@@ -2,6 +2,7 @@
 # Installs the Glacier core at pinned versions and runs every core test. Log: /tmp/run_core.log
 set -x
 cd "$(dirname "$0")/.."
+export PATH="$HOME/.local/bin:/usr/local/py-utils/bin:$PATH"; command -v uv >/dev/null || python3 -m pip install --quiet --user uv
 uv pip install --quiet --python .venv/bin/python -r setup/requirements.txt
 cd glacier/web && npm ci --no-audit --no-fund --loglevel=error && npx tsc -b && npx vite build > /dev/null && cd ../backend
 ../../.venv/bin/python -m pytest tests -q 2>&1 | tail -3
