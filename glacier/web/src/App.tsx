@@ -64,6 +64,7 @@ function Shell() {
   const [activeRun, setActiveRun] = useState<RunState | null>(null)
   const [selected, setSelected] = useState<Selection>(null)
   const [tab, setTab] = useState<'canvas' | 'vault'>('canvas')
+  const [conversationChooser, setConversationChooser] = useState(false)
   const [wsUp, setWsUp] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
@@ -306,9 +307,10 @@ function Shell() {
 
   return (
     <div className="app">
+      <header className="topbar"><div className="top-cell brand-cell"><span className="pixel-mark">▣</span> GLACIER</div><div className="top-cell top-title">YOUR WORKSPACE <span>Make a plan, then decide when it’s ready.</span></div><div className="top-cell top-theme"><button className="theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>{theme === 'light' ? '☾ Dark' : '☼ Light'}</button></div></header>
       <aside className="left">
-        <div className="brand"><span className="brand-mark" aria-hidden="true">◈</span> Glacier<span className="brand-caption">YOUR LOCAL WORKSPACE</span></div>
-        <div className="workspace-label"><span className="workspace-avatar">G</span><div>My workspace<small>Made for your everyday work</small></div></div>
+        <div className="brand"><span className="brand-mark" aria-hidden="true">▣</span> Glacier<span className="brand-caption">YOUR LITTLE WORK WORLD</span></div>
+        <div className="workspace-label"><span className="workspace-avatar">G</span><div>Your place<small>Everything you are working on</small></div></div>
         <div className="section-head"><span>Your flows</span><span>{allEnvs.length}</span></div>
         <div className="list flow-list" data-testid="env-list">
           {allEnvs.map(e => <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>
@@ -333,16 +335,14 @@ function Shell() {
         </>}
         <div className="sidebar-bottom">
           <div className="future-link"><span>Claims & proposals</span><span className="soon">Coming soon</span><small>Problems and paid options that need you.</small></div>
-          <div className={`connection ${wsUp ? 'connected' : ''}`} data-testid="ws-status" data-connected={wsUp} role="status"><span className="ws-dot" />{wsUp ? 'Live updates connected' : 'Reconnecting to live updates…'}</div>
-          <button className="theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>{theme === 'light' ? '☾ Dark appearance' : '☼ Light appearance'}<span>↔</span></button>
         </div>
       </aside>
 
       <main className="center">
-        <header className="page-header"><div><div className="eyebrow">A LITTLE MORE SPACE TO THINK</div><h1>{tab === 'vault' ? 'Your memory' : 'Good work starts with a flow.'}</h1><p>{tab === 'vault' ? 'A readable record of what your work leaves behind.' : 'Give every step a purpose. See what happens next.'}</p></div><span className="header-emblem" aria-hidden="true">◈</span></header>
+        <header className="page-header"><div className="eyebrow">{tab === 'vault' ? 'MEMORY · COMING SOON' : 'BUILD A FLOW'}</div><h1>{tab === 'vault' ? 'Memory' : (envName || 'Your flow')}</h1><p>{tab === 'vault' ? 'A simple list of things Glacier has saved.' : 'Put a few clear steps together. You stay in charge.'}</p><span className="header-emblem" aria-hidden="true">▦</span></header>
         <nav className="tabs" aria-label="Workspace views">
           <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" aria-pressed={tab === 'canvas'} onClick={() => setTab('canvas')}>◇ Build</button>
-          <button className="tab future-tab" disabled>▷ Run view <span className="soon">Coming soon</span></button>
+          <button className="tab future-tab" disabled>Run <span className="soon">Coming soon</span></button>
           <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" aria-pressed={tab === 'vault'} onClick={() => setTab('vault')}>▤ Memory</button>
         </nav>
         {tab === 'vault' ? <VaultView /> : !envId ? <div className="empty"><span className="empty-art" aria-hidden="true">◇<span>···</span>◇<span>···</span>◈</span><div className="eyebrow">ONE STEP AT A TIME</div><h2>Make room for what matters.</h2><p>A flow is a series of steps that work together.<br />Create one, add your steps, and follow its progress here.</p><button className="primary" onClick={() => setCreating(true)}>Create your first flow →</button></div> : <>
@@ -351,77 +351,48 @@ function Shell() {
             <span className={`save-state${dirty ? ' is-dirty' : ''}`}>{dirty ? <span data-testid="dirty">● Unsaved changes</span> : '✓ All changes saved'}</span>
             <button data-testid="save" disabled={busy || !!activeRun} onClick={() => save()}>Save</button><button className="primary" data-testid="run" disabled={busy || nodes.length === 0 || activeRun?.status === 'running' || activeRun?.status === 'waiting'} onClick={run}>▷ Run flow</button>
           </div>
-          <div className="palette-wrap"><div className="palette-title">ADD A STEP<span>Click to add · drag the dots to connect</span></div><div className="palette" data-testid="palette">{catalog.map(t => <button key={t.type} className="pal" data-testid={`palette-${t.type}`} title={t.description} disabled={!!activeRun} onClick={() => addNode(t.type)}><span aria-hidden="true">＋</span> {t.label}</button>)}</div></div>
+          <div className="palette-wrap"><div className="palette-title">YOUR STEP PIECES<span>Choose one to add it</span></div><div className="palette" data-testid="palette">{catalog.map(t => { const worker = t.label.toLowerCase().includes('worker'); return <button key={t.type} className="pal" data-testid={`palette-${t.type}`} title={t.description} disabled={!!activeRun} onClick={() => addNode(t.type)}><span aria-hidden="true">＋</span> <span className="pal-label">{worker ? 'Worker' : t.label}</span>{worker && <span className="sr-only">{t.label}</span>}</button> })}</div></div>
           <div className="canvas-wrap">
+            {activeRun && <div className="run-box" data-testid="run-box">
+              <div className="section-head"><span>Flow progress</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
+              <details><summary>Run details</summary><code data-testid="active-run-id">{activeRun.run_id}</code></details><p className="muted small">Live status from Glacier.</p>
+              <button data-testid="clear-run" onClick={() => setActiveRun(null)}>← Back to editing</button>
+              {selNode?.type === 'flow' && /sub-run [\w-]+ of /.test(activeRun.outputs[selNode.id] ?? '') && <button data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>}
+            </div>}
             {activeRun && waitingNode && activeRun.status === 'waiting' && <div className="approval-banner" data-testid="approval-banner" role="status"><div><span className="approval-label">Your decision is needed</span><span className="approval-prompt" data-testid="approval-prompt">{waitingNode.data.config.prompt}</span></div><button className="ok" data-testid="approve" onClick={() => decide(true)}>Approve</button><button className="danger" data-testid="reject" onClick={() => decide(false)}>Reject</button></div>}
             <div className="canvas" data-testid="canvas">
               <ReactFlow<GNode, Edge> nodes={displayNodes} edges={displayEdges} nodeTypes={flowNodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeClick={(_, n) => setSelected({ kind: 'node', id: n.id })} onEdgeClick={(_, e) => setSelected({ kind: 'edge', id: e.id })} onPaneClick={() => setSelected(null)} nodesDraggable={!activeRun} nodesConnectable={!activeRun} deleteKeyCode={activeRun ? null : ['Backspace', 'Delete']} colorMode={theme} proOptions={{ hideAttribution: true }}>
                 <Background gap={24} color="var(--dots)" /><Controls showInteractive={false} />
               </ReactFlow>
               {!nodes.length && <div className="canvas-guide"><span>01</span><h2>Start with a single step.</h2><p>Choose a step above, then select it to set it up.</p></div>}
-              <div className="canvas-caption">{nodes.length} steps · {edges.length} connections<span>Scroll to zoom · drag the background to explore</span></div>
+              <div className="canvas-caption">{nodes.length} steps · {edges.length} connections<span>Drag a step to move it</span></div>
             </div>
             {activeRun && selNode && <div className="term-panel" data-testid="terminal-panel"><div className="term-head"><span>Step output · <b data-testid="terminal-node">{selNode.id}</b> · {typeInfo(selNode.type)?.label ?? selNode.type} · {activeRun.node_states[selNode.id] ?? 'pending'}</span><button className="ghost" data-testid="terminal-close" onClick={() => setSelected(null)}>Close</button></div><TerminalPanel text={activeRun.outputs[selNode.id] ?? ''} /></div>}
           </div>
+          {tab === 'canvas' && selNode && <div className="inspector" data-testid="inspector">
+            <div className="section-head"><span>{typeInfo(selNode.type)?.label ?? selNode.type} settings</span><span>{typeInfo(selNode.type)?.description}</span></div>
+            {(typeInfo(selNode.type)?.fields ?? []).map(f => <label className="field" key={f.key}><span>{f.label}{f.optional ? ' (optional)' : ''}</span>
+              {f.picker === 'environment' ? <select data-testid={`field-${f.key}`} disabled={!!activeRun} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}><option value="">choose…</option>{allEnvs.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select>
+                : f.options ? <select data-testid={`field-${f.key}`} disabled={!!activeRun} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>{f.options.map(o => <option key={o} value={o}>{o}</option>)}</select>
+                : f.multiline ? <textarea rows={f.key === 'prompt' ? 6 : 3} data-testid={`field-${f.key}`} disabled={!!activeRun} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
+                : <input data-testid={`field-${f.key}`} disabled={!!activeRun} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}</label>)}
+            <button className="danger" data-testid="delete-selected" disabled={!!activeRun} onClick={deleteSelected}>Delete step</button>
+          </div>}
+          {tab === 'canvas' && selEdge && <div className="inspector edge-editor" data-testid="edge-inspector">
+            <div className="section-head"><span>Connection · {selEdge.source} → {selEdge.target}</span></div>
+            {selEdgeSrc && typeInfo(selEdgeSrc.type)?.branches ? <label className="field"><span>Branch</span><select data-testid="edge-label" disabled={!!activeRun} value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>{(typeInfo(selEdgeSrc.type)?.branches ?? []).map(l => <option key={l} value={l}>{l}</option>)}</select></label> : <div className="muted small">The next step follows this connection.</div>}
+            <button className="danger" data-testid="delete-selected" disabled={!!activeRun} onClick={deleteSelected}>Delete connection</button>
+          </div>}
           <footer className="save-footer"><span>Saved version <code data-testid="last-commit">{lastCommit || '—'}</code></span><details><summary>Flow details</summary><code data-testid="env-id">{envId}</code></details></footer>
         </>}
       </main>
+      {msg && <div className="workspace-message msg" role="status" data-testid="message">{msg}</div>}
 
-      <aside className="right" aria-label="Details and activity">
-        <div className="details-heading"><span className="eyebrow">IN THE KNOW</span><h2>{tab === 'vault' ? 'Yours to revisit' : activeRun ? 'Follow the work' : 'Make it yours'}</h2><p>{tab === 'vault' ? 'Useful context, kept close to your work.' : activeRun ? 'Live progress, one step at a time.' : 'A clear plan makes a great starting point.'}</p></div>
-        {msg && <div className="msg" role="status" data-testid="message">{msg}</div>}
-        {activeRun && <div className="run-box" data-testid="run-box">
-          <div className="section-head"><span>Selected run</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
-          <code data-testid="active-run-id">{activeRun.run_id}</code><p className="muted small">Select a step to read its output. Status comes from Glacier.</p>
-          <button data-testid="clear-run" onClick={() => setActiveRun(null)}>← Back to editing</button>
-          {selNode?.type === 'flow' && /sub-run [\w-]+ of /.test(activeRun.outputs[selNode.id] ?? '') && <button data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>}
-          <div className="cost-placeholder">Cost & model per run<span className="soon">Coming soon</span></div>
-        </div>}
-            {tab === 'canvas' && selNode && (
-              <div className="inspector" data-testid="inspector">
-                <div className="section-head"><span>{typeInfo(selNode.type)?.label ?? selNode.type} settings</span></div>
-                <p className="muted small">{typeInfo(selNode.type)?.description}</p>
-                {(typeInfo(selNode.type)?.fields ?? []).map(f => (
-                  <label className="field" key={f.key}>
-                    <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
-                    {f.picker === 'environment'
-                      ? <select data-testid={`field-${f.key}`} disabled={!!activeRun} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
-                          <option value="">choose…</option>
-                          {allEnvs.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                        </select>
-                      : f.options
-                      ? <select data-testid={`field-${f.key}`} disabled={!!activeRun} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
-                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      : f.multiline
-                      ? <textarea rows={f.key === 'prompt' ? 6 : 3} data-testid={`field-${f.key}`} disabled={!!activeRun} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
-                      : <input data-testid={`field-${f.key}`} disabled={!!activeRun} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
-                  </label>
-                ))}
-                <button className="danger" data-testid="delete-selected" disabled={!!activeRun} onClick={deleteSelected}>Delete step</button>
-              </div>
-            )}
-
-            {tab === 'canvas' && selEdge && (
-              <div className="inspector" data-testid="edge-inspector">
-                <div className="section-head"><span>Connection · {selEdge.source} → {selEdge.target}</span></div>
-                {selEdgeSrc && typeInfo(selEdgeSrc.type)?.branches ? (
-                  <label className="field">
-                    <span>Branch</span>
-                    <select data-testid="edge-label" disabled={!!activeRun} value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
-                      {(typeInfo(selEdgeSrc.type)?.branches ?? []).map(l => <option key={l} value={l}>{l}</option>)}
-                    </select>
-                  </label>
-                ) : <div className="muted small">The next step follows this connection.</div>}
-                <button className="danger" data-testid="delete-selected" disabled={!!activeRun} onClick={deleteSelected}>Delete connection</button>
-              </div>
-            )}
-
-        {tab === 'vault' && <div className="selection-help"><span aria-hidden="true">▤</span><h3>Read what was saved.</h3><p>Choose a note from the list. This view shows its saved text exactly as it is.</p><p>Editing, linked notes, and details about who wrote them are coming soon.</p></div>}
-        {tab === 'canvas' && !selected && <div className="selection-help"><span aria-hidden="true">↖</span><h3>A closer look</h3><p>Select a step to see its settings{activeRun ? ' and output' : ''}, or a connection to see where it leads.</p></div>}
-        {!activeRun && <div className="cost-placeholder">Cost & model per run<span className="soon">Coming soon</span></div>}
-        <div className="assistant-card"><div className="assistant-icon" aria-hidden="true">✧</div><div className="section-head"><span>Assistant chat</span><span className="soon">Coming soon</span></div><h3>Start with an idea.</h3><p>Describe what you need. Plan a flow together before anything runs.</p><div className="assistant-prompt">What would you like help with?<span>↑</span></div></div>
+      <aside className="right" aria-label="Messages">
+        <div className="messages-head"><div><span className="eyebrow">TALK IT THROUGH</span><h2>Messages</h2></div><button className="chooser-trigger" onClick={() => setConversationChooser(!conversationChooser)} aria-expanded={conversationChooser}>☷</button></div>
+        {conversationChooser ? <div className="conversation-chooser"><span className="pixel-face" aria-hidden="true">▣</span><h3>Conversations</h3><button className="conversation-row active" onClick={() => setConversationChooser(false)}><span>▣</span><span>Glacier<small>Your helpful guide</small></span><b>›</b></button><div className="future-note"><span className="soon">Coming soon</span><p>More ways to talk with Glacier are on the way.</p></div></div> : <div className="glacier-thread"><button className="conversation-current" onClick={() => setConversationChooser(true)}><span className="pixel-face" aria-hidden="true">▣</span><span>Glacier<small>Your helpful guide</small></span><b>⌄</b></button><div className="thread-empty"><span aria-hidden="true">✦</span><h3>Start with Glacier</h3><p>Tell Glacier what you want to get done. Chat is on the way.</p><span className="soon">Coming soon</span></div><label className="composer"><span>Write a message…</span><button disabled aria-label="Send message">↑</button></label><p className="plain-note">Nothing will happen until you choose to run a flow.</p></div>}
       </aside>
+      <footer className="bottombar"><div className={`footer-status ${wsUp ? 'connected' : ''}`} data-testid="ws-status" data-connected={wsUp} role="status"><span className="ws-dot" />{wsUp ? 'Connected' : 'Reconnecting…'}</div><div className="footer-center">Your flows, your choice<span>Cost per run <b>Coming soon</b> · Claims & proposals <b>Coming soon</b></span></div><div className="footer-version"><span>Memory graph · Coming soon</span></div></footer>
     </div>
   )
 }

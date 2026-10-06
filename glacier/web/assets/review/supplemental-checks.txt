@@ -7,3 +7,5 @@ PASS: cancel creation; refuse discard when creating with unsaved changes.
 PASS: delete selected connection.
 PASS: no page or console errors; no external runtime requests.
 Mock backend only. This is supplemental evidence, not the unchanged acceptance suite.
+PASS: exact five-column grid at 1024 px; left, center and right span 20/60/20 percent, aligned through header and footer.
+PASS: Messages shows only the Glacier conversation or its chooser in both themes; chooser replaces the thread.
