@@ -7,7 +7,7 @@ import {
   ApiError, api, slugify, subscribeEvents,
   type EnvSummary, type NodeTypeInfo, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from './api.ts'
-import { GlacierNode, nodeTypes as baseNodeTypes, type GNode } from './GlacierNode.tsx'
+import { GlacierNode, type GNode } from './GlacierNode.tsx'
 import { TerminalPanel } from './TerminalPanel.tsx'
 import { VaultView } from './VaultView.tsx'
 
@@ -69,8 +69,22 @@ function Shell() {
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
   const [catalog, setCatalog] = useState<NodeTypeInfo[]>([])
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try { const saved = localStorage.getItem('glacier-theme'); if (saved === 'light' || saved === 'dark') return saved } catch { /* storage may be unavailable */ }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { localStorage.setItem('glacier-theme', theme) } catch { /* theme still works in this session */ }
+  }, [theme])
   const typeInfo = useCallback((k: string) => catalog.find(t => t.type === k), [catalog])
-  const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
+  const flowNodeTypes = useMemo(() => Object.fromEntries(catalog.map(t => [t.type, GlacierNode])), [catalog])
 
   const envIdRef = useRef(envId)
   envIdRef.current = envId
@@ -101,20 +115,22 @@ function Shell() {
   }, [refreshRuns])
 
   const selectEnv = (id: string, name?: string) => {
-    if (dirty && envId && envId !== id && !window.confirm('Discard unsaved changes?')) return
+    if (envId === id) { setTab('canvas'); return }
+    if (dirty && envId && !window.confirm('Discard unsaved changes?')) return
     loadEnv(id, name)
   }
 
   const createEnv = () => {
     const name = newName.trim()
     if (!name) return
+    if (dirty && envId && !window.confirm('Discard unsaved changes?')) return
     const all = [...envs, ...unsaved].map(e => e.id)
     let id = slugify(name)
     for (let i = 2; all.includes(id); i++) id = `${slugify(name)}-${i}`
     setUnsaved(u => [...u, { id, name }])
     setCreating(false); setNewName('')
     setEnvId(id); setEnvName(name); setNodes([]); setEdges([]); setDirty(true)
-    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg('New environment - add nodes, then Save.'); setTab('canvas')
+    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg('Your flow is ready. Add a step to begin.'); setTab('canvas')
   }
 
   // ---------- live events ----------
@@ -129,7 +145,6 @@ function Shell() {
           node_states: { ...r.node_states, [ev.node_id]: ev.state },
           outputs: ev.output !== undefined ? { ...r.outputs, [ev.node_id]: ev.output } : r.outputs,
           waiting_on: ev.state === 'waiting' ? ev.node_id : r.waiting_on === ev.node_id ? null : r.waiting_on,
-          status: ev.state === 'waiting' ? 'waiting' : r.status === 'waiting' && r.waiting_on === ev.node_id ? 'running' : r.status,
         }
       })
       // the event has no run status; re-read the authoritative run state shortly after
@@ -241,15 +256,18 @@ function Shell() {
     const { run_id, waiting_on } = activeRun
     try {
       await api.approve(run_id, waiting_on, approved)
-      setActiveRun(r => (r && r.run_id === run_id ? { ...r, waiting_on: null, status: 'running' } : r))
+      const updated = await api.getRun(run_id)
+      setActiveRun(r => r?.run_id === run_id ? updated : r)
       setTimeout(() => api.getRun(run_id).then(r => setActiveRun(cur => (cur?.run_id === run_id ? r : cur))).catch(() => {}), 300)
     } catch (e) { setMsg(String(e)) }
   }
 
   // ---------- derived ----------
   const displayNodes = useMemo(() => nodes.map(n => ({
-    ...n, data: { ...n.data, state: activeRun ? (activeRun.node_states[n.id] ?? 'pending') : undefined },
-  })), [nodes, activeRun])
+    ...n, data: { ...n.data, label: typeInfo(n.type)?.label ?? n.type, description: typeInfo(n.type)?.description,
+      summary: (typeInfo(n.type)?.fields ?? []).map(f => n.data.config[f.key]).find(Boolean),
+      state: activeRun ? (activeRun.node_states[n.id] ?? 'pending') : undefined },
+  })), [nodes, activeRun, typeInfo])
 
   // edges that close a cycle (target can reach source) are loop-back edges: drawn animated
   const displayEdges = useMemo(() => {
@@ -288,183 +306,121 @@ function Shell() {
 
   return (
     <div className="app">
-      {/* ---------- left ---------- */}
       <aside className="left">
-        <div className="brand"><span className="brand-mark">◆</span> Glacier <span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? 'live events connected' : 'live events disconnected'} /></div>
-        <div className="section-head"><span>Environments</span></div>
-        <div className="list" data-testid="env-list">
-          {allEnvs.map(e => (
-            <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>
-              {e.name}{unsaved.some(u => u.id === e.id) && <span className="tag">unsaved</span>}
-            </button>
-          ))}
-          {allEnvs.length === 0 && <div className="muted">No environments yet.</div>}
+        <div className="brand"><span className="brand-mark" aria-hidden="true">◈</span> Glacier<span className="brand-caption">YOUR LOCAL WORKSPACE</span></div>
+        <div className="workspace-label"><span className="workspace-avatar">G</span><div>My workspace<small>Made for your everyday work</small></div></div>
+        <div className="section-head"><span>Your flows</span><span>{allEnvs.length}</span></div>
+        <div className="list flow-list" data-testid="env-list">
+          {allEnvs.map(e => <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>
+            <span className="flow-symbol" aria-hidden="true">◇</span><span className="flow-title">{e.name}</span>{unsaved.some(u => u.id === e.id) && <span className="unsaved-dot" title="Not saved yet" />}
+          </button>)}
+          {!allEnvs.length && <p className="muted small">Your flows will live here. Start with one small task.</p>}
         </div>
-        {creating ? (
-          <form className="new-env" onSubmit={ev => { ev.preventDefault(); createEnv() }}>
-            <input autoFocus data-testid="new-env-name" placeholder="Environment name" value={newName} onChange={e => setNewName(e.target.value)} />
-            <div className="row">
-              <button type="submit" className="primary" data-testid="new-env-create">Create</button>
-              <button type="button" className="ghost" data-testid="new-env-cancel" onClick={() => setCreating(false)}>Cancel</button>
-            </div>
-          </form>
-        ) : (
-          <button className="primary block" data-testid="new-env" onClick={() => setCreating(true)}>+ New environment</button>
-        )}
-
-        {envId && (
-          <>
-            <div className="section-head">
-              <span>Runs</span>
-              <button className="ghost" data-testid="runs-refresh" onClick={() => refreshRuns(envId)}>Refresh</button>
-            </div>
-            <div className="list" data-testid="run-list">
-              {runs.length === 0 && <div className="muted">No runs yet.</div>}
-              {runs.map(r => (
-                <button key={r.run_id} className={`list-item run-item${activeRun?.run_id === r.run_id ? ' active' : ''}`} data-testid={`run-${r.run_id}`} data-status={r.status} onClick={() => openRun(r.run_id)}>
-                  <span className={`badge status-${r.status}`}>{r.status}</span>
-                  <span className="run-id">{r.run_id}</span>
-                  <span className="run-time">{r.started_at ? new Date(r.started_at).toLocaleTimeString() : ''}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        {creating ? <form className="new-env" onSubmit={ev => { ev.preventDefault(); createEnv() }}>
+          <label className="field"><span>Give your flow a name</span><input autoFocus data-testid="new-env-name" placeholder="e.g. Weekly summary" value={newName} onChange={e => setNewName(e.target.value)} /></label>
+          <div className="row"><button type="submit" className="primary" disabled={!newName.trim()} data-testid="new-env-create">Create flow</button><button type="button" className="ghost" data-testid="new-env-cancel" onClick={() => setCreating(false)}>Cancel</button></div>
+        </form> : <button className="new-flow block" data-testid="new-env" onClick={() => setCreating(true)}>＋ New flow</button>}
+        {envId && <>
+          <div className="section-head history-heading"><span>Run history</span><button className="ghost" data-testid="runs-refresh" onClick={() => refreshRuns(envId)}>Refresh</button></div>
+          <div className="list history-list" data-testid="run-list">
+            {!runs.length && <p className="muted small">Once you run this flow, its activity appears here.</p>}
+            {runs.map(r => <button key={r.run_id} className={`list-item run-item${activeRun?.run_id === r.run_id ? ' active' : ''}`} data-testid={`run-${r.run_id}`} data-status={r.status} onClick={() => openRun(r.run_id)}>
+              <span className={`badge status-${r.status}`}>{r.status}</span>
+              <span className="run-time">{r.started_at ? new Date(r.started_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Time unavailable'}</span>
+              <span className="run-id">{r.run_id}</span>
+            </button>)}
+          </div>
+        </>}
+        <div className="sidebar-bottom">
+          <div className="future-link"><span>Claims & proposals</span><span className="soon">Coming soon</span><small>Problems and paid options that need you.</small></div>
+          <div className={`connection ${wsUp ? 'connected' : ''}`} data-testid="ws-status" data-connected={wsUp} role="status"><span className="ws-dot" />{wsUp ? 'Live updates connected' : 'Reconnecting to live updates…'}</div>
+          <button className="theme-toggle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>{theme === 'light' ? '☾ Dark appearance' : '☼ Light appearance'}<span>↔</span></button>
+        </div>
       </aside>
 
-      {/* ---------- center ---------- */}
       <main className="center">
-        <div className="tabs">
-          <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" onClick={() => setTab('canvas')}>Canvas</button>
-          <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>Vault</button>
-          {tab === 'canvas' && envId && (
-            <div className="palette" data-testid="palette">
-              {catalog.map(t => (
-                <button key={t.type} className={`pal pal-${t.type}`} data-testid={`palette-${t.type}`} title={t.description} onClick={() => addNode(t.type)}>+ {t.label}</button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {tab === 'vault' ? <VaultView /> : !envId ? (
-          <div className="empty">Pick an environment on the left, or create a new one.</div>
-        ) : (
-          <div className="canvas-wrap">
-            {activeRun && waitingNode && activeRun.status === 'waiting' && (
-              <div className="approval-banner" data-testid="approval-banner">
-                <span className="approval-label">Waiting for approval on {waitingNode.id}:</span>
-                <span className="approval-prompt" data-testid="approval-prompt">{waitingNode.data.config.prompt}</span>
-                <button className="ok" data-testid="approve" onClick={() => decide(true)}>Approve</button>
-                <button className="danger" data-testid="reject" onClick={() => decide(false)}>Reject</button>
-              </div>
-            )}
-            <div className="canvas" data-testid="canvas">
-              <ReactFlow<GNode, Edge>
-                nodes={displayNodes}
-                edges={displayEdges}
-                nodeTypes={flowNodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeClick={(_, n) => setSelected({ kind: 'node', id: n.id })}
-                onEdgeClick={(_, e) => setSelected({ kind: 'edge', id: e.id })}
-                onPaneClick={() => setSelected(null)}
-                deleteKeyCode={['Backspace', 'Delete']}
-                colorMode="dark"
-                proOptions={{ hideAttribution: true }}
-              >
-                <Background gap={20} color="#1b2733" />
-                <Controls showInteractive={false} />
-              </ReactFlow>
-            </div>
-            {activeRun && selNode && (
-              <div className="term-panel" data-testid="terminal-panel">
-                <div className="term-head">
-                  <span>Output of <b data-testid="terminal-node">{selNode.id}</b> ({selNode.type}) - {activeRun.node_states[selNode.id] ?? 'pending'}</span>
-                  <button className="ghost" data-testid="terminal-close" onClick={() => setSelected(null)}>Close</button>
-                </div>
-                <TerminalPanel text={activeRun.outputs[selNode.id] ?? ''} />
-              </div>
-            )}
+        <header className="page-header"><div><div className="eyebrow">A LITTLE MORE SPACE TO THINK</div><h1>{tab === 'vault' ? 'Your memory' : 'Good work starts with a flow.'}</h1><p>{tab === 'vault' ? 'A readable record of what your work leaves behind.' : 'Give every step a purpose. See what happens next.'}</p></div><span className="header-emblem" aria-hidden="true">◈</span></header>
+        <nav className="tabs" aria-label="Workspace views">
+          <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" aria-pressed={tab === 'canvas'} onClick={() => setTab('canvas')}>◇ Build</button>
+          <button className="tab future-tab" disabled>▷ Run view <span className="soon">Coming soon</span></button>
+          <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" aria-pressed={tab === 'vault'} onClick={() => setTab('vault')}>▤ Memory</button>
+        </nav>
+        {tab === 'vault' ? <VaultView /> : !envId ? <div className="empty"><span className="empty-art" aria-hidden="true">◇<span>···</span>◇<span>···</span>◈</span><div className="eyebrow">ONE STEP AT A TIME</div><h2>Make room for what matters.</h2><p>A flow is a series of steps that work together.<br />Create one, add your steps, and follow its progress here.</p><button className="primary" onClick={() => setCreating(true)}>Create your first flow →</button></div> : <>
+          <div className="flow-toolbar">
+            <div className="flow-name"><label htmlFor="flow-name">FLOW NAME</label><input id="flow-name" data-testid="env-name" disabled={!!activeRun} value={envName} onChange={e => { setEnvName(e.target.value); setDirty(true) }} /></div>
+            <span className={`save-state${dirty ? ' is-dirty' : ''}`}>{dirty ? <span data-testid="dirty">● Unsaved changes</span> : '✓ All changes saved'}</span>
+            <button data-testid="save" disabled={busy || !!activeRun} onClick={() => save()}>Save</button><button className="primary" data-testid="run" disabled={busy || nodes.length === 0 || activeRun?.status === 'running' || activeRun?.status === 'waiting'} onClick={run}>▷ Run flow</button>
           </div>
-        )}
+          <div className="palette-wrap"><div className="palette-title">ADD A STEP<span>Click to add · drag the dots to connect</span></div><div className="palette" data-testid="palette">{catalog.map(t => <button key={t.type} className="pal" data-testid={`palette-${t.type}`} title={t.description} disabled={!!activeRun} onClick={() => addNode(t.type)}><span aria-hidden="true">＋</span> {t.label}</button>)}</div></div>
+          <div className="canvas-wrap">
+            {activeRun && waitingNode && activeRun.status === 'waiting' && <div className="approval-banner" data-testid="approval-banner" role="status"><div><span className="approval-label">Your decision is needed</span><span className="approval-prompt" data-testid="approval-prompt">{waitingNode.data.config.prompt}</span></div><button className="ok" data-testid="approve" onClick={() => decide(true)}>Approve</button><button className="danger" data-testid="reject" onClick={() => decide(false)}>Reject</button></div>}
+            <div className="canvas" data-testid="canvas">
+              <ReactFlow<GNode, Edge> nodes={displayNodes} edges={displayEdges} nodeTypes={flowNodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeClick={(_, n) => setSelected({ kind: 'node', id: n.id })} onEdgeClick={(_, e) => setSelected({ kind: 'edge', id: e.id })} onPaneClick={() => setSelected(null)} nodesDraggable={!activeRun} nodesConnectable={!activeRun} deleteKeyCode={activeRun ? null : ['Backspace', 'Delete']} colorMode={theme} proOptions={{ hideAttribution: true }}>
+                <Background gap={24} color="var(--dots)" /><Controls showInteractive={false} />
+              </ReactFlow>
+              {!nodes.length && <div className="canvas-guide"><span>01</span><h2>Start with a single step.</h2><p>Choose a step above, then select it to set it up.</p></div>}
+              <div className="canvas-caption">{nodes.length} steps · {edges.length} connections<span>Scroll to zoom · drag the background to explore</span></div>
+            </div>
+            {activeRun && selNode && <div className="term-panel" data-testid="terminal-panel"><div className="term-head"><span>Step output · <b data-testid="terminal-node">{selNode.id}</b> · {typeInfo(selNode.type)?.label ?? selNode.type} · {activeRun.node_states[selNode.id] ?? 'pending'}</span><button className="ghost" data-testid="terminal-close" onClick={() => setSelected(null)}>Close</button></div><TerminalPanel text={activeRun.outputs[selNode.id] ?? ''} /></div>}
+          </div>
+          <footer className="save-footer"><span>Saved version <code data-testid="last-commit">{lastCommit || '—'}</code></span><details><summary>Flow details</summary><code data-testid="env-id">{envId}</code></details></footer>
+        </>}
       </main>
 
-      {/* ---------- right ---------- */}
-      <aside className="right">
-        {envId ? (
-          <>
-            <div className="section-head"><span>Environment</span>{dirty && <span className="tag" data-testid="dirty">unsaved</span>}</div>
-            <label className="field">
-              <span>Name</span>
-              <input data-testid="env-name" value={envName} onChange={e => { setEnvName(e.target.value); setDirty(true) }} />
-            </label>
-            <div className="field"><span>Id</span><code data-testid="env-id">{envId}</code></div>
-            <div className="row">
-              <button className="primary" data-testid="save" disabled={busy} onClick={() => save()}>Save</button>
-              <button className="run" data-testid="run" disabled={busy || nodes.length === 0} onClick={run}>Run</button>
-            </div>
-            <div className="field">
-              <span>Last save commit</span>
-              <code data-testid="last-commit">{lastCommit || '-'}</code>
-            </div>
-            {msg && <div className="msg" data-testid="message">{msg}</div>}
-
-            {activeRun && (
-              <div className="run-box" data-testid="run-box">
-                <div className="section-head">
-                  <span>Run</span>
-                  <button className="ghost" data-testid="clear-run" onClick={() => setActiveRun(null)}>Back to edit</button>
-                </div>
-                <div className="field"><span>Id</span><code data-testid="active-run-id">{activeRun.run_id}</code></div>
-                <div className="field"><span>Status</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
-                <div className="muted small">Click a node to see its output.</div>
-                {selNode?.type === 'flow' && /sub-run [\w-]+ of /.test(activeRun.outputs[selNode.id] ?? '') && (
-                  <button className="ghost" data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>
-                )}
-              </div>
-            )}
-
-            {selNode && (
+      <aside className="right" aria-label="Details and activity">
+        <div className="details-heading"><span className="eyebrow">IN THE KNOW</span><h2>{tab === 'vault' ? 'Yours to revisit' : activeRun ? 'Follow the work' : 'Make it yours'}</h2><p>{tab === 'vault' ? 'Useful context, kept close to your work.' : activeRun ? 'Live progress, one step at a time.' : 'A clear plan makes a great starting point.'}</p></div>
+        {msg && <div className="msg" role="status" data-testid="message">{msg}</div>}
+        {activeRun && <div className="run-box" data-testid="run-box">
+          <div className="section-head"><span>Selected run</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
+          <code data-testid="active-run-id">{activeRun.run_id}</code><p className="muted small">Select a step to read its output. Status comes from Glacier.</p>
+          <button data-testid="clear-run" onClick={() => setActiveRun(null)}>← Back to editing</button>
+          {selNode?.type === 'flow' && /sub-run [\w-]+ of /.test(activeRun.outputs[selNode.id] ?? '') && <button data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>}
+          <div className="cost-placeholder">Cost & model per run<span className="soon">Coming soon</span></div>
+        </div>}
+            {tab === 'canvas' && selNode && (
               <div className="inspector" data-testid="inspector">
-                <div className="section-head"><span>Node {selNode.id} · {selNode.type}</span></div>
+                <div className="section-head"><span>{typeInfo(selNode.type)?.label ?? selNode.type} settings</span></div>
+                <p className="muted small">{typeInfo(selNode.type)?.description}</p>
                 {(typeInfo(selNode.type)?.fields ?? []).map(f => (
                   <label className="field" key={f.key}>
                     <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
                     {f.picker === 'environment'
-                      ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
+                      ? <select data-testid={`field-${f.key}`} disabled={!!activeRun} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           <option value="">choose…</option>
                           {allEnvs.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                       : f.options
-                      ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
+                      ? <select data-testid={`field-${f.key}`} disabled={!!activeRun} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
                       : f.multiline
-                      ? <textarea rows={f.key === 'prompt' ? 6 : 3} data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
-                      : <input data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
+                      ? <textarea rows={f.key === 'prompt' ? 6 : 3} data-testid={`field-${f.key}`} disabled={!!activeRun} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
+                      : <input data-testid={`field-${f.key}`} disabled={!!activeRun} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
                   </label>
                 ))}
-                <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>Delete node</button>
+                <button className="danger" data-testid="delete-selected" disabled={!!activeRun} onClick={deleteSelected}>Delete step</button>
               </div>
             )}
 
-            {selEdge && (
+            {tab === 'canvas' && selEdge && (
               <div className="inspector" data-testid="edge-inspector">
-                <div className="section-head"><span>Edge {selEdge.id}: {selEdge.source} → {selEdge.target}</span></div>
+                <div className="section-head"><span>Connection · {selEdge.source} → {selEdge.target}</span></div>
                 {selEdgeSrc && typeInfo(selEdgeSrc.type)?.branches ? (
                   <label className="field">
                     <span>Branch</span>
-                    <select data-testid="edge-label" value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
+                    <select data-testid="edge-label" disabled={!!activeRun} value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
                       {(typeInfo(selEdgeSrc.type)?.branches ?? []).map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </label>
-                ) : <div className="muted small">Unlabelled edge (runs in order).</div>}
-                <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>Delete edge</button>
+                ) : <div className="muted small">The next step follows this connection.</div>}
+                <button className="danger" data-testid="delete-selected" disabled={!!activeRun} onClick={deleteSelected}>Delete connection</button>
               </div>
             )}
-          </>
-        ) : <div className="muted">No environment selected.</div>}
+
+        {tab === 'vault' && <div className="selection-help"><span aria-hidden="true">▤</span><h3>Read what was saved.</h3><p>Choose a note from the list. This view shows its saved text exactly as it is.</p><p>Editing, linked notes, and details about who wrote them are coming soon.</p></div>}
+        {tab === 'canvas' && !selected && <div className="selection-help"><span aria-hidden="true">↖</span><h3>A closer look</h3><p>Select a step to see its settings{activeRun ? ' and output' : ''}, or a connection to see where it leads.</p></div>}
+        {!activeRun && <div className="cost-placeholder">Cost & model per run<span className="soon">Coming soon</span></div>}
+        <div className="assistant-card"><div className="assistant-icon" aria-hidden="true">✧</div><div className="section-head"><span>Assistant chat</span><span className="soon">Coming soon</span></div><h3>Start with an idea.</h3><p>Describe what you need. Plan a flow together before anything runs.</p><div className="assistant-prompt">What would you like help with?<span>↑</span></div></div>
       </aside>
     </div>
   )

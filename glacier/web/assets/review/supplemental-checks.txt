@@ -1,0 +1,9 @@
+PASS: light and dark Build, running, approval, history and memory screenshots.
+PASS: Build and memory at 1024 px in both themes; no horizontal page overflow.
+PASS: all visible primary controls at 1024 px.
+PASS: theme persists after reload.
+PASS: dragging marks flow unsaved; save clears marker; saved flow reloads.
+PASS: cancel creation; refuse discard when creating with unsaved changes.
+PASS: delete selected connection.
+PASS: no page or console errors; no external runtime requests.
+Mock backend only. This is supplemental evidence, not the unchanged acceptance suite.

@@ -1,0 +1,51 @@
+
+> glacier-web@0.0.0 check:ui
+> tsc -b && vite build && node e2e/core.spec.mjs
+
+vite v8.3.3 building client environment for production...
+transforming...
+✓ 177 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.59 kB │ gzip:   0.39 kB
+dist/assets/index-4mpwSmFa.css   33.53 kB │ gzip:   6.78 kB
+dist/assets/index-CK9g7ul5.js   756.40 kB │ gzip: 216.43 kB
+
+✓ built in 428ms
+[e2e] ok   screen loaded, live events socket connected
+[e2e] ok   new environment appears in list
+[e2e] ok   drag created one edge n1 -> n2
+[e2e] ok   saved, commit 7d0b7ec
+[e2e] ok   backend received environment with 2 nodes, 1 edge, command config
+[e2e] ok   nodes n1, n2 turned done via live events
+[e2e] ok   run status shows done
+[e2e] ok   run history lists the run as done
+[e2e] ok   clicking n1 shows its output in the xterm terminal
+[e2e] ok   vault lists runs/e2e-flow-run-4eac958e.md and shows its body
+[e2e] ok   approval out-edges auto-labelled yes/no (got yes,no)
+[e2e] ok   label picker changes yes/no
+[e2e] ok   delete node removes it and its edge
+[e2e] ok   approval prompt shown
+[e2e] ok   run status waiting
+[e2e] ok   approved: banner gone, n3 done, run done
+[e2e] ok   rejected run: n3 skipped, status rejected
+[e2e] ok   selecting an older run from history loads its node states
+[e2e] ok   palette shows "Codex worker"
+[e2e] ok   codex prompt is a multi-line textarea
+[e2e] ok   sandbox select defaults to workspace-write
+[e2e] ok   backend saved codex node with prompt + sandbox
+[e2e] ok   codex node done with prompt filled (got "codex exit 0\ncodex: Review codex-flow: $ echo build-ok\nmock output of: echo build-ok\nexit code 0\n\n")
+[e2e] ok   codex output shown in the terminal panel
+[e2e] ok   palette shows Loop and Sub-flow
+[e2e] ok   loop out-edges auto-labelled again/done (got again,done)
+[e2e] ok   loop-back edges drawn as a cycle
+[e2e] ok   loop ran twice then exited (got "finished 2 of 2")
+[e2e] ok   sub-flow node opens the child run with its node states
+[e2e] ok   no page errors
+11:05:24 PM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:05:24 PM [vite] ws proxy socket error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+PASS
