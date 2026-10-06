@@ -1,0 +1,87 @@
+# GLACIER ORCHESTRATION PLAN — who builds which roadmap step, in what order, in parallel where safe.
+# Companion to NORTHSTAR.yaml (which stays the source of truth for goals, rules and checkpoints).
+# Every worker reads AGENTS.md + NORTHSTAR.yaml first, then its task card here.
+schema_version: 1
+updated: 2026-10-06
+
+workers:   # roles; any free model/harness can fill a role, owner approves paid ones (D4 = free only)
+  integrator:  {who: "Claude (Cowork session)", does: "writes contracts, builds the critical path, reviews and merges every branch after CI + sandbox test board pass; only one integrator"}
+  builder_a:   {who: "Codex CLI in the shared sandbox (owner's ChatGPT plan)", does: "backend lanes on its own branch + git worktree"}
+  builder_b:   {who: "Codex CLI in the shared sandbox, second worktree", does: "backend lanes, never the same files as builder_a"}
+  ui_designer: {who: "Codex in ChatGPT (cloud) from docs/UI_HANDOFF.md", does: "all screen work against the fake backend; opens PRs only"}
+  independent_tester: {who: "Gemini CLI (free tier) or a Claude subagent; never the model that built the code under test", does: "writes benchmark cases, adversarial and security tests from the spec, not from the code"}
+  researcher:  {who: "Claude subagent / Gemini CLI", does: "claims research, content drafts (templates, docs), tool scans"}
+  owner:       {who: "Ben", does: "decisions, design direction, approvals, PC installs, real-hardware checks, usability sessions"}
+
+rules:
+  - "Contract first: no lane starts until the contract it builds against is merged (docs/CONTRACT.md, glacier/contract/*). Contracts change only through the integrator."
+  - "One editor per area: each task card lists the paths it may touch; two active cards never share a path."
+  - "Every card: acceptance test first (failing), branch named card/<id>, PR to main, CI green, then the integrator runs the sandbox test board and merges."
+  - "Verification and security tests are written by the independent_tester, not by the builder of that code (rule I-04)."
+  - "Max parallel: 2 sandbox builders + 1 cloud UI designer + 1 independent tester + 1 researcher; the sandbox has 2 cores, so heavy test runs are serialized through CI."
+  - "Stuck workers follow NORTHSTAR escalation (2 attempts, stuck signals) and file claims; the integrator routes them."
+  - "Progress is only what CI + merged evidence shows; status in NORTHSTAR is updated by the integrator at merge."
+
+waves:
+  - wave: 0
+    name: "Enable parallel work"
+    serial_by_integrator:   # short, blocking: everything parallel depends on these
+      - {card: W0-CI, what: "GitHub Actions CI on every PR: backend tests + npm run check:ui on Linux, backend tests on Windows (proves the Windows run early, without the owner's PC)", unblocks: [all, PH1.7]}
+      - {card: PH1.5, what: "finish retries, time limits, failure alerts (in progress)"}
+      - {card: W0-C1, what: "Worker contract: one shape for every AI worker node (task in, result + exit code + cost + model/route out); command/codex refactored onto it", unblocks: [PH2.2, PH2.3, PH2.4, PH2.5, PH6.4]}
+      - {card: W0-C2, what: "Memory contract v2: notes with author/run/time metadata, links in/out, graph endpoint, change events, undo endpoint; fake backend updated", unblocks: [PH4.2-PH4.10 backend, all memory screens]}
+      - {card: W0-C3, what: "Verification contract: acceptance-check schema per goal + claim file format + claim/proposal API", unblocks: [PH3.x, PH3.4, PH3.9, PH7.2]}
+    parallel_now:   # need no new contract; start immediately
+      - {card: UI-1, worker: ui_designer, what: "screen redesign per docs/UI_HANDOFF.md (prompt already written)", paths: [glacier/web/src, glacier/web/index.html]}
+      - {card: PH3.4-cases, worker: independent_tester, what: "verification benchmark cases: goals with known answers + 'claims done but isn't' traps (data only)", paths: [bench/verification]}
+      - {card: PH7.2-cases, worker: independent_tester, what: "prompt-injection / lethal-trifecta attack cases (data only)", paths: [bench/security]}
+      - {card: PH6.1-parser, worker: builder_b, what: "ChatGPT + Claude export parsers into plain markdown notes, deduplicated (pure library + tests)", paths: [glacier/importers]}
+      - {card: PH10.5-a, worker: builder_a, what: "export/import a flow as a single file (pure functions + tests)", paths: [glacier/backend/portable.py]}
+      - {card: PH5.5-content, worker: researcher, what: "draft 10 starter templates as flow files for common goals (reports, monitoring, inbox triage, code fixes, research)", paths: [templates]}
+
+  - wave: 1
+    name: "Workers, memory, verification core (three lanes at once)"
+    lanes:
+      integrator: [PH3.1, PH3.2, PH3.5, PH3.6]          # critical path: verification core, done by integrator
+      builder_a:  [PH2.2, PH2.4, PH6.4]                  # local model node, ACP harnesses (OpenCode, Gemini CLI), document nodes
+      builder_b:  [PH4.2, PH4.3, PH4.5, PH4.9-backend]   # memory for every worker, meaning search, generated status notes, author/undo
+      ui_designer: [PH4.4, PH4.7, PH4.8, PH4.9-ui]       # Memory view, focus mode, friendly editor, trust details (against fake backend)
+      researcher: [PH9.3-scan, PH7.4-list]               # tool-discovery script, reviewed MCP server list
+    owner: ["design direction for the Memory view", "check the live demo of each merged lane"]
+
+  - wave: 2
+    name: "Claims, gateway, safety; verification phase exit"
+    lanes:
+      integrator: [PH3.3, PH3.7, PH3.8]                  # merge queue, claim research workflow, triage/routing
+      builder_a:  [PH2.3, PH2.5-backend]                 # free model gateway with fallback, cost/route per run
+      builder_b:  [PH4.6, PH7.3, PH7.5]                  # memory hygiene, secrets in OS keychain, one-action rollback
+      ui_designer: [PH3.9, PH2.5-ui, PH5.4-run-view]     # proposals screen, cost per run, simple Run view
+      independent_tester: ["run PH3.4 benchmark and PH7.2 suite against merged code; report false-done rate"]
+    exit_gate: "verification phase exit (false-done < 2%, verified >= 98%, claim targets) measured by the independent tester"
+
+  - wave: 3
+    name: "Assistant, desktop app, sandboxing (Glacier becomes usable by others)"
+    lanes:
+      integrator: [PH5.1, PH5.2, PH5.3]                  # assistant chat → plan → flow, strictly sequential
+      builder_a:  [PH7.1]                                # per-step sandbox with file/network allowlists
+      builder_b:  [PH8.1, PH8.3, PH8.5]                  # Tauri app + sidecar, first-run setup, low-resource mode
+      ui_designer: [PH5.4-layouts, PH6.3, PH5.5-gallery] # simple/full layouts, file drop/projects/search, template gallery
+      researcher: [PH10.2-docs-draft]
+    owner: ["PC installs (sandbox proven first)", "usability session: 10 first-time non-programmers, time to first automation"]
+
+  - wave: 4
+    name: "Glacier builds Glacier; release"
+    switch: "from here the remaining cards run as Glacier flows (goal → worktree → workers → verifier → merge queue); the integrator supervises"
+    lanes:
+      integrator: [PH9.2, PH9.1]
+      builder_a:  [PH6.2, PH8.4]
+      builder_b:  [PH10.3, PH10.4]
+      owner:      [PH8.2-signpath-application, PH10.1-go-public, PH10.2-usability-studies]
+
+  - wave: 5
+    name: "Sustainability"
+    lanes:
+      integrator: [PH11.1, PH11.2, PH11.4]
+      owner: [PH11.3]
+
+needs_owner_hardware_or_judgment: [PH2.6 laptop as model provider, PH4.10 open the folder in Obsidian/Zettlr, PH8.2 signing application, usability sessions, PC installs, design direction]

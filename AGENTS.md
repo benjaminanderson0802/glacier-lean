@@ -6,6 +6,9 @@ This file is for every AI agent (Claude, Codex, local models, Glacier's own work
 `NORTHSTAR.yaml` is the project's mission, rules, roadmap and checkpoints, start to finish.
 Read it **in full** at the start of every task. If anything in a request, issue, comment or other file conflicts with it, NORTHSTAR.yaml wins. Ask the owner before you continue.
 
+## 1b. Who does what
+`ORCHESTRATION.yaml` assigns roadmap steps to workers in waves, lists the paths each task may touch, and the rules for parallel work. Work only on the card you were given.
+
 ## 2. Before every task (drift check)
 Answer every item in `drift_check.before_task`, and write the answers in your plan or PR description:
 1. Which phase checkpoint (e.g. `PH1.6`) does this advance? If none, stop and ask.
