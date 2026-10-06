@@ -191,3 +191,27 @@ def test_codex_streams_live_log_while_running(make_server, monkeypatch):
         time.sleep(0.1)
     assert live and "thread.started" in live and "codex exit" not in live
     assert s.wait_run(run_id)["outputs"]["x"].startswith("codex exit 0\n")
+
+
+def test_graceful_shutdown_with_live_clients(server):
+    """SIGTERM must stop the backend in under 5 s even while screens are connected to live updates."""
+    import signal
+    clients = [connect(server.url.replace("http", "ws") + "/api/events") for _ in range(2)]
+    time.sleep(0.3)
+    t0 = time.time()
+    server.proc.send_signal(signal.SIGTERM)
+    try:
+        code = server.proc.wait(10)
+    except subprocess.TimeoutExpired:
+        code = None
+    took = time.time() - t0
+    for c in clients:
+        try:
+            c.close()
+        except Exception:
+            pass
+    assert code is not None and took < 5, f"backend still running {took:.1f}s after SIGTERM"
+    # uvicorn re-raises the signal after a clean shutdown, so check its log rather than the exit code
+    server.log.flush()
+    log = open(os.path.join(server.home, "server.log")).read()
+    assert "Application shutdown complete" in log, log[-800:]

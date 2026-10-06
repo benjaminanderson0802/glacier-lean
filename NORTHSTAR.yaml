@@ -290,8 +290,8 @@ phases:
     goal: "Installable, updatable, signed local app."
     status: todo
     checkpoints:
-      - {id: PH8.1, item: "Windows packaging (pywebview or Tauri shell), installer, auto-update"}
-      - {id: PH8.2, item: "Code signing (SignPath if OSI open source, else paid signing)"}
+      - {id: PH8.1, item: "Windows packaging (Tauri shell, Python backend as sidecar), installer, auto-update"}
+      - {id: PH8.2, item: "Code signing via SignPath free open-source program (Apache-2.0)"}
       - {id: PH8.3, item: "Guided first-run setup: detects available models/harnesses, proposes a starter configuration"}
       - {id: PH8.4, item: "macOS/Linux builds"}
       - {id: PH8.5, item: "Low-resource mode: runs usefully on modest hardware with small local models"}
@@ -349,11 +349,11 @@ drift_check:
     - "Re-read anti_patterns_to_detect; record any found and the correction."
   red_flags_requiring_human: ["changing an invariant", "spending money", "publishing/releasing", "deleting user data", "a new restrictive license", "two failed checkpoints in a row"]
 
-open_decisions:   # require the owner; agents must not decide these
-  - {id: D1, question: "Open-source license and timing (affects free code signing, contributors, commercial use)", needed_by: PH10.1}
-  - {id: D2, question: "One product vs separate 'builder' and 'runner' modes for finished automations", needed_by: PH5}
-  - {id: D3, question: "Primary desktop shell (pywebview vs Tauri)", needed_by: PH8.1}
-  - {id: D4, question: "Which paid or subscription model routes are acceptable by default and at what monthly cap", needed_by: PH2.3}
+open_decisions:   # require the owner; agents must not decide these. Decided items stay listed with the decision.
+  - {id: D1, question: "Open-source license and timing (affects free code signing, contributors, commercial use)", needed_by: PH10.1, status: decided, decision: "Apache-2.0; repo goes public at the first usable release", decided: 2026-10-06}
+  - {id: D2, question: "One product vs separate 'builder' and 'runner' modes for finished automations", needed_by: PH5, status: decided, decision: "One app with two views: full Build view and a simple Run view (finished automations, status, approvals)", decided: 2026-10-06}
+  - {id: D3, question: "Primary desktop shell (pywebview vs Tauri)", needed_by: PH8.1, status: decided, decision: "Tauri, with the Python backend bundled as a sidecar", decided: 2026-10-06}
+  - {id: D4, question: "Which paid or subscription model routes are acceptable by default and at what monthly cap", needed_by: PH2.3, status: decided, decision: "Free only by default: local models + the owner's existing ChatGPT plan (Codex). Monthly paid cap $0; any paid route goes to the owner as a gap proposal.", decided: 2026-10-06}
 
 amendment:
   who: "Only the project owner approves changes to mission, defining_properties, invariants, non_goals, phases' exit criteria."

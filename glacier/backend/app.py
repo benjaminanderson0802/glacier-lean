@@ -112,12 +112,27 @@ def vault_note(path: str):
 
 @app.websocket("/api/events")
 async def events(ws: WebSocket):
+    """Pushes run events to the screen. Listens for the client (or the server shutting down) closing the
+    socket at the same time, so a waiting connection never blocks a restart."""
     await ws.accept()
     q = store.broadcaster.subscribe()
-    try:
+
+    async def pump():
         while True:
             await ws.send_json(await q.get())
+
+    sender = asyncio.create_task(pump())
+    try:
+        while True:
+            receiving = asyncio.create_task(ws.receive())
+            done, _ = await asyncio.wait({sender, receiving}, return_when=asyncio.FIRST_COMPLETED)
+            if sender in done:  # send failed: socket is gone
+                receiving.cancel()
+                break
+            if receiving.result()["type"] == "websocket.disconnect":
+                break
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
+        sender.cancel()
         store.broadcaster.unsubscribe(q)
