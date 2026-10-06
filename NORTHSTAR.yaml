@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-06  # amendment 2: free/OSS-first, claims & escalation
+last_amended: 2026-10-06  # latest: Memory view as core consumer feature; non-technical-first rule
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -81,6 +81,7 @@ invariants:
   - I-13: "Cost and model/route used are visible per run."
   - I-14: "Safety rules may only be tightened by agents; loosening requires a human amendment to this file."
   - I-15: "Every gap, blocker or missing capability becomes a claim (plain markdown file in the vault, git-tracked). No claim is closed without linked evidence; no claim is silently dropped."
+  - I-17: "Every screen is designed for non-technical people first: plain words, no jargon or internal labels, sensible defaults; technical detail is available but never required. A screen is not done until a first-time non-programmer can use it without help."
   - I-16: "Workers troubleshoot only inside their own lane and budget; anything outside their specialty, permissions or budget is escalated by claim, never improvised."
 
 non_goals:
@@ -195,7 +196,7 @@ phases:
       - {id: PH1.1, item: "Environment file format in vault, one git commit per save", status: done, evidence: "backend test_save_environment_commits_to_vault"}
       - {id: PH1.2, item: "Node types schedule/command/check/approval/note; crash-safe runs; schedules; approvals across restart", status: done, evidence: "backend tests 1-7 pass in Codespace"}
       - {id: PH1.3, item: "Live canvas: edit, run, node states, terminal output, approve/reject, history, vault view", status: done, evidence: "e2e core.spec 19/19 vs real backend in Codespace"}
-      - {id: PH1.4, item: "Loops with explicit iteration caps and visual loop edges; sub-environment node", status: todo, test: "loop runs N times then exits; sub-environment run shows nested states"}
+      - {id: PH1.4, item: "Loops with explicit iteration caps and visual loop edges; sub-environment node", status: done, test: "loop runs N times then exits; sub-environment run shows nested states", evidence: "backend tests test_loop_runs_n_times_then_exits, test_runaway_cycle_stops_at_step_limit, test_sub_flow_*, test_self_calling_flow_is_depth_limited (4 failed on old code); backend 19/19; browser e2e 30/30 incl. loop + sub-flow, commit 0bef5cf"}
       - {id: PH1.5, item: "Runs/node retries & timeouts configurable per node; breakage alert (Apprise/ntfy)", status: todo, test: "failing scheduled step retries per policy then sends one alert"}
       - {id: PH1.6, item: "Graceful shutdown (live-events socket must not block restart)", status: done, test: "SIGTERM stops backend < 5 s with clients connected", evidence: "backend test_graceful_shutdown_with_live_clients (failed on old code, passes on fix); backend suite 14/14 + browser e2e PASS in Codespace 2026-10-06"}
       - {id: PH1.7, item: "Windows run of the core (pywinpty terminal, paths, services)", status: todo, test: "core test board passes on the owner's Windows PC"}
@@ -241,7 +242,11 @@ phases:
       - {id: PH4.1, item: "Vault service: single writer, git commit per change, keyword search, links, event log", status: done, evidence: "evidence/RESULTS.md memory test; backend vault.py"}
       - {id: PH4.2, item: "Vault exposed to every worker (MCP server + context injection for MAF/ACP/Codex)", status: todo, test: "two different backends read a note written by a third"}
       - {id: PH4.3, item: "Meaning search (local embeddings) as rebuildable index", status: todo}
-      - {id: PH4.4, item: "Graph view + markdown editor in UI; Obsidian opens the same vault", status: todo}
+      - {id: PH4.4, item: "Memory view (core consumer feature): live graph of everything Glacier knows (projects, decisions, notes, people, and the runs/workers that wrote them); nodes light up as AI writes memory during a run", status: todo, test: "a run that writes a note makes that node appear/highlight live; graph stays readable at 2,000 notes"}
+      - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: todo, test: "selecting a note shows exactly its incoming and outgoing links"}
+      - {id: PH4.8, item: "Friendly editor (no markdown syntax required): [[ link suggestions while typing, tags, search; saves as plain markdown", status: todo, test: "first-time non-programmer creates a linked note without help; file on disk is plain markdown"}
+      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: todo, test: "each note shows author/run; undo restores the previous version via git"}
+      - {id: PH4.10, item: "Compatibility: the same folder opens in any markdown editor (tested with Obsidian and Zettlr)", status: todo, test: "links and notes render correctly in both"}
       - {id: PH4.5, item: "Status notes generated from the event log (I-12); per-worker and per-project folders", status: todo}
       - {id: PH4.6, item: "Memory hygiene: dedupe/expiry proposals approved by user", status: todo}
     exit: "P-MEMORY test passes; memory survives a full reinstall from git."
