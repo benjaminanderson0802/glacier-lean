@@ -11,7 +11,7 @@ BP=$!
 sleep 6
 cd ../web && SKIP_MOCK=1 API_URL=http://localhost:8000 node e2e/core.spec.mjs 2>&1 | grep -aE 'codex|^PASS|^FAIL|ERROR'
 kill -9 $BP; sleep 1
-cd ../backend && GLACIER_HOME=/workspaces/glacier-data nohup ../../.venv/bin/python -m uvicorn app:app --port 8000 > /tmp/backend-live.log 2>&1 &
+cd ../backend && GLACIER_HOME=/workspaces/glacier-data GLACIER_CODEX_SANDBOX=danger-full-access nohup ../../.venv/bin/python -m uvicorn app:app --port 8000 > /tmp/backend-live.log 2>&1 &
 cd ../web && nohup npx vite preview --port 4173 --host 0.0.0.0 > /tmp/preview.log 2>&1 &
 sleep 5
 curl -s -o /dev/null -w 'live screen %{http_code}\n' localhost:4173
