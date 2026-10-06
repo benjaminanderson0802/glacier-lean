@@ -1,0 +1,10 @@
+.venv/
+node_modules/
+tests/ui/dist/
+tests/vault/
+tests/ckpt/
+tests/req_id
+tests/steps.log
+tests/crashed_once
+tests/dbos_smoke.sqlite*
+screen.png

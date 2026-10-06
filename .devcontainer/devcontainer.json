@@ -1,0 +1,8 @@
+{
+  "name": "Glacier basics sandbox",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "features": { "ghcr.io/devcontainers/features/node:1": { "version": "22" } },
+  "postCreateCommand": "bash setup/install.sh",
+  "forwardPorts": [4173],
+  "portsAttributes": { "4173": { "label": "Glacier basics screen" } }
+}
