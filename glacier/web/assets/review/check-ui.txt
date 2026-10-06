@@ -7,21 +7,21 @@ transforming...
 ✓ 177 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                   0.59 kB │ gzip:   0.39 kB
-dist/assets/index-4mpwSmFa.css   33.53 kB │ gzip:   6.78 kB
-dist/assets/index-CK9g7ul5.js   756.40 kB │ gzip: 216.43 kB
+dist/index.html                   0.59 kB │ gzip:   0.40 kB
+dist/assets/index-RiaARaK3.css   36.75 kB │ gzip:   7.43 kB
+dist/assets/index-CxZBlzFR.js   757.53 kB │ gzip: 216.65 kB
 
-✓ built in 428ms
+✓ built in 593ms
 [e2e] ok   screen loaded, live events socket connected
 [e2e] ok   new environment appears in list
 [e2e] ok   drag created one edge n1 -> n2
-[e2e] ok   saved, commit 7d0b7ec
+[e2e] ok   saved, commit c967161
 [e2e] ok   backend received environment with 2 nodes, 1 edge, command config
 [e2e] ok   nodes n1, n2 turned done via live events
 [e2e] ok   run status shows done
 [e2e] ok   run history lists the run as done
 [e2e] ok   clicking n1 shows its output in the xterm terminal
-[e2e] ok   vault lists runs/e2e-flow-run-4eac958e.md and shows its body
+[e2e] ok   vault lists runs/e2e-flow-run-185397e7.md and shows its body
 [e2e] ok   approval out-edges auto-labelled yes/no (got yes,no)
 [e2e] ok   label picker changes yes/no
 [e2e] ok   delete node removes it and its edge
@@ -42,10 +42,10 @@ dist/assets/index-CK9g7ul5.js   756.40 kB │ gzip: 216.43 kB
 [e2e] ok   loop ran twice then exited (got "finished 2 of 2")
 [e2e] ok   sub-flow node opens the child run with its node states
 [e2e] ok   no page errors
-11:05:24 PM [vite] ws proxy error:
+11:56:31 PM [vite] ws proxy error:
 Error: read ECONNRESET
     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
-11:05:24 PM [vite] ws proxy socket error:
+11:56:31 PM [vite] ws proxy socket error:
 Error: read ECONNRESET
     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
 PASS
