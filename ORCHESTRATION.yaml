@@ -4,13 +4,17 @@
 schema_version: 1
 updated: 2026-10-06
 
-workers:   # roles; any free model/harness can fill a role, owner approves paid ones (D4 = free only)
+model_policy:   # owner decision 2026-10-06, "for now"
+  all_delegated_workers: "Codex CLI with model gpt-6-luna, reasoning effort low (ChatGPT's 'Light'); set as the sandbox default in ~/.codex/config.toml"
+  independence: "the independent tester still never reuses the builder's session: fresh context, spec-only inputs (same-model clean-context review is supported by research, 2610.01471)"
+  change_only_by: owner
+workers:   # roles filled per model_policy above; owner approves any other model
   integrator:  {who: "Claude (Cowork session)", does: "writes contracts, builds the critical path, reviews and merges every branch after CI + sandbox test board pass; only one integrator"}
-  builder_a:   {who: "Codex CLI in the shared sandbox (owner's ChatGPT plan)", does: "backend lanes on its own branch + git worktree"}
-  builder_b:   {who: "Codex CLI in the shared sandbox, second worktree", does: "backend lanes, never the same files as builder_a"}
-  ui_designer: {who: "Codex in ChatGPT (cloud) from docs/UI_HANDOFF.md", does: "all screen work against the fake backend; opens PRs only"}
-  independent_tester: {who: "Gemini CLI (free tier) or a Claude subagent; never the model that built the code under test", does: "writes benchmark cases, adversarial and security tests from the spec, not from the code"}
-  researcher:  {who: "Claude subagent / Gemini CLI", does: "claims research, content drafts (templates, docs), tool scans"}
+  builder_a:   {who: "Codex CLI (gpt-6-luna, low) in the shared sandbox (owner's ChatGPT plan)", does: "backend lanes on its own branch + git worktree"}
+  builder_b:   {who: "Codex CLI (gpt-6-luna, low) in the shared sandbox, second worktree", does: "backend lanes, never the same files as builder_a"}
+  ui_designer: {who: "Codex in ChatGPT (cloud), GPT-6 Luna on Light, from docs/UI_HANDOFF.md", does: "all screen work against the fake backend; opens PRs only"}
+  independent_tester: {who: "Codex (gpt-6-luna, low) in a fresh session that never sees the builder's work", does: "writes benchmark cases, adversarial and security tests from the spec, not from the code"}
+  researcher:  {who: "Codex (gpt-6-luna, low)", does: "claims research, content drafts (templates, docs), tool scans"}
   owner:       {who: "Ben", does: "decisions, design direction, approvals, PC installs, real-hardware checks, usability sessions"}
 
 rules:
