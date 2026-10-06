@@ -54,8 +54,10 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str) -
     prompt = fill(cfg.get("prompt") or "")
     if not prompt.strip():
         raise ValueError("codex node has no prompt")
-    sandbox = cfg.get("sandbox") or "workspace-write"
-    if sandbox not in ("read-only", "workspace-write"):
+    # Codex's own Linux sandbox can't start inside some containers (e.g. Codespaces); there the container itself is
+    # the isolation, so GLACIER_CODEX_SANDBOX (when set) forces the mode for every codex node.
+    sandbox = os.environ.get("GLACIER_CODEX_SANDBOX") or cfg.get("sandbox") or "workspace-write"
+    if sandbox not in ("read-only", "workspace-write", "danger-full-access"):
         raise ValueError(f"unsupported sandbox {sandbox!r}")
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
     workdir = cfg.get("workdir") or os.path.join(home, "workspaces", env_id)
@@ -64,7 +66,7 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str) -
     args = [os.environ.get("CODEX_BIN", "codex"), "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
             "-C", workdir, "-o", last_file] + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
     try:
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=workdir)
+        p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=workdir)
     except FileNotFoundError:
         os.unlink(last_file)
         raise RuntimeError(f"Codex CLI not found ({args[0]}); install it, then run: codex login --device-auth")

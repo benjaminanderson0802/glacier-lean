@@ -41,7 +41,7 @@ export const CONFIG_FIELDS: Record<NodeKind, ConfigField[]> = {
   ],
   codex: [
     { key: 'prompt', label: 'Prompt ({env} {run} {prev_output})', placeholder: 'Fix the failing tests: {prev_output}', def: '', multiline: true },
-    { key: 'sandbox', label: 'Sandbox', placeholder: '', def: 'workspace-write', options: ['workspace-write', 'read-only'] },
+    { key: 'sandbox', label: 'Sandbox', placeholder: '', def: 'workspace-write', options: ['workspace-write', 'read-only', 'danger-full-access'] },
     { key: 'workdir', label: 'Working dir', placeholder: 'default: GLACIER_HOME/workspaces/<env>', def: '', optional: true },
     { key: 'model', label: 'Model', placeholder: 'default model', def: '', optional: true },
   ],
