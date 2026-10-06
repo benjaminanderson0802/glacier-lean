@@ -1,26 +1,195 @@
 {
-  "_about": "Single source of truth for node types, their settings and branch labels. Served by the backend at GET /api/node-types and by the mock server; the screen builds its palette and settings forms from it. Adding a node type here (plus its runner code) needs no screen changes.",
-  "types": [
-    {"type": "schedule", "label": "Schedule", "description": "Starts the flow on a timer.",
-     "fields": [{"key": "cron", "label": "When (cron)", "placeholder": "*/5 * * * *", "default": "*/5 * * * *"}], "branches": null},
-    {"type": "command", "label": "Command", "description": "Runs a shell command and records its output and exit code.",
-     "fields": [{"key": "cmd", "label": "Command", "placeholder": "pytest -q", "default": ""},
-                {"key": "cwd", "label": "Working folder", "placeholder": "optional", "default": "", "optional": true}], "branches": null},
-    {"type": "codex", "label": "Codex worker", "description": "Hands a task to Codex (signed in with ChatGPT).",
-     "fields": [{"key": "prompt", "label": "Task ({env} {run} {prev_output})", "placeholder": "Fix the failing tests: {prev_output}", "default": "", "multiline": true},
-                {"key": "sandbox", "label": "Sandbox", "placeholder": "", "default": "workspace-write", "options": ["workspace-write", "read-only", "danger-full-access"]},
-                {"key": "workdir", "label": "Working folder", "placeholder": "default: GLACIER_HOME/workspaces/<env>", "default": "", "optional": true},
-                {"key": "model", "label": "Model", "placeholder": "default model", "default": "", "optional": true}], "branches": null},
-    {"type": "check", "label": "Check", "description": "Branches on the previous step's result.",
-     "fields": [{"key": "expr", "label": "Condition", "placeholder": "exit_code == 0", "default": "exit_code == 0"}], "branches": ["yes", "no"]},
-    {"type": "approval", "label": "Approval", "description": "Pauses until a person approves or rejects.",
-     "fields": [{"key": "prompt", "label": "Question", "placeholder": "Tests failed. Continue?", "default": "Continue?"}], "branches": ["yes", "no"]},
-    {"type": "note", "label": "Note", "description": "Saves a note to memory.",
-     "fields": [{"key": "path", "label": "Memory path", "placeholder": "runs/{env}-{run}.md", "default": "runs/{env}-{run}.md"},
-                {"key": "template", "label": "Text", "placeholder": "Run {run} of {env}: {summary}", "default": "Run {run} of {env}: {summary}", "multiline": true}], "branches": null},
-    {"type": "loop", "label": "Loop", "description": "Runs its 'again' branch N times, then follows 'done'.",
-     "fields": [{"key": "times", "label": "Times", "placeholder": "3", "default": "3"}], "branches": ["again", "done"]},
-    {"type": "flow", "label": "Sub-flow", "description": "Runs another saved flow and waits for its result.",
-     "fields": [{"key": "env", "label": "Flow to run", "placeholder": "", "default": "", "picker": "environment"}], "branches": null}
-  ]
+ "_about": "Single source of truth for node types, their settings and branch labels. Served by the backend at GET /api/node-types and by the mock server; the screen builds its palette and settings forms from it. Adding a node type here (plus its runner code) needs no screen changes.",
+ "types": [
+  {
+   "type": "schedule",
+   "label": "Schedule",
+   "description": "Starts the flow on a timer.",
+   "fields": [
+    {
+     "key": "cron",
+     "label": "When (cron)",
+     "placeholder": "*/5 * * * *",
+     "default": "*/5 * * * *"
+    }
+   ],
+   "branches": null
+  },
+  {
+   "type": "command",
+   "label": "Command",
+   "description": "Runs a shell command and records its output and exit code.",
+   "fields": [
+    {
+     "key": "cmd",
+     "label": "Command",
+     "placeholder": "pytest -q",
+     "default": ""
+    },
+    {
+     "key": "cwd",
+     "label": "Working folder",
+     "placeholder": "optional",
+     "default": "",
+     "optional": true
+    },
+    {
+     "key": "retries",
+     "label": "Retries if it fails",
+     "placeholder": "0",
+     "default": "0",
+     "optional": true
+    },
+    {
+     "key": "timeout",
+     "label": "Time limit (seconds)",
+     "placeholder": "default",
+     "default": "",
+     "optional": true
+    }
+   ],
+   "branches": null
+  },
+  {
+   "type": "codex",
+   "label": "Codex worker",
+   "description": "Hands a task to Codex (signed in with ChatGPT).",
+   "fields": [
+    {
+     "key": "prompt",
+     "label": "Task ({env} {run} {prev_output})",
+     "placeholder": "Fix the failing tests: {prev_output}",
+     "default": "",
+     "multiline": true
+    },
+    {
+     "key": "sandbox",
+     "label": "Sandbox",
+     "placeholder": "",
+     "default": "workspace-write",
+     "options": [
+      "workspace-write",
+      "read-only",
+      "danger-full-access"
+     ]
+    },
+    {
+     "key": "workdir",
+     "label": "Working folder",
+     "placeholder": "default: GLACIER_HOME/workspaces/<env>",
+     "default": "",
+     "optional": true
+    },
+    {
+     "key": "model",
+     "label": "Model",
+     "placeholder": "default model",
+     "default": "",
+     "optional": true
+    },
+    {
+     "key": "retries",
+     "label": "Retries if it fails",
+     "placeholder": "0",
+     "default": "0",
+     "optional": true
+    },
+    {
+     "key": "timeout",
+     "label": "Time limit (seconds)",
+     "placeholder": "default",
+     "default": "",
+     "optional": true
+    }
+   ],
+   "branches": null
+  },
+  {
+   "type": "check",
+   "label": "Check",
+   "description": "Branches on the previous step's result.",
+   "fields": [
+    {
+     "key": "expr",
+     "label": "Condition",
+     "placeholder": "exit_code == 0",
+     "default": "exit_code == 0"
+    }
+   ],
+   "branches": [
+    "yes",
+    "no"
+   ]
+  },
+  {
+   "type": "approval",
+   "label": "Approval",
+   "description": "Pauses until a person approves or rejects.",
+   "fields": [
+    {
+     "key": "prompt",
+     "label": "Question",
+     "placeholder": "Tests failed. Continue?",
+     "default": "Continue?"
+    }
+   ],
+   "branches": [
+    "yes",
+    "no"
+   ]
+  },
+  {
+   "type": "note",
+   "label": "Note",
+   "description": "Saves a note to memory.",
+   "fields": [
+    {
+     "key": "path",
+     "label": "Memory path",
+     "placeholder": "runs/{env}-{run}.md",
+     "default": "runs/{env}-{run}.md"
+    },
+    {
+     "key": "template",
+     "label": "Text",
+     "placeholder": "Run {run} of {env}: {summary}",
+     "default": "Run {run} of {env}: {summary}",
+     "multiline": true
+    }
+   ],
+   "branches": null
+  },
+  {
+   "type": "loop",
+   "label": "Loop",
+   "description": "Runs its 'again' branch N times, then follows 'done'.",
+   "fields": [
+    {
+     "key": "times",
+     "label": "Times",
+     "placeholder": "3",
+     "default": "3"
+    }
+   ],
+   "branches": [
+    "again",
+    "done"
+   ]
+  },
+  {
+   "type": "flow",
+   "label": "Sub-flow",
+   "description": "Runs another saved flow and waits for its result.",
+   "fields": [
+    {
+     "key": "env",
+     "label": "Flow to run",
+     "placeholder": "",
+     "default": "",
+     "picker": "environment"
+    }
+   ],
+   "branches": null
+  }
+ ]
 }

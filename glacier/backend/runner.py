@@ -8,6 +8,7 @@ import store, vault
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
 MAX_LOOP_TIMES = 1000
+MAX_RETRIES = 10
 APPROVAL_TIMEOUT = 7 * 24 * 3600
 COMMAND_TIMEOUT = 3600
 OUTPUT_LIMIT = 20000
@@ -49,7 +50,7 @@ def start_run(env_id: str) -> str:
     return run_id
 
 
-def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str) -> dict:
+def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, timeout: int = CODEX_TIMEOUT) -> dict:
     """Hand the prompt to `codex exec` (ChatGPT sign-in, no API key). Streams a short live log into the node output
     every ~2s; the final output is "codex exit <code>" plus Codex's last message."""
     fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev_output[-PREV_LIMIT:])
@@ -72,7 +73,7 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str) -
     except FileNotFoundError:
         os.unlink(last_file)
         raise RuntimeError(f"Codex CLI not found ({args[0]}); install it, then run: codex login --device-auth")
-    timer = threading.Timer(CODEX_TIMEOUT, p.kill); timer.start()
+    timer = threading.Timer(timeout, p.kill); timer.start()
     log, errs, agent_msg, started = [], [], "", time.time()
     flushed = started
     try:
@@ -108,8 +109,8 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str) -
     if code != 0 and re.search(r"not (logged|signed) in|login|unauthori[sz]ed|\b401\b", "\n".join(errs), re.I):
         raise RuntimeError(CODEX_LOGIN_HINT)
     body = last_msg or agent_msg or "\n".join(log[-20:])
-    if code != 0 and time.time() - started >= CODEX_TIMEOUT:
-        body += f"\n[killed after {CODEX_TIMEOUT}s timeout]"
+    if code != 0 and time.time() - started >= timeout:
+        body += f"\n[timed out after {timeout}s]"
     out = f"codex exit {code}\n{body}"
     return {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code}
 
@@ -121,6 +122,44 @@ def snapshot_scheduled_run(env_id: str, run_id: str) -> None:
     store.create_run(run_id, env_id, load_env(env_id))
 
 
+def run_command(cfg: dict, timeout: int) -> dict:
+    """Run a shell command in its own process group so a time limit stops it and everything it started."""
+    import signal
+    p = subprocess.Popen(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or None, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, start_new_session=True)
+    try:
+        out, _ = p.communicate(timeout=timeout)
+        code = p.returncode
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        out, _ = p.communicate()
+        code, out = -1, f"{out or ''}\n[timed out after {timeout}s]"
+    return {"state": "done" if code == 0 else "failed", "output": (out or "")[-OUTPUT_LIMIT:], "exit_code": code}
+
+
+@DBOS.step(retries_allowed=True, max_attempts=3)
+def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
+    """One plain-language alert per failed run, through Apprise (ntfy, email, Discord, desktop, webhooks...).
+    Targets: GLACIER_ALERT_URLS (comma separated) plus the environment's own "alert_urls"."""
+    urls = [u.strip() for u in os.environ.get("GLACIER_ALERT_URLS", "").split(",") if u.strip()] + list(alert_urls or [])
+    if not urls:
+        return "no alert targets"
+    import apprise
+    run = store.get_run(run_id)
+    bad = [n for n, st in run["node_states"].items() if st == "failed"]
+    detail = (run["outputs"].get(bad[0], "") if bad else "")[-500:]
+    name = (store.graph_of(run_id).get("name") or env_id)
+    ap = apprise.Apprise()
+    for u in urls:
+        ap.add(u)
+    ok = ap.notify(title=f"Glacier: '{name}' ({env_id}) failed",
+                   body=f"Run {run_id} stopped at step {', '.join(bad) or '?'}.\n\nLast output:\n{detail}")
+    return "sent" if ok else "alert failed"
+
+
 @DBOS.step()
 def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
     """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
@@ -128,16 +167,21 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
     store.set_node(run_id, env_id, nid, "running")
     res = {"state": "done", "output": ""}
     try:
-        if kind == "command":
-            try:
-                p = subprocess.run(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or None, capture_output=True,
-                                   text=True, timeout=COMMAND_TIMEOUT)
-                code, out = p.returncode, p.stdout + p.stderr
-            except subprocess.TimeoutExpired as e:
-                code, out = -1, f"{e.stdout or ''}{e.stderr or ''}\n[timed out after {COMMAND_TIMEOUT}s]"
-            res = {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code}
-        elif kind == "codex":
-            res = run_codex(env_id, run_id, nid, cfg, (last or {}).get("output") or "")
+        if kind in ("command", "codex"):
+            retries = max(0, min(int(cfg.get("retries") or 0), MAX_RETRIES))
+            default_timeout = COMMAND_TIMEOUT if kind == "command" else CODEX_TIMEOUT
+            timeout = max(1, min(int(cfg.get("timeout") or default_timeout), 24 * 3600))
+            for attempt in range(1, retries + 2):
+                if kind == "command":
+                    res = run_command(cfg, timeout)
+                else:
+                    res = run_codex(env_id, run_id, nid, cfg, (last or {}).get("output") or "", timeout)
+                if retries:
+                    res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
+                if res["exit_code"] == 0 or attempt > retries:
+                    break
+                store.set_node(run_id, env_id, nid, "running", res["output"] + "\n[retrying]")
+                time.sleep(min(attempt, 10))
         elif kind == "check":
             if last is None:
                 raise ValueError("check has no previous command/codex result")
@@ -273,6 +317,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                 status = "rejected"
         queue.extend(e["target"] for e in edges)
     finish_run(env_id, run_id, status)
+    if status == "failed" and depth == 0:  # sub-flow failures are reported once, by the top-level run
+        send_failure_alert(env_id, run_id, graph.get("alert_urls") or [])
     return status
 
 

@@ -283,3 +283,65 @@ def test_node_types_catalog_served_and_enforced(server):
     assert {t["type"]: t["branches"] for t in cat}["loop"] == ["again", "done"]
     r = httpx.put(server.url + "/api/environments/bad", json=env("bad", [("x", "teleport", {})], []), timeout=30)
     assert r.status_code == 400
+
+
+def _counter_cmd(path, succeed_at):
+    return f'n=$(cat {path} 2>/dev/null || echo 0); n=$((n+1)); echo $n > {path}; echo try $n; [ $n -ge {succeed_at} ]'
+
+
+def test_command_retries_then_succeeds(server):
+    f = os.path.join(server.home, "count1")
+    server.put("/api/environments/retry-ok", env("retry-ok", [("c", "command", {"cmd": _counter_cmd(f, 3), "retries": "2"})], []))
+    run = server.wait_run(server.post("/api/environments/retry-ok/run")["run_id"])
+    assert run["status"] == "done" and run["node_states"]["c"] == "done", run
+    assert open(f).read().strip() == "3" and "attempt 3 of 3" in run["outputs"]["c"]
+
+
+def test_command_retries_exhausted_fails(server):
+    f = os.path.join(server.home, "count2")
+    server.put("/api/environments/retry-bad", env("retry-bad", [("c", "command", {"cmd": _counter_cmd(f, 99), "retries": "1"})], []))
+    run = server.wait_run(server.post("/api/environments/retry-bad/run")["run_id"])
+    assert run["status"] == "failed" and open(f).read().strip() == "2", run
+
+
+def test_command_timeout(server):
+    server.put("/api/environments/slow", env("slow", [("c", "command", {"cmd": "sleep 20", "timeout": "1"})], []))
+    t0 = time.time()
+    run = server.wait_run(server.post("/api/environments/slow/run")["run_id"])
+    assert run["status"] == "failed" and time.time() - t0 < 10 and "timed out after 1s" in run["outputs"]["c"], run
+
+
+def test_failed_run_sends_exactly_one_alert(tmp_path, monkeypatch):
+    """A broken run (including a failing sub-flow inside it) sends one plain-language alert; a good run sends none."""
+    import http.server, threading
+    from conftest import Server, free_port
+    got = []
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            got.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
+            self.send_response(200); self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    port = free_port()
+    hs = http.server.HTTPServer(("127.0.0.1", port), H)
+    threading.Thread(target=hs.serve_forever, daemon=True).start()
+    monkeypatch.setenv("GLACIER_ALERT_URLS", f"json://127.0.0.1:{port}/")
+    s = Server(tmp_path).start()
+    try:
+        s.put("/api/environments/kid", env("kid", [("c", "command", {"cmd": "echo boom; exit 4"})], []))
+        s.put("/api/environments/parent-a", env("parent-a", [("f", "flow", {"env": "kid"})], []))
+        s.put("/api/environments/fine", env("fine", [("c", "command", {"cmd": "echo ok"})], []))
+        assert s.wait_run(s.post("/api/environments/fine/run")["run_id"])["status"] == "done"
+        run = s.wait_run(s.post("/api/environments/parent-a/run")["run_id"])
+        assert run["status"] == "failed"
+        deadline = time.time() + 20
+        while not got and time.time() < deadline:
+            time.sleep(0.25)
+        time.sleep(2)  # make sure no second alert follows
+        assert len(got) == 1, got
+        assert "parent-a" in got[0]["title"] and run["run_id"] in got[0]["message"], got[0]
+    finally:
+        s.stop(); hs.shutdown()

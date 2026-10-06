@@ -22,6 +22,10 @@ Node configs:
 - check:    {"expr": "exit_code == 0"} evaluated against the most recent command/codex result; outgoing edges labelled "yes" / "no"
 - approval: {"prompt": "Tests failed. Continue?"}  pauses durably until approved/rejected; outgoing edges "yes" / "no"
 - note:     {"path": "runs/{env}-{run}.md", "template": "Run {run} of {env}: {summary}"}  writes to the vault via the memory service (git commit)
+- command and codex also accept "retries" (0-10; retried with a short pause, output prefixed "[attempt k of n]") and "timeout" (seconds;
+  on timeout the command and everything it started is stopped; output ends "[timed out after Ns]")
+- alerts:   a run that ends "failed" sends one plain-language alert via Apprise to every URL in GLACIER_ALERT_URLS (comma separated)
+            and in the flow's optional "alert_urls" list (ntfy://, mailto://, discord://, json://, ...). Sub-flow failures alert once, via the top-level run.
 - loop:     {"times": "3"}  runs its "again" edges N times (body leads back to the loop node), then follows its "done" edges (max 1000)
 - flow:     {"env": "<other flow id>"}  runs that saved flow as its own run and waits; output "sub-run <run_id> of <env>: <status>";
             exit_code 0 when the sub-run is done, else 1 (so a check can branch on it); nesting deeper than 5 fails
