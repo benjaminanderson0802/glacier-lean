@@ -76,7 +76,7 @@ invariants:
   - I-08: "Every consequential side effect (spend, send, publish, delete, external write) requires an approval rule and is logged."
   - I-09: "Every dependency is version-pinned; upgrades are deliberate and re-run the full test board."
   - I-10: "Bundled components must allow redistribution (MIT/Apache/BSD/MPL); restrictive ones (SUL, ELv2, AGPL, branding clauses) run only as separate optional processes."
-  - I-11: "No repair loop runs unbounded: max 3 repair attempts or 2 rounds without measurable progress, then the worker files a claim (see escalation). A human is reached only through a claim the system could not resolve."
+  - I-11: "No repair loop runs unbounded: at most 2 self-fix attempts (the second starts from a fresh context, not a patch on the failed one; hard cap 3), and any stuck signal (see escalation) ends self-fixing immediately; then the worker files a claim. A human is reached only through a claim the system could not resolve."
   - I-12: "Bookkeeping is generated from the event log, never hand-appended status files."
   - I-13: "Cost and model/route used are visible per run."
   - I-14: "Safety rules may only be tightened by agents; loosening requires a human amendment to this file."
@@ -94,17 +94,33 @@ non_goals:
 # ─────────────────────────────────────────────────────────────────────────────
 # 3b. CLAIMS & ESCALATION — how problems and gaps move through the system
 # ─────────────────────────────────────────────────────────────────────────────
-escalation:   # what a worker does when it hits a problem (ladder, top to bottom)
+escalation:   # what a worker does when it hits a problem. Chosen from Jul–Oct 2026 research (sources below); judgment calls marked.
   self_fix_allowed_when: "the error is inside the worker's own task and specialty (its code, its test failure, a typo, a missing import) AND it can name a concrete next attempt"
-  self_fix_budget: "max 3 attempts, or 2 attempts with no measurable progress (same error, same failing test), or 15 minutes — whichever comes first"
+  before_editing: "reproduce the problem and write down its assumptions first (decisive errors happen early and symptoms lag ~10 steps)"
+  self_fix_budget: "2 attempts; the 2nd is a fresh attempt from a clean prompt plus a one-line error summary, not a patch on the failed one; hard cap 3"
+  stuck_signals:   # any one ends self-fixing immediately and files a claim
+    - "same command gives the same error 3 times"
+    - "same action gives the same result 4 times"
+    - "two actions alternate back and forth 6 times"
+    - "the worker's stated cause of the failure is unchanged across 2 attempts"
+  time_backstop: "15 minutes for cloud models; 40 minutes for local models (judgment call: slower models are penalized by fixed clocks)"
   file_claim_immediately_when:
     - "the cause is outside its lane: environment/sandbox, dependency or version conflict, licensing, security, another worker's output, missing credentials or permissions"
     - "the fix needs a tool, library or capability that is not installed or not known"
     - "the fix would touch its own acceptance check (I-04) or loosen a safety rule (I-14)"
     - "the fix would cost money, send/publish anything, or delete data (I-08)"
+    - "the requirement itself is unclear"
     - "it is not confident what the failure means"
-  never: ["keep retrying past budget", "weaken or skip a test to get green", "adopt a paid/closed tool", "mark the task done while a claim on it is open"]
-  while_waiting: "the worker parks its task (state saved by the durable runtime) and takes other ready work; it does not idle-loop"
+  never: ["keep retrying past budget", "weaken or skip a test to get green", "adopt a paid/closed tool", "mark the task done while a claim on it is open", "edit a task another agent is editing (one editor per task)"]
+  while_waiting: "the worker parks its task (state saved by the durable runtime) and takes other ready work; at most 3 parked tasks per worker (judgment call); a task that other tasks depend on is never silently parked: its claim gets top priority"
+  sources:
+    - "https://arxiv.org/abs/2607.05197 (most repair gain in first 3-4 rounds, Jul 2026)"
+    - "https://arxiv.org/html/2607.26117 (fresh retry beats repair, 2.5-5.5x cheaper; cap ~2, Jul 2026)"
+    - "https://arxiv.org/html/2607.09510 (decisive error early; 82% of failed recoveries loop without progress, Jul 2026)"
+    - "https://docs.openhands.dev/sdk/guides/agent-stuck-detector (repeat-count thresholds; vendor)"
+    - "https://arxiv.org/html/2610.01471 (same- + different-model reviewers catch more together, Oct 2026)"
+    - "https://arxiv.org/html/2606.05670 (more agents rarely beat one at equal budget, Jun 2026)"
+    - "https://cognition.com/blog/multi-agents-working (clean-context reviewers; one writer at a time; vendor)"
 
 claims:
   location: "vault/claims/<YYYY-MM-DD>-<slug>.md  (front-matter fields below; body = details and evidence)"
@@ -113,7 +129,8 @@ claims:
     bug: "something broken that should work"
     environment: "sandbox, OS, install, network, permissions"
     capability_gap: "the system needs something it does not have (a tool, integration, model, feature)"
-    knowledge_gap: "worker does not know how; needs research or a specialist"
+    skill_gap: "worker does not know how or keeps failing at it; goes to a stronger, different model"
+    unclear_spec: "the requirement is ambiguous or contradictory; researcher first, then the owner if still unclear"
     policy: "would need money, publishing, deletion, a license exception, or a rule change"
   lifecycle: "filed → researching → (resolved | routed | proposed) → closed"
   automatic_research:   # starts the moment a claim is filed; no human needed
@@ -127,15 +144,14 @@ claims:
     proposed: "no free/OSS option fits (or the fix needs money/policy change) → a gap proposal goes to the owner"
   gap_proposal_must_include: ["the problem in plain language", "every free/OSS option checked and why each fails", "paid/closed options with exact cost, license, lock-in and data-leaves-machine risk", "a recommended choice", "what happens if the owner says no (workaround or deferral)"]
   owner_actions: ["approve one option", "reject (task gets a workaround or is deferred)", "ask for more research"]
-  specialists:   # routing table; workers here are roles, any model/harness can fill them
-    researcher: "runs automatic_research on every claim"
-    environment_fixer: "sandbox, installs, OS, network, permissions"
-    dependency_fixer: "version pins, conflicts, upgrades (I-09)"
-    security_reviewer: "anything touching secrets, outbound access, untrusted input, or safety rules"
-    license_checker: "license compatibility (I-10) for any new tool"
-    debugger: "bugs a worker failed to fix within budget; uses a different model than the original worker"
-    verifier: "confirms the claim's resolution with its own check (I-04)"
-  metrics: ["claims auto-resolved without a human (target >= 80%)", "median time filed→resolved", "repeat claims for the same cause (target 0 after a fix is recorded)"]
+  triage: "before routing, every claim is sorted as environment, skill_gap, unclear_spec, capability_gap, bug or policy"
+  specialists:   # 4 roles (research: fewer agents with one coordinator beat many); any model/harness can fill them
+    researcher: "triage + past fixes in memory + free/open-source search + license scan (as a tool); handles capability_gap and unclear_spec"
+    fixer: "environment, sandbox, installs, permissions, dependency/version problems (pins per I-09)"
+    debugger: "skill_gap and bug claims a worker could not fix; uses a stronger model from a different vendor than the stuck worker"
+    verifier: "confirms every resolution in a clean context with its own check (I-04); where possible two reviews: one same-model, one different-model"
+  automated_gates: "security and license are automated checks plus a human gate, not agents"
+  metrics: ["share of claims resolved without a human, per type: environment/dependency >= 90%, skill_gap 50-65%, unclear_spec mostly needs the owner; overall 60-70% at first, rising over time (judgment calls)", "false fixed rate caught by the verifier < 5%", "median time filed to resolved", "repeat claims for the same cause (target 0 after a fix is recorded)"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. HOW DECISIONS ARE MADE (bias guards)
@@ -226,12 +242,12 @@ phases:
       - {id: PH3.2, item: "Verifier node runs in a separate context/model from the worker; worker cannot alter it (I-04)", test: "worker attempts to edit the check are blocked and logged"}
       - {id: PH3.3, item: "Coding workers in isolated git worktrees; merge only when checks pass (merge queue)", test: "failing branch never merges; passing branch merges automatically"}
       - {id: PH3.4, item: "Verification benchmark (goals with known answers + adversarial 'claims done but isn't' cases) and M-FALSE-DONE dashboard"}
-      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "third failed repair files a claim with the attempts attached"}
+      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "second failed attempt or any stuck signal files a claim with the attempts attached"}
       - {id: PH3.6, item: "Claim filing: file_claim tool (vault MCP) available to every worker; claim files git-tracked", test: "worker hitting an out-of-lane error files a correct claim and parks its task"}
       - {id: PH3.7, item: "Automatic claim research workflow (vault search → free/OSS search → sandbox trial → findings)", test: "seeded claim with a known OSS fix is resolved with no human, with sources and passing test"}
-      - {id: PH3.8, item: "Specialist routing table and parked-task resume", test: "routed claim fixed by specialist; original task resumes and passes its check"}
+      - {id: PH3.8, item: "Triage + routing to the 4 specialist roles (researcher, fixer, debugger, verifier) and parked-task resume", test: "routed claim fixed by specialist; original task resumes and passes its check"}
       - {id: PH3.9, item: "Gap proposals in the screen: owner sees options/costs and approves or rejects", test: "claim with no OSS option produces a proposal; approve/reject updates claim and task"}
-    exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark; >= 80% of benchmark claims resolved without a human."
+    exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark; claim auto-resolution meets the per-type targets in claims.metrics."
 
   - id: PH4
     name: "Shared memory"

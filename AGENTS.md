@@ -21,7 +21,7 @@ Answer every item in `drift_check.before_task`, and write the answers in your pl
 - Stop and ask a human for anything in `drift_check.red_flags_requiring_human`.
 - Never decide an item in `open_decisions`.
 - Free and open source first. Never add a paid or closed-source tool; file a `capability_gap` claim instead.
-- When you hit a problem, follow `escalation` in NORTHSTAR.yaml: fix it yourself only inside your own task and within 3 attempts. Otherwise file a claim in `vault/claims/`, park your task and take other work.
+- When you hit a problem, follow `escalation` in NORTHSTAR.yaml: fix it yourself only inside your own task: reproduce it first, at most 2 attempts (the second from a fresh start), and stop at once on any stuck signal. Otherwise file a claim in `vault/claims/`, park your task and take other work.
 
 ## 4. After every checkpoint
 - Run the test board in the shared sandbox (`setup/run_core_tests.sh`, plus `setup/live_codex_check.sh` when workers are involved).
