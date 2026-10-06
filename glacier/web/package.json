@@ -11,10 +11,16 @@
     "e2e": "node e2e/core.spec.mjs"
   },
   "dependencies": {
+    "@ag-ui/client": "0.0.59",
+    "@assistant-ui/react": "0.15.25",
+    "@monaco-editor/react": "4.7.0",
+    "@tauri-apps/api": "2.12.1",
+    "@tauri-apps/cli": "2.12.1",
     "@xterm/xterm": "6.0.0",
     "@xyflow/react": "12.12.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-force-graph-2d": "1.29.2"
   },
   "devDependencies": {
     "@types/node": "24.19.1",
