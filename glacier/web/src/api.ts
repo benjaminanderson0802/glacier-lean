@@ -1,9 +1,9 @@
 // Typed client for the Glacier core v0 contract (docs/CONTRACT.md). All calls go to /api (proxied to :8000).
 
-export type NodeKind = 'schedule' | 'command' | 'codex' | 'check' | 'approval' | 'note'
-export const NODE_KINDS: NodeKind[] = ['schedule', 'command', 'codex', 'check', 'approval', 'note']
+export type NodeKind = 'schedule' | 'command' | 'codex' | 'check' | 'approval' | 'note' | 'loop' | 'flow'
+export const NODE_KINDS: NodeKind[] = ['schedule', 'command', 'codex', 'check', 'approval', 'note', 'loop', 'flow']
 /** Palette labels (defaults to the kind itself). */
-export const KIND_LABEL: Partial<Record<NodeKind, string>> = { codex: 'Codex worker' }
+export const KIND_LABEL: Partial<Record<NodeKind, string>> = { codex: 'Codex worker', loop: 'Loop', flow: 'Sub-flow' }
 
 export type NodeState = 'pending' | 'running' | 'done' | 'failed' | 'waiting' | 'skipped'
 export type RunStatus = 'running' | 'waiting' | 'done' | 'failed' | 'rejected'
@@ -31,7 +31,7 @@ export interface RunEvent { run_id: string; env_id: string; node_id: string; sta
 /** Config fields per node type, with defaults used when a node is added from the palette. */
 export type ConfigField = {
   key: string; label: string; placeholder: string; def: string; optional?: boolean
-  multiline?: boolean; options?: string[]
+  multiline?: boolean; options?: string[]; envPicker?: boolean
 }
 export const CONFIG_FIELDS: Record<NodeKind, ConfigField[]> = {
   schedule: [{ key: 'cron', label: 'Cron', placeholder: '*/1 * * * *', def: '*/5 * * * *' }],
@@ -51,10 +51,15 @@ export const CONFIG_FIELDS: Record<NodeKind, ConfigField[]> = {
     { key: 'path', label: 'Vault path', placeholder: 'runs/{env}-{run}.md', def: 'runs/{env}-{run}.md' },
     { key: 'template', label: 'Template', placeholder: 'Run {run} of {env}: {summary}', def: 'Run {run} of {env}: {summary}', multiline: true },
   ],
+  loop: [{ key: 'times', label: 'Times (runs the "again" branch, then "done")', placeholder: '3', def: '3' }],
+  flow: [{ key: 'env', label: 'Environment to run', placeholder: '', def: '', envPicker: true }],
 }
 
-/** Node types whose outgoing edges carry a yes/no label. */
-export const BRANCHING: NodeKind[] = ['check', 'approval']
+/** Node types whose outgoing edges carry a branch label, with the labels they use (first one is the default). */
+export const BRANCH_LABELS: Partial<Record<NodeKind, [string, string]>> = {
+  check: ['yes', 'no'], approval: ['yes', 'no'], loop: ['again', 'done'],
+}
+export const BRANCHING = Object.keys(BRANCH_LABELS) as NodeKind[]
 
 export class ApiError extends Error {
   status: number

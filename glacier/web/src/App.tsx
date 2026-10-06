@@ -4,7 +4,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
-  ApiError, BRANCHING, CONFIG_FIELDS, KIND_LABEL, NODE_KINDS, api, slugify, subscribeEvents,
+  ApiError, BRANCHING, BRANCH_LABELS, CONFIG_FIELDS, KIND_LABEL, NODE_KINDS, api, slugify, subscribeEvents,
   type EnvSummary, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from './api.ts'
 import { nodeTypes, type GNode } from './GlacierNode.tsx'
@@ -159,9 +159,8 @@ function Shell() {
     setEdges(es => {
       const src = nodes.find(n => n.id === c.source)
       let label = ''
-      if (src && BRANCHING.includes(src.type as NodeKind)) {
-        label = es.some(e => e.source === c.source && e.label === 'yes') ? 'no' : 'yes'
-      }
+      const pair = src ? BRANCH_LABELS[src.type as NodeKind] : undefined
+      if (pair) label = es.some(e => e.source === c.source && e.label === pair[0]) ? pair[1] : pair[0]
       const id = nextId('e', es.map(e => e.id))
       return addEdge({ ...c, id, ...edgeStyle(label) }, es)
     })
@@ -248,6 +247,35 @@ function Shell() {
     ...n, data: { ...n.data, state: activeRun ? (activeRun.node_states[n.id] ?? 'pending') : undefined },
   })), [nodes, activeRun])
 
+  // edges that close a cycle (target can reach source) are loop-back edges: drawn animated
+  const displayEdges = useMemo(() => {
+    const out = new Map<string, string[]>()
+    for (const e of edges) out.set(e.source, [...(out.get(e.source) ?? []), e.target])
+    const reaches = (from: string, to: string) => {
+      const seen = new Set<string>(), stack = [from]
+      while (stack.length) {
+        const n = stack.pop()!
+        if (n === to) return true
+        if (seen.has(n)) continue
+        seen.add(n); stack.push(...(out.get(n) ?? []))
+      }
+      return false
+    }
+    return edges.map(e => {
+      const back = reaches(e.target, e.source)
+      const cls = [typeof e.label === 'string' && e.label ? `edge-${e.label}` : '', back ? 'edge-loopback' : ''].filter(Boolean).join(' ')
+      return { ...e, animated: back, className: cls || undefined }
+    })
+  }, [edges])
+
+  const openSubRun = async (output: string) => {
+    const m = output.match(/sub-run (\w+) of ([\w-]+)/)
+    if (!m) return
+    if (dirty && !window.confirm('Discard unsaved changes?')) return
+    await loadEnv(m[2])
+    openRun(m[1])
+  }
+
   const selNode = selected?.kind === 'node' ? nodes.find(n => n.id === selected.id) : undefined
   const selEdge = selected?.kind === 'edge' ? edges.find(e => e.id === selected.id) : undefined
   const selEdgeSrc = selEdge ? nodes.find(n => n.id === selEdge.source) : undefined
@@ -329,7 +357,7 @@ function Shell() {
             <div className="canvas" data-testid="canvas">
               <ReactFlow<GNode, Edge>
                 nodes={displayNodes}
-                edges={edges}
+                edges={displayEdges}
                 nodeTypes={nodeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
@@ -387,6 +415,9 @@ function Shell() {
                 <div className="field"><span>Id</span><code data-testid="active-run-id">{activeRun.run_id}</code></div>
                 <div className="field"><span>Status</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
                 <div className="muted small">Click a node to see its output.</div>
+                {selNode?.type === 'flow' && /sub-run \w+ of /.test(activeRun.outputs[selNode.id] ?? '') && (
+                  <button className="ghost" data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>
+                )}
               </div>
             )}
 
@@ -396,7 +427,12 @@ function Shell() {
                 {CONFIG_FIELDS[selNode.type as NodeKind].map(f => (
                   <label className="field" key={f.key}>
                     <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
-                    {f.options
+                    {f.envPicker
+                      ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
+                          <option value="">choose…</option>
+                          {allEnvs.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                        </select>
+                      : f.options
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.def} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
@@ -416,8 +452,7 @@ function Shell() {
                   <label className="field">
                     <span>Branch</span>
                     <select data-testid="edge-label" value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
-                      <option value="yes">yes</option>
-                      <option value="no">no</option>
+                      {(BRANCH_LABELS[selEdgeSrc.type as NodeKind] ?? []).map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </label>
                 ) : <div className="muted small">Unlabelled edge (runs in order).</div>}

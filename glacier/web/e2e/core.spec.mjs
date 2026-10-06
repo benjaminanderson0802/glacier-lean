@@ -199,6 +199,38 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-testid="terminal-panel"] .xterm-rows')?.textContent.includes('codex exit 0'), null, { timeout: 5000 })
   check(true, 'codex output shown in the terminal panel')
 
+  // ---------- flow 5: loop + sub-flow (real backend only; the mock does not model them) ----------
+  if (process.env.SKIP_MOCK) {
+    await newEnv('Sub child')
+    await tid('palette-command').click()
+    await tid('node-n1').click()
+    await tid('field-cmd').fill('echo child-ok')
+    await tid('save').click()
+    await page.waitForFunction(() => document.querySelector('[data-testid="message"]')?.textContent === 'Saved.')
+    await newEnv('Loop flow')
+    for (const k of ['command', 'loop', 'command', 'flow']) await tid(`palette-${k}`).click()
+    await tid('node-n1').click(); await tid('field-cmd').fill('echo start')
+    await tid('node-n2').click(); await tid('field-times').fill('2')
+    await tid('node-n3').click(); await tid('field-cmd').fill('echo tick')
+    await tid('node-n4').click(); await tid('field-env').selectOption('sub-child')
+    check((await tid('palette-loop').textContent()).includes('Loop') && (await tid('palette-flow').textContent()).includes('Sub-flow'), 'palette shows Loop and Sub-flow')
+    await connect('n1', 'n2'); await connect('n2', 'n3'); await connect('n3', 'n2'); await connect('n2', 'n4')
+    await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 4)
+    const lbl = (await page.locator('.react-flow__edge-text').allTextContents()).sort().join(',')
+    check(lbl === 'again,done', `loop out-edges auto-labelled again/done (got ${lbl})`)
+    check(await page.locator('.react-flow__edge.edge-loopback').count() === 2, 'loop-back edges drawn as a cycle')
+    await tid('run').click()
+    await waitState('n4', 'done', 30000)
+    await page.waitForFunction(() => document.querySelector('[data-testid="run-status"]')?.textContent === 'done', null, { timeout: 10000 })
+    const lr = await (await fetch(`${API}/api/runs/${await tid('active-run-id').textContent()}`)).json()
+    check(lr.outputs.n2.includes('2 of 2') && lr.node_states.n3 === 'done', `loop ran twice then exited (got ${JSON.stringify(lr.outputs.n2)})`)
+    await tid('node-n4').click()
+    await tid('open-subrun').click()
+    await page.waitForFunction(() => document.querySelector('[data-testid="env-id"]')?.textContent === 'sub-child')
+    await waitState('n1', 'done')
+    check(true, 'sub-flow node opens the child run with its node states')
+  }
+
   await page.screenshot({ path: path.join(root, 'e2e/screen.png') })
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
 } catch (e) {

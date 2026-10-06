@@ -9,7 +9,7 @@ rm -rf /tmp/e2e2
 GLACIER_HOME=/tmp/e2e2 CODEX_BIN="$PWD/tests/fake_codex.py" ../../.venv/bin/python -m uvicorn app:app --port 8000 > /tmp/b2.log 2>&1 &
 BP=$!
 sleep 6
-cd ../web && SKIP_MOCK=1 API_URL=http://localhost:8000 node e2e/core.spec.mjs 2>&1 | grep -aE 'codex|^PASS|^FAIL|ERROR'
+cd ../web && SKIP_MOCK=1 API_URL=http://localhost:8000 node e2e/core.spec.mjs 2>&1 | grep -aE '\[e2e\]|^PASS|^FAIL'
 kill -9 $BP; sleep 1
 cd ../backend && GLACIER_HOME=/workspaces/glacier-data GLACIER_CODEX_SANDBOX=danger-full-access nohup ../../.venv/bin/python -m uvicorn app:app --port 8000 > /tmp/backend-live.log 2>&1 &
 cd ../web && nohup npx vite preview --port 4173 --host 0.0.0.0 > /tmp/preview.log 2>&1 &

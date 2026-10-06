@@ -74,6 +74,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--i
 .react-flow__edge-textbg { fill: var(--panel2); }
 .react-flow__edge.edge-yes .react-flow__edge-text { fill: var(--ok); }
 .react-flow__edge.edge-no .react-flow__edge-text { fill: var(--bad); }
+.react-flow__edge.edge-again .react-flow__edge-text { fill: var(--ice); }
+.react-flow__edge.edge-done .react-flow__edge-text { fill: var(--ok); }
+.react-flow__edge.edge-loopback .react-flow__edge-path { stroke: var(--ice); stroke-dasharray: 6 4; }
 .react-flow__edge.selected .react-flow__edge-path { stroke: var(--ice); }
 
 .approval-banner { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #2d2410; border-bottom: 1px solid var(--warn); color: var(--warn); }

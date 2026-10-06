@@ -215,3 +215,60 @@ def test_graceful_shutdown_with_live_clients(server):
     server.log.flush()
     log = open(os.path.join(server.home, "server.log")).read()
     assert "Application shutdown complete" in log, log[-800:]
+
+
+def test_loop_runs_n_times_then_exits(server):
+    ticks = os.path.join(server.home, "ticks.txt")
+    e = env("looper", [("s", "command", {"cmd": "echo start"}), ("L", "loop", {"times": 3}),
+                       ("c", "command", {"cmd": f"echo tick >> {ticks}"}),
+                       ("n", "note", {"path": "runs/{run}.md", "template": "looped {run}"})],
+            [("s", "L", ""), ("L", "c", "again"), ("c", "L", ""), ("L", "n", "done")])
+    server.put("/api/environments/looper", e)
+    run = server.wait_run(server.post("/api/environments/looper/run")["run_id"])
+    assert run["status"] == "done", run
+    assert open(ticks).read().split() == ["tick"] * 3
+    assert run["node_states"]["L"] == "done" and "3 of 3" in run["outputs"]["L"]
+    assert run["node_states"]["n"] == "done"
+
+
+def test_runaway_cycle_stops_at_step_limit(server):
+    e = env("runaway", [("a", "command", {"cmd": "true"}), ("b", "command", {"cmd": "true"})], [("a", "b", ""), ("b", "a", "")])
+    e["max_steps"] = 10
+    server.put("/api/environments/runaway", e)
+    run = server.wait_run(server.post("/api/environments/runaway/run")["run_id"])
+    assert run["status"] == "failed", run
+
+
+def test_sub_flow_runs_child_and_shows_its_states(server):
+    server.put("/api/environments/child", env("child", [("c", "command", {"cmd": "echo child-ran"}),
+                                                        ("n", "note", {"path": "runs/child-{run}.md", "template": "{summary}"})], [("c", "n", "")]))
+    server.put("/api/environments/parent", env("parent", [("f", "flow", {"env": "child"}), ("k", "check", {"expr": "exit_code == 0"}),
+                                                          ("ok", "note", {"path": "runs/p-{run}.md", "template": "ok"}),
+                                                          ("bad", "note", {"path": "runs/never.md", "template": "x"})],
+                                               [("f", "k", ""), ("k", "ok", "yes"), ("k", "bad", "no")]))
+    run = server.wait_run(server.post("/api/environments/parent/run")["run_id"])
+    assert run["status"] == "done", run
+    assert run["node_states"] == {"f": "done", "k": "done", "ok": "done", "bad": "skipped"}
+    child_runs = server.get("/api/runs", params={"env_id": "child"})
+    assert len(child_runs) == 1 and child_runs[0]["run_id"] in run["outputs"]["f"]
+    child = server.get(f"/api/runs/{child_runs[0]['run_id']}")
+    assert child["status"] == "done" and child["node_states"] == {"c": "done", "n": "done"}
+
+
+def test_failing_sub_flow_routes_check_no(server):
+    server.put("/api/environments/bad-child", env("bad-child", [("c", "command", {"cmd": "exit 3"})], []))
+    server.put("/api/environments/p2", env("p2", [("f", "flow", {"env": "bad-child"}), ("k", "check", {"expr": "exit_code == 0"}),
+                                                  ("ok", "note", {"path": "runs/never.md", "template": "x"}),
+                                                  ("fix", "note", {"path": "runs/fix-{run}.md", "template": "child failed"})],
+                                           [("f", "k", ""), ("k", "ok", "yes"), ("k", "fix", "no")]))
+    run = server.wait_run(server.post("/api/environments/p2/run")["run_id"])
+    assert run["status"] == "done" and run["node_states"]["f"] == "failed" and run["node_states"]["fix"] == "done", run
+
+
+def test_self_calling_flow_is_depth_limited(server):
+    server.put("/api/environments/selfie", env("selfie", [("f", "flow", {"env": "selfie"})], []))
+    run = server.wait_run(server.post("/api/environments/selfie/run")["run_id"], timeout=60)
+    assert run["status"] == "failed"
+    deepest = [r for r in server.get("/api/runs", params={"env_id": "selfie"}) if "nested" in (r.get("outputs") or {}).get("f", "")
+               or "nested" in server.get(f"/api/runs/{r['run_id']}")["outputs"].get("f", "")]
+    assert deepest, "no run reports the nesting limit"

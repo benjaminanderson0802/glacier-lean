@@ -4,7 +4,7 @@ import type { NodeKind, NodeState } from './api.ts'
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>
 
-const ICON: Record<NodeKind, string> = { schedule: '⏱', command: '›_', codex: '◆', check: '?', approval: '✓', note: '✎' }
+const ICON: Record<NodeKind, string> = { schedule: '⏱', command: '›_', codex: '◆', check: '?', approval: '✓', note: '✎', loop: '↻', flow: '⧉' }
 
 function summary(kind: NodeKind, c: Record<string, string>): string {
   switch (kind) {
@@ -14,6 +14,8 @@ function summary(kind: NodeKind, c: Record<string, string>): string {
     case 'check': return c.expr || 'no expression'
     case 'approval': return c.prompt || 'no prompt'
     case 'note': return c.path || 'no path'
+    case 'loop': return `${c.times || '1'} times`
+    case 'flow': return c.env ? `runs ${c.env}` : 'no environment'
   }
 }
 
@@ -29,7 +31,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
       <Handle type="target" position={Position.Left} data-testid={`handle-in-${id}`} />
       <div className="gnode-head">
         <span className="gnode-icon">{ICON[type]}</span>
-        <span className="gnode-type">{type === 'codex' ? 'codex worker' : type}</span>
+        <span className="gnode-type">{type === 'codex' ? 'codex worker' : type === 'flow' ? 'sub-flow' : type}</span>
         <span className="gnode-id">{id}</span>
       </div>
       <div className="gnode-body" title={summary(type, data.config)}>{summary(type, data.config)}</div>
@@ -40,5 +42,5 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
 }
 
 export const nodeTypes = {
-  schedule: GlacierNode, command: GlacierNode, codex: GlacierNode, check: GlacierNode, approval: GlacierNode, note: GlacierNode,
+  schedule: GlacierNode, command: GlacierNode, codex: GlacierNode, check: GlacierNode, approval: GlacierNode, note: GlacierNode, loop: GlacierNode, flow: GlacierNode,
 }

@@ -5,14 +5,16 @@ from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
 import store, vault
 
-MAX_EXECUTIONS = 50
+MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
+MAX_FLOW_DEPTH = 5
+MAX_LOOP_TIMES = 1000
 APPROVAL_TIMEOUT = 7 * 24 * 3600
 COMMAND_TIMEOUT = 3600
 OUTPUT_LIMIT = 20000
 CODEX_TIMEOUT = 30 * 60
 PREV_LIMIT = 8000
 CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
-WORKERS = ("command", "codex")  # nodes with an exit_code that check nodes branch on
+WORKERS = ("command", "codex", "flow")  # nodes with an exit_code that check nodes branch on
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
 
@@ -180,10 +182,43 @@ def finish_run(env_id: str, run_id: str, status: str) -> None:
     store.set_run(run_id, status)
 
 
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def loop_tick(env_id: str, run_id: str, node_id: str, count: int, times: int) -> dict:
+    if count <= times:
+        res = {"state": "running", "output": f"iteration {count} of {times}", "branch": "again"}
+    else:
+        res = {"state": "done", "output": f"finished {times} of {times}", "branch": "done"}
+    store.set_node(run_id, env_id, node_id, res["state"], res["output"])
+    return res
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def start_child(env_id: str, run_id: str, node_id: str, child_env: str, child_run: str, depth: int) -> dict:
+    """Snapshot the sub-flow's saved graph into its own run (visible in history like any run)."""
+    try:
+        if depth >= MAX_FLOW_DEPTH:
+            raise ValueError(f"sub-flows nested more than {MAX_FLOW_DEPTH} deep; stopping")
+        store.create_run(child_run, child_env, load_env(child_env))
+    except (FileNotFoundError, ValueError) as e:
+        msg = str(e) if "nested" in str(e) else f"sub-flow {child_env!r} not found"
+        store.set_node(run_id, env_id, node_id, "failed", f"error: {msg}")
+        return {"state": "failed", "output": f"error: {msg}", "error": True}
+    store.set_node(run_id, env_id, node_id, "running", f"sub-run {child_run} of {child_env}")
+    return {"state": "running"}
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def finish_child(env_id: str, run_id: str, node_id: str, child_env: str, child_run: str, status: str) -> dict:
+    code = 0 if status == "done" else 1
+    res = {"state": "done" if code == 0 else "failed", "output": f"sub-run {child_run} of {child_env}: {status}", "exit_code": code}
+    store.set_node(run_id, env_id, node_id, res["state"], res["output"])
+    return res
+
+
 # ---- workflows ---------------------------------------------------------------------------
 
 @DBOS.workflow()
-def run_environment(env_id: str, run_id: str) -> str:
+def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
     graph = store.graph_of(run_id)  # immutable snapshot taken when the run was created
     nodes = {n["id"]: n for n in graph["nodes"]}
     out = defaultdict(list)
@@ -193,16 +228,34 @@ def run_environment(env_id: str, run_id: str) -> str:
     targets = {e["target"] for es in out.values() for e in es}
     queue = deque([n for n in nodes if n not in targets] or list(nodes)[:1])
     last, status, executions = None, "done", 0
+    limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
+    loop_counts, flow_visits = defaultdict(int), defaultdict(int)
     while queue:
-        if executions >= MAX_EXECUTIONS:
+        if executions >= limit:
             status = "failed"
             break
         executions += 1
         node = nodes[queue.popleft()]
         nid = node["id"]
+        cfg = node.get("config") or {}
         if node["type"] == "approval":
             mark_waiting(env_id, run_id, nid)
             res = finish_approval(env_id, run_id, nid, DBOS.recv(topic=nid, timeout_seconds=APPROVAL_TIMEOUT))
+        elif node["type"] == "loop":
+            times = max(0, min(int(cfg.get("times") or 1), MAX_LOOP_TIMES))
+            loop_counts[nid] += 1
+            res = loop_tick(env_id, run_id, nid, loop_counts[nid], times)
+            if res["branch"] == "done":
+                loop_counts[nid] = 0  # an outer loop can run this loop again
+        elif node["type"] == "flow":
+            child_env = str(cfg.get("env") or "")
+            flow_visits[nid] += 1
+            child_run = uuid.uuid5(uuid.NAMESPACE_URL, f"{run_id}/{nid}/{flow_visits[nid]}").hex[:12]
+            res = start_child(env_id, run_id, nid, child_env, child_run, depth)
+            if not res.get("error"):
+                with SetWorkflowID(child_run):
+                    handle = DBOS.start_workflow(run_environment, child_env, child_run, depth + 1)
+                res = finish_child(env_id, run_id, nid, child_env, child_run, handle.get_result())
         else:
             res = run_node(env_id, run_id, node, last)
         edges = out[nid]
