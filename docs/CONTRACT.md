@@ -26,13 +26,18 @@ Node configs:
   on timeout the command and everything it started is stopped; output ends "[timed out after Ns]")
 - alerts:   a run that ends "failed" sends one plain-language alert via Apprise to every URL in GLACIER_ALERT_URLS (comma separated)
             and in the flow's optional "alert_urls" list (ntfy://, mailto://, discord://, json://, ...). Sub-flow failures alert once, via the top-level run.
+- decide:   {"question": "Which team? {prev_output}", "options": "Billing, Tech support, Other", "engine": "auto|local|codex", "model": "optional"}
+            picks exactly one option (the AI's answer is constrained to the list; anything else fails the step) and follows the
+            outgoing edge whose label equals that option (case-insensitive). Context = previous step's output. Engines are free:
+            local = Ollama (GLACIER_OLLAMA_URL, GLACIER_LOCAL_MODEL), codex = Codex CLI default model; auto = local, then codex.
+            Output "decided: <option> (by <engine>)". 2-12 options.
 - loop:     {"times": "3"}  runs its "again" edges N times (body leads back to the loop node), then follows its "done" edges (max 1000)
 - flow:     {"env": "<other flow id>"}  runs that saved flow as its own run and waits; output "sub-run <run_id> of <env>: <status>";
             exit_code 0 when the sub-run is done, else 1 (so a check can branch on it); nesting deeper than 5 fails
 A failing command/codex/flow node only continues when it feeds a check node. A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max_steps node executions per run (default 500).
 
 ## HTTP API (backend on :8000, all JSON, prefix /api)
-- GET  /api/node-types                        -> [{type,label,description,fields:[{key,label,placeholder,default,optional?,multiline?,options?,picker?}],branches:[a,b]|null}]
+- GET  /api/node-types                        -> [{type,label,description,fields:[{key,label,placeholder,default,optional?,multiline?,options?,picker?}],branches:[a,b]|null,branches_from?:"options"}]
 - GET  /api/environments                      -> [{id,name}]
 - GET  /api/environments/{id}                 -> Environment
 - PUT  /api/environments/{id}                 body Environment -> {"saved": true, "commit": "abc123"}

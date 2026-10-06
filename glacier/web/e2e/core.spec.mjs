@@ -231,6 +231,21 @@ try {
     check(true, 'sub-flow node opens the child run with its node states')
   }
 
+  // ---------- flow 6: Decide step labels its arrows with its own options ----------
+  await newEnv('Decide flow')
+  for (const k of ['decide', 'note', 'note']) await tid(`palette-${k}`).click()
+  await tid('node-n1').click()
+  await tid('field-question').fill('Which team handles this?')
+  await tid('field-options').fill('Billing, Tech support, Other')
+  check(await tid('field-engine').inputValue() === 'auto', 'decide engine defaults to auto (free engines first)')
+  await connect('n1', 'n2'); await connect('n1', 'n3')
+  await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 2)
+  const dl = (await page.locator('.react-flow__edge-text').allTextContents()).sort().join(',')
+  check(dl === 'Billing,Tech support', `decide arrows auto-labelled from its options (got ${dl})`)
+  await page.locator('.react-flow__edge').first().click({ force: true })
+  const opts = await tid('edge-label').locator('option').allTextContents()
+  check(opts.join(',') === 'Billing,Tech support,Other', `arrow label picker offers the decide options (got ${opts})`)
+
   await page.screenshot({ path: path.join(root, 'e2e/screen.png') })
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
 } catch (e) {

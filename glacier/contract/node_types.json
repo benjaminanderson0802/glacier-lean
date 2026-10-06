@@ -1,5 +1,5 @@
 {
- "_about": "Single source of truth for node types, their settings and branch labels. Served by the backend at GET /api/node-types and by the mock server; the screen builds its palette and settings forms from it. Adding a node type here (plus its runner code) needs no screen changes.",
+ "_about": "Single source of truth for node types, their settings and branch labels. Served by the backend at GET /api/node-types and by the mock server; the screen builds its palette and settings forms from it. Adding a node type here (plus its runner code) needs no screen changes. \"branches\" is a fixed pair of labels; \"branches_from\": \"options\" means the labels are the node's own comma-separated options.",
  "types": [
   {
    "type": "schedule",
@@ -137,6 +137,46 @@
     "yes",
     "no"
    ]
+  },
+  {
+   "type": "decide",
+   "label": "Decide",
+   "description": "Picks one option from your list (using a free AI model) and follows the arrow with that name.",
+   "fields": [
+    {
+     "key": "question",
+     "label": "Question ({prev_output} {env} {run})",
+     "placeholder": "Which team should handle this ticket?",
+     "default": "",
+     "multiline": true
+    },
+    {
+     "key": "options",
+     "label": "Options (comma separated)",
+     "placeholder": "Billing, Tech support, Other",
+     "default": "Yes, No"
+    },
+    {
+     "key": "engine",
+     "label": "Who decides",
+     "placeholder": "",
+     "default": "auto",
+     "options": [
+      "auto",
+      "local",
+      "codex"
+     ]
+    },
+    {
+     "key": "model",
+     "label": "Model",
+     "placeholder": "default",
+     "default": "",
+     "optional": true
+    }
+   ],
+   "branches": null,
+   "branches_from": "options"
   },
   {
    "type": "note",

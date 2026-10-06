@@ -13,7 +13,8 @@ Audience: **non-technical people first** (project rule). Plain words, no jargon,
 4. **State vocabulary** (show these, style them however you like):
    - step states: `pending, running, done, failed, waiting, skipped`
    - run states: `running, waiting, done, failed, rejected`
-   - branch labels: whatever the node type's `branches` says (today `yes/no` for check and approval, `again/done` for loop). A new edge from a branching node gets the first label, the second edge gets the other.
+   - branch labels: whatever the node type's `branches` says (today `yes/no` for check and approval, `again/done` for loop). A new edge from a branching node gets the first unused label.
+   - when a type has `branches_from: "options"` (the Decide step), its labels are that node's own comma-separated `options` setting; offer exactly those in the arrow-label picker.
 5. **Test labels:** keep a `data-testid` with the exact values below on the element that does that job. They are invisible to users.
 6. **Technical limits:**
    - React + TypeScript + Vite, or anything else that builds to plain static files in `dist/`.

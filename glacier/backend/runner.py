@@ -3,7 +3,7 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
-import store, vault
+import store, vault, decider
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
@@ -187,6 +187,12 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
                 raise ValueError("check has no previous command/codex result")
             ok = check(cfg.get("expr", "exit_code == 0"), last["exit_code"])
             res = {"state": "done", "output": "yes" if ok else "no", "branch": "yes" if ok else "no"}
+        elif kind == "decide":
+            options = decider.parse_options(cfg.get("options"))
+            prev = (last or {}).get("output") or ""
+            question = (cfg.get("question") or "").replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev[-PREV_LIMIT:])
+            d = decider.decide(question, options, prev, cfg.get("engine") or "auto", cfg.get("model") or "")
+            res = {"state": "done", "output": f"decided: {d['choice']} (by {d['engine']})", "branch": d["choice"].strip().lower()}
         elif kind == "note":
             run = store.get_run(run_id)
             summary = ", ".join(f"{k}: {v}" for k, v in run["node_states"].items() if v != "pending")

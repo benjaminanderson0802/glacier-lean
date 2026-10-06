@@ -192,6 +192,17 @@ async function execute(env, r, depth = 0) {
         setState(r, id, 'done', `wrote ${path}\n${body}\n`)
         break
       }
+      case 'decide': {
+        // mock decision: the first option mentioned in the previous step's output, else the first option
+        const opts = [...new Set(String(c.options ?? '').split(/[,\n]/).map(s => s.trim()).filter(Boolean))]
+        if (opts.length < 2) { setState(r, id, 'failed', 'error: a decision needs at least 2 options'); failed = true; queue.length = 0; next = []; break }
+        const ctx = String(prev?.output ?? '').toLowerCase()
+        const pick = opts.find(o => ctx.includes(o.toLowerCase())) ?? opts[0]
+        setState(r, id, 'done', `decided: ${pick} (by mock)`)
+        next = out(id).filter(e => (e.label ?? '').trim().toLowerCase() === pick.toLowerCase())
+        result = prev ?? result
+        break
+      }
       case 'loop': {
         const times = Math.max(0, Math.min(Number(c.times) || 1, MAX_LOOP))
         const k = (loopCounts.get(id) ?? 0) + 1

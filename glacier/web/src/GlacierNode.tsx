@@ -4,7 +4,7 @@ import type { NodeKind, NodeState } from './api.ts'
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>
 
-const ICON: Record<string, string> = { schedule: '⏱', command: '›_', codex: '◆', check: '?', approval: '✓', note: '✎', loop: '↻', flow: '⧉' }
+const ICON: Record<string, string> = { schedule: '⏱', command: '›_', codex: '◆', check: '?', approval: '✓', note: '✎', loop: '↻', flow: '⧉', decide: '⋔' }
 
 function summary(kind: NodeKind, c: Record<string, string>): string {
   switch (kind) {
@@ -16,6 +16,7 @@ function summary(kind: NodeKind, c: Record<string, string>): string {
     case 'note': return c.path || 'no path'
     case 'loop': return `${c.times || '1'} times`
     case 'flow': return c.env ? `runs ${c.env}` : 'no environment'
+    case 'decide': return c.question || 'no question'
     default: return Object.values(c).find(Boolean) || ''
   }
 }

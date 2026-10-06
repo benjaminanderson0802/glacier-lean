@@ -277,9 +277,10 @@ def test_self_calling_flow_is_depth_limited(server):
 def test_node_types_catalog_served_and_enforced(server):
     cat = server.get("/api/node-types")
     kinds = [t["type"] for t in cat]
-    assert kinds == ["schedule", "command", "codex", "check", "approval", "note", "loop", "flow"]
+    assert kinds == ["schedule", "command", "codex", "check", "approval", "decide", "note", "loop", "flow"]
     for t in cat:
         assert t["label"] and isinstance(t["fields"], list) and (t["branches"] is None or len(t["branches"]) == 2)
+        assert t["branches"] is None or "branches_from" not in t
     assert {t["type"]: t["branches"] for t in cat}["loop"] == ["again", "done"]
     r = httpx.put(server.url + "/api/environments/bad", json=env("bad", [("x", "teleport", {})], []), timeout=30)
     assert r.status_code == 400
@@ -345,3 +346,77 @@ def test_failed_run_sends_exactly_one_alert(tmp_path, monkeypatch):
         assert "parent-a" in got[0]["title"] and run["run_id"] in got[0]["message"], got[0]
     finally:
         s.stop(); hs.shutdown()
+
+
+def _fake_ollama(answer_for):
+    """Tiny stand-in for Ollama's /api/chat: answer_for(prompt) -> choice string. Returns (url, seen_requests, server)."""
+    import http.server, threading
+    from conftest import free_port
+    seen = []
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            seen.append(body)
+            out = json.dumps({"message": {"content": json.dumps({"choice": answer_for(body["messages"][0]["content"])})}}).encode()
+            self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(out)
+
+        def log_message(self, *a):
+            pass
+
+    port = free_port()
+    hs = http.server.HTTPServer(("127.0.0.1", port), H)
+    threading.Thread(target=hs.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{port}", seen, hs
+
+
+DECIDE_ENV = env("triage", [("t", "command", {"cmd": "echo 'customer: I want a refund for order 12'"}),
+                            ("d", "decide", {"question": "Which team should handle this ticket?", "options": "Billing, Tech support, Other", "engine": "local"}),
+                            ("b", "note", {"path": "runs/billing-{run}.md", "template": "billing"}),
+                            ("s", "note", {"path": "runs/tech-{run}.md", "template": "tech"})],
+                 [("t", "d", ""), ("d", "b", "Billing"), ("d", "s", "Tech support")])
+
+
+def test_decide_step_follows_chosen_branch(tmp_path, monkeypatch):
+    from conftest import Server
+    url, seen, hs = _fake_ollama(lambda prompt: "billing" if "refund" in prompt else "Other")
+    monkeypatch.setenv("GLACIER_OLLAMA_URL", url)
+    s = Server(tmp_path).start()
+    try:
+        s.put("/api/environments/triage", DECIDE_ENV)
+        run = s.wait_run(s.post("/api/environments/triage/run")["run_id"])
+        assert run["status"] == "done", run
+        assert run["node_states"] == {"t": "done", "d": "done", "b": "done", "s": "skipped"}, run
+        assert "Billing" in run["outputs"]["d"] and "local model" in run["outputs"]["d"]
+        req = seen[0]
+        assert req["format"]["properties"]["choice"]["enum"] == ["Billing", "Tech support", "Other"]  # output constrained to the options
+        assert "refund" in req["messages"][0]["content"]  # previous step's output is the context
+    finally:
+        s.stop(); hs.shutdown()
+
+
+def test_decide_rejects_answers_outside_the_options(tmp_path, monkeypatch):
+    from conftest import Server
+    url, _, hs = _fake_ollama(lambda prompt: "pizza")
+    monkeypatch.setenv("GLACIER_OLLAMA_URL", url)
+    s = Server(tmp_path).start()
+    try:
+        s.put("/api/environments/triage", DECIDE_ENV)
+        run = s.wait_run(s.post("/api/environments/triage/run")["run_id"])
+        assert run["status"] == "failed" and run["node_states"]["d"] == "failed"
+        assert "not one of the options" in run["outputs"]["d"]
+    finally:
+        s.stop(); hs.shutdown()
+
+
+def test_decide_needs_two_options(server):
+    e = env("one-opt", [("d", "decide", {"question": "Pick", "options": "only", "engine": "local"})], [])
+    server.put("/api/environments/one-opt", e)
+    run = server.wait_run(server.post("/api/environments/one-opt/run")["run_id"])
+    assert run["status"] == "failed" and "at least 2 options" in run["outputs"]["d"]
+
+
+def test_decide_catalog_entry(server):
+    t = {x["type"]: x for x in server.get("/api/node-types")}["decide"]
+    assert t["branches"] is None and t["branches_from"] == "options"
+    assert [f["key"] for f in t["fields"]][:3] == ["question", "options", "engine"]

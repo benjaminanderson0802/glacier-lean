@@ -34,6 +34,14 @@ export interface ConfigField {
 /** One entry of GET /api/node-types. branches = the two labels its outgoing edges carry, or null. */
 export interface NodeTypeInfo {
   type: NodeKind; label: string; description: string; fields: ConfigField[]; branches: [string, string] | null
+  /** 'options': branch labels are this node's own comma-separated `options` setting (Decide step). */
+  branches_from?: 'options'
+}
+
+/** Split a comma-separated options setting into labels (trimmed, no blanks, no duplicates). */
+export function splitOptions(text: string | undefined): string[] {
+  const seen = new Set<string>()
+  return String(text ?? '').split(/[,\n]/).map(s => s.trim()).filter(s => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()))
 }
 
 export class ApiError extends Error {

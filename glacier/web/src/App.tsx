@@ -4,7 +4,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
-  ApiError, api, slugify, subscribeEvents,
+  ApiError, api, slugify, splitOptions, subscribeEvents,
   type EnvSummary, type NodeTypeInfo, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from './api.ts'
 import { GlacierNode, nodeTypes as baseNodeTypes, type GNode } from './GlacierNode.tsx'
@@ -70,6 +70,13 @@ function Shell() {
   const [busy, setBusy] = useState(false)
   const [catalog, setCatalog] = useState<NodeTypeInfo[]>([])
   const typeInfo = useCallback((k: string) => catalog.find(t => t.type === k), [catalog])
+  /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
+  const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
+    const t = n ? typeInfo(n.type as string) : undefined
+    if (!n || !t) return null
+    if (t.branches) return t.branches
+    return t.branches_from === 'options' ? splitOptions(n.data.config.options) : null
+  }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
 
   const envIdRef = useRef(envId)
@@ -163,13 +170,13 @@ function Shell() {
     setEdges(es => {
       const src = nodes.find(n => n.id === c.source)
       let label = ''
-      const pair = src ? typeInfo(src.type)?.branches ?? undefined : undefined
-      if (pair) label = es.some(e => e.source === c.source && e.label === pair[0]) ? pair[1] : pair[0]
+      const labels = branchLabels(src)
+      if (labels?.length) label = labels.find(l => !es.some(e => e.source === c.source && e.label === l)) ?? labels[0]
       const id = nextId('e', es.map(e => e.id))
       return addEdge({ ...c, id, ...edgeStyle(label) }, es)
     })
     setDirty(true)
-  }, [nodes, typeInfo])
+  }, [nodes, branchLabels])
 
   const addNode = (kind: NodeKind) => {
     const id = nextId('n', nodes.map(n => n.id))
@@ -452,11 +459,11 @@ function Shell() {
             {selEdge && (
               <div className="inspector" data-testid="edge-inspector">
                 <div className="section-head"><span>Edge {selEdge.id}: {selEdge.source} → {selEdge.target}</span></div>
-                {selEdgeSrc && typeInfo(selEdgeSrc.type)?.branches ? (
+                {branchLabels(selEdgeSrc)?.length ? (
                   <label className="field">
                     <span>Branch</span>
                     <select data-testid="edge-label" value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
-                      {(typeInfo(selEdgeSrc.type)?.branches ?? []).map(l => <option key={l} value={l}>{l}</option>)}
+                      {(branchLabels(selEdgeSrc) ?? []).map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </label>
                 ) : <div className="muted small">Unlabelled edge (runs in order).</div>}
