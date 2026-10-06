@@ -4,7 +4,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
-  ApiError, BRANCHING, CONFIG_FIELDS, NODE_KINDS, api, slugify, subscribeEvents,
+  ApiError, BRANCHING, CONFIG_FIELDS, KIND_LABEL, NODE_KINDS, api, slugify, subscribeEvents,
   type EnvSummary, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from './api.ts'
 import { nodeTypes, type GNode } from './GlacierNode.tsx'
@@ -308,7 +308,7 @@ function Shell() {
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
               {NODE_KINDS.map(k => (
-                <button key={k} className={`pal pal-${k}`} data-testid={`palette-${k}`} onClick={() => addNode(k)}>+ {k}</button>
+                <button key={k} className={`pal pal-${k}`} data-testid={`palette-${k}`} onClick={() => addNode(k)}>+ {KIND_LABEL[k] ?? k}</button>
               ))}
             </div>
           )}
@@ -396,8 +396,12 @@ function Shell() {
                 {CONFIG_FIELDS[selNode.type as NodeKind].map(f => (
                   <label className="field" key={f.key}>
                     <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
-                    {f.key === 'template'
-                      ? <textarea rows={3} data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
+                    {f.options
+                      ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.def} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
+                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      : f.multiline
+                      ? <textarea rows={f.key === 'prompt' ? 6 : 3} data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
                       : <input data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
                   </label>
                 ))}

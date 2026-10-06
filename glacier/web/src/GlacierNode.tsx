@@ -4,12 +4,13 @@ import type { NodeKind, NodeState } from './api.ts'
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>
 
-const ICON: Record<NodeKind, string> = { schedule: '⏱', command: '›_', check: '?', approval: '✓', note: '✎' }
+const ICON: Record<NodeKind, string> = { schedule: '⏱', command: '›_', codex: '◆', check: '?', approval: '✓', note: '✎' }
 
 function summary(kind: NodeKind, c: Record<string, string>): string {
   switch (kind) {
     case 'schedule': return c.cron || 'no cron'
     case 'command': return c.cmd || 'no command'
+    case 'codex': return c.prompt || 'no prompt'
     case 'check': return c.expr || 'no expression'
     case 'approval': return c.prompt || 'no prompt'
     case 'note': return c.path || 'no path'
@@ -28,7 +29,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
       <Handle type="target" position={Position.Left} data-testid={`handle-in-${id}`} />
       <div className="gnode-head">
         <span className="gnode-icon">{ICON[type]}</span>
-        <span className="gnode-type">{type}</span>
+        <span className="gnode-type">{type === 'codex' ? 'codex worker' : type}</span>
         <span className="gnode-id">{id}</span>
       </div>
       <div className="gnode-body" title={summary(type, data.config)}>{summary(type, data.config)}</div>
@@ -39,5 +40,5 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
 }
 
 export const nodeTypes = {
-  schedule: GlacierNode, command: GlacierNode, check: GlacierNode, approval: GlacierNode, note: GlacierNode,
+  schedule: GlacierNode, command: GlacierNode, codex: GlacierNode, check: GlacierNode, approval: GlacierNode, note: GlacierNode,
 }

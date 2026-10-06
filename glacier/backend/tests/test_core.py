@@ -131,3 +131,63 @@ def test_websocket_receives_node_events(server):
             if (msg["node_id"], msg["state"]) == ("c", "done"):
                 assert "hi" in msg["output"]
     assert seen == [("c", "running"), ("c", "done"), ("n", "running"), ("n", "done")]
+
+
+def test_codex_node_output_saved(server):
+    server.put("/api/environments/cx", env("cx", [("x", "codex", {"prompt": "fix the tests in {env}", "sandbox": "read-only", "model": "gpt-5"})], []))
+    run = server.wait_run(server.post("/api/environments/cx/run")["run_id"])
+    assert run["status"] == "done" and run["node_states"] == {"x": "done"}
+    out = run["outputs"]["x"]
+    assert out.startswith("codex exit 0\n")
+    assert "did: fix the tests in cx [sandbox=read-only cwd=cx model=gpt-5]" in out  # default workdir workspaces/<env>
+    assert os.path.isdir(os.path.join(server.home, "workspaces", "cx"))
+
+
+def test_codex_prev_output_substitution(server):
+    e = env("cxprev", [("c", "command", {"cmd": "echo hello-prev"}), ("x", "codex", {"prompt": "summarize <{prev_output}> run {run}"})],
+            [("c", "x", "")])
+    server.put("/api/environments/cxprev", e)
+    run_id = server.post("/api/environments/cxprev/run")["run_id"]
+    run = server.wait_run(run_id)
+    assert run["status"] == "done"
+    assert f"did: summarize <hello-prev\n> run {run_id} [sandbox=workspace-write" in run["outputs"]["x"]
+
+
+def test_failing_codex_routes_check_no(server):
+    e = env("cxfail", [("x", "codex", {"prompt": "please FAIL"}), ("k", "check", {"expr": "exit_code == 0"}),
+                       ("yes", "note", {"path": "runs/yes.md", "template": "y"}), ("no", "note", {"path": "runs/no.md", "template": "n"})],
+            [("x", "k", ""), ("k", "yes", "yes"), ("k", "no", "no")])
+    server.put("/api/environments/cxfail", e)
+    run = server.wait_run(server.post("/api/environments/cxfail/run")["run_id"])
+    assert run["node_states"] == {"x": "failed", "k": "done", "yes": "skipped", "no": "done"}
+    assert run["outputs"]["x"].startswith("codex exit 1\n") and run["outputs"]["k"] == "no"
+    assert run["status"] == "done"
+
+
+def test_codex_not_signed_in_fails_with_hint(server):
+    server.put("/api/environments/cxauth", env("cxauth", [("x", "codex", {"prompt": "NOAUTH"})], []))
+    run = server.wait_run(server.post("/api/environments/cxauth/run")["run_id"])
+    assert run["status"] == "failed" and run["node_states"]["x"] == "failed"
+    assert "Codex not signed in — run: codex login --device-auth" in run["outputs"]["x"]
+
+
+def test_save_rejects_unknown_node_type_but_accepts_codex(server):
+    import httpx
+    assert server.put("/api/environments/ok", env("ok", [("x", "codex", {"prompt": "hi"})], []))["saved"]
+    r = httpx.put(server.url + "/api/environments/bad", json=env("bad", [("x", "robot", {})], []))
+    assert r.status_code == 400 and "robot" in r.text
+
+
+def test_codex_streams_live_log_while_running(make_server, monkeypatch):
+    monkeypatch.setenv("FAKE_CODEX_DELAY", "1.5")
+    s = make_server().start()
+    s.put("/api/environments/cxlive", env("cxlive", [("x", "codex", {"prompt": "slow job"})], []))
+    run_id = s.post("/api/environments/cxlive/run")["run_id"]
+    live = None
+    for _ in range(80):
+        run = s.get(f"/api/runs/{run_id}")
+        if run["node_states"]["x"] == "running" and run["outputs"].get("x"):
+            live = run["outputs"]["x"]; break
+        time.sleep(0.1)
+    assert live and "thread.started" in live and "codex exit" not in live
+    assert s.wait_run(run_id)["outputs"]["x"].startswith("codex exit 0\n")

@@ -1,7 +1,9 @@
 // Typed client for the Glacier core v0 contract (docs/CONTRACT.md). All calls go to /api (proxied to :8000).
 
-export type NodeKind = 'schedule' | 'command' | 'check' | 'approval' | 'note'
-export const NODE_KINDS: NodeKind[] = ['schedule', 'command', 'check', 'approval', 'note']
+export type NodeKind = 'schedule' | 'command' | 'codex' | 'check' | 'approval' | 'note'
+export const NODE_KINDS: NodeKind[] = ['schedule', 'command', 'codex', 'check', 'approval', 'note']
+/** Palette labels (defaults to the kind itself). */
+export const KIND_LABEL: Partial<Record<NodeKind, string>> = { codex: 'Codex worker' }
 
 export type NodeState = 'pending' | 'running' | 'done' | 'failed' | 'waiting' | 'skipped'
 export type RunStatus = 'running' | 'waiting' | 'done' | 'failed' | 'rejected'
@@ -27,17 +29,27 @@ export interface RunState {
 export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
 
 /** Config fields per node type, with defaults used when a node is added from the palette. */
-export const CONFIG_FIELDS: Record<NodeKind, { key: string; label: string; placeholder: string; def: string; optional?: boolean }[]> = {
+export type ConfigField = {
+  key: string; label: string; placeholder: string; def: string; optional?: boolean
+  multiline?: boolean; options?: string[]
+}
+export const CONFIG_FIELDS: Record<NodeKind, ConfigField[]> = {
   schedule: [{ key: 'cron', label: 'Cron', placeholder: '*/1 * * * *', def: '*/5 * * * *' }],
   command: [
     { key: 'cmd', label: 'Command', placeholder: 'pytest -q', def: '' },
     { key: 'cwd', label: 'Working dir', placeholder: 'optional', def: '', optional: true },
   ],
+  codex: [
+    { key: 'prompt', label: 'Prompt ({env} {run} {prev_output})', placeholder: 'Fix the failing tests: {prev_output}', def: '', multiline: true },
+    { key: 'sandbox', label: 'Sandbox', placeholder: '', def: 'workspace-write', options: ['workspace-write', 'read-only'] },
+    { key: 'workdir', label: 'Working dir', placeholder: 'default: GLACIER_HOME/workspaces/<env>', def: '', optional: true },
+    { key: 'model', label: 'Model', placeholder: 'default model', def: '', optional: true },
+  ],
   check: [{ key: 'expr', label: 'Expression', placeholder: 'exit_code == 0', def: 'exit_code == 0' }],
   approval: [{ key: 'prompt', label: 'Prompt', placeholder: 'Tests failed. Continue?', def: 'Continue?' }],
   note: [
     { key: 'path', label: 'Vault path', placeholder: 'runs/{env}-{run}.md', def: 'runs/{env}-{run}.md' },
-    { key: 'template', label: 'Template', placeholder: 'Run {run} of {env}: {summary}', def: 'Run {run} of {env}: {summary}' },
+    { key: 'template', label: 'Template', placeholder: 'Run {run} of {env}: {summary}', def: 'Run {run} of {env}: {summary}', multiline: true },
   ],
 }
 

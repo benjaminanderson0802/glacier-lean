@@ -14,7 +14,7 @@ store.init(DB_PATH)
 DBOS(config=DBOSConfig(name="glacier", system_database_url=f"sqlite:///{DB_PATH}"))
 import runner  # noqa: E402  (registers workflows after DBOS is configured)
 
-NODE_TYPES = {"schedule", "command", "check", "approval", "note"}
+NODE_TYPES = {"schedule", "command", "codex", "check", "approval", "note"}
 
 
 @asynccontextmanager

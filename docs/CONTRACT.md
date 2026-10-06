@@ -1,18 +1,26 @@
-# Glacier core v0 contract (backend <-> screen). No AI yet.
+# Glacier core v0 contract (backend <-> screen). The only AI is the optional Codex worker node.
 
 ## Environment file (saved in the vault as `environments/<id>.json`, one git commit per save)
 {
   "id": "nightly-tests", "name": "Nightly tests",
-  "nodes": [ {"id": "n1", "type": "schedule|command|check|approval|note", "config": {...}, "position": {"x": 0, "y": 0}} ],
+  "nodes": [ {"id": "n1", "type": "schedule|command|codex|check|approval|note", "config": {...}, "position": {"x": 0, "y": 0}} ],
   "edges": [ {"id": "e1", "source": "n1", "target": "n2", "label": "" } ]
 }
 Node configs:
 - schedule: {"cron": "*/1 * * * *"}   (start node; also creates/updates a DBOS schedule named after the environment)
 - command:  {"cmd": "pytest -q", "cwd": "optional"}   (records exit_code + output)
-- check:    {"expr": "exit_code == 0"} evaluated against the PREVIOUS node's result; outgoing edges labelled "yes" / "no"
+- codex:    {"prompt": "Fix {prev_output}", "workdir": "optional", "sandbox": "read-only|workspace-write", "model": "optional"}
+            Codex worker: runs `codex exec --json --skip-git-repo-check -s <sandbox> -C <workdir> -o <file> [-m model] -- <prompt>`
+            (binary from env CODEX_BIN, default "codex"; signed in with ChatGPT, no API key; 30 min timeout).
+            Prompt placeholders: {env} {run} {prev_output} (= output of the most recent command/codex node, last 8000 chars).
+            workdir default GLACIER_HOME/workspaces/<env>; sandbox default workspace-write.
+            While running, output is a live log of Codex events (refreshed every ~2s); final output is
+            "codex exit <code>\n<last message>". Records exit_code like command. Not installed / not signed in ->
+            node fails with "Codex not signed in — run: codex login --device-auth" (or a not-installed message).
+- check:    {"expr": "exit_code == 0"} evaluated against the most recent command/codex result; outgoing edges labelled "yes" / "no"
 - approval: {"prompt": "Tests failed. Continue?"}  pauses durably until approved/rejected; outgoing edges "yes" / "no"
 - note:     {"path": "runs/{env}-{run}.md", "template": "Run {run} of {env}: {summary}"}  writes to the vault via the memory service (git commit)
-A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max 50 node executions per run.
+A failing command/codex node only continues when it feeds a check node. A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max 50 node executions per run.
 
 ## HTTP API (backend on :8000, all JSON, prefix /api)
 - GET  /api/environments                      -> [{id,name}]

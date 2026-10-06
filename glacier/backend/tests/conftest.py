@@ -3,6 +3,7 @@ import os, sys, time, socket, signal, subprocess
 import httpx, pytest
 
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FAKE_CODEX = os.path.join(BACKEND, "tests", "fake_codex.py")  # tests never call the real Codex CLI
 
 
 def free_port() -> int:
@@ -21,7 +22,7 @@ class Server:
         return f"http://127.0.0.1:{self.port}"
 
     def start(self):
-        env = dict(os.environ, GLACIER_HOME=self.home)
+        env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
         self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
                                      cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, start_new_session=True)
         for _ in range(150):

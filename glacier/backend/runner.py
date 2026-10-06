@@ -1,6 +1,6 @@
 """Graph runner: each run is the DBOS workflow run_environment(env_id, run_id) (workflow id == run_id); each node
 execution is a DBOS step, so after a crash finished nodes are replayed from DBOS's record instead of re-run."""
-import json, re, uuid, operator, subprocess
+import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
 import store, vault
@@ -9,6 +9,10 @@ MAX_EXECUTIONS = 50
 APPROVAL_TIMEOUT = 7 * 24 * 3600
 COMMAND_TIMEOUT = 3600
 OUTPUT_LIMIT = 20000
+CODEX_TIMEOUT = 30 * 60
+PREV_LIMIT = 8000
+CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
+WORKERS = ("command", "codex")  # nodes with an exit_code that check nodes branch on
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
 
@@ -43,6 +47,69 @@ def start_run(env_id: str) -> str:
     return run_id
 
 
+def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str) -> dict:
+    """Hand the prompt to `codex exec` (ChatGPT sign-in, no API key). Streams a short live log into the node output
+    every ~2s; the final output is "codex exit <code>" plus Codex's last message."""
+    fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev_output[-PREV_LIMIT:])
+    prompt = fill(cfg.get("prompt") or "")
+    if not prompt.strip():
+        raise ValueError("codex node has no prompt")
+    sandbox = cfg.get("sandbox") or "workspace-write"
+    if sandbox not in ("read-only", "workspace-write"):
+        raise ValueError(f"unsupported sandbox {sandbox!r}")
+    home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    workdir = cfg.get("workdir") or os.path.join(home, "workspaces", env_id)
+    os.makedirs(workdir, exist_ok=True)
+    fd, last_file = tempfile.mkstemp(prefix="codex-last-", suffix=".txt"); os.close(fd)
+    args = [os.environ.get("CODEX_BIN", "codex"), "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
+            "-C", workdir, "-o", last_file] + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
+    try:
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=workdir)
+    except FileNotFoundError:
+        os.unlink(last_file)
+        raise RuntimeError(f"Codex CLI not found ({args[0]}); install it, then run: codex login --device-auth")
+    timer = threading.Timer(CODEX_TIMEOUT, p.kill); timer.start()
+    log, errs, agent_msg, started = [], [], "", time.time()
+    flushed = started
+    try:
+        for line in p.stdout:
+            line = line.strip()
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                ev = None
+            if isinstance(ev, dict):
+                item = ev.get("item") or ev.get("msg")
+                item = item if isinstance(item, dict) else {}
+                err = ev.get("error")
+                kind = item.get("type") if str(ev.get("type", "")).startswith("item.") else ev.get("type") or item.get("type")
+                text = str(item.get("text") or item.get("message") or (err.get("message") if isinstance(err, dict) else err)
+                           or ev.get("message") or "")
+                if kind == "agent_message" and text:
+                    agent_msg = text
+                elif "error" in str(kind) or "failed" in str(kind):
+                    errs.append(text)
+                log.append(f"{kind}: {text[:200]}" if text else str(kind))
+            elif line:
+                errs.append(line); log.append(line[:200])
+            if time.time() - flushed >= 2:
+                store.set_node(run_id, env_id, nid, "running", "\n".join(log[-40:]))
+                flushed = time.time()
+        code = p.wait()
+    finally:
+        timer.cancel()
+        with open(last_file) as f:
+            last_msg = f.read().strip()
+        os.unlink(last_file)
+    if code != 0 and re.search(r"not (logged|signed) in|login|unauthori[sz]ed|\b401\b", "\n".join(errs), re.I):
+        raise RuntimeError(CODEX_LOGIN_HINT)
+    body = last_msg or agent_msg or "\n".join(log[-20:])
+    if code != 0 and time.time() - started >= CODEX_TIMEOUT:
+        body += f"\n[killed after {CODEX_TIMEOUT}s timeout]"
+    out = f"codex exit {code}\n{body}"
+    return {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code}
+
+
 # ---- steps -------------------------------------------------------------------------------
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
@@ -65,9 +132,11 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
             except subprocess.TimeoutExpired as e:
                 code, out = -1, f"{e.stdout or ''}{e.stderr or ''}\n[timed out after {COMMAND_TIMEOUT}s]"
             res = {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code}
+        elif kind == "codex":
+            res = run_codex(env_id, run_id, nid, cfg, (last or {}).get("output") or "")
         elif kind == "check":
             if last is None:
-                raise ValueError("check has no previous command result")
+                raise ValueError("check has no previous command/codex result")
             ok = check(cfg.get("expr", "exit_code == 0"), last["exit_code"])
             res = {"state": "done", "output": "yes" if ok else "no", "branch": "yes" if ok else "no"}
         elif kind == "note":
@@ -138,7 +207,7 @@ def run_environment(env_id: str, run_id: str) -> str:
         if res.get("error"):
             status = "failed"
             break
-        if node["type"] == "command":
+        if node["type"] in WORKERS:
             last = res
             if res["exit_code"] != 0 and not any(nodes[e["target"]]["type"] == "check" for e in edges):
                 status = "failed"  # a failing command only continues when a check handles it

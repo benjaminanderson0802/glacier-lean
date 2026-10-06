@@ -1,7 +1,7 @@
 // In-memory mock of the Glacier core v0 backend contract (docs/CONTRACT.md), for UI work and e2e tests.
 // Usage: node mock/mock_server.mjs [port]   (default 8787, or env MOCK_PORT)
 // Commands are NOT executed: a command's output is "$ <cmd>" plus a fake line; its exit code is 1 when the
-// command text contains "fail" or "exit 1", else 0. Each node step takes STEP_MS (default 250ms).
+// command text contains "fail" or "exit 1", else 0. A codex node's output is "codex: <prompt>". Each node step takes STEP_MS (default 250ms).
 import http from 'node:http'
 import crypto from 'node:crypto'
 import { WebSocketServer } from 'ws'
@@ -137,6 +137,17 @@ async function execute(env, r) {
         const text = `$ ${c.cmd ?? ''}${c.cwd ? `   (cwd ${c.cwd})` : ''}\n${code ? 'mock: command failed' : `mock output of: ${c.cmd}`}\nexit code ${code}\n`
         result = { exit_code: code, output: text }
         summary.push(`${id} exit ${code}`)
+        setState(r, id, code ? 'failed' : 'done', text)
+        if (code) failed = true
+        break
+      }
+      case 'codex': {
+        // mock Codex worker: echoes the filled prompt; exit 1 when the prompt contains FAIL
+        const prompt = fill(c.prompt || '', { env: env.id, run: r.run_id, prev_output: String(prev?.output ?? '').slice(-8000) })
+        const code = /FAIL/.test(prompt) ? 1 : 0
+        const text = `codex exit ${code}\ncodex: ${prompt}\n`
+        result = { exit_code: code, output: text }
+        summary.push(`${id} codex exit ${code}`)
         setState(r, id, code ? 'failed' : 'done', text)
         if (code) failed = true
         break

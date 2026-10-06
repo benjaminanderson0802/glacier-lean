@@ -174,6 +174,31 @@ try {
   await page.waitForFunction(id => document.querySelector('[data-testid="active-run-id"]')?.textContent === id, firstRun)
   check(await tid('node-n3').getAttribute('data-state') === 'done', 'selecting an older run from history loads its node states')
 
+  // ---------- flow 4: command -> Codex worker ----------
+  await newEnv('Codex flow')
+  await tid('palette-command').click()
+  await tid('node-n1').click()
+  await tid('field-cmd').fill('echo build-ok')
+  check((await tid('palette-codex').textContent()).includes('Codex worker'), 'palette shows "Codex worker"')
+  await tid('palette-codex').click()
+  await tid('node-n2').click()
+  check(await tid('field-prompt').evaluate(el => el.tagName) === 'TEXTAREA', 'codex prompt is a multi-line textarea')
+  check(await tid('field-sandbox').inputValue() === 'workspace-write', 'sandbox select defaults to workspace-write')
+  await tid('field-sandbox').selectOption('read-only')
+  await tid('field-prompt').fill('Review {env}: {prev_output}')
+  await connect('n1', 'n2')
+  await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 1)
+  await tid('run').click() // auto-saves first
+  await waitState('n2', 'done', 20000)
+  await page.waitForFunction(() => document.querySelector('[data-testid="run-status"]')?.textContent === 'done', null, { timeout: 10000 })
+  const cx = (await (await fetch(`${API}/api/environments/codex-flow`)).json()).nodes.find(n => n.id === 'n2')
+  check(cx.type === 'codex' && cx.config.sandbox === 'read-only' && cx.config.prompt === 'Review {env}: {prev_output}', 'backend saved codex node with prompt + sandbox')
+  const cxRun = await (await fetch(`${API}/api/runs/${await tid('active-run-id').textContent()}`)).json()
+  check(/^codex exit 0\n/.test(cxRun.outputs.n2) && cxRun.outputs.n2.includes('Review codex-flow: ') && cxRun.outputs.n2.includes('build-ok'), `codex node done with prompt filled (got ${JSON.stringify(cxRun.outputs.n2)})`)
+  await tid('node-n2').click()
+  await page.waitForFunction(() => document.querySelector('[data-testid="terminal-panel"] .xterm-rows')?.textContent.includes('codex exit 0'), null, { timeout: 5000 })
+  check(true, 'codex output shown in the terminal panel')
+
   await page.screenshot({ path: path.join(root, 'e2e/screen.png') })
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
 } catch (e) {
