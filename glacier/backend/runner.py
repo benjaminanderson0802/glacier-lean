@@ -1,0 +1,172 @@
+"""Graph runner: each run is the DBOS workflow run_environment(env_id, run_id) (workflow id == run_id); each node
+execution is a DBOS step, so after a crash finished nodes are replayed from DBOS's record instead of re-run."""
+import json, re, uuid, operator, subprocess
+from collections import defaultdict, deque
+from dbos import DBOS, SetWorkflowID
+import store, vault
+
+MAX_EXECUTIONS = 50
+APPROVAL_TIMEOUT = 7 * 24 * 3600
+COMMAND_TIMEOUT = 3600
+OUTPUT_LIMIT = 20000
+OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
+
+
+def schedule_name(env_id: str) -> str:
+    return f"glacier-env-{env_id}"
+
+
+def check(expr: str, exit_code: int) -> bool:
+    """Tiny safe evaluator: `exit_code <op> <int>` clauses joined by and/or. Nothing is eval()'d."""
+    def clause(text):
+        m = re.fullmatch(r"\s*exit_code\s*(==|!=|<=|>=|<|>)\s*(-?\d+)\s*", text)
+        if not m:
+            raise ValueError(f"unsupported check expression: {text.strip()!r}")
+        return OPS[m[1]](exit_code, int(m[2]))
+    return any(all(clause(a) for a in re.split(r"\band\b", o)) for o in re.split(r"\bor\b", expr))
+
+
+def env_path(env_id: str) -> str:
+    return f"environments/{env_id}.json"
+
+
+def load_env(env_id: str) -> dict:
+    return json.loads(vault.read_note(env_path(env_id)))
+
+
+def start_run(env_id: str) -> str:
+    """Snapshot the saved graph into a new run and start its workflow."""
+    run_id = uuid.uuid4().hex[:12]
+    store.create_run(run_id, env_id, load_env(env_id))
+    with SetWorkflowID(run_id):
+        DBOS.start_workflow(run_environment, env_id, run_id)
+    return run_id
+
+
+# ---- steps -------------------------------------------------------------------------------
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def snapshot_scheduled_run(env_id: str, run_id: str) -> None:
+    store.create_run(run_id, env_id, load_env(env_id))
+
+
+@DBOS.step()
+def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
+    """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
+    nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
+    store.set_node(run_id, env_id, nid, "running")
+    res = {"state": "done", "output": ""}
+    try:
+        if kind == "command":
+            try:
+                p = subprocess.run(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or None, capture_output=True,
+                                   text=True, timeout=COMMAND_TIMEOUT)
+                code, out = p.returncode, p.stdout + p.stderr
+            except subprocess.TimeoutExpired as e:
+                code, out = -1, f"{e.stdout or ''}{e.stderr or ''}\n[timed out after {COMMAND_TIMEOUT}s]"
+            res = {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code}
+        elif kind == "check":
+            if last is None:
+                raise ValueError("check has no previous command result")
+            ok = check(cfg.get("expr", "exit_code == 0"), last["exit_code"])
+            res = {"state": "done", "output": "yes" if ok else "no", "branch": "yes" if ok else "no"}
+        elif kind == "note":
+            run = store.get_run(run_id)
+            summary = ", ".join(f"{k}: {v}" for k, v in run["node_states"].items() if v != "pending")
+            fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{summary}", summary)
+            path = fill(cfg.get("path") or "runs/{env}-{run}.md")
+            sha = vault.write_note(path, fill(cfg.get("template") or "Run {run} of {env}: {summary}"), agent="glacier-runner")
+            res["output"] = f"{path} (commit {sha})"
+        elif kind != "schedule":
+            raise ValueError(f"unknown node type {kind!r}")
+    except Exception as e:  # a broken node fails itself, not the whole server
+        res = {"state": "failed", "output": f"error: {e}", "error": True}
+    store.set_node(run_id, env_id, nid, res["state"], res["output"])
+    return res
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def mark_waiting(env_id: str, run_id: str, node_id: str) -> None:
+    store.set_run(run_id, "waiting", node_id)
+    store.set_node(run_id, env_id, node_id, "waiting")
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def finish_approval(env_id: str, run_id: str, node_id: str, msg: dict | None) -> dict:
+    store.set_run(run_id, "running")
+    if msg is None:
+        res = {"state": "failed", "output": "timed out waiting for approval", "error": True}
+    else:
+        approved = bool(msg.get("approved"))
+        res = {"state": "done", "output": "approved" if approved else "rejected", "branch": "yes" if approved else "no"}
+    store.set_node(run_id, env_id, node_id, res["state"], res["output"])
+    return res
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def finish_run(env_id: str, run_id: str, status: str) -> None:
+    store.skip_pending(run_id, env_id)
+    store.set_run(run_id, status)
+
+
+# ---- workflows ---------------------------------------------------------------------------
+
+@DBOS.workflow()
+def run_environment(env_id: str, run_id: str) -> str:
+    graph = store.graph_of(run_id)  # immutable snapshot taken when the run was created
+    nodes = {n["id"]: n for n in graph["nodes"]}
+    out = defaultdict(list)
+    for e in graph.get("edges", []):
+        if e["source"] in nodes and e["target"] in nodes:
+            out[e["source"]].append(e)
+    targets = {e["target"] for es in out.values() for e in es}
+    queue = deque([n for n in nodes if n not in targets] or list(nodes)[:1])
+    last, status, executions = None, "done", 0
+    while queue:
+        if executions >= MAX_EXECUTIONS:
+            status = "failed"
+            break
+        executions += 1
+        node = nodes[queue.popleft()]
+        nid = node["id"]
+        if node["type"] == "approval":
+            mark_waiting(env_id, run_id, nid)
+            res = finish_approval(env_id, run_id, nid, DBOS.recv(topic=nid, timeout_seconds=APPROVAL_TIMEOUT))
+        else:
+            res = run_node(env_id, run_id, node, last)
+        edges = out[nid]
+        if res.get("error"):
+            status = "failed"
+            break
+        if node["type"] == "command":
+            last = res
+            if res["exit_code"] != 0 and not any(nodes[e["target"]]["type"] == "check" for e in edges):
+                status = "failed"  # a failing command only continues when a check handles it
+                break
+        if "branch" in res:
+            edges = [e for e in edges if (e.get("label") or "").strip().lower() == res["branch"]]
+            if not edges and node["type"] == "approval" and res["branch"] == "no":
+                status = "rejected"
+        queue.extend(e["target"] for e in edges)
+    finish_run(env_id, run_id, status)
+    return status
+
+
+@DBOS.workflow()
+def scheduled_run(when, env_id) -> str:
+    """Fired by the environment's DBOS schedule; starts a normal run (id derived from this workflow, so replay-safe)."""
+    run_id = uuid.uuid5(uuid.NAMESPACE_URL, DBOS.workflow_id).hex[:12]
+    snapshot_scheduled_run(env_id, run_id)
+    with SetWorkflowID(run_id):
+        DBOS.start_workflow(run_environment, env_id, run_id)
+    return run_id
+
+
+def sync_schedule(env: dict) -> None:
+    """Create/replace the environment's DBOS schedule from its schedule node, or delete it if there is none."""
+    DBOS.delete_schedule(schedule_name(env["id"]))
+    for n in env.get("nodes", []):
+        if n["type"] == "schedule":
+            DBOS.create_schedule(schedule_name=schedule_name(env["id"]), workflow_fn=scheduled_run,
+                                 schedule=(n.get("config") or {}).get("cron", ""), context=env["id"])
+            return

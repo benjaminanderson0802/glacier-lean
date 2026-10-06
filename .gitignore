@@ -8,3 +8,10 @@ tests/steps.log
 tests/crashed_once
 tests/dbos_smoke.sqlite*
 screen.png
+
+glacier/backend/data/
+glacier/web/node_modules/
+glacier/web/dist/
+__pycache__/
+.pytest_cache/
+glacier/web/e2e/screen.png

@@ -1,0 +1,104 @@
+// Typed client for the Glacier core v0 contract (docs/CONTRACT.md). All calls go to /api (proxied to :8000).
+
+export type NodeKind = 'schedule' | 'command' | 'check' | 'approval' | 'note'
+export const NODE_KINDS: NodeKind[] = ['schedule', 'command', 'check', 'approval', 'note']
+
+export type NodeState = 'pending' | 'running' | 'done' | 'failed' | 'waiting' | 'skipped'
+export type RunStatus = 'running' | 'waiting' | 'done' | 'failed' | 'rejected'
+
+export interface EnvNode {
+  id: string
+  type: NodeKind
+  config: Record<string, string>
+  position: { x: number; y: number }
+}
+export interface EnvEdge { id: string; source: string; target: string; label: string }
+export interface Environment { id: string; name: string; nodes: EnvNode[]; edges: EnvEdge[] }
+export interface EnvSummary { id: string; name: string }
+export interface RunSummary { run_id: string; env_id: string; status: RunStatus; started_at: string }
+export interface RunState {
+  run_id: string
+  env_id: string
+  status: RunStatus
+  node_states: Record<string, NodeState>
+  outputs: Record<string, string>
+  waiting_on: string | null
+}
+export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
+
+/** Config fields per node type, with defaults used when a node is added from the palette. */
+export const CONFIG_FIELDS: Record<NodeKind, { key: string; label: string; placeholder: string; def: string; optional?: boolean }[]> = {
+  schedule: [{ key: 'cron', label: 'Cron', placeholder: '*/1 * * * *', def: '*/5 * * * *' }],
+  command: [
+    { key: 'cmd', label: 'Command', placeholder: 'pytest -q', def: '' },
+    { key: 'cwd', label: 'Working dir', placeholder: 'optional', def: '', optional: true },
+  ],
+  check: [{ key: 'expr', label: 'Expression', placeholder: 'exit_code == 0', def: 'exit_code == 0' }],
+  approval: [{ key: 'prompt', label: 'Prompt', placeholder: 'Tests failed. Continue?', def: 'Continue?' }],
+  note: [
+    { key: 'path', label: 'Vault path', placeholder: 'runs/{env}-{run}.md', def: 'runs/{env}-{run}.md' },
+    { key: 'template', label: 'Template', placeholder: 'Run {run} of {env}: {summary}', def: 'Run {run} of {env}: {summary}' },
+  ],
+}
+
+/** Node types whose outgoing edges carry a yes/no label. */
+export const BRANCHING: NodeKind[] = ['check', 'approval']
+
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, msg: string) { super(msg); this.status = status }
+}
+
+async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method,
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (!res.ok) {
+    let detail = res.statusText
+    try { const j = await res.json(); detail = j.detail ? JSON.stringify(j.detail) : JSON.stringify(j) } catch { /* not json */ }
+    throw new ApiError(res.status, `${method} ${path} -> ${res.status} ${detail}`)
+  }
+  return res.json() as Promise<T>
+}
+
+const enc = encodeURIComponent
+export const api = {
+  listEnvs: () => req<EnvSummary[]>('GET', '/api/environments'),
+  getEnv: (id: string) => req<Environment>('GET', `/api/environments/${enc(id)}`),
+  saveEnv: (env: Environment) => req<{ saved: boolean; commit: string }>('PUT', `/api/environments/${enc(env.id)}`, env),
+  runEnv: (id: string) => req<{ run_id: string }>('POST', `/api/environments/${enc(id)}/run`),
+  listRuns: (envId: string) => req<RunSummary[]>('GET', `/api/runs?env_id=${enc(envId)}`),
+  getRun: (runId: string) => req<RunState>('GET', `/api/runs/${enc(runId)}`),
+  approve: (runId: string, nodeId: string, approved: boolean) =>
+    req<{ ok: boolean }>('POST', `/api/runs/${enc(runId)}/approve`, { node_id: nodeId, approved }),
+  listNotes: () => req<string[]>('GET', '/api/vault/notes'),
+  getNote: (path: string) => req<{ path: string; body: string }>('GET', `/api/vault/note?path=${enc(path)}`),
+}
+
+/** Subscribe to WS /api/events with auto-reconnect. Returns an unsubscribe function. */
+export function subscribeEvents(onEvent: (e: RunEvent) => void, onStatus: (connected: boolean) => void): () => void {
+  let ws: WebSocket | null = null
+  let closed = false
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const connect = () => {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+    ws = new WebSocket(`${proto}://${location.host}/api/events`)
+    ws.onopen = () => onStatus(true)
+    ws.onmessage = m => {
+      try { onEvent(JSON.parse(String(m.data)) as RunEvent) } catch { /* ignore malformed */ }
+    }
+    ws.onclose = () => {
+      onStatus(false)
+      if (!closed) timer = setTimeout(connect, 1000)
+    }
+    ws.onerror = () => ws?.close()
+  }
+  connect()
+  return () => { closed = true; clearTimeout(timer); ws?.close() }
+}
+
+export function slugify(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'env'
+}
