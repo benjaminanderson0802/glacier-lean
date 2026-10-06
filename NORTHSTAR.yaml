@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-06
+last_amended: 2026-10-06  # amendment 2: free/OSS-first, claims & escalation
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ defining_properties:
 # 3. INVARIANTS — never violated by any change. A task that requires breaking one stops and escalates.
 # ─────────────────────────────────────────────────────────────────────────────
 invariants:
-  - I-01: "Compose before build. Use an existing, maintained, permissively licensed tool when it covers >= 80% of a need; custom code only for glue, the assistant, and the user experience."
+  - I-01: "Free and open source first, always. Use an existing, maintained, OSI-licensed tool when it covers >= 80% of a need; custom code only for glue, the assistant, and the user experience. A paid or closed-source tool is never adopted by an agent: it enters only through an owner-approved gap proposal (see claims)."
   - I-02: "The orchestrator must never become the product. If infrastructure work exceeds user-visible progress for two consecutive checkpoints, stop and re-plan."
   - I-03: "Tests are written before the feature; 'done' = its acceptance test passes in the shared sandbox, with evidence committed."
   - I-04: "No worker may edit, disable or bypass the check that judges its own work."
@@ -76,10 +76,12 @@ invariants:
   - I-08: "Every consequential side effect (spend, send, publish, delete, external write) requires an approval rule and is logged."
   - I-09: "Every dependency is version-pinned; upgrades are deliberate and re-run the full test board."
   - I-10: "Bundled components must allow redistribution (MIT/Apache/BSD/MPL); restrictive ones (SUL, ELv2, AGPL, branding clauses) run only as separate optional processes."
-  - I-11: "No repair loop runs unbounded: max 3 repair attempts or 2 rounds without measurable progress, then escalate to a human."
+  - I-11: "No repair loop runs unbounded: max 3 repair attempts or 2 rounds without measurable progress, then the worker files a claim (see escalation). A human is reached only through a claim the system could not resolve."
   - I-12: "Bookkeeping is generated from the event log, never hand-appended status files."
   - I-13: "Cost and model/route used are visible per run."
   - I-14: "Safety rules may only be tightened by agents; loosening requires a human amendment to this file."
+  - I-15: "Every gap, blocker or missing capability becomes a claim (plain markdown file in the vault, git-tracked). No claim is closed without linked evidence; no claim is silently dropped."
+  - I-16: "Workers troubleshoot only inside their own lane and budget; anything outside their specialty, permissions or budget is escalated by claim, never improvised."
 
 non_goals:
   - "Training or hosting foundation models."
@@ -87,6 +89,52 @@ non_goals:
   - "Live scraping/syncing of consumer chat apps against their terms (use official exports/APIs)."
   - "Enterprise multi-tenant SaaS before the single-user local product meets its metrics."
   - "Features with no path to a defining property or a phase exit criterion."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3b. CLAIMS & ESCALATION — how problems and gaps move through the system
+# ─────────────────────────────────────────────────────────────────────────────
+escalation:   # what a worker does when it hits a problem (ladder, top to bottom)
+  self_fix_allowed_when: "the error is inside the worker's own task and specialty (its code, its test failure, a typo, a missing import) AND it can name a concrete next attempt"
+  self_fix_budget: "max 3 attempts, or 2 attempts with no measurable progress (same error, same failing test), or 15 minutes — whichever comes first"
+  file_claim_immediately_when:
+    - "the cause is outside its lane: environment/sandbox, dependency or version conflict, licensing, security, another worker's output, missing credentials or permissions"
+    - "the fix needs a tool, library or capability that is not installed or not known"
+    - "the fix would touch its own acceptance check (I-04) or loosen a safety rule (I-14)"
+    - "the fix would cost money, send/publish anything, or delete data (I-08)"
+    - "it is not confident what the failure means"
+  never: ["keep retrying past budget", "weaken or skip a test to get green", "adopt a paid/closed tool", "mark the task done while a claim on it is open"]
+  while_waiting: "the worker parks its task (state saved by the durable runtime) and takes other ready work; it does not idle-loop"
+
+claims:
+  location: "vault/claims/<YYYY-MM-DD>-<slug>.md  (front-matter fields below; body = details and evidence)"
+  fields: [id, filed_by, run_id, node_id, checkpoint, kind, summary, evidence, attempts_made, status, assigned_to, resolution, resolution_evidence]
+  kinds:
+    bug: "something broken that should work"
+    environment: "sandbox, OS, install, network, permissions"
+    capability_gap: "the system needs something it does not have (a tool, integration, model, feature)"
+    knowledge_gap: "worker does not know how; needs research or a specialist"
+    policy: "would need money, publishing, deletion, a license exception, or a rule change"
+  lifecycle: "filed → researching → (resolved | routed | proposed) → closed"
+  automatic_research:   # starts the moment a claim is filed; no human needed
+    - "Search the vault (past claims, decisions, notes) for the same problem — reuse a known fix first."
+    - "Search for free/open-source solutions: maintained OSI-licensed projects, package registries, official docs, issue trackers. Record name, license, maintenance activity, adoption, fit %."
+    - "Try the best candidate in an isolated sandbox branch with the claim's failing case as the test."
+    - "Write findings with sources into the claim file."
+  outcomes:
+    resolved: "an existing fix or free/OSS tool works; its test passes; the original worker's task resumes"
+    routed: "assigned to a specialist worker (see specialists); it fixes under the same verification rules"
+    proposed: "no free/OSS option fits (or the fix needs money/policy change) → a gap proposal goes to the owner"
+  gap_proposal_must_include: ["the problem in plain language", "every free/OSS option checked and why each fails", "paid/closed options with exact cost, license, lock-in and data-leaves-machine risk", "a recommended choice", "what happens if the owner says no (workaround or deferral)"]
+  owner_actions: ["approve one option", "reject (task gets a workaround or is deferred)", "ask for more research"]
+  specialists:   # routing table; workers here are roles, any model/harness can fill them
+    researcher: "runs automatic_research on every claim"
+    environment_fixer: "sandbox, installs, OS, network, permissions"
+    dependency_fixer: "version pins, conflicts, upgrades (I-09)"
+    security_reviewer: "anything touching secrets, outbound access, untrusted input, or safety rules"
+    license_checker: "license compatibility (I-10) for any new tool"
+    debugger: "bugs a worker failed to fix within budget; uses a different model than the original worker"
+    verifier: "confirms the claim's resolution with its own check (I-04)"
+  metrics: ["claims auto-resolved without a human (target >= 80%)", "median time filed→resolved", "repeat claims for the same cause (target 0 after a fix is recorded)"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. HOW DECISIONS ARE MADE (bias guards)
@@ -177,8 +225,12 @@ phases:
       - {id: PH3.2, item: "Verifier node runs in a separate context/model from the worker; worker cannot alter it (I-04)", test: "worker attempts to edit the check are blocked and logged"}
       - {id: PH3.3, item: "Coding workers in isolated git worktrees; merge only when checks pass (merge queue)", test: "failing branch never merges; passing branch merges automatically"}
       - {id: PH3.4, item: "Verification benchmark (goals with known answers + adversarial 'claims done but isn't' cases) and M-FALSE-DONE dashboard"}
-      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "third failed repair escalates with a summary"}
-    exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark."
+      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "third failed repair files a claim with the attempts attached"}
+      - {id: PH3.6, item: "Claim filing: file_claim tool (vault MCP) available to every worker; claim files git-tracked", test: "worker hitting an out-of-lane error files a correct claim and parks its task"}
+      - {id: PH3.7, item: "Automatic claim research workflow (vault search → free/OSS search → sandbox trial → findings)", test: "seeded claim with a known OSS fix is resolved with no human, with sources and passing test"}
+      - {id: PH3.8, item: "Specialist routing table and parked-task resume", test: "routed claim fixed by specialist; original task resumes and passes its check"}
+      - {id: PH3.9, item: "Gap proposals in the screen: owner sees options/costs and approves or rejects", test: "claim with no OSS option produces a proposal; approve/reject updates claim and task"}
+    exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark; >= 80% of benchmark claims resolved without a human."
 
   - id: PH4
     name: "Shared memory"
@@ -289,7 +341,7 @@ drift_check:
     - "Which phase checkpoint does this task advance? If none → stop and ask."
     - "Are all depends_on phases at their exit (or is this item explicitly parallel-safe)?"
     - "Which defining property and metric does it serve?"
-    - "Is there an existing tool for it (I-01)? Record the reason if building."
+    - "Is there an existing free/open-source tool for it (I-01)? If not, file a capability_gap claim instead of building or buying."
     - "What is the acceptance test, written first (I-03)?"
   at_checkpoint:
     - "Run the full test board in the shared sandbox; commit evidence; update status + evidence here."
