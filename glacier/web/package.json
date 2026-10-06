@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "mock": "node mock/mock_server.mjs",
-    "e2e": "node e2e/core.spec.mjs"
+    "e2e": "node e2e/core.spec.mjs",
+    "check:ui": "tsc -b && vite build && node e2e/core.spec.mjs"
   },
   "dependencies": {
     "@ag-ui/client": "0.0.59",

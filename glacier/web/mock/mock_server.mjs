@@ -5,10 +5,16 @@
 import http from 'node:http'
 import crypto from 'node:crypto'
 import { WebSocketServer } from 'ws'
+import { readFileSync } from 'node:fs'
+
+// same node-type catalog the real backend serves
+const CATALOG = JSON.parse(readFileSync(new URL('../../contract/node_types.json', import.meta.url), 'utf8')).types
 
 const PORT = Number(process.argv[2] ?? process.env.MOCK_PORT ?? 8787)
 const STEP_MS = Number(process.env.STEP_MS ?? 250)
-const MAX_EXEC = 50
+const MAX_EXEC = 500
+const MAX_DEPTH = 5
+const MAX_LOOP = 1000
 
 const envs = new Map() // id -> Environment
 const runs = new Map() // run_id -> run record
@@ -30,6 +36,7 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname
   let m
   try {
+    if (req.method === 'GET' && p === '/api/node-types') return send(200, CATALOG)
     if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name })))
     if ((m = p.match(/^\/api\/environments\/([^/]+)$/))) {
       const id = decodeURIComponent(m[1])
@@ -37,6 +44,8 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') {
         const body = await readBody()
         if (!body || !Array.isArray(body.nodes) || !Array.isArray(body.edges)) return send(422, { detail: 'invalid environment' })
+        const bad = body.nodes.map(n => n.type).filter(t => !CATALOG.some(c => c.type === t))
+        if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
         envs.set(id, { ...body, id })
         const commit = commitId()
         vault.set(`environments/${id}.json`, JSON.stringify({ ...body, id }, null, 2))
@@ -95,20 +104,20 @@ function setState(r, nodeId, state, output) {
   broadcast({ run_id: r.run_id, env_id: r.env_id, node_id: nodeId, state, ...(output !== undefined ? { output } : {}) })
 }
 
-function startRun(env) {
+function startRun(env, depth = 0) {
   const run_id = `run-${crypto.randomBytes(4).toString('hex')}`
   const r = {
     run_id, env_id: env.id, status: 'running', started_at: new Date().toISOString(),
     node_states: Object.fromEntries(env.nodes.map(n => [n.id, 'pending'])), outputs: {}, waiting_on: null, resolve: null,
   }
   runs.set(run_id, r)
-  execute(structuredClone(env), r).catch(e => { r.status = 'failed'; console.error(e) })
+  execute(structuredClone(env), r, depth).catch(e => { r.status = 'failed'; console.error(e) })
   return run_id
 }
 
 function fill(tpl, vars) { return String(tpl ?? '').replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`)) }
 
-async function execute(env, r) {
+async function execute(env, r, depth = 0) {
   await sleep(150)
   const byId = new Map(env.nodes.map(n => [n.id, n]))
   const out = id => env.edges.filter(e => e.source === id)
@@ -116,9 +125,13 @@ async function execute(env, r) {
   const starts = env.nodes.filter(n => n.type === 'schedule')
   const queue = (starts.length ? starts : env.nodes.filter(n => !targeted.has(n.id))).map(n => ({ id: n.id, prev: null }))
   let execs = 0
+  const limit = Number(env.max_steps) || MAX_EXEC
+  const loopCounts = new Map()
+  const handledByCheck = id => out(id).some(e => byId.get(e.target)?.type === 'check')
   let failed = false
   const summary = []
-  while (queue.length && execs < MAX_EXEC) {
+  while (queue.length) {
+    if (execs >= limit) { failed = true; break }
     const { id, prev } = queue.shift()
     const node = byId.get(id)
     if (!node) continue
@@ -138,7 +151,7 @@ async function execute(env, r) {
         result = { exit_code: code, output: text }
         summary.push(`${id} exit ${code}`)
         setState(r, id, code ? 'failed' : 'done', text)
-        if (code) failed = true
+        if (code && !handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
         break
       }
       case 'codex': {
@@ -149,7 +162,7 @@ async function execute(env, r) {
         result = { exit_code: code, output: text }
         summary.push(`${id} codex exit ${code}`)
         setState(r, id, code ? 'failed' : 'done', text)
-        if (code) failed = true
+        if (code && !handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
         break
       }
       case 'check': {
@@ -177,6 +190,34 @@ async function execute(env, r) {
         const body = fill(c.template || '', { env: env.id, run: r.run_id, summary: summary.join(', ') || 'ok' })
         vault.set(path, body)
         setState(r, id, 'done', `wrote ${path}\n${body}\n`)
+        break
+      }
+      case 'loop': {
+        const times = Math.max(0, Math.min(Number(c.times) || 1, MAX_LOOP))
+        const k = (loopCounts.get(id) ?? 0) + 1
+        loopCounts.set(id, k)
+        const again = k <= times
+        if (!again) loopCounts.set(id, 0)
+        setState(r, id, again ? 'running' : 'done', again ? `iteration ${k} of ${times}` : `finished ${times} of ${times}`)
+        next = out(id).filter(e => e.label === (again ? 'again' : 'done'))
+        result = prev ?? result
+        break
+      }
+      case 'flow': {
+        const child = envs.get(c.env)
+        if (depth >= MAX_DEPTH || !child) {
+          setState(r, id, 'failed', depth >= MAX_DEPTH ? `error: sub-flows nested more than ${MAX_DEPTH} deep; stopping` : `error: sub-flow '${c.env}' not found`)
+          failed = true; queue.length = 0; next = []
+          break
+        }
+        const childId = startRun(child, depth + 1)
+        setState(r, id, 'running', `sub-run ${childId} of ${child.id}`)
+        while (['running', 'waiting'].includes(runs.get(childId).status)) await sleep(50)
+        const st = runs.get(childId).status
+        const code = st === 'done' ? 0 : 1
+        result = { exit_code: code, output: `sub-run ${childId} of ${child.id}: ${st}` }
+        setState(r, id, code ? 'failed' : 'done', result.output)
+        if (code && !handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
         break
       }
       default:

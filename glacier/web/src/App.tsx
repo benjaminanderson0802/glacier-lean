@@ -4,10 +4,10 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
-  ApiError, BRANCHING, BRANCH_LABELS, CONFIG_FIELDS, KIND_LABEL, NODE_KINDS, api, slugify, subscribeEvents,
-  type EnvSummary, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
+  ApiError, api, slugify, subscribeEvents,
+  type EnvSummary, type NodeTypeInfo, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from './api.ts'
-import { nodeTypes, type GNode } from './GlacierNode.tsx'
+import { GlacierNode, nodeTypes as baseNodeTypes, type GNode } from './GlacierNode.tsx'
 import { TerminalPanel } from './TerminalPanel.tsx'
 import { VaultView } from './VaultView.tsx'
 
@@ -68,6 +68,9 @@ function Shell() {
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
+  const [catalog, setCatalog] = useState<NodeTypeInfo[]>([])
+  const typeInfo = useCallback((k: string) => catalog.find(t => t.type === k), [catalog])
+  const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
 
   const envIdRef = useRef(envId)
   envIdRef.current = envId
@@ -77,6 +80,7 @@ function Shell() {
   // ---------- loading ----------
   const refreshEnvs = useCallback(() => api.listEnvs().then(setEnvs).catch(e => setMsg(String(e))), [])
   useEffect(() => { refreshEnvs() }, [refreshEnvs])
+  useEffect(() => { api.nodeTypes().then(setCatalog).catch(e => setMsg(String(e))) }, [])
 
   const refreshRuns = useCallback((id: string) => {
     api.listRuns(id).then(r => { if (envIdRef.current === id) setRuns(r) }).catch(e => setMsg(String(e)))
@@ -159,18 +163,18 @@ function Shell() {
     setEdges(es => {
       const src = nodes.find(n => n.id === c.source)
       let label = ''
-      const pair = src ? BRANCH_LABELS[src.type as NodeKind] : undefined
+      const pair = src ? typeInfo(src.type)?.branches ?? undefined : undefined
       if (pair) label = es.some(e => e.source === c.source && e.label === pair[0]) ? pair[1] : pair[0]
       const id = nextId('e', es.map(e => e.id))
       return addEdge({ ...c, id, ...edgeStyle(label) }, es)
     })
     setDirty(true)
-  }, [nodes])
+  }, [nodes, typeInfo])
 
   const addNode = (kind: NodeKind) => {
     const id = nextId('n', nodes.map(n => n.id))
     const i = nodes.length
-    const config = Object.fromEntries(CONFIG_FIELDS[kind].map(f => [f.key, f.def]))
+    const config = Object.fromEntries((typeInfo(kind)?.fields ?? []).map(f => [f.key, f.default]))
     const node: GNode = { id, type: kind, position: { x: 60 + (i % 3) * 240, y: 60 + Math.floor(i / 3) * 160 }, data: { config }, selected: true }
     setNodes(ns => [...ns.map(n => ({ ...n, selected: false })), node])
     setEdges(es => es.map(e => ({ ...e, selected: false })))
@@ -269,7 +273,7 @@ function Shell() {
   }, [edges])
 
   const openSubRun = async (output: string) => {
-    const m = output.match(/sub-run (\w+) of ([\w-]+)/)
+    const m = output.match(/sub-run ([\w-]+) of ([\w-]+)/)
     if (!m) return
     if (dirty && !window.confirm('Discard unsaved changes?')) return
     await loadEnv(m[2])
@@ -335,8 +339,8 @@ function Shell() {
           <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>Vault</button>
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
-              {NODE_KINDS.map(k => (
-                <button key={k} className={`pal pal-${k}`} data-testid={`palette-${k}`} onClick={() => addNode(k)}>+ {KIND_LABEL[k] ?? k}</button>
+              {catalog.map(t => (
+                <button key={t.type} className={`pal pal-${t.type}`} data-testid={`palette-${t.type}`} title={t.description} onClick={() => addNode(t.type)}>+ {t.label}</button>
               ))}
             </div>
           )}
@@ -358,7 +362,7 @@ function Shell() {
               <ReactFlow<GNode, Edge>
                 nodes={displayNodes}
                 edges={displayEdges}
-                nodeTypes={nodeTypes}
+                nodeTypes={flowNodeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
@@ -415,7 +419,7 @@ function Shell() {
                 <div className="field"><span>Id</span><code data-testid="active-run-id">{activeRun.run_id}</code></div>
                 <div className="field"><span>Status</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
                 <div className="muted small">Click a node to see its output.</div>
-                {selNode?.type === 'flow' && /sub-run \w+ of /.test(activeRun.outputs[selNode.id] ?? '') && (
+                {selNode?.type === 'flow' && /sub-run [\w-]+ of /.test(activeRun.outputs[selNode.id] ?? '') && (
                   <button className="ghost" data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>
                 )}
               </div>
@@ -424,16 +428,16 @@ function Shell() {
             {selNode && (
               <div className="inspector" data-testid="inspector">
                 <div className="section-head"><span>Node {selNode.id} · {selNode.type}</span></div>
-                {CONFIG_FIELDS[selNode.type as NodeKind].map(f => (
+                {(typeInfo(selNode.type)?.fields ?? []).map(f => (
                   <label className="field" key={f.key}>
                     <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
-                    {f.envPicker
+                    {f.picker === 'environment'
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           <option value="">choose…</option>
                           {allEnvs.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                       : f.options
-                      ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.def} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
+                      ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
                       : f.multiline
@@ -448,11 +452,11 @@ function Shell() {
             {selEdge && (
               <div className="inspector" data-testid="edge-inspector">
                 <div className="section-head"><span>Edge {selEdge.id}: {selEdge.source} → {selEdge.target}</span></div>
-                {selEdgeSrc && BRANCHING.includes(selEdgeSrc.type as NodeKind) ? (
+                {selEdgeSrc && typeInfo(selEdgeSrc.type)?.branches ? (
                   <label className="field">
                     <span>Branch</span>
                     <select data-testid="edge-label" value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
-                      {(BRANCH_LABELS[selEdgeSrc.type as NodeKind] ?? []).map(l => <option key={l} value={l}>{l}</option>)}
+                      {(typeInfo(selEdgeSrc.type)?.branches ?? []).map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </label>
                 ) : <div className="muted small">Unlabelled edge (runs in order).</div>}

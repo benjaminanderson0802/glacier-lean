@@ -199,8 +199,8 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-testid="terminal-panel"] .xterm-rows')?.textContent.includes('codex exit 0'), null, { timeout: 5000 })
   check(true, 'codex output shown in the terminal panel')
 
-  // ---------- flow 5: loop + sub-flow (real backend only; the mock does not model them) ----------
-  if (process.env.SKIP_MOCK) {
+  // ---------- flow 5: loop + sub-flow ----------
+  {
     await newEnv('Sub child')
     await tid('palette-command').click()
     await tid('node-n1').click()

@@ -3,9 +3,11 @@
 ## Environment file (saved in the vault as `environments/<id>.json`, one git commit per save)
 {
   "id": "nightly-tests", "name": "Nightly tests",
-  "nodes": [ {"id": "n1", "type": "schedule|command|codex|check|approval|note", "config": {...}, "position": {"x": 0, "y": 0}} ],
-  "edges": [ {"id": "e1", "source": "n1", "target": "n2", "label": "" } ]
+  "nodes": [ {"id": "n1", "type": "<one of GET /api/node-types>", "config": {...}, "position": {"x": 0, "y": 0}} ],
+  "edges": [ {"id": "e1", "source": "n1", "target": "n2", "label": "" } ],
+  "max_steps": 500   (optional; step limit per run, default 500)
 }
+Node types, their settings fields and branch labels are defined once in glacier/contract/node_types.json and served at GET /api/node-types.
 Node configs:
 - schedule: {"cron": "*/1 * * * *"}   (start node; also creates/updates a DBOS schedule named after the environment)
 - command:  {"cmd": "pytest -q", "cwd": "optional"}   (records exit_code + output)
@@ -20,9 +22,13 @@ Node configs:
 - check:    {"expr": "exit_code == 0"} evaluated against the most recent command/codex result; outgoing edges labelled "yes" / "no"
 - approval: {"prompt": "Tests failed. Continue?"}  pauses durably until approved/rejected; outgoing edges "yes" / "no"
 - note:     {"path": "runs/{env}-{run}.md", "template": "Run {run} of {env}: {summary}"}  writes to the vault via the memory service (git commit)
-A failing command/codex node only continues when it feeds a check node. A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max 50 node executions per run.
+- loop:     {"times": "3"}  runs its "again" edges N times (body leads back to the loop node), then follows its "done" edges (max 1000)
+- flow:     {"env": "<other flow id>"}  runs that saved flow as its own run and waits; output "sub-run <run_id> of <env>: <status>";
+            exit_code 0 when the sub-run is done, else 1 (so a check can branch on it); nesting deeper than 5 fails
+A failing command/codex/flow node only continues when it feeds a check node. A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max_steps node executions per run (default 500).
 
 ## HTTP API (backend on :8000, all JSON, prefix /api)
+- GET  /api/node-types                        -> [{type,label,description,fields:[{key,label,placeholder,default,optional?,multiline?,options?,picker?}],branches:[a,b]|null}]
 - GET  /api/environments                      -> [{id,name}]
 - GET  /api/environments/{id}                 -> Environment
 - PUT  /api/environments/{id}                 body Environment -> {"saved": true, "commit": "abc123"}

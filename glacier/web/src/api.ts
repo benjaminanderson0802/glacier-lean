@@ -1,9 +1,7 @@
 // Typed client for the Glacier core v0 contract (docs/CONTRACT.md). All calls go to /api (proxied to :8000).
 
-export type NodeKind = 'schedule' | 'command' | 'codex' | 'check' | 'approval' | 'note' | 'loop' | 'flow'
-export const NODE_KINDS: NodeKind[] = ['schedule', 'command', 'codex', 'check', 'approval', 'note', 'loop', 'flow']
-/** Palette labels (defaults to the kind itself). */
-export const KIND_LABEL: Partial<Record<NodeKind, string>> = { codex: 'Codex worker', loop: 'Loop', flow: 'Sub-flow' }
+/** Node type id. The full list, labels, settings fields and branch labels come from GET /api/node-types. */
+export type NodeKind = string
 
 export type NodeState = 'pending' | 'running' | 'done' | 'failed' | 'waiting' | 'skipped'
 export type RunStatus = 'running' | 'waiting' | 'done' | 'failed' | 'rejected'
@@ -28,38 +26,15 @@ export interface RunState {
 }
 export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
 
-/** Config fields per node type, with defaults used when a node is added from the palette. */
-export type ConfigField = {
-  key: string; label: string; placeholder: string; def: string; optional?: boolean
-  multiline?: boolean; options?: string[]; envPicker?: boolean
+/** One settings field of a node type (from the node-type catalog). */
+export interface ConfigField {
+  key: string; label: string; placeholder: string; default: string
+  optional?: boolean; multiline?: boolean; options?: string[]; picker?: 'environment'
 }
-export const CONFIG_FIELDS: Record<NodeKind, ConfigField[]> = {
-  schedule: [{ key: 'cron', label: 'Cron', placeholder: '*/1 * * * *', def: '*/5 * * * *' }],
-  command: [
-    { key: 'cmd', label: 'Command', placeholder: 'pytest -q', def: '' },
-    { key: 'cwd', label: 'Working dir', placeholder: 'optional', def: '', optional: true },
-  ],
-  codex: [
-    { key: 'prompt', label: 'Prompt ({env} {run} {prev_output})', placeholder: 'Fix the failing tests: {prev_output}', def: '', multiline: true },
-    { key: 'sandbox', label: 'Sandbox', placeholder: '', def: 'workspace-write', options: ['workspace-write', 'read-only', 'danger-full-access'] },
-    { key: 'workdir', label: 'Working dir', placeholder: 'default: GLACIER_HOME/workspaces/<env>', def: '', optional: true },
-    { key: 'model', label: 'Model', placeholder: 'default model', def: '', optional: true },
-  ],
-  check: [{ key: 'expr', label: 'Expression', placeholder: 'exit_code == 0', def: 'exit_code == 0' }],
-  approval: [{ key: 'prompt', label: 'Prompt', placeholder: 'Tests failed. Continue?', def: 'Continue?' }],
-  note: [
-    { key: 'path', label: 'Vault path', placeholder: 'runs/{env}-{run}.md', def: 'runs/{env}-{run}.md' },
-    { key: 'template', label: 'Template', placeholder: 'Run {run} of {env}: {summary}', def: 'Run {run} of {env}: {summary}', multiline: true },
-  ],
-  loop: [{ key: 'times', label: 'Times (runs the "again" branch, then "done")', placeholder: '3', def: '3' }],
-  flow: [{ key: 'env', label: 'Environment to run', placeholder: '', def: '', envPicker: true }],
+/** One entry of GET /api/node-types. branches = the two labels its outgoing edges carry, or null. */
+export interface NodeTypeInfo {
+  type: NodeKind; label: string; description: string; fields: ConfigField[]; branches: [string, string] | null
 }
-
-/** Node types whose outgoing edges carry a branch label, with the labels they use (first one is the default). */
-export const BRANCH_LABELS: Partial<Record<NodeKind, [string, string]>> = {
-  check: ['yes', 'no'], approval: ['yes', 'no'], loop: ['again', 'done'],
-}
-export const BRANCHING = Object.keys(BRANCH_LABELS) as NodeKind[]
 
 export class ApiError extends Error {
   status: number
@@ -82,6 +57,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 
 const enc = encodeURIComponent
 export const api = {
+  nodeTypes: () => req<NodeTypeInfo[]>('GET', '/api/node-types'),
   listEnvs: () => req<EnvSummary[]>('GET', '/api/environments'),
   getEnv: (id: string) => req<Environment>('GET', `/api/environments/${enc(id)}`),
   saveEnv: (env: Environment) => req<{ saved: boolean; commit: string }>('PUT', `/api/environments/${enc(env.id)}`, env),

@@ -1,5 +1,5 @@
 import os, json, time, subprocess
-import pytest
+import pytest, httpx
 from websockets.sync.client import connect
 from conftest import env
 
@@ -272,3 +272,14 @@ def test_self_calling_flow_is_depth_limited(server):
     deepest = [r for r in server.get("/api/runs", params={"env_id": "selfie"}) if "nested" in (r.get("outputs") or {}).get("f", "")
                or "nested" in server.get(f"/api/runs/{r['run_id']}")["outputs"].get("f", "")]
     assert deepest, "no run reports the nesting limit"
+
+
+def test_node_types_catalog_served_and_enforced(server):
+    cat = server.get("/api/node-types")
+    kinds = [t["type"] for t in cat]
+    assert kinds == ["schedule", "command", "codex", "check", "approval", "note", "loop", "flow"]
+    for t in cat:
+        assert t["label"] and isinstance(t["fields"], list) and (t["branches"] is None or len(t["branches"]) == 2)
+    assert {t["type"]: t["branches"] for t in cat}["loop"] == ["again", "done"]
+    r = httpx.put(server.url + "/api/environments/bad", json=env("bad", [("x", "teleport", {})], []), timeout=30)
+    assert r.status_code == 400

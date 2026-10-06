@@ -14,7 +14,10 @@ store.init(DB_PATH)
 DBOS(config=DBOSConfig(name="glacier", system_database_url=f"sqlite:///{DB_PATH}"))
 import runner  # noqa: E402  (registers workflows after DBOS is configured)
 
-NODE_TYPES = {"schedule", "command", "codex", "check", "approval", "note", "loop", "flow"}
+CATALOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "contract", "node_types.json")
+with open(CATALOG_PATH) as _f:
+    NODE_CATALOG = json.load(_f)["types"]  # single source of truth shared with the screen and the mock server
+NODE_TYPES = {t["type"] for t in NODE_CATALOG}
 
 
 @asynccontextmanager
@@ -33,6 +36,12 @@ def _env_or_404(env_id: str) -> dict:
         return runner.load_env(env_id)
     except (FileNotFoundError, ValueError):
         raise HTTPException(404, f"environment {env_id} not found")
+
+
+@app.get("/api/node-types")
+def node_types():
+    """Node types, their settings fields and branch labels; the screen builds its palette and forms from this."""
+    return NODE_CATALOG
 
 
 @app.get("/api/environments")
