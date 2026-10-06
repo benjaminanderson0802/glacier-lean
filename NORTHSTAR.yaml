@@ -1,0 +1,309 @@
+# GLACIER NORTH STAR — canonical, machine-readable direction for every human and AI working on this project.
+# Read this file in full before any task. Every unit of work must map to an item in `phases`.
+# Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
+schema_version: 1
+last_amended: 2026-10-06
+status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. WHY THIS EXISTS
+# ─────────────────────────────────────────────────────────────────────────────
+mission: >
+  Let any person hand goals and recurring work to any mix of AI models and ordinary automation,
+  on hardware they control, and accept results only on independent evidence — with memory they can
+  read, every action approvable, auditable and undoable, and no lock-in to any single AI vendor.
+
+gap_statement: >
+  Each needed property exists somewhere (automation tools, agent frameworks, coding agents, note apps,
+  chat front-ends, personal agents), but no product combines them, and the most consistently missing
+  one is accepting AI work only on independent verification. The barrier for most people and small
+  organizations is trust and skill, not model capability. Open standards (MCP, ACP, A2A, AG-UI,
+  AGENTS.md) now make composing existing tools into this layer practical.
+evidence:
+  - {claim: "inaccurate self-reporting is 22.6% of coding-agent failure modes; 91% of resolved cases needed explicit human pushback", source: "https://arxiv.org/pdf/2605.29442"}
+  - {claim: "74% of production agent teams rely on human verification; 85% build custom orchestration", source: "https://arxiv.org/html/2512.04123v3"}
+  - {claim: "agents oversell success (1.8%) and circumvent oversight (1.9%), e.g. --no-verify", source: "https://www.lesswrong.com/posts/smE9h9RnaK7FWKBZ2/measuring-coding-agent-misalignment-in-the-wild-1"}
+  - {claim: "AI use under 20% and flat at US firms with <20 employees vs 37% at 250+", source: "https://census.gov/library/stories/2026/05/ai-use-businesses.html"}
+  - {claim: "vendor terms can revoke subscription access in third-party tools (Anthropic, April 2026)", source: "https://www.implicator.ai/anthropic-cuts-openclaw-from-claude-subscriptions-citing-unsustainable-compute-costs/"}
+  - {claim: "agents with private data + untrusted input + outbound access are inherently exploitable (lethal trifecta)", source: "https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/"}
+
+who_it_serves:   # in order of priority for design decisions
+  - first_user: "the project owner, daily, on a Windows PC with ChatGPT/Codex access and local hardware"
+  - next: "non-programmers and small organizations who cannot afford engineers to wire and babysit AI"
+  - then: "people in low-bandwidth / low-budget settings (local models, offline-capable, free tools)"
+  - also: "developers who want a trustworthy, portable layer instead of one vendor's agent"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. WHAT GLACIER IS (the 8 defining properties). Each has a test that proves it.
+# ─────────────────────────────────────────────────────────────────────────────
+defining_properties:
+  - id: P-VERIFY
+    statement: "Work counts as done only when an independent check passes (deterministic test, schema check, separate reviewer model, or human sign-off) — never on the worker's own report."
+    test: "false_done_rate metric < 2% on the verification benchmark; workers cannot modify or skip their own checks"
+  - id: P-GOALS
+    statement: "The unit of work is a goal, decomposed into an Environment (graph) of AI workers and ordinary steps."
+    test: "a goal entered in plain language becomes a runnable Environment the user can inspect before running"
+  - id: P-LOOPS
+    statement: "Recurring automations mix AI and non-AI steps, survive crashes and restarts, retry by policy, and alert on breakage."
+    test: "kill -9 mid-run resumes without repeating finished steps; scheduled runs fire after restart; a broken step alerts the user"
+  - id: P-MEMORY
+    statement: "Memory is local, human-readable plain files under version control, shared by every worker and harness."
+    test: "memory is fully readable/editable in a plain editor and Obsidian; any change can be reverted; all workers see the same notes"
+  - id: P-PORTABLE
+    statement: "Any model or harness (local, subscription CLI, API) is swappable through open protocols; no single vendor is required."
+    test: "the same goal completes and verifies after swapping worker backends (e.g. Codex → local model → another CLI)"
+  - id: P-CONTROL
+    statement: "Approvals before consequential actions, one-step rollback, and a complete audit trail are defaults, not options."
+    test: "100% of side effects appear in the audit log; injected bad change is rolled back in one action; approvals survive restarts"
+  - id: P-SECURE
+    statement: "Secure by default: sandboxed execution, outbound-network allowlists, reviewed capabilities, no unauthenticated exposure."
+    test: "passes the prompt-injection / lethal-trifecta test suite; no network listener without auth"
+  - id: P-USABLE
+    statement: "A non-programmer can get value without learning the machinery; complexity is available, never required."
+    test: "median time-to-first-working-automation < 30 min for first-time non-programmers (moderated test, n >= 10)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. INVARIANTS — never violated by any change. A task that requires breaking one stops and escalates.
+# ─────────────────────────────────────────────────────────────────────────────
+invariants:
+  - I-01: "Compose before build. Use an existing, maintained, permissively licensed tool when it covers >= 80% of a need; custom code only for glue, the assistant, and the user experience."
+  - I-02: "The orchestrator must never become the product. If infrastructure work exceeds user-visible progress for two consecutive checkpoints, stop and re-plan."
+  - I-03: "Tests are written before the feature; 'done' = its acceptance test passes in the shared sandbox, with evidence committed."
+  - I-04: "No worker may edit, disable or bypass the check that judges its own work."
+  - I-05: "User data stays on user-controlled hardware unless the user explicitly routes it elsewhere; every outbound destination is visible."
+  - I-06: "Memory is plain files + git; any database is a rebuildable index, never the only copy."
+  - I-07: "No dependence on reusing a vendor's consumer login inside third-party code against its terms; drive official CLIs/APIs only."
+  - I-08: "Every consequential side effect (spend, send, publish, delete, external write) requires an approval rule and is logged."
+  - I-09: "Every dependency is version-pinned; upgrades are deliberate and re-run the full test board."
+  - I-10: "Bundled components must allow redistribution (MIT/Apache/BSD/MPL); restrictive ones (SUL, ELv2, AGPL, branding clauses) run only as separate optional processes."
+  - I-11: "No repair loop runs unbounded: max 3 repair attempts or 2 rounds without measurable progress, then escalate to a human."
+  - I-12: "Bookkeeping is generated from the event log, never hand-appended status files."
+  - I-13: "Cost and model/route used are visible per run."
+  - I-14: "Safety rules may only be tightened by agents; loosening requires a human amendment to this file."
+
+non_goals:
+  - "Training or hosting foundation models."
+  - "A custom workflow engine, scheduler, vector database, chat framework or canvas library (use existing ones)."
+  - "Live scraping/syncing of consumer chat apps against their terms (use official exports/APIs)."
+  - "Enterprise multi-tenant SaaS before the single-user local product meets its metrics."
+  - "Features with no path to a defining property or a phase exit criterion."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. HOW DECISIONS ARE MADE (bias guards)
+# ─────────────────────────────────────────────────────────────────────────────
+decision_rules:
+  evidence_over_opinion: "Choose by measured results in the sandbox; cite sources for external facts; label vendor-biased sources."
+  maturity_over_novelty: "Prefer tools with sustained releases and real adoption; new tools only behind an adapter and with a fallback."
+  no_originality_bias: "Building something ourselves needs a written reason why no existing tool fits."
+  no_recency_bias: "A newer tool replaces an adopted one only if it measurably beats it on this file's metrics."
+  no_authority_bias: "Neither the owner's phrasing nor an AI's preference overrides the defining properties; conflicts go to open_decisions."
+  smallest_step: "Pick the smallest change that moves a phase checkpoint, verify it, then continue."
+  reversibility: "Prefer reversible changes; irreversible ones need explicit human approval."
+
+anti_patterns_to_detect:   # if observed, stop and correct course
+  - "Agents generating reports instead of working software."
+  - "A growing custom 'governance' layer that duplicates DBOS/MAF/git features."
+  - "Tests that only test the test harness, or are rewritten to pass."
+  - "Many tiny tasks with no user-visible change."
+  - "Status claims without a linked passing test or artifact."
+  - "Scope added that serves no defining property."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. METRICS (measured continuously from phase 3 on; targets are exit gates where noted)
+# ─────────────────────────────────────────────────────────────────────────────
+metrics:
+  - {id: M-FALSE-DONE, what: "share of runs marked done whose independent re-check fails", target: "< 2%"}
+  - {id: M-VERIFIED, what: "share of completed goals with independent passing evidence", target: ">= 98%"}
+  - {id: M-TTFA, what: "median minutes for a first-time non-programmer to a working recurring automation", target: "< 30"}
+  - {id: M-COST, what: "cost (money + tokens) per verified completed task, by route", target: "tracked; trending down"}
+  - {id: M-LOCAL, what: "share of steps run on local/small models without lowering M-VERIFIED", target: "tracked; maximized"}
+  - {id: M-RECOVER, what: "median time to restore after an injected bad action", target: "< 2 min, one action"}
+  - {id: M-INTERVENE, what: "human interventions per completed goal", target: "falls over time while M-VERIFIED holds"}
+  - {id: M-PORTABLE, what: "portability swap test pass rate across >= 3 worker backends", target: "100%"}
+  - {id: M-SURVIVE, what: "share of recurring automations still correct after 90 days", target: ">= 90%"}
+  - {id: M-SECURITY, what: "prompt-injection suite pass rate; unauthenticated listeners", target: "100% pass; 0 listeners"}
+  - {id: M-AUDIT, what: "share of side effects present in audit log", target: "100%"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. PHASES — end to end. Work strictly follows dependencies. Each item: goal, checkpoints (testable), exit.
+# ─────────────────────────────────────────────────────────────────────────────
+phases:
+  - id: PH0
+    name: "Foundation & proven toolset"
+    goal: "Choose and prove the composed stack; remove replaced legacy code."
+    status: done
+    checkpoints:
+      - {id: PH0.1, item: "Core tools proven in sandbox (MAF workflows, DBOS, ACP, Bifrost, vault+git+search, AG-UI, React Flow, xterm, Monaco)", status: done, evidence: "evidence/RESULTS.md; research doc 'Glacier Lean Stack'"}
+      - {id: PH0.2, item: "Shared sandbox (GitHub Codespace) + private repo glacier-lean with pinned install", status: done, evidence: "repo commits 81d4294..5f17502"}
+      - {id: PH0.3, item: "Legacy code mapped; 97% replaceable; keepers saved to legacy-keep/; old copies removed", status: done, evidence: "docs/OLD_CODE_MAP.md, legacy-keep/"}
+      - {id: PH0.4, item: "Previous autonomous systems (Forge tasks, containers) disabled", status: done, evidence: "session log 2026-10-06"}
+
+  - id: PH1
+    name: "Core runtime (no AI): draw → save → run → survive → approve → remember"
+    depends_on: [PH0]
+    goal: "A durable, inspectable Environment runtime with a live canvas."
+    status: in_progress
+    checkpoints:
+      - {id: PH1.1, item: "Environment file format in vault, one git commit per save", status: done, evidence: "backend test_save_environment_commits_to_vault"}
+      - {id: PH1.2, item: "Node types schedule/command/check/approval/note; crash-safe runs; schedules; approvals across restart", status: done, evidence: "backend tests 1-7 pass in Codespace"}
+      - {id: PH1.3, item: "Live canvas: edit, run, node states, terminal output, approve/reject, history, vault view", status: done, evidence: "e2e core.spec 19/19 vs real backend in Codespace"}
+      - {id: PH1.4, item: "Loops with explicit iteration caps and visual loop edges; sub-environment node", status: todo, test: "loop runs N times then exits; sub-environment run shows nested states"}
+      - {id: PH1.5, item: "Runs/node retries & timeouts configurable per node; breakage alert (Apprise/ntfy)", status: todo, test: "failing scheduled step retries per policy then sends one alert"}
+      - {id: PH1.6, item: "Graceful shutdown (live-events socket must not block restart)", status: todo, test: "SIGTERM stops backend < 5 s with clients connected"}
+      - {id: PH1.7, item: "Windows run of the core (pywinpty terminal, paths, services)", status: todo, test: "core test board passes on the owner's Windows PC"}
+    exit: "PH1.1–PH1.7 done; M-AUDIT = 100% for runtime side effects."
+
+  - id: PH2
+    name: "Workers & models"
+    depends_on: [PH1]
+    goal: "Any worker backend can be a node; routing and cost are visible."
+    status: in_progress
+    checkpoints:
+      - {id: PH2.1, item: "Codex worker node using the user's ChatGPT sign-in (no API key)", status: done, evidence: "live check run 1e15bcca8897: codex created file, verified by command node"}
+      - {id: PH2.2, item: "Local-model worker (Ollama/llama.cpp) via MAF agent node", status: todo, test: "local model completes a task offline; result verified"}
+      - {id: PH2.3, item: "Model gateway (Bifrost) with per-node route, fallback chain and quota awareness", status: todo, test: "primary unavailable → fallback used, logged, run still verified"}
+      - {id: PH2.4, item: "ACP harness driver: OpenCode / Hermes / Gemini CLI etc. as worker nodes", status: todo, test: "same goal completes via >= 2 ACP harnesses"}
+      - {id: PH2.5, item: "Per-run cost & route shown in UI (M-COST, M-LOCAL)", status: todo}
+      - {id: PH2.6, item: "Laptop / second machine as a model provider over a private network", status: todo, test: "gateway prefers laptop when online, falls back when offline"}
+    exit: "M-PORTABLE swap test passes across >= 3 backends."
+
+  - id: PH3
+    name: "Verification layer (the core differentiator)"
+    depends_on: [PH2]
+    goal: "Nothing is accepted on a worker's word."
+    status: todo
+    checkpoints:
+      - {id: PH3.1, item: "Acceptance checks defined before work: test command, schema, rubric, or human sign-off per goal", test: "a goal without an acceptance check cannot start"}
+      - {id: PH3.2, item: "Verifier node runs in a separate context/model from the worker; worker cannot alter it (I-04)", test: "worker attempts to edit the check are blocked and logged"}
+      - {id: PH3.3, item: "Coding workers in isolated git worktrees; merge only when checks pass (merge queue)", test: "failing branch never merges; passing branch merges automatically"}
+      - {id: PH3.4, item: "Verification benchmark (goals with known answers + adversarial 'claims done but isn't' cases) and M-FALSE-DONE dashboard"}
+      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "third failed repair escalates with a summary"}
+    exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark."
+
+  - id: PH4
+    name: "Shared memory"
+    depends_on: [PH1]
+    goal: "One readable memory every worker uses and the user can browse."
+    status: in_progress
+    checkpoints:
+      - {id: PH4.1, item: "Vault service: single writer, git commit per change, keyword search, links, event log", status: done, evidence: "evidence/RESULTS.md memory test; backend vault.py"}
+      - {id: PH4.2, item: "Vault exposed to every worker (MCP server + context injection for MAF/ACP/Codex)", status: todo, test: "two different backends read a note written by a third"}
+      - {id: PH4.3, item: "Meaning search (local embeddings) as rebuildable index", status: todo}
+      - {id: PH4.4, item: "Graph view + markdown editor in UI; Obsidian opens the same vault", status: todo}
+      - {id: PH4.5, item: "Status notes generated from the event log (I-12); per-worker and per-project folders", status: todo}
+      - {id: PH4.6, item: "Memory hygiene: dedupe/expiry proposals approved by user", status: todo}
+    exit: "P-MEMORY test passes; memory survives a full reinstall from git."
+
+  - id: PH5
+    name: "The Assistant (conversational control)"
+    depends_on: [PH3, PH4]
+    goal: "Users state goals in plain language; Glacier proposes, explains and runs Environments."
+    status: todo
+    checkpoints:
+      - {id: PH5.1, item: "Chat UI (assistant-ui over AG-UI) bound to a MAF assistant workflow", test: "chat reply streams; tool approvals render as buttons"}
+      - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan"}
+      - {id: PH5.3, item: "Assistant edits Environments only through the same API and approvals as the user; all changes versioned", test: "assistant change is revertible and audited"}
+      - {id: PH5.4, item: "Simple/Standard/Full layouts (complexity optional) and plain-language explanations of any run", test: "M-TTFA measured with first-time users"}
+      - {id: PH5.5, item: "Templates gallery for common goals (reports, monitoring, inbox triage, code fixes, research)"}
+    exit: "M-TTFA < 30 min in a moderated test (n >= 10) with M-VERIFIED held."
+
+  - id: PH6
+    name: "Everyday AI hub (harness mirroring & ordinary UX)"
+    depends_on: [PH2, PH5]
+    goal: "Glacier can be the daily home for AI work, not just automation."
+    status: todo
+    checkpoints:
+      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory"}
+      - {id: PH6.2, item: "Live mirror of local coding-agent sessions (Codex, OpenCode, etc.) via their official interfaces"}
+      - {id: PH6.3, item: "File drop, images, projects, chat rename, search"}
+      - {id: PH6.4, item: "Documents/web tools (MarkItDown/Docling, search/scrape) as nodes with egress rules"}
+    exit: "Owner uses Glacier as primary AI workspace for 2 consecutive weeks (self-reported + usage log)."
+
+  - id: PH7
+    name: "Security & trust hardening"
+    depends_on: [PH3]
+    goal: "Safe to give real tools and data to agents."
+    status: todo
+    checkpoints:
+      - {id: PH7.1, item: "Per-node sandbox (container or OS sandbox) with file and network allowlists"}
+      - {id: PH7.2, item: "Prompt-injection / lethal-trifecta test suite in CI (M-SECURITY)"}
+      - {id: PH7.3, item: "Secrets via OS keychain only; never in vault, logs or prompts"}
+      - {id: PH7.4, item: "Reviewed/pinned capability catalog (MCP servers) with provenance"}
+      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)"}
+    exit: "M-SECURITY 100%, M-AUDIT 100%, M-RECOVER < 2 min."
+
+  - id: PH8
+    name: "Desktop product"
+    depends_on: [PH1, PH7]
+    goal: "Installable, updatable, signed local app."
+    status: todo
+    checkpoints:
+      - {id: PH8.1, item: "Windows packaging (pywebview or Tauri shell), installer, auto-update"}
+      - {id: PH8.2, item: "Code signing (SignPath if OSI open source, else paid signing)"}
+      - {id: PH8.3, item: "Guided first-run setup: detects available models/harnesses, proposes a starter configuration"}
+      - {id: PH8.4, item: "macOS/Linux builds"}
+      - {id: PH8.5, item: "Low-resource mode: runs usefully on modest hardware with small local models"}
+    exit: "Clean machine → working first automation using only the installer."
+
+  - id: PH9
+    name: "Self-improvement (Glacier builds Glacier)"
+    depends_on: [PH3, PH5, PH7]
+    goal: "Glacier's own development runs as Glacier Environments under the same verification rules."
+    status: todo
+    checkpoints:
+      - {id: PH9.1, item: "Repo-maintenance Environment: dependency watch, test board, proposed upgrades (human-approved)"}
+      - {id: PH9.2, item: "Feature Environment: goal → worktree → workers → verifier → merge queue"}
+      - {id: PH9.3, item: "Tool discovery: periodic scan of MCP registry / model catalogs → proposals, never auto-adoption (I-09)"}
+    exit: "3 consecutive real features shipped through Glacier with M-FALSE-DONE < 2%."
+    guard: "Cannot start before PH3 exit; self-modification never loosens invariants (I-14)."
+
+  - id: PH10
+    name: "Public release & ecosystem"
+    depends_on: [PH8, PH9]
+    goal: "Make the layer available to the people the gap affects most."
+    status: todo
+    checkpoints:
+      - {id: PH10.1, item: "License decision and open-source release (see open_decisions)"}
+      - {id: PH10.2, item: "Docs, tutorials, template library; non-programmer usability studies across >= 3 contexts (incl. small business, low-bandwidth)"}
+      - {id: PH10.3, item: "Localization and offline-first packs (local models, bundled docs)"}
+      - {id: PH10.4, item: "Community templates/connectors with review and provenance"}
+      - {id: PH10.5, item: "Interoperability: export/import Environments; speaks MCP/ACP/A2A/AG-UI; AGENTS.md compatible"}
+    exit: "External users reach M-TTFA and M-VERIFIED targets without the core team's help."
+
+  - id: PH11
+    name: "Sustainability"
+    depends_on: [PH10]
+    goal: "The project stays healthy without heroics."
+    status: todo
+    checkpoints:
+      - {id: PH11.1, item: "Automated integration health checks (M-SURVIVE) and pinned-upgrade cadence"}
+      - {id: PH11.2, item: "Governance: amendment process, maintainers, security disclosure policy"}
+      - {id: PH11.3, item: "Funding/maintenance model that does not compromise local-first or portability"}
+      - {id: PH11.4, item: "Annual review of this file against the gap (is the gap still unfilled? what changed?)"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. DRIFT CONTROL — run at the start of every task and at every checkpoint
+# ─────────────────────────────────────────────────────────────────────────────
+drift_check:
+  before_task:
+    - "Which phase checkpoint does this task advance? If none → stop and ask."
+    - "Are all depends_on phases at their exit (or is this item explicitly parallel-safe)?"
+    - "Which defining property and metric does it serve?"
+    - "Is there an existing tool for it (I-01)? Record the reason if building."
+    - "What is the acceptance test, written first (I-03)?"
+  at_checkpoint:
+    - "Run the full test board in the shared sandbox; commit evidence; update status + evidence here."
+    - "Compare user-visible progress vs infrastructure work (I-02)."
+    - "Re-read anti_patterns_to_detect; record any found and the correction."
+  red_flags_requiring_human: ["changing an invariant", "spending money", "publishing/releasing", "deleting user data", "a new restrictive license", "two failed checkpoints in a row"]
+
+open_decisions:   # require the owner; agents must not decide these
+  - {id: D1, question: "Open-source license and timing (affects free code signing, contributors, commercial use)", needed_by: PH10.1}
+  - {id: D2, question: "One product vs separate 'builder' and 'runner' modes for finished automations", needed_by: PH5}
+  - {id: D3, question: "Primary desktop shell (pywebview vs Tauri)", needed_by: PH8.1}
+  - {id: D4, question: "Which paid or subscription model routes are acceptable by default and at what monthly cap", needed_by: PH2.3}
+
+amendment:
+  who: "Only the project owner approves changes to mission, defining_properties, invariants, non_goals, phases' exit criteria."
+  how: "Propose a diff with evidence (data or sources) and the metric it improves; record it in docs/AMENDMENTS.md; bump last_amended."
+  agents_may: "update status/evidence fields after verified checkpoints, and add checkpoints that serve an existing phase exit."
