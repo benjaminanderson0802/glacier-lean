@@ -142,22 +142,28 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         os.makedirs(ws, exist_ok=True)
     command = cfg["cmd"]
     if sandbox:
+        if os.name == "nt":
+            raise RuntimeError("The step sandbox needs Linux; this step can't run sandboxed on Windows")
         if not ws:
             raise ValueError("the sandbox needs a work folder")
         if cfg.get("network") == "allow":
             raise ValueError("Network access is not available for sandboxed steps yet")
         command = sandboxing.wrap(command, os.path.abspath(ws), [])
         env = None
+    options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
     p = subprocess.Popen(command, shell=not sandbox, cwd=(ws if sandbox else cfg.get("cwd") or ws or None), env=env, stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, start_new_session=True)
+                         stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, **options)
     try:
         out, _ = p.communicate(timeout=timeout)
         code = p.returncode
     except subprocess.TimeoutExpired:
-        try:
-            os.killpg(p.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
+        else:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
         out, _ = p.communicate()
         code, out = -1, f"{out or ''}\n[timed out after {timeout}s]"
     return {"state": "done" if code == 0 else "failed", "output": (out or "")[-OUTPUT_LIMIT:], "exit_code": code}

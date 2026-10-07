@@ -3,7 +3,46 @@ Every flow has a workspace folder GLACIER_HOME/workspaces/<flow>. Steps run ther
 A flow with "isolate": true gets a private git worktree per run (GLACIER_HOME/worktrees/<flow>/<run>, branch run/<run>).
 When the run is verified, its branch is merged into the workspace's main branch, one run at a time (a file lock is the
 queue). When it is not, nothing reaches main; the branch is kept for inspection and the worktree is removed."""
-import fcntl, os, subprocess
+import os, subprocess, time
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
+
+
+class _MergeLock:
+    """Cross-process lock for the per-flow merge queue."""
+    def __init__(self, file):
+        self.file = file
+
+    def __enter__(self):
+        if os.name == "nt":
+            self.file.seek(0)
+            if not self.file.read(1):
+                self.file.seek(0)
+                self.file.write("0")
+                self.file.flush()
+            self.file.seek(0)
+            while True:
+                try:
+                    msvcrt.locking(self.file.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.05)
+        else:
+            fcntl.flock(self.file, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *_):
+        try:
+            if os.name == "nt":
+                self.file.seek(0)
+                msvcrt.locking(self.file.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(self.file, fcntl.LOCK_UN)
+        finally:
+            self.file.close()
 
 def _git(cwd, *args, check=True):
     p = subprocess.run(["git", "-c", "user.name=glacier", "-c", "user.email=glacier@localhost", *args], cwd=cwd,
@@ -46,8 +85,7 @@ def finish(home: str, env_id: str, run_id: str, verified: bool) -> dict:
             _git(wt, "commit", "-q", "-m", f"Glacier run {run_id}")
     result = {"isolated": True, "branch": branch, "merged": False, "commit": "", "note": ""}
     if verified:
-        with open(os.path.join(home, "worktrees", f"{env_id}.merge.lock"), "w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)  # the merge queue: one merge at a time per flow
+        with _MergeLock(open(os.path.join(home, "worktrees", f"{env_id}.merge.lock"), "a+")):
             dirty = _git(ws, "status", "--porcelain")
             if dirty:
                 result["note"] = "main has uncommitted changes; merge skipped so nothing is overwritten"

@@ -23,8 +23,9 @@ class Server:
 
     def start(self):
         env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
+        options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
         self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
-                                     cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, start_new_session=True)
+                                     cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, **options)
         deadline = time.time() + float(os.environ.get("GLACIER_TEST_START_TIMEOUT", "60"))
         while time.time() < deadline:  # startup grows with plug-ins; a busy machine can need well over 15 s
             if self.proc.poll() is not None:
@@ -38,8 +39,11 @@ class Server:
         raise RuntimeError("server did not start; see " + self.home + "/server.log")
 
     def kill(self):
-        """Simulated power loss: SIGKILL the server and anything it spawned."""
-        os.killpg(self.proc.pid, signal.SIGKILL)
+        """Simulated power loss: forcibly stop the server and anything it spawned."""
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(self.proc.pid), "/T", "/F"], capture_output=True)
+        else:
+            os.killpg(self.proc.pid, signal.SIGKILL)
         self.proc.wait()
 
     def stop(self):

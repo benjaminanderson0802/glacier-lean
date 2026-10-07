@@ -1,4 +1,4 @@
-import os, json, time, subprocess
+import os, json, time, subprocess, sys
 import pytest, httpx
 from websockets.sync.client import connect
 from conftest import env
@@ -193,6 +193,7 @@ def test_codex_streams_live_log_while_running(make_server, monkeypatch):
     assert s.wait_run(run_id)["outputs"]["x"].startswith("codex exit 0\n")
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX process-group signal delivery is Linux-only")
 def test_graceful_shutdown_with_live_clients(server):
     """SIGTERM must stop the backend in under 5 s even while screens are connected to live updates."""
     import signal
@@ -306,7 +307,8 @@ def test_command_retries_exhausted_fails(server):
 
 
 def test_command_timeout(server):
-    server.put("/api/environments/slow", env("slow", [("c", "command", {"cmd": "sleep 20", "timeout": "1"})], []))
+    pause = f'"{sys.executable}" -c "import time; time.sleep(20)"'
+    server.put("/api/environments/slow", env("slow", [("c", "command", {"cmd": pause, "timeout": "1"})], []))
     t0 = time.time()
     run = server.wait_run(server.post("/api/environments/slow/run")["run_id"])
     assert run["status"] == "failed" and time.time() - t0 < 10 and "timed out after 1s" in run["outputs"]["c"], run
