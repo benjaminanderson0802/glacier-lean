@@ -1,20 +1,53 @@
+# Live ACP proof: two real harnesses
 
-## W43 larger-model trial — 2026-10-07
+Run date: 2026-10-07
 
-Memory before the trial: `free -h` showed 7.6 GiB total, 4.0 GiB available, and 2.0 GiB swap (1.8 GiB free). `qwen3:1.7b` was already installed (`ollama list`: 1.4 GB); no model was pulled. `ollama show qwen3:1.7b --license` reports Apache License 2.0. The larger candidates (`qwen3:4b`, `qwen2.5-coder:3b`, and `llama3.2:3b`) were not pulled: available memory fell to 3.2 GiB after the trial, and Ollama reported the 1.7B runner using 1.7 GB with `PROCESSOR 100% GPU`. This host therefore does not match the requested 4-core CPU-only laptop. No newly pulled models require removal. `qwen2.5-coder:3b` and `llama3.2:3b` were confirmed absent with `ollama show`; no model was pulled for license inspection.
+Both flows used the same goal and command acceptance check in separate temporary workspaces. The backend, database, and workspaces were temporary. OpenCode used the local Ollama model; Codex ACP used the existing Codex login with configured model `gpt-6-luna` and low reasoning effort.
 
-### Direct OpenCode CLI check — qwen3:1.7b
+## opencode
 
-The task was exactly `Create hello.txt containing exactly: hello from glacier`. OpenCode 1.18.35 used an isolated project `opencode.json` with the local Ollama endpoint and `tool_call: true`. One setup attempt accidentally ran from the repository root rather than the project directory; it failed before using Ollama with `ProviderModelNotFoundError: Model not found: ollama/qwen3:1.7b. Did you mean: ollama-cloud?` That attempt took 1.66 seconds and peaked at 569,088 KiB RSS. It created no file. The corrected fresh attempt ran from the isolated project directory and loaded the local model:
+- Version: 1.18.35
+- License: MIT
+- Goal: `Create hello.txt containing exactly: hello from glacier`
+- Acceptance: `test "$(cat hello.txt)" = "hello from glacier"`
+- Glacier status: `failed`
+- Glacier check passed: `False`
+- Independent check passed: `False`
+- Elapsed: 20.78 seconds
+- Route: `acp/opencode`
+- Tokens in/out: 0 / 0
+- Cost USD: 0.0
+
+Raw step output (secret patterns redacted):
 
 ```text
-permission requested: external_directory (/home/user/*); auto-rejecting
-✗ Write /home/user/hello.txt failed
-Error: The user rejected permission to use this specific tool call.
-exit status: 0
-hello.txt: absent
+The coding agent finished without a message
 ```
 
-The model requested `/home/user/hello.txt`, outside the project, so the direct check failed. Elapsed time was 59.54 seconds; OpenCode's maximum resident set was 585,852 KiB (about 572 MiB). This is OpenCode process RSS, not total system/model memory. Afterward `free -h` showed 3.4 GiB available and 1.7 GiB swap free.
+OpenCode failure note: the ACP node exposed no message text and did not include the child process exit code or stderr in the saved step output. The next required change is better redacted ACP failure diagnostics (exit status and safe stderr) before another live attempt; this proof does not change Glacier code or guess at the underlying cause.
 
-The OpenCode ACP check was not run: this branch does not contain `bench/live_acp/run_live.py`, and the version on `origin/card/W28-acp-diag` is an unmerged change outside this branch. No direct-check-passing model was found in this trial, so PH2.4's live two-harness test is not met by this attempt. Existing W28 direct and ACP failures above remain the prior baseline; qwen3:1.7b has again failed the direct OpenCode tool-use check. The requested ordered model sweep and CPU-only two-harness proof remain incomplete because this host exposes a GPU runner and no larger pull met the available-memory room requirement.
+## codex-acp
+
+- Version: 2.1.1
+- License: Apache-2.0
+- Goal: `Create hello.txt containing exactly: hello from glacier`
+- Acceptance: `test "$(cat hello.txt)" = "hello from glacier"`
+- Glacier status: `done`
+- Glacier check passed: `True`
+- Independent check passed: `True`
+- Elapsed: 13.22 seconds
+- Route: `acp/codex-acp`
+- Tokens in/out: 0 / 0
+- Cost USD: 0.0
+
+Raw step output (secret patterns redacted):
+
+```text
+I’ll create `hello.txt` in the workspace with the exact requested contents.Created [hello.txt](/tmp/glacier-live-acp-owye0azy/workspace-codex-acp/hello.txt) with exactly `hello from glacier`.
+```
+
+Result: **FAIL** — both harnesses must be done and pass both checks.
+
+## Prior W43 qwen3:1.7b direct trial — 2026-10-07
+
+The vague task `Create hello.txt containing exactly: hello from glacier` led the model to request `/home/user/hello.txt` outside its project, which OpenCode denied. The command exited 0 without creating the file after 59.54 seconds; maximum OpenCode RSS was 585,852 KiB (about 572 MiB). The initial `free -h` record showed 7.6 GiB total and 4.0 GiB available. Ollama reported the runner using 1.7 GB and `PROCESSOR 100% GPU`; no model was pulled.
