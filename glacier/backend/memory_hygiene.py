@@ -278,6 +278,17 @@ def _commit_changes(changes, removals, agent="glacier-hygiene"):
         finally:
             connection.close()
 
+    # Live memory events (same shape as vault.write_note), published outside the vault lock.
+    try:
+        import store
+        for path in changed_paths:
+            store.broadcaster.publish({"type": "memory", "path": path,
+                                       "change": "created" if original_files.get(path) is None else "updated",
+                                       "author": agent, "run_id": ""})
+        for path in removed_paths:
+            store.broadcaster.publish({"type": "memory", "path": path, "change": "deleted", "author": agent, "run_id": ""})
+    except (ImportError, AttributeError):
+        pass
     return commit.hexsha[:8]
 
 

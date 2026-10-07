@@ -60,8 +60,7 @@ def _all() -> list[dict]:
     result = []
     for path in vault.list_notes(".md"):
         try:
-            text = vault.read_raw_note(path)
-            meta, _ = _meta(text, path)
+            meta, _ = vault.read_note_metadata(path)
             result.append({"path": path, **{k: meta[k] for k in ("title", "author", "updated", "tags")}})
         except (OSError, ValueError):
             continue
@@ -87,7 +86,7 @@ def note(path: str):
         if other == path:
             continue
         try:
-            _, other_body = _meta(vault.read_raw_note(other), other)
+            _, other_body = vault.read_note_metadata(other)
             if path.removesuffix(".md") in _links(other_body):
                 incoming.append(other.removesuffix(".md"))
         except (OSError, ValueError):
@@ -108,17 +107,28 @@ def put_note(item: NoteWrite):
 
 
 @router.get("/api/memory/graph")
-def graph():
+def graph(limit: int | None = None):
+    if limit is not None and limit < 1:
+        raise HTTPException(400, "Limit must be a positive number")
     nodes, edges = [], []
     known = set()
+    items = _all()
+    def _mtime(item: dict) -> int:
+        try:
+            return os.stat(vault.safe_path(item["path"])).st_mtime_ns
+        except OSError:  # removed since it was listed
+            return 0
+    items.sort(key=_mtime, reverse=True)
+    if limit is not None:
+        items = items[:limit]
     refs = []
-    for item in _all():
+    for item in items:
         path = item["path"].removesuffix(".md")
         known.add(path)
         nodes.append({"id": path, "title": item["title"], "kind": "note", "author": item["author"]})
         edges.append({"source": path, "target": item["author"], "kind": "wrote"})
         try:
-            _, body = _meta(vault.read_raw_note(item["path"]), item["path"])
+            _, body = vault.read_note_metadata(item["path"])
             refs.extend((path, ref) for ref in _links(body))
         except (OSError, ValueError):
             pass
@@ -134,12 +144,14 @@ def graph():
 @router.get("/api/memory/history")
 def history(path: str):
     _path(path)
+    # Commit details load lazily through the shared Git pipe, so read them while holding the lock.
     try:
         with vault._lock:
-            commits = list(vault._repo.iter_commits(paths=path))
+            return [{"commit": c.hexsha[:8], "author": c.author.name,
+                     "date": c.committed_datetime.astimezone(timezone.utc).isoformat(),
+                     "message": c.message.strip()} for c in vault._repo.iter_commits(paths=path)]
     except Exception:
-        commits = []
-    return [{"commit": c.hexsha[:8], "author": c.author.name, "date": c.committed_datetime.astimezone(timezone.utc).isoformat(), "message": c.message.strip()} for c in commits]
+        return []
 
 
 @router.post("/api/memory/undo")
@@ -149,15 +161,15 @@ def undo(item: Undo):
         raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
     with vault._lock:
         commits = list(vault._repo.iter_commits(paths=path))
-    if not commits:
-        raise HTTPException(404, "No saved version exists for this note")
-    matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
-    if item.commit and not matching:
-        raise HTTPException(404, "That saved version was not found")
-    if len(matching) > 1:
-        raise HTTPException(400, "More than one saved version matches. Enter more of the version ID.")
-    selected = matching[0] if item.commit else commits[0]
-    target = selected.parents[0] if selected.parents else None
+        if not commits:
+            raise HTTPException(404, "No saved version exists for this note")
+        matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
+        if item.commit and not matching:
+            raise HTTPException(404, "That saved version was not found")
+        if len(matching) > 1:
+            raise HTTPException(400, "More than one saved version matches. Enter more of the version ID.")
+        selected = matching[0] if item.commit else commits[0]
+        target = selected.parents[0] if selected.parents else None
     if target is None:
         raise HTTPException(400, "There is no earlier version to restore")
     try:

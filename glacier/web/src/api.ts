@@ -30,6 +30,8 @@ export interface RunState {
   waiting_prompt?: string
 }
 export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
+/** Live memory event (docs/CONTRACT.md): a note was created, updated or deleted. */
+export interface MemoryEvent { type: 'memory'; path: string; change: 'created' | 'updated' | 'deleted'; author: string; run_id: string }
 
 /** One settings field of a node type (from the node-type catalog). */
 export interface ConfigField {
@@ -269,7 +271,7 @@ export interface GraphNode { id: string; title: string; kind: 'note' | 'run' | '
 export interface GraphEdge { source: string; target: string; kind: 'wrote' | 'link' | string }
 export interface HygieneProposal { id: string; kind: 'merge' | 'archive' | string; paths: string[]; reason: string }
 export const memoryMore = {
-  graph: () => req<{ nodes: GraphNode[]; edges: GraphEdge[] }>('GET', '/api/memory/graph'),
+  graph: (limit?: number) => req<{ nodes: GraphNode[]; edges: GraphEdge[] }>('GET', `/api/memory/graph${limit ? `?limit=${limit}` : ''}`),
   hygiene: () => req<HygieneProposal[]>('GET', '/api/memory/hygiene'),
   scan: () => req<HygieneProposal[]>('POST', '/api/memory/hygiene/scan'),
   decide: (id: string, approve: boolean) => req<{ id: string; status: string; commit?: string }>('POST', `/api/memory/hygiene/${enc(id)}`, { approve }),

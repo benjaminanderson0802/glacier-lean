@@ -11,11 +11,15 @@ import memory_meta
 VAULT: str = ""
 _repo = None
 _lock = threading.RLock()
+_note_metadata_cache: dict[str, tuple[int, int, dict, str]] = {}
+_note_metadata_cache_lock = threading.Lock()
 
 
 def init(path: str) -> None:
     global VAULT, _repo
     VAULT = os.path.abspath(path)
+    with _note_metadata_cache_lock:
+        _note_metadata_cache.clear()
     os.makedirs(VAULT, exist_ok=True)
     _repo = git.Repo.init(VAULT)
     with open(os.path.join(VAULT, ".gitignore"), "w") as f:
@@ -79,6 +83,15 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         actor = git.Actor(git_writer, "glacier@localhost")
         _repo.index.add([os.path.relpath(full, VAULT)])
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
+        try:
+            stat = os.stat(full)
+            parsed_meta, parsed_body = memory_meta.parse(stored_body, path)
+            cached = (stat.st_mtime_ns, stat.st_size, parsed_meta, parsed_body)
+            with _note_metadata_cache_lock:
+                _note_metadata_cache[path] = cached
+        except OSError:
+            with _note_metadata_cache_lock:
+                _note_metadata_cache.pop(path, None)
         # Keep bookkeeping ordered with commits: an earlier writer must not
         # overwrite the index state recorded by a later Git commit.
         c = _db()
@@ -98,12 +111,29 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
                  "change": "created" if previous is None else "updated",
                  "author": writer, "run_id": metadata_run_id or ""}
         if writer.startswith("run:"):
+            # A run's note event follows its node events; a short delay keeps that order for live screens.
             threading.Timer(0.1, store.broadcaster.publish, args=(event,)).start()
         else:
             store.broadcaster.publish(event)
     except (ImportError, AttributeError):
         pass
     return sha
+
+
+def read_note_metadata(path: str) -> tuple[dict, str]:
+    """Return parsed note metadata/body, reusing it while the file mtime is unchanged."""
+    full = safe_path(path)
+    stat = os.stat(full)
+    with _note_metadata_cache_lock:
+        cached = _note_metadata_cache.get(path)
+        if cached and cached[0] == stat.st_mtime_ns and cached[1] == stat.st_size:
+            return cached[2], cached[3]
+    with open(full, encoding="utf-8") as f:
+        text = f.read()
+    meta, body = memory_meta.parse(text, path)
+    with _note_metadata_cache_lock:
+        _note_metadata_cache[path] = (stat.st_mtime_ns, stat.st_size, meta, body)
+    return meta, body
 
 
 def read_note(path: str) -> str:
