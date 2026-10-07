@@ -5,6 +5,11 @@ Windows process groups to stop timed-out commands and a file lock to serialize
 verified workspace merges. Git, Python, and the Python packages in
 `setup/requirements.txt` must be available.
 
+Configured command steps and command acceptance checks use Git Bash when it is
+available (`bash` on `PATH`, or `C:\Program Files\Git\bin\bash.exe`). If Git
+Bash is missing, they run through Command Prompt and print a warning in the
+step output. Vault paths returned by the API use `/` separators.
+
 ## Linux-only features
 
 Per-step OS sandboxing uses Linux Landlock and seccomp. A command step configured
@@ -13,6 +18,11 @@ step failure with a plain-language explanation. Linux-only sandbox enforcement
 tests are skipped on Windows with a reason. POSIX process-group signal tests
 are also Linux-only. Windows process-tree termination uses the built-in
 `taskkill` command; `psutil` is not required.
+
+Meaning search uses an optional SQLite vector extension. If Windows denies
+loading it, meaning search falls back to keyword results with a plain message;
+extension-dependent meaning-index tests skip with that reason. Keyword search
+remains available.
 
 ## Run the backend tests
 
@@ -30,21 +40,21 @@ The same test command runs in the `backend-windows` GitHub Actions job.
 
 ## CI failure triage (run 37622660999, 2026-10-07)
 
-The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Failures grouped by their first differing traceback/assertion are below. Groups may overlap when one root cause (for example, POSIX shell syntax) causes cascading workflow assertions.
+The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Portability fixes for the grouped failures are:
 
 | Count | First differing failure | Root cause / treatment |
 |---:|---|---|
-| 18 | `error: [WinError 193] %1 is not a valid Win32 application` and missing fake-agent outputs | Python test fixtures invoke extensionless `.py` fake Codex/ACP scripts as native Windows executables. Use `sys.executable` for Python fixtures, or make the product launch its configured command through the platform interpreter where that is the contract. |
-| 14 | `$((...))`, `mkdir -p`, `sh` command assertions; downstream run/verification/alert failures | Tests and sample command flows assume a POSIX shell. Make portable test commands use Python/PowerShell on Windows; retain POSIX cases only where explicitly Linux-only and explain the skip. |
-| 9 | `sqlite3.OperationalError: not authorized` | SQLite extension/vector-index authorization differs on Windows; isolate the unsupported extension path while retaining plain SQLite search behavior. |
-| 8 | `notes\\...`, `runs\\...` compared with `notes/...`, `runs/...` | Path separators leak into vault/API identifiers and generated note links. Normalize logical vault paths to `/` at the boundary while using native paths for disk access. |
-| 5 | `The step sandbox needs Linux; this step can't run sandboxed on Windows` where tests expect validation/errors | Linux-only Landlock/seccomp sandbox path masks earlier input-validation and network-policy outcomes. Preserve validation order and clearly skip enforcement-only tests on Windows; report a plain Windows limitation for actual sandbox execution. |
-| 3 | Fake worker returns `cancelled`/502 or lacks assistant stream events | Fake worker process launch/response is failing under Windows; inspect its process invocation before treating assistant behavior as a separate issue. |
-| 2 | `AttributeError: os.sysconf` and fake Ollama lookup failure | System check assumes POSIX memory APIs/path lookup; add Windows equivalents while preserving Linux behavior. |
-| 2 | `CalledProcessError` for vault note containing `[run:abc]`; missing nested Windows-named file | Windows path/filename handling in vault operations needs a portable representation and native parent-directory creation. |
-| 1 | Template manifest SHA mismatch | Content/hash drift, not an OS portability symptom; outside this card unless the file differs due to Windows line endings (verify before changing). |
-| 1 | `assert 3 == 4` in vault compatibility report | A compatibility check expected a seeded Windows-specific issue but did not report it; inspect path handling and fixture setup. |
-| 1 | Claim research expected proposal/routing but got different status | No clear OS symptom in the traceback; defer as non-portability unless a Windows-only failure is reproduced. |
-| 1 | `KeyError: 'x'` in Codex route test | Downstream fake Codex launch/result failure; likely covered by the subprocess group. |
+| 18 | `error: [WinError 193] %1 is not a valid Win32 application` and missing fake-agent outputs | Fake Python commands run through the current interpreter on Windows. ACP fixtures use `sys.executable`; POSIX wrappers remain in use on Linux. |
+| 14 | `$((...))`, `mkdir -p`, `sh` command assertions; downstream run/verification/alert failures | Command steps and acceptance checks use Git Bash on Windows, with a one-time Command Prompt warning if it is unavailable. Linux keeps its existing shell. |
+| 9 | `sqlite3.OperationalError: not authorized` | Meaning search falls back to keyword results with a plain message; extension-dependent tests skip on Windows only when SQLite refuses to load the extension. |
+| 8 | `notes\\...`, `runs\\...` compared with `notes/...`, `runs/...` | Windows vault input paths are normalized and logical paths use `/`. |
+| 5 | `The step sandbox needs Linux; this step can't run sandboxed on Windows` where tests expect validation/errors | Landlock enforcement tests skip on Windows with a reason; sandbox requests retain their existing plain-language limitation. |
+| 3 | Fake worker returns `cancelled`/502 or lacks assistant stream events | Covered by launching Python fake commands through the active interpreter. |
+| 2 | `AttributeError: os.sysconf` and fake Ollama lookup failure | Windows RAM detection uses `GlobalMemoryStatusEx`; fake Ollama uses a Python fixture on Windows. |
+| 2 | `CalledProcessError` for vault note containing `[run:abc]`; missing nested Windows-named file | Windows vault input paths are normalized and listed paths use `/`. |
+| 1 | Template manifest SHA mismatch | No Windows-specific cause was established; unchanged. |
+| 1 | `assert 3 == 4` in vault compatibility report | Re-evaluated after vault path normalization. |
+| 1 | Claim research expected proposal/routing but got different status | Covered by launching the Python fake researcher through the active interpreter. |
+| 1 | `KeyError: 'x'` in Codex route test | Covered by launching Python fakes through the active interpreter. |
 
-Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The workflow keeps `continue-on-error` until two consecutive Windows backend runs pass.
+Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. The workflow keeps `continue-on-error` until two consecutive Windows backend runs pass.

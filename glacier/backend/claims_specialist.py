@@ -5,6 +5,7 @@ in a fresh context (no memory of the stuck worker's attempts beyond the claim te
 import os, subprocess, tempfile, time
 from dbos import DBOS, SetWorkflowID
 import claims, store, vault, workspaces
+import shell_commands
 
 SPECIALIST_TIMEOUT = 30 * 60
 WORKABLE = ("fixer", "debugger")
@@ -20,9 +21,9 @@ def _prompt(meta: dict, body: str) -> str:
 def run_specialist(workdir: str, prompt: str) -> tuple[int, str]:
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "out.txt")
-        args = [os.environ.get("GLACIER_SPECIALIST_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
+        args = shell_commands.executable_invocation(os.environ.get("GLACIER_SPECIALIST_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
                 "--skip-git-repo-check", "-s", os.environ.get("GLACIER_CODEX_SANDBOX") or "workspace-write", "-C", workdir,
-                "-o", out, "--", prompt]
+                "-o", out, "--", prompt)
         try:
             p = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=SPECIALIST_TIMEOUT)
         except (OSError, subprocess.TimeoutExpired) as e:

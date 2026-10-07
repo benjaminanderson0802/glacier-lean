@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -39,6 +40,15 @@ class _EmbedHandler(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def embed_server(monkeypatch, tmp_path):
+    connection = sqlite3.connect(":memory:")
+    try:
+        memory_index.sqlite_vec.load(connection)
+    except Exception as exc:
+        if os.name == "nt":
+            pytest.skip(f"Meaning search needs a SQLite extension that cannot load on this Windows runner: {exc}")
+        raise
+    finally:
+        connection.close()
     server = ThreadingHTTPServer(("127.0.0.1", 0), _EmbedHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()

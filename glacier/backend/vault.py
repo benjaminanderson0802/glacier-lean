@@ -36,6 +36,8 @@ def _db():
 
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
+    if os.name == "nt":
+        path = path.replace("\\", "/")
     full = os.path.realpath(os.path.join(VAULT, path))
     if not full.startswith(VAULT + os.sep) or "/.git/" in full + "/":
         raise ValueError(f"bad vault path: {path}")
@@ -44,6 +46,8 @@ def safe_path(path: str) -> str:
 
 def write_note(path: str, body: str, agent: str = "unknown", *, author: str | None = None, run_id: str = "") -> str:
     """Create or replace a note; returns the short commit sha. Legacy agent callers remain supported."""
+    if os.name == "nt":
+        path = path.replace("\\", "/")
     full = safe_path(path)
     if run_id and not re.fullmatch(r"[A-Za-z0-9-]{1,64}", run_id):
         raise ValueError("Run id must contain only letters, numbers, and hyphens (up to 64 characters)")
@@ -162,7 +166,7 @@ def list_notes(suffix: str = ".md", prefix: str = "") -> list[str]:
     out = []
     for root, dirs, files in os.walk(os.path.join(VAULT, prefix)):
         dirs[:] = [d for d in dirs if d != ".git"]
-        out += [os.path.relpath(os.path.join(root, f), VAULT) for f in files if f.endswith(suffix)]
+        out += [os.path.relpath(os.path.join(root, f), VAULT).replace(os.sep, "/") for f in files if f.endswith(suffix)]
     return sorted(out)
 
 

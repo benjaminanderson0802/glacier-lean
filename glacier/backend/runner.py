@@ -4,6 +4,7 @@ import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
+import shell_commands
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
@@ -75,8 +76,9 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     workdir = cfg.get("workdir") or ws or os.path.join(home, "workspaces", env_id)
     os.makedirs(workdir, exist_ok=True)
     fd, last_file = tempfile.mkstemp(prefix="codex-last-", suffix=".txt"); os.close(fd)
-    args = [os.environ.get("CODEX_BIN", "codex"), "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
-            "-C", workdir, "-o", last_file] + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
+    executable = os.environ.get("CODEX_BIN", "codex")
+    args = shell_commands.executable_invocation(executable, "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
+            "-C", workdir, "-o", last_file) + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
     try:
         p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=workdir)
     except FileNotFoundError:
@@ -153,7 +155,11 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         command = sandboxing.wrap(command, os.path.abspath(ws), [])
         env = None
     options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
-    p = subprocess.Popen(command, shell=not sandbox, cwd=(ws if sandbox else cfg.get("cwd") or ws or None), env=env, stdout=subprocess.PIPE,
+    shell = not sandbox
+    warning = ""
+    if not sandbox:
+        command, shell, warning = shell_commands.command_invocation(command)
+    p = subprocess.Popen(command, shell=shell, cwd=(ws if sandbox else cfg.get("cwd") or ws or None), env=env, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, **options)
     try:
         out, _ = p.communicate(timeout=timeout)
@@ -168,7 +174,7 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
                 pass
         out, _ = p.communicate()
         code, out = -1, f"{out or ''}\n[timed out after {timeout}s]"
-    return {"state": "done" if code == 0 else "failed", "output": (out or "")[-OUTPUT_LIMIT:], "exit_code": code}
+    return {"state": "done" if code == 0 else "failed", "output": (warning + (out or ""))[-OUTPUT_LIMIT:], "exit_code": code}
 
 
 @DBOS.step(retries_allowed=True, max_attempts=3)

@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import time
+import shell_commands
 
 
 DEFAULT_MODEL = "granite3.3:2b"
@@ -70,6 +71,8 @@ def _machine_stats():
 
 def _run(command, timeout=2, first_line=True):
     try:
+        if command and isinstance(command[0], str):
+            command = shell_commands.executable_invocation(command[0], *command[1:])
         result = subprocess.run(command, capture_output=True, text=True, timeout=timeout,
                                 check=False, shell=False)
     except (OSError, subprocess.SubprocessError):

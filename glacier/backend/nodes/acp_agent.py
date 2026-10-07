@@ -7,6 +7,7 @@ import asyncio
 import os
 import shlex
 import shutil
+import sys
 from pathlib import Path
 
 PREV_LIMIT = 8000
@@ -161,7 +162,10 @@ def run(ctx):
         missing_message = f"This coding agent isn't installed: {command[0]}"
 
     if shutil.which(command[0]) is None:
-        return {"state": "failed", "output": missing_message, "exit_code": 1}
+        if os.name == "nt" and command[0].lower().endswith(".py") and os.path.isfile(command[0]):
+            command.insert(0, sys.executable)
+        else:
+            return {"state": "failed", "output": missing_message, "exit_code": 1}
 
     prompt = config.get("prompt") or ""
     prompt = prompt.replace("{env}", str(ctx["env_id"])).replace("{run}", str(ctx["run_id"]))

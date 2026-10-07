@@ -8,6 +8,7 @@ Specialists then work the claim under the same verification rules (docs/contract
 import os, re, subprocess, tempfile
 from dbos import DBOS
 import claims, vault, store
+import shell_commands
 
 ROUTES = {"environment": "fixer", "bug": "debugger", "skill_gap": "debugger", "unclear_spec": "owner", "policy": "owner"}
 RESEARCH_TIMEOUT = 15 * 60
@@ -25,8 +26,8 @@ def run_researcher(prompt: str) -> str:
     """Read-only Codex run (sandbox default model). GLACIER_RESEARCH_BIN overrides the binary (tests)."""
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "out.txt")
-        args = [os.environ.get("GLACIER_RESEARCH_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
-                "--skip-git-repo-check", "-s", "read-only", "-C", d, "-o", out, "--", prompt]
+        args = shell_commands.executable_invocation(os.environ.get("GLACIER_RESEARCH_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
+                "--skip-git-repo-check", "-s", "read-only", "-C", d, "-o", out, "--", prompt)
         try:
             p = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=RESEARCH_TIMEOUT)
         except (OSError, subprocess.TimeoutExpired) as e:
