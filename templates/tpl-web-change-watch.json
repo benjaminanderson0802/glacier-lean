@@ -1,0 +1,135 @@
+{
+  "id": "tpl-web-change-watch",
+  "name": "Watch a web page for changes",
+  "description": "Reads one approved page, compares it with the previous saved copy, and records whether it changed.",
+  "when_to_use": "Use it for a public page you want to check regularly, such as an announcement or status page.",
+  "goal": "Check an approved web page and save a note when its text differs from the last saved copy.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "grep -R -q \"changed\" \"$GLACIER_HOME/vault/web-watch\""
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 * * * *"
+      },
+      "position": {
+        "x": -260,
+        "y": 0
+      }
+    },
+    {
+      "id": "read_page",
+      "type": "fetch_page",
+      "config": {
+        "url": "https://example.org/page",
+        "allowed_sites": "example.org"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_current",
+      "type": "note",
+      "config": {
+        "path": "web-watch/current-page.md",
+        "template": "{prev_output}"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "compare_page",
+      "type": "command",
+      "config": {
+        "cmd": "changed=1; if test -f \"$GLACIER_HOME/vault/web-watch/last-page.md\" && cmp -s \"$GLACIER_HOME/vault/web-watch/last-page.md\" \"$GLACIER_HOME/vault/web-watch/current-page.md\"; then changed=0; printf \"No change\\n\" > web-status.txt; else printf \"Page changed\\n\" > web-status.txt; fi; cp \"$GLACIER_HOME/vault/web-watch/current-page.md\" \"$GLACIER_HOME/vault/web-watch/last-page.md\"; test \"$changed\" -eq 1",
+        "timeout": "60"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    },
+    {
+      "id": "change_result",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 780,
+        "y": 0
+      }
+    },
+    {
+      "id": "changed_note",
+      "type": "note",
+      "config": {
+        "path": "web-watch/changed-{run}.md",
+        "template": "The approved page is new or has changed since the last saved copy.\n\n{prev_output}"
+      },
+      "position": {
+        "x": 1040,
+        "y": -140
+      }
+    },
+    {
+      "id": "same_note",
+      "type": "note",
+      "config": {
+        "path": "web-watch/unchanged-{run}.md",
+        "template": "The approved page matches the last saved copy."
+      },
+      "position": {
+        "x": 1040,
+        "y": 140
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "schedule",
+      "target": "read_page",
+      "label": ""
+    },
+    {
+      "id": "e1",
+      "source": "read_page",
+      "target": "save_current",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "save_current",
+      "target": "compare_page",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "compare_page",
+      "target": "change_result",
+      "label": ""
+    },
+    {
+      "id": "e4",
+      "source": "change_result",
+      "target": "changed_note",
+      "label": "yes"
+    },
+    {
+      "id": "e5",
+      "source": "change_result",
+      "target": "same_note",
+      "label": "no"
+    }
+  ]
+}

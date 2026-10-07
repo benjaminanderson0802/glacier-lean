@@ -1,6 +1,17 @@
 {
   "templates": [
     {
+      "id": "tpl-backup-check",
+      "file": "tpl-backup-check.json",
+      "name": "Check my backups ran",
+      "description": "Checks the newest recent backup file and writes a note saying whether the folder needs attention.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "ea6f23504f1e0c1edcef143d836aa1cbf0e2b74f39d1cb1e0f5adb5799c77413",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
       "id": "tpl-daily-report",
       "file": "tpl-daily-report.json",
       "name": "Daily report",
@@ -8,6 +19,28 @@
       "author": "Glacier",
       "license": "Apache-2.0",
       "sha256": "972d9b6c306e727cf3dac82b3085f2831409de5541b9ff89a45f818ffbae9f1f",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-document-note",
+      "file": "tpl-document-note.json",
+      "name": "Summarise a document into a note",
+      "description": "Reads a document, makes a short local summary, and saves it as a note.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "f0acb13f28e75c3faa55055ccee8fc6c3ee3d7b5e36221531ebaf3be5a37a36d",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-downloads-tidy",
+      "file": "tpl-downloads-tidy.json",
+      "name": "Weekly tidy of my Downloads folder",
+      "description": "Lists older Downloads files in a note. It never deletes files, and asks before moving them to a review folder.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "c42b0ab062b45f2633c4f4b64a86057cb2122f314152c4a49249eb9fa3540f22",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -56,6 +89,28 @@
       "reviewed_on": "2026-10-07"
     },
     {
+      "id": "tpl-meeting-tasks",
+      "file": "tpl-meeting-tasks.json",
+      "name": "Turn meeting notes into a task list",
+      "description": "Pulls out decisions and next steps, then saves them as checkboxes in a note.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "5263f6f42ec36d7f81e0b2d438ef2198ec4630e5578e4877e1b16b538b7ebe45",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-morning-brief",
+      "file": "tpl-morning-brief.json",
+      "name": "Morning brief from my notes",
+      "description": "Finds yesterday’s changed notes on this computer, summarises them with a local model, and saves a brief.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "e1913a20f06fbb9cbcf8201357153cb1b8b297b2b2ed8fc3d92d6ccf00a3af1c",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
       "id": "tpl-nightly-job",
       "file": "tpl-nightly-job.json",
       "name": "Nightly test job",
@@ -85,6 +140,17 @@
       "author": "Glacier",
       "license": "Apache-2.0",
       "sha256": "8fad77964adc191498c804577dc8517a43bf0c4684ad0a20e0c837e38b5f8136",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-web-change-watch",
+      "file": "tpl-web-change-watch.json",
+      "name": "Watch a web page for changes",
+      "description": "Reads one approved page, compares it with the previous saved copy, and records whether it changed.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "552fdd8532dc1fc9bcbe8294325daa6c1d6f94b067f50c0e7b7059217ef2fd25",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },

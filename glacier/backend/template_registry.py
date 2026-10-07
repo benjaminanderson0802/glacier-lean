@@ -12,6 +12,7 @@ import uuid
 
 import portable
 import verify
+import plugins
 
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -75,6 +76,52 @@ def _route_is_paid(route) -> bool:
     return hosted or remote
 
 
+def _known_step_types() -> set[str]:
+    """Return core and registered plug-in types without importing app (which starts DBOS)."""
+    contract_path = BACKEND_DIR.parent / "contract" / "node_types.json"
+    definitions = json.loads(contract_path.read_text(encoding="utf-8"))["types"]
+    known = {item["type"] for item in definitions}
+    # app.NODE_CATALOG is the served catalog, but importing app here starts the runtime and
+    # creates a cycle through routes/templates. Read the same plug-in NODE.catalog entries
+    # used by plugins.load_nodes(), without registering those modules a second time.
+    for _path, module in plugins._modules("nodes"):
+        node = getattr(module, "NODE", None)
+        catalog = node.get("catalog") if isinstance(node, dict) else None
+        step_type = catalog.get("type") if isinstance(catalog, dict) else None
+        if step_type:
+            known.add(step_type)
+    return known
+
+
+def _import_review_flow(text: str) -> dict:
+    """Use portable structural validation while admitting the backend's plug-in steps."""
+    package = json.loads(text)
+    flow = package.get("flow") if isinstance(package, dict) else None
+    if not isinstance(flow, dict):
+        return portable.import_flow(text, set())
+    known = _known_step_types()
+    core_types = _core_step_types()
+    plug_in_types = known - core_types
+    original_nodes = {item.get("id"): item.get("type") for item in flow.get("nodes", []) if isinstance(item, dict)}
+    # portable.import_flow intentionally validates only the portable core contract. Replace
+    # plug-in names for that structural pass, then restore them in the returned copy. Unknown
+    # names stay untouched and are still rejected by portable validation.
+    for node in flow.get("nodes", []) if isinstance(flow.get("nodes"), list) else []:
+        if isinstance(node, dict) and node.get("type") in plug_in_types:
+            node["type"] = "command"
+    imported = portable.import_flow(json.dumps(package), set())
+    for node in imported.get("nodes", []):
+        original_type = original_nodes.get(node.get("id"))
+        if original_type:
+            node["type"] = original_type
+    return imported
+
+
+def _core_step_types() -> set[str]:
+    contract_path = BACKEND_DIR.parent / "contract" / "node_types.json"
+    return {item["type"] for item in json.loads(contract_path.read_text(encoding="utf-8"))["types"]}
+
+
 def update_manifest() -> dict:
     """Recompute the bundled template manifest hashes for maintainers."""
     entries = []
@@ -133,7 +180,7 @@ def _home() -> Path:
 def review_import(text: str) -> dict:
     findings: list[str] = []
     try:
-        flow = portable.import_flow(text, set())
+        flow = _import_review_flow(text)
     except (TypeError, ValueError) as exc:
         return {"accepted": False, "review": [str(exc)]}
 

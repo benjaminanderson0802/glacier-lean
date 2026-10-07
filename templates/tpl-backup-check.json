@@ -1,0 +1,99 @@
+{
+  "id": "tpl-backup-check",
+  "name": "Check my backups ran",
+  "description": "Checks the newest recent backup file and writes a note saying whether the folder needs attention.",
+  "when_to_use": "Use it after scheduled backups to spot a folder that has not received a recent file.",
+  "goal": "Check whether the backups folder has a file newer than two days and save the result.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "grep -R -q \"newer than two days\" \"$GLACIER_HOME/vault/backups\""
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * *"
+      },
+      "position": {
+        "x": -260,
+        "y": 0
+      }
+    },
+    {
+      "id": "check_recent_file",
+      "type": "command",
+      "config": {
+        "cmd": "find backups -type f -mtime -2 -print -quit",
+        "timeout": "60"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "backup_is_recent",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "backup_ok",
+      "type": "note",
+      "config": {
+        "path": "backups/check-{run}.md",
+        "template": "A backup file newer than two days was found in the backups folder.\n\n{prev_output}"
+      },
+      "position": {
+        "x": 520,
+        "y": -140
+      }
+    },
+    {
+      "id": "backup_missing",
+      "type": "note",
+      "config": {
+        "path": "backups/needs-attention-{run}.md",
+        "template": "No backup file newer than two days was found. Please check the backup schedule and folder."
+      },
+      "position": {
+        "x": 520,
+        "y": 140
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "schedule",
+      "target": "check_recent_file",
+      "label": ""
+    },
+    {
+      "id": "e1",
+      "source": "check_recent_file",
+      "target": "backup_is_recent",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "backup_is_recent",
+      "target": "backup_ok",
+      "label": "yes"
+    },
+    {
+      "id": "e3",
+      "source": "backup_is_recent",
+      "target": "backup_missing",
+      "label": "no"
+    }
+  ]
+}

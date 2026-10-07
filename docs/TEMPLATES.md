@@ -1,5 +1,20 @@
 # Flow templates
 
+## Everyday templates
+
+The Templates gallery includes six ready-made flows for common personal tasks. Select **Use this template** to add one, then open it and choose the files, folder, page, or age limit that fits your needs.
+
+| Template | What it does | Use it when |
+| --- | --- | --- |
+| Summarise a document into a note | Reads a local document, asks a local model for a short summary, and saves a note. | You want the main points of a report, article, or other file in your notes. |
+| Weekly tidy of my Downloads folder | Lists files older than seven days in a note. It never deletes files; moving them requires approval first. | You want to review an untidy Downloads folder and choose what to move. |
+| Turn meeting notes into a task list | Turns a meeting-notes file into checkbox tasks and saves them in a note. | You want next steps separated from the rest of a meeting. |
+| Watch a web page for changes | Reads one approved page, compares its text with the last saved copy, and records whether it changed. | You want to keep an eye on a public announcement or status page. |
+| Morning brief from my notes | Finds Markdown notes changed yesterday, asks a local model for a short brief, and saves it. | You want a quick catch-up on the notes you changed the day before. |
+| Check my backups ran | Checks for a file newer than two days in the `backups` folder and saves a status note. | You want to spot a backup folder that has stopped receiving new files. |
+
+The local-model templates use Ollama on this computer. The page watcher uses the built-in **Read a web page** step and its allowed-sites list. The folder tidy flow only moves listed files after approval, and it never deletes files. The backup check treats a file modified within two days as recent; edit the age in its command step if your backup schedule differs. Every flow has an independent acceptance check, and its run reports **done** only when that check passes.
+
 Bundled templates are listed in `templates/manifest/MANIFEST.json`. Each entry records its author, Apache-2.0 license, SHA-256 digest, and review date. The API reports a bundled item as **changed since review** and marks it unavailable for installation if the file digest differs from the manifest.
 
 Community templates use the portable flow file format from `portable.py`. Import runs structural validation and a safety review. Flows with missing or invalid goal acceptance checks, paid model routing, secret placeholders, or commands containing these flagged forms are rejected with plain findings:
