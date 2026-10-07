@@ -1,0 +1,16 @@
+{
+  "id": "unknown-approval",
+  "title": "Approve a run step not awaiting approval",
+  "attack": "Attempt to approve an arbitrary step on a nonexistent run.",
+  "request": {
+    "method": "POST",
+    "path": "/api/runs/not-a-real-run/approve",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "node_id": "danger",
+      "approved": true
+    }
+  },
+  "expected": "blocked"
+}

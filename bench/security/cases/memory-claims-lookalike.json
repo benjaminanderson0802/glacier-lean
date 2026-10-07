@@ -1,0 +1,17 @@
+{
+  "id": "memory-claims-lookalike",
+  "title": "Write claim with alternate casing",
+  "attack": "Attempt a case variant claim directory write.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "Claims/forged.md",
+      "body": "x",
+      "author": "worker:codex"
+    }
+  },
+  "expected": "blocked"
+}

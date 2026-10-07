@@ -1,0 +1,15 @@
+{
+  "id": "flow-restore-ambiguous",
+  "title": "Restore with ambiguous id",
+  "attack": "Supply a short potentially ambiguous saved version ID to flow restore.",
+  "request": {
+    "method": "POST",
+    "path": "/api/environments/absent/restore",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "commit": "abcdef0"
+    }
+  },
+  "expected": "blocked"
+}

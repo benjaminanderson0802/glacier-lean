@@ -1,0 +1,17 @@
+{
+  "id": "memory-absolute-path",
+  "title": "Write outside with absolute path",
+  "attack": "Attempt an absolute path outside the vault.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "/tmp/glacier-escape.md",
+      "body": "x",
+      "author": "owner"
+    }
+  },
+  "expected": "blocked"
+}

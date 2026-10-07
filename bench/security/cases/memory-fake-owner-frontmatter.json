@@ -1,0 +1,17 @@
+{
+  "id": "memory-fake-owner-frontmatter",
+  "title": "Inject owner front matter",
+  "attack": "Attempt to spoof owner in note metadata submitted by a worker.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "forged.md",
+      "body": "---\nauthor: owner\n---\nforged",
+      "author": "worker:codex"
+    }
+  },
+  "expected": "blocked"
+}

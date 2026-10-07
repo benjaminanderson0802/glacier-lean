@@ -1,0 +1,12 @@
+{
+  "id": "worker-edits-acceptance-check",
+  "title": "Worker edits its protected acceptance check",
+  "attack": "A command worker attempts to change its own protected check file; the run must fail under I-04.",
+  "request": {
+    "method": "POST",
+    "path": "/api/environments",
+    "probe": "edit_check",
+    "check": "run_failed_unverified"
+  },
+  "expected": "blocked"
+}

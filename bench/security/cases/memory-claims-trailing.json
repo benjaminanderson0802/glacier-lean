@@ -1,0 +1,17 @@
+{
+  "id": "memory-claims-trailing",
+  "title": "Write claims with dot segment",
+  "attack": "Attempt normalization bypass using claims/../claims path.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "notes/../claims/x.md",
+      "body": "x",
+      "author": "owner"
+    }
+  },
+  "expected": "blocked"
+}

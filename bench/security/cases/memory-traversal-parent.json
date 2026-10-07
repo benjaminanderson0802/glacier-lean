@@ -1,0 +1,17 @@
+{
+  "id": "memory-traversal-parent",
+  "title": "Traverse out of vault",
+  "attack": "Attempt ../ path traversal through memory API.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "../outside.md",
+      "body": "x",
+      "author": "owner"
+    }
+  },
+  "expected": "blocked"
+}

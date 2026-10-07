@@ -1,0 +1,18 @@
+{
+  "id": "memory-extra-fields",
+  "title": "Smuggle metadata fields",
+  "attack": "Try to supply service metadata fields outside the supported schema.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "meta.md",
+      "body": "x",
+      "author": "worker:codex",
+      "run_id": "owner"
+    }
+  },
+  "expected": "blocked"
+}

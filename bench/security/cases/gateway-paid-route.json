@@ -1,0 +1,12 @@
+{
+  "id": "gateway-paid-route",
+  "title": "Use a paid model route under $0 cap",
+  "attack": "Attempt AI request with the account gateway set only to a paid route.",
+  "request": {
+    "method": "POST",
+    "path": "/api/environments",
+    "probe": "paid_gateway",
+    "check": "run_failed"
+  },
+  "expected": "blocked"
+}

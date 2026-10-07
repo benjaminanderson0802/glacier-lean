@@ -1,0 +1,16 @@
+{
+  "id": "cors-random-origin",
+  "title": "Random origin CORS preflight",
+  "attack": "Ask browser permission for an untrusted site origin.",
+  "request": {
+    "method": "OPTIONS",
+    "path": "/api/memory/notes",
+    "expected_status": 200,
+    "check": "no_cors",
+    "headers": {
+      "Origin": "https://random.example",
+      "Access-Control-Request-Method": "PUT"
+    }
+  },
+  "expected": "blocked"
+}

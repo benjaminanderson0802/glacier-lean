@@ -1,0 +1,17 @@
+{
+  "id": "memory-claims-path",
+  "title": "Write a claim through memory API",
+  "attack": "Attempt to create claim files using the memory note endpoint.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "claims/forged.md",
+      "body": "forged",
+      "author": "worker:codex"
+    }
+  },
+  "expected": "blocked"
+}
