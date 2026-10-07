@@ -1,6 +1,8 @@
 # Tool discovery scan
 
-`scan.py` gathers public candidates from the official MCP registry API, GitHub topics (`mcp-server`, `ai-agents`, `ollama`) and the Ollama model library. It only writes a dated Markdown proposal; it never installs or adopts a tool. A candidate needs an OSI-approved SPDX license and activity in the last 90 days. GitHub projects also need at least 50 stars. Entries already referenced in `setup/requirements.txt` or `setup/install_tools.sh` are skipped.
+`scan.py` gathers public candidates from the official MCP registry API, GitHub topics (`mcp-server`, `ai-agents`, `ollama`) and the Ollama model library. It only writes a dated Markdown proposal; it never installs or adopts a tool. A candidate needs an OSI-approved SPDX license and activity in the last 90 days. GitHub projects also need at least 50 stars. Entries already referenced in `setup/requirements.txt` or `setup/install_tools.sh` are skipped. Each network source has a 20 second limit and is handled separately, so an unavailable source does not stop the others.
+
+The weekly maintenance flow calls `discover_records()` and `render_report()` to place the same filtered research leads directly in its saved maintenance note. These functions return data or Markdown without writing a file. The older standalone `scan.py` flow step remains for compatibility with the flow checks.
 
 Run a live scan with the project Python:
 

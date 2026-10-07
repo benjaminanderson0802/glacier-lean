@@ -14,8 +14,10 @@ import subprocess
 import sys
 from typing import Callable
 
-
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools" / "scan"))
+import scan as tool_scan
+
 OSI_LICENSES = {
     "0bsd", "afl-3.0", "agpl-3.0", "apache-2.0", "artistic-2.0", "bsd-2-clause",
     "bsd-3-clause", "bsl-1.0", "cddl-1.0", "ecl-2.0", "epl-1.0", "epl-2.0",
@@ -127,27 +129,80 @@ def filter_licenses(rows: list[dict]) -> tuple[list[dict], list[dict]]:
     return proposed, rejected
 
 
-def render_note(run_id: str, run_date: str, proposed: list[dict], rejected: list[dict], board: list[dict]) -> str:
-    lines = [f"# Weekly maintenance proposal — {run_date}", "", f"Run: {run_id}", "",
-             "This note suggests changes for the owner to review. Nothing was installed or changed.", "",
-             "## Safe to update", ""]
-    if proposed:
-        for row in proposed:
-            lines.append(f"- {row['name']}: {row['current']} → {row['latest']} ({row['source']})"
-                         f" — {row['license']} licence" + ("; needs care because this changes the major version" if row.get("care") else "; no major-version jump"))
-    else:
-        lines.append("- No upgrades with a confirmed open-source licence were found.")
-    lines.extend(["", "## Not proposed: licence", ""])
-    if rejected:
-        lines.extend(f"- {row['name']} ({row['source']}): {row['current']} → {row['latest']}; licence could not be confirmed as OSI open source ({row.get('license') or 'unknown'})." for row in rejected)
-    else:
-        lines.append("- None.")
-    lines.extend(["", "## Test board", ""])
-    for item in board:
-        lines.append(f"- {item['name']}: {'passed' if item['passed'] else 'failed'} — {item['summary']}")
-        if item.get("slowest"):
-            lines.append("  - Slowest tests: " + "; ".join(item["slowest"][:5]))
+NOTE_LIMIT = 7500
+TOOL_SECTION_END = "Nothing was installed. To try one, approve it and a feature run will add it with tests."
+
+
+def render_tool_section(records: list[tool_scan.Tool], failures: list[str] | None = None,
+                        more_not_shown: int = 0) -> str:
+    lines = ["## New tools worth a look", ""]
+    for record in records[:10]:
+        why = tool_scan._why(record)
+        updated = record.updated.isoformat() if record.updated else "unknown"
+        name = tool_scan._markdown_text(record.name)
+        license_name = tool_scan._markdown_text(record.license)
+        lines.append(f"- {name} — {record.url} — {license_name} licence — last update {updated}. {why}")
+    if more_not_shown:
+        lines.append(f"- ({more_not_shown} more not shown)")
+    for source in failures or []:
+        lines.append(f"- {source}: could not check right now.")
+    if not records and not failures:
+        lines.append("- No new tools met the open-source and activity checks.")
+    lines.extend(["", TOOL_SECTION_END])
     return "\n".join(lines)
+
+
+def render_note(run_id: str, run_date: str, proposed: list[dict], rejected: list[dict], board: list[dict],
+                tools: list[tool_scan.Tool] | None = None, tool_failures: list[str] | None = None,
+                issues: list[str] | None = None) -> str:
+    tools = list(tools or [])
+    proposed = list(proposed)
+    rejected = list(rejected)
+    tool_omitted = max(0, len(tools) - 10)
+    tools = tools[:10]
+    package_omitted = 0
+    rejected_omitted = 0
+    issues = issues or []
+
+    def compose() -> str:
+        lines = [f"# Weekly maintenance proposal — {run_date}", "", f"Run: {run_id}", "",
+                 "This note suggests changes for the owner to review. Nothing was installed or changed.", "",
+                 "## Safe to update", ""]
+        if proposed or package_omitted:
+            for row in proposed:
+                lines.append(f"- {row['name']}: {row['current']} → {row['latest']} ({row['source']})"
+                             f" — {row['license']} licence" + ("; needs care because this changes the major version" if row.get("care") else "; no major-version jump"))
+            if package_omitted:
+                lines.append(f"- ({package_omitted} more not shown)")
+        else:
+            lines.append("- No upgrades with a confirmed open-source licence were found.")
+        lines.extend(["", "## Not proposed: licence", ""])
+        if rejected:
+            lines.extend(f"- {row['name']} ({row['source']}): {row['current']} → {row['latest']}; licence could not be confirmed as OSI open source ({row.get('license') or 'unknown'})." for row in rejected)
+        else:
+            lines.append("- None.")
+        if rejected_omitted:
+            lines.append(f"- ({rejected_omitted} more not shown)")
+        if issues:
+            lines.extend(["", "## Checks that could not run", "", *[f"- {item}" for item in issues]])
+        lines.extend(["", "## Test board", ""])
+        for item in board:
+            lines.append(f"- {item['name']}: {'passed' if item['passed'] else 'failed'} — {item['summary']}")
+            if item.get("slowest"):
+                lines.append("  - Slowest tests: " + "; ".join(item["slowest"][:5]))
+        lines.extend(["", render_tool_section(tools, tool_failures, tool_omitted)])
+        return "\n".join(lines)
+
+    while len(compose()) > NOTE_LIMIT and tools:
+        tools.pop()
+        tool_omitted += 1
+    while len(compose()) > NOTE_LIMIT and proposed:
+        proposed.pop()
+        package_omitted += 1
+    while len(compose()) > NOTE_LIMIT and rejected:
+        rejected.pop()
+        rejected_omitted += 1
+    return compose()
 
 
 def _run(command: list[str], cwd: Path, timeout: int) -> CommandResult:
@@ -260,9 +315,9 @@ def run_maintenance(config: RunConfig, command_runner: Callable = _run) -> dict:
     board = []
     board.append(_test_result("Backend tests", command_runner(config.backend_command, repo / "glacier/backend", config.timeout)))
     board.append(_test_result("Screen check", command_runner(config.ui_command, repo / "glacier/web", config.timeout)))
-    note = render_note(config.run_id, config.date, proposed, rejected, board)
-    if issues:
-        note = note.replace("## Not proposed: licence", "## Checks that could not run\n\n" + "\n".join(f"- {item}" for item in issues) + "\n\n## Not proposed: licence")
+    tool_records, tool_failures = tool_scan.discover_records(today=date_type.fromisoformat(config.date))
+    tool_records = tool_scan.skip_installed(tool_records, setup_root=repo / "setup")
+    note = render_note(config.run_id, config.date, proposed, rejected, board, tool_records, tool_failures, issues)
     path = f"proposals/maintenance-{config.date}.md"
     return {"path": path, "body": note, "author": f"run:{config.run_id}"}
 

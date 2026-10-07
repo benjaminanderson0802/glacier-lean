@@ -296,8 +296,9 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
 def mark_waiting(env_id: str, run_id: str, node_id: str) -> None:
-    store.set_run(run_id, "waiting", node_id)
+    # Node first: anyone who sees the run waiting must also see which step is waiting.
     store.set_node(run_id, env_id, node_id, "waiting")
+    store.set_run(run_id, "waiting", node_id)
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
