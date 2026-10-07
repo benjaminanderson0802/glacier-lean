@@ -52,8 +52,21 @@ def test_graph_with_2000_notes_is_fast_and_complete(server, tmp_path):
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     import vault
     vault.init(os.path.join(server.home, "vault"))
+    # Seed the 2,000 notes in one saved version (one Git commit per note takes minutes on Windows);
+    # each file has exactly the content write_note would store. Only the graph request is timed.
+    import memory_meta
+    paths = []
     for i in range(2000):
-        vault.write_note(f"bench/note-{i:04}.md", f"# Note {i}\n\nLinks [[bench/note-{(i + 1) % 2000:04}]].", author="owner")
+        path = f"bench/note-{i:04}.md"
+        body = f"# Note {i}\n\nLinks [[bench/note-{(i + 1) % 2000:04}]]."
+        full = vault.safe_path(path)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "w", encoding="utf-8", newline="") as f:
+            f.write(memory_meta.render(path, body, "owner", "", None)[1])
+        paths.append(path)
+    with vault._lock:
+        vault._repo.index.add(paths)
+        vault._repo.index.commit("[owner] seed 2,000 notes")
     started = time.perf_counter()
     import httpx
     response = httpx.get(server.url + "/api/memory/graph", timeout=10)

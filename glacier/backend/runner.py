@@ -133,8 +133,14 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
 # ---- steps -------------------------------------------------------------------------------
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
-def snapshot_scheduled_run(env_id: str, run_id: str) -> None:
-    store.create_run(run_id, env_id, load_env(env_id))
+def snapshot_scheduled_run(env_id: str, run_id: str) -> bool:
+    """Create the run for a schedule tick, unless the flow no longer has a schedule (a tick that was already
+    queued when the owner removed the schedule must not start the flow)."""
+    graph = load_env(env_id)
+    if not any(n.get("type") == "schedule" for n in graph.get("nodes", [])):
+        return False
+    store.create_run(run_id, env_id, graph)
+    return True
 
 
 def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) -> dict:
@@ -503,7 +509,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
 def scheduled_run(when, env_id) -> str:
     """Fired by the environment's DBOS schedule; starts a normal run (id derived from this workflow, so replay-safe)."""
     run_id = uuid.uuid5(uuid.NAMESPACE_URL, DBOS.workflow_id).hex[:12]
-    snapshot_scheduled_run(env_id, run_id)
+    if not snapshot_scheduled_run(env_id, run_id):
+        return ""
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)
     return run_id

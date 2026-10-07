@@ -8,9 +8,10 @@ if BACKEND not in sys.path:
 
 
 def _write_note_file(vault_path, name, text):
-    if os.name == "nt" and any(ord(char) < 32 for char in name):
-        # Win32 rejects control characters even through an extended path.
-        return
+    if os.name == "nt" and (any(ord(char) < 32 for char in name) or ":" in os.path.basename(name)):
+        # Win32 rejects control characters even through an extended path, and a ':' makes NTFS write
+        # a hidden alternate stream of a different file instead, so these names cannot exist on Windows.
+        return False
     path = os.path.join(vault_path, name)
     stem = os.path.basename(name).split(".", 1)[0].upper()
     reserved = stem in {"CON", "PRN", "AUX", "NUL"} or any(
@@ -23,6 +24,7 @@ def _write_note_file(vault_path, name, text):
         path = "\\\\?\\" + os.path.abspath(path)
     with open(path, "w", encoding="utf-8") as note:
         note.write(text)
+    return True
 
 
 def test_notes_written_through_memory_api_are_compatible(server):
@@ -54,7 +56,7 @@ def test_compatibility_reports_each_seeded_problem_once_with_a_hint(server):
     with open(os.path.join(vault_path, "broken.md"), "w", encoding="utf-8") as note:
         note.write("---\ntitle: Broken\n---\n[[missing-note]]\n[[twin]]\n")
     bad_name = "bad: name.md"
-    _write_note_file(vault_path, bad_name, "---\ntitle: Bad name\n---\n# Bad name\n")
+    bad_name_seeded = _write_note_file(vault_path, bad_name, "---\ntitle: Bad name\n---\n# Bad name\n")
     with open(os.path.join(vault_path, "bad-yaml.md"), "w", encoding="utf-8") as note:
         note.write('---\ntitle: [unterminated\n---\n# Bad YAML\n')
 
@@ -66,9 +68,10 @@ def test_compatibility_reports_each_seeded_problem_once_with_a_hint(server):
     expected = {
         ("broken.md", "unresolved_link"),
         ("broken.md", "ambiguous_link"),
-        (bad_name, "invalid_filename"),
         ("bad-yaml.md", "invalid_front_matter"),
     }
+    if bad_name_seeded:
+        expected.add((bad_name, "invalid_filename"))
     assert {(problem["path"], problem["kind"]) for problem in problems} == expected
     assert all(problem["detail"] and problem["fix_hint"] for problem in problems)
     assert len({(problem["path"], problem["kind"], problem["detail"]) for problem in problems}) == len(problems)

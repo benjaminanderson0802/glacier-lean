@@ -34,7 +34,8 @@ class FakeAgent:
         match = re.search(r"Permission request: (.*)$", text)
         request = match.group(1) if match else ""
         kind, _, value = request.partition(":")
-        if not _:
+        if not _ or re.match(r"^[A-Za-z]:[\\/]", request):
+            # No kind prefix, or a Windows drive letter ("C:\\..."), which is part of the path, not a kind.
             kind, value = "read", request
         locations = []
         raw_input = {}
