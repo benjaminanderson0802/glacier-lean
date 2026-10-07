@@ -64,6 +64,36 @@ const server = http.createServer(async (req, res) => {
         .map(r => ({ run_id: r.run_id, env_id: r.env_id, status: r.status, started_at: r.started_at }))
       return send(200, list)
     }
+    if (req.method === 'GET' && p === '/api/costs') {
+      const envId = url.searchParams.get('env_id')
+      const days = Math.max(1, Number(url.searchParams.get('days') ?? 30))
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+      const usage = [...runs.values()].filter(r => (!envId || r.env_id === envId) && Date.parse(r.started_at) >= cutoff)
+        .flatMap(r => Object.entries(r.usage ?? {}).map(([nodeId, value]) => ({ runId: r.run_id, nodeId, ...value })))
+      const summarize = key => {
+        const groups = new Map()
+        for (const item of usage) {
+          const name = item[key] || 'unknown'
+          const row = groups.get(name) ?? { [key]: name, _runs: new Set(), runs: 0, steps: 0, tokens_in: 0,
+            tokens_out: 0, cost_usd: 0 }
+          row._runs.add(item.runId)
+          row.steps += 1
+          row.tokens_in += Number(item.tokens_in ?? 0)
+          row.tokens_out += Number(item.tokens_out ?? 0)
+          row.cost_usd += Number(item.cost_usd ?? 0)
+          groups.set(name, row)
+        }
+        return [...groups.values()].sort((a, b) => a[key].localeCompare(b[key])).map(row => {
+          row.runs = row._runs.size
+          delete row._runs
+          return row
+        })
+      }
+      return send(200, { total_usd: usage.reduce((sum, item) => sum + Number(item.cost_usd ?? 0), 0),
+        by_route: summarize('route'), by_model: summarize('model'),
+        local_share: usage.length ? usage.filter(item => (item.route ?? '').startsWith('local/')).length / usage.length : 0,
+        paid_cap_usd: Number(process.env.GLACIER_PAID_CAP_USD ?? 0) })
+    }
     if (req.method === 'GET' && (m = p.match(/^\/api\/runs\/([^/]+)$/))) {
       const r = runs.get(decodeURIComponent(m[1]))
       return r ? send(200, publicRun(r)) : send(404, { detail: 'run not found' })
