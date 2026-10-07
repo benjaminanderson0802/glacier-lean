@@ -1,19 +1,27 @@
-# Start your first automation
+# Your first automation from a template
 
-An automation is a set of steps that Glacier can run for you. A ready-made example is called a template. Templates are a starting point; read each step and change its instructions to fit your needs before you run it.
+## What you will do
 
-## Pick an example
+You will choose a ready-made example, save it as an automation, run it and read Glacier's plain-language summary.
 
-The templates include **Daily report**, **Explain an error**, **Folder backup**, and **Website monitor**. For a first try, choose **Explain an error**. It asks an AI helper to explain text you provide and saves the explanation as a note. It is set to read-only, so the helper can look at files but cannot change them.
+## What you need
 
-## Look over the steps
+You need Glacier open. Choose a template that fits a harmless task and read what it will do before running it.
 
-Read what each step asks Glacier to do. Check which folder the work uses and where any saved note will go. A template may run commands, use an AI helper, ask for your approval, or save a note. Some examples run on a schedule, so check the timing before using them.
+The gallery may include Daily report, Explain an error, Folder backup and Website monitor. For a first try, Explain an error uses text you provide and saves an explanation as a note.
 
-Change the example text to your own harmless sample. Do not paste private details into a prompt unless you understand where that information will go. See [Safety and secrets](04-safety-and-secrets.md) for more.
+## Steps
 
-## Run and read the result
+1. Open **Automations**, then choose **Templates**.
+2. Choose a template from the list. Read its name and description, then choose **Use this template**.
+3. Glacier opens the saved automation in the builder. To run it, return to **Automations** and select the automation by name.
+4. In the run view, select **Run**. Watch the steps and wait for them to finish. If a step asks, read the question before choosing **Approve** or **Reject**.
+5. Read **What happened** near the top of the run view. Check the step results and the **Verification** area too. A finished run is not necessarily verified; look for whether its checks passed.
 
-Start the automation and follow its progress and step results. When it finishes, read the saved note or output. A finished run means the steps ended; it does not by itself mean a separate check proved the result. See [Checks and trust](02-checks-and-trust.md).
+## If something goes wrong
 
-If a step asks for approval, read the question before choosing. You can reject the request. For a failed run, see [When something breaks](05-when-something-breaks.md).
+Glacier shows its error text on screen. If a step fails, open the run view and read the failed step's output. If the template list says **No templates.**, no templates are available right now. If a run is waiting, review its request before approving it. Do not repeat a failed run without understanding the error.
+
+## What to try next
+
+Try a different template, or describe a recurring task in [Ask Glacier to set something up for you](02-ask-for-automation.md).
