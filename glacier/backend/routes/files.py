@@ -14,7 +14,7 @@ class ProjectCreate(BaseModel):
 
 
 @router.post("/api/files")
-async def upload_file(file: UploadFile = File(...), project: str | None = Form(default=None)):
+def upload_file(file: UploadFile = File(...), project: str | None = Form(default=None)):
     try:
         filename = files_store.validate_filename(file.filename or "")
         if project:
@@ -23,15 +23,16 @@ async def upload_file(file: UploadFile = File(...), project: str | None = Form(d
         raise HTTPException(400, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
-    content = await file.read(files_store.max_upload_bytes() + 1)
-    if len(content) > files_store.max_upload_bytes():
-        raise HTTPException(413, "This file is too large. The upload limit is 50 MB by default.")
     try:
-        return files_store.save_upload(filename, project, content)
+        content_length = int(file.headers.get("content-length", "0"))
+        if content_length > files_store.max_upload_bytes() + 64 * 1024:
+            raise HTTPException(413, files_store.too_large_message())
+        return files_store.save_upload(filename, project, file.file)
     except PermissionError as exc:
         raise HTTPException(400, str(exc)) from exc
     except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
+        status = 413 if "too large" in str(exc).lower() else 400
+        raise HTTPException(status, str(exc)) from exc
 
 
 @router.get("/api/files")

@@ -35,12 +35,63 @@ def test_upload_rejects_executable(server):
     assert "not allowed" in response.text.lower()
 
 
+def test_upload_rejects_executable_magic_bytes_named_as_text(server):
+    response = httpx.post(server.url + "/api/files", files={"file": ("notes.txt", b"MZ" + b"\x00" * 64, "text/plain")})
+    assert response.status_code == 400
+    assert "not allowed" in response.text.lower()
+
+
 def test_upload_rejects_file_over_configured_limit(monkeypatch, make_server):
     monkeypatch.setenv("GLACIER_MAX_UPLOAD_MB", "0.00001")
     server = make_server().start()
     response = httpx.post(server.url + "/api/files", files={"file": ("large.txt", b"This is too large", "text/plain")})
     assert response.status_code == 413
     assert "too large" in response.text.lower()
+    assert "0.00001 MB" in response.text
+
+
+def test_index_is_persisted_and_same_name_upload_uses_new_name(server):
+    first = httpx.post(server.url + "/api/files", files={"file": ("same.txt", b"first body", "text/plain")}).json()
+    second = httpx.post(server.url + "/api/files", files={"file": ("same.txt", b"second body", "text/plain")}).json()
+    assert first["name"] == "same.txt"
+    assert second["name"] == "same (2).txt"
+    index_path = os.path.join(server.home, "files", "Inbox", ".index.json")
+    assert os.path.isfile(index_path)
+    assert len(httpx.get(server.url + "/api/files").json()) == 2
+
+
+def test_upload_docx_is_converted_and_searchable(server):
+    import io
+    from zipfile import ZIP_DEFLATED, ZipFile
+    content = io.BytesIO()
+    with ZipFile(content, "w", ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", "<Types xmlns='http://schemas.openxmlformats.org/package/2006/content-types'></Types>")
+        archive.writestr("word/document.xml", "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'><w:body><w:p><w:r><w:t>Zirconium report searchable phrase</w:t></w:r></w:p></w:body></w:document>")
+    response = httpx.post(server.url + "/api/files", files={"file": ("report.docx", content.getvalue(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")})
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert os.path.isfile(os.path.join(server.home, result["path"]))
+    if result.get("note"):
+        found = httpx.get(server.url + "/api/memory/search", params={"q": "Zirconium"}).json()
+        assert any(row["path"] == result["note"] for row in found)
+    else:
+        # This environment may omit MarkItDown's optional docx extra.
+        assert result.get("message") == "File saved, but its text couldn't be read."
+
+
+def test_upload_reports_vault_write_failure(tmp_path, monkeypatch):
+    import files_store
+    import vault
+    import io
+    def fail(*args, **kwargs):
+        raise OSError("vault unavailable")
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.setattr(vault, "VAULT", str(tmp_path / "vault"))
+    monkeypatch.setattr(files_store, "_convert_in_child", lambda path: "Readable words " + path.name)
+    monkeypatch.setattr(vault, "write_note", fail)
+    result = files_store.save_upload("write-failure.txt", None, io.BytesIO(b"Unique vault failure words"))
+    assert "saved" in result.get("message", "").lower()
+    assert "note could not be saved" in result.get("message", "").lower()
 
 
 def test_duplicate_upload_returns_existing_entry(server):
