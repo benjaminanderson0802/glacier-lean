@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-06  # latest: Memory view as core consumer feature; non-technical-first rule
+last_amended: 2026-10-07  # latest: checkpoint statuses + evidence for merged work (wave 1-3 integration)
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -225,10 +225,10 @@ phases:
     status: in_progress
     checkpoints:
       - {id: PH2.1, item: "Codex worker node using the user's ChatGPT sign-in (no API key)", status: done, evidence: "live check run 1e15bcca8897: codex created file, verified by command node"}
-      - {id: PH2.2, item: "Local-model worker (Ollama/llama.cpp) via MAF agent node", status: todo, test: "local model completes a task offline; result verified"}
-      - {id: PH2.3, item: "Model gateway (Bifrost) with per-node route, fallback chain and quota awareness", status: todo, test: "primary unavailable → fallback used, logged, run still verified"}
-      - {id: PH2.4, item: "ACP harness driver: OpenCode / Hermes / Gemini CLI etc. as worker nodes", status: todo, test: "same goal completes via >= 2 ACP harnesses"}
-      - {id: PH2.5, item: "Per-run cost & route shown in UI (M-COST, M-LOCAL)", status: todo}
+      - {id: PH2.2, item: "Local-model worker (Ollama/llama.cpp) via MAF agent node", status: done, test: "local model completes a task offline; result verified", evidence: "PR #6 nodes/local_ai.py; backend tests with a fake Ollama server (offline); live model check on the owner's PC pending PC installs"}
+      - {id: PH2.3, item: "Model gateway (Bifrost) with per-node route, fallback chain and quota awareness", status: in_progress, test: "primary unavailable → fallback used, logged, run still verified", evidence: "card W2-gateway in progress (fallback chain, daily caps, $0 cap)"}
+      - {id: PH2.4, item: "ACP harness driver: OpenCode / Hermes / Gemini CLI etc. as worker nodes", status: in_progress, test: "same goal completes via >= 2 ACP harnesses", evidence: "PR #10 ACP coding agent worker in review (round 2)"}
+      - {id: PH2.5, item: "Per-run cost & route shown in UI (M-COST, M-LOCAL)", status: in_progress, evidence: "backend: per-step usage table + GET run usage, per-run cost/route summary PR #13 (f58c5f4); screen part is with the UI designer"}
       - {id: PH2.6, item: "Laptop / second machine as a model provider over a private network", status: todo, test: "gateway prefers laptop when online, falls back when offline"}
     exit: "M-PORTABLE swap test passes across >= 3 backends."
 
@@ -236,16 +236,16 @@ phases:
     name: "Verification layer (the core differentiator)"
     depends_on: [PH2]
     goal: "Nothing is accepted on a worker's word."
-    status: todo
+    status: in_progress
     checkpoints:
-      - {id: PH3.1, item: "Acceptance checks defined before work: test command, schema, rubric, or human sign-off per goal", test: "a goal without an acceptance check cannot start"}
-      - {id: PH3.2, item: "Verifier node runs in a separate context/model from the worker; worker cannot alter it (I-04)", test: "worker attempts to edit the check are blocked and logged"}
-      - {id: PH3.3, item: "Coding workers in isolated git worktrees; merge only when checks pass (merge queue)", test: "failing branch never merges; passing branch merges automatically"}
-      - {id: PH3.4, item: "Verification benchmark (goals with known answers + adversarial 'claims done but isn't' cases) and M-FALSE-DONE dashboard"}
-      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "second failed attempt or any stuck signal files a claim with the attempts attached"}
-      - {id: PH3.6, item: "Claim filing: file_claim tool (vault MCP) available to every worker; claim files git-tracked", test: "worker hitting an out-of-lane error files a correct claim and parks its task"}
-      - {id: PH3.7, item: "Automatic claim research workflow (vault search → free/OSS search → sandbox trial → findings)", test: "seeded claim with a known OSS fix is resolved with no human, with sources and passing test"}
-      - {id: PH3.8, item: "Triage + routing to the 4 specialist roles (researcher, fixer, debugger, verifier) and parked-task resume", test: "routed claim fixed by specialist; original task resumes and passes its check"}
+      - {id: PH3.1, item: "Acceptance checks defined before work: test command, schema, rubric, or human sign-off per goal", test: "a goal without an acceptance check cannot start", status: done, evidence: "commit 87395ee; verify.validate on save, run with goal but no checks refused (400); tests in test_verification.py"}
+      - {id: PH3.2, item: "Verifier node runs in a separate context/model from the worker; worker cannot alter it (I-04)", test: "worker attempts to edit the check are blocked and logged", status: done, evidence: "commits 87395ee + 8fae168: checks run on a copy with protected files restored; ANY change to a protected check file fails the run (I-04)"}
+      - {id: PH3.3, item: "Coding workers in isolated git worktrees; merge only when checks pass (merge queue)", test: "failing branch never merges; passing branch merges automatically", status: done, evidence: "commit 17124fc: isolate:true runs in a git worktree, merged to main only when verified, one at a time (lock); test_workspaces.py"}
+      - {id: PH3.4, item: "Verification benchmark (goals with known answers + adversarial 'claims done but isn't' cases) and M-FALSE-DONE dashboard", status: done, evidence: "PR #5 cases + PR #14 runner; bench/verification/RESULTS.md on main bc52a5d: false-done 0% (0/20), verified 100% (30/30)"}
+      - {id: PH3.5, item: "Circuit breakers (I-11) built into runs", test: "second failed attempt or any stuck signal files a claim with the attempts attached", status: done, evidence: "commit 87395ee: same failure twice or 3 failures stops the run and files a bug claim with attempts attached"}
+      - {id: PH3.6, item: "Claim filing: file_claim tool (vault MCP) available to every worker; claim files git-tracked", test: "worker hitting an out-of-lane error files a correct claim and parks its task", status: in_progress, evidence: "claim files git-tracked + claims API done (87395ee); file_claim MCP tool waits on memory API PR #12"}
+      - {id: PH3.7, item: "Automatic claim research workflow (vault search → free/OSS search → sandbox trial → findings)", test: "seeded claim with a known OSS fix is resolved with no human, with sources and passing test", status: done, evidence: "commit 6a7f4ed: research workflow (past fixes, free/OSS research via Codex, routing); test_claims_research.py"}
+      - {id: PH3.8, item: "Triage + routing to the 4 specialist roles (researcher, fixer, debugger, verifier) and parked-task resume", test: "routed claim fixed by specialist; original task resumes and passes its check", status: done, evidence: "commit 8fae168: specialist repairs, proof re-run, resolved only on evidence else escalated to owner; test_claims_specialist.py + test_verification stuck test"}
       - {id: PH3.9, item: "Gap proposals in the screen: owner sees options/costs and approves or rejects", test: "claim with no OSS option produces a proposal; approve/reject updates claim and task"}
     exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark; claim auto-resolution meets the per-type targets in claims.metrics."
 
@@ -256,14 +256,14 @@ phases:
     status: in_progress
     checkpoints:
       - {id: PH4.1, item: "Vault service: single writer, git commit per change, keyword search, links, event log", status: done, evidence: "evidence/RESULTS.md memory test; backend vault.py"}
-      - {id: PH4.2, item: "Vault exposed to every worker (MCP server + context injection for MAF/ACP/Codex)", status: todo, test: "two different backends read a note written by a third"}
-      - {id: PH4.3, item: "Meaning search (local embeddings) as rebuildable index", status: todo}
+      - {id: PH4.2, item: "Vault exposed to every worker (MCP server + context injection for MAF/ACP/Codex)", status: in_progress, test: "two different backends read a note written by a third", evidence: "context injection for Codex/plug-in steps done (17124fc, memory_context.py); MCP server in PR #12"}
+      - {id: PH4.3, item: "Meaning search (local embeddings) as rebuildable index", status: done, evidence: "PR #7 memory_index.py (sqlite-vec, rebuildable)"}
       - {id: PH4.4, item: "Memory view (core consumer feature): live graph of everything Glacier knows (projects, decisions, notes, people, and the runs/workers that wrote them); nodes light up as AI writes memory during a run", status: todo, test: "a run that writes a note makes that node appear/highlight live; graph stays readable at 2,000 notes"}
       - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: todo, test: "selecting a note shows exactly its incoming and outgoing links"}
       - {id: PH4.8, item: "Friendly editor (no markdown syntax required): [[ link suggestions while typing, tags, search; saves as plain markdown", status: todo, test: "first-time non-programmer creates a linked note without help; file on disk is plain markdown"}
-      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: todo, test: "each note shows author/run; undo restores the previous version via git"}
+      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: in_progress, test: "each note shows author/run; undo restores the previous version via git", evidence: "author/run front matter + undo in PR #12 and rollback PR #11 (review round 2)"}
       - {id: PH4.10, item: "Compatibility: the same folder opens in any markdown editor (tested with Obsidian and Zettlr)", status: todo, test: "links and notes render correctly in both"}
-      - {id: PH4.5, item: "Status notes generated from the event log (I-12); per-worker and per-project folders", status: todo}
+      - {id: PH4.5, item: "Status notes generated from the event log (I-12); per-worker and per-project folders", status: done, evidence: "PR #8 status_notes.py + routes/status.py"}
       - {id: PH4.6, item: "Memory hygiene: dedupe/expiry proposals approved by user", status: todo}
     exit: "P-MEMORY test passes; memory survives a full reinstall from git."
 
@@ -271,47 +271,47 @@ phases:
     name: "The Assistant (conversational control)"
     depends_on: [PH3, PH4]
     goal: "Users state goals in plain language; Glacier proposes, explains and runs Environments."
-    status: todo
+    status: in_progress
     checkpoints:
       - {id: PH5.1, item: "Chat UI (assistant-ui over AG-UI) bound to a MAF assistant workflow", test: "chat reply streams; tool approvals render as buttons"}
-      - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan"}
+      - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan", status: in_progress, evidence: "backend planner done (ca8ec21, POST /api/assistant/plan, proposes only); plan view is with the UI designer"}
       - {id: PH5.3, item: "Assistant edits Environments only through the same API and approvals as the user; all changes versioned", test: "assistant change is revertible and audited"}
       - {id: PH5.4, item: "Simple/Standard/Full layouts (complexity optional) and plain-language explanations of any run", test: "M-TTFA measured with first-time users"}
-      - {id: PH5.5, item: "Templates gallery for common goals (reports, monitoring, inbox triage, code fixes, research)"}
+      - {id: PH5.5, item: "Templates gallery for common goals (reports, monitoring, inbox triage, code fixes, research)", status: in_progress, evidence: "10 templates merged (templates/); gallery screen is with the UI designer"}
     exit: "M-TTFA < 30 min in a moderated test (n >= 10) with M-VERIFIED held."
 
   - id: PH6
     name: "Everyday AI hub (harness mirroring & ordinary UX)"
     depends_on: [PH2, PH5]
     goal: "Glacier can be the daily home for AI work, not just automation."
-    status: todo
+    status: in_progress
     checkpoints:
-      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory"}
+      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory", status: in_progress, evidence: "importers merged (glacier/importers/); refresh button is UI"}
       - {id: PH6.2, item: "Live mirror of local coding-agent sessions (Codex, OpenCode, etc.) via their official interfaces"}
       - {id: PH6.3, item: "File drop, images, projects, chat rename, search"}
-      - {id: PH6.4, item: "Documents/web tools (MarkItDown/Docling, search/scrape) as nodes with egress rules"}
+      - {id: PH6.4, item: "Documents/web tools (MarkItDown/Docling, search/scrape) as nodes with egress rules", status: in_progress, evidence: "PR #9 read_document step (MarkItDown); egress rules wait on PH7.1"}
     exit: "Owner uses Glacier as primary AI workspace for 2 consecutive weeks (self-reported + usage log)."
 
   - id: PH7
     name: "Security & trust hardening"
     depends_on: [PH3]
     goal: "Safe to give real tools and data to agents."
-    status: todo
+    status: in_progress
     checkpoints:
-      - {id: PH7.1, item: "Per-node sandbox (container or OS sandbox) with file and network allowlists"}
+      - {id: PH7.1, item: "Per-node sandbox (container or OS sandbox) with file and network allowlists", status: in_progress, evidence: "card W3-sandbox in progress"}
       - {id: PH7.2, item: "Prompt-injection / lethal-trifecta test suite in CI (M-SECURITY)"}
-      - {id: PH7.3, item: "Secrets via OS keychain only; never in vault, logs or prompts"}
-      - {id: PH7.4, item: "Reviewed/pinned capability catalog (MCP servers) with provenance"}
-      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)"}
+      - {id: PH7.3, item: "Secrets via OS keychain only; never in vault, logs or prompts", status: in_progress, evidence: "PR #15 OS keychain secrets store (review round 1)"}
+      - {id: PH7.4, item: "Reviewed/pinned capability catalog (MCP servers) with provenance", status: in_progress, evidence: "PR #17 pinned MCP capability catalog (review round 1)"}
+      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)", status: in_progress, evidence: "PR #11 rollback (review round 2)"}
     exit: "M-SECURITY 100%, M-AUDIT 100%, M-RECOVER < 2 min."
 
   - id: PH8
     name: "Desktop product"
     depends_on: [PH1, PH7]
     goal: "Installable, updatable, signed local app."
-    status: todo
+    status: in_progress
     checkpoints:
-      - {id: PH8.1, item: "Windows packaging (Tauri shell, Python backend as sidecar), installer, auto-update"}
+      - {id: PH8.1, item: "Windows packaging (Tauri shell, Python backend as sidecar), installer, auto-update", status: in_progress, evidence: "card W3-desktop in progress (Tauri shell + sidecar)"}
       - {id: PH8.2, item: "Code signing via SignPath free open-source program (Apache-2.0)"}
       - {id: PH8.3, item: "Guided first-run setup: detects available models/harnesses, proposes a starter configuration"}
       - {id: PH8.4, item: "macOS/Linux builds"}
@@ -326,7 +326,7 @@ phases:
     checkpoints:
       - {id: PH9.1, item: "Repo-maintenance Environment: dependency watch, test board, proposed upgrades (human-approved)"}
       - {id: PH9.2, item: "Feature Environment: goal → worktree → workers → verifier → merge queue"}
-      - {id: PH9.3, item: "Tool discovery: periodic scan of MCP registry / model catalogs → proposals, never auto-adoption (I-09)"}
+      - {id: PH9.3, item: "Tool discovery: periodic scan of MCP registry / model catalogs → proposals, never auto-adoption (I-09)", status: todo, evidence: "PR #16 proposal-only scanner built early (review round 1); counts only after PH3 exit per guard"}
     exit: "3 consecutive real features shipped through Glacier with M-FALSE-DONE < 2%."
     guard: "Cannot start before PH3 exit; self-modification never loosens invariants (I-14)."
 
@@ -334,13 +334,13 @@ phases:
     name: "Public release & ecosystem"
     depends_on: [PH8, PH9]
     goal: "Make the layer available to the people the gap affects most."
-    status: todo
+    status: in_progress
     checkpoints:
       - {id: PH10.1, item: "License decision and open-source release (see open_decisions)"}
       - {id: PH10.2, item: "Docs, tutorials, template library; non-programmer usability studies across >= 3 contexts (incl. small business, low-bandwidth)"}
       - {id: PH10.3, item: "Localization and offline-first packs (local models, bundled docs)"}
       - {id: PH10.4, item: "Community templates/connectors with review and provenance"}
-      - {id: PH10.5, item: "Interoperability: export/import Environments; speaks MCP/ACP/A2A/AG-UI; AGENTS.md compatible"}
+      - {id: PH10.5, item: "Interoperability: export/import Environments; speaks MCP/ACP/A2A/AG-UI; AGENTS.md compatible", status: in_progress, evidence: "flow export/import merged (portable.py)"}
     exit: "External users reach M-TTFA and M-VERIFIED targets without the core team's help."
 
   - id: PH11
