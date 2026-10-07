@@ -37,14 +37,18 @@ def _run_commits(run_id: str) -> list[git.Commit]:
 
 
 def run_commits(run_id: str) -> list[git.Commit]:
-    return _run_commits(run_id)
+    import vault
+    with vault._lock:
+        return _run_commits(run_id)
 
 
 def changes(run_id: str) -> list[dict]:
+    import vault
     result = []
-    for commit in _run_commits(run_id):
-        for path in sorted(_commit_paths(commit)):
-            result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name, "repo": "vault"})
+    with vault._lock:
+        for commit in _run_commits(run_id):
+            for path in sorted(_commit_paths(commit)):
+                result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name, "repo": "vault"})
     for workspace, commit in _workspace_run_commits(run_id):
         for path in sorted(_commit_paths(commit)):
             result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name,
@@ -76,9 +80,12 @@ def _workspace_run_commits(run_id: str) -> list[tuple[str, git.Commit]]:
         except (git.InvalidGitRepositoryError, git.NoSuchPathError):
             continue
         # --grep is anchored so similarly named runs cannot claim one another's commits.
-        for commit in workspace_repo.iter_commits(grep=f"^\\[run:{re.escape(run_id)}\\]"):
-            if tag.match(commit.message):
-                found.append((path, commit))
+        try:
+            for commit in workspace_repo.iter_commits(grep=f"^\\[run:{re.escape(run_id)}\\]"):
+                if tag.match(commit.message):
+                    found.append((path, commit))
+        finally:
+            workspace_repo.close()
     return found
 
 
@@ -144,6 +151,7 @@ def undo(run_id: str) -> dict:
     import vault
 
     r = repo()
+    # Global order: vault Git lock, then per-workspace merge locks in sorted order.
     with vault._lock, ExitStack() as locks:
         commits = _run_commits(run_id)
         workspace_commits = _workspace_run_commits(run_id)
@@ -159,9 +167,10 @@ def undo(run_id: str) -> dict:
         for workspace, commit in workspace_commits:
             workspace_groups.setdefault(workspace, []).append(commit)
         workspace_plans = []
-        for path, repo_commits in workspace_groups.items():
+        for path, repo_commits in sorted(workspace_groups.items()):
             workspace_repo = git.Repo(path)
             if _repo_status(workspace_repo):
+                workspace_repo.close()
                 raise RuntimeError("main has uncommitted changes; undo skipped so nothing is overwritten")
             touched, conflicts = _undo_conflicts(workspace_repo, repo_commits)
             workspace_plans.append((path, workspace_repo, repo_commits, touched, conflicts))
@@ -243,6 +252,9 @@ def undo(run_id: str) -> dict:
                 except Exception:
                     pass
             raise
+        finally:
+            for _, workspace_repo, _, _, _ in workspace_plans:
+                workspace_repo.close()
     workspace_result = {
         "reverted": [short for item in workspace_results for short in item["reverted"]],
         "new_commit": workspace_results[-1]["new_commit"] if workspace_results else "",
@@ -266,7 +278,8 @@ def restore_flow(env_id: str, short_commit: str) -> str:
     vault.safe_path(path)
     if not re.fullmatch(r"[0-9a-fA-F]{7,40}", short_commit):
         raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
-    matches = list(repo().iter_commits(paths=path))
+    with vault._lock:
+        matches = list(repo().iter_commits(paths=path))
     matching = [commit for commit in matches if commit.hexsha.startswith(short_commit.lower())]
     if not matching:
         raise ValueError(f"Saved version {short_commit} was not found for this flow.")
@@ -274,11 +287,11 @@ def restore_flow(env_id: str, short_commit: str) -> str:
         raise ValueError("More than one saved version matches. Enter more of the version ID.")
     selected = matching[0]
     try:
-        saved = selected.tree / path
+        with vault._lock:
+            saved = selected.tree / path
+            env = json.loads(saved.data_stream.read().decode("utf-8"))
     except KeyError:
         raise ValueError("That saved version does not contain this flow.")
-    try:
-        env = json.loads(saved.data_stream.read().decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("That saved flow version is not valid JSON.") from exc
     result = app.save_environment(env_id, env)

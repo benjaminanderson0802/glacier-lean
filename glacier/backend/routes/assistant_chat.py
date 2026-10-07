@@ -166,6 +166,7 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
     run_id = str(uuid.uuid4())
     body = json.dumps(flow, indent=2)
     full_path = vault.safe_path(path)
+    # Vault Git lock precedes any workspace merge lock held by runtime paths.
     with vault._lock:
         if os.path.exists(full_path):
             from fastapi import HTTPException

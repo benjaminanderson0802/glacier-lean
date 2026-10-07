@@ -1,13 +1,16 @@
 """Glacier memory vault: markdown/JSON notes tracked in git + SQLite keyword search + event log.
 Importable (call init(path) once) and runnable as an MCP server: `python vault.py` (uses GLACIER_VAULT, default ./vault).
 Every write is: atomic file write -> git commit -> index update. No AI models."""
+# Git access policy: all operations using the process-wide `_repo` hold `_lock`.
+# The lock serializes GitPython's index and persistent cat-file helpers. Operations
+# that also take a workspace merge lock must acquire `_lock` first, then merge locks.
 import os, re, json, sqlite3, tempfile, threading
 import git
 import memory_meta
 
 VAULT: str = ""
 _repo = None
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 
 def init(path: str) -> None:
@@ -56,8 +59,6 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
             match = re.search(r"(?<![a-f0-9])([a-f0-9]{12})(?![a-f0-9])", path + "\n" + body, re.I)
             if match:
                 metadata_run_id = match.group(1)
-        # Legacy internal writers (not the HTTP screen) encode their domain fields in
-        # front matter. Carry a claim's run id into the service field when available.
         if path.endswith(".md") and not metadata_run_id and author is None and agent != "unknown":
             incoming = re.match(r"\A---\s*\n(.*?)\n---\s*\n?", body, re.S)
             if incoming:
@@ -70,35 +71,34 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         os.makedirs(os.path.dirname(full), exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=os.path.dirname(full))
         os.write(fd, stored_body.encode()); os.close(fd); os.replace(tmp, full)
-        _repo.index.add([os.path.relpath(full, VAULT)])
         git_writer = "glacier-runner" if agent == "glacier-runner" else writer
         message_writer = f"run:{metadata_run_id}" if agent == "glacier-runner" and metadata_run_id else writer
         message = f"[{message_writer}] write {path}"
         if agent == "glacier-runner" and metadata_run_id:
             message += f" [run:{metadata_run_id}]"
         actor = git.Actor(git_writer, "glacier@localhost")
+        _repo.index.add([os.path.relpath(full, VAULT)])
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
-        c = _db()
-        indexed_body = memory_meta.parse(stored_body, path)[1] if path.endswith(".md") else stored_body
-        c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, indexed_body))
-        c.execute("DELETE FROM links WHERE src=?", (path,))
-        for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
-            c.execute("INSERT INTO links VALUES (?,?)", (path, dst.split("|", 1)[0].strip().removesuffix(".md")))
-        c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)", (writer, "write_note", json.dumps({"path": path, "commit": sha})))
-        c.commit(); c.close()
-        # Keep the change notification on the existing event channel without changing run-step events.
-        try:
-            import store
-            event = {"type": "memory", "path": path,
-                     "change": "created" if previous is None else "updated",
-                     "author": writer, "run_id": metadata_run_id or ""}
-            if writer.startswith("run:"):
-                # Let the associated run-step completion event reach clients first.
-                threading.Timer(0.1, store.broadcaster.publish, args=(event,)).start()
-            else:
-                store.broadcaster.publish(event)
-        except (ImportError, AttributeError):
-            pass
+
+    c = _db()
+    indexed_body = memory_meta.parse(stored_body, path)[1] if path.endswith(".md") else stored_body
+    c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, indexed_body))
+    c.execute("DELETE FROM links WHERE src=?", (path,))
+    for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
+        c.execute("INSERT INTO links VALUES (?,?)", (path, dst.split("|", 1)[0].strip().removesuffix(".md")))
+    c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)", (writer, "write_note", json.dumps({"path": path, "commit": sha})))
+    c.commit(); c.close()
+    try:
+        import store
+        event = {"type": "memory", "path": path,
+                 "change": "created" if previous is None else "updated",
+                 "author": writer, "run_id": metadata_run_id or ""}
+        if writer.startswith("run:"):
+            threading.Timer(0.1, store.broadcaster.publish, args=(event,)).start()
+        else:
+            store.broadcaster.publish(event)
+    except (ImportError, AttributeError):
+        pass
     return sha
 
 
@@ -133,7 +133,8 @@ def list_notes(suffix: str = ".md", prefix: str = "") -> list[str]:
 
 
 def last_commit(path: str) -> str | None:
-    commits = list(_repo.iter_commits(paths=path, max_count=1))
+    with _lock:
+        commits = list(_repo.iter_commits(paths=path, max_count=1))
     return commits[0].hexsha[:8] if commits else None
 
 

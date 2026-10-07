@@ -256,7 +256,10 @@ def _commit_changes(changes, removals, agent="glacier-hygiene"):
             index.reset()
             raise ValueError("the memory changes could not be saved. Your notes were restored; please try again.") from exc
 
-        connection = vault._db()
+    # SQLite bookkeeping is independent of GitPython; avoid extending the shared
+    # Repo lock over this slower rebuildable-index work.
+    connection = vault._db()
+    try:
         for path in removed_paths:
             connection.execute("DELETE FROM fts WHERE path=?", (path,))
             connection.execute("DELETE FROM links WHERE src=?", (path,))
@@ -272,8 +275,9 @@ def _commit_changes(changes, removals, agent="glacier-hygiene"):
             connection.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
                                (agent, "write_note", json.dumps({"path": path, "commit": commit.hexsha[:8]})))
         connection.commit()
+    finally:
         connection.close()
-        return commit.hexsha[:8]
+    return commit.hexsha[:8]
 
 
 def decide(proposal_id, approve):
