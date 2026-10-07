@@ -1,17 +1,19 @@
 {
   "id": "self-maintenance",
-  "name": "Weekly Glacier maintenance and status note",
-  "goal": "Check project health and prepare upgrade or tool proposals without changing requirements or adopting anything.",
+  "name": "Weekly Glacier maintenance proposal",
+  "goal": "Check dependencies and the test board, then save one proposal note. This flow never changes the repository.",
   "nodes": [
     {"id": "weekly", "type": "schedule", "config": {"cron": "0 9 * * 1"}, "position": {"x": 0, "y": 0}},
-    {"id": "health", "type": "command", "config": {"cmd": "python setup/health_check.py --quick", "cwd": "{repo}", "timeout": "1800"}, "position": {"x": 260, "y": 0}},
-    {"id": "scan", "type": "command", "config": {"cmd": "python tools/scan/scan.py", "cwd": "{repo}", "timeout": "120"}, "position": {"x": 520, "y": 0}},
-    {"id": "status_note", "type": "note", "config": {"path": "self-build/maintenance-{run}.md", "template": "Weekly maintenance results for run {run}. Health checks and tool scan are proposal-only. Review any suggested upgrades before changing pinned requirements.\n\n{summary}"}, "position": {"x": 780, "y": 0}}
+    {"id": "health", "type": "command", "config": {"cmd": "python setup/health_check.py --quick", "cwd": "{repo}", "timeout": "1800"}, "position": {"x": 300, "y": 0}},
+    {"id": "scan", "type": "command", "config": {"cmd": "python tools/scan/scan.py", "cwd": "{repo}", "timeout": "120"}, "position": {"x": 600, "y": 0}},
+    {"id": "maintenance", "type": "command", "config": {"cmd": "python setup/selfbuild/maintenance.py --repo {repo} --run {run}", "cwd": "{repo}", "timeout": "3600"}, "position": {"x": 900, "y": 0}},
+    {"id": "status_note", "type": "note", "config": {"path": "proposals/maintenance-{date}.md", "template": "Weekly maintenance results. This is a proposal for the owner to review. Nothing was installed or changed.\n\n{prev_output}\n\nStep results: {summary}"}, "position": {"x": 1200, "y": 0}}
   ],
   "edges": [
     {"id": "e0", "source": "weekly", "target": "health", "label": ""},
     {"id": "e1", "source": "health", "target": "scan", "label": ""},
-    {"id": "e2", "source": "scan", "target": "status_note", "label": ""}
+    {"id": "e2", "source": "scan", "target": "maintenance", "label": ""},
+    {"id": "e3", "source": "maintenance", "target": "status_note", "label": ""}
   ],
   "max_steps": 10
 }

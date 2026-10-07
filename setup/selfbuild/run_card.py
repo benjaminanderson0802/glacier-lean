@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 from pathlib import Path
 import sys
 import subprocess
@@ -69,6 +70,9 @@ def install_maintenance(client: httpx.Client, repo: Path) -> None:
         config = node.get("config", {})
         if config.get("cwd") == "{repo}":
             config["cwd"] = str(repo)
+        if node.get("id") == "maintenance":
+            script = repo / "setup" / "selfbuild" / "maintenance.py"
+            config["cmd"] = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} --repo {shlex.quote(str(repo))} --run {{run}}"
     saved = client.put(f"/api/environments/{flow['id']}", json=flow)
     saved.raise_for_status()
 
