@@ -5,7 +5,8 @@ import hashlib
 import json
 import logging
 import os
-from collections import deque
+import threading
+from collections import OrderedDict, deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
@@ -16,7 +17,10 @@ log = logging.getLogger(__name__)
 MAX_OUTPUT = 4000
 MAX_LINE_BYTES = 1_000_000
 MAX_EVENTS = 2000
-_FILE_CACHE: dict[tuple[str, int, int], tuple[dict, list[dict], str, bool]] = {}
+MAX_EVENT_CACHE = 8
+_FILE_CACHE: dict[tuple[str, int, int], tuple[dict, str, bool]] = {}
+_EVENT_CACHE: OrderedDict[tuple[str, int, int], list[dict]] = OrderedDict()
+_CACHE_LOCK = threading.RLock()
 
 
 def sessions_dir() -> Path:
@@ -103,14 +107,29 @@ def _first_record_id(path: Path) -> str:
         with path.open("rb") as handle:
             raw = handle.readline(MAX_LINE_BYTES + 1)
         if len(raw) <= MAX_LINE_BYTES:
-            record = json.loads(raw)
-            if isinstance(record, dict) and record.get("type") == "session_meta":
-                payload = record.get("payload")
-                if isinstance(payload, dict) and payload.get("id"):
-                    return str(payload["id"])
+            return _record_id(json.loads(raw), path)
     except (OSError, ValueError, UnicodeDecodeError):
         pass
     return path.stem
+
+
+def _record_id(record: dict | None, path: Path) -> str:
+    """Return the session ID only from the first JSONL record, matching discovery."""
+    if isinstance(record, dict) and record.get("type") == "session_meta":
+        payload = record.get("payload")
+        if isinstance(payload, dict) and payload.get("id"):
+            return str(payload["id"])
+    return path.stem
+
+
+def _first_record(path: Path) -> dict | None:
+    try:
+        with path.open("rb") as handle:
+            raw = handle.readline(MAX_LINE_BYTES + 1)
+        record = json.loads(raw) if len(raw) <= MAX_LINE_BYTES else None
+        return record if isinstance(record, dict) else None
+    except (OSError, ValueError, UnicodeDecodeError):
+        return None
 
 
 def _event(record: dict, when: datetime | None) -> dict | None:
@@ -153,20 +172,34 @@ def _event(record: dict, when: datetime | None) -> dict | None:
     return {"type": "other", "text": _text(content), "timestamp": stamp}
 
 
-def _load_file(path: Path) -> tuple[dict, list[dict], str, bool] | None:
+def _load_file(path: Path, *, include_events: bool = True) -> tuple[dict, list[dict], str, bool] | None:
     signature = _file_signature(path)
     if signature is None:
         return None
-    cached = _FILE_CACHE.get(signature)
-    if cached is not None:
-        return cached
-    # Discard stale versions of this path while retaining independent file entries.
-    path_key = signature[0]
-    for key in list(_FILE_CACHE):
-        if key[0] == path_key and key != signature:
-            del _FILE_CACHE[key]
+    with _CACHE_LOCK:
+        cached = _FILE_CACHE.get(signature)
+        if cached is not None:
+            _FILE_CACHE.pop(signature, None)
+            _FILE_CACHE[signature] = cached
+            events = _EVENT_CACHE.get(signature) if include_events else None
+            if events is not None:
+                _EVENT_CACHE.move_to_end(signature)
+            else:
+                events = []
+            if include_events and signature not in _EVENT_CACHE:
+                # Reparse on a detail open when only the summary is cached.
+                _FILE_CACHE.pop(signature, None)
+            else:
+                return cached[0], events, cached[1], cached[2]
+        # Discard old versions of this path from both caches.
+        for cache in (_FILE_CACHE, _EVENT_CACHE):
+            for key in list(cache):
+                if key[0] == signature[0] and key != signature:
+                    cache.pop(key, None)
 
     meta = {}
+    first_record = _first_record(path)
+    first_meta = first_record.get("payload") if first_record and first_record.get("type") == "session_meta" and isinstance(first_record.get("payload"), dict) else {}
     events = deque(maxlen=MAX_EVENTS)
     event_count = 0
     digest = ""
@@ -176,8 +209,8 @@ def _load_file(path: Path) -> tuple[dict, list[dict], str, bool] | None:
         if final_digest:
             digest = final_digest
             continue
-        if line_number == 1 and record.get("type") == "session_meta":
-            meta = record.get("payload") if isinstance(record.get("payload"), dict) else {}
+        if line_number == 1:
+            meta = first_meta
         if "_glacier_digest" in record:
             continue
         created = _timestamp(record.get("timestamp"))
@@ -193,16 +226,25 @@ def _load_file(path: Path) -> tuple[dict, list[dict], str, bool] | None:
         fallback = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
     except OSError:
         return None
-    current_id = str(meta.get("id") or path.stem)
+    current_id = _record_id(first_record, path)
     started = _timestamp(meta.get("timestamp")) or first_time or fallback
     updated = max_time or fallback
     summary = {"id": current_id, "tool": "codex", "started": started.isoformat(), "updated": updated.isoformat(),
                "title": next((event["text"].strip()[:160] for event in events if event["type"] == "user_message" and event["text"].strip()), ""),
                "cwd": meta.get("cwd") or "", "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120,
                "truncated": event_count > MAX_EVENTS}
-    parsed = (summary, list(events), digest, event_count > MAX_EVENTS)
-    _FILE_CACHE[signature] = parsed
-    return parsed
+    event_list = list(events) if include_events else []
+    truncated = event_count > MAX_EVENTS
+    with _CACHE_LOCK:
+        # Another reader may have populated this same signature while we parsed.
+        _FILE_CACHE.pop(signature, None)
+        _FILE_CACHE[signature] = (summary, digest, truncated)
+        if include_events:
+            _EVENT_CACHE.pop(signature, None)
+            _EVENT_CACHE[signature] = event_list
+            while len(_EVENT_CACHE) > MAX_EVENT_CACHE:
+                _EVENT_CACHE.popitem(last=False)
+        return summary, event_list, digest, truncated
 
 
 def _summary_copy(summary: dict) -> dict:
@@ -225,10 +267,17 @@ def read_session(session_id: str) -> tuple[dict, list[dict], str] | None:
 
 
 def list_sessions() -> list[dict]:
+    paths = list(_files())
+    existing = {str(path) for path in paths}
+    with _CACHE_LOCK:
+        for cache in (_FILE_CACHE, _EVENT_CACHE):
+            for key in list(cache):
+                if key[0] not in existing:
+                    cache.pop(key, None)
     result = []
     seen = set()
-    for path in _files():
-        parsed = _load_file(path)
+    for path in paths:
+        parsed = _load_file(path, include_events=False)
         if parsed is None:
             continue
         summary = parsed[0]

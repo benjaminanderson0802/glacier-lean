@@ -214,6 +214,42 @@ def test_detail_skips_nonmatching_files_before_streaming(mirror_client, monkeypa
     assert calls[0] == source / "2026/10/07/session-two.jsonl"
 
 
+def test_event_cache_keeps_only_eight_recently_opened_files(mirror_client):
+    _, source, _ = mirror_client
+    session_mirror._FILE_CACHE.clear()
+    paths = [source / "2026/10/07/session-one.jsonl", source / "2026/10/07/session-two.jsonl"]
+    for index in range(9):
+        path = source / f"2026/10/07/extra-{index}.jsonl"
+        path.write_text(json.dumps({"type": "session_meta", "payload": {"id": f"extra-{index}"}}) + "\n")
+        paths.append(path)
+    for path in paths:
+        session_mirror._load_file(path)
+    assert len(session_mirror._EVENT_CACHE) == 8
+    assert (str(paths[0]), paths[0].stat().st_mtime_ns, paths[0].stat().st_size) not in session_mirror._EVENT_CACHE
+
+
+def test_summary_cache_drops_entries_for_removed_files(mirror_client):
+    _, source, _ = mirror_client
+    session_mirror._FILE_CACHE.clear()
+    session_mirror.list_sessions()
+    removed = source / "2026/10/07/session-two.jsonl"
+    removed.unlink()
+    session_mirror.list_sessions()
+    assert all(key[0] != str(removed) for key in session_mirror._FILE_CACHE)
+
+
+def test_detail_uses_first_record_id_consistently_with_list(mirror_client):
+    client, source, _ = mirror_client
+    path = source / "2026/10/07/session-two.jsonl"
+    lines = path.read_text().splitlines()
+    lines.append(json.dumps({"type": "session_meta", "payload": {"id": "late-metadata-id"}}))
+    path.write_text("\n".join(lines) + "\n")
+    rows = client.get("/api/sessions").json()
+    assert "session-two" in {row["id"] for row in rows}
+    assert session_mirror.read_session("session-two") is not None
+    assert session_mirror.read_session("late-metadata-id") is None
+
+
 def test_missing_session_is_not_found(mirror_client):
     client, _, _ = mirror_client
     assert client.get("/api/sessions/missing").status_code == 404
