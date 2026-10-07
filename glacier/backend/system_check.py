@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import time
 import shell_commands
+import json
+from pathlib import Path
 
 
 DEFAULT_MODEL = "granite3.3:2b"
@@ -168,6 +170,17 @@ def clear_cache():
 
 def effective_settings():
     result = dict(check_system()["recommended"])
+    settings_path = Path(os.environ.get("GLACIER_HOME", "data")) / "settings.json"
+    try:
+        saved = json.loads(settings_path.read_text(encoding="utf-8"))
+        if saved.get("mode") in {"low", "standard"}:
+            result["mode"] = saved["mode"]
+        if isinstance(saved.get("local_model"), str) and saved["local_model"].strip():
+            result["local_model"] = saved["local_model"].strip()
+        if isinstance(saved.get("max_parallel_runs"), int) and saved["max_parallel_runs"] > 0:
+            result["max_parallel_runs"] = saved["max_parallel_runs"]
+    except (OSError, ValueError, TypeError):
+        pass
     local_model = os.environ.get("GLACIER_LOCAL_MODEL", "").strip()
     if local_model:
         result["local_model"] = local_model
