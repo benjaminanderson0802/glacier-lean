@@ -19,3 +19,4 @@ sqlite-vec==0.1.9
 agent-client-protocol==0.12.1
 jsonschema==4.25.1
 keyring==25.6.0
+pyyaml==6.0.3

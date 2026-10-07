@@ -1,0 +1,139 @@
+capabilities:
+  - name: Filesystem
+    description: Lets a worker read and change files inside named folders.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem
+    license: MIT
+    version: 2026.8.31
+    install: npx -y @modelcontextprotocol/server-filesystem@2026.8.31 /approved/workspace
+    permissions:
+      files: ["/approved/workspace:read-write"]
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: Can read, overwrite, move, or delete files within its allowed folders; use narrow folders.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Git
+    description: Lets a worker inspect and change a named local Git repository.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/git
+    license: MIT
+    version: 2026.8.18
+    install: uvx --from mcp-server-git==2026.8.18 mcp-server-git --repository /approved/repo
+    permissions:
+      files: ["/approved/repo:read-write"]
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: Git operations can change branches and repository content; limit it to a disposable or approved checkout.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Fetch
+    description: Lets a worker retrieve web pages and convert them to readable text.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/fetch
+    license: MIT
+    version: 2026.8.18
+    install: uvx --from mcp-server-fetch==2026.8.18 mcp-server-fetch
+    network_enforcement: "Glacier network sandbox allowlist: approved-host.example"
+    permissions:
+      files: []
+      network_access: true
+      network_hosts: ["approved-host.example"]
+      secrets: []
+    risk_notes: Web content may contain prompt injection; enforce a host allowlist and block local or private IP ranges.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Memory graph
+    description: Lets a worker store and search simple entities and relationships.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/memory
+    license: MIT
+    version: 2026.8.31
+    install: MEMORY_FILE_PATH=/approved/mcp-memory.jsonl npx -y @modelcontextprotocol/server-memory@2026.8.31
+    permissions:
+      files: ["/approved/mcp-memory.jsonl:read-write"]
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: This server uses its own JSONL store and does not replace Glacier's plain Markdown vault; treat stored content as worker-controlled data.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Playwright browser
+    description: Lets a worker control a browser to inspect and interact with websites.
+    source: https://github.com/microsoft/playwright-mcp
+    license: Apache-2.0
+    version: 0.0.83
+    install: npx -y @playwright/mcp@0.0.83
+    network_enforcement: "Glacier network sandbox allowlist: approved-site.example"
+    permissions:
+      files: ["browser-profile:temporary"]
+      network_access: true
+      network_hosts: ["approved-site.example"]
+      secrets: []
+    risk_notes: Browser pages can prompt-inject the worker and browser actions can submit forms or change remote data; use isolated profiles and approvals.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: GitHub
+    description: Lets a worker read and manage repositories, issues, and pull requests.
+    source: https://github.com/github/github-mcp-server
+    license: MIT
+    version: sha256:f1c51d1df58bebaeeb672e01c91692d87a7a6e22f44b9ca75263375b5e35b7fe
+    install: docker run -i --rm ghcr.io/github/github-mcp-server@sha256:f1c51d1df58bebaeeb672e01c91692d87a7a6e22f44b9ca75263375b5e35b7fe
+    network_enforcement: "Glacier network sandbox allowlist: api.github.com, github.com"
+    permissions:
+      files: []
+      network_access: true
+      network_hosts: ["api.github.com", "github.com"]
+      secrets: ["GITHUB_PERSONAL_ACCESS_TOKEN"]
+    risk_notes: Depending on token scopes, tools can create or change external issues, pull requests, and repository content; require approval for writes.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: PostgreSQL
+    description: Lets a worker inspect and query an approved PostgreSQL database.
+    source: https://github.com/crystaldba/postgres-mcp
+    license: MIT
+    version: 0.3.0
+    install: uvx postgres-mcp==0.3.0 --access-mode restricted
+    network_enforcement: "Glacier network sandbox allowlist: approved-database.example"
+    permissions:
+      files: []
+      network_access: true
+      network_hosts: ["approved-database.example"]
+      secrets: ["POSTGRES_CONNECTION_STRING"]
+    risk_notes: Restricted mode is intended to limit operations to read-only queries, but a connection still exposes database contents; use a least-privilege account.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Time
+    description: Lets a worker check the current time and convert times between time zones.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/time
+    license: MIT
+    version: 0.6.2
+    install: uvx --from mcp-server-time==0.6.2 mcp-server-time
+    permissions:
+      files: []
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: Time zone conversion depends on the bundled time zone database and system configuration.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Sequential thinking
+    description: Lets a worker organize a problem into revisable steps and alternatives.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
+    license: MIT
+    version: 2026.8.31
+    install: npx -y @modelcontextprotocol/server-sequential-thinking@2026.8.31
+    permissions:
+      files: []
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: The server is a reasoning aid; its output still needs an independent check.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
