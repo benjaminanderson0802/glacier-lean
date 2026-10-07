@@ -7,9 +7,11 @@ missing tools are reported without preventing setup.
 
 Computers with 8 GB RAM or less, or 4 CPU cores or less, use `low` mode with a
 recommended one parallel run. Other computers use `standard` mode. When no
-supported model is installed, both modes recommend `granite3.3:2b` (Apache-2.0,
-about 1.5 GB to download), the best result in the allowed-model evaluation.
-Glacier reuses the smallest supported model already installed. No evaluated
+model is installed, `low` mode recommends `qwen3:0.6b` (Apache-2.0, about 0.5 GB to
+download, about 1 GiB in use) and `standard` mode recommends `granite3.3:2b` (Apache-2.0,
+about 1.5 GB to download, about 5 GiB in use), the best result in the allowed-model evaluation.
+Glacier first reuses an evaluated model you already have, then any other chat model you
+installed (smallest first), so nothing is downloaded when you already have one. No evaluated
 model met the target of 8/10 strict, independently checked tasks; the final
 score is recorded in the model evaluation evidence. Treat this as a best-effort
 default, not a model that has passed the low-resource target. See

@@ -1,16 +1,17 @@
 """Cross-platform hardware and local tool checks for first-run setup."""
 import os
 import platform
+import re
 import shutil
 import subprocess
 import time
 
 
 DEFAULT_MODEL = "granite3.3:2b"
-# All entries are small, instruct-tuned models under OSI-approved licenses.
-# Order from smallest download upward so an installed small model is reused.
+# All entries are small, instruct-tuned models under OSI-approved licenses (evidence/live/model_choice.md).
+# Low-resource mode must fit a modest PC: qwen3:0.6b peaks around 1 GiB, granite3.3:2b around 5 GiB.
 RECOMMENDED_MODELS = {
-    "low": DEFAULT_MODEL,
+    "low": "qwen3:0.6b",
     "standard": DEFAULT_MODEL,
 }
 INSTALLED_MODEL_ORDER = (
@@ -101,8 +102,17 @@ def recommend(machine):
     memory = float(raw_memory) if raw_memory is not None else None
     low = (memory is not None and memory <= 8) or cores <= 4
     mode = "low" if low else "standard"
-    installed = set(machine.get("ollama_models") or [])
-    model = next((name for name in INSTALLED_MODEL_ORDER if name in installed), RECOMMENDED_MODELS[mode])
+    installed = [m for m in (machine.get("ollama_models") or [])
+                 if "embed" not in m.lower() and "minilm" not in m.lower()]
+    # 1) an evaluated model already installed; 2) any other chat model the user installed (smallest first, no
+    # download needed); 3) the recommended default for this mode.
+    model = next((name for name in INSTALLED_MODEL_ORDER if name in installed), None)
+    if model is None and installed:
+        def size(name):
+            match = re.search(r"(?:^|[-:])(\d+(?:\.\d+)?)\s*([bm])(?:\b|$)", name.lower())
+            return float("inf") if not match else float(match.group(1)) * (1_000 if match.group(2) == "b" else 1)
+        model = min(enumerate(installed), key=lambda item: (size(item[1]), item[0]))[1]
+    model = model or RECOMMENDED_MODELS[mode]
     return {"mode": mode, "local_model": model,
             "max_parallel_runs": 1 if low else min(4, max(1, cores // 2))}
 

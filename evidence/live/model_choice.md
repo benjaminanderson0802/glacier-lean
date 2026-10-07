@@ -2,7 +2,9 @@
 
 ## Recommendation
 
-No candidate met the low-resource threshold of 8/10. `granite3.3:2b` is the highest scoring allowed model (4/10), and is the best result among these candidates with an Ollama download under 3 GB. It is the fallback default for both modes. The measured resident memory peak was about 5.13 GiB for Granite on this host, so this default is not proven to fit a 4 GB PC. Glacier chooses the smallest evaluated model already installed before falling back to the default.
+No candidate met the low-resource threshold of 8/10. `granite3.3:2b` is the highest scoring allowed model (4/10), and is the best result among these candidates with an Ollama download under 3 GB. It is the fallback default for standard mode. Low-resource mode defaults to `qwen3:0.6b` (about 1 GiB peak), the only candidate measured to fit a modest PC. The measured resident memory peak was about 5.13 GiB for Granite on this host, so this default is not proven to fit a 4 GB PC. Glacier chooses the smallest evaluated model already installed before falling back to the default.
+
+**Integrator note:** most failures were formatting, not wrong answers (for example `19 + 23 = 42. **Integer answer:** 42.` instead of `42`). A follow-up makes Glacier's local-AI step ask for the answer only, at temperature 0, and re-measures.
 
 ## Evaluation setup
 

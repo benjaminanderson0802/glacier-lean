@@ -63,13 +63,17 @@ def test_system_endpoints(server):
     assert server.get("/api/system/settings")["max_parallel_runs"] >= 1
 
 
-def test_recommend_uses_evaluated_model_table():
+def test_recommend_skips_embedding_models():
     settings = system_check.recommend({
         "memory_gb": 16,
         "cpu_cores": 8,
         "ollama_models": ["nomic-embed-text:latest", "all-minilm:33m", "qwen3:8b"],
     })
-    assert settings["local_model"] == "granite3.3:2b"
+    assert settings["local_model"] == "qwen3:8b"
+
+
+def test_low_resource_default_fits_a_modest_pc():
+    assert system_check.recommend({"memory_gb": 4, "cpu_cores": 2, "ollama_models": []})["local_model"] == "qwen3:0.6b"
 
 
 def test_unknown_memory_is_not_treated_as_low(monkeypatch):
