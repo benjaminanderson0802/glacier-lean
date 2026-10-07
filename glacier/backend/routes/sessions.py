@@ -48,10 +48,11 @@ def save_to_memory(session_id: str):
         return {"saved": False, "path": path}
     except FileNotFoundError:
         pass
-    lines = [f"# {summary['title'] or 'Codex session'}", "", f"Session: {session_id}",
+    agent = "OpenCode" if summary.get("source") == "opencode" else "Codex"
+    lines = [f"# {summary['title'] or agent + ' session'}", "", f"Session: {session_id}",
              f"Started: {summary['started'] or 'unknown'}", f"Working folder: {summary['cwd'] or 'unknown'}", "", "## Conversation"]
     for event in events:
-        label = {"user_message": "User", "assistant_message": "Codex", "command": "Command",
+        label = {"user_message": "User", "assistant_message": agent, "command": "Command",
                  "command_output": "Command output", "file_change": "File changes", "other": "Other"}.get(event["type"], "Other")
         lines.append(f"\n**{label}:** {event['text']}")
     body = secrets_store.redact("\n".join(lines))

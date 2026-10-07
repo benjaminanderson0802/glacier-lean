@@ -146,7 +146,7 @@ def test_detail_orders_messages_and_tool_calls_and_redacts_saved_note(session_cl
     assert "**User:** Please inspect [secret session-token]" in note
     assert "**Command:** Ran command: Run tests" in note
     assert "**Command output:** 2 passed" in note
-    assert "**Codex:** Found [secret session-token]" in note
+    assert "**OpenCode:** Found [secret session-token]" in note
     assert "opencode-secret" not in note
 
 
