@@ -1,5 +1,37 @@
 # Per-step sandbox research and current support
 
+## Read a web page step
+
+The **Read a web page** step fetches one URL and turns it into text for later
+steps. Add the site's domain in **Allowed sites**, separated by commas (for
+example, `example.org, docs.python.org`). A domain permits that exact host and
+its subdomains. With the list empty, the step refuses every address and asks
+you to add an allowed site.
+
+Only `http` and `https` addresses are accepted. Before connecting, Glacier
+checks that every address the host resolves to is public; private, loopback,
+link-local, multicast and reserved IPv4 and IPv6 addresses are refused. Each
+redirect is checked again against the allowed sites and address rules, and at
+most three redirects are followed. The request has a 10 second timeout, sends
+no cookies, and uses the plain user agent `Glacier (local automation)`. URLs
+containing `{secret:...}` are refused so a secret cannot be sent in an address.
+
+The response may be at most 5 MB and must be HTML, plain text, PDF, JSON or
+Markdown. MarkItDown converts it in the same memory-capped child process used
+for uploaded documents. Output includes the final URL and HTTP status, followed
+by at most 20,000 characters of converted text. Errors tell you what to change
+in plain language.
+
+The allowed-site list is a step setting, so each flow makes its outbound
+destinations visible in the flow configuration. The check is applied before
+each request and redirect; operating-system network sandboxing remains a
+separate control for ordinary command steps.
+
+This card adds an ordinary user-facing web step, not a new orchestration layer.
+MarkItDown and its capped conversion child already handle document conversion;
+the new code only fetches the page under the per-step egress rules. No checkpoint
+status is changed here.
+
 Research checked 2026-10-07. This card advances PH7.1 (per-node sandbox with
 file and network allowlists), serves P-SECURE, and uses filesystem, network and
 exit-status acceptance tests in `glacier/backend/tests/test_sandboxing.py`.
