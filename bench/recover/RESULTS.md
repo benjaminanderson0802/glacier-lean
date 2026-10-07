@@ -1,23 +1,27 @@
 # Recovery benchmark results
 
-Local backend, fake Codex executable, HTTP API requests. Recovery latency starts immediately before the undo/restore request and ends after independent file-state verification.
+## Latest live attempt
 
-Audit coverage: 98.39% (61/62 expected side effects found)
+The benchmark ran against a local backend with the fake Codex executable under `/tmp/glacier-suite.lock`. It stalled during the 50-note run setup, before the run completed and before any undo request started. At a process check, Git `cat-file` helpers had been blocked for 3 minutes 53 seconds; I stopped the benchmark I had started shortly afterward. This setup delay is not a recovery time.
 
-| Scenario | Recovery time | Restored state | Audit entries expected/found | Result |
+| Scenario | Latest recovery time | Restored state | Audit coverage | Result vs. 120 s / 100% |
 |---|---:|---|---:|---|
-| run_notes | 0.404 s | PASS | 50/50 | PASS |
+| Run writes 50 notes, then undo | Not measured; undo was not reached | Not measured | Not established | FAIL: no valid measurement |
+| Restore a flow after 10 edits | Not measured | Not measured | Not established | FAIL: no valid measurement |
+| Undo an overwritten memory note | Not measured | Not measured | Not established | FAIL: no valid measurement |
+| Undo an isolated coding run merged into workspace | Not measured | Not measured | Not established | FAIL: no valid measurement |
 
-run_notes detail: one run; 50 note files hashed and removed; audit paths=50
-| flow_restore | 0.022 s | PASS | 10/10 | PASS |
+Audit coverage for this attempt: **not established**; the 100% gate is not demonstrated. Overall: **FAIL / incomplete measurement**. The recovery threshold is < 120 seconds; no fresh recovery duration can be compared to it because setup did not reach recovery.
 
-flow_restore detail: restored hash 4bd69d7a0f68 -> 053f3c227302 content=original
-| memory_undo | 0.022 s | PASS | 1/1 | PASS |
+## Prior observations (historical only)
 
-memory_undo detail: restored exact prior hash e639d260ce27
-| isolated_code_undo | 0.200 s | FAIL | 1/0 | FAIL |
+These timings came from an earlier benchmark version. They are retained as context and do not count as fresh results for this revision.
 
-isolated_code_undo detail: workspace changed files=1; API audit changes=0; workspace hash 9160d4be34c8 -> 7b9a72466d39 -> 7b9a72466d39; recovery error: Glacier API POST /api/runs/8256bf00b193/undo returned 404: {"detail":"No saved changes were found for run 8256bf00b193."}
+| Scenario | Prior recovery time | Prior restored state | Prior audit evidence |
+|---|---:|---|---|
+| Run writes 50 notes, then undo | 0.404 s | PASS | 50 run-tagged paths for 50 changed notes |
+| Restore a flow after 10 edits | 0.022 s | PASS | 10 version entries for 10 edits |
+| Undo an overwritten memory note | 0.022 s | PASS | 1 history entry for 1 overwrite |
+| Undo an isolated coding run merged into workspace | 0.200 s | FAIL | No matching run changes in the vault API; undo returned 404 and left the workspace file changed |
 
-Threshold: each recovery <= 120 s; total audit coverage 100%.
-Overall: FAIL
+An earlier overall figure of 98.39% (61/62) used a different denominator and an API change-count fallback. It is not valid for the current audit definition and is not reported as current coverage.

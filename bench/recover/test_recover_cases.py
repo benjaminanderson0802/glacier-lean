@@ -69,3 +69,31 @@ def test_report_records_threshold_and_audit_coverage():
     assert passed
     assert "100.00%" in report
     assert "120 s" in report
+
+
+def test_recovery_timer_polls_until_state_is_restored(monkeypatch):
+    ticks = iter([10.0, 10.0, 10.1, 10.2])
+    monkeypatch.setattr(recover.time, "monotonic", lambda: next(ticks))
+    sleeps = []
+    monkeypatch.setattr(recover.time, "sleep", lambda delay: sleeps.append(delay))
+    checks = iter([False, False, True])
+    elapsed, restored, error = recover.timed_recovery(lambda: None, lambda: next(checks))
+    assert round(elapsed, 3) == 0.2
+    assert restored is True
+    assert error == ""
+    assert sleeps == [0.1, 0.1]
+
+
+def test_tree_snapshot_excludes_git_and_index_files(tmp_path):
+    (tmp_path / "note.md").write_text("note", encoding="utf-8")
+    (tmp_path / "index.sqlite").write_text("index", encoding="utf-8")
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".git" / "config").write_text("git", encoding="utf-8")
+    snapshot = recover.tree_snapshot(tmp_path)
+    assert set(snapshot) == {"note.md"}
+
+
+def test_expected_audit_counts_run_side_effects_not_recovery_requests():
+    assert recover.expected_audit_count(changed_files=50) == 50
+    assert recover.expected_audit_count(changed_files=10) == 10
+    assert recover.expected_audit_count(changed_files=1) == 1
