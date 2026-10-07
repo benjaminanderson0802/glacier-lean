@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from glacier.backend.portable import export_flow, import_flow
+from portable import export_flow, import_flow
 
 
 def sample_flow():
