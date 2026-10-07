@@ -11,6 +11,8 @@ FAKE_CODEX = os.path.join(BACKEND, "tests", "fake_codex.py")  # tests never call
 TEST_TOKEN = "glacier-test-token"
 # Tests never read the developer's real OpenCode sessions; a test that needs some points this at its own folder.
 os.environ["GLACIER_OPENCODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-opencode-in-tests")
+os.environ["GLACIER_CLAUDE_CODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-claude-code-in-tests")
+os.environ["GLACIER_GEMINI_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-gemini-in-tests")
 os.environ["GLACIER_TOKEN"] = TEST_TOKEN
 raw_httpx = {name: getattr(httpx, name) for name in ("get", "post", "put", "patch", "delete", "options", "head", "stream", "request")}
 _LOCAL = ("http://127.0.0.1", "http://localhost")

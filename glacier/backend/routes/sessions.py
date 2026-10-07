@@ -48,7 +48,7 @@ def save_to_memory(session_id: str):
         return {"saved": False, "path": path}
     except FileNotFoundError:
         pass
-    agent = "OpenCode" if summary.get("source") == "opencode" else "Codex"
+    agent = {"opencode": "OpenCode", "claude": "Claude Code", "gemini": "Gemini CLI"}.get(summary.get("source"), "Codex")
     lines = [f"# {summary['title'] or agent + ' session'}", "", f"Session: {session_id}",
              f"Started: {summary['started'] or 'unknown'}", f"Working folder: {summary['cwd'] or 'unknown'}", "", "## Conversation"]
     for event in events:

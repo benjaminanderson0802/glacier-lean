@@ -13,6 +13,7 @@ from typing import Iterator
 
 import secrets_store
 from session_readers import opencode
+from session_readers import claude_code, gemini
 
 log = logging.getLogger(__name__)
 MAX_OUTPUT = 4000
@@ -258,6 +259,10 @@ def _summary_copy(summary: dict) -> dict:
 def read_session(session_id: str) -> tuple[dict, list[dict], str] | None:
     if session_id.startswith("opencode:"):
         return opencode.read_session(session_id)
+    if session_id.startswith("claude-code:"):
+        return claude_code.read_session(session_id)
+    if session_id.startswith("gemini:"):
+        return gemini.read_session(session_id)
     for path in _files():
         if _first_record_id(path) != session_id:
             continue
@@ -290,4 +295,6 @@ def list_sessions() -> list[dict]:
         seen.add(session_id)
         result.append({key: _summary_copy(summary)[key] for key in ("id", "tool", "started", "updated", "title", "cwd", "active")})
     result.extend(opencode.list_sessions())
+    result.extend(claude_code.list_sessions())
+    result.extend(gemini.list_sessions())
     return sorted(result, key=lambda row: row["updated"], reverse=True)
