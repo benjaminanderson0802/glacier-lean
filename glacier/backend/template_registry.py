@@ -22,7 +22,15 @@ RISKY_COMMANDS = (
     (re.compile(r"\bnc\b", re.IGNORECASE), "nc"),
     (re.compile(r"\bssh\b", re.IGNORECASE), "ssh"),
     (re.compile(r"\bscp\b", re.IGNORECASE), "scp"),
+    (re.compile(r"\brm\s+-fr\b", re.IGNORECASE), "rm -fr"),
+    (re.compile(r"\brm\s+-r\s+-f\b", re.IGNORECASE), "rm -r -f"),
     (re.compile(r"\brm\s+-rf\b", re.IGNORECASE), "rm -rf"),
+    (re.compile(r"\bpython(?:\d+(?:\.\d+)*)?\s+-c\b", re.IGNORECASE), "python -c"),
+    (re.compile(r"\bperl\s+-e\b", re.IGNORECASE), "perl -e"),
+    (re.compile(r"\bnode(?:\.exe)?\s+-e\b", re.IGNORECASE), "node -e"),
+    (re.compile(r"\binvoke-webrequest\b", re.IGNORECASE), "Invoke-WebRequest"),
+    (re.compile(r"\biwr\b", re.IGNORECASE), "iwr"),
+    (re.compile(r"\bcertutil(?:\.exe)?\b", re.IGNORECASE), "certutil"),
     (re.compile(r"\bsudo\b", re.IGNORECASE), "sudo"),
     (re.compile(r"\bbash\b", re.IGNORECASE), "bash"),
     (re.compile(r"\bsh\b", re.IGNORECASE), "sh"),
@@ -36,10 +44,12 @@ def _contains_paid_route(value) -> bool:
     if isinstance(value, dict):
         route_marker = any(key in value for key in ("base_url", "model", "route", "routes"))
         engine = str(value.get("engine", "")).casefold()
-        paid_engine = engine in {"gateway", "openai", "anthropic", "claude", "hosted", "api"}
+        paid_engine = engine in {"openai", "anthropic", "claude", "hosted", "api"}
         url = str(value.get("base_url", "")).casefold()
         hosted_url = bool(url) and not any(host in url for host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"))
-        return (("paid" in value and value["paid"] is not False)
+        route_paid = "paid" in value and value["paid"] is not False
+        gateway_route_paid = "name" in value and value.get("paid", True) is not False
+        return (route_paid or gateway_route_paid
                 or (route_marker and (paid_engine or hosted_url))
                 or any(_contains_paid_route(item) for item in value.values()))
     if isinstance(value, list):
@@ -116,18 +126,22 @@ def review_import(text: str) -> dict:
         findings.append("Every goal needs at least one acceptance check.")
 
     nodes = flow.get("nodes", [])
+    commands_for_review = []
     for node in nodes:
         config = node.get("config") or {}
         node_id = node.get("id", "unnamed node")
         if not isinstance(config, dict):
             findings.append(f"Node {node_id} settings must be an object.")
             continue
-        for command in _commands_for_review(config):
+        node_commands = _commands_for_review(config)
+        commands_for_review.extend(node_commands)
+        for command in node_commands:
             _append_command_findings(findings, f"Node {node_id}", command)
         if re.search(r"\{secret:[^}]*\}", json.dumps(config, ensure_ascii=False), re.IGNORECASE):
             findings.append(f"Node {node_id} contains a secret placeholder ({'{secret:}'}).")
         if node.get("type") == "codex":
             config["sandbox"] = "read-only"
+            node["config"] = config
 
         if _contains_paid_route(config):
             findings.append(f"Node {node_id} selects a paid model route.")
@@ -136,13 +150,16 @@ def review_import(text: str) -> dict:
         for index, check in enumerate(acceptance, start=1):
             if isinstance(check, dict):
                 for command in _commands_for_review(check):
+                    commands_for_review.append(command)
                     _append_command_findings(findings, f"Acceptance check {index}", command)
                 if re.search(r"\{secret:[^}]*\}", json.dumps(check, ensure_ascii=False), re.IGNORECASE):
                     findings.append(f"Acceptance check {index} contains a secret placeholder ({'{secret:}'}).")
                 if _contains_paid_route(check):
                     findings.append(f"Acceptance check {index} selects a paid model route.")
 
-    for command in _commands_for_review(flow.get("gateway", {})):
+    gateway_commands = _commands_for_review(flow.get("gateway", {}))
+    commands_for_review.extend(gateway_commands)
+    for command in gateway_commands:
         _append_command_findings(findings, "Gateway configuration", command)
 
     if findings:
@@ -152,11 +169,13 @@ def review_import(text: str) -> dict:
     original_id = flow["id"]
     flow["source_id"] = original_id
     flow["id"] = original_id if original_id.startswith("community-") else f"community-{original_id}"
-    proposal = {"id": proposal_id, "status": "pending", "author": flow.get("author", "Community contributor"), "template": flow}
+    proposal = {"id": proposal_id, "status": "pending", "author": flow.get("author", "Community contributor"), "template": flow,
+                "commands_for_review": commands_for_review}
     pending = _home() / "templates" / "pending"
     pending.mkdir(parents=True, exist_ok=True)
     (pending / f"{proposal_id}.json").write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return {"accepted": True, "review": [], "id": proposal_id, "template_id": flow["id"], "source_id": original_id, "status": "pending"}
+    return {"accepted": True, "review": [], "id": proposal_id, "template_id": flow["id"], "source_id": original_id,
+            "status": "pending", "commands_for_review": commands_for_review}
 
 
 def approve_import(proposal_id: str) -> dict:

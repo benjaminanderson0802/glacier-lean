@@ -61,13 +61,44 @@ def test_risky_template_is_rejected_with_each_finding(tmp_path, monkeypatch):
     flow["nodes"] = [
         {"id": "danger", "type": "command", "config": {"cmd": "curl x; wget y; nc x; ssh x; scp x; rm -rf /tmp/x; sudo id; printf '{secret:token}'"}, "position": {"x": 0, "y": 0}},
         {"id": "ai", "type": "codex", "config": {"prompt": "inspect"}, "position": {"x": 260, "y": 0}},
-        {"id": "paid", "type": "decide", "config": {"engine": "gateway", "routes": "paid"}, "position": {"x": 520, "y": 0}},
+        {"id": "paid", "type": "decide", "config": {"engine": "gateway", "gateway": {"routes": [{"name": "hosted", "paid": True}]}}, "position": {"x": 520, "y": 0}},
     ]
     result = template_registry.review_import(_portable(flow))
     assert result["accepted"] is False
     findings = "\n".join(result["review"])
     for item in ("acceptance", "curl", "wget", "nc", "ssh", "scp", "rm -rf", "sudo", "{secret:}", "paid"):
         assert item in findings
+
+
+def test_all_requested_risky_command_forms_are_reported(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    commands = [
+        "rm -fr /tmp/x", "rm -r -f /tmp/x", "python -c 'print(1)'",
+        "perl -e 'print 1'", "node -e 'console.log(1)'",
+        "Invoke-WebRequest https://example.invalid", "iwr https://example.invalid",
+        "certutil -urlcache https://example.invalid",
+    ]
+    flow["nodes"][0]["config"]["cmd"] = "; ".join(commands)
+    flow["acceptance"] = [{"kind": "command", "cmd": "rm -r -f /tmp/also"}]
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is False
+    findings = "\n".join(result["review"]).casefold()
+    for pattern in ("rm -fr", "rm -r -f", "python -c", "perl -e", "node -e", "invoke-webrequest", "iwr", "certutil"):
+        assert pattern in findings
+
+
+def test_gateway_engine_is_not_paid_by_itself_and_missing_paid_flag_is_paid(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["nodes"][0]["config"]["gateway"] = {"routes": [{"name": "local", "paid": False}]}
+    flow["nodes"][0]["config"]["engine"] = "gateway"
+    assert template_registry.review_import(_portable(flow))["accepted"] is True
+
+    flow["nodes"][0]["config"]["gateway"] = {"routes": [{"name": "unspecified"}]}
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is False
+    assert any("paid" in finding.lower() for finding in result["review"])
 
 
 def test_clean_template_is_pending_then_approved_and_listed(tmp_path, monkeypatch):
@@ -81,7 +112,10 @@ def test_clean_template_is_pending_then_approved_and_listed(tmp_path, monkeypatc
     proposal = response.json()
     assert proposal["accepted"] is True
     assert proposal["status"] == "pending"
+    expected_commands = ["printf hello", "test -n '{prev_output}'"]
+    assert proposal["commands_for_review"] == expected_commands
     saved = json.loads((tmp_path / "templates" / "pending" / f"{proposal['id']}.json").read_text())
+    assert saved["commands_for_review"] == expected_commands
     codex = next(node for node in saved["template"]["nodes"] if node["type"] == "codex")
     assert codex["config"]["sandbox"] == "read-only"
     approved = client.post(f"/api/templates/import/{proposal['id']}/approve")
@@ -118,6 +152,17 @@ def test_all_codex_nodes_are_forced_read_only_and_ids_are_namespaced(tmp_path, m
     assert saved["template"]["id"].startswith("community-")
     codex = next(node for node in saved["template"]["nodes"] if node["type"] == "codex")
     assert codex["config"]["sandbox"] == "read-only"
+
+
+def test_codex_without_config_is_saved_read_only(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["nodes"][1].pop("config")
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is True
+    saved = json.loads((tmp_path / "templates" / "pending" / f"{result['id']}.json").read_text())
+    codex = next(node for node in saved["template"]["nodes"] if node["type"] == "codex")
+    assert codex["config"] == {"sandbox": "read-only"}
 
 
 def test_gateway_routes_are_reviewed_for_paid_flags(tmp_path, monkeypatch):
