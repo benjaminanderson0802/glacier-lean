@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-07  # latest: statuses through PR #56 (all mockup screens), PR #47 self-build
+last_amended: 2026-10-07  # latest: statuses through PR #58; engine token (PR #57)
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ phases:
       - {id: PH4.4, item: "Memory view (core consumer feature): live graph of everything Glacier knows (projects, decisions, notes, people, and the runs/workers that wrote them); nodes light up as AI writes memory during a run", status: in_progress, test: "a run that writes a note makes that node appear/highlight live; graph stays readable at 2,000 notes", evidence: "PR #55 Memory > Map: pixel graph of notes, runs, flows and writers with stats; live highlight during a run and the 2,000-note readability test not done yet"}
       - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: in_progress, evidence: "PR #52 note reader shows links to / linked from; PR #55 map neighbourhood; exactness test against the real engine still to add", test: "selecting a note shows exactly its incoming and outgoing links"}
       - {id: PH4.8, item: "Friendly editor (no markdown syntax required): [[ link suggestions while typing, tags, search; saves as plain markdown", status: in_progress, test: "first-time non-programmer creates a linked note without help; file on disk is plain markdown", evidence: "PR #54 editor: plain text, [[ link suggestions while typing, saves plain markdown, undo (e2e); first-time-user test not done"}
-      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: in_progress, test: "each note shows author/run; undo restores the previous version via git", evidence: "backend PR #12, #30; PR #52/#54 reader shows each saved version with author and an Undo after saving; run link per note not shown yet"}
+      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: in_progress, test: "each note shows author/run; undo restores the previous version via git", evidence: "backend PR #12, #30; PR #58 note reader: written by (you / an automation / AI model), when, link to the run that wrote it, one-click undo of the last change; history with Undo"}
       - {id: PH4.10, item: "Compatibility: the same folder opens in any markdown editor (tested with Obsidian and Zettlr)", status: in_progress, test: "links and notes render correctly in both", evidence: "PR #26 conformance checker (YAML front matter, Obsidian link rules, Windows names); owner to open the folder in Obsidian and Zettlr"}
       - {id: PH4.5, item: "Status notes generated from the event log (I-12); per-worker and per-project folders", status: done, evidence: "PR #8 status_notes.py + routes/status.py"}
       - {id: PH4.6, item: "Memory hygiene: dedupe/expiry proposals approved by user", status: done, evidence: "PR #18 memory hygiene: dedupe/expiry proposals, owner approves, links rewritten, git-tracked"}
@@ -275,7 +275,7 @@ phases:
     status: in_progress
     checkpoints:
       - {id: PH5.1, item: "Chat UI (assistant-ui over AG-UI) bound to a MAF assistant workflow", test: "chat reply streams; tool approvals render as buttons", status: in_progress, evidence: "backend PR #28 AG-UI event stream; PR #52 Ask screen streams replies and renders proposal Approve/Reject buttons; not yet tested against the real assistant"}
-      - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan", status: in_progress, evidence: "backend planner done (ca8ec21, POST /api/assistant/plan, proposes only); plan view is with the UI designer"}
+      - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan", status: in_progress, evidence: "backend planner (ca8ec21); Ask screen shows proposals with Approve / Edit / Reject (PR #52, #58: Edit opens the proposed flow in the builder, goal and checks kept on save)"}
       - {id: PH5.3, item: "Assistant edits Environments only through the same API and approvals as the user; all changes versioned", test: "assistant change is revertible and audited", status: done, evidence: "PR #28: assistant applies only with owner approval, same validation as PUT, one commit authored assistant, undo_id returned"}
       - {id: PH5.4, item: "Simple/Standard/Full layouts (complexity optional) and plain-language explanations of any run", test: "M-TTFA measured with first-time users"}
       - {id: PH5.5, item: "Templates gallery for common goals (reports, monitoring, inbox triage, code fixes, research)", status: done, evidence: "10 templates (templates/) + PR #54 Templates gallery: pick a template, Use this template creates the flow and opens it (e2e)"}
@@ -287,7 +287,7 @@ phases:
     goal: "Glacier can be the daily home for AI work, not just automation."
     status: in_progress
     checkpoints:
-      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory", status: in_progress, evidence: "importers merged; PR #55 Memory > Add > Chat import (ChatGPT/Claude export upload); refresh button not built yet"}
+      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory", status: in_progress, evidence: "importers merged; PR #55 Chat import upload; PR #58 Check for new chats (refresh) with last import counts"}
       - {id: PH6.2, item: "Live mirror of local coding-agent sessions (Codex, OpenCode, etc.) via their official interfaces", status: in_progress, evidence: "PR #29 read-only Codex session mirror (list/detail/save to memory, redacted); other harnesses documented as readers to add"}
       - {id: PH6.3, item: "File drop, images, projects, chat rename, search", status: in_progress, evidence: "backend PR #27; PR #55 Memory > Add: file drop with optional project, text notes; memory search in PR #52; chat rename not built"}
       - {id: PH6.4, item: "Documents/web tools (MarkItDown/Docling, search/scrape) as nodes with egress rules", status: in_progress, evidence: "PR #9 read_document step (MarkItDown); egress rules wait on PH7.1"}
@@ -300,7 +300,7 @@ phases:
     status: in_progress
     checkpoints:
       - {id: PH7.1, item: "Per-node sandbox (container or OS sandbox) with file and network allowlists", status: done, evidence: "PR #20 Landlock+seccomp sandbox (32-bit/x32 blocked, minimal env, network off, fail closed) + PR #35 wired into runs (GLACIER_SANDBOX floor); limits documented in docs/SANDBOXING.md"}
-      - {id: PH7.2, item: "Prompt-injection / lethal-trifecta test suite in CI (M-SECURITY)", status: done, evidence: "PR #24 bench/security: Blocked 28/28 on main"}
+      - {id: PH7.2, item: "Prompt-injection / lethal-trifecta test suite in CI (M-SECURITY)", status: done, evidence: "PR #24 bench/security; PR #57 per-install engine token: every /api call and the events socket need it (0 unauthenticated listeners). Blocked 30/30 on main incl. no-token and forged-origin cases"}
       - {id: PH7.3, item: "Secrets via OS keychain only; never in vault, logs or prompts", status: done, evidence: "PR #15 keychain store + PR #22 secrets resolved only in command steps, redacted everywhere; codex prompts with secrets refused"}
       - {id: PH7.4, item: "Reviewed/pinned capability catalog (MCP servers) with provenance", status: done, evidence: "PR #17 tools/catalog pinned capability catalog (digests, current versions, advisories reviewed)"}
       - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)", status: in_progress, evidence: "PR #11 rollback + PR #30 exact undo ids + PR #45 code-workspace undo + PR #46 serialized vault Git access; M-RECOVER benchmark re-running (PR #42)"}
