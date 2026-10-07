@@ -7,10 +7,13 @@ import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
+import shutil
+import signal
 import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -35,7 +38,11 @@ def free_port() -> int:
         return sock.getsockname()[1]
 
 
+PROGRESS = {"last_request": "none", "last_at": 0.0, "notes_written": 0}
+
+
 def request(base: str, method: str, path: str, body: dict | None = None, timeout: float = 10):
+    PROGRESS["inflight"] = f"{method} {path}"
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(base + path, data=data, method=method)
     if data is not None:
@@ -43,7 +50,11 @@ def request(base: str, method: str, path: str, body: dict | None = None, timeout
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
             raw = response.read()
-            return json.loads(raw) if raw else {}
+        result = json.loads(raw) if raw else {}
+        PROGRESS["last_request"] = PROGRESS.get("inflight", f"{method} {path}")
+        PROGRESS["last_at"] = time.monotonic()
+        PROGRESS["inflight"] = ""
+        return result
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode(errors="replace")
         raise RuntimeError(f"Glacier API {method} {path} returned {exc.code}: {detail}") from exc
@@ -71,14 +82,22 @@ def load_runner() -> object:
     return module
 
 
-def start_backend(home: Path, port: int) -> subprocess.Popen:
+def start_backend(home: Path, port: int, log_path: Path, diagnostic_dir: Path, parallel_runs: int = 1) -> subprocess.Popen:
     backend_dir = REPO / "glacier" / "backend"
+    diagnostic_dir.mkdir(parents=True, exist_ok=True)
+    (diagnostic_dir / "sitecustomize.py").write_text(
+        "import faulthandler, signal, sys\n"
+        "faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)\n",
+        encoding="utf-8",
+    )
     env = {k: v for k, v in os.environ.items() if k not in {"CODEX_HOME", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"}}
     env.update({"GLACIER_HOME": str(home), "GLACIER_CODEX_BIN": str(HERE / "fake_codex.py"),
                 "GLACIER_SANDBOX": "off", "CODEX_BIN": str(HERE / "fake_codex.py"),
-                "PYTHONUNBUFFERED": "1"})
+                "PYTHONUNBUFFERED": "1", "GLACIER_MAX_PARALLEL_RUNS": str(parallel_runs),
+                "PYTHONPATH": str(diagnostic_dir) + os.pathsep + env.get("PYTHONPATH", "")})
+    log = log_path.open("w", encoding="utf-8", buffering=1)
     return subprocess.Popen([str(PYTHON), "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", str(port)],
-                            cwd=backend_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+                            cwd=backend_dir, env=env, stdout=log, stderr=subprocess.STDOUT,
                             start_new_session=True)
 
 
@@ -99,6 +118,8 @@ def wait_run(base: str, run_id: str, timeout: float = 60) -> dict:
     end = time.monotonic() + timeout
     while time.monotonic() < end:
         run = request(base, "GET", f"/api/runs/{urllib.parse.quote(run_id, safe='')}")
+        PROGRESS["notes_written"] = sum(state == "done" for state in (run.get("node_states") or {}).values())
+        PROGRESS["last_request"] = f"GET /api/runs/{run_id} (completed nodes: {PROGRESS['notes_written']})"
         if run.get("status") in {"done", "failed", "rejected"}:
             return run
         time.sleep(.2)
@@ -305,28 +326,92 @@ def build_report(rows: list[dict]) -> tuple[str, bool]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results", type=Path, default=HERE / "RESULTS.md")
+    parser.add_argument("--parallel-runs", type=int, default=1)
     args = parser.parse_args(argv)
     temp = tempfile.TemporaryDirectory(prefix="glacier-recover-")
     home = Path(temp.name) / "home"
     home.mkdir()
+    diagnostic_dir = Path(temp.name) / "diagnostics"
+    backend_log = Path(temp.name) / "backend.log"
     port = free_port()
-    proc = start_backend(home, port)
+    proc = start_backend(home, port, backend_log, diagnostic_dir, args.parallel_runs)
+    PROGRESS["parallel_runs"] = args.parallel_runs
     base = f"http://127.0.0.1:{port}"
+    # Detect a setup operation that has stopped completing requests for 20 seconds.
+    setup_in_progress = threading.Event()
+    setup_in_progress.set()
+    def stall_monitor():
+        while setup_in_progress.is_set() and proc.poll() is None:
+            last = PROGRESS.get("last_at", 0.0)
+            if PROGRESS.get("inflight") and last and time.monotonic() - last >= 20:
+                PROGRESS["stalled"] = True
+                try:
+                    os.kill(proc.pid, signal.SIGUSR1)
+                    time.sleep(2)
+                    proc.terminate()
+                except ProcessLookupError:
+                    pass
+                return
+            time.sleep(.2)
+    monitor = threading.Thread(target=stall_monitor, daemon=True)
+    monitor.start()
     try:
         wait_ready(proc, base)
+        PROGRESS["last_request"] = "GET /api/node-types (backend ready)"
+        PROGRESS["last_at"] = time.monotonic()
         rows = exercise(base, home)
         report, passed = build_report(rows)
         args.results.parent.mkdir(parents=True, exist_ok=True)
         args.results.write_text(report, encoding="utf-8")
         print(report, end="")
         return 0 if passed else 1
+    except BaseException:
+        # Keep diagnostics in the task's allowed path, with the log retained for inspection.
+        if proc.poll() is None:
+            # The monitor handles the no-progress diagnostic path; other errors get clean shutdown.
+            if not PROGRESS.get("stalled"):
+                proc.terminate()
+            try:
+                proc.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=3)
+        stall_dir = HERE / "stall-logs"
+        stall_dir.mkdir(exist_ok=True)
+        if backend_log.exists():
+            saved_log = stall_dir / f"backend-{time.strftime('%Y%m%d-%H%M%S')}.log"
+            shutil.copy2(backend_log, saved_log)
+            if PROGRESS.get("stalled"):
+                excerpt = "\n".join(
+                    line for line in backend_log.read_text(encoding="utf-8", errors="replace").splitlines()
+                    if any(token in line for token in ("vault.py", "git/index", "git/db.py", "dbos", "runner.py"))
+                )[-5000:]
+                (HERE / "STALL.md").write_text(
+                    "# Recovery benchmark stall record\n\n"
+                    f"Parallel run limit: {PROGRESS.get('parallel_runs', 1)}. "
+                    f"Last successful request: `{PROGRESS['last_request']}`. "
+                    f"Notes written before stall: {PROGRESS['notes_written']}.\n\n"
+                    "After no progress for 20 seconds, the backend received SIGUSR1; after 2 seconds it was "
+                    "stopped with SIGTERM. Full backend output is retained in `stall-logs/` (git-ignored).\n\n"
+                    "## Relevant stack excerpt\n\n"
+                    "```text\n" + excerpt + "\n```\n\n"
+                    "## Most likely cause\n\n"
+                    "A worker was inside GitPython index staging (`IndexFile.add` / `git.db` object store) "
+                    "during a memory-note write. Git index/object processing or contention is the likely stall; "
+                    "the stack alone cannot distinguish those causes.\n",
+                    encoding="utf-8",
+                )
+        raise
     finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=8)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait(timeout=3)
+        setup_in_progress.clear()
+        monitor.join(timeout=3)
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=3)
         temp.cleanup()
 
 

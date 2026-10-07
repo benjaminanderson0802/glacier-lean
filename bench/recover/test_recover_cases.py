@@ -121,3 +121,11 @@ def test_tree_snapshot_detects_added_changed_and_removed_files(tmp_path):
     (tmp_path / "added.txt").write_text("added", encoding="utf-8")
     after = recover.tree_snapshot(tmp_path)
     assert recover.snapshot_diff(before, after) == {"added.txt", "before.txt"}
+
+
+def test_backend_diagnostics_use_log_file_and_sigusr1_hook(tmp_path):
+    import inspect
+    source = inspect.getsource(recover.start_backend)
+    assert "log_path.open" in source
+    assert "faulthandler.register(signal.SIGUSR1" in (Path(recover.__file__).with_name("run_glacier.py").parent / "run_glacier.py").read_text()
+    assert "GLACIER_MAX_PARALLEL_RUNS" in source

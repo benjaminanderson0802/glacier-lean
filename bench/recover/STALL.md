@@ -1,24 +1,23 @@
 # Recovery benchmark stall record
 
-The revised live attempt was started under `flock /tmp/glacier-suite.lock` with a `timeout 600` outer bound. It did not complete the 50-note run setup, so no recovery endpoint was reached and no M-RECOVER number is available. The `RESULTS.md` from the prior attempt remains the current results and reports this as an incomplete measurement.
+Both attempts ran under `flock /tmp/glacier-suite.lock` with `timeout 600`. The default limit-1 run wrote 50 notes; its last successful recovery request was `POST /api/runs/<run-id>/undo` (HTTP 200). The limit-4 run also wrote 50 notes and completed flow restore and memory undo; its last successful request was `POST /api/memory/undo` (HTTP 200). Neither attempt completed the full scenario matrix, so no recovery timing or audit percentage is established.
 
-## Captured process evidence
+After 20 seconds without a completed request, the runner sent SIGUSR1 to the backend, waited 2 seconds, then stopped it with SIGTERM. Full logs are kept in the ignored `stall-logs/` directory.
 
-At 2026-10-07 10:31:44 UTC, the runner process was PID 775981 and its backend child was PID 775985, listening on `127.0.0.1:49923`. The backend had been alive for about 35 seconds at that snapshot. The benchmark wrapper PID was 774776. At a later check, backend PID 775985 was in a sleeping state with 10.3% accumulated CPU. Its Git subprocesses were both sleeping:
+## Limit-1 evidence
+
+The backend returned HTTP 200 from run undo. At the later diagnostic signal it was idle in the asyncio event loop; the benchmark was waiting in client-side validation. This does not establish a backend stall.
+
+## Limit-4 relevant stack excerpt
 
 ```text
-PID     PPID    ELAPSED STAT COMMAND
-775985  775981  00:30   S<sl python -m uvicorn app:app --host 127.0.0.1 --port 49923
-776053  775985  00:28   S<    git cat-file --batch-check
-776054  775985  00:28   S<    git cat-file --batch
+File ".../git/db.py", line 67, in store
+File ".../git/index/base.py", line 778, in _store_path
+File ".../git/index/base.py", line 828, in _entries_for_paths
+File ".../git/index/util.py", line 111, in set_git_working_dir
+File ".../git/index/base.py", line 968, in add
+File ".../glacier/backend/vault.py", line 73, in write_note
+File ".../glacier/backend/routes/memory.py", line 104, in put_note
 ```
 
-`ps -ef | grep git` also showed long-lived idle `git cat-file` helpers from unrelated backend processes in other shared worktrees (PIDs 73885/73886, 289930/289931, and 289982/289983). Those processes were not part of this benchmark and were left alone.
-
-`which py-spy` returned no path, so no Python thread stack dump could be captured. No debugger was installed into the shared environment. The benchmark runner and its backend child were stopped with SIGTERM after the setup exceeded the 120-second recovery target; both exited cleanly.
-
-## Suspected cause
-
-The benchmark lock only serializes processes that also acquire `/tmp/glacier-suite.lock`; it cannot prevent unrelated workers' backend processes from accessing their own or shared Git repositories. The observed idle `cat-file` children indicate GitPython's persistent object readers, but the process listing alone does not prove they caused the wait. The long delay appears during repeated per-note Git work in the 50-note flow, potentially amplified by concurrent Git activity in the shared sandbox. A stack dump or an actually exclusive quiet window is needed to distinguish a lock wait, GitPython reader contention, and ordinary slow commit/index work.
-
-This is a setup stall, not a recovery duration. Results must not be interpreted as a measured rollback time.
+The worker was inside GitPython index staging and its object store during a memory-note write. Git index/object processing or contention is the most likely cause; the captured frames do not distinguish those possibilities.
