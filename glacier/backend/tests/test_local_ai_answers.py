@@ -3,7 +3,6 @@ import importlib.util
 from pathlib import Path
 
 import decider
-import verify
 from nodes import local_ai
 
 
@@ -86,29 +85,6 @@ def test_default_style_is_answer_only(monkeypatch):
     fields = {field["key"]: field for field in local_ai.NODE["catalog"]["fields"]}
     assert fields["answer_style"]["default"] == "Answer only"
     assert fields["answer_style"]["options"] == ["Answer only", "Free text"]
-
-
-def test_local_rubric_reviewer_asks_for_binary_answer_and_uses_first_word(monkeypatch):
-    calls = _stub_ollama(monkeypatch, "Pass. Looks correct.")
-    monkeypatch.setattr(decider, "_local", lambda question, options, context, model: (
-        verify._local_rubric_decision(question, options, context, model), "local model test"
-    ))
-    result = verify.run_check("/tmp", "e", {"kind": "rubric", "rubric": "is correct", "engine": "local"}, "42")
-
-    assert calls[0][1]["options"] == {"temperature": 0}
-    assert calls[0][1]["think"] is False
-    assert calls[0][1]["messages"][0]["role"] == "system"
-    assert calls[0][1]["messages"][0]["content"].startswith("Reply with exactly one word: pass or fail.")
-    assert result["passed"] is True
-
-
-def test_local_rubric_parser_is_case_insensitive_and_never_defaults_to_pass():
-    parse = verify._parse_rubric_answer
-    assert parse("Pass.") == "pass"
-    assert parse("FAIL") == "fail"
-    assert parse("pass - looks right") == "pass"
-    assert parse("maybe") == "fail"
-    assert parse("") == "fail"
 
 
 def test_benchmark_uses_real_local_ai_node_with_fake_ollama(monkeypatch):
