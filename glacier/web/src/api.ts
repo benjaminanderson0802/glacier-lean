@@ -260,3 +260,30 @@ export function sections(body: string): Record<string, string> {
 // ---------- Templates (GET /api/templates) ----------
 export interface TemplateItem { id: string; name: string; description: string; author?: string; license?: string; review_status: string; installable: boolean; template?: Environment & { description?: string; tags?: string[] } }
 export const templatesApi = { list: () => req<TemplateItem[]>('GET', '/api/templates') }
+
+// ---------- Memory map, add, cleanup ----------
+export interface GraphNode { id: string; title: string; kind: 'note' | 'run' | 'flow' | 'claim' | string; author: string }
+export interface GraphEdge { source: string; target: string; kind: 'wrote' | 'link' | string }
+export interface HygieneProposal { id: string; kind: 'merge' | 'archive' | string; paths: string[]; reason: string }
+export const memoryMore = {
+  graph: () => req<{ nodes: GraphNode[]; edges: GraphEdge[] }>('GET', '/api/memory/graph'),
+  hygiene: () => req<HygieneProposal[]>('GET', '/api/memory/hygiene'),
+  scan: () => req<HygieneProposal[]>('POST', '/api/memory/hygiene/scan'),
+  decide: (id: string, approve: boolean) => req<{ id: string; status: string; commit?: string }>('POST', `/api/memory/hygiene/${enc(id)}`, { approve }),
+}
+
+/** Multipart upload helpers (file drop and chat-export import). */
+async function upload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(BASE + path, { method: 'POST', body: form })
+  if (!res.ok) {
+    let detail = res.statusText
+    try { const j = await res.json(); detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail ?? j) } catch { /* not json */ }
+    throw new ApiError(res.status, detail)
+  }
+  return res.json() as Promise<T>
+}
+export const addToMemory = {
+  file: (file: File, project?: string) => { const f = new FormData(); f.append('file', file); if (project) f.append('project', project); return upload<Record<string, unknown>>('/api/files', f) },
+  chatExport: (source: 'chatgpt' | 'claude', file: File) => { const f = new FormData(); f.append('source', source); f.append('file', file); return upload<Record<string, number>>('/api/imports', f) },
+  projects: () => req<{ name: string }[] | string[]>('GET', '/api/projects'),
+}

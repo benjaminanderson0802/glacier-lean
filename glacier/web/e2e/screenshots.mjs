@@ -33,6 +33,13 @@ const F = {
     body: '## Problem\nBest eBay product opportunities\n\n## Evidence\n- completed successfully\n- 5 product ideas generated\n- sources included\n\n## Research\n- analyzed 12 categories\n- found 5 high-demand products\n- checked competition and pricing\n\n## Proposal\n- used web research agent\n- checked recent sales data\n- compared supplier costs\n\n## Resolution\n' },
   '/api/templates': [['Email monitor', 'Check and summarize important emails'], ['Daily summary', 'Get a daily overview of what matters'], ['Website monitor', 'Track changes on any website'], ['Social media', 'Create and schedule posts'], ['Research assistant', 'Deep research with verified sources'], ['File organizer', 'Sort and organize files automatically']]
     .map(([n, d], i) => ({ id: `tpl-${i}`, name: n, description: d, author: 'Glacier', license: 'Apache-2.0', review_status: 'reviewed', installable: true, template: { id: `tpl-${i}`, name: n, nodes: [{ id: 'a', type: 'schedule', config: {}, position: { x: 0, y: 0 } }, { id: 'b', type: 'command', config: {}, position: { x: 0, y: 0 } }], edges: [] } })),
+  '/api/memory/graph': (() => { const n = [], e = []; const t = ['Projects', 'Notes', 'Preferences', 'Conversations', 'People', 'Docs'];
+    t.forEach((x, i) => { n.push({ id: `hub/${i}`, title: x, kind: 'note', author: 'you' }); e.push({ source: `hub/${i}`, target: 'you', kind: 'wrote' }) })
+    for (let i = 0; i < 60; i++) { const k = i % 9 === 0 ? 'run' : i % 13 === 0 ? 'flow' : 'note'; n.push({ id: `n/${i}`, title: `note ${i}`, kind: k, author: i % 2 ? 'assistant' : 'you' }); e.push({ source: `n/${i}`, target: `hub/${i % 6}`, kind: 'link' }); e.push({ source: `n/${i}`, target: i % 2 ? 'assistant' : 'you', kind: 'wrote' }) }
+    return { nodes: n, edges: e } })(),
+  '/api/memory/hygiene': [{ id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.' },
+    { id: 'h2', kind: 'archive', paths: ['logs/chat-2026-03.md'], reason: 'Old chat log, not opened or linked for over 90 days.' },
+    { id: 'h3', kind: 'merge', paths: ['people/sam.md', 'people/sam-k.md', 'people/samuel.md'], reason: 'Three notes about the same person.' }],
   '/api/node-types': [
     { type: 'schedule', label: 'Schedule', description: 'Start on a timer', fields: [{ key: 'every', label: 'Every', placeholder: 'daily 9am', default: '' }], branches: null },
     { type: 'command', label: 'Command', description: 'Run a command', fields: [{ key: 'command', label: 'Command', placeholder: 'echo hi', default: '' }], branches: null },

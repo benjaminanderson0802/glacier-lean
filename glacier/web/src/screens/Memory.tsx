@@ -2,9 +2,32 @@ import { useEffect, useMemo, useState } from 'react'
 import { ago, memory, type MemCommit, type MemHit, type MemNote, type MemNoteFull } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { NoteEditor } from './NoteEditor.tsx'
+import { MemoryAdd } from './MemoryAdd.tsx'
+import { MemoryCleanup } from './MemoryCleanup.tsx'
+import { lazy, Suspense } from 'react'
+const MemoryMap = lazy(() => import('./MemoryMap.tsx').then(m => ({ default: m.MemoryMap })))
 import { go } from '../route.ts'
 
+const VIEWS = [['', 'Notes'], ['~map', 'Map'], ['~add', 'Add'], ['~cleanup', 'Cleanup']] as const
+
 export function MemoryScreen({ path }: { path?: string }) {
+  const view = path?.startsWith('~') ? path : ''
+  const switcher = (
+    <div className="g-seg" data-testid="memory-views">
+      {VIEWS.map(([v, l]) => <button key={v} className={`g-seg-btn${v === view ? ' active' : ''}`} onClick={() => go(v ? `memory/${v}` : 'memory')} data-testid={`memview-${l.toLowerCase()}`}>{l}</button>)}
+    </div>
+  )
+  if (view) return (
+    <>
+      <PageHead title={view === '~map' ? 'Memory' : view === '~add' ? 'Add to Memory' : 'Memory Cleanup'} crumb="Memory"
+        sub={view === '~map' ? 'What Glacier knows.' : view === '~add' ? 'Import new information.' : 'Keep your memory organized.'} side={switcher} />
+      {view === '~map' ? <Suspense fallback={<div className="g-empty">Drawing the map…</div>}><MemoryMap /></Suspense> : view === '~add' ? <MemoryAdd /> : <MemoryCleanup />}
+    </>
+  )
+  return <NotesView path={path} switcher={switcher} />
+}
+
+function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNode }) {
   const [notes, setNotes] = useState<MemNote[] | null>(null)
   const [tag, setTag] = useState<string>('All')
   const [q, setQ] = useState('')
@@ -43,7 +66,7 @@ export function MemoryScreen({ path }: { path?: string }) {
 
   return (
     <>
-      <PageHead title="Memory" sub="What Glacier knows." side={<input className="g-input" style={{ width: 280 }} placeholder="Search memory…" value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" />} />
+      <PageHead title="Memory" sub="What Glacier knows." side={<>{switcher}<input className="g-input" style={{ width: 240 }} placeholder="Search memory…" value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
       {err && <div className="g-error">{err}</div>}
       <div className="g-memory">
         <Panel className="g-sidenav" testid="memory-tags">

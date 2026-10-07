@@ -22,6 +22,10 @@ const mockClaims = new Map([['c0ffee01', {
   body: '## Problem\nBest eBay product opportunities\n\n## Evidence\n- completed successfully\n- 5 product ideas generated\n- sources included\n\n## Research\n- analyzed 12 categories\n- found 5 high-demand products\n- checked competition and pricing\n\n## Resolution\n',
   summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
 }]])
+const mockHygiene = [
+  { id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.', status: 'pending' },
+  { id: 'h2', kind: 'archive', paths: ['old/chat-log.md'], reason: 'Not opened or linked for over 90 days.', status: 'pending' },
+]
 const mockTemplates = [
   { id: 'tpl-daily-report', name: 'Daily report', description: 'Get a daily overview of what matters', author: 'Glacier', license: 'Apache-2.0', review_status: 'reviewed', installable: true,
     template: { id: 'tpl-daily-report', name: 'Daily report', nodes: [{ id: 'n1', type: 'command', config: { command: 'date' }, position: { x: 0, y: 0 } }], edges: [] } },
@@ -210,6 +214,18 @@ const server = http.createServer(async (req, res) => {
       vault.set(`environments/${flow.id}.json`, JSON.stringify(flow, null, 2))
       assistantProposals.delete(proposal.id)
       return send(200, { saved: true, commit })
+    }
+    // ---- memory cleanup + file drop + chat import (screen development only) ----
+    if (p === '/api/memory/hygiene' && req.method === 'GET') return send(200, mockHygiene.filter(h => h.status === 'pending').map(({ status, ...h }) => h))
+    if (p === '/api/memory/hygiene/scan' && req.method === 'POST') return send(200, mockHygiene.filter(h => h.status === 'pending').map(({ status, ...h }) => h))
+    if ((m = p.match(/^\/api\/memory\/hygiene\/([^/]+)$/)) && req.method === 'POST') {
+      const h = mockHygiene.find(x => x.id === m[1]); if (!h) return send(404, { detail: 'proposal not found' })
+      const body = await readBody(); h.status = body.approve ? 'approved' : 'rejected'
+      return send(200, { id: h.id, status: h.status, ...(body.approve ? { commit: commitId() } : {}) })
+    }
+    if ((p === '/api/files' || p === '/api/imports') && req.method === 'POST') {
+      let size = 0; await new Promise(r => { req.on('data', c => (size += c.length)); req.on('end', r) })
+      return send(200, p === '/api/files' ? { name: 'upload', size, duplicate: false } : { conversations: 3, notes: 3 })
     }
     // ---- claims + templates (screen development only) ----
     if (p === '/api/claims' && req.method === 'GET') {
