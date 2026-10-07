@@ -25,5 +25,6 @@ Complete this checklist before the owner makes the repository public or announce
 
 ## Approval
 
+- [ ] The owner adds a real security contact to [`../SECURITY.md`](../SECURITY.md) and a real conduct contact to [`../CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md) before the repository goes public.
 - [ ] The owner reviewed the license, security results, test and benchmark evidence, documentation, and desktop status.
 - [ ] The owner explicitly signs off on making the repository public and on the release announcement.

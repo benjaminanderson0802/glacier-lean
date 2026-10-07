@@ -22,4 +22,4 @@ Reports are in scope when they show a security impact in Glacier's supported cod
 - unauthorized access to the memory API or exposure/change of stored notes;
 - unauthenticated network listeners or bypasses of approval and audit controls.
 
-The security benchmark is the prompt-injection and lethal-trifecta suite tracked by M-SECURITY: 100% of benchmark cases pass and there are zero unauthenticated listeners. Reports should include a reproducible case when possible.
+The security benchmark is the prompt-injection and lethal-trifecta suite tracked by M-SECURITY. Its target is 100% of benchmark cases passing and zero unauthenticated listeners. That target is not met yet: the local API currently has no authentication. Reports should include a reproducible case when possible.

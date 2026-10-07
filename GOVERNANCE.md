@@ -4,11 +4,11 @@ Glacier's direction is set by [`NORTHSTAR.yaml`](NORTHSTAR.yaml). The project ow
 
 ## North Star amendments
 
-Anyone may propose a change. Record the proposed diff in [`docs/AMENDMENTS.md`](docs/AMENDMENTS.md), with evidence (data or sources) and the metric it is expected to improve. The owner decides whether to approve it. After approval, update `NORTHSTAR.yaml` and bump `last_amended`. Do not make a proposed policy change effective before approval. Workers may update checkpoint `status` and `evidence` after verification, and may add checkpoints that serve an existing phase exit; they may not change the protected direction fields. Invariants can never be weakened to make work pass (I-14).
+Anyone may propose a change. Record a diff in [`docs/AMENDMENTS.md`](docs/AMENDMENTS.md), with evidence (data or sources) and the metric it is expected to improve. Only the project owner approves changes to the mission, defining properties, invariants, non-goals, or phase exit criteria. After approval, update `NORTHSTAR.yaml` and bump `last_amended`. A proposal does not take effect before approval. Workers may update checkpoint `status` and `evidence` after verification, and may add checkpoints that serve an existing phase exit; they may not change protected direction fields. Invariants can never be weakened to make work pass (I-14).
 
 ## Maintainers and decisions
 
-The project owner maintains the roadmap and makes owner decisions. The integrator coordinates assigned work, reviews changes, and merges only after the required checks pass. A maintainer may help with review and upkeep, but cannot override the North Star or an owner decision. Open decisions stay with the owner; contributors record questions rather than deciding them.
+The project owner maintains the roadmap and makes owner decisions. The current owner decisions are D1-D4: Apache-2.0 and public at the first usable release; one app with Build and Run views; a Tauri desktop shell; and free only by default with a $0 monthly paid cap. The integrator coordinates assigned work, reviews changes, and merges only after the required checks pass. A maintainer may help with review and upkeep, but cannot override the North Star or an owner decision. Open decisions stay with the owner; contributors record questions rather than deciding them.
 
 ## AI worker contributions
 
