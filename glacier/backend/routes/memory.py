@@ -135,7 +135,8 @@ def graph():
 def history(path: str):
     _path(path)
     try:
-        commits = list(vault._repo.iter_commits(paths=path))
+        with vault._lock:
+            commits = list(vault._repo.iter_commits(paths=path))
     except Exception:
         commits = []
     return [{"commit": c.hexsha[:8], "author": c.author.name, "date": c.committed_datetime.astimezone(timezone.utc).isoformat(), "message": c.message.strip()} for c in commits]
@@ -146,7 +147,8 @@ def undo(item: Undo):
     path = _normalised_path(item.path)
     if item.commit and not re.fullmatch(r"[0-9a-fA-F]{7,40}", item.commit):
         raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
-    commits = list(vault._repo.iter_commits(paths=path))
+    with vault._lock:
+        commits = list(vault._repo.iter_commits(paths=path))
     if not commits:
         raise HTTPException(404, "No saved version exists for this note")
     matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
@@ -159,8 +161,9 @@ def undo(item: Undo):
     if target is None:
         raise HTTPException(400, "There is no earlier version to restore")
     try:
-        previous = target.tree / path
-        body = previous.data_stream.read().decode("utf-8")
+        with vault._lock:
+            previous = target.tree / path
+            body = previous.data_stream.read().decode("utf-8")
     except (KeyError, OSError):
         raise HTTPException(404, "The earlier version did not contain this note")
     commit = vault.write_note(path, body, author="owner")

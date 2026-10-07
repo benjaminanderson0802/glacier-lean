@@ -3,6 +3,9 @@ Every flow has a workspace folder GLACIER_HOME/workspaces/<flow>. Steps run ther
 A flow with "isolate": true gets a private git worktree per run (GLACIER_HOME/worktrees/<flow>/<run>, branch run/<run>).
 When the run is verified, its branch is merged into the workspace's main branch, one run at a time (a file lock is the
 queue). When it is not, nothing reaches main; the branch is kept for inspection and the worktree is removed."""
+# Lock order for code that needs both locks: vault._lock, then the per-flow merge
+# lock. This merge operates only on the separate workspace repository, so it
+# takes only the merge lock and never acquires vault._lock while holding it.
 import os, subprocess, time
 
 if os.name == "nt":
