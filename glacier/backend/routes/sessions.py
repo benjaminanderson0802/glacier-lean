@@ -39,7 +39,8 @@ def save_to_memory(session_id: str):
         raise HTTPException(404, "Session not found")
     summary, events, version = found
     safe_id = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", session_id).strip(" .")[:64]
-    if not safe_id or safe_id.upper() in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}:
+    windows_device = safe_id.split(".", 1)[0].upper()
+    if not safe_id or windows_device in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}:
         safe_id = f"session-{safe_id or 'log'}"
     path = f"sessions/{safe_id}-{version[:16]}.md"
     try:

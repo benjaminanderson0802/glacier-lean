@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import secrets_store
+import session_mirror
 import vault
 from routes import sessions
 
@@ -155,11 +156,40 @@ def test_saved_note_filename_sanitizes_session_id(mirror_client):
     client, source, _ = mirror_client
     path = source / "2026/10/07/session-two.jsonl"
     lines = path.read_text().splitlines()
-    lines[0] = json.dumps({"type": "session_meta", "payload": {"id": "id/with spaces!", "cwd": "/work", "timestamp": "2026-10-07T09:00:00Z"}})
+    lines[0] = json.dumps({"type": "session_meta", "payload": {"id": "CON.txt", "cwd": "/work", "timestamp": "2026-10-07T09:00:00Z"}})
     path.write_text("\n".join(lines) + "\n")
 
-    response = client.post("/api/sessions/id/with spaces!/save-to-memory")
-    assert response.status_code == 404
+    response = client.post("/api/sessions/CON.txt/save-to-memory")
+    assert response.status_code == 200
+    assert response.json()["path"].startswith("sessions/session-CON.txt-")
+
+
+def test_metadata_is_read_only_from_first_line_and_list_cache_reuses_summaries(mirror_client, monkeypatch):
+    client, source, _ = mirror_client
+    path = source / "2026/10/07/session-two.jsonl"
+    lines = path.read_text().splitlines()
+    metadata = json.dumps({"type": "session_meta", "payload": {"id": "metadata-only-id", "cwd": "/ignored", "timestamp": "2026-10-07T09:00:00Z"}})
+    lines.pop(0)
+    path.write_text("\n".join(lines + [metadata]) + "\n")
+
+    rows = client.get("/api/sessions").json()
+    assert "metadata-only-id" not in {row["id"] for row in rows}
+    assert path.stem in {row["id"] for row in rows}
+
+    calls = 0
+    original = session_mirror._records
+
+    def count_reads(file_path, warnings=True):
+        nonlocal calls
+        calls += 1
+        yield from original(file_path, warnings)
+
+    monkeypatch.setattr(session_mirror, "_records", count_reads)
+    session_mirror._LIST_CACHE.clear()
+    session_mirror.list_sessions()
+    initial_calls = calls
+    session_mirror.list_sessions()
+    assert calls == initial_calls
 
 
 def test_missing_session_is_not_found(mirror_client):
