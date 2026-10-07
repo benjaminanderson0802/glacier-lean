@@ -5,6 +5,7 @@ import re
 GUIDE = Path(__file__).parent
 EXPECTED = [
     "README.md",
+    "00-finding-your-way.md",
     "01-first-automation.md",
     "02-checks-and-trust.md",
     "03-memory.md",
@@ -71,4 +72,5 @@ def test_secret_and_route_guidance_matches_main():
     assert "one policy claim per day" in text
     assert "GLACIER_CODEX_SANDBOX" in text
     assert "Read-only means the AI can look at files but cannot change them" in text
-    assert "overrides the setting on every Codex step, including steps marked read-only" in text
+    # Since PR #35 a step's own sandbox setting (including read-only) wins over GLACIER_CODEX_SANDBOX (runner.py).
+    assert "A step's own setting, including read-only, takes precedence" in text
