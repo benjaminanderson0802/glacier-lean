@@ -46,3 +46,20 @@ then guard its node execution with this one-line hook:
 ```python
 with _run_semaphore: res = run_node(env_id, run_id, node, last, ws)
 ```
+
+## Measured on a modest laptop
+
+On the 4-core laptop used for the assigned check (7.6 GB total memory, 2.6 GB
+available before the full run), Glacier's backend and local models were measured
+through complete runs, not just model answers. The host reports 16 logical CPUs;
+the four-core figure is the laptop context provided for this measurement. The
+run used `qwen3:0.6b` with one parallel run for light mode and
+`granite3.3:2b` with standard settings. Results, checks, raw run outputs, and
+the 0.5-second memory samples are in
+[`evidence/live/modest_hardware.md`](../evidence/live/modest_hardware.md).
+The measurement can be repeated with
+[`bench/modest_hw/run.py`](../bench/modest_hw/run.py).
+The PDF upload saved the original file in both modes but could not extract its
+text or create a searchable note: the installed MarkItDown package lacks its
+optional PDF reader. CPU percentages in the evidence use all detected logical
+CPUs as the denominator; 100% means all detected CPUs are busy.
