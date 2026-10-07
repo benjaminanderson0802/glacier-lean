@@ -38,10 +38,25 @@ Use Obsidian-style wiki links to connect notes. A full folder path is clearest:
 [[projects/roadmap.md|Roadmap]]
 ```
 
-Links may name the exact file, omit the `.md` extension, or use a file name by
-itself when that name is unique in the folder. If two notes share a name, use
-their folder paths so the intended note is clear. Embeds use the same form with
-an exclamation mark, and the referenced file must be present in the vault:
+Links may use `[[name]]`, `[[folder/name]]`, `[[name|shown text]]`,
+`[[name#heading]]`, `[[name#^block]]`, or `[[name.md]]`. Note embeds such as
+`![[name]]` and standard Markdown links such as `[Roadmap](folder/roadmap.md)`
+are also recognized. Markdown links may encode spaces as `%20`. Link matching
+is case-insensitive. Link examples inside fenced code blocks or inline code do
+not create links, and web URLs are not vault links.
+
+For a bare name that matches more than one note, Glacier prefers a match in
+the source note's folder. Otherwise it selects the matching note with the
+shortest vault path; ties are resolved in alphabetical path order. Folder
+paths in wiki links identify that path directly. Unresolved note links remain
+visible as “not written yet” and are not counted as notes. Embeds may also
+refer to attachments; only Markdown notes appear as note links in the map.
+
+The note reader and map use the same link resolution rules. The reader returns
+the canonical extensionless target in `links_out` and adds its `resolved` or
+`unresolved` state in `links_out_status`.
+
+An embed can refer to an attachment in the vault:
 
 ```markdown
 ![[images/diagram.png]]

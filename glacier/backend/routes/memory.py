@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 import vault
 import memory_meta
+from memory_links import LinkResolver, resolve_links
 
 def _is_claims_path(path: str) -> bool:
     """Claims are never edited through memory; compare without case and with either slash (Windows/macOS ignore case)."""
@@ -52,10 +53,6 @@ def _meta(text: str, path: str) -> tuple[dict, str]:
     return memory_meta.parse(text, path)
 
 
-def _links(body: str) -> list[str]:
-    return list(dict.fromkeys(x.strip().split("|", 1)[0].removesuffix(".md") for x in re.findall(r"\[\[([^\]]+)\]\]", body)))
-
-
 def _all() -> list[dict]:
     result = []
     for path in vault.list_notes(".md"):
@@ -65,6 +62,26 @@ def _all() -> list[dict]:
         except (OSError, ValueError):
             continue
     return result
+
+
+def _link_index(items: list[dict]) -> tuple[dict[str, list[dict[str, str]]], LinkResolver]:
+    paths = [item["path"].removesuffix(".md") for item in items]
+    attachments = []
+    for root, dirs, files in os.walk(vault.VAULT):
+        dirs[:] = [name for name in dirs if name != ".git"]
+        for name in files:
+            if not name.lower().endswith(".md"):
+                attachments.append(os.path.relpath(os.path.join(root, name), vault.VAULT).replace(os.sep, "/"))
+    resolver = LinkResolver(paths, attachments)
+    links = {}
+    for item in items:
+        path = item["path"].removesuffix(".md")
+        try:
+            _, body = vault.read_note_metadata(item["path"])
+            links[path] = resolve_links(body, path, resolver)
+        except (OSError, ValueError):
+            links[path] = []
+    return links, resolver
 
 
 @router.get("/api/memory/notes")
@@ -80,18 +97,19 @@ def note(path: str):
     except (FileNotFoundError, IsADirectoryError):
         raise HTTPException(404, "Note not found")
     meta, body = _meta(text, path)
-    outgoing = _links(body)
-    incoming = []
-    for other in vault.list_notes(".md"):
-        if other == path:
-            continue
-        try:
-            _, other_body = vault.read_note_metadata(other)
-            if path.removesuffix(".md") in _links(other_body):
-                incoming.append(other.removesuffix(".md"))
-        except (OSError, ValueError):
-            continue
-    return {"path": path, "body": body, "meta": meta, "links_out": outgoing, "links_in": sorted(incoming)}
+    items = _all()
+    links, _ = _link_index(items)
+    note_path = path.replace("\\", "/").removesuffix(".md")
+    # Keep the requested on-disk identity while matching case-insensitively.
+    note_path = next((p for p in links if p.casefold() == note_path.casefold()), note_path)
+    outgoing = links.get(note_path, resolve_links(body, note_path, LinkResolver([])))
+    incoming = sorted(source for source, targets in links.items()
+                      if any(target["status"] == "resolved" and target["target"].casefold() == note_path.casefold()
+                             for target in targets))
+    return {"path": path, "body": body, "meta": meta,
+            "links_out": [item["target"] for item in outgoing], "links_in": incoming,
+            "links_out_status": [{**item, "display": item["target"] if item["status"] == "resolved"
+                                  else f"{item['target']} (not written yet)"} for item in outgoing]}
 
 
 @router.put("/api/memory/note")
@@ -121,23 +139,23 @@ def graph(limit: int | None = None):
     items.sort(key=_mtime, reverse=True)
     if limit is not None:
         items = items[:limit]
-    refs = []
+    links, _ = _link_index(items)
     for item in items:
         path = item["path"].removesuffix(".md")
         known.add(path)
         nodes.append({"id": path, "title": item["title"], "kind": "note", "author": item["author"]})
         edges.append({"source": path, "target": item["author"], "kind": "wrote"})
-        try:
-            _, body = vault.read_note_metadata(item["path"])
-            refs.extend((path, ref) for ref in _links(body))
-        except (OSError, ValueError):
-            pass
-    for source, target in refs:
-        kind = "run" if target.startswith("runs/") else "flow" if target.startswith("environments/") or target.startswith("flows/") else "claim" if target.startswith("claims/") else "note"
-        if target not in known:
-            nodes.append({"id": target, "title": os.path.basename(target), "kind": kind, "author": ""})
-            known.add(target)
-        edges.append({"source": source, "target": target, "kind": "link"})
+    for source, refs in links.items():
+        for ref in refs:
+            target = ref["target"]
+            kind = ("unresolved" if ref["status"] == "unresolved" else
+                    "run" if target.startswith("runs/") else
+                    "flow" if target.startswith("environments/") or target.startswith("flows/") else
+                    "claim" if target.startswith("claims/") else "note")
+            if target not in known:
+                nodes.append({"id": target, "title": os.path.basename(target), "kind": kind, "author": ""})
+                known.add(target)
+            edges.append({"source": source, "target": target, "kind": "link"})
     return {"nodes": nodes, "edges": edges}
 
 
