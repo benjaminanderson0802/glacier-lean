@@ -41,9 +41,7 @@ def test_image_upload_ocr_note_is_searchable(monkeypatch, make_server, tmp_path)
 
 
 def test_image_without_tesseract_is_stored_with_install_hint(monkeypatch, make_server, tmp_path):
-    path = os.pathsep.join(item for item in os.environ.get("PATH", "").split(os.pathsep)
-                           if item and not os.path.exists(os.path.join(item, "tesseract")))
-    monkeypatch.setenv("PATH", path)
+    monkeypatch.setenv("GLACIER_TESSERACT_BIN", str(tmp_path / "no-tesseract-here"))
     server = make_server().start()
     response = httpx.post(server.url + "/api/files", files={"file": ("photo.png", _png(), "image/png")})
     assert response.status_code == 200, response.text

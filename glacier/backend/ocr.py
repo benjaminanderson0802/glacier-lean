@@ -21,22 +21,28 @@ try:
 except (ImportError, OSError, ValueError):
     pass
 try:
-    from PIL import Image, ImageOps
-    warnings.simplefilter('error', Image.DecompressionBombWarning)
     source = sys.argv[1]
     fd, prepared = tempfile.mkstemp(suffix='.png')
     os.close(fd)
     try:
-        with Image.open(source) as image:
-            image.seek(0)
-            image = ImageOps.exif_transpose(image)
-            image.thumbnail((4000, 4000), Image.Resampling.LANCZOS)
-            image.convert('RGB').save(prepared, format='PNG')
-        binary = shutil.which('tesseract')
+        try:
+            from PIL import Image, ImageOps
+        except ImportError:
+            Image = None  # Pillow is optional: Tesseract reads the original image (memory and time limits still apply)
+        if Image is not None:
+            warnings.simplefilter('error', Image.DecompressionBombWarning)
+            with Image.open(source) as image:
+                image.seek(0)
+                image = ImageOps.exif_transpose(image)
+                image.thumbnail((4000, 4000), Image.Resampling.LANCZOS)
+                image.convert('RGB').save(prepared, format='PNG')
+        override = os.environ.get('GLACIER_TESSERACT_BIN')
+        binary = (override if os.path.isfile(override) else None) if override is not None else shutil.which('tesseract')
         if not binary:
             raise FileNotFoundError('tesseract')
         langs = os.environ.get('GLACIER_OCR_LANGS', 'eng').strip() or 'eng'
-        result = subprocess.run([binary, prepared, 'stdout', '-l', langs], capture_output=True, timeout=55, check=False)
+        target = prepared if Image is not None else source
+        result = subprocess.run([binary, target, 'stdout', '-l', langs], capture_output=True, timeout=55, check=False)
         if result.returncode:
             raise RuntimeError('ocr_failed')
         print(json.dumps({'text': result.stdout[:2097152].decode('utf-8', 'replace')}))
@@ -52,6 +58,14 @@ except Exception as exc:
         pass
     print(json.dumps({'error': 'decompression_bomb' if bomb else 'ocr_failed'}))
 '''
+
+
+def find_tesseract() -> str | None:
+    """GLACIER_TESSERACT_BIN (a path) overrides the search on PATH."""
+    override = os.environ.get("GLACIER_TESSERACT_BIN")
+    if override is not None:
+        return override if os.path.isfile(override) else None
+    return shutil.which("tesseract")
 
 
 def recognize(path: Path) -> tuple[str, str | None]:
