@@ -49,6 +49,7 @@ def changes(run_id: str) -> list[dict]:
         for commit in _run_commits(run_id):
             for path in sorted(_commit_paths(commit)):
                 result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name, "repo": "vault"})
+    # Workspace repositories are independent and opened/closed per operation.
     for workspace, commit in _workspace_run_commits(run_id):
         for path in sorted(_commit_paths(commit)):
             result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name,
@@ -151,13 +152,10 @@ def undo(run_id: str) -> dict:
     import vault
 
     r = repo()
-    # Global order: vault Git lock, then per-workspace merge locks in sorted order.
-    with vault._lock, ExitStack() as locks:
-        commits = _run_commits(run_id)
+    # Workspace merge locks cover workspace Git only. Release them before taking
+    # vault._lock; workspace merge never takes the vault lock in reverse order.
+    with ExitStack() as locks:
         workspace_commits = _workspace_run_commits(run_id)
-        if not commits and not workspace_commits:
-            raise ValueError(f"No saved changes were found for run {run_id}.")
-
         for path in sorted({path for path, _ in workspace_commits}):
             env_id = os.path.basename(path)
             lock_path = os.path.join(os.path.dirname(path), "..", "worktrees", f"{env_id}.merge.lock")
@@ -174,87 +172,97 @@ def undo(run_id: str) -> dict:
                 raise RuntimeError("main has uncommitted changes; undo skipped so nothing is overwritten")
             touched, conflicts = _undo_conflicts(workspace_repo, repo_commits)
             workspace_plans.append((path, workspace_repo, repo_commits, touched, conflicts))
-        if commits and (_dirty_paths(r) & set().union(*(_commit_paths(c) for c in commits))):
-            raise RuntimeError("vault has uncommitted changes; undo skipped so nothing is overwritten")
-        vault_touched, vault_conflicts = _undo_conflicts(r, commits) if commits else (set(), set())
-        conflicts = vault_conflicts | set().union(*(plan[4] for plan in workspace_plans)) if workspace_plans else vault_conflicts
-        if conflicts:
-            raise RuntimeError(
-                "These files have later changes by other runs and were left alone: "
-                + ", ".join(sorted(conflicts))
-            )
-        # Capture every repository head before applying anything. If an undo or the
-        # rebuildable vault index update fails, restore all repositories and indexes.
-        starts = [(workspace_repo, workspace_repo.head.commit.hexsha)
-                  for _, workspace_repo, _, _, _ in workspace_plans]
-        if commits:
-            starts.append((r, r.head.commit.hexsha))
-        index_backup = None
-        if commits:
-            db = vault._db()
-            try:
-                index_backup = {
-                    "fts": {path: db.execute("SELECT body FROM fts WHERE path=?", (path,)).fetchall()
-                            for path in vault_touched},
-                    "links": {path: db.execute("SELECT src, dst FROM links WHERE src=? OR dst=?", (path, path)).fetchall()
-                              for path in vault_touched},
-                }
-            finally:
-                db.close()
-        workspace_result_items = []
-        vault_result = {"reverted": [], "new_commit": "", "changes": []}
-        workspace_results = []
-        try:
-            for path, workspace_repo, repo_commits, touched, _ in workspace_plans:
-                workspace_result = _apply_undo(workspace_repo, repo_commits, touched, "workspace", run_id)
-                workspace_result["workspace"] = os.path.basename(path)
-                workspace_results.append(workspace_result)
+        if any(plan[4] for plan in workspace_plans):
+            conflicts = set().union(*(plan[4] for plan in workspace_plans))
+            for _, workspace_repo, _, _, _ in workspace_plans:
+                workspace_repo.close()
+            raise RuntimeError("These files have later changes by other runs and were left alone: " + ", ".join(sorted(conflicts)))
+
+        with vault._lock:
+            commits = _run_commits(run_id)
+            if not commits and not workspace_commits:
+                raise ValueError(f"No saved changes were found for run {run_id}.")
+            if commits and (_dirty_paths(r) & set().union(*(_commit_paths(c) for c in commits))):
+                raise RuntimeError("vault has uncommitted changes; undo skipped so nothing is overwritten")
+            vault_touched, vault_conflicts = _undo_conflicts(r, commits) if commits else (set(), set())
+            conflicts = vault_conflicts | set().union(*(plan[4] for plan in workspace_plans)) if workspace_plans else vault_conflicts
+            if conflicts:
+                raise RuntimeError(
+                    "These files have later changes by other runs and were left alone: "
+                    + ", ".join(sorted(conflicts))
+                )
+            # Capture every repository head before applying anything. If an undo or the
+            # rebuildable vault index update fails, restore all repositories and indexes.
+            starts = [(workspace_repo, workspace_repo.head.commit.hexsha)
+                      for _, workspace_repo, _, _, _ in workspace_plans]
             if commits:
-                vault_result = _apply_undo(r, commits, vault_touched, "vault", run_id)
-            # Keep the rebuildable keyword and link indexes in sync with git's restored tree.
+                starts.append((r, r.head.commit.hexsha))
+            index_backup = None
             if commits:
                 db = vault._db()
                 try:
-                    for path in vault_touched:
-                        full_path = vault.safe_path(path)
-                        if os.path.isfile(full_path):
-                            with open(full_path, encoding="utf-8", errors="replace") as note:
-                                body = note.read()
-                            db.execute("DELETE FROM fts WHERE path=?", (path,))
-                            db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
-                            db.execute("DELETE FROM links WHERE src=?", (path,))
-                            for target in re.findall(r"\[\[([^\]|#]+)", body):
-                                db.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
-                        else:
-                            db.execute("DELETE FROM fts WHERE path=?", (path,))
-                            db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
-                    db.commit()
+                    index_backup = {
+                        "fts": {path: db.execute("SELECT body FROM fts WHERE path=?", (path,)).fetchall()
+                                for path in vault_touched},
+                        "links": {path: db.execute("SELECT src, dst FROM links WHERE src=? OR dst=?", (path, path)).fetchall()
+                                  for path in vault_touched},
+                    }
                 finally:
                     db.close()
-        except Exception:
-            for selected_repo, start in reversed(starts):
-                _rollback_repo(selected_repo, start)
-            # Restore the exact affected index rows along with the Git repositories.
-            if commits:
-                try:
+            workspace_result_items = []
+            vault_result = {"reverted": [], "new_commit": "", "changes": []}
+            workspace_results = []
+            try:
+                for path, workspace_repo, repo_commits, touched, _ in workspace_plans:
+                    workspace_result = _apply_undo(workspace_repo, repo_commits, touched, "workspace", run_id)
+                    workspace_result["workspace"] = os.path.basename(path)
+                    workspace_results.append(workspace_result)
+                if commits:
+                    vault_result = _apply_undo(r, commits, vault_touched, "vault", run_id)
+                # Keep the rebuildable keyword and link indexes in sync with git's restored tree.
+                if commits:
                     db = vault._db()
                     try:
                         for path in vault_touched:
-                            db.execute("DELETE FROM fts WHERE path=?", (path,))
-                            db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
-                            for (body,) in index_backup["fts"][path]:
+                            full_path = vault.safe_path(path)
+                            if os.path.isfile(full_path):
+                                with open(full_path, encoding="utf-8", errors="replace") as note:
+                                    body = note.read()
+                                db.execute("DELETE FROM fts WHERE path=?", (path,))
                                 db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
-                            for src, dst in index_backup["links"][path]:
-                                db.execute("INSERT INTO links VALUES (?,?)", (src, dst))
+                                db.execute("DELETE FROM links WHERE src=?", (path,))
+                                for target in re.findall(r"\[\[([^\]|#]+)", body):
+                                    db.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
+                            else:
+                                db.execute("DELETE FROM fts WHERE path=?", (path,))
+                                db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
                         db.commit()
                     finally:
                         db.close()
-                except Exception:
-                    pass
-            raise
-        finally:
-            for _, workspace_repo, _, _, _ in workspace_plans:
-                workspace_repo.close()
+            except Exception:
+                for selected_repo, start in reversed(starts):
+                    _rollback_repo(selected_repo, start)
+                # Restore the exact affected index rows along with the Git repositories.
+                if commits:
+                    try:
+                        db = vault._db()
+                        try:
+                            for path in vault_touched:
+                                db.execute("DELETE FROM fts WHERE path=?", (path,))
+                                db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
+                                for (body,) in index_backup["fts"][path]:
+                                    db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
+                                for src, dst in index_backup["links"][path]:
+                                    db.execute("INSERT INTO links VALUES (?,?)", (src, dst))
+                            db.commit()
+                        finally:
+                            db.close()
+                    except Exception:
+                        pass
+                raise
+            finally:
+                for _, workspace_repo, _, _, _ in workspace_plans:
+                    workspace_repo.close()
     workspace_result = {
         "reverted": [short for item in workspace_results for short in item["reverted"]],
         "new_commit": workspace_results[-1]["new_commit"] if workspace_results else "",
@@ -278,18 +286,19 @@ def restore_flow(env_id: str, short_commit: str) -> str:
     vault.safe_path(path)
     if not re.fullmatch(r"[0-9a-fA-F]{7,40}", short_commit):
         raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
-    with vault._lock:
-        matches = list(repo().iter_commits(paths=path))
-    matching = [commit for commit in matches if commit.hexsha.startswith(short_commit.lower())]
-    if not matching:
-        raise ValueError(f"Saved version {short_commit} was not found for this flow.")
-    if len(matching) > 1:
-        raise ValueError("More than one saved version matches. Enter more of the version ID.")
-    selected = matching[0]
     try:
         with vault._lock:
+            matches = list(repo().iter_commits(paths=path))
+            matching = [commit for commit in matches if commit.hexsha.startswith(short_commit.lower())]
+            if not matching:
+                raise ValueError(f"Saved version {short_commit} was not found for this flow.")
+            if len(matching) > 1:
+                raise ValueError("More than one saved version matches. Enter more of the version ID.")
+            selected = matching[0]
             saved = selected.tree / path
             env = json.loads(saved.data_stream.read().decode("utf-8"))
+    except ValueError:
+        raise
     except KeyError:
         raise ValueError("That saved version does not contain this flow.")
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:

@@ -79,15 +79,19 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         actor = git.Actor(git_writer, "glacier@localhost")
         _repo.index.add([os.path.relpath(full, VAULT)])
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
-
-    c = _db()
-    indexed_body = memory_meta.parse(stored_body, path)[1] if path.endswith(".md") else stored_body
-    c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, indexed_body))
-    c.execute("DELETE FROM links WHERE src=?", (path,))
-    for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
-        c.execute("INSERT INTO links VALUES (?,?)", (path, dst.split("|", 1)[0].strip().removesuffix(".md")))
-    c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)", (writer, "write_note", json.dumps({"path": path, "commit": sha})))
-    c.commit(); c.close()
+        # Keep bookkeeping ordered with commits: an earlier writer must not
+        # overwrite the index state recorded by a later Git commit.
+        c = _db()
+        try:
+            indexed_body = memory_meta.parse(stored_body, path)[1] if path.endswith(".md") else stored_body
+            c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, indexed_body))
+            c.execute("DELETE FROM links WHERE src=?", (path,))
+            for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
+                c.execute("INSERT INTO links VALUES (?,?)", (path, dst.split("|", 1)[0].strip().removesuffix(".md")))
+            c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)", (writer, "write_note", json.dumps({"path": path, "commit": sha})))
+            c.commit()
+        finally:
+            c.close()
     try:
         import store
         event = {"type": "memory", "path": path,

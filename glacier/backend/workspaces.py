@@ -3,8 +3,9 @@ Every flow has a workspace folder GLACIER_HOME/workspaces/<flow>. Steps run ther
 A flow with "isolate": true gets a private git worktree per run (GLACIER_HOME/worktrees/<flow>/<run>, branch run/<run>).
 When the run is verified, its branch is merged into the workspace's main branch, one run at a time (a file lock is the
 queue). When it is not, nothing reaches main; the branch is kept for inspection and the worktree is removed."""
-# Lock order shared with vault operations: vault._lock, then the per-flow merge
-# lock. Never acquire vault._lock from inside a merge-lock critical section.
+# Lock order for code that needs both locks: vault._lock, then the per-flow merge
+# lock. This merge operates only on the separate workspace repository, so it
+# takes only the merge lock and never acquires vault._lock while holding it.
 import os, subprocess, time
 
 if os.name == "nt":
@@ -87,8 +88,7 @@ def finish(home: str, env_id: str, run_id: str, verified: bool) -> dict:
             _git(wt, "commit", "-q", "-m", f"Glacier run {run_id}")
     result = {"isolated": True, "branch": branch, "merged": False, "commit": "", "note": ""}
     if verified:
-        import vault
-        with vault._lock, _MergeLock(open(os.path.join(home, "worktrees", f"{env_id}.merge.lock"), "a+")):
+        with _MergeLock(open(os.path.join(home, "worktrees", f"{env_id}.merge.lock"), "a+")):
             dirty = _git(ws, "status", "--porcelain")
             if dirty:
                 result["note"] = "main has uncommitted changes; merge skipped so nothing is overwritten"
