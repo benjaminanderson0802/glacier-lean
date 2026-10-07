@@ -150,7 +150,7 @@ def test_run_tag_in_path_is_not_a_run_change(server):
     response = httpx.post(server.url + "/api/runs/abc/undo", timeout=30)
     assert response.status_code == 404
     assert read(server, "notes/[run:abc].md") is not None
-    assert git(server.home, "rev-parse", "HEAD") == unrelated
+    assert git(server.home, "rev-parse", "HEAD") == git(server.home, "rev-parse", unrelated)
 
 
 def test_restore_flow_to_an_earlier_saved_version(server):
