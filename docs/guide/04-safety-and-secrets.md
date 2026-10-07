@@ -4,12 +4,14 @@ Glacier is designed to keep its data on your computer by default. A step may sti
 
 ## Protect private information
 
-Do not put passwords or access keys in a prompt, note, or command text. Glacier has a Secrets area for named values. A command step can use a saved secret by name, and Glacier hides recognized secret values in saved run output. AI steps cannot receive these saved secrets.
+Do not put passwords or access keys directly in a prompt, note, or command text. AI step instructions can't use `{secret:...}`; a secret can only be used in a command step, and any saved secret that appears in output is hidden as `[secret name]` before it is saved or passed on.
 
-Use only free routes by default. A paid AI route needs the owner's approval first. If no free route is available, Glacier records a claim for review instead of using a paid route automatically.
+Glacier uses free AI routes. When no free route is available and a paid route is configured, the step fails. Glacier files one policy claim per day in this case. It does not switch to a paid route without approval.
 
 ## Limit what a step can do
 
-AI steps can be set to read-only or allowed to write in their work folder. A sandbox is a boundary that limits where a step can work. The exact boundary depends on the step and how Glacier is installed; do not treat a setting as permission to expose private files.
+AI steps can be read-only or allowed to write in their work folder. Read-only means the AI can look at files but cannot change them. A sandbox limits where a step can work.
+
+The person who installs Glacier can set `GLACIER_CODEX_SANDBOX` to change the default for Codex steps. The boundary depends on this setting and the installation. Do not treat it as permission to expose private files.
 
 An approval step pauses and asks before its connected action continues. Read the request carefully. Approve only actions you understand, such as moving selected files into a review folder. Reject anything unclear. A check can verify a result, but it does not replace your judgment about whether an action is safe.

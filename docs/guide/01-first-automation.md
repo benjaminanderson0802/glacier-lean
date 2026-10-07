@@ -4,7 +4,7 @@ An automation is a set of steps that Glacier can run for you. A ready-made examp
 
 ## Pick an example
 
-The starter templates include a daily report, an error explainer, a folder backup, and a website check. For a first try, choose **Explain an error**. It asks an AI helper to explain text you provide and saves the explanation as a note. It is set to read-only, so the helper is not asked to change files.
+The templates include **Daily report**, **Explain an error**, **Folder backup**, and **Website monitor**. For a first try, choose **Explain an error**. It asks an AI helper to explain text you provide and saves the explanation as a note. It is set to read-only, so the helper can look at files but cannot change them.
 
 ## Look over the steps
 

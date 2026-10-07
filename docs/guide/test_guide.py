@@ -50,3 +50,24 @@ def test_average_sentence_length_is_at_most_20_words():
         parts = sentences(text)
         average = sum(len(re.findall(r"\b[\w’'-]+\b", part)) for part in parts) / max(1, len(parts))
         assert average <= 20, f"{source.name}: average sentence length is {average:.1f} words"
+
+
+def test_template_examples_use_real_template_names():
+    text = (GUIDE / "01-first-automation.md").read_text()
+    assert "**Daily report**" in text
+    assert "**Explain an error**" in text
+    assert "**Folder backup**" in text
+    assert "**Website monitor**" in text
+    assert "error explainer" not in text.lower()
+    assert "website check" not in text.lower()
+
+
+def test_secret_and_route_guidance_matches_main():
+    text = (GUIDE / "04-safety-and-secrets.md").read_text()
+    assert "AI step instructions can't use `{secret:...}`" in text
+    assert "only be used in a command step" in text
+    assert "hidden as `[secret name]` before it is saved or passed on" in text
+    assert "the step fails" in text
+    assert "one policy claim per day" in text
+    assert "GLACIER_CODEX_SANDBOX" in text
+    assert "Read-only means the AI can look at files but cannot change them" in text
