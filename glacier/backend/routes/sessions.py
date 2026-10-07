@@ -1,4 +1,6 @@
 """Read-only API for local coding-agent session logs."""
+import re
+
 from fastapi import APIRouter, HTTPException
 
 import secrets_store
@@ -10,7 +12,11 @@ router = APIRouter()
 
 @router.get("/api/sessions")
 def sessions():
-    return session_mirror.list_sessions()
+    rows = session_mirror.list_sessions()
+    for row in rows:
+        row["title"] = secrets_store.redact(row.get("title", ""))
+        row["cwd"] = secrets_store.redact(row.get("cwd", ""))
+    return rows
 
 
 @router.get("/api/sessions/{session_id}")
@@ -19,6 +25,10 @@ def session(session_id: str):
     if not found:
         raise HTTPException(404, "Session not found")
     summary, events, _ = found
+    for event in events:
+        event["text"] = secrets_store.redact(event.get("text", ""))
+    summary["title"] = secrets_store.redact(summary.get("title", ""))
+    summary["cwd"] = secrets_store.redact(summary.get("cwd", ""))
     return {**summary, "events": events}
 
 
@@ -28,7 +38,9 @@ def save_to_memory(session_id: str):
     if not found:
         raise HTTPException(404, "Session not found")
     summary, events, version = found
-    safe_id = session_id.replace("/", "-").replace("\\", "-")[:80]
+    safe_id = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", session_id).strip(" .")[:64]
+    if not safe_id or safe_id.upper() in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}:
+        safe_id = f"session-{safe_id or 'log'}"
     path = f"sessions/{safe_id}-{version[:16]}.md"
     try:
         vault.read_raw_note(path)

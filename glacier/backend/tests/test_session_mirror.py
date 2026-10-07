@@ -1,4 +1,5 @@
 import json
+import logging
 import shutil
 from datetime import datetime, timezone
 
@@ -30,13 +31,18 @@ class MemoryKeyring(keyring.backend.KeyringBackend):
 
 
 @pytest.fixture
-def mirror_client(tmp_path, monkeypatch):
+def mirror_client(tmp_path, monkeypatch, request):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     source = tmp_path / "codex-sessions"
     fixture_dir = __file__.replace("test_session_mirror.py", "fixtures/codex_sessions")
     shutil.copytree(fixture_dir, source)
     monkeypatch.setenv("GLACIER_CODEX_SESSIONS", str(source))
-    keyring.set_keyring(MemoryKeyring())
+    original_keyring = keyring.get_keyring()
+    test_keyring = MemoryKeyring()
+    keyring.set_keyring(test_keyring)
+    def restore_keyring():
+        keyring.set_keyring(original_keyring)
+    request.addfinalizer(restore_keyring)
     vault.init(str(tmp_path / "vault"))
     app = FastAPI()
     app.include_router(sessions.router)
@@ -60,7 +66,7 @@ def test_lists_and_reads_nested_codex_sessions_with_unknown_and_bad_lines(mirror
     assert events[0]["text"] == "Please fix the parser bug"
     assert "pytest -q" in events[2]["text"]
     assert "parser.py" in events[4]["text"]
-    assert events[-1]["text"] == "custom_future_event"
+    assert events[-1]["text"] == '{"note": "preserve this"}'
     assert "malformed" in caplog.text.lower()
 
 
@@ -103,6 +109,57 @@ def test_save_to_memory_redacts_secrets_and_is_idempotent_per_version(mirror_cli
     revised = client.post("/api/sessions/session-one/save-to-memory")
     assert revised.json()["saved"] is True
     assert len(list((home / "vault" / "sessions").glob("*.md"))) == 2
+
+
+def test_redacts_list_titles_and_detail_event_text(mirror_client):
+    client, source, _ = mirror_client
+    keyring.set_password(secrets_store.SERVICE, "session-token", "codex-secret-value")
+    secrets_store._write_names(["session-token"])
+    path = source / "2026/10/07/session-two.jsonl"
+    path.write_text(path.read_text().replace("Review this config", "Review codex-secret-value"))
+
+    rows = client.get("/api/sessions").json()
+    assert next(row for row in rows if row["id"] == "session-two")["title"] == "Review [secret session-token]"
+    detail = client.get("/api/sessions/session-two").json()
+    assert "codex-secret-value" not in detail["events"][0]["text"]
+
+
+def test_detail_caps_to_newest_2000_events_and_filters_digest(mirror_client):
+    client, source, _ = mirror_client
+    path = source / "2026/10/07/session-two.jsonl"
+    with path.open("a") as handle:
+        for index in range(2005):
+            handle.write(json.dumps({"type": "event_msg", "timestamp": "2026-10-07T09:00:03Z",
+                                     "payload": {"type": "agent_message", "message": f"event-{index}"}}) + "\n")
+
+    detail = client.get("/api/sessions/session-two").json()
+    assert detail["truncated"] is True
+    assert len(detail["events"]) == 2000
+    assert detail["events"][0]["text"] == "event-5"
+    assert detail["events"][-1]["text"] == "event-2004"
+
+
+def test_overlong_jsonl_line_is_skipped_with_warning(mirror_client, caplog):
+    client, source, _ = mirror_client
+    path = source / "2026/10/07/session-two.jsonl"
+    with path.open("a") as handle:
+        handle.write('{"type":"event_msg","payload":{"type":"agent_message","message":"' + "x" * 1_000_001 + '"}}\n')
+
+    with caplog.at_level(logging.WARNING):
+        detail = client.get("/api/sessions/session-two").json()
+    assert all("x" * 100 not in event["text"] for event in detail["events"])
+    assert "over-long" in caplog.text.lower()
+
+
+def test_saved_note_filename_sanitizes_session_id(mirror_client):
+    client, source, _ = mirror_client
+    path = source / "2026/10/07/session-two.jsonl"
+    lines = path.read_text().splitlines()
+    lines[0] = json.dumps({"type": "session_meta", "payload": {"id": "id/with spaces!", "cwd": "/work", "timestamp": "2026-10-07T09:00:00Z"}})
+    path.write_text("\n".join(lines) + "\n")
+
+    response = client.post("/api/sessions/id/with spaces!/save-to-memory")
+    assert response.status_code == 404
 
 
 def test_missing_session_is_not_found(mirror_client):

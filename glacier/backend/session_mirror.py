@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import os
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
@@ -13,6 +14,9 @@ import secrets_store
 
 log = logging.getLogger(__name__)
 MAX_OUTPUT = 4000
+MAX_LINE_BYTES = 1_000_000
+MAX_EVENTS = 2000
+_LIST_CACHE: dict[tuple[str, tuple], list[dict]] = {}
 
 
 def sessions_dir() -> Path:
@@ -44,8 +48,20 @@ def _records(path: Path, warnings: bool = True) -> Iterator[tuple[dict, str]]:
     digest = hashlib.sha256()
     try:
         with path.open("rb") as handle:
-            for number, raw in enumerate(handle, 1):
+            number = 0
+            while True:
+                raw = handle.readline(MAX_LINE_BYTES + 1)
+                if not raw:
+                    break
+                number += 1
                 digest.update(raw)
+                if len(raw) > MAX_LINE_BYTES:
+                    if warnings:
+                        log.warning("Skipping over-long Codex session line %s:%d", path, number)
+                    while raw and not raw.endswith(b"\n"):
+                        raw = handle.readline(MAX_LINE_BYTES + 1)
+                        digest.update(raw)
+                    continue
                 try:
                     record = json.loads(raw)
                     if not isinstance(record, dict):
@@ -109,25 +125,30 @@ def _event(record: dict, when: datetime | None) -> dict | None:
         return {"type": "file_change", "text": "Changed files: " + (", ".join(map(str, names)) or _text(changes)), "timestamp": stamp}
     if outer in ("session_meta", "turn_context"):
         return None
-    return {"type": "other", "text": kind if kind != outer else outer, "timestamp": stamp}
+    content = payload if payload else {key: value for key, value in record.items() if key != "timestamp"}
+    return {"type": "other", "text": _text(content), "timestamp": stamp}
 
 
 def read_session(session_id: str) -> tuple[dict, list[dict], str] | None:
     for path in _files():
         meta = {}
-        events = []
+        events = deque(maxlen=MAX_EVENTS)
+        event_count = 0
         digest = ""
         max_time = None
-        for record, final_digest in _records(path):
+        for line_number, (record, final_digest) in enumerate(_records(path), 1):
             if final_digest:
                 digest = final_digest
                 continue
-            if record.get("type") == "session_meta":
+            if line_number == 1 and record.get("type") == "session_meta":
                 meta = record.get("payload") if isinstance(record.get("payload"), dict) else {}
+            if "_glacier_digest" in record:
+                continue
             created = _timestamp(record.get("timestamp"))
             event = _event(record, created)
             if event:
                 events.append(event)
+                event_count += 1
             if created and (max_time is None or created > max_time):
                 max_time = created
         current_id = str(meta.get("id") or path.stem)
@@ -137,23 +158,40 @@ def read_session(session_id: str) -> tuple[dict, list[dict], str] | None:
         updated = max_time or datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
         summary = {"id": current_id, "tool": "codex", "started": started.isoformat() if started else None,
                    "updated": updated.isoformat(), "title": "", "cwd": meta.get("cwd") or "",
-                   "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120}
+                   "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120,
+                   "truncated": event_count > MAX_EVENTS}
         summary["title"] = next((event["text"].strip()[:160] for event in events if event["type"] == "user_message" and event["text"].strip()), "")
-        return summary, events, digest
+        return summary, list(events), digest
     return None
 
 
 def list_sessions() -> list[dict]:
+    root = sessions_dir()
+    signature = []
+    paths = []
+    for path in _files():
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+        paths.append(path)
+        signature.append((str(path), stat.st_mtime_ns, stat.st_size))
+    cache_key = (str(root), tuple(signature))
+    cached = _LIST_CACHE.get(cache_key)
+    if cached is not None:
+        return [dict(row) for row in cached]
     result = []
     seen = set()
-    for path in _files():
+    for path in paths:
         meta = {}
         last = None
         first = None
         first_user = ""
-        for record, _ in _records(path):
-            if record.get("type") == "session_meta":
+        for line_number, (record, _) in enumerate(_records(path), 1):
+            if line_number == 1 and record.get("type") == "session_meta":
                 meta = record.get("payload") if isinstance(record.get("payload"), dict) else {}
+            if "_glacier_digest" in record:
+                continue
             timestamp = _timestamp(record.get("timestamp"))
             if timestamp and (first is None or timestamp < first):
                 first = timestamp
@@ -175,4 +213,7 @@ def list_sessions() -> list[dict]:
         result.append({"id": session_id, "tool": "codex", "started": started.isoformat(), "updated": updated.isoformat(),
                        "title": first_user, "cwd": meta.get("cwd") or "",
                        "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120})
-    return sorted(result, key=lambda row: row["updated"], reverse=True)
+    sorted_result = sorted(result, key=lambda row: row["updated"], reverse=True)
+    _LIST_CACHE.clear()
+    _LIST_CACHE[cache_key] = sorted_result
+    return [dict(row) for row in sorted_result]
