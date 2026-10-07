@@ -3,8 +3,8 @@ capabilities:
     description: Lets a worker read and change files inside named folders.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem
     license: MIT
-    version: 0.6.3
-    install: npx -y @modelcontextprotocol/server-filesystem@0.6.3 /approved/workspace
+    version: 2026.8.31
+    install: npx -y @modelcontextprotocol/server-filesystem@2026.8.31 /approved/workspace
     permissions:
       files: ["/approved/workspace:read-write"]
       network_access: false
@@ -18,8 +18,8 @@ capabilities:
     description: Lets a worker inspect and change a named local Git repository.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/git
     license: MIT
-    version: 0.6.2
-    install: uvx --from mcp-server-git==0.6.2 mcp-server-git --repository /approved/repo
+    version: 2026.8.18
+    install: uvx --from mcp-server-git==2026.8.18 mcp-server-git --repository /approved/repo
     permissions:
       files: ["/approved/repo:read-write"]
       network_access: false
@@ -33,8 +33,8 @@ capabilities:
     description: Lets a worker retrieve web pages and convert them to readable text.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/fetch
     license: MIT
-    version: 0.6.3
-    install: uvx --from mcp-server-fetch==0.6.3 mcp-server-fetch
+    version: 2026.8.18
+    install: uvx --from mcp-server-fetch==2026.8.18 mcp-server-fetch
     network_enforcement: "Glacier network sandbox allowlist: approved-host.example"
     permissions:
       files: []
@@ -49,8 +49,8 @@ capabilities:
     description: Lets a worker store and search simple entities and relationships.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/memory
     license: MIT
-    version: 0.6.3
-    install: MEMORY_FILE_PATH=/approved/mcp-memory.jsonl npx -y @modelcontextprotocol/server-memory@0.6.3
+    version: 2026.8.31
+    install: MEMORY_FILE_PATH=/approved/mcp-memory.jsonl npx -y @modelcontextprotocol/server-memory@2026.8.31
     permissions:
       files: ["/approved/mcp-memory.jsonl:read-write"]
       network_access: false
