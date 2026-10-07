@@ -317,7 +317,7 @@ phases:
       - {id: PH8.2, item: "Code signing via SignPath free open-source program (Apache-2.0)"}
       - {id: PH8.3, item: "Guided first-run setup: detects available models/harnesses, proposes a starter configuration", status: in_progress, evidence: "PR #25 /api/system/check + desktop first-run page"}
       - {id: PH8.4, item: "macOS/Linux builds"}
-      - {id: PH8.5, item: "Low-resource mode: runs usefully on modest hardware with small local models", status: in_progress, evidence: "PR #25 recommendations + PR #35 max parallel steps; not yet measured on modest hardware"}
+      - {id: PH8.5, item: "Low-resource mode: runs usefully on modest hardware with small local models", status: in_progress, evidence: "PR #25 recommendations + PR #35 max parallel steps; PR #51 open-source defaults; answers PR: Answer only style + repeatable 10-task bench (bench/local_models) on a 4-core laptop CPU: granite3.3:2b 8/10 (standard default, ~1 GB runner memory), qwen3:1.7b 6/10, qwen3:0.6b 5/10 (light-mode default). Light-mode model still below 8/10"}
     exit: "Clean machine → working first automation using only the installer."
 
   - id: PH9
