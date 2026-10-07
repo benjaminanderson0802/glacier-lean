@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 
 MODULE_PATH = Path(__file__).with_name("health_check.py")
@@ -17,7 +18,7 @@ def test_report_shape_and_success_exit(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(health_check, "run_health_sections", lambda quick: [
         {"name": name, "passed": True, "summary": "passed"} for name in runners
     ])
-    monkeypatch.setattr(health_check, "upgrade_proposals", lambda: [])
+    monkeypatch.setattr(health_check, "check_upgrades", lambda python=None: ([], "Upgrade check complete; proposals only"))
     report_path = tmp_path / "health-report.json"
 
     code = health_check.main(["--quick", "--report", str(report_path)])
@@ -36,7 +37,7 @@ def test_failed_section_writes_failed_report_and_exits_one(monkeypatch, tmp_path
     monkeypatch.setattr(health_check, "run_health_sections", lambda quick: [
         {"name": "backend", "passed": False, "summary": "tests failed"}
     ])
-    monkeypatch.setattr(health_check, "upgrade_proposals", lambda: [])
+    monkeypatch.setattr(health_check, "check_upgrades", lambda python=None: ([], "Upgrade check complete; proposals only"))
     report_path = tmp_path / "health-report.json"
 
     code = health_check.main(["--report", str(report_path)])
@@ -51,6 +52,9 @@ def test_failed_section_writes_failed_report_and_exits_one(monkeypatch, tmp_path
 def test_quick_mode_reuses_current_python(monkeypatch):
     called = []
     monkeypatch.setattr(health_check, "run_commands", lambda specs, python, quick: called.append((python, quick)) or [])
+    monkeypatch.setattr(health_check, "run_security_suite", lambda python, results_path: {
+        "name": "security suite", "passed": True, "summary": "all attack cases blocked"
+    })
 
     health_check.run_health_sections(quick=True)
 
@@ -80,3 +84,36 @@ def test_missing_security_suite_is_reported_as_failure(monkeypatch, tmp_path):
     security = next(section for section in sections if section["name"] == "security suite")
     assert security["passed"] is False
     assert "not found" in security["summary"].lower()
+
+
+def test_timeout_is_reported_in_plain_language(monkeypatch):
+    monkeypatch.setattr(health_check.subprocess, "run", lambda *args, **kwargs: (_ for _ in ()).throw(
+        subprocess.TimeoutExpired(args[0], kwargs.get("timeout", 1))))
+
+    sections = health_check.run_commands([("backend", ["{python}", "-m", "pytest"], Path("."))],
+                                        Path("python"), quick=True)
+
+    assert sections == [{"name": "backend", "passed": False, "summary": "timed out"}]
+
+
+def test_upgrade_check_uses_bounded_pip_and_stops_after_network_failure(monkeypatch):
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 1, "", "Network is unreachable")
+
+    monkeypatch.setattr(health_check, "pinned_requirements", lambda: ["one==1.0", "two==2.0"])
+    monkeypatch.setattr(health_check.subprocess, "run", fake_run)
+
+    proposals, summary = health_check.check_upgrades(Path("python"))
+
+    assert proposals == []
+    assert summary == "Upgrade check skipped (no network)"
+    assert len(calls) == 1
+    assert calls[0][0][-7:] == ["index", "versions", "one", "--timeout", "5", "--retries", "0"]
+    assert calls[0][1]["timeout"] <= health_check.UPGRADE_BUDGET_SECONDS
+
+
+def test_default_report_path_is_ignored():
+    assert health_check.REPORT == health_check.HERE / ".health" / "health-report.json"
