@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 MAX_OUTPUT = 4000
 MAX_LINE_BYTES = 1_000_000
 MAX_EVENTS = 2000
-_LIST_CACHE: dict[tuple[str, tuple], list[dict]] = {}
+_FILE_CACHE: dict[tuple[str, int, int], tuple[dict, list[dict], str, bool]] = {}
 
 
 def sessions_dir() -> Path:
@@ -89,6 +89,30 @@ def _files() -> Iterator[Path]:
                 yield Path(base) / name
 
 
+def _file_signature(path: Path) -> tuple[str, int, int] | None:
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return str(path), stat.st_mtime_ns, stat.st_size
+
+
+def _first_record_id(path: Path) -> str:
+    """Choose the id using only the first record; old formats fall back to filename."""
+    try:
+        with path.open("rb") as handle:
+            raw = handle.readline(MAX_LINE_BYTES + 1)
+        if len(raw) <= MAX_LINE_BYTES:
+            record = json.loads(raw)
+            if isinstance(record, dict) and record.get("type") == "session_meta":
+                payload = record.get("payload")
+                if isinstance(payload, dict) and payload.get("id"):
+                    return str(payload["id"])
+    except (OSError, ValueError, UnicodeDecodeError):
+        pass
+    return path.stem
+
+
 def _event(record: dict, when: datetime | None) -> dict | None:
     outer = str(record.get("type") or "other")
     payload = record.get("payload") if isinstance(record.get("payload"), dict) else {}
@@ -129,91 +153,88 @@ def _event(record: dict, when: datetime | None) -> dict | None:
     return {"type": "other", "text": _text(content), "timestamp": stamp}
 
 
+def _load_file(path: Path) -> tuple[dict, list[dict], str, bool] | None:
+    signature = _file_signature(path)
+    if signature is None:
+        return None
+    cached = _FILE_CACHE.get(signature)
+    if cached is not None:
+        return cached
+    # Discard stale versions of this path while retaining independent file entries.
+    path_key = signature[0]
+    for key in list(_FILE_CACHE):
+        if key[0] == path_key and key != signature:
+            del _FILE_CACHE[key]
+
+    meta = {}
+    events = deque(maxlen=MAX_EVENTS)
+    event_count = 0
+    digest = ""
+    max_time = None
+    first_time = None
+    for line_number, (record, final_digest) in enumerate(_records(path), 1):
+        if final_digest:
+            digest = final_digest
+            continue
+        if line_number == 1 and record.get("type") == "session_meta":
+            meta = record.get("payload") if isinstance(record.get("payload"), dict) else {}
+        if "_glacier_digest" in record:
+            continue
+        created = _timestamp(record.get("timestamp"))
+        if created and (first_time is None or created < first_time):
+            first_time = created
+        event = _event(record, created)
+        if event:
+            events.append(event)
+            event_count += 1
+        if created and (max_time is None or created > max_time):
+            max_time = created
+    try:
+        fallback = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+    except OSError:
+        return None
+    current_id = str(meta.get("id") or path.stem)
+    started = _timestamp(meta.get("timestamp")) or first_time or fallback
+    updated = max_time or fallback
+    summary = {"id": current_id, "tool": "codex", "started": started.isoformat(), "updated": updated.isoformat(),
+               "title": next((event["text"].strip()[:160] for event in events if event["type"] == "user_message" and event["text"].strip()), ""),
+               "cwd": meta.get("cwd") or "", "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120,
+               "truncated": event_count > MAX_EVENTS}
+    parsed = (summary, list(events), digest, event_count > MAX_EVENTS)
+    _FILE_CACHE[signature] = parsed
+    return parsed
+
+
+def _summary_copy(summary: dict) -> dict:
+    result = dict(summary)
+    updated = _timestamp(result.get("updated"))
+    result["active"] = bool(updated and (datetime.now(timezone.utc) - updated).total_seconds() <= 120)
+    return result
+
+
 def read_session(session_id: str) -> tuple[dict, list[dict], str] | None:
     for path in _files():
-        meta = {}
-        events = deque(maxlen=MAX_EVENTS)
-        event_count = 0
-        digest = ""
-        max_time = None
-        for line_number, (record, final_digest) in enumerate(_records(path), 1):
-            if final_digest:
-                digest = final_digest
-                continue
-            if line_number == 1 and record.get("type") == "session_meta":
-                meta = record.get("payload") if isinstance(record.get("payload"), dict) else {}
-            if "_glacier_digest" in record:
-                continue
-            created = _timestamp(record.get("timestamp"))
-            event = _event(record, created)
-            if event:
-                events.append(event)
-                event_count += 1
-            if created and (max_time is None or created > max_time):
-                max_time = created
-        current_id = str(meta.get("id") or path.stem)
-        if current_id != session_id:
+        if _first_record_id(path) != session_id:
             continue
-        started = _timestamp(meta.get("timestamp")) or next((_timestamp(event["timestamp"]) for event in events if event.get("timestamp")), None)
-        updated = max_time or datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
-        summary = {"id": current_id, "tool": "codex", "started": started.isoformat() if started else None,
-                   "updated": updated.isoformat(), "title": "", "cwd": meta.get("cwd") or "",
-                   "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120,
-                   "truncated": event_count > MAX_EVENTS}
-        summary["title"] = next((event["text"].strip()[:160] for event in events if event["type"] == "user_message" and event["text"].strip()), "")
-        return summary, list(events), digest
+        parsed = _load_file(path)
+        if parsed is None:
+            return None
+        summary, events, digest, _ = parsed
+        return _summary_copy(summary), [dict(event) for event in events], digest
     return None
 
 
 def list_sessions() -> list[dict]:
-    root = sessions_dir()
-    signature = []
-    paths = []
-    for path in _files():
-        try:
-            stat = path.stat()
-        except OSError:
-            continue
-        paths.append(path)
-        signature.append((str(path), stat.st_mtime_ns, stat.st_size))
-    cache_key = (str(root), tuple(signature))
-    cached = _LIST_CACHE.get(cache_key)
-    if cached is not None:
-        return [dict(row) for row in cached]
     result = []
     seen = set()
-    for path in paths:
-        meta = {}
-        last = None
-        first = None
-        first_user = ""
-        for line_number, (record, _) in enumerate(_records(path), 1):
-            if line_number == 1 and record.get("type") == "session_meta":
-                meta = record.get("payload") if isinstance(record.get("payload"), dict) else {}
-            if "_glacier_digest" in record:
-                continue
-            timestamp = _timestamp(record.get("timestamp"))
-            if timestamp and (first is None or timestamp < first):
-                first = timestamp
-            if timestamp and (last is None or timestamp > last):
-                last = timestamp
-            event = _event(record, timestamp)
-            if not first_user and event and event["type"] == "user_message":
-                first_user = event["text"].strip()[:160]
-        session_id = str(meta.get("id") or path.stem)
+    for path in _files():
+        parsed = _load_file(path)
+        if parsed is None:
+            continue
+        summary = parsed[0]
+        session_id = summary["id"]
         if session_id in seen:
             continue
         seen.add(session_id)
-        try:
-            fallback = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
-        except OSError:
-            continue
-        started = _timestamp(meta.get("timestamp")) or first or fallback
-        updated = last or fallback
-        result.append({"id": session_id, "tool": "codex", "started": started.isoformat(), "updated": updated.isoformat(),
-                       "title": first_user, "cwd": meta.get("cwd") or "",
-                       "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120})
-    sorted_result = sorted(result, key=lambda row: row["updated"], reverse=True)
-    _LIST_CACHE.clear()
-    _LIST_CACHE[cache_key] = sorted_result
-    return [dict(row) for row in sorted_result]
+        result.append({key: _summary_copy(summary)[key] for key in ("id", "tool", "started", "updated", "title", "cwd", "active")})
+    return sorted(result, key=lambda row: row["updated"], reverse=True)

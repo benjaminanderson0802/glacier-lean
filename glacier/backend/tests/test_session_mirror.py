@@ -176,20 +176,42 @@ def test_metadata_is_read_only_from_first_line_and_list_cache_reuses_summaries(m
     assert "metadata-only-id" not in {row["id"] for row in rows}
     assert path.stem in {row["id"] for row in rows}
 
-    calls = 0
+    calls = []
     original = session_mirror._records
 
     def count_reads(file_path, warnings=True):
-        nonlocal calls
-        calls += 1
+        calls.append(file_path)
         yield from original(file_path, warnings)
 
     monkeypatch.setattr(session_mirror, "_records", count_reads)
-    session_mirror._LIST_CACHE.clear()
+    session_mirror._FILE_CACHE.clear()
     session_mirror.list_sessions()
-    initial_calls = calls
+    initial_calls = len(calls)
+    assert initial_calls == 2
     session_mirror.list_sessions()
-    assert calls == initial_calls
+    assert len(calls) == initial_calls
+
+    path.write_text(path.read_text() + "\n")
+    session_mirror.list_sessions()
+    assert len(calls) == initial_calls + 1
+    assert calls[-1] == path
+
+
+def test_detail_skips_nonmatching_files_before_streaming(mirror_client, monkeypatch):
+    _, source, _ = mirror_client
+    calls = []
+    original = session_mirror._records
+
+    def count_reads(file_path, warnings=True):
+        calls.append(file_path)
+        yield from original(file_path, warnings)
+
+    monkeypatch.setattr(session_mirror, "_records", count_reads)
+    session_mirror._FILE_CACHE.clear()
+    found = session_mirror.read_session("session-two")
+    assert found is not None
+    assert len(calls) == 1
+    assert calls[0] == source / "2026/10/07/session-two.jsonl"
 
 
 def test_missing_session_is_not_found(mirror_client):
