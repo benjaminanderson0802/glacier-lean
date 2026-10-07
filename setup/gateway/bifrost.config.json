@@ -1,0 +1,17 @@
+{
+  "model": {
+    "providers": [
+      {
+        "provider": "ollama",
+        "name": "local",
+        "base_url": "http://localhost:11434/v1",
+        "models": ["qwen3:0.6b"],
+        "disabled": false
+      }
+    ]
+  },
+  "routing": {
+    "strategy": "fallback",
+    "routes": ["local"]
+  }
+}
