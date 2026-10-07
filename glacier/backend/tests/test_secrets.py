@@ -71,3 +71,19 @@ def test_delete_removes_name_and_secret(secret_client):
     assert client.get("/api/secrets").json() == []
     assert json.loads((home / "secret_names.json").read_text()) == []
     assert secrets_store.redact("remove-me") == "remove-me"
+
+
+def test_redact_replaces_longer_overlapping_value_first(secret_client):
+    client, _ = secret_client
+    client.put("/api/secrets/short", json={"value": "abc123"})
+    client.put("/api/secrets/long", json={"value": "abc123-long-suffix"})
+
+    assert secrets_store.redact("x abc123-long-suffix y") == "x [secret long] y"
+
+
+def test_redact_skips_empty_and_short_values(secret_client):
+    client, _ = secret_client
+    client.put("/api/secrets/empty", json={"value": ""})
+    client.put("/api/secrets/tiny", json={"value": "abc"})
+
+    assert secrets_store.redact("normal output abc") == "normal output abc"

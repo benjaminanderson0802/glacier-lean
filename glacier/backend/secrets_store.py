@@ -84,8 +84,11 @@ def redact(text: str) -> str:
     """Replace known keyring values with their names in output text."""
     result = text
     # Replace longer values first so a shorter secret cannot expose part of a longer one.
-    for name in names():
-        value = keyring.get_password(SERVICE, name)
-        if value:
-            result = result.replace(value, f"[secret {name}]")
+    values = [
+        (value, name)
+        for name in names()
+        if (value := keyring.get_password(SERVICE, name)) and len(value) >= 4
+    ]
+    for value, name in sorted(values, key=lambda item: len(item[0]), reverse=True):
+        result = result.replace(value, f"[secret {name}]")
     return result
