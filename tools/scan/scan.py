@@ -17,9 +17,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE_FILE = Path(__file__).with_name("sources.yaml")
 OSI_LICENSES = {
     "0bsd", "afl-3.0", "agpl-3.0", "apache-1.1", "apache-2.0", "artistic-2.0",
-    "bsd-2-clause", "bsd-3-clause", "bsl-1.0", "cc0-1.0", "epl-1.0", "epl-2.0",
+    "bsd-2-clause", "bsd-3-clause", "bsl-1.0", "epl-1.0", "epl-2.0",
     "eupl-1.1", "gpl-2.0", "gpl-3.0", "isc", "lgpl-2.1", "lgpl-3.0", "mit",
-    "mpl-2.0", "ms-pl", "osl-3.0", "postgresql", "unlicense", "wtfpl",
+    "mpl-2.0", "ms-pl", "osl-3.0", "postgresql", "unlicense",
 }
 
 
@@ -175,15 +175,62 @@ def load_records(fixture: Path | None = None, today: date | None = None) -> list
 
 def skip_installed(records: list[Tool], setup_root: Path | None = None) -> list[Tool]:
     setup_root = setup_root or ROOT / "setup"
-    texts = "\n".join(path.read_text(encoding="utf-8", errors="ignore")
-                      for path in (setup_root / "requirements.txt", setup_root / "install_tools.sh")
-                      if path.exists()).lower()
-    return [record for record in records if record.name.lower() not in texts and record.url.lower() not in texts]
+    paths = (setup_root / "requirements.txt", setup_root / "install_tools.sh")
+    texts = [path.read_text(encoding="utf-8", errors="ignore") for path in paths if path.exists()]
+    packages: set[str] = set()
+    urls: set[str] = set()
+
+    def package_key(value: str) -> str:
+        return re.sub(r"[-_.]+", "-", value).lower()
+
+    for text in texts:
+        for line in text.splitlines():
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            if re.search(r"(?:^|\s)(?:uv\s+)?pip\s+install\b|(?:^|\s)npm\s+install\b", line):
+                tokens = line.split()
+                try:
+                    install_index = next(i for i, token in enumerate(tokens) if token == "install")
+                except StopIteration:
+                    continue
+                skip_next = False
+                for token in tokens[install_index + 1:]:
+                    if skip_next:
+                        skip_next = False
+                        continue
+                    if token in {"--python", "--prefix", "--target", "--registry"}:
+                        skip_next = True
+                        continue
+                    if token.startswith("-"):
+                        continue
+                    if "/" in token and not token.startswith("@"):
+                        continue
+                    match = re.match(r"^(@[^/\s]+/[^@\s]+|[A-Za-z0-9][A-Za-z0-9._-]*)(?=$|[<>=!~\[]|@)", token)
+                    if match:
+                        packages.add(package_key(match.group(1)))
+            else:
+                match = re.match(r"^([A-Za-z0-9][A-Za-z0-9._-]*)(?=$|[<>=!~\[])", line)
+                if match:
+                    packages.add(package_key(match.group(1)))
+        for url in re.findall(r"https?://[^\s'\"<>]+", text, flags=re.IGNORECASE):
+            urls.add(url.rstrip(".,;:!?)]").lower().rstrip("/"))
+
+    return [record for record in records
+            if package_key(record.name) not in packages
+            and record.url.lower().rstrip("/") not in urls]
+
+
+def _markdown_text(value: str) -> str:
+    value = re.sub(r"\s+", " ", value).strip()
+    value = re.sub(r"^[#>\-*`\[\]()\s]+", "", value)
+    value = re.sub(r"[`\[\]()]+", "", value)
+    return value[:200]
 
 
 def _why(record: Tool) -> str:
-    summary = record.description.strip() or "Could be useful as a locally controlled, open-source capability."
-    return summary
+    summary = record.description or "Could be useful as a locally controlled, open-source capability."
+    return _markdown_text(summary)
 
 
 def write_report(records: list[Tool], output_dir: Path, today: date) -> Path:
@@ -194,7 +241,7 @@ def write_report(records: list[Tool], output_dir: Path, today: date) -> Path:
     if not records:
         lines.append("No new candidates met the license, activity, popularity, and installed-tool filters.")
     for record in records:
-        lines.extend([f"## {record.name}", "", f"- License: {record.license}", f"- Link: {record.url}",
+        lines.extend([f"## {_markdown_text(record.name)}", "", f"- License: {record.license}", f"- Link: {record.url}",
                       f"- Why it may help: {_why(record)}", "- Roadmap step: PH9.3 (tool discovery proposal; review before adoption)",
                       f"- Source: {record.source}; last active: {record.updated.isoformat() if record.updated else 'unknown'}", ""])
     target.write_text("\n".join(lines), encoding="utf-8")
