@@ -298,6 +298,15 @@ export const addToMemory = {
   refreshImports: () => req<Record<string, Record<string, number>>>('POST', '/api/imports/refresh'),
 }
 
+// ---------- Coding sessions (read-only mirror of Codex / OpenCode) ----------
+export interface CodingSession { id: string; tool: string; source?: string; started: string | null; updated: string | null; title: string; cwd: string; active: boolean }
+export interface SessionEvent { type: string; text: string; timestamp?: string | null }
+export const sessionsApi = {
+  list: () => req<CodingSession[]>('GET', '/api/sessions'),
+  get: (id: string) => req<CodingSession & { events: SessionEvent[] }>('GET', `/api/sessions/${enc(id)}`),
+  save: (id: string) => req<{ saved: boolean; path: string }>('POST', `/api/sessions/${enc(id)}/save-to-memory`),
+}
+
 // ---------- Settings: secrets, usage, data ----------
 export interface CostGroup { runs: number; steps: number; tokens_in: number; tokens_out: number; cost_usd: number; route?: string; model?: string }
 export interface Costs { total_usd: number; by_route: CostGroup[]; by_model: CostGroup[]; local_share: number; paid_cap_usd: number }

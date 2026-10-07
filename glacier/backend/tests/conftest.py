@@ -9,6 +9,8 @@ FAKE_CODEX = os.path.join(BACKEND, "tests", "fake_codex.py")  # tests never call
 # a local engine carry it automatically. Tests about refusals send no token or a wrong one explicitly
 # (see test_local_token.py), using raw_httpx below.
 TEST_TOKEN = "glacier-test-token"
+# Tests never read the developer's real OpenCode sessions; a test that needs some points this at its own folder.
+os.environ["GLACIER_OPENCODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-opencode-in-tests")
 os.environ["GLACIER_TOKEN"] = TEST_TOKEN
 raw_httpx = {name: getattr(httpx, name) for name in ("get", "post", "put", "patch", "delete", "options", "head", "stream", "request")}
 _LOCAL = ("http://127.0.0.1", "http://localhost")
