@@ -24,6 +24,8 @@ jobs:
       - name: backend tests
         working-directory: glacier/backend
         run: python -m pytest -q tests
+      - name: other test suites (importers, templates, verification benchmark)
+        run: python -m pytest -q glacier/importers templates bench
 
   screen-linux:
     runs-on: ubuntu-latest
