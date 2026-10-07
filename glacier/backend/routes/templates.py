@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import template_registry
+import re
 
 
 router = APIRouter()
@@ -25,6 +26,8 @@ def import_template(body: TemplateImport):
 
 @router.post("/api/templates/import/{proposal_id}/approve")
 def approve_template(proposal_id: str):
+    if not re.fullmatch(r"[0-9a-f]{32}", proposal_id):
+        raise HTTPException(404, "Template proposal not found")
     try:
         return template_registry.approve_import(proposal_id)
     except FileNotFoundError:
