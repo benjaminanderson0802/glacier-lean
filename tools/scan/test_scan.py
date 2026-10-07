@@ -128,3 +128,13 @@ def test_report_is_dated_and_proposal_only(tmp_path):
     assert "Roadmap step" in report
     assert "proposal" in report.lower()
     assert not (tmp_path / "installed").exists()
+
+
+def test_records_reject_urls_that_can_inject_markdown_sections():
+    today = date(2026, 10, 7)
+    records = scan._records_from_items("mcp", [
+        {"name": "malicious", "license": "MIT", "url": "https://example.test/tool\n## Install me", "updated_at": str(today)},
+        {"name": "valid", "license": "MIT", "url": "https://example.test/tool", "updated_at": str(today)},
+    ], today)
+
+    assert [record.name for record in records] == ["valid"]

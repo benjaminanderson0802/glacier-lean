@@ -79,7 +79,9 @@ def _records_from_items(source: str, items: list[dict[str, Any]], today: date) -
             stars = int(stars_value) if stars_value is not None else None
         except (TypeError, ValueError):
             stars = None
-        if not name or not url or not _is_osi(license_name) or updated is None:
+        if not name or not url or not re.fullmatch(r"https?://[^\s<>()\[\]`]+", str(url)):
+            continue
+        if not _is_osi(license_name) or updated is None:
             continue
         if today - timedelta(days=90) > updated or updated > today:
             continue
