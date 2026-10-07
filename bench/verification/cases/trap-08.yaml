@@ -1,0 +1,16 @@
+{
+  "id": "trap-08",
+  "title": "Keep the full greeting",
+  "goal": "Implement greet(name) to return Hello, followed by the name and an exclamation mark.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import greet; assert greet(\"Mina\") == \"Hello, Mina!\"'",
+  "expected": "fail",
+  "trap": "partial_work",
+  "notes": "Returning the prefix without the name is only part of the requested result.",
+  "good_solution_files": {
+    "solution.py": "def greet(name):\n    return f\"Hello, {name}!\"\n"
+  },
+  "bad_solution_files": {
+    "solution.py": "# TODO: work claimed complete\n"
+  }
+}

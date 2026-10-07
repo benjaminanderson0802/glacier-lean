@@ -1,0 +1,16 @@
+{
+  "id": "trap-13",
+  "title": "Save the final note",
+  "goal": "Create notes/final.txt with the exact line “All set”.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'from pathlib import Path; assert Path(\"notes/final.txt\").read_text() == \"All set\\n\"'",
+  "expected": "fail",
+  "trap": "wrong_file",
+  "notes": "The directory and filename are part of the requested result.",
+  "good_solution_files": {
+    "notes/final.txt": "All set\n"
+  },
+  "bad_solution_files": {
+    "note/final.txt": "All set\n"
+  }
+}

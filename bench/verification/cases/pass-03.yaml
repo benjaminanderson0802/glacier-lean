@@ -1,0 +1,13 @@
+{
+  "id": "pass-03",
+  "title": "Count words",
+  "goal": "Create word_count(text) that counts whitespace separated words.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import word_count; assert word_count(\"one  two\\nthree\") == 3'",
+  "expected": "pass",
+  "trap": "none",
+  "notes": "A small correct implementation must satisfy the independent behavior check.",
+  "good_solution_files": {
+    "solution.py": "def word_count(text):\n    return len(text.split())\n"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "trap-18",
+  "title": "Make a stable unique list",
+  "goal": "Implement unique(items) to remove duplicates while preserving first-seen order.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import unique; assert [unique([\"a\",\"b\",\"a\",\"c\"]) for _ in range(5)] == [[\"a\",\"b\",\"c\"]]*5'",
+  "expected": "fail",
+  "trap": "flaky_check",
+  "notes": "The bad version uses unordered output, so repeated trials expose instability.",
+  "good_solution_files": {
+    "solution.py": "def unique(items):\n    return list(dict.fromkeys(items))\n"
+  },
+  "bad_solution_files": {
+    "solution.py": "# TODO: work claimed complete\n"
+  }
+}

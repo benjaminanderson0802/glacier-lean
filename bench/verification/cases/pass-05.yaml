@@ -1,0 +1,13 @@
+{
+  "id": "pass-05",
+  "title": "Find the largest value",
+  "goal": "Create largest(values) that returns the largest number in a non-empty list.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import largest; assert largest([-2, 9, 3]) == 9'",
+  "expected": "pass",
+  "trap": "none",
+  "notes": "A small correct implementation must satisfy the independent behavior check.",
+  "good_solution_files": {
+    "solution.py": "def largest(values):\n    return max(values)\n"
+  }
+}
