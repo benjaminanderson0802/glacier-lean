@@ -1,12 +1,22 @@
 """Small OpenAI-compatible model router with local daily quota tracking."""
 import json
+import logging
 import socket
+import threading
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 import claims
+
+
+logger = logging.getLogger(__name__)
+_HEALTH_TIMEOUT = 1.5
+_HEALTH_CACHE_SECONDS = 30.0
+_health_cache: dict[str, tuple[float, bool]] = {}
+_health_lock = threading.Lock()
 
 FRIENDLY_FAILURE = "No free model is available right now. A paid option needs your approval (a claim was filed)."
 DEFAULT_ROUTE = {
@@ -89,6 +99,47 @@ def _post(route: dict, prompt: str, timeout: int) -> dict:
     return {"content": content, "response": result}
 
 
+def _probe_health(url: str) -> bool:
+    """Check a route's health URL briefly; a successful HTTP response means online."""
+    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=_HEALTH_TIMEOUT) as response:
+            return 200 <= response.status < 400
+    except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout, TimeoutError, OSError, ValueError):
+        return False
+
+
+def _is_online(route: dict) -> bool:
+    url = route.get("health_url")
+    if not isinstance(url, str) or not url.strip():
+        logger.warning("Preferred model route %s is offline: no health URL is configured", route.get("name", "unnamed"))
+        return False
+    url = url.strip()
+    now = time.monotonic()
+    with _health_lock:
+        cached = _health_cache.get(url)
+        if cached and now - cached[0] < _HEALTH_CACHE_SECONDS:
+            return cached[1]
+    online = _probe_health(url)
+    with _health_lock:
+        _health_cache[url] = (time.monotonic(), online)
+    return online
+
+
+def route_status(route_list: list[dict]) -> list[dict]:
+    """Return plain-language availability for gateway routes without sending a model request."""
+    statuses = []
+    for route in route_list:
+        if route.get("paid", True) is not False:
+            status = "Needs approval before use"
+        elif route.get("prefer_when_online"):
+            status = "Online and preferred" if _is_online(route) else "Offline; another model will be tried"
+        else:
+            status = "Available when earlier routes cannot answer"
+        statuses.append({"name": route.get("name", "unnamed"), "status": status})
+    return statuses
+
+
 def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = None) -> dict:
     """Try eligible routes in order and report the route that answered."""
     config = ctx.get("config") or {}
@@ -113,10 +164,23 @@ def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = 
     today = datetime.now(timezone.utc).date().isoformat()
     paid_blocked = False
     failures = []
+    eligible_routes = []
+    preferred_online = []
     for route in route_list:
         if route.get("paid", True) is not False:
             paid_blocked = True
             continue
+        eligible_routes.append(route)
+        if route.get("prefer_when_online"):
+            if _is_online(route):
+                preferred_online.append(route)
+            else:
+                logger.warning("Skipping preferred model route %s because it is offline", route.get("name", "unnamed"))
+    ordered_routes = preferred_online + [
+        route for route in eligible_routes
+        if not route.get("prefer_when_online")
+    ]
+    for route in ordered_routes:
         cap = int(route.get("daily_request_cap", 0) or 0)
         if cap > 0 and _daily_count(ctx["home"], route["name"], today) >= cap:
             continue
