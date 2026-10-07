@@ -62,7 +62,7 @@ New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/con
                                                   for 10 seconds and does not block the response on tool probes.
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
-- WS   /api/events  -> run messages {"run_id","env_id","node_id","state","output"?} on every node state change; memory writes publish {"type":"memory","path":"<note path>","action":"write"|"delete","author":"<writer>","run_id":"<run id or empty>"} after the vault git commit succeeds. Events use action `write` for a note write, merge, archive, or undo restoration and `delete` for an actual note deletion. Publish runs outside the vault lock so a slow socket never blocks note writers.
+- WS   /api/events  -> run messages {"run_id","env_id","node_id","state","output"?} on every node state change; memory writes through the vault (owner saves, run notes, undo) publish {"type":"memory","path":"<note path>","change":"created"|"updated","author":"<writer>","run_id":"<run id or empty>"} after the vault git commit succeeds, outside the vault lock (run-written notes follow that run's node events by ~0.1 s).
 - GET  /api/memory/graph?limit=N -> graph of the N most recently updated notes plus their direct links; omit `limit` for the full graph.
 
 ## Durability rules

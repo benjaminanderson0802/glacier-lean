@@ -103,7 +103,7 @@ const server = http.createServer(async (req, res) => {
         vault.set(path, item.body); memoryMeta.set(path, { title, author: item.author, run_id: '', created: oldMeta?.created ?? now, updated: now, tags })
         const commit = commitId(), history = memoryHistory.get(path) ?? []
         history.unshift({ commit, author: item.author, date: now, message: `[${item.author}] write ${path}`, body: item.body }); memoryHistory.set(path, history)
-        broadcast({ type: 'memory', path, action: 'write', author: item.author, run_id: '' })
+        broadcast({ type: 'memory', path, change, author: item.author, run_id: '' })
         return send(200, { path, commit })
       }
       if (req.method === 'GET' && p === '/api/memory/graph') {
@@ -130,7 +130,7 @@ const server = http.createServer(async (req, res) => {
         if (index < 0 || !history[index + 1]) return send(404, { detail: 'No earlier version exists' })
         const old = history[index + 1]; vault.set(path, old.body); history.splice(0, index + 1); memoryHistory.set(path, history)
         const commit = commitId(); history.unshift({ ...old, commit });
-        broadcast({ type: 'memory', path, action: 'write', author: 'owner', run_id: '' })
+        broadcast({ type: 'memory', path, change: 'updated', author: 'owner', run_id: '' })
         return send(200, { path, commit })
       }
       if (req.method === 'GET' && p === '/api/memory/search') {

@@ -85,8 +85,8 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
         try:
             stat = os.stat(full)
-            cached = (stat.st_mtime_ns, stat.st_size, memory_meta.parse(stored_body, path)[0],
-                      memory_meta.parse(stored_body, path)[1])
+            parsed_meta, parsed_body = memory_meta.parse(stored_body, path)
+            cached = (stat.st_mtime_ns, stat.st_size, parsed_meta, parsed_body)
             with _note_metadata_cache_lock:
                 _note_metadata_cache[path] = cached
         except OSError:
@@ -107,9 +107,14 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
             c.close()
     try:
         import store
-        event = {"type": "memory", "path": path, "action": "write",
+        event = {"type": "memory", "path": path,
+                 "change": "created" if previous is None else "updated",
                  "author": writer, "run_id": metadata_run_id or ""}
-        threading.Thread(target=store.broadcaster.publish, args=(event,), daemon=True).start()
+        if writer.startswith("run:"):
+            # A run's note event follows its node events; a short delay keeps that order for live screens.
+            threading.Timer(0.1, store.broadcaster.publish, args=(event,)).start()
+        else:
+            store.broadcaster.publish(event)
     except (ImportError, AttributeError):
         pass
     return sha

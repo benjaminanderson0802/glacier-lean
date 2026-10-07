@@ -28,7 +28,7 @@ def test_run_write_publishes_one_memory_websocket_event(server):
             except TimeoutError:
                 break
         memory = [e for e in events if e.get("type") == "memory"]
-    assert memory == [{"type": "memory", "path": "runs/live-run-note.md", "action": "write",
+    assert memory == [{"type": "memory", "path": "runs/live-run-note.md", "change": "created",
                        "author": "run:" + run["run_id"], "run_id": run["run_id"]}]
 
 
@@ -36,7 +36,7 @@ def test_owner_save_publishes_one_memory_event(server):
     with websockets.sync.client.connect(_ws_url(server), open_timeout=10) as ws:
         server.put("/api/memory/note", {"path": "owner-live.md", "body": "# Owner", "author": "owner"})
         event = json.loads(ws.recv(timeout=2))
-    assert event == {"type": "memory", "path": "owner-live.md", "action": "write", "author": "owner", "run_id": ""}
+    assert event == {"type": "memory", "path": "owner-live.md", "change": "created", "author": "owner", "run_id": ""}
 
 
 def test_memory_undo_publishes_one_write_event(server):
@@ -45,7 +45,7 @@ def test_memory_undo_publishes_one_write_event(server):
     with websockets.sync.client.connect(_ws_url(server), open_timeout=10) as ws:
         server.post("/api/memory/undo", {"path": "undo-live.md"})
         event = json.loads(ws.recv(timeout=2))
-    assert event == {"type": "memory", "path": "undo-live.md", "action": "write", "author": "owner", "run_id": ""}
+    assert event == {"type": "memory", "path": "undo-live.md", "change": "updated", "author": "owner", "run_id": ""}
 
 
 def test_graph_with_2000_notes_is_fast_and_complete(server, tmp_path):
@@ -69,6 +69,34 @@ def test_graph_with_2000_notes_is_fast_and_complete(server, tmp_path):
 def test_graph_limit_keeps_newest_notes_and_direct_links(server):
     server.put("/api/memory/note", {"path": "older.md", "body": "# Older\n\n[[older-link]]", "author": "owner"})
     server.put("/api/memory/note", {"path": "newer.md", "body": "# Newer\n\n[[newer-link]]", "author": "owner"})
+    # Two quick saves can share a file timestamp; set distinct ones so "newest" is unambiguous.
+    vault_dir = os.path.join(server.home, "vault")
+    os.utime(os.path.join(vault_dir, "older.md"), (1_000_000_000, 1_000_000_000))
+    os.utime(os.path.join(vault_dir, "newer.md"), (2_000_000_000, 2_000_000_000))
     graph = server.get("/api/memory/graph", params={"limit": 1})
     assert {n["id"] for n in graph["nodes"] if n["id"] in {"older", "newer"}} == {"newer"}
     assert {e["target"] for e in graph["edges"] if e["source"] == "newer"} == {"owner", "newer-link"}
+
+
+def test_cleanup_merge_publishes_updated_and_deleted_events(server):
+    server.put("/api/memory/note", {"path": "dupe-a.md", "body": "# Same\nshared words here", "author": "owner"})
+    server.put("/api/memory/note", {"path": "dupe-b.md", "body": "# Same\nshared words here", "author": "owner"})
+    import memory_hygiene  # noqa: F401  (proposal shape lives server-side; drive it through the API)
+    proposals = server.post("/api/memory/hygiene/scan")
+    merge = next((p for p in proposals if p["kind"] == "merge" and {"dupe-a.md", "dupe-b.md"} <= set(p["paths"])), None)
+    if merge is None:
+        import pytest
+        pytest.skip("scanner did not propose this merge on this data")
+    with websockets.sync.client.connect(_ws_url(server), open_timeout=10) as ws:
+        server.post(f"/api/memory/hygiene/{merge['id']}", {"approve": True})
+        events = []
+        deadline = time.monotonic() + 8  # generous under a loaded machine; stops as soon as both are seen
+        while time.monotonic() < deadline and not (
+                any(e.get("change") == "deleted" for e in events) and any(e.get("change") == "updated" for e in events)):
+            try:
+                events.append(json.loads(ws.recv(timeout=max(0.01, deadline - time.monotonic()))))
+            except TimeoutError:
+                break
+    changes = {(e["path"], e["change"]) for e in events if e.get("type") == "memory"}
+    assert any(change == "deleted" for _, change in changes)
+    assert any(change == "updated" for _, change in changes)

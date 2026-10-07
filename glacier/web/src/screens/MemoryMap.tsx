@@ -1,7 +1,7 @@
 // Memory map (mockup panel 10): pixel-square graph of everything Glacier knows. Colours from tokens only.
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
-import { memoryMore, type GraphEdge, type GraphNode } from '../api.ts'
+import { memoryMore, subscribeEvents, type GraphEdge, type GraphNode, type MemoryEvent } from '../api.ts'
 import { Empty, Panel } from '../ui/kit.tsx'
 import { tok } from '../ui/tok.ts'
 import { go } from '../route.ts'
@@ -16,7 +16,21 @@ export function MemoryMap() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fg = useRef<any>(undefined)
   const [size, setSize] = useState({ w: 600, h: 400 })
-  useEffect(() => { memoryMore.graph().then(setData).catch(e => setErr(String(e))) }, [])
+  // Notes light up for a few seconds when anything (you, an automation, an AI worker) writes them.
+  const [lit, setLit] = useState<Record<string, number>>({})
+  useEffect(() => {
+    const load = () => memoryMore.graph(1500).then(setData).catch(e => setErr(String(e)))
+    load()
+    let t: ReturnType<typeof setTimeout> | undefined
+    const off = subscribeEvents(ev => {
+      const m = ev as unknown as MemoryEvent
+      if (m.type !== 'memory') return
+      setLit(x => ({ ...x, [m.path.replace(/\.md$/, '')]: Date.now() }))
+      clearTimeout(t); t = setTimeout(load, 300)
+    }, () => {})
+    const fade = setInterval(() => setLit(x => Object.fromEntries(Object.entries(x).filter(([, at]) => Date.now() - at < 4000))), 500)
+    return () => { off(); clearTimeout(t); clearInterval(fade) }
+  }, [])
   useEffect(() => {
     const el = box.current; if (!el) return
     const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }))
@@ -51,10 +65,12 @@ export function MemoryMap() {
               nodeRelSize={4} linkColor={() => line} linkWidth={1} cooldownTicks={120}
               onNodeClick={(n: { id?: string | number; kind?: string }) => { if (n.kind === 'note') go(`memory/${encodeURIComponent(`${n.id}.md`)}`) }}
               nodeCanvasObject={(n: { x?: number; y?: number; kind?: string; title?: string }, ctx: CanvasRenderingContext2D, scale: number) => {
-                const s = n.kind === 'author' ? 7 : 5
+                const glowing = lit[(n as { id?: string }).id ?? '']
+                const s = glowing ? 9 : n.kind === 'author' ? 7 : 5
+                if (glowing) { ctx.fillStyle = colours.author; ctx.fillRect(Math.round((n.x ?? 0) - s / 2 - 2), Math.round((n.y ?? 0) - s / 2 - 2), s + 4, s + 4) }
                 ctx.fillStyle = colours[n.kind ?? 'note'] ?? colours.note
                 ctx.fillRect(Math.round((n.x ?? 0) - s / 2), Math.round((n.y ?? 0) - s / 2), s, s)
-                if (scale > 1.4 || n.kind === 'author') {
+                if (scale > 1.4 || n.kind === 'author' || glowing) {
                   ctx.font = `${Math.max(8, 14 / scale)}px ${font}`
                   ctx.fillStyle = text
                   ctx.fillText(n.title ?? '', (n.x ?? 0) + s, (n.y ?? 0) + 3)
@@ -70,7 +86,8 @@ export function MemoryMap() {
           ))}
           <dt>Links</dt><dd>{graph.links.filter(l => l.kind === 'link').length}</dd>
         </dl>
-        <div className="g-detail" style={{ marginTop: 10 }}>Click a note square to open it. Scroll to zoom, drag to move.</div>
+        <div className="g-detail" style={{ marginTop: 10 }}>Click a note square to open it. Scroll to zoom, drag to move. Notes light up while they are being written.</div>
+        {Object.keys(lit).length > 0 && <div className="g-saved" data-testid="memory-live">Writing: {Object.keys(lit).slice(0, 3).join(', ')}</div>}
       </Panel>
     </div>
   )
