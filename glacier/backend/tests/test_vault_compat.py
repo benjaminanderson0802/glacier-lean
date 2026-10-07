@@ -8,6 +8,9 @@ if BACKEND not in sys.path:
 
 
 def _write_note_file(vault_path, name, text):
+    if os.name == "nt" and any(ord(char) < 32 for char in name):
+        # Win32 rejects control characters even through an extended path.
+        return
     path = os.path.join(vault_path, name)
     stem = os.path.basename(name).split(".", 1)[0].upper()
     reserved = stem in {"CON", "PRN", "AUX", "NUL"} or any(
@@ -96,12 +99,12 @@ def test_compatibility_checks_windows_names_and_warns_on_obsidian_link_character
 
     expected = {
         ("nul.md", "invalid_filename"),
-        ("control\x01.md", "invalid_filename"),
         ("hash#name.md", "link_unsafe_filename"),
         ("caret^name.md", "link_unsafe_filename"),
         ("bracket[name].md", "link_unsafe_filename"),
     }
     if os.name != "nt":
+        expected.add(("control\x01.md", "invalid_filename"))
         expected.add(("a\\b.md", "invalid_filename"))
     assert {(p["path"], p["kind"]) for p in problems} == expected
     assert all(p["fix_hint"] for p in problems)
