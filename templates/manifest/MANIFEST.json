@@ -1,0 +1,114 @@
+{
+  "templates": [
+    {
+      "id": "tpl-daily-report",
+      "file": "tpl-daily-report.json",
+      "name": "Daily report",
+      "description": "Daily report",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "972d9b6c306e727cf3dac82b3085f2831409de5541b9ff89a45f818ffbae9f1f",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-explain-error",
+      "file": "tpl-explain-error.json",
+      "name": "Explain an error",
+      "description": "Explain an error",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "308d556f2059f8de4bb97e88b9753cc861bdede4cfc20e48789f14e0883e2bdf",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-folder-backup",
+      "file": "tpl-folder-backup.json",
+      "name": "Folder backup",
+      "description": "Folder backup",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "328acefef1d289e43f5c0f03176ec9748f7b43b733907668fb1fe14e8ef95b8a",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-folder-cleanup",
+      "file": "tpl-folder-cleanup.json",
+      "name": "Folder cleanup",
+      "description": "Folder cleanup",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "e209ed040dc3d3bad8f5c8ff00349e92dca1d1a21b943ab9d0b4c1254ff19e32",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-inbox-triage",
+      "file": "tpl-inbox-triage.json",
+      "name": "Sort incoming messages",
+      "description": "Sort incoming messages",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "fe3ddd1c392dfff223e4cd92f284860bb6b0a6c23a96fe84ea15b6e098a2ba24",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-nightly-job",
+      "file": "tpl-nightly-job.json",
+      "name": "Nightly test job",
+      "description": "Nightly test job",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "302d783b38ca9677b8bccdd291cea6f436e21d1ea54c7a0bb0c99b30e7c48036",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-sub-flow-example",
+      "file": "tpl-sub-flow-example.json",
+      "name": "Run another flow",
+      "description": "Run another flow",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "883d42e06495c1ebbe997457ad18728e4d6b4baf82c010f8a5b45411691fb9c3",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-test-and-fix",
+      "file": "tpl-test-and-fix.json",
+      "name": "Test and fix",
+      "description": "Test and fix",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "8fad77964adc191498c804577dc8517a43bf0c4684ad0a20e0c837e38b5f8136",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-website-monitor",
+      "file": "tpl-website-monitor.json",
+      "name": "Website monitor",
+      "description": "Website monitor",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "c4aa3ee2e16cc50d082c2a97e8449444ec8ccccc9c79aa8672e9daaf078c6a36",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-weekly-research",
+      "file": "tpl-weekly-research.json",
+      "name": "Weekly research summary",
+      "description": "Weekly research summary",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "f110a140b8d6db9da6efcd2f0b9cec98d8221521e66dd59b33995141f95ccc33",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    }
+  ]
+}
