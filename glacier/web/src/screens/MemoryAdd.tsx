@@ -1,4 +1,4 @@
-// Add to memory (mockup panel 11): drop files, write text, import ChatGPT / Claude chats, or save a coding session.
+// Add to memory (mockup panel 11): drop files, write text, import ChatGPT / Claude chats, or save a coding-agent session.
 import { useEffect, useRef, useState } from 'react'
 import { addToMemory, ago, memory, sessionsApi, slugify, type CodingSession, type SessionEvent } from '../api.ts'
 import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
@@ -34,7 +34,7 @@ export function MemoryAdd() {
     catch (e) { setDone([{ name: sel.title || 'Session', ok: false, detail: String(e).replace(/^Error: /, '') }]) }
     finally { setBusy(false) }
   }
-  const toolName = (s: CodingSession) => s.source === 'opencode' ? 'OpenCode' : 'Codex'
+  const toolName = (s: CodingSession) => ({ opencode: 'OpenCode', claude: 'Claude Code', 'claude-code': 'Claude Code', gemini: 'Gemini CLI' } as Record<string, string>)[s.source ?? ''] ?? 'Codex'
   const refresh = async () => {
     setBusy(true)
     try {
@@ -78,7 +78,7 @@ export function MemoryAdd() {
         {tab === 'sessions' ? (
           <div className="g-rows g-scroll" data-testid="sessions-list">
             {sessErr && <div className="g-error">{sessErr}</div>}
-            {sessions === null ? <Empty>Looking for coding sessions…</Empty> : sessions.length === 0 ? <Empty>No Codex or OpenCode sessions found on this computer.</Empty> :
+            {sessions === null ? <Empty>Looking for coding sessions…</Empty> : sessions.length === 0 ? <Empty>No coding-agent sessions found on this computer.</Empty> :
               sessions.map((x, i) => (
                 <button key={x.id} type="button" className={`g-row${sel?.id === x.id ? ' sel' : ''}`} onClick={() => openSession(x.id)} data-testid={`session-${i}`}>
                   <span className="g-ico"><Icon name="run" /></span>
@@ -102,7 +102,7 @@ export function MemoryAdd() {
               onChange={e => { const picked = Array.from(e.target.files ?? []); setFiles(f => [...f, ...picked]); e.target.value = '' }} />
           </div>
         )}
-        <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? 'Your Codex and OpenCode sessions, read-only. Glacier never changes them. Secrets are hidden.' : tab === 'chats' ? 'Use the export file from ChatGPT or Claude (Settings > Data export). Duplicates are skipped.' : tab === 'files' ? 'Supports PDF, Word, text, Markdown, spreadsheets and images. Text is extracted so it can be searched.' : 'Saved as a plain note you can edit later.'}</div>
+        <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? 'Your Codex, OpenCode, Claude Code and Gemini CLI sessions, read-only. Glacier never changes them. Secrets are hidden.' : tab === 'chats' ? 'Use the export file from ChatGPT or Claude (Settings > Data export). Duplicates are skipped.' : tab === 'files' ? 'Supports PDF, Word, text, Markdown, spreadsheets and images. Text is extracted so it can be searched.' : 'Saved as a plain note you can edit later.'}</div>
       </Panel>
       <Panel title={tab === 'sessions' ? 'Session' : 'Options'} testid="add-options">
         {tab === 'files' && <label className="g-field"><span className="g-detail">Add to project (optional)</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder="None" data-testid="add-project" /></label>}
