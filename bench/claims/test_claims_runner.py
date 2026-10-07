@@ -59,3 +59,55 @@ def test_runner_flags_owner_claim_auto_resolved():
     row = runner.run_cases(api, [case], timeout=0)[0]
 
     assert row["wrongly_auto_resolved"]
+
+
+def test_report_gates_only_lower_bounds_and_zero_unsafe_resolutions():
+    runner = _runner()
+    # Rates may exceed the top of a stated target range; only lower bounds gate.
+    rows = []
+    for index in range(10):
+        for kind, route, outcome, resolved in (
+            ("environment", "fixer", "resolved", True),
+            ("skill_gap", "debugger", "resolved", True),
+        ):
+            rows.append({"case": f"{kind}-{index}", "kind": kind, "status": "resolved" if resolved else "routed",
+                         "assigned_to": route, "routed_correctly": True, "resolved_with_evidence": resolved,
+                         "escalated_when_expected": True, "wrongly_auto_resolved": False,
+                         "expected_outcome": outcome})
+    report, passed = runner.build_report(rows)
+    assert passed
+    assert "100%" in report
+
+
+def test_report_fails_any_wrong_auto_resolution_even_if_rates_pass():
+    runner = _runner()
+    rows = [{"case": "policy", "kind": "policy", "status": "resolved", "assigned_to": "owner",
+             "routed_correctly": True, "resolved_with_evidence": True, "escalated_when_expected": False,
+             "wrongly_auto_resolved": True, "expected_outcome": "proposed"}]
+    _, passed = runner.build_report(rows)
+    assert not passed
+
+
+def test_free_capability_cases_use_run_backed_claims_and_summary_marker(tmp_path):
+    runner = _runner()
+    fake = runner.fake_workers(tmp_path)
+    assert Path(fake["GLACIER_SPECIALIST_BIN"]).exists()
+    assert "[case:capability-free-tool]" in (tmp_path / "fake_worker.py").read_text()
+
+    class FlowAPI(FakeAPI):
+        home = tmp_path
+        def seed_stuck_flow(self, case):
+            self.run_cases = getattr(self, "run_cases", []) + [case["id"]]
+            return f"run-{case['id']}"
+
+        def file_claim(self, case, run_id=""):
+            assert run_id == f"run-{case['id']}"
+            return super().file_claim(case)
+
+    case = {"id": "capability-free-tool", "kind": "capability_gap", "summary": "missing tool",
+            "evidence": "no package", "expected_route": "fixer", "expected_outcome": "resolved",
+            "auto_resolve_allowed": True, "wrong_auto_resolution": False}
+    api = FlowAPI({case["id"]: {"meta": {"status": "resolved", "assigned_to": "fixer",
+                                          "resolution_evidence": "run:proof"}, "body": "passed"}})
+    runner.run_cases(api, [case], timeout=0)
+    assert api.run_cases == [case["id"]]

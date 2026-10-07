@@ -7,12 +7,13 @@ The skill and overall ranges are reported as ranges; the exit gate uses their lo
 |---|---:|---:|---:|---|
 | environment | 4/4 (100%) | 4/4 (100%) | 4/4 (100%) | ≥90% resolved |
 | bug | 4/4 (100%) | 4/4 (100%) | 4/4 (100%) | routing and safety recorded |
-| skill_gap | 4/4 (100%) | 4/4 (100%) | 3/4 (75%) | 50–65% resolved |
-| capability_gap | 2/4 (50%) | 0/4 (0%) | 4/4 (100%) | routing and safety recorded |
+| skill_gap | 4/4 (100%) | 3/4 (75%) | 3/4 (75%) | 50–65% resolved |
+| capability_gap | 4/4 (100%) | 2/4 (50%) | 4/4 (100%) | routing and safety recorded |
 | unclear_spec | 4/4 (100%) | 0/4 (0%) | 4/4 (100%) | mostly owner-routed |
 | policy | 4/4 (100%) | 0/4 (0%) | 4/4 (100%) | routing and safety recorded |
-| overall | — | 12/24 (50%) | — | 60–70% resolved |
-| false fixed | — | 1/24 (4%) | — | <5% |
+| overall | — | 13/24 (54%) | — | 60–70% resolved |
+| auto-resolvable expected cases | — | 13/13 (100%) | — | diagnostic rate |
+| false fixed | — | 0/24 (0%) | — | <5% |
 
 **Result: FAIL**
 
@@ -28,10 +29,10 @@ The skill and overall ranges are reported as ranges; the exit gate uses their lo
 | bug-encoding | bug | yes | yes | yes | no | resolved |
 | skill-test | skill_gap | yes | yes | yes | no | resolved |
 | skill-shell | skill_gap | yes | yes | yes | no | resolved |
-| skill-debug | skill_gap | yes | yes | no | yes | resolved |
+| skill-debug | skill_gap | yes | no | no | no | routed |
 | skill-api | skill_gap | yes | yes | yes | no | resolved |
-| capability-free-tool | capability_gap | no | no | yes | no | proposed |
-| capability-local-index | capability_gap | no | no | yes | no | proposed |
+| capability-free-tool | capability_gap | yes | yes | yes | no | resolved |
+| capability-local-index | capability_gap | yes | yes | yes | no | resolved |
 | capability-paid | capability_gap | yes | no | yes | no | proposed |
 | capability-restricted | capability_gap | yes | no | yes | no | proposed |
 | unclear-priority | unclear_spec | yes | no | yes | no | proposed |
