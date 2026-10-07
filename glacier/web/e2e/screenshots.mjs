@@ -21,7 +21,18 @@ const F = {
   '/api/memory/note': { path: 'ideas/products.md', body: '# Product ideas\n\n- pixel desk lamp\n- glacier mug\n\nSee [[people/sam]].', meta: { title: 'Product ideas' }, links_out: ['people/sam'], links_in: [] },
   '/api/memory/history': [{ commit: 'a1b2c3d4', author: 'assistant', date: h(3), message: 'added product ideas' }],
   '/api/system/check': { cpu_cores: 8, memory_gb: 16, disk_free_gb: 120, ollama_models: ['qwen3:0.6b'], tools: { codex: { found: true, version: '0.9' }, ollama: { found: true, version: '0.12' }, git: { found: true, version: '2.42.0' } }, recommended: { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 4 }, messages: [] },
-  '/api/node-types': [],
+  '/api/node-types': [
+    { type: 'schedule', label: 'Schedule', description: 'Start on a timer', fields: [{ key: 'every', label: 'Every', placeholder: 'daily 9am', default: '' }], branches: null },
+    { type: 'command', label: 'Command', description: 'Run a command', fields: [{ key: 'command', label: 'Command', placeholder: 'echo hi', default: '' }], branches: null },
+    { type: 'check', label: 'Check', description: 'Verify', fields: [{ key: 'command', label: 'Check command', placeholder: '', default: '' }], branches: ['yes', 'no'] },
+    { type: 'approval', label: 'Approval', description: 'Ask the owner', fields: [{ key: 'prompt', label: 'Question', placeholder: '', default: '', multiline: true }], branches: ['yes', 'no'] },
+    { type: 'note', label: 'Note', description: 'Write to memory', fields: [{ key: 'path', label: 'Note', placeholder: '', default: '' }], branches: null }],
+  '/api/environments/website-monitor': { id: 'website-monitor', name: 'website monitor', nodes: [
+    { id: 'n1', type: 'schedule', config: { every: 'every 6h' }, position: { x: 80, y: 40 } },
+    { id: 'n2', type: 'command', config: { command: 'fetch https://example.org' }, position: { x: 80, y: 170 } },
+    { id: 'n3', type: 'check', config: { command: 'changes detected' }, position: { x: 80, y: 300 } },
+    { id: 'n4', type: 'note', config: { path: 'monitor/changes.md' }, position: { x: 360, y: 300 } }],
+    edges: [{ id: 'e1', source: 'n1', target: 'n2', label: '' }, { id: 'e2', source: 'n2', target: 'n3', label: '' }, { id: 'e3', source: 'n3', target: 'n4', label: 'yes' }] },
 }
 const srv = http.createServer((q, r) => {
   let p = path.join(dist, decodeURIComponent(q.url.split('?')[0]))
