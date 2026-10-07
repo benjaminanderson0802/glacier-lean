@@ -24,7 +24,7 @@ def _run_commits(run_id: str) -> list[git.Commit]:
         message = commit.message
         if message.casefold().startswith("revert"):
             continue
-        if tag.search(message) or tag.search(commit.author.name) or commit.author.name.casefold() == author:
+        if tag.match(message) or tag.search(commit.author.name) or commit.author.name.casefold() == author:
             out.append(commit)
             continue
         if commit.author.name.casefold() == "glacier-runner" and any(
