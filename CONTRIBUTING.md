@@ -1,26 +1,31 @@
 # Contributing
 
-Contributions from people and AI workers follow [`NORTHSTAR.yaml`](NORTHSTAR.yaml) and [`GOVERNANCE.md`](GOVERNANCE.md). Keep changes tied to an existing checkpoint and use plain language in anything a Glacier user reads (I-17).
+Contributions follow [`NORTHSTAR.yaml`](NORTHSTAR.yaml), [`GOVERNANCE.md`](GOVERNANCE.md), and the assigned card. Keep user-facing text plain and tied to a project goal (I-17).
 
 ## Before changing files
 
 1. Read `AGENTS.md`, `NORTHSTAR.yaml`, `ORCHESTRATION.yaml`, and the contract or guide named by your card.
-2. Use the branch named by your card (`card/<id>`) and touch only its listed paths.
-3. Write the acceptance test first, then run it and confirm that it fails for the expected reason (I-03). Do not edit the check that judges your change (I-04).
-4. Free only by default; monthly paid cap $0. A paid or closed option is never adopted by a worker; it goes to the owner as a gap proposal (D4, I-01). Use a local route or the owner's already available official CLI route only where assigned.
+2. Work on your assigned branch and touch only the paths listed on your card.
+3. Write and run the acceptance test first (I-03). Never edit, disable, or bypass the check that judges your change (I-04).
+4. Use free and open-source dependencies only. Prefer an existing maintained OSI-licensed tool when it covers the need (I-01). Never add a paid or closed-source dependency.
+5. Use plain words in the screen. Do not make users learn internal names or jargon (I-17).
 
-## Checks and review
+## Checks
 
-Run the relevant focused test, then the complete backend suite and applicable UI checks. Use the project's Python environment for `python` (for example, activate the project's virtual environment first); do not rely on a system Python. From the repository root:
+From the repository root, run the documentation checks, full backend suite, and screen checks with the project environment installed:
 
 ```sh
-python -m pytest -q docs/test_governance_docs.py
-(cd glacier/backend && python -m pytest -q tests)
+../../.venv/bin/python -m pytest -q docs/test_governance_docs.py docs/test_governance_files.py
+flock /tmp/glacier-suite.lock bash -c 'cd glacier/backend && ../../.venv/bin/python -m pytest -q tests'
 (cd glacier/web && npm run check:ui)
 ```
 
-The documentation command applies to changes in these governance documents; run the backend and UI commands when your card touches those areas or requires the full board. The sandbox test board must pass; CI too once it can run (GitHub Actions is paused by the $0 spending limit). Also run any card-specific checks. Tests must use local fakes and must not require internet access or a real AI model.
+The screen check includes the theme lint. All screen colours, fonts, and radii must come only from [`glacier/web/src/theme/tokens.css`](glacier/web/src/theme/tokens.css); `npm run check:ui` must pass. Do not define these theme values elsewhere.
 
-Open a pull request to `main`. Include the checkpoint, acceptance test, exact commands and results, and any limitation. A reviewer checks scope, evidence, and policy; CI and the sandbox test board must pass before the integrator merges. Only the integrator merges cards. A worker never marks a checkpoint complete without linked test or artifact evidence.
+Run focused checks for your change as well. Do not weaken an existing check to make a change pass. The full backend suite uses a shared lock; wait for your turn. Keep tests local and independent of internet access or live AI services.
 
-If you encounter a stuck signal, a problem outside your lane, or an unclear requirement, follow the escalation rules in `NORTHSTAR.yaml` and file a claim. Do not keep retrying past the stated budget or silently drop the issue (I-11, I-15, I-16).
+## Review
+
+Open a pull request to `main` with the checkpoint, acceptance test, exact commands and results, and any limitations. Include the exact final output line from the full suite. For screen changes, include screenshots and compare them with the established theme. A reviewer checks scope, evidence, and policy; the integrator merges after the required checks pass.
+
+If a problem is outside your assigned work, the requirement is unclear, or you hit a stuck signal, follow the escalation rules in `NORTHSTAR.yaml` and file a claim. Do not retry past the stated limit or silently drop the issue (I-11, I-15, I-16).
