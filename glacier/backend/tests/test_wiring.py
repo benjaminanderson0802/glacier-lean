@@ -24,7 +24,7 @@ class MemoryKeyring(keyring.backend.KeyringBackend):
         del self.values[(service, username)]
 
 
-def _start_with_memory_keyring(server, home):
+def _start_with_memory_keyring(server, home, monkeypatch):
     """Load a test-only in-memory keyring in the real uvicorn subprocess."""
     hook = home / "keyring_hook"
     hook.mkdir(exist_ok=True)
@@ -46,7 +46,7 @@ def _start_with_memory_keyring(server, home):
                 with open(self.path, "w") as handle: json.dump(values, handle)
         keyring.set_keyring(MemoryKeyring())
     '''))
-    os.environ["PYTHONPATH"] = str(hook) + os.pathsep + os.environ.get("PYTHONPATH", "")
+    monkeypatch.setenv("PYTHONPATH", str(hook) + os.pathsep + os.environ.get("PYTHONPATH", ""))
 
 
 def test_command_secret_is_redacted_from_run_and_vault(server, monkeypatch):
@@ -54,8 +54,7 @@ def test_command_secret_is_redacted_from_run_and_vault(server, monkeypatch):
     import secrets_store
     monkeypatch.setenv("GLACIER_HOME", server.home)
     home = __import__("pathlib").Path(server.home)
-    _start_with_memory_keyring(server, home)
-    monkeypatch.setenv("PYTHONPATH", os.environ["PYTHONPATH"])
+    _start_with_memory_keyring(server, home, monkeypatch)
     server.stop()
     server = Server(server.home)
     server.start()
@@ -83,8 +82,7 @@ def test_unknown_command_secret_fails_with_plain_message(server, monkeypatch):
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     monkeypatch.setenv("GLACIER_HOME", server.home)
     home = __import__("pathlib").Path(server.home)
-    _start_with_memory_keyring(server, home)
-    monkeypatch.setenv("PYTHONPATH", os.environ["PYTHONPATH"])
+    _start_with_memory_keyring(server, home, monkeypatch)
     server.stop()
     server = Server(server.home)
     server.start()
@@ -149,3 +147,53 @@ def test_mcp_file_claim_validates_worker_and_kind(tmp_path):
             assert str(exc)
         else:
             raise AssertionError("invalid claim kind or author was accepted")
+
+
+def test_codex_secret_placeholder_is_rejected_without_resolution(server, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", server.home)
+    server.put("/api/environments/codex-secret", env("codex-secret", [
+        ("ask", "codex", {"prompt": "use {secret:tok}"}),
+    ], []))
+    run_id = server.post("/api/environments/codex-secret/run")["run_id"]
+    run = server.wait_run(run_id)
+    assert run["status"] == "failed"
+    assert run["outputs"]["ask"] == "error: Secrets can't be sent to an AI model. Use the secret in a command step instead."
+
+
+def test_node_output_is_hidden_when_keyring_cannot_redact(tmp_path, monkeypatch):
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    import store
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    store.init(str(tmp_path / "db.sqlite"))
+    store.create_run("run1", "flow", {"nodes": [{"id": "node"}]})
+    import secrets_store
+    def broken_redact(text):
+        raise RuntimeError("keyring unavailable")
+    monkeypatch.setattr(secrets_store, "redact", broken_redact)
+    store.set_node("run1", "flow", "node", "done", "may contain a secret")
+    assert store.get_run("run1")["outputs"]["node"] == "[output hidden: secrets could not be checked]"
+
+
+def test_folder_backup_commands_use_absolute_glacier_home_in_real_run(tmp_path, monkeypatch):
+    monkeypatch.delenv("GLACIER_HOME", raising=False)
+    monkeypatch.setenv("GLACIER_PLUGIN_DIRS", "")
+    home = tmp_path / "home"
+    home.mkdir()
+    s = Server(home).start()
+    try:
+        template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "templates", "tpl-folder-backup.json"))
+        template = json.loads(open(template_path, encoding="utf-8").read())
+        for node in template["nodes"]:
+            if node["type"] == "schedule":
+                continue
+            node["position"] = {"x": 0, "y": 0}
+        s.put("/api/environments/backup", template)
+        run_id = s.post("/api/environments/backup/run")["run_id"]
+        run = s.wait_run(run_id)
+        assert run["status"] == "done", run
+        workspace = home / "workspaces" / "backup"
+        backups = list((home / "backups" / "tpl-folder-backup").glob("*") )
+        assert backups and backups[0].is_dir()
+        assert not (workspace / "backups").exists()
+    finally:
+        s.stop()

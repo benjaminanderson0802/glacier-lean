@@ -172,7 +172,7 @@ def test_required_flow_patterns_are_present():
     backup = templates["tpl-folder-backup"]
     backup_commands = [node["config"]["cmd"] for node in backup["nodes"] if node["type"] == "command"]
     assert all(not command.startswith("cd ") for command in backup_commands)
-    assert any('d="${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)"' in command and "cp -a . \"$d\"" in command for command in backup_commands)
+    assert any('d="$GLACIER_HOME/backups/tpl-folder-backup/$(date +%F)"' in command and "cp -a . \"$d\"" in command for command in backup_commands)
     assert any("diff -qr . \"$d\"" in command for command in backup_commands)
     assert any(node["type"] == "check" for node in backup["nodes"])
 

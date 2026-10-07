@@ -60,7 +60,10 @@ def set_run(run_id: str, status: str, waiting_on: str | None = None) -> None:
 def set_node(run_id: str, env_id: str, node_id: str, state: str, output: str | None = None) -> None:
     if output is not None:
         import secrets_store
-        output = secrets_store.redact(str(output))
+        try:
+            output = secrets_store.redact(str(output))
+        except Exception:
+            output = "[output hidden: secrets could not be checked]"
     with _conn() as c:
         if output is None:
             c.execute("UPDATE glacier_nodes SET state=? WHERE run_id=? AND node_id=?", (state, run_id, node_id))

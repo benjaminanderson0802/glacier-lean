@@ -56,6 +56,8 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     every ~2s; the final output is "codex exit <code>" plus Codex's last message."""
     fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev_output[-PREV_LIMIT:])
     prompt = fill(cfg.get("prompt") or "")
+    if secrets_store.PLACEHOLDER.search(prompt):
+        raise ValueError("Secrets can't be sent to an AI model. Use the secret in a command step instead.")
     if not prompt.strip():
         raise ValueError("codex node has no prompt")
     prompt += memory_context.block(prompt, cfg)
@@ -131,7 +133,8 @@ def snapshot_scheduled_run(env_id: str, run_id: str) -> None:
 def run_command(cfg: dict, timeout: int, ws: str = "") -> dict:
     """Run a shell command in its own process group so a time limit stops it and everything it started."""
     import signal
-    env = dict(os.environ, GLACIER_WORKSPACE=ws) if ws else None
+    env = dict(os.environ, GLACIER_WORKSPACE=ws,
+               GLACIER_HOME=os.path.abspath(os.environ.get("GLACIER_HOME", "data"))) if ws else None
     if ws:
         os.makedirs(ws, exist_ok=True)
     p = subprocess.Popen(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or ws or None, env=env, stdout=subprocess.PIPE,
@@ -180,7 +183,10 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
             execution_cfg = dict(cfg)
             try:
                 field = "cmd" if kind == "command" else "prompt"
-                execution_cfg[field] = secrets_store.resolve(str(cfg.get(field) or ""))
+                if kind == "codex" and secrets_store.PLACEHOLDER.search(str(cfg.get(field) or "")):
+                    raise ValueError("Secrets can't be sent to an AI model. Use the secret in a command step instead.")
+                if kind == "command":
+                    execution_cfg[field] = secrets_store.resolve(str(cfg.get(field) or ""))
             except ValueError as exc:
                 match = re.search(r"Unknown secret: (.+)$", str(exc))
                 if not match:
