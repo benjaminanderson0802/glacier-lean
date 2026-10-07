@@ -50,6 +50,14 @@ def test_edge_to_missing_node_is_rejected():
         import_flow(json.dumps({"glacier_flow": 1, "flow": flow}), set())
 
 
+def test_edge_from_missing_node_is_rejected():
+    flow = sample_flow()
+    flow["edges"][0]["source"] = "missing"
+
+    with pytest.raises(ValueError, match="e1"):
+        import_flow(json.dumps({"glacier_flow": 1, "flow": flow}), set())
+
+
 def test_bad_branch_label_is_rejected():
     flow = sample_flow()
     flow["nodes"].append({"id": "approval", "type": "approval", "config": {}, "position": {}})
@@ -73,6 +81,48 @@ def test_decide_option_edge_labels_are_accepted():
     }
 
     assert import_flow(json.dumps({"glacier_flow": 1, "flow": flow}), set()) == flow
+
+
+def test_decide_edge_with_unknown_option_is_rejected():
+    flow = {
+        "id": "triage",
+        "name": "Triage",
+        "nodes": [
+            {"id": "decider", "type": "decide", "config": {"options": "Billing, Tech support"}},
+            {"id": "billing", "type": "note", "config": {}},
+        ],
+        "edges": [
+            {"id": "e1", "source": "decider", "target": "billing", "label": "Other"},
+        ],
+    }
+
+    with pytest.raises(ValueError, match="e1"):
+        import_flow(json.dumps({"glacier_flow": 1, "flow": flow}), set())
+
+
+def test_decide_without_options_uses_catalog_default():
+    flow = {
+        "id": "triage",
+        "name": "Triage",
+        "nodes": [
+            {"id": "decider", "type": "decide", "config": {}},
+            {"id": "yes", "type": "note", "config": {}},
+        ],
+        "edges": [
+            {"id": "e1", "source": "decider", "target": "yes", "label": "Yes"},
+        ],
+    }
+
+    assert import_flow(json.dumps({"glacier_flow": 1, "flow": flow}), set()) == flow
+
+
+@pytest.mark.parametrize("flow_id", [None, "", 42])
+def test_missing_or_invalid_flow_id_is_rejected(flow_id):
+    flow = sample_flow()
+    flow["id"] = flow_id
+
+    with pytest.raises(ValueError, match="flow.*id|id.*flow"):
+        import_flow(json.dumps({"glacier_flow": 1, "flow": flow}), set())
 
 
 def test_id_clash_renames_flow_and_suffixes_name():

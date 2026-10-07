@@ -49,6 +49,10 @@ def _validate_flow(flow: Any) -> None:
     if not isinstance(flow, dict):
         raise ValueError("The flow is missing or is not an object.")
 
+    flow_id = flow.get("id")
+    if not isinstance(flow_id, str) or not flow_id.strip():
+        raise ValueError("The flow needs a non-empty id.")
+
     nodes = flow.get("nodes")
     edges = flow.get("edges")
     if not isinstance(nodes, list):
@@ -101,7 +105,11 @@ def _validate_flow(flow: Any) -> None:
         allowed = definition.get("branches")
         if definition.get("branches_from") == "options":
             config = source_node.get("config", {})
-            options = config.get("options", "") if isinstance(config, dict) else ""
+            options_field = next(
+                (field for field in definition.get("fields", []) if field.get("key") == "options"),
+                {},
+            )
+            options = config.get("options", options_field.get("default", "")) if isinstance(config, dict) else options_field.get("default", "")
             allowed = [option.strip() for option in options.split(",") if option.strip()] if isinstance(options, str) else []
         if allowed is not None and label.casefold() not in {item.casefold() for item in allowed}:
             choices = ", ".join(allowed)
