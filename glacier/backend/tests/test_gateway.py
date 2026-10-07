@@ -75,12 +75,31 @@ def test_daily_cap_skips_route(tmp_path):
 def test_paid_only_route_is_refused_and_policy_claim_filed(tmp_path, monkeypatch):
     filed = []
     monkeypatch.setattr(gateway.claims, "file_claim", lambda **kw: filed.append(kw) or {"id": "claim"})
-    monkeypatch.setenv("GLACIER_PAID_CAP_USD", "0")
+    existing = []
+    monkeypatch.setattr(gateway.claims, "list_claims", lambda status=None: [
+        {"kind": "policy", "summary": "Paid model route needs owner approval", "status": "filed",
+         "updated": gateway.datetime.now(gateway.timezone.utc).isoformat()}
+    ] if existing else [])
     route = {"name": "paid", "base_url": "http://127.0.0.1:1/v1", "model": "paid", "paid": True}
-    result = gateway.complete(ctx(tmp_path, {"prompt": "hello"}), routes=[route])
-    assert result["state"] == "failed"
-    assert result["output"] == "No free model is available right now. A paid option needs your approval (a claim was filed)."
+    missing_paid = {"name": "unspecified", "base_url": "http://127.0.0.1:2/v1", "model": "unknown"}
+    for _ in range(2):
+        result = gateway.complete(ctx(tmp_path, {"prompt": "hello"}), routes=[route, missing_paid])
+        assert result["state"] == "failed"
+        assert result["output"] == "No free model is available right now. A paid option needs your approval (a claim was filed)."
+        existing.append(True)
     assert len(filed) == 1 and filed[0]["kind"] == "policy"
+
+
+def test_gateway_settings_validation_is_friendly(tmp_path):
+    (tmp_path / "gateway.json").write_text("{broken", encoding="utf-8")
+    result = gateway.complete(ctx(tmp_path, {"prompt": "hello"}))
+    assert result["state"] == "failed"
+    assert result["output"].startswith("Your model settings file (gateway.json) can't be read:")
+
+    (tmp_path / "gateway.json").write_text(json.dumps([{"name": "missing-fields"}]), encoding="utf-8")
+    result = gateway.complete(ctx(tmp_path, {"prompt": "hello"}))
+    assert result["state"] == "failed"
+    assert result["output"].startswith("Your model settings file (gateway.json) can't be read:")
 
 
 def test_all_free_routes_down_has_friendly_failure(tmp_path):
@@ -94,7 +113,6 @@ def test_all_free_routes_down_has_friendly_failure(tmp_path):
 def test_ai_any_catalog_and_placeholder_expansion(tmp_path):
     server = FakeOpenAI()
     try:
-        monkeypatch = None
         result = ai_any.run(ctx(tmp_path, {"prompt": "{env}/{run}: {prev_output}"}, {"output": "prior"}),
                             routes=[{"name": "one", "base_url": server.base_url, "model": "x", "paid": False}])
         assert result["state"] == "done"

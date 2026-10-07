@@ -21,3 +21,5 @@ A `gateway.json` entry looks like:
 ```
 
 A cap of `0` means there is no daily request limit. Successful requests are counted by route in `gateway_usage.json`, using the current UTC date.
+
+Future API-key support must read keys from `secrets_store` (the OS keychain), never from `gateway.json`.

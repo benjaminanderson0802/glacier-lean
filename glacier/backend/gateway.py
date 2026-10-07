@@ -1,6 +1,5 @@
 """Small OpenAI-compatible model router with local daily quota tracking."""
 import json
-import os
 import socket
 import urllib.error
 import urllib.request
@@ -24,10 +23,19 @@ def routes(home: str | Path) -> list[dict]:
     path = Path(home) / "gateway.json"
     if not path.exists():
         return [dict(DEFAULT_ROUTE)]
-    with path.open(encoding="utf-8") as stream:
-        value = json.load(stream)
-    if not isinstance(value, list):
-        raise ValueError("gateway.json must contain a list of model routes")
+    try:
+        with path.open(encoding="utf-8") as stream:
+            value = json.load(stream)
+        if not isinstance(value, list):
+            raise ValueError("it must contain a list of model routes")
+        for index, route in enumerate(value):
+            if not isinstance(route, dict):
+                raise ValueError(f"route {index + 1} must be an object")
+            missing = [key for key in ("name", "base_url", "model") if not isinstance(route.get(key), str) or not route[key].strip()]
+            if missing:
+                raise ValueError(f"route {index + 1} needs {', '.join(missing)}")
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        raise ValueError(f"Your model settings file (gateway.json) can't be read: {exc}") from None
     return value
 
 
@@ -84,7 +92,10 @@ def _post(route: dict, prompt: str, timeout: int) -> dict:
 def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = None) -> dict:
     """Try eligible routes in order and report the route that answered."""
     config = ctx.get("config") or {}
-    route_list = routes if routes is not None else globals()["routes"](ctx["home"])
+    try:
+        route_list = routes if routes is not None else globals()["routes"](ctx["home"])
+    except ValueError as exc:
+        return {"state": "failed", "exit_code": 1, "output": str(exc)}
     selected = config.get("routes")
     if selected:
         names = {part.strip() for part in selected.split(",") if part.strip()}
@@ -100,14 +111,12 @@ def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = 
         request_timeout = 600
     request_timeout = max(1, min(request_timeout, 24 * 3600))
     today = datetime.now(timezone.utc).date().isoformat()
-    paid_cap = float(os.environ.get("GLACIER_PAID_CAP_USD", "0") or 0)
     paid_blocked = False
     failures = []
     for route in route_list:
-        if route.get("paid", False):
-            if paid_cap <= 0:
-                paid_blocked = True
-                continue
+        if route.get("paid", True) is not False:
+            paid_blocked = True
+            continue
         cap = int(route.get("daily_request_cap", 0) or 0)
         if cap > 0 and _daily_count(ctx["home"], route["name"], today) >= cap:
             continue
@@ -128,17 +137,27 @@ def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = 
                 "route": f"gateway/{route['name']}",
                 "tokens_in": int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0),
                 "tokens_out": int(usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0),
-                "cost_usd": 0.0 if not route.get("paid", False) else 0.0,
+                "cost_usd": 0.0,
             },
         }
     if paid_blocked:
-        claims.file_claim(
-            kind="policy",
-            summary="Paid model route needs owner approval",
-            evidence="A workflow had no available free model route. D4 sets the paid route cap to $0; owner approval is required before any paid route can be used.",
-            run_id=ctx.get("run_id", ""),
-            node_id=ctx.get("node_id", ""),
+        summary = "Paid model route needs owner approval"
+        today_utc = datetime.now(timezone.utc).date().isoformat()
+        existing = claims.list_claims(status="filed")
+        already_filed = any(
+            claim.get("kind") == "policy"
+            and claim.get("summary") == summary
+            and (claim.get("updated") or "").startswith(today_utc)
+            for claim in existing
         )
+        if not already_filed:
+            claims.file_claim(
+                kind="policy",
+                summary=summary,
+                evidence="A workflow had no available free model route. D4 sets the paid route cap to $0; owner approval is required before any paid route can be used.",
+                run_id=ctx.get("run_id", ""),
+                node_id=ctx.get("node_id", ""),
+            )
         output = FRIENDLY_FAILURE
     else:
         output = "No free model is available right now. Check that a model is running and try again."
