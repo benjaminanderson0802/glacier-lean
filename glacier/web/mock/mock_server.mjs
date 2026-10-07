@@ -19,6 +19,8 @@ const MAX_LOOP = 1000
 const envs = new Map() // id -> Environment
 const runs = new Map() // run_id -> run record
 const vault = new Map() // path -> body
+const memoryMeta = new Map()
+const memoryHistory = new Map()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 const commitId = () => crypto.randomBytes(20).toString('hex').slice(0, 7)
 
@@ -33,9 +35,76 @@ const server = http.createServer(async (req, res) => {
     req.on('data', c => (s += c))
     req.on('end', () => { try { r(s ? JSON.parse(s) : {}) } catch { r(null) } })
   })
-  const p = url.pathname
-  let m
-  try {
+    const p = url.pathname
+    let m
+    try {
+    if (p.startsWith('/api/memory/')) {
+      const clean = path => String(path ?? '').replace(/\.md$/, '')
+      const parse = path => {
+        const text = vault.get(path) ?? ''
+        const title = (text.match(/^#\s+(.+)$/m) ?? [])[1] ?? path.split('/').pop().replace(/\.md$/, '')
+        const tags = [...new Set([...text.matchAll(/(?:^|\s)#([\w-]+)/g)].map(x => x[1]))]
+        return { title, author: memoryMeta.get(path)?.author ?? 'owner', run_id: memoryMeta.get(path)?.run_id ?? '',
+          created: memoryMeta.get(path)?.created ?? new Date().toISOString(), updated: memoryMeta.get(path)?.updated ?? new Date().toISOString(), tags }
+      }
+      const links = body => [...new Set([...body.matchAll(/\[\[([^\]]+)\]\]/g)].map(x => clean(x[1].split('|', 1)[0].trim())))]
+      if (req.method === 'GET' && p === '/api/memory/notes') {
+        return send(200, [...vault.keys()].filter(x => x.endsWith('.md')).map(path => ({ path, ...parse(path) }))
+          .filter(n => (!url.searchParams.get('tag') || n.tags.includes(url.searchParams.get('tag')))
+            && (!url.searchParams.get('author') || n.author === url.searchParams.get('author'))))
+      }
+      if (req.method === 'GET' && p === '/api/memory/note') {
+        const path = url.searchParams.get('path')
+        if (!vault.has(path)) return send(404, { detail: 'Note not found' })
+        const body = vault.get(path)
+        return send(200, { path, body, meta: parse(path), links_out: links(body),
+          links_in: [...vault].filter(([other, text]) => other !== path && links(text).includes(clean(path))).map(([other]) => clean(other)) })
+      }
+      if (req.method === 'PUT' && p === '/api/memory/note') {
+        const item = await readBody()
+        if (!item || !item.path || !item.path.endsWith('.md') || item.path.includes('..')) return send(400, { detail: 'That note path is not allowed' })
+        if (item.author !== 'owner') return send(400, { detail: 'Notes saved from the screen must be authored by owner' })
+        const change = vault.has(item.path) ? 'updated' : 'created'
+        const oldMeta = memoryMeta.get(item.path)
+        const now = new Date().toISOString()
+        const title = (item.body.match(/^#\s+(.+)$/m) ?? [])[1] ?? item.path.split('/').pop().replace(/\.md$/, '')
+        const tags = [...new Set([...item.body.matchAll(/(?:^|\s)#([\w-]+)/g)].map(x => x[1]))]
+        vault.set(item.path, item.body); memoryMeta.set(item.path, { title, author: item.author, run_id: item.run_id ?? '', created: oldMeta?.created ?? now, updated: now, tags })
+        const commit = commitId(), history = memoryHistory.get(item.path) ?? []
+        history.unshift({ commit, author: item.author, date: now, message: `[${item.author}] write ${item.path}`, body: item.body }); memoryHistory.set(item.path, history)
+        broadcast({ type: 'memory', path: item.path, change, author: item.author, run_id: item.run_id ?? '' })
+        return send(200, { path: item.path, commit })
+      }
+      if (req.method === 'GET' && p === '/api/memory/graph') {
+        const nodes = new Map(), edges = [], knownEdges = new Set()
+        const edge = item => { const key = `${item.source}\0${item.target}\0${item.kind}`; if (!knownEdges.has(key)) { knownEdges.add(key); edges.push(item) } }
+        for (const [path, body] of vault) if (path.endsWith('.md')) {
+          const id = clean(path), meta = parse(path); nodes.set(id, { id, title: meta.title, kind: 'note', author: meta.author })
+          edge({ source: id, target: meta.author, kind: 'wrote' })
+          for (const target of links(body)) {
+            if (!nodes.has(target)) nodes.set(target, { id: target, title: target.split('/').pop(), kind: target.startsWith('runs/') ? 'run' : target.startsWith('claims/') ? 'claim' : target.startsWith('flows/') || target.startsWith('environments/') ? 'flow' : 'note', author: '' })
+            edge({ source: id, target, kind: 'link' })
+          }
+        }
+        return send(200, { nodes: [...nodes.values()], edges })
+      }
+      if (req.method === 'GET' && p === '/api/memory/history') return send(200, memoryHistory.get(url.searchParams.get('path')) ?? [])
+      if (req.method === 'POST' && p === '/api/memory/undo') {
+        const item = await readBody(), history = memoryHistory.get(item.path) ?? []
+        const index = item.commit ? history.findIndex(row => row.commit.startsWith(item.commit)) : 0
+        if (index < 0 || !history[index + 1]) return send(404, { detail: 'No earlier version exists' })
+        const old = history[index + 1]; vault.set(item.path, old.body); history.splice(0, index + 1); memoryHistory.set(item.path, history)
+        const commit = commitId(); history.unshift({ ...old, commit });
+        broadcast({ type: 'memory', path: item.path, change: 'updated', author: 'owner', run_id: '' })
+        return send(200, { path: item.path, commit })
+      }
+      if (req.method === 'GET' && p === '/api/memory/search') {
+        const q = (url.searchParams.get('q') ?? '').toLowerCase(), mode = url.searchParams.get('mode')
+        const fallback = mode === 'meaning'
+        return send(200, [...vault].filter(([path, body]) => path.endsWith('.md') && body.toLowerCase().includes(q)).slice(0, 10)
+          .map(([path, body]) => ({ path, title: parse(path).title, score: 1, snippet: body.slice(0, 240), ...(fallback ? { fallback: true } : {}) })))
+      }
+    }
     if (req.method === 'GET' && p === '/api/node-types') return send(200, CATALOG)
     if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name })))
     if ((m = p.match(/^\/api\/environments\/([^/]+)$/))) {
