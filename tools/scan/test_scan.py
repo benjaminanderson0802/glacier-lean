@@ -138,3 +138,28 @@ def test_records_reject_urls_that_can_inject_markdown_sections():
     ], today)
 
     assert [record.name for record in records] == ["valid"]
+
+
+def test_discover_records_returns_records_and_source_failures_without_writing(monkeypatch, tmp_path):
+    today = date(2026, 10, 7)
+    monkeypatch.setattr(scan, "_read_sources", lambda: {"mcp": "fixture://mcp", "ollama": "fixture://ollama"})
+
+    def fetch(url, timeout=20):
+        assert timeout == 20
+        if url.endswith("ollama"):
+            raise TimeoutError("slow source")
+        return {"servers": [{"name": "new", "license": "MIT", "url": "https://example.test/new",
+                             "updated_at": str(today)}]}
+
+    monkeypatch.setattr(scan, "_fetch", fetch)
+    records, failures = scan.discover_records(today=today)
+
+    assert [record.name for record in records] == ["new"]
+    assert failures == ["Ollama library"]
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_render_report_returns_markdown_without_writing():
+    record = scan.Tool("new", "MIT", "https://example.test/new", date(2026, 10, 7), "A useful helper", source="mcp")
+    markdown = scan.render_report([record], today=date(2026, 10, 7))
+    assert "new" in markdown and "MIT" in markdown and "https://example.test/new" in markdown

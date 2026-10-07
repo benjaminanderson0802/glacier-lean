@@ -145,9 +145,9 @@ def _read_sources() -> dict[str, str]:
     return found
 
 
-def _fetch(url: str) -> Any:
+def _fetch(url: str, timeout: int = 20) -> Any:
     request = Request(url, headers={"User-Agent": "Glacier-tool-discovery/1.0", "Accept": "application/json"})
-    with urlopen(request, timeout=30) as response:
+    with urlopen(request, timeout=timeout) as response:
         data = response.read()
         content_type = response.headers.get("Content-Type", "")
     if "json" in content_type or data.lstrip().startswith((b"{", b"[")):
@@ -173,6 +173,29 @@ def load_records(fixture: Path | None = None, today: date | None = None) -> list
     for record in records:
         deduped.setdefault(record.url, record)
     return list(deduped.values())
+
+
+SOURCE_LABELS = {
+    "mcp": "MCP registry", "github_mcp": "GitHub MCP topic", "github_agents": "GitHub AI agents topic",
+    "github_ollama": "GitHub Ollama topic", "ollama": "Ollama library",
+}
+
+
+def discover_records(today: date | None = None) -> tuple[list[Tool], list[str]]:
+    """Fetch each public source independently; return eligible records and failed source labels."""
+    today = today or date.today()
+    records: list[Tool] = []
+    failures: list[str] = []
+    for source, url in _read_sources().items():
+        try:
+            payload = _fetch(url, timeout=20)
+            records.extend(_records_from_items(source, _source_items(source, payload), today))
+        except Exception:
+            failures.append(SOURCE_LABELS.get(source, source))
+    deduped: dict[str, Tool] = {}
+    for record in records:
+        deduped.setdefault(record.url, record)
+    return list(deduped.values()), failures
 
 
 def skip_installed(records: list[Tool], setup_root: Path | None = None) -> list[Tool]:
@@ -235,9 +258,7 @@ def _why(record: Tool) -> str:
     return _markdown_text(summary)
 
 
-def write_report(records: list[Tool], output_dir: Path, today: date) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    target = output_dir / f"proposals-{today.isoformat()}.md"
+def render_report(records: list[Tool], today: date) -> str:
     lines = [f"# Tool discovery proposals — {today.isoformat()}", "",
              "These are research leads for human review. This report does not install or adopt tools.", ""]
     if not records:
@@ -246,13 +267,23 @@ def write_report(records: list[Tool], output_dir: Path, today: date) -> Path:
         lines.extend([f"## {_markdown_text(record.name)}", "", f"- License: {record.license}", f"- Link: {record.url}",
                       f"- Why it may help: {_why(record)}", "- Roadmap step: PH9.3 (tool discovery proposal; review before adoption)",
                       f"- Source: {record.source}; last active: {record.updated.isoformat() if record.updated else 'unknown'}", ""])
-    target.write_text("\n".join(lines), encoding="utf-8")
+    return "\n".join(lines)
+
+
+def write_report(records: list[Tool], output_dir: Path, today: date) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    target = output_dir / f"proposals-{today.isoformat()}.md"
+    target.write_text(render_report(records, today), encoding="utf-8")
     return target
 
 
 def run(fixture: Path | None = None, output_dir: Path | None = None, today: date | None = None) -> Path:
     today = today or date.today()
-    records = skip_installed(load_records(fixture=fixture, today=today))
+    if fixture:
+        records = load_records(fixture=fixture, today=today)
+    else:
+        records, _ = discover_records(today=today)
+    records = skip_installed(records)
     return write_report(records, output_dir or Path(__file__).parent, today)
 
 
