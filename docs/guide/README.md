@@ -6,6 +6,7 @@ Glacier keeps its files on your computer unless you choose a step that sends inf
 
 ## Read this guide
 
+- [Finding your way around](00-finding-your-way.md)
 - [Start your first automation](01-first-automation.md)
 - [Checks and trust](02-checks-and-trust.md)
 - [Memory and notes](03-memory.md)
@@ -13,4 +14,4 @@ Glacier keeps its files on your computer unless you choose a step that sends inf
 - [When something breaks](05-when-something-breaks.md)
 - [Glossary](glossary.md)
 
-The screen is being redesigned, so these pages explain what Glacier does without relying on a particular screen layout.
+Start with [Finding your way around](00-finding-your-way.md) for a tour of the screen.
