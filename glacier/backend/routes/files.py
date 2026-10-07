@@ -1,7 +1,8 @@
 """Upload originals, manage projects, and create searchable document notes."""
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
+from starlette.datastructures import UploadFile
 
 import files_store
 
@@ -13,26 +14,57 @@ class ProjectCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+async def _read_bounded_body(request: Request) -> None:
+    limit = files_store.max_upload_bytes() + 64 * 1024
+    try:
+        declared = int(request.headers.get("content-length", "0"))
+    except ValueError:
+        declared = 0
+    if declared > limit:
+        raise HTTPException(413, files_store.too_large_message())
+
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(413, files_store.too_large_message())
+        chunks.append(chunk)
+    request._body = b"".join(chunks)
+
+
 @router.post("/api/files")
-def upload_file(file: UploadFile = File(...), project: str | None = Form(default=None)):
+async def upload_file(request: Request):
+    await _read_bounded_body(request)
+    form = await request.form()
+    file = form.get("file")
+    project = form.get("project")
+    if not isinstance(file, UploadFile):
+        await form.close()
+        raise HTTPException(400, "Choose a file to upload")
+    if project is not None and not isinstance(project, str):
+        await form.close()
+        raise HTTPException(400, "That project name is not allowed")
     try:
         filename = files_store.validate_filename(file.filename or "")
         if project:
             files_store.validate_project(project)
     except PermissionError as exc:
+        await form.close()
         raise HTTPException(400, str(exc)) from exc
     except ValueError as exc:
+        await form.close()
         raise HTTPException(400, str(exc)) from exc
     try:
-        content_length = int(file.headers.get("content-length", "0"))
-        if content_length > files_store.max_upload_bytes() + 64 * 1024:
-            raise HTTPException(413, files_store.too_large_message())
-        return files_store.save_upload(filename, project, file.file)
-    except PermissionError as exc:
-        raise HTTPException(400, str(exc)) from exc
-    except ValueError as exc:
-        status = 413 if "too large" in str(exc).lower() else 400
-        raise HTTPException(status, str(exc)) from exc
+        try:
+            return files_store.save_upload(filename, project, file.file)
+        except PermissionError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except ValueError as exc:
+            status = 413 if "too large" in str(exc).lower() else 400
+            raise HTTPException(status, str(exc)) from exc
+    finally:
+        await form.close()
 
 
 @router.get("/api/files")

@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 
@@ -48,6 +49,75 @@ def test_upload_rejects_file_over_configured_limit(monkeypatch, make_server):
     assert response.status_code == 413
     assert "too large" in response.text.lower()
     assert "0.00001 MB" in response.text
+
+
+def test_request_body_over_limit_is_rejected_while_streaming(monkeypatch, make_server):
+    monkeypatch.setenv("GLACIER_MAX_UPLOAD_MB", "0.00001")
+    server = make_server().start()
+    response = httpx.post(
+        server.url + "/api/files",
+        files={"file": ("large.txt", b"x" * (128 * 1024), "text/plain")},
+    )
+    assert response.status_code == 413
+    assert "too large" in response.text.lower()
+    assert httpx.get(server.url + "/api/files").json() == []
+
+
+def test_bounded_body_reader_stops_before_consuming_remaining_chunks(monkeypatch):
+    import asyncio
+    import files_store
+    import routes.files as files_routes
+
+    monkeypatch.setattr(files_store, "max_upload_bytes", lambda: 10)
+
+    class StreamingRequest:
+        headers = {}
+        consumed = 0
+
+        async def stream(self):
+            self.consumed += 1
+            yield b"x" * (10 + 64 * 1024 + 1)
+            self.consumed += 1
+            yield b"remaining"
+
+    request = StreamingRequest()
+    try:
+        asyncio.run(files_routes._read_bounded_body(request))
+    except files_routes.HTTPException as exc:
+        assert exc.status_code == 413
+    else:
+        raise AssertionError("oversized request body was accepted")
+    assert request.consumed == 1
+
+
+def test_concurrent_uploads_both_appear_in_project_index(server):
+    def upload(filename, content):
+        return httpx.post(server.url + "/api/files", files={"file": (filename, content, "text/plain")}, timeout=30)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        responses = list(pool.map(lambda item: upload(*item), [
+            ("first.txt", b"concurrent first contents"),
+            ("second.txt", b"concurrent second contents"),
+        ]))
+    assert [response.status_code for response in responses] == [200, 200]
+    assert {row["name"] for row in httpx.get(server.url + "/api/files").json()} == {"first.txt", "second.txt"}
+
+
+def test_conversion_sets_memory_limit_inside_child_without_preexec(monkeypatch, tmp_path):
+    import subprocess
+    import files_store
+
+    captured = {}
+
+    def fake_run(args, **kwargs):
+        captured.update(kwargs)
+        captured["script"] = args[2]
+        return subprocess.CompletedProcess(args, 0, stdout=b"Readable", stderr=b"")
+
+    monkeypatch.setattr(files_store.subprocess, "run", fake_run)
+    files_store._convert_in_child(tmp_path / "example.txt")
+    assert "preexec_fn" not in captured
+    assert "resource.setrlimit(resource.RLIMIT_AS" in captured["script"]
 
 
 def test_index_is_persisted_and_same_name_upload_uses_new_name(server):

@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 import vault
@@ -18,6 +19,14 @@ _BLOCKED_EXTENSIONS = {".exe", ".bat", ".cmd", ".ps1", ".sh", ".msi", ".com", ".
 _MAGIC = (b"MZ", b"\x7fELF", b"#!", b"\xfe\xed\xfa\xce", b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe")
 _WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 _MAX_TEXT_BYTES = 2 * 1024 * 1024
+_project_locks: dict[str, threading.Lock] = {}
+_project_locks_guard = threading.Lock()
+
+
+def _project_lock(folder: Path) -> threading.Lock:
+    key = str(folder.resolve())
+    with _project_locks_guard:
+        return _project_locks.setdefault(key, threading.Lock())
 
 
 def _home() -> Path:
@@ -137,19 +146,19 @@ def _check_magic(path: Path) -> None:
 
 def _convert_in_child(path: Path) -> str:
     script = (
-        "import sys; from markitdown import MarkItDown; "
-        "r=MarkItDown().convert(sys.argv[1]); "
-        "sys.stdout.buffer.write((r.text_content or '').encode('utf-8')[:2097152])"
+        "import sys\n"
+        "try:\n"
+        "    import resource\n"
+        "    cap = 1024 * 1024 * 1024\n"
+        "    resource.setrlimit(resource.RLIMIT_AS, (cap, cap))\n"
+        "except ImportError:\n"
+        "    pass\n"
+        "from markitdown import MarkItDown\n"
+        "r = MarkItDown().convert(sys.argv[1])\n"
+        "sys.stdout.buffer.write((r.text_content or '').encode('utf-8')[:2097152])\n"
     )
-    preexec_fn = None
-    if sys.platform.startswith("linux"):
-        def limit_memory():
-            import resource
-            cap = 1024 * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_AS, (cap, cap))
-        preexec_fn = limit_memory
     result = subprocess.run([sys.executable, "-c", script, str(path)], capture_output=True,
-                            timeout=60, check=False, preexec_fn=preexec_fn)
+                            timeout=60, check=False)
     if result.returncode:
         raise RuntimeError("document conversion failed")
     return result.stdout[:_MAX_TEXT_BYTES].decode("utf-8", errors="replace")
@@ -161,51 +170,50 @@ def save_upload(filename: str, project: str | None, source) -> dict:
     project = validate_project(project or DEFAULT_PROJECT)
     folder = _home() / "files" / project
     folder.mkdir(parents=True, exist_ok=True)
-    index = _load_index(folder)
-    fd, tmp_name = tempfile.mkstemp(dir=folder, prefix=".upload-")
-    digest = hashlib.sha256()
-    size = 0
-    try:
-        with os.fdopen(fd, "wb") as output:
+    with _project_lock(folder):
+        index = _load_index(folder)
+        fd, tmp_name = tempfile.mkstemp(dir=folder, prefix=".upload-")
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with os.fdopen(fd, "wb") as output:
+                while True:
+                    chunk = source.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > max_upload_bytes():
+                        raise OverflowError
+                    digest.update(chunk)
+                    output.write(chunk)
+                output.flush()
+                os.fsync(output.fileno())
+            staged = Path(tmp_name)
+            _check_magic(staged)
+            hexdigest = digest.hexdigest()
+            for name, metadata in index.items():
+                if metadata.get("sha256") == hexdigest and (folder / name).is_file():
+                    staged.unlink()
+                    return _entry(folder / name, project, hexdigest, duplicate=True)
+            stem, suffix = Path(filename).stem, Path(filename).suffix
+            candidate = filename
+            number = 2
             while True:
-                chunk = source.read(1024 * 1024)
-                if not chunk:
+                destination = folder / candidate
+                try:
+                    os.link(staged, destination)
                     break
-                size += len(chunk)
-                if size > max_upload_bytes():
-                    raise OverflowError
-                digest.update(chunk)
-                output.write(chunk)
-            output.flush()
-            os.fsync(output.fileno())
-        staged = Path(tmp_name)
-        _check_magic(staged)
-        hexdigest = digest.hexdigest()
-        for name, metadata in index.items():
-            if metadata.get("sha256") == hexdigest and (folder / name).is_file():
-                staged.unlink()
-                return _entry(folder / name, project, hexdigest, duplicate=True)
-        # Recheck the extension after the streamed prefix checks; extension checks are cheap
-        # and all final paths are created exclusively to avoid concurrent replacement.
-        stem, suffix = Path(filename).stem, Path(filename).suffix
-        candidate = filename
-        number = 2
-        while True:
-            destination = folder / candidate
-            try:
-                os.link(staged, destination)
-                break
-            except FileExistsError:
-                candidate = f"{stem} ({number}){suffix}"
-                number += 1
-        staged.unlink()
-        index[candidate] = {"sha256": hexdigest, "size": size}
-        _write_index(folder, index)
-    except OverflowError as exc:
-        raise ValueError(too_large_message()) from exc
-    finally:
-        if os.path.exists(tmp_name):
-            os.unlink(tmp_name)
+                except FileExistsError:
+                    candidate = f"{stem} ({number}){suffix}"
+                    number += 1
+            staged.unlink()
+            index[candidate] = {"sha256": hexdigest, "size": size}
+            _write_index(folder, index)
+        except OverflowError as exc:
+            raise ValueError(too_large_message()) from exc
+        finally:
+            if os.path.exists(tmp_name):
+                os.unlink(tmp_name)
 
     message = None
     note_path = f"files/{project}/{destination.name}.md"
