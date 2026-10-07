@@ -70,7 +70,7 @@ def record_and_route(cid: str, fixes: list, findings: str) -> dict:
     if findings:
         section += "Free/open-source search:\n" + findings.strip() + "\n"
     if kind == "capability_gap":
-        free = "VERDICT: FREE OPTION FOUND" in findings.upper()
+        free = "VERDICT: FREE OPTION FOUND" in findings.upper() or bool(fixes)  # a past resolved fix is a known free option
         assigned, status = ("fixer", "routed") if free else ("owner", "proposed")
     else:
         assigned = ROUTES.get(kind, "researcher")
@@ -90,7 +90,8 @@ def record_and_route(cid: str, fixes: list, findings: str) -> dict:
 def research_claim(cid: str) -> dict:
     fixes = past_fixes(cid)
     kind = claims.get_claim(cid)["meta"].get("kind")
-    findings = research(cid) if kind in ("capability_gap", "skill_gap") and not fixes else ""
+    # capability gaps are always researched (a similar past claim is a hint, not a reason to skip the free-option search)
+    findings = research(cid) if kind == "capability_gap" or (kind == "skill_gap" and not fixes) else ""
     r = record_and_route(cid, fixes, findings)
     if r.get("has_run") and r["status"] == "routed":
         import claims_specialist
