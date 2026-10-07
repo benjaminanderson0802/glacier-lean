@@ -1,5 +1,6 @@
 """Acceptance tests for interchangeable ACP harnesses."""
 import os
+import shlex
 import sys
 
 from conftest import env
@@ -8,6 +9,10 @@ from conftest import env
 HERE = os.path.dirname(__file__)
 FAKE_AGENT = os.path.join(HERE, "fake_acp_agent.py")
 FAKE_SECOND = os.path.join(HERE, "fake_acp_agent_second.py")
+
+
+def _python_command(agent):
+    return " ".join(shlex.quote(part) for part in (sys.executable, os.path.abspath(agent)))
 
 
 def _run(server, env_id, agent, workdir, command, harness="custom", permission_target=None):
@@ -29,7 +34,7 @@ def test_two_different_agents_complete_same_goal_and_keep_security(server, tmp_p
     for env_id, agent in (("acp-one", FAKE_AGENT), ("acp-two", FAKE_SECOND)):
         workdir = tmp_path / env_id
         workdir.mkdir()
-        command = f'"{sys.executable}" "{agent}"'
+        command = _python_command(agent)
         run, target = _run(server, env_id, agent, workdir, command)
         assert run["status"] == "done", run
         assert target.read_text() == "hi"
@@ -42,7 +47,7 @@ def test_two_different_agents_complete_same_goal_and_keep_security(server, tmp_p
 def test_second_agent_does_not_write_when_glacier_refuses_edit(server, tmp_path):
     workdir = tmp_path / "acp-refused"
     workdir.mkdir()
-    command = f'"{sys.executable}" "{FAKE_SECOND}"'
+    command = _python_command(FAKE_SECOND)
     run, target = _run(server, "acp-refused", FAKE_SECOND, workdir, command, permission_target=tmp_path / "outside.txt")
     assert run["status"] == "done", run
     assert "edit=cancelled" in run["outputs"]["agent"]

@@ -1,4 +1,5 @@
 import os
+import shlex
 import shutil
 import sys
 
@@ -8,8 +9,12 @@ from conftest import env
 FAKE_AGENT = os.path.join(os.path.dirname(__file__), "fake_acp_agent.py")
 
 
+def _python_command(agent):
+    return " ".join(shlex.quote(part) for part in (sys.executable, os.path.abspath(agent)))
+
+
 def _run(server, env_id, workdir, permission_path):
-    command = f'"{sys.executable}" "{FAKE_AGENT}"'
+    command = _python_command(FAKE_AGENT)
     server.put(f"/api/environments/{env_id}", env(env_id, [
         ("agent", "acp_agent", {
             "harness": "custom",
@@ -53,7 +58,7 @@ def test_acp_supplies_real_previous_output(server, tmp_path):
     server.put("/api/environments/acp-prev", env("acp-prev", [
         ("previous", "command", {"cmd": "echo earlier result"}),
         ("agent", "acp_agent", {
-            "harness": "custom", "command": f'"{sys.executable}" "{FAKE_AGENT}"',
+            "harness": "custom", "command": _python_command(FAKE_AGENT),
             "workdir": str(workdir),
             "prompt": "Previous result: {prev_output}. Task for {env} in {run}. Permission request: " + str(workdir / "ok.txt"),
             "timeout": 10,
