@@ -38,6 +38,10 @@ def safe_path(path: str) -> str:
 def write_note(path: str, body: str, agent: str = "unknown", *, author: str | None = None, run_id: str = "") -> str:
     """Create or replace a note; returns the short commit sha. Legacy agent callers remain supported."""
     full = safe_path(path)
+    if run_id and not re.fullmatch(r"[A-Za-z0-9-]{1,64}", run_id):
+        raise ValueError("Run id must contain only letters, numbers, and hyphens (up to 64 characters)")
+    if author and author.startswith("worker:") and not re.fullmatch(r"worker:[A-Za-z0-9._-]{1,64}", author):
+        raise ValueError("Worker author must be worker:<model> using letters, numbers, dot, underscore, or hyphen")
     with _lock:
         previous = None
         try:

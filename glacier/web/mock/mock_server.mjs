@@ -62,18 +62,32 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method === 'PUT' && p === '/api/memory/note') {
         const item = await readBody()
-        if (!item || !item.path || !item.path.endsWith('.md') || item.path.includes('..')) return send(400, { detail: 'That note path is not allowed' })
+        const normalise = value => {
+          const raw = String(value ?? '').replaceAll('\\', '/')
+          const parts = []
+          for (const part of raw.split('/')) {
+            if (!part || part === '.') continue
+            if (part === '..') return null
+            parts.push(part)
+          }
+          return parts.join('/')
+        }
+        if (!item || !item.path) return send(400, { detail: 'That note path is not allowed' })
+        const path = normalise(item.path)
+        if (!path || !path.endsWith('.md')) return send(400, { detail: 'That note path is not allowed' })
+        if (path === 'claims.md' || path.startsWith('claims/')) return send(400, { detail: "Claims can't be edited from memory" })
         if (item.author !== 'owner') return send(400, { detail: 'Notes saved from the screen must be authored by owner' })
-        const change = vault.has(item.path) ? 'updated' : 'created'
-        const oldMeta = memoryMeta.get(item.path)
+        if (Object.hasOwn(item, 'run_id')) return send(400, { detail: 'Run id is set by the service' })
+        const change = vault.has(path) ? 'updated' : 'created'
+        const oldMeta = memoryMeta.get(path)
         const now = new Date().toISOString()
-        const title = (item.body.match(/^#\s+(.+)$/m) ?? [])[1] ?? item.path.split('/').pop().replace(/\.md$/, '')
+        const title = (item.body.match(/^#\s+(.+)$/m) ?? [])[1] ?? path.split('/').pop().replace(/\.md$/, '')
         const tags = [...new Set([...item.body.matchAll(/(?:^|\s)#([\w-]+)/g)].map(x => x[1]))]
-        vault.set(item.path, item.body); memoryMeta.set(item.path, { title, author: item.author, run_id: item.run_id ?? '', created: oldMeta?.created ?? now, updated: now, tags })
-        const commit = commitId(), history = memoryHistory.get(item.path) ?? []
-        history.unshift({ commit, author: item.author, date: now, message: `[${item.author}] write ${item.path}`, body: item.body }); memoryHistory.set(item.path, history)
-        broadcast({ type: 'memory', path: item.path, change, author: item.author, run_id: item.run_id ?? '' })
-        return send(200, { path: item.path, commit })
+        vault.set(path, item.body); memoryMeta.set(path, { title, author: item.author, run_id: '', created: oldMeta?.created ?? now, updated: now, tags })
+        const commit = commitId(), history = memoryHistory.get(path) ?? []
+        history.unshift({ commit, author: item.author, date: now, message: `[${item.author}] write ${path}`, body: item.body }); memoryHistory.set(path, history)
+        broadcast({ type: 'memory', path, change, author: item.author, run_id: '' })
+        return send(200, { path, commit })
       }
       if (req.method === 'GET' && p === '/api/memory/graph') {
         const nodes = new Map(), edges = [], knownEdges = new Set()
@@ -90,13 +104,17 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method === 'GET' && p === '/api/memory/history') return send(200, memoryHistory.get(url.searchParams.get('path')) ?? [])
       if (req.method === 'POST' && p === '/api/memory/undo') {
-        const item = await readBody(), history = memoryHistory.get(item.path) ?? []
+        const item = await readBody()
+        const path = String(item?.path ?? '').replaceAll('\\', '/').split('/').filter(x => x && x !== '.').join('/')
+        if (!path.endsWith('.md')) return send(400, { detail: 'That note path is not allowed' })
+        if (path === 'claims.md' || path.startsWith('claims/')) return send(400, { detail: "Claims can't be edited from memory" })
+        const history = memoryHistory.get(path) ?? []
         const index = item.commit ? history.findIndex(row => row.commit.startsWith(item.commit)) : 0
         if (index < 0 || !history[index + 1]) return send(404, { detail: 'No earlier version exists' })
-        const old = history[index + 1]; vault.set(item.path, old.body); history.splice(0, index + 1); memoryHistory.set(item.path, history)
+        const old = history[index + 1]; vault.set(path, old.body); history.splice(0, index + 1); memoryHistory.set(path, history)
         const commit = commitId(); history.unshift({ ...old, commit });
-        broadcast({ type: 'memory', path: item.path, change: 'updated', author: 'owner', run_id: '' })
-        return send(200, { path: item.path, commit })
+        broadcast({ type: 'memory', path, change: 'updated', author: 'owner', run_id: '' })
+        return send(200, { path, commit })
       }
       if (req.method === 'GET' && p === '/api/memory/search') {
         const q = (url.searchParams.get('q') ?? '').toLowerCase(), mode = url.searchParams.get('mode')

@@ -29,9 +29,17 @@ def _path(path: str) -> str:
         full = vault.safe_path(path)
     except ValueError as exc:
         raise HTTPException(400, "That note path is not allowed") from exc
-    if not path.endswith(".md"):
+    if not os.path.relpath(full, vault.VAULT).endswith(".md"):
         raise HTTPException(400, "Memory notes must be Markdown files")
     return full
+
+
+def _normalised_path(path: str) -> str:
+    full = _path(path)
+    relative = os.path.relpath(full, vault.VAULT).replace(os.sep, "/")
+    if relative == "claims" or relative.startswith("claims/"):
+        raise HTTPException(400, "Claims can't be edited from memory")
+    return relative
 
 
 def _meta(text: str, path: str) -> tuple[dict, str]:
@@ -83,14 +91,14 @@ def note(path: str):
 
 @router.put("/api/memory/note")
 def put_note(item: NoteWrite):
-    _path(item.path)
+    path = _normalised_path(item.path)
     if item.author != "owner":
         raise HTTPException(400, "Notes saved from the screen must be authored by owner")
     try:
-        commit = vault.write_note(item.path, item.body, author=item.author)
+        commit = vault.write_note(path, item.body, author=item.author)
     except ValueError as exc:
         raise HTTPException(400, "That note path is not allowed") from exc
-    return {"path": item.path, "commit": commit}
+    return {"path": path, "commit": commit}
 
 
 @router.get("/api/memory/graph")
@@ -129,8 +137,8 @@ def history(path: str):
 
 @router.post("/api/memory/undo")
 def undo(item: Undo):
-    _path(item.path)
-    commits = list(vault._repo.iter_commits(paths=item.path))
+    path = _normalised_path(item.path)
+    commits = list(vault._repo.iter_commits(paths=path))
     if not commits:
         raise HTTPException(404, "No saved version exists for this note")
     index = next((i for i, c in enumerate(commits) if item.commit and c.hexsha.startswith(item.commit)), 0) if item.commit else 0
@@ -140,12 +148,12 @@ def undo(item: Undo):
     if target is None:
         raise HTTPException(400, "There is no earlier version to restore")
     try:
-        previous = target.tree / item.path
+        previous = target.tree / path
         body = previous.data_stream.read().decode("utf-8")
     except (KeyError, OSError):
         raise HTTPException(404, "The earlier version did not contain this note")
-    commit = vault.write_note(item.path, body, author="owner")
-    return {"path": item.path, "commit": commit}
+    commit = vault.write_note(path, body, author="owner")
+    return {"path": path, "commit": commit}
 
 
 @router.get("/api/memory/search")
