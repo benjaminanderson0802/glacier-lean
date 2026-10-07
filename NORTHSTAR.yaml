@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-07  # latest: statuses + evidence through PR #36 (security, sandbox, assistant chat, desktop scaffold)
+last_amended: 2026-10-07  # latest: owner-approved PH3 exit; PH9 started
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -237,6 +237,7 @@ phases:
     depends_on: [PH2]
     goal: "Nothing is accepted on a worker's word."
     status: in_progress
+    exit_decision: "Owner approved the PH3 exit on 2026-10-07: verification 0% false-done / 100% verified, security 28/28 blocked, claims benchmark all per-type targets met with 0 wrong auto-resolutions; the overall 54% auto-resolution reflects a test mix that is half owner-only by design. Remaining PH3.9 is screen work."
     checkpoints:
       - {id: PH3.1, item: "Acceptance checks defined before work: test command, schema, rubric, or human sign-off per goal", test: "a goal without an acceptance check cannot start", status: done, evidence: "commit 87395ee; verify.validate on save, run with goal but no checks refused (400); tests in test_verification.py"}
       - {id: PH3.2, item: "Verifier node runs in a separate context/model from the worker; worker cannot alter it (I-04)", test: "worker attempts to edit the check are blocked and logged", status: done, evidence: "commits 87395ee + 8fae168: checks run on a copy with protected files restored; ANY change to a protected check file fails the run (I-04)"}
@@ -322,7 +323,7 @@ phases:
     name: "Self-improvement (Glacier builds Glacier)"
     depends_on: [PH3, PH5, PH7]
     goal: "Glacier's own development runs as Glacier Environments under the same verification rules."
-    status: todo
+    status: in_progress  # started after the owner-approved PH3 exit (2026-10-07); PH5/PH7 still in progress, so self-build stays owner-approved and verified-merge only
     checkpoints:
       - {id: PH9.1, item: "Repo-maintenance Environment: dependency watch, test board, proposed upgrades (human-approved)"}
       - {id: PH9.2, item: "Feature Environment: goal → worktree → workers → verifier → merge queue"}
