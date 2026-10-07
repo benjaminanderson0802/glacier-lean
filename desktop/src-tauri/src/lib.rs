@@ -27,6 +27,16 @@ fn detect_tools_in(search_path: &std::ffi::OsStr) -> Vec<ToolStatus> {
     TOOLS.iter().map(|name| ToolStatus { name: (*name).to_string(), installed: executable_exists_in(name, search_path) }).collect()
 }
 
+fn navigation_is_allowed(url: &tauri::Url, port: u16) -> bool {
+    if url.scheme() == "tauri" { return true; }
+    if matches!(url.scheme(), "http" | "https") && url.host_str() == Some("tauri.localhost") { return true; }
+    url.scheme() == "http" && url.host_str() == Some("127.0.0.1") && url.port() == Some(port)
+}
+
+fn api_initialization_script(port: u16) -> String {
+    format!("window.__GLACIER_API__ = \"http://127.0.0.1:{port}\";")
+}
+
 #[tauri::command]
 fn available_tools() -> Vec<ToolStatus> { detect_tools_in(&env::var_os("PATH").unwrap_or_default()) }
 
@@ -94,7 +104,8 @@ pub fn run() {
             let port = free_listener().local_addr()?.port();
             let window = WebviewWindowBuilder::new(app.handle(), "main", WebviewUrl::App("first-run/index.html".into()))
                 .title("Welcome to Glacier").inner_size(1280.0, 820.0)
-                .on_navigation(move |url| url.scheme() == "tauri" || url.scheme() == "http" && url.host_str() == Some("127.0.0.1") && url.port() == Some(port))
+                .initialization_script(api_initialization_script(port))
+                .on_navigation(move |url| navigation_is_allowed(url, port))
                 .build()?;
             match launch_backend(&app.handle(), port) {
                 Ok((child, log_path)) => {
@@ -107,7 +118,7 @@ pub fn run() {
                             if backend_ready(port) {
                                 if let Some(window) = handle.get_webview_window("main") {
                                     let _ = window.set_title("Glacier");
-                                    let _ = window.navigate(format!("http://127.0.0.1:{port}").parse().unwrap());
+                                    let _ = window.navigate("tauri://localhost/index.html".parse().unwrap());
                                 }
                                 return;
                             }
@@ -145,6 +156,23 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bundled_screen_navigation_stays_local_and_allows_the_backend() {
+        let port = 43127;
+        assert!(navigation_is_allowed(&"tauri://localhost/index.html".parse().unwrap(), port));
+        assert!(navigation_is_allowed(&"http://tauri.localhost/index.html".parse().unwrap(), port));
+        assert!(navigation_is_allowed(&"https://tauri.localhost/index.html".parse().unwrap(), port));
+        assert!(navigation_is_allowed(&format!("http://127.0.0.1:{port}/api/node-types").parse().unwrap(), port));
+        assert!(!navigation_is_allowed(&"https://example.com/".parse().unwrap(), port));
+        assert!(!navigation_is_allowed(&format!("http://127.0.0.1:{}/", port + 1).parse().unwrap(), port));
+    }
+
+    #[test]
+    fn api_address_is_injected_into_bundled_pages() {
+        assert_eq!(api_initialization_script(43127), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\";");
+    }
+
     #[test]
     fn detects_installed_tools() {
         let root = std::env::temp_dir().join(format!("glacier-tool-detection-{}", std::process::id()));
