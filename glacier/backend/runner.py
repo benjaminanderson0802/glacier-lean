@@ -366,7 +366,9 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                 failures[nid].append(res.get("output", "")[-500:])
                 f = failures[nid]
                 if (len(f) >= 2 and f[-1] == f[-2]) or len(f) >= MAX_STEP_FAILURES:
-                    file_stuck_claim(env_id, run_id, nid, len(f), res.get("output", ""))
+                    cid = file_stuck_claim(env_id, run_id, nid, len(f), res.get("output", ""))
+                    import claims_research
+                    claims_research.start(cid)
                     status = "failed"
                     break
             if res["exit_code"] != 0 and not any(nodes[e["target"]]["type"] == "check" for e in edges):

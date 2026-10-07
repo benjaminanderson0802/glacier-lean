@@ -37,3 +37,10 @@ Answer every item in `drift_check.before_task`, and write the answers in your pl
 - `tests/`, `glacier/backend/tests/`, `glacier/web/e2e/`: test boards
 - `setup/`: sandbox install, test and restart scripts
 - `legacy-keep/`: the only old Glacier code kept (see `docs/OLD_CODE_MAP.md`)
+
+## 6. Working next to other workers (shared sandbox)
+- Your card is your authorization to start. A phase's `depends_on` decides when a checkpoint can be marked done, not whether an assigned card may start.
+- Use the project interpreter: /workspaces/glacier-lean/.venv/bin/python (plain `python` is a different one).
+- Never stop, kill or pkill processes you did not start. Other workers run tests at the same time.
+- The full backend suite takes several minutes on a busy machine: start it and wait for it to finish.
+- Backend tests run from inside glacier/backend: `cd glacier/backend && /workspaces/glacier-lean/.venv/bin/python -m pytest -q tests`.
