@@ -1,6 +1,6 @@
 // Claims: problems the AI could not solve alone, waiting for the owner (mockup panel 3).
 import { useEffect, useState } from 'react'
-import { ago, claimsApi, sections, type ClaimFull, type ClaimSummary } from '../api.ts'
+import { ago, api, claimsApi, sections, type ClaimFull, type ClaimSummary } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -48,6 +48,9 @@ export function ClaimDetail({ id }: { id: string }) {
     try { const r = await claimsApi.decide(id, a); setDone(a === 'approve' ? 'Approved.' : a === 'reject' ? 'Rejected.' : 'Sent back for more research.'); void r; load() } catch (e) { setErr(String(e)) }
   }
   const open = m && OPEN.includes(String(m.status))
+  const rerun = async () => {
+    try { const r = await claimsApi.rerun(id); go(`automations/flow/${r.env_id}/${r.run_id}`) } catch (e) { setErr(String(e).replace(/^Error: /, '')) }
+  }
   const research = lines(s['Research'])
   const proposal = lines(s['Proposal'])
   const evidence = lines(s['Evidence'])
@@ -65,7 +68,12 @@ export function ClaimDetail({ id }: { id: string }) {
         </Panel>
         <Panel title="Proof" testid="claim-proof" className="g-scroll">
           {evidence.length ? <div className="g-rows">{evidence.map((l, i) => <Row key={i} status="ok" lead={l} />)}</div> : <Empty>No evidence attached.</Empty>}
-          {m?.run_id && <div style={{ marginTop: 10 }}><Btn primary onClick={() => go(`automations/flow/${String(m.env_id ?? '') || 'unknown'}/${m.run_id}`)} disabled={!m.env_id}>View run</Btn></div>}
+          {m?.run_id && (
+            <div className="g-actions" style={{ marginTop: 10 }}>
+              <Btn primary={open} onClick={() => api.getRun(String(m.run_id)).then(r => go(`automations/flow/${r.env_id}/${r.run_id}`)).catch(() => setErr('That run is no longer in the history.'))} data-testid="claim-view-run">View run</Btn>
+              {!open && <Btn primary onClick={rerun} data-testid="claim-rerun" title="Run the flow that raised this claim again, to see whether it works now">Run it again to check</Btn>}
+            </div>
+          )}
           {s['Resolution'] && <><h3 className="g-panel-title" style={{ marginTop: 12 }}>History</h3><ul className="g-bullets">{lines(s['Resolution']).map((l, i) => <li key={i}>{l}</li>)}</ul></>}
         </Panel>
       </div>

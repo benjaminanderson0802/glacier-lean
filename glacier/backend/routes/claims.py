@@ -1,7 +1,7 @@
 """Claims API (docs/contracts/VERIFICATION.md)."""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import claims, claims_research
+import claims, claims_research, runner, store, vault
 
 router = APIRouter()
 
@@ -51,3 +51,26 @@ def decide(cid: str, d: Decision):
         raise HTTPException(404, "claim not found")
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+@router.post("/api/claims/{cid}/rerun")
+def rerun_claim(cid: str):
+    """After a decision, run the flow that raised the claim again so the owner sees whether it is fixed now."""
+    try:
+        c = claims.get_claim(cid)
+    except (ValueError, FileNotFoundError):
+        raise HTTPException(404, "claim not found")
+    meta, body = c["meta"], c["body"]
+    run = store.get_run(meta.get("run_id") or "") if meta.get("run_id") else None
+    if not run:
+        raise HTTPException(400, "This claim did not come from a run, so there is nothing to run again.")
+    env_id = run["env_id"]
+    try:
+        run_id = runner.start_run(env_id, {"_rerun_of": cid})
+    except FileNotFoundError:
+        raise HTTPException(400, "The flow behind this claim no longer exists.")
+    meta.update(updated=claims._now())
+    vault.write_note(claims._path(cid), claims._render(meta, body.rstrip() + f"\n- {claims._now()} Owner ran the flow again to check: run {run_id}.\n"),
+                     agent="owner")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
+    return {"run_id": run_id, "env_id": env_id}

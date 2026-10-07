@@ -137,7 +137,7 @@ def test_run_waits_at_effective_limit(make_server, monkeypatch):
     monkeypatch.setenv("GLACIER_MAX_PARALLEL_RUNS", "1")
     server = make_server().start()
     server.put("/api/environments/limited", env("limited", [
-        ("wait", "command", {"cmd": "sleep 1; echo finished"})
+        ("wait", "command", {"cmd": "sleep 5; echo finished"})  # long enough that slow CI machines still see the second run queue
     ], []))
     first_id = server.post("/api/environments/limited/run")["run_id"]
     deadline = time.time() + 10
@@ -156,7 +156,7 @@ def test_run_waits_at_effective_limit(make_server, monkeypatch):
     assert second["status"] == "queued"
     assert second["waiting_on"] == "Waiting for another run to finish"
     assert server.wait_run(first_id)["status"] == "done"
-    assert server.wait_run(second_id, timeout=10)["status"] == "done"
+    assert server.wait_run(second_id, timeout=30)["status"] == "done"
 
 
 def test_run_node_marks_queued_only_when_no_execution_slot_is_available(monkeypatch):
