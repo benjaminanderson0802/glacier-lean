@@ -114,3 +114,28 @@ def test_trim_removes_aliases_for_removed_development_tools(tmp_path):
     assert not (binaries / "python3-config").is_symlink()
     assert not (binaries / "2to3").exists()
     assert not (binaries / "2to3").is_symlink()
+
+
+def test_relative_destination_extracts_safely(tmp_path, monkeypatch):
+    # The Windows CI build passes a relative destination; a safe archive must not be reported as escaping it.
+    archive = tmp_path / "runtime.tar.gz"
+    with tarfile.open(archive, "w:gz") as bundle:
+        item = tmp_path / "python"
+        item.write_bytes(b"fake python")
+        bundle.add(item, arcname="python/bin/python3.12")
+    monkeypatch.chdir(tmp_path)
+    runtime = build_runtime.extract_runtime(archive, Path("out/runtime"), "python")
+    assert (tmp_path / "out/runtime/bin/python3.12").read_bytes() == b"fake python"
+    assert runtime == Path("out/runtime")
+
+
+def test_member_escaping_through_a_link_is_still_refused(tmp_path):
+    archive = tmp_path / "evil.tar.gz"
+    with tarfile.open(archive, "w:gz") as bundle:
+        link = tarfile.TarInfo("python/escape")
+        link.type = tarfile.SYMTYPE
+        link.linkname = "../../outside"
+        bundle.addfile(link)
+    import pytest
+    with pytest.raises(ValueError):
+        build_runtime.extract_runtime(archive, tmp_path / "runtime", "python")

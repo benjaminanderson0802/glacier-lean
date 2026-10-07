@@ -80,3 +80,9 @@ The standalone runtime includes `LICENSE.txt` under the PSF License. The builder
 3. Build the Windows runtime from the repository checkout. From the repository root run `python setup/pybundle/build_runtime.py --platform x86_64-pc-windows-msvc`, then build from `desktop/`. This cross-downloads the Windows interpreter and resolves binary wheels using `pip --platform win_amd64 --only-binary=:all:`; Windows itself is not needed for this preparation step.
 4. From `desktop/`, run `npm ci` and `npx tauri build --config src-tauri/tauri.windows.conf.json --debug` to check the Windows app. The configured `beforeBuildCommand` builds the screen and assembles `desktop/dist` automatically. For a release installer, run `npx tauri build --config src-tauri/tauri.windows.conf.json`; the configured NSIS target produces an installer under `src-tauri/target/release/bundle/nsis/`.
 5. Verify first run on a clean Windows account, including the tool list, local data location, and backend readiness before handing the app to users.
+
+## Windows installer check in GitHub Actions
+
+The `desktop` workflow runs on pull requests that change `desktop/`, `glacier/`, `setup/pybundle/`, or the workflow itself, and can also be started manually from the repository's Actions page. It builds the pinned Windows Python runtime, packages the NSIS installer, and smoke-tests installation, backend readiness, and the engine token on a temporary CI runner. The workflow is marked non-blocking while its first Windows runs are reviewed. It does not install anything on the owner's PC.
+
+To download the installer, open the completed `desktop` workflow run on GitHub and download the `glacier-windows-installer` artifact from its Artifacts section. The artifact is retained for 7 days. The Windows runner smoke test does not replace the owner's later install and first-run check on his PC.

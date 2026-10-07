@@ -10,19 +10,32 @@
   "app": {
     "withGlobalTauri": true,
     "windows": [],
-    "security": { "csp": "default-src 'self' http://127.0.0.1:*; script-src 'self'; connect-src ipc: http://127.0.0.1:* ws://127.0.0.1:* http://tauri.localhost https://tauri.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'" }
+    "security": {
+      "csp": "default-src 'self' http://127.0.0.1:*; script-src 'self'; connect-src ipc: http://127.0.0.1:* ws://127.0.0.1:* http://tauri.localhost https://tauri.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'"
+    }
   },
   "bundle": {
-    "icon": ["icons/icon.png"],
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
     "active": true,
-    "targets": ["deb", "appimage", "nsis"],
+    "targets": [
+      "deb",
+      "appimage",
+      "nsis"
+    ],
     "resources": {
       "../sidecar.json": "sidecar.json",
       "../../glacier/backend/*.py": "backend/",
       "../../glacier/backend/nodes/*.py": "backend/nodes/",
       "../../glacier/backend/routes/*.py": "backend/routes/",
       "../../glacier/contract/node_types.json": "contract/node_types.json",
-      "../../setup/requirements.txt": "backend/requirements.txt"
+      "../../setup/requirements.txt": "backend/requirements.txt",
+      "../../glacier/importers/*.py": "glacier/importers/",
+      "../../templates/*.json": "templates/",
+      "../../templates/manifest/*.json": "templates/manifest/",
+      "../../glacier/backend/session_readers/*.py": "backend/session_readers/"
     }
   }
 }

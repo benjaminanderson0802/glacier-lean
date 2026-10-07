@@ -50,6 +50,9 @@ def verify_sha256(archive, expected):
 
 
 def _safe_target(root, member):
+    # Compare fully resolved paths (relative destinations, Windows short names and drive-letter case
+    # would otherwise make a safe member look like it escapes the destination).
+    root = Path(root).resolve()
     target = (root / member).resolve()
     if target != root and root not in target.parents:
         raise ValueError("Runtime archive contains a path outside its destination")
@@ -60,6 +63,7 @@ def extract_runtime(archive, destination, strip_prefix="python"):
     """Safely extract supported standalone archives, removing their top folder."""
     archive, destination = Path(archive), Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
+    requested, destination = destination, destination.resolve()
     if tarfile.is_tarfile(archive):
         with tarfile.open(archive, "r:*") as bundle:
             for member in bundle.getmembers():
@@ -105,7 +109,7 @@ def extract_runtime(archive, destination, strip_prefix="python"):
                         shutil.copyfileobj(source, output)
     else:
         raise ValueError("Unsupported runtime archive format")
-    return destination
+    return requested
 
 
 def _trim_runtime(runtime, platform_name):
