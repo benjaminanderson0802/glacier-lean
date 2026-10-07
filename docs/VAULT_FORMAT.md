@@ -56,6 +56,12 @@ The note reader and map use the same link resolution rules. The reader returns
 the canonical extensionless target in `links_out` and adds its `resolved` or
 `unresolved` state in `links_out_status`.
 
+Renaming a note through `POST /api/memory/rename` updates resolved wiki, embed,
+and local Markdown links in other notes in the same saved version. Examples in
+code remain unchanged. The rename can be undone through `POST
+/api/memory/undo` using the new path and the rename's saved version ID; this
+restores the prior name and inbound links together.
+
 An embed can refer to an attachment in the vault:
 
 ```markdown

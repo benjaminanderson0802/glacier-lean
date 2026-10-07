@@ -6,8 +6,10 @@ from datetime import timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+import git
 import vault
 import memory_meta
+import memory_links
 from memory_links import LinkResolver, resolve_links
 
 def _is_claims_path(path: str) -> bool:
@@ -29,6 +31,14 @@ class NoteWrite(BaseModel):
 class Undo(BaseModel):
     path: str
     commit: str | None = None
+
+
+class Rename(BaseModel):
+    source: str | None = None
+    target: str | None = None
+    from_: str | None = None
+    to: str | None = None
+    model_config = {"extra": "forbid", "populate_by_name": True}
 
 
 def _path(path: str) -> str:
@@ -179,6 +189,40 @@ def undo(item: Undo):
         raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
     with vault._lock:
         commits = list(vault._repo.iter_commits(paths=path))
+        if item.commit:
+            requested = item.commit.lower()
+            rename_commits = [commit for commit in vault._repo.iter_commits(paths=".")
+                              if commit.hexsha.startswith(requested) and
+                              getattr(commit, "message", "").startswith("[owner] rename ")]
+            if len(rename_commits) == 1:
+                selected = rename_commits[0]
+                if not selected.parents:
+                    raise HTTPException(400, "There is no earlier version to restore")
+                try:
+                    vault._repo.git.revert(selected.hexsha, no_commit=True)
+                    actor = git.Actor("owner", "glacier@localhost")
+                    undo_commit = vault._repo.index.commit(
+                        f"[owner] undo rename {selected.hexsha[:8]}", author=actor, committer=actor)
+                except Exception as exc:
+                    vault._repo.git.reset("--hard", "HEAD")
+                    raise HTTPException(409, "That rename could not be safely undone") from exc
+                # Rebuild note metadata, search and link indexes from the restored files.
+                with vault._note_metadata_cache_lock:
+                    vault._note_metadata_cache.clear()
+                connection = vault._db()
+                try:
+                    connection.execute("DELETE FROM fts")
+                    connection.execute("DELETE FROM links")
+                    for note_path in vault.list_notes(".md"):
+                        raw = vault.read_raw_note(note_path)
+                        _, body = memory_meta.parse(raw, note_path)
+                        connection.execute("INSERT INTO fts VALUES (?,?)", (note_path, body))
+                        for destination, _ in memory_links.parse_links(body):
+                            connection.execute("INSERT INTO links VALUES (?,?)", (note_path, destination))
+                    connection.commit()
+                finally:
+                    connection.close()
+                return {"path": item.path, "commit": undo_commit.hexsha[:8]}
         if not commits:
             raise HTTPException(404, "No saved version exists for this note")
         matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
@@ -198,6 +242,21 @@ def undo(item: Undo):
         raise HTTPException(404, "The earlier version did not contain this note")
     commit = vault.write_note(path, body, author="owner")
     return {"path": path, "commit": commit}
+
+
+@router.post("/api/memory/rename")
+def rename_note(item: dict):
+    from memory_rename import rename
+    if set(item) != {"from", "to"} or not all(isinstance(item[key], str) for key in ("from", "to")):
+        raise HTTPException(400, "Provide the old and new note paths")
+    try:
+        return rename(item["from"], item["to"])
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/api/memory/search")
