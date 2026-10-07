@@ -57,3 +57,94 @@ jobs:
       - name: Smoke test installed backend
         shell: pwsh
         run: ./desktop/scripts/smoke_windows.ps1 -Installer (Get-ChildItem desktop/src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1 -ExpandProperty FullName)
+
+  linux-appimage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            glacier/web/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@1.92.0
+      - name: Install Tauri Linux prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file libxdo-dev libssl-dev \
+            librsvg2-dev patchelf libwebkit2gtk-4.1-dev libayatana-appindicator3-dev
+      - name: Build bundled Linux Python runtime
+        run: python3 setup/pybundle/build_runtime.py --platform x86_64-unknown-linux-gnu
+      - name: Install screen dependencies
+        working-directory: glacier/web
+        run: npm ci --no-audit --no-fund
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Build .deb and AppImage
+        working-directory: desktop
+        run: npx tauri build --config src-tauri/tauri.linux.conf.json --bundles deb,appimage
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: glacier-linux-packages
+          path: |
+            desktop/src-tauri/target/release/bundle/deb/*.deb
+            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 7
+      - name: Smoke test extracted Linux packages
+        run: |
+          deb="$(find desktop/src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)"
+          appimage="$(find desktop/src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' -print -quit)"
+          ./desktop/scripts/smoke_unix.sh --deb "$deb"
+          ./desktop/scripts/smoke_unix.sh --appimage "$appimage"
+
+  macos-app:
+    runs-on: macos-latest
+    timeout-minutes: 35
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            glacier/web/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@1.92.0
+      - name: Confirm Apple Silicon runner
+        run: test "$(uname -m)" = arm64
+      - name: Build bundled Apple Silicon Python runtime
+        run: python3 setup/pybundle/build_runtime.py --platform aarch64-apple-darwin
+      - name: Install screen dependencies
+        working-directory: glacier/web
+        run: npm ci --no-audit --no-fund
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+      - name: Build macOS app and disk image
+        working-directory: desktop
+        run: npx tauri build --config src-tauri/tauri.macos.conf.json --bundles app,dmg
+      - name: Upload macOS disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: glacier-macos-dmg
+          path: desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 7
+      - name: Smoke test backend in app bundle
+        run: |
+          app="$(find desktop/src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' -print -quit)"
+          ./desktop/scripts/smoke_unix.sh --app "$app"
