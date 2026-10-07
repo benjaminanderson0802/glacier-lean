@@ -50,6 +50,10 @@ New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/con
                                                   node_states: {node_id: pending|running|done|failed|waiting|skipped},
                                                   outputs: {node_id: "text"}, waiting_on: node_id|null,
                                                   usage: {node_id: {model, route, tokens_in, tokens_out, cost_usd}}}
+- GET  /api/runs/{run_id}/explain             -> {summary, steps:[{node_id,label,state,sentence}], verified:boolean|null, needs_you:string|null}
+                                                  A deterministic, plain-language explanation from the saved run, node catalog labels,
+                                                  outputs, checks and waiting approval. Output snippets are redacted and limited to 120 characters.
+                                                  Returns 404 when the run does not exist; never calls an AI model.
 - GET  /api/home                             -> {local_ai:{online,model}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
                                                   needs_you:[{kind,title,detail,at,ref}],
                                                   running:[{run_id,env_id,name,status,step,steps,started_at}],
