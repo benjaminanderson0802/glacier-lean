@@ -36,7 +36,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["tauri://localhost", "http://t
                    allow_methods=["*"], allow_headers=["*"])
 from local_guard import LocalRequestGuard  # noqa: E402
 app.add_middleware(LocalRequestGuard)
-plugins.load_routes(app)  # route plug-ins (routes/)
+plugins.load_routes(app)  # registers routers in routes/, including the Home summary endpoint
 
 
 def _env_or_404(env_id: str) -> dict:

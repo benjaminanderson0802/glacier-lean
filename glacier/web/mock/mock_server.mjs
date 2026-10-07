@@ -135,6 +135,28 @@ const server = http.createServer(async (req, res) => {
           .map(([path, body]) => ({ path, title: parse(path).title, score: 1, snippet: body.slice(0, 240), ...(fallback ? { fallback: true } : {}) })))
       }
     }
+    if (req.method === 'GET' && p === '/api/home') {
+      const now = Date.now()
+      const at = minutes => new Date(now - minutes * 60_000).toISOString()
+      return send(200, {
+        local_ai: { online: true, model: 'qwen3:0.6b' },
+        counts: { running: 2, need_you: 4 },
+        needs_you: [
+          { kind: 'approval', title: 'approval waiting', detail: 'Weekly report', at: at(2), ref: { run_id: 'run-report', node_id: 'approve', env_id: 'weekly-report' } },
+          { kind: 'approval', title: 'approval waiting', detail: 'Inbox triage', at: at(9), ref: { run_id: 'run-inbox', node_id: 'confirm', env_id: 'inbox-triage' } },
+          { kind: 'claim', title: 'capability_gap', detail: 'Need a calendar connection for this workflow.', at: at(18), ref: { claim_id: '2026-10-07-calendar-claim-a1b2c3' } },
+          { kind: 'failed_run', title: 'run failed', detail: 'Nightly checks', at: at(46), ref: { run_id: 'run-tests', env_id: 'nightly-tests' } },
+        ],
+        running: [
+          { run_id: 'run-backup', env_id: 'daily-backup', name: 'Daily backup', status: 'running', step: 2, steps: 4, started_at: at(3) },
+          { run_id: 'run-research', env_id: 'market-research', name: 'Market research', status: 'queued', step: 0, steps: 5, started_at: at(1) },
+        ],
+        recent_notes: [
+          { path: 'projects/market-research.md', summary: 'Competitor pricing changed this week.', at: at(32) },
+          { path: 'runs/daily-backup.md', summary: 'The latest backup completed successfully.', at: at(115) },
+        ],
+      })
+    }
     if (req.method === 'GET' && p === '/api/node-types') return send(200, CATALOG)
     if (req.method === 'POST' && p === '/api/assistant/chat') {
       const body = await readBody()
