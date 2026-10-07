@@ -25,7 +25,7 @@ jobs:
         working-directory: glacier/backend
         run: python -m pytest -q tests
       - name: other test suites (importers, templates, verification benchmark)
-        run: python -m pytest -q $(ls -d glacier/importers templates bench 2>/dev/null)
+        run: python -m pytest -q $(ls -d glacier/importers templates bench tools/scan tools/catalog 2>/dev/null)
 
   screen-linux:
     runs-on: ubuntu-latest
