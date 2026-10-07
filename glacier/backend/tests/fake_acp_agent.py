@@ -1,5 +1,6 @@
 """Small ACP agent used by the acp_agent acceptance tests."""
 import asyncio
+import os
 import re
 import sys
 
@@ -25,6 +26,7 @@ class FakeAgent:
         return InitializeResponse(protocol_version=protocol_version)
 
     async def new_session(self, cwd, **kwargs):
+        self.cwd = cwd
         return NewSessionResponse(session_id="fake-session")
 
     async def prompt(self, session_id, prompt, **kwargs):
@@ -66,6 +68,9 @@ class FakeAgent:
         permission = "cancelled"
         if outcome == "selected":
             permission = "once" if result.outcome.option_id == "once" else "always"
+        if permission == "once" and "create hello.txt containing hi" in text:
+            with open(os.path.join(self.cwd, "hello.txt"), "w", encoding="utf-8") as output:
+                output.write("hi")
         message = f"done: {text} (permission={permission})"
         await self.connection.session_update(
             session_id=session_id,
