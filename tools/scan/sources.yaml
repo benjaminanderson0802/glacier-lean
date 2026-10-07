@@ -1,0 +1,17 @@
+# Each live endpoint is public and read-only. JSON fixtures use the keys below.
+sources:
+  mcp:
+    url: https://registry.modelcontextprotocol.io/v0/servers
+    parse: "JSON: servers[]; name, description, repository.url (or url), license, updated_at, stars"
+  github_mcp:
+    url: https://api.github.com/search/repositories?q=topic:mcp-server&sort=updated&order=desc&per_page=100
+    parse: "GitHub search JSON: items[]; name, html_url, description, license.spdx_id, pushed_at (or updated_at), stargazers_count"
+  github_agents:
+    url: https://api.github.com/search/repositories?q=topic:ai-agents&sort=updated&order=desc&per_page=100
+    parse: "GitHub search JSON: items[]; name, html_url, description, license.spdx_id, pushed_at (or updated_at), stargazers_count"
+  github_ollama:
+    url: https://api.github.com/search/repositories?q=topic:ollama&sort=updated&order=desc&per_page=100
+    parse: "GitHub search JSON: items[]; name, html_url, description, license.spdx_id, pushed_at (or updated_at), stargazers_count"
+  ollama:
+    url: https://ollama.com/library
+    parse: "HTML model library: links under /library/<model>; model name and page URL. License/activity must be supplied by metadata when available; otherwise excluded."
