@@ -2,7 +2,7 @@
 
 ## What you will do
 
-You will restore an earlier note or undo changes made by a run. Saved automations also keep earlier versions, but the current screen does not offer a control to restore them.
+You will restore an earlier note, undo changes made by a run, or bring back an earlier version of an automation.
 
 ## What you need
 
@@ -12,7 +12,7 @@ Know which note or run changed. Undo applies to the selected saved change, so ch
 
 1. For a note: Open **Memory** and select the note. After saving an edit, the “Saved (version …)” message includes **Undo**. Choose it to restore the note from before that save. In an older note with saved history, **undo last change** restores its previous version.
 2. For a run: Open **Automations**, select the automation, then choose **Past runs**. Select the run and choose **Undo**. Read “Put back everything this run changed?” and choose **Yes, undo** to confirm, or **No** to cancel.
-3. For an automation's saved version: The current screen does not show a version list or restore control for automations. You can continue editing and saving the automation, but restoring an earlier saved version requires a screen that is not available yet.
+3. For an automation's saved version: Open **Automations** and open the automation in the editor. Under **Saved versions** you see every save, newest first, marked **Current** at the top. Choose **Restore** next to the version you want, then **Restore it** to confirm, or **Cancel**. Glacier keeps every version: the old one is saved again as the newest. If you have unsaved changes, save them first; **Restore** is unavailable until you do.
 
 ## If something goes wrong
 

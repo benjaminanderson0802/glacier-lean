@@ -275,10 +275,19 @@ const server = http.createServer(async (req, res) => {
         const bad = body.nodes.map(n => n.type).filter(t => !CATALOG.some(c => c.type === t))
         if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
         envs.set(id, { ...body, id })
-        const commit = commitId()
-        vault.set(`environments/${id}.json`, JSON.stringify({ ...body, id }, null, 2))
+        const commit = commitId(), epath = `environments/${id}.json`, text = JSON.stringify({ ...body, id }, null, 2)
+        vault.set(epath, text)
+        const eh = memoryHistory.get(epath) ?? []; eh.unshift({ commit, author: 'owner', date: new Date().toISOString(), message: `[owner] write ${epath}`, body: text }); memoryHistory.set(epath, eh)
         return send(200, { saved: true, commit })
       }
+    }
+    if (req.method === 'POST' && (m = p.match(/^\/api\/environments\/([^/]+)\/restore$/))) {
+      const id = decodeURIComponent(m[1]), epath = `environments/${id}.json`, body = await readBody()
+      const old = (memoryHistory.get(epath) ?? []).find(h => h.commit === body?.commit)
+      if (!old) return send(400, { detail: 'Saved version was not found for this flow.' })
+      const flow = JSON.parse(old.body); envs.set(id, flow); vault.set(epath, old.body)
+      const commit = commitId(); memoryHistory.get(epath).unshift({ commit, author: 'owner', date: new Date().toISOString(), message: `[owner] restore ${epath}`, body: old.body })
+      return send(200, { restored: true, new_commit: commit })
     }
     if (req.method === 'POST' && (m = p.match(/^\/api\/environments\/([^/]+)\/run$/))) {
       const id = decodeURIComponent(m[1])

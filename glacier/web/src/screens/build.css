@@ -31,6 +31,8 @@
 .app button:hover:not(:disabled) { background: var(--g-panel-hi); }
 .app button:disabled { opacity: .5; cursor: default; }
 .app button.primary { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
+/* keep the accent fill on hover (the generic hover rule above would hide the dark text) - same as .g-btn.primary */
+.app button.primary:hover:not(:disabled) { background: var(--g-accent); filter: brightness(1.08); }
 .app button.run, .app button.ok { border-color: var(--g-ok); color: var(--g-ok); }
 .app button.danger { border-color: var(--g-bad); color: var(--g-bad); }
 .app button.ghost { background: transparent; border-color: transparent; color: var(--g-sub); padding: 0 6px; font-size: var(--g-size-small); }

@@ -85,6 +85,7 @@ export const api = {
   getEnv: (id: string) => req<Environment>('GET', `/api/environments/${enc(id)}`),
   saveEnv: (env: Environment) => req<{ saved: boolean; commit: string }>('PUT', `/api/environments/${enc(env.id)}`, env),
   runEnv: (id: string) => req<{ run_id: string }>('POST', `/api/environments/${enc(id)}/run`),
+  restoreEnv: (id: string, commit: string) => req<{ restored: boolean; new_commit: string }>('POST', `/api/environments/${enc(id)}/restore`, { commit }),
   listRuns: (envId: string) => req<RunSummary[]>('GET', `/api/runs?env_id=${enc(envId)}`),
   getRun: (runId: string) => req<RunState>('GET', `/api/runs/${enc(runId)}`),
   approve: (runId: string, nodeId: string, approved: boolean) =>

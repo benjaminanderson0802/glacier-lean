@@ -173,6 +173,13 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-testid=last-commit]')?.textContent !== '-')
   const savedFlow = await (await fetch(`http://localhost:${MOCK_PORT}/api/environments/daily-backup`)).json()
   check(savedFlow.goal && Array.isArray(savedFlow.acceptance) && savedFlow.acceptance.length === 1, 'saving keeps the goal and checks the builder does not show')
+  await page.getByTestId('env-name').fill('Daily backup renamed')
+  await page.getByTestId('save').click()
+  await page.getByTestId('version-restore-1').waitFor()
+  await page.getByTestId('version-restore-1').click()
+  await page.getByTestId('version-restore-yes-1').click()
+  const restored = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Daily backup', null, { timeout: 8000 }).then(() => true, () => false)
+  check(restored && /Restored the version/.test(await page.getByTestId('message').textContent()), 'Saved versions: Restore brings back an earlier version of a flow')
 
   // Run view: plain-language "What happened" explanation of a finished run
   const M = `http://localhost:${MOCK_PORT}`

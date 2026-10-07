@@ -4,7 +4,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
-  ApiError, api, slugify, splitOptions, subscribeEvents,
+  ApiError, ago, api, memory, slugify, splitOptions, subscribeEvents, type MemCommit,
   type EnvSummary, type NodeTypeInfo, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from '../api.ts'
 import { GlacierNode, nodeTypes as baseNodeTypes, type GNode } from './GlacierNode.tsx'
@@ -116,6 +116,24 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     }
     refreshRuns(id)
   }, [refreshRuns])
+
+  // Saved versions of this flow (every Save is a version; Restore makes an earlier one current again).
+  const [versions, setVersions] = useState<MemCommit[]>([])
+  const [confirmRestore, setConfirmRestore] = useState('')
+  const loadVersions = useCallback((id: string) => {
+    memory.history(`environments/${id}.json`).then(v => setVersions(v.slice(0, 8))).catch(() => setVersions([]))
+  }, [])
+  useEffect(() => { setConfirmRestore(''); if (envId) loadVersions(envId); else setVersions([]) }, [envId, lastCommit, loadVersions])
+  const restoreVersion = async (commit: string) => {
+    if (!envId) return
+    try {
+      const r = await api.restoreEnv(envId, commit)
+      setConfirmRestore('')
+      await loadEnv(envId)
+      setMsg(`Restored the version from ${commit}. It is now saved as ${r.new_commit}.`)
+      loadVersions(envId)
+    } catch (e) { setMsg(String(e).replace(/^Error: /, '')) }
+  }
 
   const selectEnv = (id: string, name?: string) => {
     if (dirty && envId && envId !== id && !window.confirm('Discard unsaved changes?')) return
@@ -443,6 +461,22 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               <span>Last save commit</span>
               <code data-testid="last-commit">{lastCommit || '-'}</code>
             </div>
+            {versions.length > 1 && (
+              <div data-testid="versions">
+                <div className="section-head"><span>Saved versions</span></div>
+                <div className="list">
+                  {versions.map((v, i) => (
+                    <div key={v.commit} className="list-item" data-testid={`version-${i}`} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                      <span>{i === 0 ? 'Current' : ago(v.date) || v.date.slice(0, 16)} <span className="muted small">· {v.author} · {v.commit}</span></span>
+                      {i > 0 && (confirmRestore === v.commit
+                        ? <span className="row"><button className="primary" data-testid={`version-restore-yes-${i}`} onClick={() => restoreVersion(v.commit)}>Restore it</button><button className="ghost" onClick={() => setConfirmRestore('')}>Cancel</button></span>
+                        : <button className="ghost" data-testid={`version-restore-${i}`} disabled={dirty} title={dirty ? 'Save or discard your changes first' : 'Make this version current again'} onClick={() => setConfirmRestore(v.commit)}>Restore</button>)}
+                    </div>
+                  ))}
+                </div>
+                <div className="muted small">Restoring keeps every version; it saves the old one as a new version.</div>
+              </div>
+            )}
             {msg && <div className="msg" data-testid="message">{msg}</div>}
 
             {activeRun && (
