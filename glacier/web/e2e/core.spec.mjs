@@ -72,7 +72,7 @@ try {
   const waitState = (node, state, timeout = 10000) =>
     page.waitForSelector(`[data-testid="node-${node}"][data-state="${state}"]`, { timeout })
 
-  await page.goto(UI, { waitUntil: 'networkidle' })
+  await page.goto(UI + '/#/automations/build', { waitUntil: 'networkidle' })
   await page.waitForSelector('[data-testid="ws-status"][data-connected="true"]', { timeout: 10000 })
   check(true, 'screen loaded, live events socket connected')
 

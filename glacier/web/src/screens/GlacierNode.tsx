@@ -1,5 +1,5 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import type { NodeKind, NodeState } from './api.ts'
+import type { NodeKind, NodeState } from '../api.ts'
 
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>

@@ -1,3 +1,4 @@
+import { tok } from '../ui/tok.ts'
 import { useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 
@@ -10,9 +11,8 @@ export function TerminalPanel({ text }: { text: string }) {
     const t = new Terminal({
       convertEol: true,
       disableStdin: true,
-      fontSize: 12,
       rows: 12,
-      theme: { background: '#070b10', foreground: '#d7e3ec', cursor: '#070b10' },
+      theme: { background: tok('--g-void'), foreground: tok('--g-text'), cursor: tok('--g-void') }, fontFamily: tok('--g-font-body'), fontSize: 18,
     })
     t.open(host.current!)
     term.current = t

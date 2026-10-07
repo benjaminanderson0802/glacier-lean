@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from './api.ts'
+import { api } from '../api.ts'
 
 export function VaultView() {
   const [notes, setNotes] = useState<string[]>([])
