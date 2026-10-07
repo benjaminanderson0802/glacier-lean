@@ -2,17 +2,28 @@
 
 import os
 import struct
+import sys
 import zlib
 
 import httpx
 import pytest
 
 
-def _fake_tesseract(tmp_path, body, *, sleep=0):
-    exe = tmp_path / "tesseract"
+def _fake_tesseract(tmp_path, body, *, sleep=0, monkeypatch=None):
+    """A stand-in tesseract that works on every platform (Python script + .cmd launcher on Windows)."""
     marker = tmp_path / "tesseract-called"
-    exe.write_text(f"#!/bin/sh\ntouch '{marker}'\nsleep {sleep}\nprintf '%s\\n' '{body}'\n", encoding="utf-8")
-    exe.chmod(0o755)
+    script = tmp_path / "fake_tesseract.py"
+    script.write_text(f"import pathlib, time\npathlib.Path({str(marker)!r}).touch()\ntime.sleep({sleep})\nprint({body!r})\n",
+                      encoding="utf-8")
+    if os.name == "nt":
+        exe = tmp_path / "tesseract.cmd"
+        exe.write_text(f'@"{sys.executable}" "{script}" %*\r\n', encoding="utf-8")
+    else:
+        exe = tmp_path / "tesseract"
+        exe.write_text(f"#!/bin/sh\nexec '{sys.executable}' '{script}' \"$@\"\n", encoding="utf-8")
+        exe.chmod(0o755)
+    if monkeypatch is not None:
+        monkeypatch.setenv("GLACIER_TESSERACT_BIN", str(exe))
     return exe
 
 
@@ -26,8 +37,7 @@ def _png(width=12, height=8):
 
 
 def test_image_upload_ocr_note_is_searchable(monkeypatch, make_server, tmp_path):
-    _fake_tesseract(tmp_path, "Nebula receipt searchable phrase")
-    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+    _fake_tesseract(tmp_path, "Nebula receipt searchable phrase", monkeypatch=monkeypatch)
     server = make_server().start()
     response = httpx.post(server.url + "/api/files", files={"file": ("receipt.png", _png(), "image/png")})
     assert response.status_code == 200, response.text
@@ -63,8 +73,7 @@ def test_huge_dimension_image_is_refused_cleanly(server):
 
 
 def test_ocr_timeout_is_enforced(monkeypatch, tmp_path):
-    _fake_tesseract(tmp_path, "too late", sleep=2)
-    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+    _fake_tesseract(tmp_path, "too late", sleep=2, monkeypatch=monkeypatch)
     image = tmp_path / "slow.png"
     image.write_bytes(_png())
     import ocr
