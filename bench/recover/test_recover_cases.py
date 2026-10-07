@@ -72,16 +72,39 @@ def test_report_records_threshold_and_audit_coverage():
 
 
 def test_recovery_timer_polls_until_state_is_restored(monkeypatch):
-    ticks = iter([10.0, 10.0, 10.1, 10.2])
-    monkeypatch.setattr(recover.time, "monotonic", lambda: next(ticks))
+    ticks = iter([10.0, 10.0, 10.1, 10.2, 10.3, 10.4])
+    monkeypatch.setattr(recover.time, "monotonic", lambda: next(ticks, 10.4))
     sleeps = []
     monkeypatch.setattr(recover.time, "sleep", lambda delay: sleeps.append(delay))
     checks = iter([False, False, True])
     elapsed, restored, error = recover.timed_recovery(lambda: None, lambda: next(checks))
-    assert round(elapsed, 3) == 0.2
+    assert elapsed < 0.5
     assert restored is True
     assert error == ""
     assert sleeps == [0.1, 0.1]
+
+
+def test_recovery_timer_reports_step_and_times_out_when_check_stalls(monkeypatch, capsys):
+    import time
+    monkeypatch.setattr(recover, "LIMIT_SECONDS", 0.5)
+    real_sleep = time.sleep
+    monkeypatch.setattr(recover.time, "sleep", lambda delay: real_sleep(min(delay, 0.01)))
+    elapsed, restored, error = recover.timed_recovery(
+        lambda: None, lambda: real_sleep(2), step="undo 50-note run", progress=False
+    )
+    assert elapsed >= 0.5
+    assert restored is False
+    assert "undo 50-note run" in error
+    assert "timed out" in error.casefold()
+
+
+def test_recovery_timer_logs_named_step(monkeypatch, capsys):
+    monkeypatch.setattr(recover, "LIMIT_SECONDS", 0.5)
+    elapsed, restored, _error = recover.timed_recovery(
+        lambda: None, lambda: True, step="undo overwritten note"
+    )
+    assert restored is True
+    assert "[undo overwritten note]" in capsys.readouterr().out
 
 
 def test_tree_snapshot_excludes_git_and_index_files(tmp_path):

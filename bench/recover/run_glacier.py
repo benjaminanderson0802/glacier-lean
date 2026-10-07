@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import concurrent.futures
 import time
 import urllib.error
 import urllib.parse
@@ -139,7 +140,7 @@ def save_flow(base: str, env_id: str, value: dict) -> str:
 
 def audit_commit_count(repo_root: Path, message_text: str) -> int:
     result = subprocess.run(["git", "-C", str(repo_root), "log", "--all", "--format=%s"],
-                            capture_output=True, text=True, check=True)
+                            capture_output=True, text=True, check=True, timeout=10)
     return sum(message_text.casefold() in line.casefold() for line in result.stdout.splitlines())
 
 
@@ -147,7 +148,7 @@ def audit_recovery_commit_count(repo_root: Path, commit_id: str | None) -> int:
     if not commit_id:
         return 0
     result = subprocess.run(["git", "-C", str(repo_root), "rev-parse", "--verify", "-q", f"{commit_id}^{{commit}}"],
-                            capture_output=True, text=True)
+                            capture_output=True, text=True, timeout=10)
     return int(result.returncode == 0)
 
 
@@ -155,24 +156,65 @@ def snapshot_diff(before: dict[str, str], after: dict[str, str]) -> set[str]:
     return {path for path in before.keys() | after.keys() if before.get(path) != after.get(path)}
 
 
-def timed_recovery(action, verify):
+def paths_match(root: Path, expected: dict[str, str | None]) -> bool:
+    """Check only affected files; an expected audit commit may change git metadata."""
+    for relative, digest in expected.items():
+        path = root / relative
+        if digest is None:
+            if path.exists():
+                return False
+        elif not path.is_file() or file_hash(path) != digest:
+            return False
+    return True
+
+
+def timed_recovery(action, verify, *, step: str = "recovery", progress: bool = True):
     started = time.monotonic()
     error = ""
+    if progress:
+        print(f"[{step}] sending recovery request", flush=True)
     try:
         action()
     except (RuntimeError, OSError) as exc:
         error = str(exc)
+        if progress:
+            print(f"[{step}] recovery request returned an error: {error}", flush=True)
+    else:
+        if progress:
+            print(f"[{step}] request returned; verifying restored state", flush=True)
     deadline = started + LIMIT_SECONDS
+    next_progress = started + 10
+    verifier = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="recover-verify")
+    submitted = None
     while True:
         try:
-            restored = bool(verify())
+            if submitted is None:
+                submitted = verifier.submit(verify)
+            remaining = max(0.0, deadline - time.monotonic())
+            restored = bool(submitted.result(timeout=remaining))
+            submitted = None
+        except concurrent.futures.TimeoutError:
+            restored = False
         except (OSError, ValueError, KeyError):
             restored = False
         if restored:
-            return time.monotonic() - started, True, error
+            elapsed = time.monotonic() - started
+            if progress:
+                print(f"[{step}] restored state verified in {elapsed:.3f} s", flush=True)
+            verifier.shutdown(wait=False, cancel_futures=True)
+            return elapsed, True, error
         now = time.monotonic()
         if now >= deadline:
-            return now - started, False, error
+            timeout_error = f"{step}: timed out after {now - started:.3f} s waiting for restored state"
+            if error:
+                timeout_error = f"{error}; {timeout_error}"
+            if progress:
+                print(timeout_error, file=sys.stderr, flush=True)
+            verifier.shutdown(wait=False, cancel_futures=True)
+            return now - started, False, timeout_error
+        if progress and now >= next_progress:
+            print(f"[{step}] restored state not verified yet ({now - started:.1f} s)", flush=True)
+            next_progress = now + 10
         time.sleep(min(0.1, deadline - now))
 
 
@@ -184,7 +226,7 @@ def expected_audit_count(changed_files: int, recovery_requests: int = 0) -> int:
 def audit_paths_for_run(repo_root: Path, run_id: str) -> set[str]:
     """Return paths in commits explicitly associated with this run."""
     result = subprocess.run(["git", "-C", str(repo_root), "log", "--all", "--format=%H%x09%s", "--name-only"],
-                            capture_output=True, text=True, check=True)
+                            capture_output=True, text=True, check=True, timeout=10)
     paths: set[str] = set()
     matching = False
     for line in result.stdout.splitlines():
@@ -206,7 +248,6 @@ def exercise(base: str, home: Path) -> list[dict]:
               "position": {"x": 0, "y": 0}} for i in range(50)]
     runflow = {"id": env_id, "name": env_id, "nodes": nodes, "edges": []}
     save_flow(base, env_id, runflow)
-    vault_before_run = tree_snapshot(vault_root)
     run_id = request(base, "POST", f"/api/environments/{env_id}/run")["run_id"]
     run = wait_run(base, run_id)
     if run.get("status") != "done":
@@ -216,12 +257,15 @@ def exercise(base: str, home: Path) -> list[dict]:
     if len(before) != 50:
         raise RuntimeError(f"50-note run created {len(before)} notes instead of 50")
     audit_paths = audit_paths_for_run(vault_root, run_id)
-    vault_before_undo = tree_snapshot(vault_root)
+    expected_notes = {p.relative_to(vault_root).as_posix(): None for p in paths}
     recovery_result = {}
     def undo_notes():
         recovery_result.update(request(base, "POST", f"/api/runs/{run_id}/undo"))
+    if not all(p.exists() for p in paths):
+        raise RuntimeError("50-note run state changed before undo request")
     elapsed, recovered, recovery_error = timed_recovery(undo_notes,
-        lambda: all(not p.exists() for p in paths) and not snapshot_diff(vault_before_run, tree_snapshot(vault_root)))
+        lambda: paths_match(vault_root, expected_notes),
+        step="undo 50-note run")
     undo_audit = audit_recovery_commit_count(vault_root, recovery_result.get("new_commit"))
     rows.append({"id": "run_notes", "seconds": elapsed, "recovered": recovered,
                  "audit_expected": expected_audit_count(len(before), 1), "audit_found": len(audit_paths) + undo_audit,
@@ -242,13 +286,16 @@ def exercise(base: str, home: Path) -> list[dict]:
     env_rel = f"environments/{env_id}.json"
     flow_history_before = subprocess.run(["git", "-C", str(home / "vault"), "log", "--format=%H",
                                           "--", f"environments/{env_id}.json"],
-                                         capture_output=True, text=True, check=True).stdout.splitlines()
+                                         capture_output=True, text=True, check=True, timeout=10).stdout.splitlines()
     restore_result = {}
     def restore_flow():
         restore_result.update(request(base, "POST", f"/api/environments/{env_id}/restore", {"commit": old_commit}))
+    if flow_path.read_bytes() == original_bytes:
+        raise RuntimeError("Flow was not changed before restore request")
     elapsed, recovered, recovery_error = timed_recovery(
         restore_flow,
-        lambda: flow_path.read_bytes() == original_bytes and not snapshot_diff(vault_before_edits, tree_snapshot(home / "vault")))
+        lambda: flow_path.read_bytes() == original_bytes,
+        step="restore flow after 10 edits")
     restore_commits = audit_recovery_commit_count(home / "vault", restore_result.get("new_commit"))
     rows.append({"id": "flow_restore", "seconds": elapsed, "recovered": recovered,
                  "audit_expected": expected_audit_count(len(versions), 1),
@@ -258,17 +305,19 @@ def exercise(base: str, home: Path) -> list[dict]:
     note_path = "bench/recovery-note.md"
     request(base, "PUT", "/api/memory/note", {"path": note_path, "body": "# Original\n\nfirst body", "author": "owner"})
     prior_hash = file_hash(home / "vault" / note_path)
-    vault_before_overwrite = tree_snapshot(home / "vault")
     overwrite = request(base, "PUT", "/api/memory/note", {"path": note_path, "body": "# Changed\n\nsecond body", "author": "owner"})
     note_file = home / "vault" / note_path
     expected = 1
     history_before = subprocess.run(["git", "-C", str(home / "vault"), "log", "--format=%H",
-                                     "--", note_path], capture_output=True, text=True, check=True).stdout.splitlines()
+                                     "--", note_path], capture_output=True, text=True, check=True, timeout=10).stdout.splitlines()
     undo_result = {}
     def undo_memory():
         undo_result.update(request(base, "POST", "/api/memory/undo", {"path": note_path, "commit": overwrite["commit"]}))
+    if file_hash(note_file) == prior_hash:
+        raise RuntimeError("Memory note was not overwritten before undo request")
     elapsed, recovered, recovery_error = timed_recovery(undo_memory,
-        lambda: file_hash(note_file) == prior_hash and not snapshot_diff(vault_before_overwrite, tree_snapshot(home / "vault")))
+        lambda: file_hash(note_file) == prior_hash,
+        step="undo overwritten memory note")
     undo_commits = audit_recovery_commit_count(home / "vault", undo_result.get("commit"))
     rows.append({"id": "memory_undo", "seconds": elapsed, "recovered": recovered,
                  "audit_expected": expected_audit_count(expected, 1),
@@ -285,22 +334,22 @@ def exercise(base: str, home: Path) -> list[dict]:
     codeflow = {"id": env_id, "name": env_id, "isolate": True, "nodes": [{"id": "write", "type": "command",
         "config": {"cmd": cmd}, "position": {"x": 0, "y": 0}}], "edges": []}
     save_flow(base, env_id, codeflow)
-    vault_before_run = tree_snapshot(vault_root)
     run_id = request(base, "POST", f"/api/environments/{env_id}/run")["run_id"]
     result = wait_run(base, run_id)
     if not result.get("workspace", {}).get("merged"):
         raise RuntimeError(f"Isolated run did not merge: {result.get('workspace')}")
     after_hash = file_hash(target)
     audit_paths = audit_paths_for_run(workspace, run_id)
-    workspace_head = subprocess.run(["git", "-C", str(workspace), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
-    workspace_paths = subprocess.run(["git", "-C", str(workspace), "diff", "--name-only", f"{workspace_head}^1", workspace_head], capture_output=True, text=True, check=True).stdout.splitlines()
-    workspace_before_undo = tree_snapshot(workspace)
+    workspace_head = subprocess.run(["git", "-C", str(workspace), "rev-parse", "HEAD"], capture_output=True, text=True, check=True, timeout=10).stdout.strip()
+    workspace_paths = subprocess.run(["git", "-C", str(workspace), "diff", "--name-only", f"{workspace_head}^1", workspace_head], capture_output=True, text=True, check=True, timeout=10).stdout.splitlines()
     undo_result = {}
     def undo_code():
         undo_result.update(request(base, "POST", f"/api/runs/{run_id}/undo"))
+    if file_hash(target) == before_hash:
+        raise RuntimeError("Workspace file was not changed before undo request")
     elapsed, recovered, recovery_error = timed_recovery(undo_code,
-        lambda: file_hash(target) == before_hash and not snapshot_diff(vault_before_run, tree_snapshot(vault_root))
-        and not snapshot_diff(workspace_before_undo, tree_snapshot(workspace)))
+        lambda: file_hash(target) == before_hash,
+        step="undo isolated coding run")
     undo_commits = audit_recovery_commit_count(vault_root, undo_result.get("new_commit"))
     rows.append({"id": "isolated_code_undo", "seconds": elapsed, "recovered": recovered,
                  "audit_expected": expected_audit_count(len(workspace_paths), 1), "audit_found": len(audit_paths) + undo_commits,
