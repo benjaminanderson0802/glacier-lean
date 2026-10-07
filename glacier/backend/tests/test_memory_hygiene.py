@@ -28,8 +28,8 @@ def test_scan_proposes_duplicates_without_changing_notes(server):
     proposals = response.json()
     duplicate = next(p for p in proposals if p["kind"] == "merge")
     assert set(duplicate["paths"]) == {"notes/first.md", "notes/second.md"}
-    assert httpx.get(server.url + "/api/vault/note", params={"path": "notes/first.md"}).json()["body"] == one
-    assert httpx.get(server.url + "/api/vault/note", params={"path": "notes/second.md"}).json()["body"] == two
+    assert (root / "first.md").read_text() == one
+    assert (root / "second.md").read_text() == two
     assert git.Repo(server.home + "/vault").head.commit.hexsha == before
 
 
