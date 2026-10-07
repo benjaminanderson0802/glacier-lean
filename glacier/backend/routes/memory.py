@@ -9,6 +9,12 @@ from pydantic import BaseModel
 import vault
 import memory_meta
 
+def _is_claims_path(path: str) -> bool:
+    """Claims are never edited through memory; compare without case and with either slash (Windows/macOS ignore case)."""
+    p = str(path).replace("\\", "/").casefold().lstrip("./")
+    return p == "claims" or p.startswith("claims/")
+
+
 router = APIRouter()
 
 
@@ -37,7 +43,7 @@ def _path(path: str) -> str:
 def _normalised_path(path: str) -> str:
     full = _path(path)
     relative = os.path.relpath(full, vault.VAULT).replace(os.sep, "/")
-    if relative == "claims" or relative.startswith("claims/"):
+    if _is_claims_path(relative):
         raise HTTPException(400, "Claims can't be edited from memory")
     return relative
 

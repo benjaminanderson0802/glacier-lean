@@ -6,13 +6,19 @@ import re
 import vault
 import claims
 
+def _is_claims_path(path: str) -> bool:
+    """Claims are never edited through memory; compare without case and with either slash (Windows/macOS ignore case)."""
+    p = str(path).replace("\\", "/").casefold().lstrip("./")
+    return p == "claims" or p.startswith("claims/")
+
+
 
 def _validate_worker_write(path: str, author: str, run_id: str) -> str:
     try:
         normalised = os.path.relpath(vault.safe_path(path), vault.VAULT).replace(os.sep, "/")
     except ValueError as exc:
         raise ValueError("That note path is not allowed") from exc
-    if normalised == "claims" or normalised.startswith("claims/"):
+    if _is_claims_path(normalised):
         raise ValueError("Claims can't be edited from memory")
     if not normalised.endswith(".md"):
         raise ValueError("Memory notes must be Markdown files")
