@@ -94,6 +94,30 @@ def test_tree_snapshot_excludes_git_and_index_files(tmp_path):
 
 
 def test_expected_audit_counts_run_side_effects_not_recovery_requests():
-    assert recover.expected_audit_count(changed_files=50) == 50
-    assert recover.expected_audit_count(changed_files=10) == 10
-    assert recover.expected_audit_count(changed_files=1) == 1
+    assert recover.expected_audit_count(changed_files=50, recovery_requests=1) == 51
+    assert recover.expected_audit_count(changed_files=10, recovery_requests=1) == 11
+    assert recover.expected_audit_count(changed_files=1, recovery_requests=1) == 2
+
+
+def test_audit_recovery_request_counts_returned_commit_id(tmp_path):
+    repo = tmp_path / "vault"
+    repo.mkdir()
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "test"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "test@example.invalid"], check=True)
+    (repo / "note.md").write_text("note", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "note.md"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "Undo changes from run abc"], check=True)
+    commit = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    assert recover.audit_recovery_commit_count(repo, commit[:8]) == 1
+    assert recover.audit_recovery_commit_count(repo, "not-a-commit") == 0
+
+
+def test_tree_snapshot_detects_added_changed_and_removed_files(tmp_path):
+    (tmp_path / "before.txt").write_text("before", encoding="utf-8")
+    before = recover.tree_snapshot(tmp_path)
+    (tmp_path / "before.txt").write_text("changed", encoding="utf-8")
+    (tmp_path / "added.txt").write_text("added", encoding="utf-8")
+    after = recover.tree_snapshot(tmp_path)
+    assert recover.snapshot_diff(before, after) == {"added.txt", "before.txt"}

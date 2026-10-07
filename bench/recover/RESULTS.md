@@ -2,7 +2,7 @@
 
 ## Latest live attempt
 
-The benchmark ran against a local backend with the fake Codex executable under `/tmp/glacier-suite.lock`. It stalled during the 50-note run setup, before the run completed and before any undo request started. At a process check, Git `cat-file` helpers had been blocked for 3 minutes 53 seconds; I stopped the benchmark I had started shortly afterward. This setup delay is not a recovery time.
+The benchmark ran against a local backend with the fake Codex executable under `flock /tmp/glacier-suite.lock` and an outer `timeout 600`. It again stalled during the 50-note run setup before recovery started. The runner/backend pair was stopped cleanly after setup exceeded 120 seconds. The backend's Git `cat-file` helpers were sleeping; the process list also contained old helpers owned by unrelated backends. `py-spy` was unavailable, so no thread stack could be captured. See [STALL.md](STALL.md). This setup delay is not a recovery time.
 
 | Scenario | Latest recovery time | Restored state | Audit coverage | Result vs. 120 s / 100% |
 |---|---:|---|---:|---|
