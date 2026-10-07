@@ -29,14 +29,15 @@ then removes outer whitespace, one surrounding pair of backticks or `**` marks,
 and one final period on a single-line answer. Choose **Free text** when an
 explanation is useful. Both styles keep Ollama's `think: false` setting.
 
-The repeatable ten-task run on 2026-10-07 scored qwen3:0.6b 4/10, qwen3:1.7b
-5/10, and granite3.3:2b 6/10 with Answer only. None reached 8/10. The 1.7b
-Qwen run had one 180-second task timeout. These scores improve on the previous
-strict results (1/10, 2/10 and 4/10), but they do not show that small models can
-reliably handle every task. See [the full comparison](../evidence/live/model_choice.md)
-and [the repeatable benchmark](../bench/local_models/README.md). Its RSS value
-is sampled from Ollama's `llama-server` runner on Linux and is specific to that
-host; do not use it as a hardware requirement.
+The repeatable ten-task run on 2026-10-07 scored qwen3:0.6b 5/10, qwen3:1.7b
+6/10, and granite3.3:2b 8/10 with Answer only. Granite reached the 8/10 target;
+the two Qwen models did not. The 1.7b Qwen run had one 180-second task timeout.
+These scores improve on the previous strict results (1/10, 2/10 and 4/10), but
+they do not show that small models can reliably handle every task. See [the full
+comparison](../evidence/live/model_choice.md) and [the repeatable
+benchmark](../bench/local_models/README.md). Its RSS value is sampled from
+Ollama's `llama-server` runner on Linux and is specific to that host; do not use
+it as a hardware requirement.
 
 To apply the recommended run limit in `runner.py`, the integrator should define a semaphore
 from `threading.BoundedSemaphore` using `int(os.environ.get("GLACIER_MAX_PARALLEL_RUNS", "1"))`,
