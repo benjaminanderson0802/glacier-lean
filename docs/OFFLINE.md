@@ -1,65 +1,100 @@
-# Install Glacier without an internet connection
+# Glacier offline setup
 
-You will need two computers or two trips to the internet: one computer that can download files, and the computer where you want to use Glacier. The computers should use the same kind of system (Windows, Linux, or Mac) and the same kind of processor. Python 3.12 must be installed on the computer where you build the pack and on the computer where you install it.
+This guide is for a computer with little or no internet access. Build the pack on a
+connected computer first. Use Python 3.12 on both computers. Choose the pack for
+the computer that will install it: Windows 64-bit, Linux 64-bit, or macOS.
 
-## 1. Build the pack on a computer with internet
+## On the connected computer
 
-Open PowerShell on Windows, or Terminal on Linux or Mac. Go to the Glacier project folder. Copy and paste the command for the computer where you plan to install Glacier.
+Python 3.12 is the default because the pinned packages have Linux wheels for it.
+Use the same Python version on the connected and offline computers. Open a
+terminal in the Glacier folder and run one line for the target computer:
 
-Windows 64-bit:
+Windows 64-bit (PowerShell):
 
 ```powershell
-python setup/offline/build_pack.py --platform win_amd64 --python-version 3.12 --output Glacier-offline
+py -3.12 setup/offline/build_pack.py --platform win_amd64 --output glacier-offline
 ```
 
 Linux 64-bit:
 
-```text
-python3 setup/offline/build_pack.py --python-version 3.12 --output Glacier-offline
+```sh
+python3 setup/offline/build_pack.py --platform manylinux_2_28_x86_64 --platform manylinux_2_27_x86_64 --platform manylinux_2_17_x86_64 --platform manylinux2014_x86_64 --output glacier-offline
 ```
 
-The Linux command automatically downloads wheels for several compatible Linux versions. For a Mac with an Intel processor, use `--platform macosx_11_0_x86_64`. For a Mac with an Apple processor, use `--platform macosx_11_0_arm64`.
+macOS Apple silicon:
 
-When the command finishes, copy the entire Glacier-offline folder to a USB drive. The folder contains the installer, the getting-started guide, and the pinned Python packages. Keep the MANIFEST.json file with the folder; Glacier uses it to check that files were copied safely.
+```sh
+python3 setup/offline/build_pack.py --platform macosx_11_0_arm64 --output glacier-offline
+```
 
-## 2. Install on Windows
+macOS Intel:
 
-1. Copy Glacier-offline from the USB drive to your Desktop.
-2. Press **Win+R**, type `powershell`, and press **Enter**.
-3. Copy and paste this line, then press **Enter**:
+```sh
+python3 setup/offline/build_pack.py --platform macosx_11_0_x86_64 --output glacier-offline
+```
+
+The pack contains Glacier's source, its Python packages, this guide, and the guide
+pages. Keep the `MANIFEST.sha256` file with the pack. The installer prints its
+value before installing. If sharing the value separately, open `MANIFEST.sha256`
+in a text editor and send its contents to the person carrying the pack.
+
+To record an Ollama model and its estimated size, add `--ollama-model qwen3:0.6b`
+to the command. This records the exact `ollama pull` command; it does not include
+the model files. Add `--include-model` only if Ollama and the requested model are
+installed on the connected computer. That option copies all installed Ollama model
+blobs, which may be very large.
+
+## Copy the pack to Windows
+
+Install Python 3.12 first, then copy the complete `glacier-offline` folder to
+`C:\Glacier-offline` using a USB drive. Do not use the Desktop or a OneDrive folder.
+
+Press Win+R, type `powershell`, and press Enter. Copy and paste these lines one
+at a time. They assume the folder is at `C:\Glacier-offline`:
 
 ```powershell
-cd $env:USERPROFILE\Desktop\Glacier-offline
+cd C:\Glacier-offline
+py -3.12 install_pack.py --destination C:\Glacier
 ```
 
-4. Copy and paste this line, then press **Enter**:
+If someone sent you the value from `MANIFEST.sha256` separately, add it to the
+command like this:
 
 ```powershell
-py -3.12 install_pack.py --destination $env:USERPROFILE\Glacier
+py -3.12 install_pack.py --destination C:\Glacier --manifest-sha256 PASTE_SHA256_HERE
 ```
 
-Leave the PowerShell window open until it says setup is complete. If Windows says Python is missing, ask someone with internet access to bring you the Python 3.12 installer on the USB drive.
+## Copy the pack to Linux
 
-## 3. Install on Linux
+Install Python 3.12 first, then copy the complete `glacier-offline` folder to your
+home folder or a USB drive. In a terminal, paste:
 
-1. Copy Glacier-offline from the USB drive into your home folder.
-2. Open **Terminal** from your applications menu.
-3. Copy and paste this line, then press **Enter**:
-
-```text
-cd ~/Glacier-offline
+```sh
+cd ~/glacier-offline
+python3.12 install_pack.py --destination ~/Glacier
 ```
 
-4. Copy and paste this line, then press **Enter**:
+To compare the value in `MANIFEST.sha256` with one shared by the pack builder,
+add it like this:
 
-```text
-python3 install_pack.py --destination ~/Glacier
+```sh
+python3.12 install_pack.py --destination ~/Glacier --manifest-sha256 PASTE_SHA256_HERE
 ```
 
-Leave the Terminal window open until it says setup is complete. If it says Python 3.12 is missing, ask someone with internet access to bring a Python 3.12 installer for your Linux version on the USB drive.
+## If a check fails
 
-## Optional local AI model
+The installer prints the manifest's SHA-256 before it starts. Compare that value
+with `MANIFEST.sha256` or the one shared by the person who built the pack.
+If it differs, copying may have damaged or changed the pack; copy it again from the
+original USB drive or ask for a fresh copy.
 
-To add model information to the pack, include `--ollama-model qwen3:0.6b` in the build command. This records the exact command `ollama pull qwen3:0.6b` and the model size if Ollama can report it. The model files are not copied into the pack. Model files can be several gigabytes and need an internet connection to download unless they are moved separately.
+If a file check reports that a file has changed, or the SHA-256 differs from a
+trusted value, the pack may have been changed after it was built. Do not install it;
+ask the person who built it to check the original pack and share its SHA-256 again.
 
-If the installer says that pack files have changed, copy the whole folder again from the USB drive and retry. It checks the file list and every SHA-256 fingerprint before creating the Python environment. After installing the packages, it checks Python, Git, Ollama, and Codex and tells you which ones are ready or missing.
+The pack must match the operating system and Python 3.12. Linux packs use the
+compatible `manylinux_2_28`, `manylinux_2_27`, `manylinux_2_17`, and `manylinux2014`
+tags so document reading works offline. If the installer says it needs a different
+system, use the pack built for your computer. Optional tools such as Ollama, Codex,
+Node.js, and Git are checked and reported; they can be installed later when needed.

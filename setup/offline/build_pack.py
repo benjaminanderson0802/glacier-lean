@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a portable folder of pinned Python wheels and Glacier's guide."""
+"""Create a portable folder of pinned Python wheels, Glacier source, and guides."""
 import argparse
 import hashlib
 import html
@@ -16,19 +16,17 @@ ROOT = Path(__file__).resolve().parents[2]
 LINUX_PLATFORMS = ("manylinux_2_28_x86_64", "manylinux_2_27_x86_64",
                    "manylinux_2_17_x86_64", "manylinux2014_x86_64")
 PLATFORMS = ("win_amd64", *LINUX_PLATFORMS, "macosx_11_0_x86_64", "macosx_11_0_arm64")
+IGNORED_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 
 
 def _platform_tags(platform_name):
-    if isinstance(platform_name, str):
-        return [platform_name]
-    return list(platform_name)
+    return [platform_name] if isinstance(platform_name, str) else list(platform_name)
 
 
 def download_command(requirements, destination, platform_name, python_version):
-    tags = _platform_tags(platform_name)
     command = [sys.executable, "-m", "pip", "download", "--only-binary=:all:",
                "--requirement", str(requirements), "--dest", str(destination)]
-    for tag in tags:
+    for tag in _platform_tags(platform_name):
         command.extend(["--platform", tag])
     command += ["--python-version", python_version, "--implementation", "cp",
                 "--abi", "cp" + python_version.replace(".", "")]
@@ -45,7 +43,7 @@ def download_wheels(requirements, destination, platform_name, python_version):
         pip = shutil.which("pip3") or shutil.which("pip")
         if not pip:
             raise RuntimeError("Pip is missing. Install Python with pip on the connected computer.")
-        command[0:3] = [pip, "download"]
+        command = [pip, "download", *command[4:]]
     print("Downloading the pinned Python packages. This needs an internet connection.")
     subprocess.run(command, check=True)
 
@@ -64,8 +62,7 @@ def _render_markdown(source, destination):
 
 
 def _guide_files(repo_root, destination):
-    guide = repo_root / "docs" / "guide"
-    sources = sorted(guide.glob("*.md"))
+    sources = sorted((repo_root / "docs" / "guide").glob("*.md"))
     if not sources:
         raise ValueError("No guide pages were found in docs/guide.")
     try:
@@ -74,12 +71,11 @@ def _guide_files(repo_root, destination):
     except ImportError:
         html_mode = False
     destination.mkdir(parents=True, exist_ok=True)
-    if html_mode:
-        for source in sources:
+    for source in sources:
+        if html_mode:
             name = "index.html" if source.name == "README.md" else source.with_suffix(".html").name
             _render_markdown(source, destination / name)
-    else:
-        for source in sources:
+        else:
             shutil.copy2(source, destination / source.name)
     return html_mode
 
@@ -92,6 +88,10 @@ def _sha256(path):
     return digest.hexdigest()
 
 
+def manifest_sha256(pack):
+    return _sha256(Path(pack) / "MANIFEST.json")
+
+
 def _wheel_distribution(wheel):
     with zipfile.ZipFile(wheel) as archive:
         metadata_name = next((name for name in archive.namelist()
@@ -99,16 +99,18 @@ def _wheel_distribution(wheel):
         if not metadata_name:
             raise ValueError("A downloaded wheel has no package metadata: " + wheel.name)
         metadata = email.message_from_bytes(archive.read(metadata_name))
-    name = metadata.get("Name")
-    version = metadata.get("Version")
+    name, version = metadata.get("Name"), metadata.get("Version")
     if not name or not version:
         raise ValueError("A downloaded wheel has incomplete package metadata: " + wheel.name)
     return name, version
 
 
 def write_manifest(pack, metadata=None):
+    pack = Path(pack)
     files = []
     for path in sorted(p for p in pack.rglob("*") if p.is_file() and p.name != "MANIFEST.json"):
+        if path.name in IGNORED_NAMES or path.name.startswith("._"):
+            continue
         files.append({"path": path.relative_to(pack).as_posix(), "sha256": _sha256(path),
                       "size_bytes": path.stat().st_size})
     manifest = {"format_version": 1, "files": files, "metadata": metadata or {}}
@@ -116,7 +118,6 @@ def write_manifest(pack, metadata=None):
 
 
 def zip_pack(pack, archive):
-    archive = Path(archive)
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zipped:
         for path in sorted(p for p in Path(pack).rglob("*") if p.is_file()):
             zipped.write(path, Path(pack).name + "/" + path.relative_to(pack).as_posix())
@@ -126,9 +127,9 @@ def _ollama_info(model):
     if not model:
         return None
     if not shutil.which("ollama"):
-        raise RuntimeError("Ollama is not installed, so model size cannot be checked.")
-    command = ["ollama", "list"]
-    result = subprocess.run(command, capture_output=True, text=True, check=False)
+        return {"name": model, "pull_command": "ollama pull " + model,
+                "size": "not available because Ollama is not installed; model files are not bundled"}
+    result = subprocess.run(["ollama", "list"], capture_output=True, text=True, check=False)
     size = "not available because this model is not installed; model files are not bundled"
     if result.returncode == 0:
         for line in result.stdout.splitlines()[1:]:
@@ -139,6 +140,18 @@ def _ollama_info(model):
     return {"name": model, "pull_command": "ollama pull " + model, "size": size}
 
 
+def _source_archive(repo_root, destination):
+    destination.mkdir(parents=True, exist_ok=True)
+    archive = destination / "glacier-source.tar"
+    try:
+        with archive.open("wb") as stream:
+            subprocess.run(["git", "-C", str(repo_root), "archive", "--format=tar", "HEAD"],
+                           check=True, stdout=stream, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        archive.unlink(missing_ok=True)
+        print("Glacier source was not available as a Git archive; the setup pack can still be used.")
+
+
 def build_pack(repo_root=ROOT, output=None, platform_name=LINUX_PLATFORMS,
                python_version="3.12", ollama_model=None, include_model=False):
     repo_root = Path(repo_root).resolve()
@@ -146,18 +159,16 @@ def build_pack(repo_root=ROOT, output=None, platform_name=LINUX_PLATFORMS,
     archive_output = output.suffix.lower() == ".zip"
     pack_dir = output.with_suffix("") if archive_output else output
     if pack_dir.exists():
-        if pack_dir.is_dir():
-            shutil.rmtree(pack_dir)
-        else:
-            pack_dir.unlink()
+        shutil.rmtree(pack_dir) if pack_dir.is_dir() else pack_dir.unlink()
     pack_dir.mkdir(parents=True)
     wheels = pack_dir / "wheels"
-    download_wheels(repo_root / "setup" / "requirements.txt", wheels,
-                    platform_name, python_version)
+    download_wheels(repo_root / "setup" / "requirements.txt", wheels, platform_name, python_version)
     installed = sorted(_wheel_distribution(wheel) for wheel in wheels.glob("*.whl"))
     (pack_dir / "requirements.txt").write_text(
         "".join(name + "==" + version + "\n" for name, version in installed), encoding="utf-8")
-    html_mode = _guide_files(repo_root, pack_dir / "docs")
+    _guide_files(repo_root, pack_dir / "docs")
+    _source_archive(repo_root, pack_dir / "source")
+    shutil.copy2(Path(__file__).resolve(), pack_dir / "install_pack.py")
     model = _ollama_info(ollama_model)
     if include_model:
         if not model:
@@ -165,33 +176,35 @@ def build_pack(repo_root=ROOT, output=None, platform_name=LINUX_PLATFORMS,
         if not shutil.which("ollama"):
             raise RuntimeError("Ollama is not installed; the model cannot be included.")
         model_dir = Path.home() / ".ollama" / "models"
-        if not model_dir.is_dir():
-            raise RuntimeError("Ollama model files were not found in the usual models folder.")
-        if "not available because" in model["size"]:
-            raise RuntimeError("The requested Ollama model is not installed, so there are no model files to include.")
-        print("Copying Ollama model files. This may take a long time and use a lot of disk space.")
+        if not model_dir.is_dir() or "not available because" in model["size"]:
+            raise RuntimeError("The requested Ollama model is not installed in the usual models folder.")
+        print("Copying the installed Ollama model files. This may take a long time and use a lot of disk space.")
         shutil.copytree(model_dir, pack_dir / "ollama-models")
         model["included_folder"] = "ollama-models"
-    readme = ["Glacier offline setup pack", "", "1. Copy this whole folder to the offline computer.",
-              "2. Run install_pack.py with Python 3.12 installed.",
-              "3. Keep MANIFEST.json with the files; it is used to check them before installation.", "",
-              "The guide is " + ("HTML" if html_mode else "plain Markdown") + "."]
-    if model:
-        readme += ["", "Optional local model:", model["pull_command"],
-                   "Approximate/available size: " + model["size"] + "."]
-        if model.get("included_folder"):
-            readme += ["Model files are included under " + model["included_folder"] +
-                       ". Copy them into Ollama's models folder on the offline computer."]
-    (pack_dir / "README.txt").write_text("\n".join(readme) + "\n", encoding="utf-8")
+        model["included_scope"] = "all installed Ollama model blobs"
+    (pack_dir / "README.txt").write_text(
+        "Glacier offline setup pack\n\n"
+        "1. Copy this whole folder to the offline computer.\n"
+        "2. Run install_pack.py with Python 3.12 installed.\n"
+        "3. Keep MANIFEST.json and MANIFEST.sha256 with the files.\n"
+        "   The installer prints the MANIFEST SHA-256 before it checks the pack.\n\n"
+        "The guide is available in the docs folder.\n"
+        + (("\nOptional model: " + model["name"] + "\n" + model["pull_command"] +
+            "\nApproximate size: " + model["size"] + "\n") if model else ""), encoding="utf-8")
     tags = _platform_tags(platform_name)
     write_manifest(pack_dir, {"platform": tags[0] if len(tags) == 1 else tags,
-                            "python_version": python_version,
-                            "ollama_model": model})
+                              "python_version": python_version, "ollama_model": model})
+    # README is covered by the manifest. The separate checksum file avoids a
+    # self-referential manifest while giving the installer a stable digest.
+    digest = manifest_sha256(pack_dir)
+    (pack_dir / "MANIFEST.sha256").write_text(digest + "\n", encoding="ascii")
     if archive_output:
         zip_pack(pack_dir, output)
         shutil.rmtree(pack_dir)
+        print("MANIFEST SHA-256: " + digest)
         print("Pack created at " + str(output))
         return output
+    print("MANIFEST SHA-256: " + digest)
     print("Pack created at " + str(pack_dir))
     return pack_dir
 
@@ -205,11 +218,10 @@ def main(argv=None):
     parser.add_argument("--ollama-model")
     parser.add_argument("--include-model", action="store_true")
     args = parser.parse_args(argv)
-    platform_tags = args.platform or list(LINUX_PLATFORMS)
     try:
-        result = build_pack(output=args.output, platform_name=platform_tags,
-                            python_version=args.python_version, ollama_model=args.ollama_model,
-                            include_model=args.include_model)
+        build_pack(output=args.output, platform_name=args.platform or list(LINUX_PLATFORMS),
+                   python_version=args.python_version, ollama_model=args.ollama_model,
+                   include_model=args.include_model)
     except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         print("Could not build the pack: " + str(exc), file=sys.stderr)
         return 1
