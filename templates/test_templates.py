@@ -19,7 +19,9 @@ EXPECTED_IDS = {
     "tpl-explain-error",
 }
 DESTRUCTIVE_COMMAND = re.compile(
-    r"(?:^|[;&|]\s*)(?:sudo\s+)?(?:rm|rmdir|shred|unlink)\b|\bfind\b[^\n]*\s-delete\b",
+    r"(?:^|[;&|]\s*)(?:sudo\s+)?(?:rm|rmdir|shred|unlink)\b"
+    r"|\bfind\b[^\n]*\s-delete\b|(?:^|\s)-exec\s+rm\b"
+    r"|\bxargs\s+rm\b|\bmv\s+|\btruncate\b|\bgit\s+clean\b",
     re.IGNORECASE,
 )
 
@@ -62,6 +64,8 @@ def test_templates_follow_the_environment_contract_and_catalog():
             }
             assert set(node["position"]) >= {"x", "y"}
             assert all(isinstance(node["position"][axis], (int, float)) for axis in ("x", "y"))
+            assert node["position"]["x"] % 260 == 0
+            assert node["position"]["y"] % 140 == 0
 
         edge_ids = [edge["id"] for edge in template["edges"]]
         assert len(edge_ids) == len(set(edge_ids))
@@ -94,6 +98,38 @@ def test_commands_are_safe_linux_commands_without_folder_placeholders():
             assert "<" not in command and ">" not in command
 
 
+def test_every_write_enabled_codex_step_requires_an_approval_yes_edge():
+    for template in load_templates():
+        nodes = {node["id"]: node for node in template["nodes"]}
+        approvals = {node_id for node_id, node in nodes.items() if node["type"] == "approval"}
+        writable = {
+            node_id for node_id, node in nodes.items()
+            if node["type"] == "codex"
+            and node["config"].get("sandbox", "workspace-write")
+            in {"workspace-write", "danger-full-access"}
+        }
+        if not writable:
+            continue
+        outgoing = {}
+        for edge in template["edges"]:
+            outgoing.setdefault(edge["source"], []).append(edge)
+        starts = {node_id for node_id in nodes if not any(e["target"] == node_id for e in template["edges"])}
+        pending = [(node_id, False) for node_id in starts]
+        visited = set()
+        while pending:
+            node_id, approved = pending.pop()
+            state = (node_id, approved)
+            if state in visited:
+                continue
+            visited.add(state)
+            assert node_id not in writable or approved, (template["id"], node_id)
+            for edge in outgoing.get(node_id, []):
+                next_approved = approved or (
+                    node_id in approvals and edge.get("label", "").casefold() == "yes"
+                )
+                pending.append((edge["target"], next_approved))
+
+
 def test_required_flow_patterns_are_present():
     templates = {template["id"]: template for template in load_templates()}
 
@@ -107,6 +143,9 @@ def test_required_flow_patterns_are_present():
     assert any(node["type"] == "loop" and node["config"].get("times") == "3" for node in repair_nodes)
     assert any(node["type"] == "check" and node["config"].get("expr") == "exit_code == 0" for node in repair_nodes)
     assert any(node["type"] == "codex" for node in repair_nodes)
+    assert any(node["type"] == "approval" for node in repair_nodes)
+    repair_commands = [node["config"]["cmd"] for node in repair_nodes if node["type"] == "command"]
+    assert all('cd "${GLACIER_HOME:-data}/workspaces/tpl-test-and-fix" &&' in command for command in repair_commands)
 
     triage = templates["tpl-inbox-triage"]
     decide = next(node for node in triage["nodes"] if node["type"] == "decide")
@@ -122,13 +161,19 @@ def test_required_flow_patterns_are_present():
     }
     assert approval_ids
     assert mutating_nodes
+    move_prompt = cleanup_nodes["move_files"]["config"]["prompt"]
+    assert "{prev_output}" in move_prompt
+    assert "only the files listed there" in move_prompt.casefold()
     assert all(
         any(edge["source"] in approval_ids and edge["label"].casefold() == "yes" and edge["target"] == mutation for edge in cleanup["edges"])
         for mutation in mutating_nodes
     )
 
     backup = templates["tpl-folder-backup"]
-    assert any(node["type"] == "command" and "cp -a" in node["config"]["cmd"] for node in backup["nodes"])
+    backup_commands = [node["config"]["cmd"] for node in backup["nodes"] if node["type"] == "command"]
+    assert any('cd "${GLACIER_HOME:-data}/workspaces/tpl-folder-backup" &&' in command for command in backup_commands)
+    assert any('d="${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)"' in command and "cp -a . \"$d\"" in command for command in backup_commands)
+    assert any("diff -qr . \"$d\"" in command for command in backup_commands)
     assert any(node["type"] == "check" for node in backup["nodes"])
 
     sub_flow = templates["tpl-sub-flow-example"]
@@ -145,3 +190,9 @@ def test_required_flow_patterns_are_present():
     explain = templates["tpl-explain-error"]
     assert any(node["type"] == "codex" for node in explain["nodes"])
     assert any(node["type"] == "note" for node in explain["nodes"])
+
+
+def test_daily_report_prompt_uses_the_previous_step_output():
+    report = next(t for t in load_templates() if t["id"] == "tpl-daily-report")
+    codex = next(node for node in report["nodes"] if node["type"] == "codex")
+    assert "{prev_output}" in codex["config"]["prompt"]

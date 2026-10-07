@@ -29,7 +29,7 @@
       "id": "move_files",
       "type": "codex",
       "config": {
-        "prompt": "Move only the clearly temporary items identified in the preceding review into a folder named cleanup-review in the current working folder. Do not permanently delete anything. Do not touch files that were not listed for review. Report each move.",
+        "prompt": "The person approved the list shown here:\n{prev_output}\nMove ONLY the files listed there into a folder named cleanup-review in the current working folder. Do not permanently delete anything or touch any other files. Report each move.",
         "sandbox": "workspace-write"
       },
       "position": {

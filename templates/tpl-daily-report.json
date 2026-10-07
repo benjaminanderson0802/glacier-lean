@@ -28,7 +28,7 @@
       "id": "write_report",
       "type": "codex",
       "config": {
-        "prompt": "Write a short daily report in plain language using the details entered below and the run context. Include what happened, decisions, and next steps. If no work details are available, say so clearly. Do not change files or take external actions.\n\nDetails for today:\n",
+        "prompt": "Write a short daily report in plain language using the previous step output and the run context. Include what happened, decisions, and next steps. If no work details are available, say so clearly. Do not change files or take external actions.\n\nPrevious step output:\n{prev_output}\n\nDetails for today:\n",
         "sandbox": "read-only"
       },
       "position": {
