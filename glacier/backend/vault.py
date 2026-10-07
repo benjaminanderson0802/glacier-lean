@@ -47,8 +47,11 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
             pass
         # Keep the historical `agent=` call shape, while run note steps carry an
         # explicit run identity in the service-owned author field.
-        writer = author or (f"run:{run_id}" if run_id else agent)
         metadata_run_id = run_id
+        if path.startswith("runs/") and not metadata_run_id and agent == "glacier-runner":
+            match = re.search(r"(?<![a-f0-9])([a-f0-9]{12})(?![a-f0-9])", path + "\n" + body, re.I)
+            if match:
+                metadata_run_id = match.group(1)
         # Legacy internal writers (not the HTTP screen) encode their domain fields in
         # front matter. Carry a claim's run id into the service field when available.
         if path.endswith(".md") and not metadata_run_id and author is None and agent != "unknown":
@@ -57,6 +60,8 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
                 run_line = re.search(r"(?m)^run_id:\s*(.*)$", incoming.group(1))
                 if run_line:
                     metadata_run_id = run_line.group(1).strip().strip('"')
+        writer = author or (f"run:{metadata_run_id}" if metadata_run_id and agent == "glacier-runner" else
+                            f"run:{run_id}" if run_id else agent)
         stored_body = memory_meta.render(path, body, writer, metadata_run_id, previous)[1] if path.endswith(".md") else body
         os.makedirs(os.path.dirname(full), exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=os.path.dirname(full))

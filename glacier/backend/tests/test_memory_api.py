@@ -92,3 +92,7 @@ def test_vault_worker_write_uses_service_metadata(tmp_path):
     assert "run_id: r-9" in text
     assert "title: \"Worker note\"" in text
     assert "tags: [agent]" in text
+    vault.write_note("runs/flow-123456abcdef.md", "Run 123456abcdef of flow", agent="glacier-runner")
+    runner_text = vault.read_raw_note("runs/flow-123456abcdef.md")
+    assert "author: run:123456abcdef" in runner_text
+    assert "run_id: 123456abcdef" in runner_text

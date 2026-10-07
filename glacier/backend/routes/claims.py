@@ -1,7 +1,7 @@
 """Claims API (docs/contracts/VERIFICATION.md)."""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import claims
+import claims, claims_research
 
 router = APIRouter()
 
@@ -23,9 +23,11 @@ class Decision(BaseModel):
 @router.post("/api/claims")
 def file_claim(c: NewClaim):
     try:
-        return claims.file_claim(c.kind, c.summary, c.evidence, c.run_id, c.node_id, c.attempts_made, filed_by="owner")
+        r = claims.file_claim(c.kind, c.summary, c.evidence, c.run_id, c.node_id, c.attempts_made, filed_by="owner")
     except ValueError as e:
         raise HTTPException(400, str(e))
+    claims_research.start(r["id"])
+    return r
 
 
 @router.get("/api/claims")
