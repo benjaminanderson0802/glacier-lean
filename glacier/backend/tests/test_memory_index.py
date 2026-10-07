@@ -9,6 +9,7 @@ import memory_index
 
 
 VOCABULARY = ["refund", "billing", "invoice", "pizza", "cheese", "orbit", "planet", "rocket"]
+EMBED_BATCHES = []
 
 
 class _EmbedHandler(BaseHTTPRequestHandler):
@@ -20,6 +21,7 @@ class _EmbedHandler(BaseHTTPRequestHandler):
         inputs = request.get("input", request.get("prompt", []))
         if isinstance(inputs, str):
             inputs = [inputs]
+        EMBED_BATCHES.append((request.get("model"), len(inputs)))
         embeddings = []
         for value in inputs:
             words = value.lower().split()
@@ -120,3 +122,47 @@ def test_unavailable_ollama_raises_documented_error(monkeypatch, tmp_path):
 
     with pytest.raises(RuntimeError, match=r"^meaning search unavailable: .+"):
         memory_index.rebuild(str(vault))
+
+
+def test_search_without_index_reports_no_index(embed_server):
+    with pytest.raises(RuntimeError, match=r"^meaning search unavailable: no index yet$"):
+        memory_index.search("anything")
+
+
+def test_model_change_rebuilds_index_automatically(embed_server, tmp_path, monkeypatch):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    _put(vault, "one.md", "Refund the billing invoice.")
+    _put(vault, "two.md", "Pizza with cheese for dinner.")
+    memory_index.rebuild(str(vault))
+
+    monkeypatch.setenv("GLACIER_EMBED_MODEL", "changed-test-model")
+    assert memory_index.search("refund invoice", k=1)[0][0] == "one.md"
+    _put(vault, "two.md", "A rocket visits a planet.")
+    memory_index.update(str(vault), "two.md")
+    assert memory_index.search("rocket planet", k=1)[0][0] == "two.md"
+    assert memory_index.search("pizza cheese", k=1)[0][0] == "one.md"
+    import sqlite3
+    with sqlite3.connect(tmp_path / "memory_index.sqlite") as connection:
+        assert connection.execute(
+            "SELECT value FROM meaning_settings WHERE key='model'"
+        ).fetchone() == ("changed-test-model",)
+
+
+def test_rebuild_embeds_chunks_in_batches_of_64(embed_server, tmp_path):
+    EMBED_BATCHES.clear()
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    for number in range(130):
+        _put(vault, f"{number:03}.md", "Refund the billing invoice.")
+
+    assert memory_index.rebuild(str(vault)) == 130
+    assert [count for model, count in EMBED_BATCHES] == [64, 64, 2]
+
+
+def test_bad_utf8_bytes_do_not_break_rebuild(embed_server, tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "bad.md").write_bytes(b"Refund invoice \xff\xfe")
+
+    assert memory_index.rebuild(str(vault)) == 1

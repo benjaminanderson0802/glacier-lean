@@ -13,6 +13,7 @@ import sqlite_vec
 _DB_NAME = "memory_index.sqlite"
 _TABLE = "meaning_vectors"
 _MAX_CHUNK = 800
+_EMBED_BATCH = 64
 
 
 def _home():
@@ -38,21 +39,27 @@ def _embed(texts):
         return []
     base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
     model = os.environ.get("GLACIER_EMBED_MODEL", "all-minilm")
-    payload = json.dumps({"model": model, "input": texts}).encode("utf-8")
-    request = urllib.request.Request(
-        base_url + "/api/embed", data=payload, headers={"Content-Type": "application/json"}
-    )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            result = json.loads(response.read().decode("utf-8"))
-        vectors = result.get("embeddings")
-        if vectors is None and len(texts) == 1 and "embedding" in result:
-            vectors = [result["embedding"]]
-        if not isinstance(vectors, list) or len(vectors) != len(texts):
-            raise ValueError("Ollama returned an unexpected number of embeddings")
-        vectors = [[float(value) for value in vector] for vector in vectors]
-        if not vectors or not vectors[0] or any(len(vector) != len(vectors[0]) for vector in vectors):
-            raise ValueError("Ollama returned invalid embedding dimensions")
+        vectors = []
+        for start in range(0, len(texts), _EMBED_BATCH):
+            batch = texts[start : start + _EMBED_BATCH]
+            payload = json.dumps({"model": model, "input": batch}).encode("utf-8")
+            request = urllib.request.Request(
+                base_url + "/api/embed", data=payload, headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(request, timeout=30) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            batch_vectors = result.get("embeddings")
+            if batch_vectors is None and len(batch) == 1 and "embedding" in result:
+                batch_vectors = [result["embedding"]]
+            if not isinstance(batch_vectors, list) or len(batch_vectors) != len(batch):
+                raise ValueError("Ollama returned an unexpected number of embeddings")
+            batch_vectors = [[float(value) for value in vector] for vector in batch_vectors]
+            if not batch_vectors or not batch_vectors[0] or any(
+                len(vector) != len(batch_vectors[0]) for vector in batch_vectors
+            ):
+                raise ValueError("Ollama returned invalid embedding dimensions")
+            vectors.extend(batch_vectors)
         return vectors
     except Exception as exc:
         raise RuntimeError(f"meaning search unavailable: {exc}") from exc
@@ -83,11 +90,19 @@ def _notes(vault_dir):
                 continue
             full_path = os.path.join(root, filename)
             relative = os.path.relpath(full_path, vault_dir).replace(os.sep, "/")
-            with open(full_path, encoding="utf-8") as note:
+            with open(full_path, encoding="utf-8", errors="replace") as note:
                 yield relative, _chunks(note.read())
 
 
 def _ensure_vectors(connection, dimension):
+    model = os.environ.get("GLACIER_EMBED_MODEL", "all-minilm")
+    stored_model = connection.execute(
+        "SELECT value FROM meaning_settings WHERE key='model'"
+    ).fetchone()
+    if stored_model and stored_model[0] != model:
+        connection.execute(f"DROP TABLE IF EXISTS {_TABLE}")
+        connection.execute("DELETE FROM meaning_chunks")
+        connection.execute("DELETE FROM meaning_settings")
     stored = connection.execute("SELECT value FROM meaning_settings WHERE key='dimension'").fetchone()
     if stored and int(stored[0]) != dimension:
         connection.execute(f"DROP TABLE IF EXISTS {_TABLE}")
@@ -102,6 +117,17 @@ def _ensure_vectors(connection, dimension):
             "INSERT OR REPLACE INTO meaning_settings(key, value) VALUES ('dimension', ?)",
             (str(dimension),),
         )
+    connection.execute(
+        "INSERT OR REPLACE INTO meaning_settings(key, value) VALUES ('model', ?)",
+        (model,),
+    )
+
+
+def _set_setting(connection, key, value):
+    connection.execute(
+        "INSERT OR REPLACE INTO meaning_settings(key, value) VALUES (?, ?)",
+        (key, str(value)),
+    )
 
 
 def _replace_note(connection, path, chunks, vectors):
@@ -121,6 +147,7 @@ def _replace_note(connection, path, chunks, vectors):
 
 def rebuild(vault_dir):
     """Recreate the index from markdown files and return the number of notes indexed."""
+    vault_dir = os.path.abspath(vault_dir)
     notes = list(_notes(vault_dir))
     flat_chunks = [(path, chunk) for path, chunks in notes for chunk in chunks]
     vectors = _embed([chunk for _, chunk in flat_chunks])
@@ -128,6 +155,7 @@ def rebuild(vault_dir):
     try:
         connection.execute("BEGIN")
         connection.execute("DELETE FROM meaning_chunks")
+        _set_setting(connection, "vault_dir", vault_dir)
         exists = connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (_TABLE,)
         ).fetchone()
@@ -143,6 +171,9 @@ def rebuild(vault_dir):
                 _replace_note(connection, path, chunks, note_vectors)
         elif exists:
             connection.execute(f"DELETE FROM {_TABLE}")
+            connection.execute("DELETE FROM meaning_settings WHERE key='model'")
+        if not dimension:
+            _set_setting(connection, "model", os.environ.get("GLACIER_EMBED_MODEL", "all-minilm"))
         connection.commit()
     except Exception:
         connection.rollback()
@@ -155,6 +186,17 @@ def rebuild(vault_dir):
 def update(vault_dir, path):
     """Replace one note's indexed chunks, or remove them when the note was deleted."""
     vault_dir = os.path.abspath(vault_dir)
+    connection = _connect()
+    try:
+        stored_model = connection.execute(
+            "SELECT value FROM meaning_settings WHERE key='model'"
+        ).fetchone()
+    finally:
+        connection.close()
+    model = os.environ.get("GLACIER_EMBED_MODEL", "all-minilm")
+    if stored_model and stored_model[0] != model:
+        rebuild(vault_dir)
+        return
     path = os.fspath(path)
     if os.path.isabs(path):
         path = os.path.relpath(path, vault_dir)
@@ -164,12 +206,13 @@ def update(vault_dir, path):
         raise ValueError(f"bad memory path: {path}")
     chunks = []
     if os.path.isfile(full_path) and full_path.endswith(".md"):
-        with open(full_path, encoding="utf-8") as note:
+        with open(full_path, encoding="utf-8", errors="replace") as note:
             chunks = _chunks(note.read())
     vectors = _embed(chunks)
     connection = _connect()
     try:
         connection.execute("BEGIN")
+        _set_setting(connection, "vault_dir", vault_dir)
         if vectors:
             _ensure_vectors(connection, len(vectors[0]))
         exists = connection.execute(
@@ -189,7 +232,32 @@ def search(q, k=10):
     """Return (relative note path, similarity score) pairs, best chunk per note."""
     if k <= 0:
         return []
+    connection = _connect()
+    try:
+        exists = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (_TABLE,)
+        ).fetchone()
+        if not exists:
+            raise RuntimeError("meaning search unavailable: no index yet")
+        stored_model = connection.execute(
+            "SELECT value FROM meaning_settings WHERE key='model'"
+        ).fetchone()
+        model = os.environ.get("GLACIER_EMBED_MODEL", "all-minilm")
+        if stored_model and stored_model[0] != model:
+            vault_dir = connection.execute(
+                "SELECT value FROM meaning_settings WHERE key='vault_dir'"
+            ).fetchone()
+            if not vault_dir or not os.path.isdir(vault_dir[0]):
+                raise RuntimeError("meaning search unavailable: source notes unavailable for rebuild")
+        else:
+            vault_dir = None
+    finally:
+        connection.close()
+
+    if vault_dir:
+        rebuild(vault_dir[0])
     query_vector = _embed([q])[0]
+
     connection = _connect()
     try:
         exists = connection.execute(
