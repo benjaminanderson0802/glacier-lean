@@ -26,9 +26,17 @@ try {
     $install = Start-Process -FilePath $Installer -ArgumentList $installArgs -Wait -PassThru
     if ($install.ExitCode -ne 0) { Stop-Smoke "the silent installer exited with $($install.ExitCode)" }
 
-    $python = Join-Path $installRoot "resources\runtime\x86_64-pc-windows-msvc\python.exe"
-    $backendDir = Join-Path $installRoot "resources\backend"
-    if (-not (Test-Path -LiteralPath $python -PathType Leaf)) { Stop-Smoke "bundled Python was not installed" }
+    # Tauri's resource folder on Windows is the install folder itself (the app reads it via resource_dir()).
+    $resourceRoot = @($installRoot, (Join-Path $installRoot "resources")) |
+        Where-Object { Test-Path -LiteralPath (Join-Path $_ "runtime\x86_64-pc-windows-msvc\python.exe") -PathType Leaf } |
+        Select-Object -First 1
+    if (-not $resourceRoot) {
+        Write-Host "Installed files (top two levels):"
+        Get-ChildItem -LiteralPath $installRoot -Depth 1 | ForEach-Object { Write-Host "  $($_.FullName)" }
+        Stop-Smoke "bundled Python was not installed"
+    }
+    $python = Join-Path $resourceRoot "runtime\x86_64-pc-windows-msvc\python.exe"
+    $backendDir = Join-Path $resourceRoot "backend"
     if (-not (Test-Path -LiteralPath (Join-Path $backendDir "app.py") -PathType Leaf)) { Stop-Smoke "bundled backend was not installed" }
 
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
