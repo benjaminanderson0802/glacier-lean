@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 import files_store
@@ -57,7 +58,7 @@ async def upload_file(request: Request):
         raise HTTPException(400, str(exc)) from exc
     try:
         try:
-            return files_store.save_upload(filename, project, file.file)
+            return await run_in_threadpool(files_store.save_upload, filename, project, file.file)
         except PermissionError as exc:
             raise HTTPException(400, str(exc)) from exc
         except ValueError as exc:
