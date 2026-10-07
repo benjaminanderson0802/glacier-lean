@@ -75,7 +75,8 @@ def _workspace_run_commits(run_id: str) -> list[tuple[str, git.Commit]]:
             workspace_repo = git.Repo(path, search_parent_directories=False)
         except (git.InvalidGitRepositoryError, git.NoSuchPathError):
             continue
-        for commit in workspace_repo.iter_commits():
+        # --grep is anchored so similarly named runs cannot claim one another's commits.
+        for commit in workspace_repo.iter_commits(grep=f"^\\[run:{re.escape(run_id)}\\]"):
             if tag.match(commit.message):
                 found.append((path, commit))
     return found
@@ -97,6 +98,23 @@ def _undo_conflicts(r: git.Repo, commits: list[git.Commit]) -> tuple[set[str], s
             later_commits.append(commit)
     conflicts = set().union(*(touched & _commit_paths(commit) for commit in later_commits)) if later_commits else set()
     return touched, conflicts
+
+
+def _repo_status(r: git.Repo) -> str:
+    return r.git.status("--porcelain")
+
+
+def _dirty_paths(r: git.Repo) -> set[str]:
+    return {line[3:] for line in _repo_status(r).splitlines() if len(line) > 3}
+
+
+def _rollback_repo(r: git.Repo, start: str):
+    """Restore git state after a failed multi-repository undo."""
+    try:
+        r.git.revert("--abort")
+    except Exception:
+        pass
+    r.git.reset("--hard", start)
 
 
 def _apply_undo(r: git.Repo, commits: list[git.Commit], touched: set[str], repo_name: str, run_id: str) -> dict:
@@ -137,57 +155,105 @@ def undo(run_id: str) -> dict:
             lock_path = os.path.join(os.path.dirname(path), "..", "worktrees", f"{env_id}.merge.lock")
             os.makedirs(os.path.dirname(lock_path), exist_ok=True)
             locks.enter_context(workspaces_lock(lock_path))
-        vault_touched, vault_conflicts = _undo_conflicts(r, commits) if commits else (set(), set())
         workspace_groups = {}
         for workspace, commit in workspace_commits:
             workspace_groups.setdefault(workspace, []).append(commit)
         workspace_plans = []
         for path, repo_commits in workspace_groups.items():
             workspace_repo = git.Repo(path)
+            if _repo_status(workspace_repo):
+                raise RuntimeError("main has uncommitted changes; undo skipped so nothing is overwritten")
             touched, conflicts = _undo_conflicts(workspace_repo, repo_commits)
             workspace_plans.append((path, workspace_repo, repo_commits, touched, conflicts))
+        if commits and (_dirty_paths(r) & set().union(*(_commit_paths(c) for c in commits))):
+            raise RuntimeError("vault has uncommitted changes; undo skipped so nothing is overwritten")
+        vault_touched, vault_conflicts = _undo_conflicts(r, commits) if commits else (set(), set())
         conflicts = vault_conflicts | set().union(*(plan[4] for plan in workspace_plans)) if workspace_plans else vault_conflicts
         if conflicts:
             raise RuntimeError(
-                "These files have later changes by someone else and were left alone: "
+                "These files have later changes by other runs and were left alone: "
                 + ", ".join(sorted(conflicts))
             )
-
-        vault_result = _apply_undo(r, commits, vault_touched, "vault", run_id) if commits else {
-            "reverted": [], "new_commit": "", "changes": []
-        }
+        # Capture every repository head before applying anything. If an undo or the
+        # rebuildable vault index update fails, restore all repositories and indexes.
+        starts = [(workspace_repo, workspace_repo.head.commit.hexsha)
+                  for _, workspace_repo, _, _, _ in workspace_plans]
+        if commits:
+            starts.append((r, r.head.commit.hexsha))
+        index_backup = None
+        if commits:
+            db = vault._db()
+            try:
+                index_backup = {
+                    "fts": {path: db.execute("SELECT body FROM fts WHERE path=?", (path,)).fetchall()
+                            for path in vault_touched},
+                    "links": {path: db.execute("SELECT src, dst FROM links WHERE src=? OR dst=?", (path, path)).fetchall()
+                              for path in vault_touched},
+                }
+            finally:
+                db.close()
+        workspace_result_items = []
+        vault_result = {"reverted": [], "new_commit": "", "changes": []}
         workspace_results = []
-        for path, workspace_repo, repo_commits, touched, _ in workspace_plans:
-            workspace_result = _apply_undo(workspace_repo, repo_commits, touched, "workspace", run_id)
-            workspace_result["workspace"] = os.path.basename(path)
-            workspace_results.append(workspace_result)
-
-        # Keep the rebuildable keyword and link indexes in sync with git's restored tree.
-        db = vault._db()
         try:
-            for path in vault_touched:
-                full_path = vault.safe_path(path)
-                if os.path.isfile(full_path):
-                    with open(full_path, encoding="utf-8", errors="replace") as note:
-                        body = note.read()
-                    db.execute("DELETE FROM fts WHERE path=?", (path,))
-                    db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
-                    db.execute("DELETE FROM links WHERE src=?", (path,))
-                    for target in re.findall(r"\[\[([^\]|#]+)", body):
-                        db.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
-                else:
-                    db.execute("DELETE FROM fts WHERE path=?", (path,))
-                    db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
-            db.commit()
-        finally:
-            db.close()
+            for path, workspace_repo, repo_commits, touched, _ in workspace_plans:
+                workspace_result = _apply_undo(workspace_repo, repo_commits, touched, "workspace", run_id)
+                workspace_result["workspace"] = os.path.basename(path)
+                workspace_results.append(workspace_result)
+            if commits:
+                vault_result = _apply_undo(r, commits, vault_touched, "vault", run_id)
+            # Keep the rebuildable keyword and link indexes in sync with git's restored tree.
+            if commits:
+                db = vault._db()
+                try:
+                    for path in vault_touched:
+                        full_path = vault.safe_path(path)
+                        if os.path.isfile(full_path):
+                            with open(full_path, encoding="utf-8", errors="replace") as note:
+                                body = note.read()
+                            db.execute("DELETE FROM fts WHERE path=?", (path,))
+                            db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
+                            db.execute("DELETE FROM links WHERE src=?", (path,))
+                            for target in re.findall(r"\[\[([^\]|#]+)", body):
+                                db.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
+                        else:
+                            db.execute("DELETE FROM fts WHERE path=?", (path,))
+                            db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
+                    db.commit()
+                finally:
+                    db.close()
+        except Exception:
+            for selected_repo, start in reversed(starts):
+                _rollback_repo(selected_repo, start)
+            # Restore the exact affected index rows along with the Git repositories.
+            if commits:
+                try:
+                    db = vault._db()
+                    try:
+                        for path in vault_touched:
+                            db.execute("DELETE FROM fts WHERE path=?", (path,))
+                            db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
+                            for (body,) in index_backup["fts"][path]:
+                                db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
+                            for src, dst in index_backup["links"][path]:
+                                db.execute("INSERT INTO links VALUES (?,?)", (src, dst))
+                        db.commit()
+                    finally:
+                        db.close()
+                except Exception:
+                    pass
+            raise
     workspace_result = {
         "reverted": [short for item in workspace_results for short in item["reverted"]],
         "new_commit": workspace_results[-1]["new_commit"] if workspace_results else "",
         "changes": sorted({path for item in workspace_results for path in item["changes"]}),
         "workspaces": workspace_results,
     }
-    return {"reverted": vault_result["reverted"], "new_commit": vault_result["new_commit"],
+    all_reverted = vault_result["reverted"] + workspace_result["reverted"]
+    all_commits = ([vault_result["new_commit"]] if vault_result["new_commit"] else []) + [
+        item["new_commit"] for item in workspace_results if item["new_commit"]
+    ]
+    return {"reverted": all_reverted, "new_commit": all_commits[-1] if all_commits else "",
             "vault": vault_result, "workspace": workspace_result}
 
 
