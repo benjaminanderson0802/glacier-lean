@@ -24,4 +24,6 @@ The command prints the run ID and API address to watch. It also installs the `se
 
 ## First live run
 
-The first real card run was `ea0a71bb2629` on 2026-10-07. Codex completed the requested two-file change in an isolated worktree, but the acceptance commands could not find `python`, so the protected guard and test commands did not run. The run was rejected at the final human gate and nothing was merged. The requested health-check implementation is also on the guard's protected-path list. See [the live-run record](../evidence/live/selfbuild_first_card.md) for the diff, approvals, timings, and exact check output.
+The first real card run was `ea0a71bb2629` on 2026-10-07. Codex completed the requested two-file change in an isolated worktree, but the acceptance commands could not find `python`, so the protected guard and test commands did not run. The run was rejected at the final human gate and nothing was merged. The requested health-check implementation is also on the guard's protected-path list.
+
+The retry run was `22c344e628ad`. The `tools/scan/` card was not protected and the scanner tests and benchmarks passed, but the guard command kept `{guard}` and `{baseline}` literal, and the backend check still used bare `python`. The run was rejected and nothing was merged. Both run records, including diffs, approvals, timings, and exact check output, are in [the live-run evidence](../evidence/live/selfbuild_first_card.md).

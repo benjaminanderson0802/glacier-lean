@@ -66,13 +66,19 @@ def _auth_headers() -> dict:
 
 def install_maintenance(client: httpx.Client, repo: Path) -> None:
     flow = json.loads(MAINTENANCE_PATH.read_text(encoding="utf-8"))
+    python = shlex.quote(sys.executable)
     for node in flow["nodes"]:
         config = node.get("config", {})
         if config.get("cwd") == "{repo}":
             config["cwd"] = str(repo)
+        if node.get("type") == "command" and config.get("cmd", "").startswith("python "):
+            config["cmd"] = python + config["cmd"][len("python"):]
         if node.get("id") == "maintenance":
             script = repo / "setup" / "selfbuild" / "maintenance.py"
             config["cmd"] = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} --repo {shlex.quote(str(repo))} --run {{run}}"
+    for check in flow.get("acceptance", []):
+        if check.get("kind") == "command" and check.get("cmd", "").startswith("python "):
+            check["cmd"] = python + check["cmd"][len("python"):]
     saved = client.put(f"/api/environments/{flow['id']}", json=flow)
     saved.raise_for_status()
 
@@ -103,12 +109,18 @@ def main(argv: list[str] | None = None) -> int:
     flow["nodes"][0]["config"]["cmd"] = "printf '%s' '" + card_text.replace("'", "'\\''") + "'"
     baseline = str(ROOT)
     guard = str(GUARD_PATH)
+    python = shlex.quote(sys.executable)
     for node in flow["nodes"]:
         config = node.get("config", {})
         if node.get("type") == "codex":
             config["prompt"] += f"\n\nApproved card text:\n{card_text}"
         if node.get("type") == "command":
             config["cmd"] = config.get("cmd", "").replace("{guard}", guard).replace("{baseline}", baseline)
+            if config["cmd"].startswith("python "):
+                config["cmd"] = python + config["cmd"][len("python"):]
+    for check in flow.get("acceptance", []):
+        if check.get("kind") == "command" and check.get("cmd", "").startswith("python "):
+            check["cmd"] = python + check["cmd"][len("python"):]
     try:
         with httpx.Client(base_url=args.api.rstrip("/"), timeout=30, headers=_auth_headers()) as client:
             install_maintenance(client, repo)

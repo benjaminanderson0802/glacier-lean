@@ -110,3 +110,150 @@ Exact final line:
 ```text
 412 passed, 1 warning in 555.90s (0:09:15)
 ```
+
+
+# Retry: scanner source-list card
+
+## Result
+
+- Checkpoint: PH9.2, attempted; not complete.
+- Run ID: `22c344e628ad`.
+- Started: 2026-10-07 21:37:34 UTC; final state observed 21:40:18 UTC (about 164 seconds).
+- Backend: local Uvicorn at `127.0.0.1:8765`, project interpreter `/home/glacier/w/glacier-lean/.venv/bin/python`, temporary `GLACIER_HOME=/tmp/glacier-w31-retry-home`. Its engine token stayed in the temporary home and was not printed.
+- Worker: Codex CLI using the existing login and configured `gpt-6-luna`, low reasoning effort. Route `codex/chatgpt-plan`; cost `$0.00`; 326,117 input tokens and 1,727 output tokens.
+- Scratch checkout: `/tmp/glacier-w31-retry-home/workspaces/self-feature`. Worker branch `run/22c344e628ad`, commit `d306a4e`; scratch `main` stayed unchanged. No push occurred.
+- Final state: failed, `verified: false`, `merged: false`. No product feature diff was copied into this branch because required checks failed.
+
+The guard command failed before running because the acceptance engine left `{guard}` and `{baseline}` literal. The backend-suite command failed because it still used bare `python`. The scanner/project suites and both benchmarks passed. The guard therefore did not print its protected paths. I rejected the final approval gate based on those failures.
+
+## Drift check
+
+1. This is the PH9.2 real feature-flow retry. It does not complete the checkpoint.
+2. PH3 and PH7 exits are approved; PH5 remains in progress. PH9 is authorized only under owner approval and verified-merge-only rules while dependencies remain incomplete.
+3. It serves P-VERIFY and P-CONTROL: independent checks and explicit approval before local merge. PH9's metric is three consecutive verified real features; this failed run does not count.
+4. The existing feature flow and merge gate cover the intended behavior; this attempt adds no replacement system.
+5. Acceptance was the configured guard, backend suite, other project suites, verification benchmark, security benchmark, and final owner gate all passing before merge. Two command checks failed, so acceptance failed.
+
+## Flow steps
+
+Durations are approximate wall-clock durations from API polling and the server record; the engine did not expose individual operation timestamps in the run response.
+
+| Step | Status | Duration | Result |
+| --- | --- | ---: | --- |
+| Prepare temporary backend/home | done | about 1.2 s startup | DBOS initialized in temporary home. |
+| Load card and start run | done | under 1 s | Run `22c344e628ad` created. |
+| Start approval | approved | about 2 s wait | Approved through authenticated API after confirming the card was unprotected and isolated/local only. |
+| Codex worker | done, exit 0 | about 60 s | Produced two-file scanner diff; worker noted it could not run pytest in its own sandbox. |
+| Worker-result check and report note | done | not separately exposed | Report saved as `self-build/feature-22c344e628ad.md`. |
+| Protected-path guard | failed | under 1 s | Did not execute: Python reported it could not open `/tmp/glacier-check-5ctmea01/work/{guard}`. |
+| Backend acceptance suite | failed | under 1 s | `/bin/sh: 1: python: not found`. |
+| Other suites | passed | 7.08 s | `60 passed in 7.08s`. |
+| Verification benchmark | passed | not separately exposed | False-done 0.00% (0/20); verified 100.00% (30/30). |
+| Security benchmark | passed | not separately exposed | Exact final line: `P 400 | blocked |`. |
+| Final owner check | rejected | about 2 s | Rejected because the guard and backend suite had failed. |
+| Finish run/workspace | failed, unmerged | under 1 s | API reported `verified: false`, `merged: false`, branch retained for inspection. |
+
+### API approval decisions
+
+1. `approve_start` — approved through `POST /api/runs/22c344e628ad/approve`. Reason: the small card targets unprotected `tools/scan/`, and the run is isolated with a local-only merge gate and no push.
+2. `check-5` — rejected through the same API after all checks completed. Reason: the guard did not run and the backend suite did not launch, so the flow had no valid basis for a verified merge.
+
+The token was read only by local API calls and was never printed. No approval was sent outside the local backend.
+
+## Worker diff (not merged)
+
+```diff
+diff --git a/tools/scan/scan.py b/tools/scan/scan.py
+index 6ff5a9b..1389c25 100644
+--- a/tools/scan/scan.py
++++ b/tools/scan/scan.py
+@@ -259,8 +259,13 @@ def run(fixture: Path | None = None, output_dir: Path | None = None, today: date
+ def main(argv: list[str] | None = None) -> int:
+     parser = argparse.ArgumentParser(description="List maintained open-source tools as proposals; never installs them.")
+     parser.add_argument("--offline-fixture", type=Path, help="Read source payloads from a JSON fixture instead of the network.")
++    parser.add_argument("--list-sources", action="store_true", help="List discovery source names and URLs without contacting them.")
+     parser.add_argument("--output-dir", type=Path, default=Path(__file__).parent)
+     args = parser.parse_args(argv)
++    if args.list_sources:
++        for name, url in _read_sources().items():
++            print(f"{name}: {url}")
++        return 0
+     try:
+         report = run(fixture=args.offline_fixture, output_dir=args.output_dir)
+     except Exception as exc:
+         print(f"Tool scan failed: {exc}", file=sys.stderr)
+```
+
+```diff
+diff --git a/tools/scan/test_scan.py b/tools/scan/test_scan.py
+index 7396de3..9ac88fe 100644
+--- a/tools/scan/test_scan.py
++++ b/tools/scan/test_scan.py
+@@ -5,6 +5,20 @@ from pathlib import Path
+ import scan
+
+
++def test_list_sources_matches_config_and_skips_scanner(monkeypatch, capsys):
++    configured = scan._read_sources()
++
++    def fail_if_scanner_runs(*args, **kwargs):
++        raise AssertionError("normal scanner ran while listing sources")
++
++    monkeypatch.setattr(scan, "run", fail_if_scanner_runs)
++
++    assert scan.main(["--list-sources"]) == 0
++    output = capsys.readouterr().out.splitlines()
++    expected = [f"{name}: {url}" for name, url in configured.items()]
++    assert output == expected
++
++
+ def test_offline_fixture_parses_mcp_github_and_ollama_sources(tmp_path):
+```
+
+## Check output and follow-up
+
+Check 0, guard (failed):
+
+```text
+`/home/glacier/w/glacier-lean/.venv/bin/python {guard} --repo . --baseline-root {baseline}` exited non-zero
+/home/glacier/w/glacier-lean/.venv/bin/python: can't open file '/tmp/glacier-check-5ctmea01/work/{guard}': [Errno 2] No such file or directory
+```
+
+Check 1, backend suite acceptance command (failed):
+
+```text
+`cd glacier/backend && python -m pytest -q tests` exited non-zero
+/bin/sh: 1: python: not found
+```
+
+Check 2, other project suites (passed; exact last lines):
+
+```text
+............................................................             [100%]
+60 passed in 7.08s
+```
+
+Check 3, verification benchmark (passed; exact final lines):
+
+```text
+False-done rate: 0.00% (0/20 bad runs verified)
+Verified rate: 100.00% (30/30 good runs verified)
+```
+
+Check 4, security benchmark (passed; exact last line):
+
+```text
+P 400 | blocked |
+```
+
+What needs fixing before another live run: the acceptance runner must substitute `{guard}` and `{baseline}` for isolated-worktree checks, and its command execution must apply the run-card interpreter rewrite to every acceptance command (including `cd glacier/backend && python ...`). Those are existing workflow defects; this run did not edit or work around them. The full backend suite for this branch waited about 35 minutes for the shared lock, then completed successfully. Exact command:
+
+```sh
+flock /tmp/glacier-suite.lock bash -c 'cd glacier/backend && ../../.venv/bin/python -m pytest -q tests'
+```
+
+Exact final line:
+
+```text
+421 passed, 1 skipped, 1 warning in 513.81s (0:08:33)
+```
