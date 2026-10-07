@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-07  # latest: owner-approved PH3 exit; PH9 started
+last_amended: 2026-10-07  # latest: statuses through PR #52 (retro UI shell), repo public note on D1
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ phases:
       - {id: PH2.3, item: "Model gateway (Bifrost) with per-node route, fallback chain and quota awareness", status: done, test: "primary unavailable → fallback used, logged, run still verified", evidence: "PR #19 gateway.py: fallback chain, daily caps, free-only (paid always refused, one policy claim per day); fake-server tests"}
       - {id: PH2.4, item: "ACP harness driver: OpenCode / Hermes / Gemini CLI etc. as worker nodes", status: in_progress, test: "same goal completes via >= 2 ACP harnesses", evidence: "PR #10 ACP worker + PR #34 presets (codex-acp, opencode, custom); two different fake ACP agents pass the same check; live two-harness proof pending a free local model"}
       - {id: PH2.5, item: "Per-run cost & route shown in UI (M-COST, M-LOCAL)", status: in_progress, evidence: "backend: per-step usage table + GET run usage, per-run cost/route summary PR #13 (f58c5f4); screen part is with the UI designer"}
-      - {id: PH2.6, item: "Laptop / second machine as a model provider over a private network", status: todo, test: "gateway prefers laptop when online, falls back when offline"}
+      - {id: PH2.6, item: "Laptop / second machine as a model provider over a private network", status: done, test: "gateway prefers laptop when online, falls back when offline", evidence: "PR #43 (cffd976): tests/test_gateway_preferred.py online route answers first, offline falls back to local with usage naming the route, health cached 30s; tested with a simulated second machine, real laptop check at the owner PC install"}
     exit: "M-PORTABLE swap test passes across >= 3 backends."
 
   - id: PH3
@@ -260,7 +260,7 @@ phases:
       - {id: PH4.2, item: "Vault exposed to every worker (MCP server + context injection for MAF/ACP/Codex)", status: done, test: "two different backends read a note written by a third", evidence: "memory context for Codex/plug-in steps (17124fc) + MCP server read/write/search (PR #12)"}
       - {id: PH4.3, item: "Meaning search (local embeddings) as rebuildable index", status: done, evidence: "PR #7 memory_index.py (sqlite-vec, rebuildable)"}
       - {id: PH4.4, item: "Memory view (core consumer feature): live graph of everything Glacier knows (projects, decisions, notes, people, and the runs/workers that wrote them); nodes light up as AI writes memory during a run", status: todo, test: "a run that writes a note makes that node appear/highlight live; graph stays readable at 2,000 notes"}
-      - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: todo, test: "selecting a note shows exactly its incoming and outgoing links"}
+      - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: in_progress, evidence: "PR #52 Memory screen shows links to / linked from for the open note; graph neighbourhood view is card W13-ui-memory", test: "selecting a note shows exactly its incoming and outgoing links"}
       - {id: PH4.8, item: "Friendly editor (no markdown syntax required): [[ link suggestions while typing, tags, search; saves as plain markdown", status: todo, test: "first-time non-programmer creates a linked note without help; file on disk is plain markdown"}
       - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: in_progress, test: "each note shows author/run; undo restores the previous version via git", evidence: "backend done: author/run front matter, history, undo (PR #12, #30); trust details screen is UI"}
       - {id: PH4.10, item: "Compatibility: the same folder opens in any markdown editor (tested with Obsidian and Zettlr)", status: in_progress, test: "links and notes render correctly in both", evidence: "PR #26 conformance checker (YAML front matter, Obsidian link rules, Windows names); owner to open the folder in Obsidian and Zettlr"}
@@ -274,7 +274,7 @@ phases:
     goal: "Users state goals in plain language; Glacier proposes, explains and runs Environments."
     status: in_progress
     checkpoints:
-      - {id: PH5.1, item: "Chat UI (assistant-ui over AG-UI) bound to a MAF assistant workflow", test: "chat reply streams; tool approvals render as buttons", status: in_progress, evidence: "backend done: PR #28 AG-UI event stream chat (hand-written events); chat screen is UI"}
+      - {id: PH5.1, item: "Chat UI (assistant-ui over AG-UI) bound to a MAF assistant workflow", test: "chat reply streams; tool approvals render as buttons", status: in_progress, evidence: "backend PR #28 AG-UI event stream; PR #52 Ask screen streams replies and renders proposal Approve/Reject buttons; not yet tested against the real assistant"}
       - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan", status: in_progress, evidence: "backend planner done (ca8ec21, POST /api/assistant/plan, proposes only); plan view is with the UI designer"}
       - {id: PH5.3, item: "Assistant edits Environments only through the same API and approvals as the user; all changes versioned", test: "assistant change is revertible and audited", status: done, evidence: "PR #28: assistant applies only with owner approval, same validation as PUT, one commit authored assistant, undo_id returned"}
       - {id: PH5.4, item: "Simple/Standard/Full layouts (complexity optional) and plain-language explanations of any run", test: "M-TTFA measured with first-time users"}
@@ -303,7 +303,7 @@ phases:
       - {id: PH7.2, item: "Prompt-injection / lethal-trifecta test suite in CI (M-SECURITY)", status: done, evidence: "PR #24 bench/security: Blocked 28/28 on main"}
       - {id: PH7.3, item: "Secrets via OS keychain only; never in vault, logs or prompts", status: done, evidence: "PR #15 keychain store + PR #22 secrets resolved only in command steps, redacted everywhere; codex prompts with secrets refused"}
       - {id: PH7.4, item: "Reviewed/pinned capability catalog (MCP servers) with provenance", status: done, evidence: "PR #17 tools/catalog pinned capability catalog (digests, current versions, advisories reviewed)"}
-      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)", status: in_progress, evidence: "PR #11 rollback + PR #30 exact undo ids; M-RECOVER timing not yet measured"}
+      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)", status: in_progress, evidence: "PR #11 rollback + PR #30 exact undo ids + PR #45 code-workspace undo + PR #46 serialized vault Git access; M-RECOVER benchmark re-running (PR #42)"}
     exit: "M-SECURITY 100%, M-AUDIT 100%, M-RECOVER < 2 min."
 
   - id: PH8
@@ -339,7 +339,7 @@ phases:
     checkpoints:
       - {id: PH10.1, item: "License decision and open-source release (see open_decisions)"}
       - {id: PH10.2, item: "Docs, tutorials, template library; non-programmer usability studies across >= 3 contexts (incl. small business, low-bandwidth)", status: in_progress, evidence: "PR #23 docs/guide plain-language guide; usability studies are owner-led"}
-      - {id: PH10.3, item: "Localization and offline-first packs (local models, bundled docs)", status: in_progress, evidence: "card W8-offline (PR #37) offline pack in review"}
+      - {id: PH10.3, item: "Localization and offline-first packs (local models, bundled docs)", status: in_progress, evidence: "PR #37 offline pack merged (local models, bundled docs); localization not started"}
       - {id: PH10.4, item: "Community templates/connectors with review and provenance", status: done, evidence: "PR #31 template manifest with sha256 + reviewer, community import safety review, owner approval, commands_for_review"}
       - {id: PH10.5, item: "Interoperability: export/import Environments; speaks MCP/ACP/A2A/AG-UI; AGENTS.md compatible", status: in_progress, evidence: "flow export/import merged (portable.py)"}
     exit: "External users reach M-TTFA and M-VERIFIED targets without the core team's help."
@@ -351,7 +351,7 @@ phases:
     status: in_progress
     checkpoints:
       - {id: PH11.1, item: "Automated integration health checks (M-SURVIVE) and pinned-upgrade cadence", status: done, evidence: "PR #33 setup/health_check.py (fresh venv, all suites, 3 benchmarks, upgrade proposals); weekly run is local (Task Scheduler/cron) while GitHub Actions is paused"}
-      - {id: PH11.2, item: "Governance: amendment process, maintainers, security disclosure policy", status: in_progress, evidence: "card W8-governance in progress"}
+      - {id: PH11.2, item: "Governance: amendment process, maintainers, security disclosure policy", status: in_progress, evidence: "PR #38 merged: GOVERNANCE.md, CONTRIBUTING.md, SECURITY.md, amendment process; private vulnerability reporting enabled on the public repo"}
       - {id: PH11.3, item: "Funding/maintenance model that does not compromise local-first or portability"}
       - {id: PH11.4, item: "Annual review of this file against the gap (is the gap still unfilled? what changed?)"}
 
@@ -372,7 +372,7 @@ drift_check:
   red_flags_requiring_human: ["changing an invariant", "spending money", "publishing/releasing", "deleting user data", "a new restrictive license", "two failed checkpoints in a row"]
 
 open_decisions:   # require the owner; agents must not decide these. Decided items stay listed with the decision.
-  - {id: D1, question: "Open-source license and timing (affects free code signing, contributors, commercial use)", needed_by: PH10.1, status: decided, decision: "Apache-2.0; repo goes public at the first usable release", decided: 2026-10-06}
+  - {id: D1, question: "Open-source license and timing (affects free code signing, contributors, commercial use)", needed_by: PH10.1, status: decided, decision: "Apache-2.0; repo goes public at the first usable release", decided: 2026-10-06, note: "2026-10-07 owner: repo made public early (secret scan passed); the launcher stays unannounced until the owner decides"}
   - {id: D2, question: "One product vs separate 'builder' and 'runner' modes for finished automations", needed_by: PH5, status: decided, decision: "One app with two views: full Build view and a simple Run view (finished automations, status, approvals)", decided: 2026-10-06}
   - {id: D3, question: "Primary desktop shell (pywebview vs Tauri)", needed_by: PH8.1, status: decided, decision: "Tauri, with the Python backend bundled as a sidecar", decided: 2026-10-06}
   - {id: D4, question: "Which paid or subscription model routes are acceptable by default and at what monthly cap", needed_by: PH2.3, status: decided, decision: "Free only by default: local models + the owner's existing ChatGPT plan (Codex). Monthly paid cap $0; any paid route goes to the owner as a gap proposal.", decided: 2026-10-06}
