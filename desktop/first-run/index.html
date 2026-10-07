@@ -21,20 +21,9 @@
   <h2>Tools on this computer</h2>
   <ul id="tools"><li>Checking this computer…</li></ul>
   <p class="note">You can continue without any of these tools. Glacier will not send this list anywhere.</p>
-  <button onclick="window.location.reload()">Check again</button>
+  <p id="startup-error" role="alert" hidden></p>
+  <button id="check-again">Check again</button>
 </main>
-<script>
-  const names = {codex: 'Codex', ollama: 'Ollama', opencode: 'OpenCode', gemini: 'Gemini', git: 'Git'};
-  async function showTools() {
-    const list = document.querySelector('#tools');
-    try {
-      const tools = await window.__TAURI__.core.invoke('available_tools');
-      list.innerHTML = tools.map(tool => `<li class="${tool.installed ? 'yes' : 'no'}">${names[tool.name] || tool.name}: ${tool.installed ? 'Ready' : 'Not found'}</li>`).join('');
-    } catch (_) {
-      list.innerHTML = '<li>Tool check is not available in this window.</li>';
-    }
-  }
-  showTools();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
