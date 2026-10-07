@@ -5,10 +5,12 @@ Windows process groups to stop timed-out commands and a file lock to serialize
 verified workspace merges. Git, Python, and the Python packages in
 `setup/requirements.txt` must be available.
 
-Configured command steps and command acceptance checks use Git Bash when it is
-available (`bash` on `PATH`, or `C:\Program Files\Git\bin\bash.exe`). If Git
-Bash is missing, they run through Command Prompt and print a warning in the
-step output. Vault paths returned by the API use `/` separators.
+Configured command steps and command acceptance checks use Git Bash
+(`bash` on `PATH`, or `C:\Program Files\Git\bin\bash.exe`). If Git Bash is
+missing, Glacier reports a clear error so the command can be retried after Git
+for Windows is installed. The Windows CI job also invokes the backend suite
+through Git Bash and reports an explicit setup error if Bash is missing. Vault
+paths returned by the API use `/` separators.
 
 ## Linux-only features
 
@@ -19,10 +21,10 @@ tests are skipped on Windows with a reason. POSIX process-group signal tests
 are also Linux-only. Windows process-tree termination uses the built-in
 `taskkill` command; `psutil` is not required.
 
-Meaning search uses an optional SQLite vector extension. If Windows denies
+Meaning search uses an optional SQLite vector extension. If SQLite denies
 loading it, meaning search falls back to keyword results with a plain message;
-extension-dependent meaning-index tests skip with that reason. Keyword search
-remains available.
+extension-dependent meaning-index tests skip with the load error. Keyword
+search remains available.
 
 ## Run the backend tests
 
@@ -45,8 +47,8 @@ The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Portabi
 | Count | First differing failure | Root cause / treatment |
 |---:|---|---|
 | 18 | `error: [WinError 193] %1 is not a valid Win32 application` and missing fake-agent outputs | Fake Python commands run through the current interpreter on Windows. ACP fixtures use `sys.executable`; POSIX wrappers remain in use on Linux. |
-| 14 | `$((...))`, `mkdir -p`, `sh` command assertions; downstream run/verification/alert failures | Command steps and acceptance checks use Git Bash on Windows, with a one-time Command Prompt warning if it is unavailable. Linux keeps its existing shell. |
-| 9 | `sqlite3.OperationalError: not authorized` | Meaning search falls back to keyword results with a plain message; extension-dependent tests skip on Windows only when SQLite refuses to load the extension. |
+| 14 | `$((...))`, `mkdir -p`, `sh` command assertions; downstream run/verification/alert failures | Command steps and acceptance checks use Git Bash on Windows. They report a clear error if it is unavailable. Linux keeps its existing shell. |
+| 9 | `sqlite3.OperationalError: not authorized` | Meaning search falls back to keyword results with a plain message; vector-dependent tests skip with the SQLite load error when the extension cannot load. |
 | 8 | `notes\\...`, `runs\\...` compared with `notes/...`, `runs/...` | Windows vault input paths are normalized and logical paths use `/`. |
 | 5 | `The step sandbox needs Linux; this step can't run sandboxed on Windows` where tests expect validation/errors | Landlock enforcement tests skip on Windows with a reason; sandbox requests retain their existing plain-language limitation. |
 | 3 | Fake worker returns `cancelled`/502 or lacks assistant stream events | Covered by launching Python fake commands through the active interpreter. |
@@ -57,4 +59,4 @@ The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Portabi
 | 1 | Claim research expected proposal/routing but got different status | Covered by launching the Python fake researcher through the active interpreter. |
 | 1 | `KeyError: 'x'` in Codex route test | Covered by launching Python fakes through the active interpreter. |
 
-Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. The workflow keeps `continue-on-error` until two consecutive Windows backend runs pass.
+Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The earlier Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. The workflow keeps `continue-on-error` until two consecutive Windows backend runs pass.
