@@ -67,9 +67,16 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         fd, tmp = tempfile.mkstemp(dir=os.path.dirname(full))
         os.write(fd, stored_body.encode()); os.close(fd); os.replace(tmp, full)
         _repo.index.add([os.path.relpath(full, VAULT)])
-        sha = _repo.index.commit(f"[{agent}] write {path}").hexsha[:8]
+        git_writer = "glacier-runner" if agent == "glacier-runner" else writer
+        message_writer = f"run:{metadata_run_id}" if agent == "glacier-runner" and metadata_run_id else writer
+        message = f"[{message_writer}] write {path}"
+        if agent == "glacier-runner" and metadata_run_id:
+            message += f" [run:{metadata_run_id}]"
+        actor = git.Actor(git_writer, "glacier@localhost")
+        sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
         c = _db()
-        c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, stored_body))
+        indexed_body = memory_meta.parse(stored_body, path)[1] if path.endswith(".md") else stored_body
+        c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, indexed_body))
         c.execute("DELETE FROM links WHERE src=?", (path,))
         for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
             c.execute("INSERT INTO links VALUES (?,?)", (path, dst.split("|", 1)[0].strip().removesuffix(".md")))
@@ -80,7 +87,7 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
             import store
             event = {"type": "memory", "path": path,
                      "change": "created" if previous is None else "updated",
-                     "author": writer, "run_id": metadata_run_id}
+                     "author": writer, "run_id": metadata_run_id or ""}
             if writer.startswith("run:"):
                 # Let the associated run-step completion event reach clients first.
                 threading.Timer(0.1, store.broadcaster.publish, args=(event,)).start()
@@ -127,32 +134,9 @@ def last_commit(path: str) -> str | None:
 
 
 def main() -> None:
-    from mcp.server.fastmcp import FastMCP
-    init(os.environ.get("GLACIER_VAULT", "vault"))
-    mcp = FastMCP("glacier-memory")
-
-    @mcp.tool(name="write_note")
-    def _write(path: str, body: str, author: str = "worker:unknown", run_id: str = "", agent: str | None = None) -> str:
-        """Create or replace a shared note. Supply author worker:<model> and the current run id."""
-        who = author if agent is None else agent  # agent is accepted for older MCP clients.
-        return f"saved {path} (commit {write_note(path, body, author=who, run_id=run_id)})"
-
-    @mcp.tool(name="search")
-    def _search(query: str, k: int = 10) -> str:
-        """Keyword search of the shared vault (any word matches). Returns matching note paths, best first."""
-        return json.dumps(search(query, k))
-
-    @mcp.tool(name="links")
-    def _links(path: str) -> str:
-        """Notes this note links to with [[wiki links]]."""
-        return json.dumps(links(path))
-
-    @mcp.tool(name="read_note")
-    def _read(path: str) -> str:
-        """Read a note from the shared vault."""
-        return read_note(path)
-
-    mcp.run()
+    # MCP is implemented in mem_server.py; this entry point remains for older launchers.
+    import mem_server
+    mem_server.main()
 
 
 if __name__ == "__main__":

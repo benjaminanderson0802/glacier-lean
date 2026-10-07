@@ -16,7 +16,7 @@ class NoteWrite(BaseModel):
     path: str
     body: str
     author: str
-    run_id: str = ""
+    model_config = {"extra": "forbid"}
 
 
 class Undo(BaseModel):
@@ -87,7 +87,7 @@ def put_note(item: NoteWrite):
     if item.author != "owner":
         raise HTTPException(400, "Notes saved from the screen must be authored by owner")
     try:
-        commit = vault.write_note(item.path, item.body, author=item.author, run_id=item.run_id)
+        commit = vault.write_note(item.path, item.body, author=item.author)
     except ValueError as exc:
         raise HTTPException(400, "That note path is not allowed") from exc
     return {"path": item.path, "commit": commit}

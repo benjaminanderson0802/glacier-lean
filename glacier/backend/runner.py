@@ -207,7 +207,8 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
             summary = ", ".join(f"{k}: {v}" for k, v in run["node_states"].items() if v != "pending")
             fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{summary}", summary)
             path = fill(cfg.get("path") or "runs/{env}-{run}.md")
-            sha = vault.write_note(path, fill(cfg.get("template") or "Run {run} of {env}: {summary}"), agent="glacier-runner")
+            sha = vault.write_note(path, fill(cfg.get("template") or "Run {run} of {env}: {summary}"),
+                                   agent="glacier-runner", run_id=run_id)
             res["output"] = f"{path} (commit {sha})"
         elif kind in plugins.NODES:
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))

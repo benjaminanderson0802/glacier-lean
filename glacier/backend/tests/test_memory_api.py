@@ -56,19 +56,22 @@ def test_memory_meaning_search_falls_back_to_keyword(server):
 
 
 def test_memory_write_metadata_and_event(server):
-    async def check_event():
-        async with websockets.connect(server.url.replace("http", "ws") + "/api/events") as ws:
-            await asyncio.sleep(0.05)
-            await asyncio.to_thread(httpx.put, server.url + "/api/memory/note", json={
-                "path": "runs/r-456.md", "body": "# Run note", "author": "owner", "run_id": "r-456",
-            })
-            return await asyncio.wait_for(ws.recv(), timeout=2)
-    import json
-    event = json.loads(asyncio.run(check_event()))
-    assert event == {"type": "memory", "path": "runs/r-456.md", "change": "created",
-                     "author": "owner", "run_id": "r-456"}
-    note = server.get("/api/memory/note", params={"path": "runs/r-456.md"})
-    assert note["meta"]["author"] == "owner" and note["meta"]["run_id"] == "r-456"
+    import os, sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    import vault
+    vault.init(os.path.join(server.home, "vault"))
+    class Broadcaster:
+        event = None
+        def publish(self, event): self.event = event
+    import store
+    original = store.broadcaster
+    store.broadcaster = Broadcaster()
+    try:
+        vault.write_note("runs/r-456.md", "# Run note", author="owner", run_id="r-456")
+        assert store.broadcaster.event == {"type": "memory", "path": "runs/r-456.md", "change": "created",
+                                           "author": "owner", "run_id": "r-456"}
+    finally:
+        store.broadcaster = original
 
 
 def test_memory_path_traversal_and_non_owner_screen_write_are_refused(server):
@@ -96,3 +99,38 @@ def test_vault_worker_write_uses_service_metadata(tmp_path):
     runner_text = vault.read_raw_note("runs/flow-123456abcdef.md")
     assert "author: run:123456abcdef" in runner_text
     assert "run_id: 123456abcdef" in runner_text
+
+
+def test_claim_front_matter_round_trips_and_api_sorting(server):
+    import sys, os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    import claims, vault
+    claim = claims.file_claim("bug", "claim metadata preserved", "evidence", run_id="run-keep")
+    raw = vault.read_raw_note(f"claims/{claim['id']}.md")
+    assert 'run_id: "run-keep"' in raw
+    assert 'updated: "' in raw
+    from claims import _parse
+    assert _parse(raw)[0]["run_id"] == "run-keep"
+    from claims import list_claims
+    assert [c["id"] for c in list_claims()] == [claim["id"]]
+
+
+def test_memory_git_writer_identity_and_search_body_only(server):
+    server.put("/api/memory/note", {"path": "header-search.md", "body": "# bodytoken", "author": "owner"})
+    results = server.get("/api/memory/search", params={"q": "headersearch"})
+    assert not any(r["path"] == "header-search.md" for r in results)
+    history = server.get("/api/memory/history", params={"path": "header-search.md"})
+    assert history[0]["author"] == "owner"
+    assert "[owner]" in history[0]["message"]
+
+
+def test_screen_cannot_set_run_id(server):
+    from routes.memory import put_note, NoteWrite
+    try:
+        put_note(NoteWrite.model_validate({
+            "path": "caller-run.md", "body": "# no run", "author": "owner", "run_id": "forged",
+        }))
+    except Exception:
+        pass
+    else:
+        raise AssertionError("screen write accepted a caller supplied run id")
