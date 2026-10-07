@@ -113,7 +113,7 @@ def graph(limit: int | None = None):
     nodes, edges = [], []
     known = set()
     items = _all()
-    items.sort(key=lambda item: item["updated"], reverse=True)
+    items.sort(key=lambda item: os.stat(vault.safe_path(item["path"])).st_mtime_ns, reverse=True)
     if limit is not None:
         items = items[:limit]
     refs = []
