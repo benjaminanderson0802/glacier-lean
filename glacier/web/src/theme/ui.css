@@ -77,6 +77,7 @@ button.g-row:hover { background: var(--g-panel-hi); }
 .g-statusbox > div + div { border-left: 1px solid var(--g-line); }
 .g-online { color: var(--g-ok); display: flex; align-items: center; gap: 10px; }
 .g-online.off { color: var(--g-bad); }
+.g-online.wait { color: var(--g-warn); }
 .g-dot { width: 12px; height: 12px; background: currentColor; box-shadow: 0 0 6px currentColor; }
 
 /* ---------- overlays (command palette, help) ---------- */

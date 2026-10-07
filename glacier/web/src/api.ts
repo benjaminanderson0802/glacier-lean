@@ -87,7 +87,8 @@ export interface HomeItem { kind: 'approval' | 'claim' | 'failed_run'; title: st
 export interface HomeRun { run_id: string; env_id: string; name: string; status: 'running' | 'queued' | 'waiting'; step: number; steps: number; started_at: string }
 export interface HomeNote { path: string; summary: string; at: string }
 export interface HomeSummary {
-  local_ai: { online: boolean; model: string | null }
+  /** online: null = still checking (first seconds after start). */
+  local_ai: { online: boolean | null; model: string | null }
   counts: { running: number; need_you: number }
   needs_you: HomeItem[]
   running: HomeRun[]
@@ -114,7 +115,7 @@ export async function loadHome(): Promise<HomeSummary> {
   const notes = await api.listNotes().catch(() => [] as string[])
   const byNew = (a: { at: string }, b: { at: string }) => (b.at ?? '').localeCompare(a.at ?? '')
   return {
-    local_ai: { online: false, model: null },
+    local_ai: { online: null, model: null },
     counts: { running: running.length, need_you: needs.length },
     needs_you: needs.sort(byNew).slice(0, 20),
     running,

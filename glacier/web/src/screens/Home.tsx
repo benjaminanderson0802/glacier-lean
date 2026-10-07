@@ -26,7 +26,12 @@ export function HomeScreen() {
     <>
       <PageHead title="Home" sub="Today at a glance." side={
         <div className="g-statusbox" data-testid="home-status">
-          <div><span className={`g-online${data?.local_ai.online ? '' : ' off'}`}><i className="g-dot" />{data?.local_ai.online ? 'Local AI Online' : 'Local AI Offline'}</span></div>
+          <div>{(() => {
+            const on = data?.local_ai.online
+            const cls = on ? '' : on === false ? ' off' : ' wait'
+            const label = on ? 'Local AI Online' : on === false ? 'Local AI Offline' : 'Checking local AI…'
+            return <span className={`g-online${cls}`} title={data?.local_ai.model ?? undefined} data-testid="local-ai"><i className="g-dot" />{label}</span>
+          })()}</div>
           <div>
             <span data-testid="count-running">{data?.counts.running ?? 0} Running</span>
             <span data-testid="count-need-you">{data?.counts.need_you ?? 0} Need You</span>
