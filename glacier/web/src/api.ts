@@ -191,6 +191,7 @@ export const memory = {
   save: (path: string, body: string) => req<{ path: string; commit: string }>('PUT', '/api/memory/note', { path, body, author: 'owner' }),
   /** Restore the version before `commit` (or before the latest save). */
   undo: (path: string, commit?: string) => req<{ path: string; commit: string }>('POST', '/api/memory/undo', { path, commit }),
+  rename: (from: string, to: string) => req<{ path: string; commit: string }>('POST', '/api/memory/rename', { from, to }),
 }
 
 // ---------- System (/api/system/*) ----------

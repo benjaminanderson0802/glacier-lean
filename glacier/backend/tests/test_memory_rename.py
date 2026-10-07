@@ -105,3 +105,25 @@ def test_rename_publishes_delete_create_and_updated_memory_events(server):
         ("folder/new.md", "created", "owner"),
         ("links.md", "updated", "owner"),
     }
+
+
+def test_undo_rename_leaves_other_unsaved_files_alone_and_refuses_when_old_name_is_taken(server):
+    from pathlib import Path
+
+    server.put("/api/memory/note", {"path": "a.md", "body": "# a\n", "author": "owner"})
+    server.put("/api/memory/note", {"path": "links.md", "body": "see [[a]]\n", "author": "owner"})
+    vault_path = Path(server.home) / "vault"
+    first = server.post("/api/memory/rename", {"from": "a.md", "to": "b.md"})
+    # A file edited in another editor and not yet saved by Glacier must survive an undo.
+    (vault_path / "editing-elsewhere.md").write_text("# draft in another app\n", encoding="utf-8")
+    undone = server.post("/api/memory/undo", {"path": "b.md", "commit": first["commit"]})
+    assert undone["commit"]
+    assert (vault_path / "a.md").exists() and not (vault_path / "b.md").exists()
+    assert "[[a]]" in (vault_path / "links.md").read_text(encoding="utf-8")
+    assert (vault_path / "editing-elsewhere.md").read_text(encoding="utf-8") == "# draft in another app\n"
+
+    second = server.post("/api/memory/rename", {"from": "a.md", "to": "c.md"})
+    server.put("/api/memory/note", {"path": "a.md", "body": "# a new note with the old name\n", "author": "owner"})
+    response = httpx.post(server.url + "/api/memory/undo", json={"path": "c.md", "commit": second["commit"]}, timeout=30)
+    assert response.status_code == 409
+    assert "old name" in response.json()["detail"]

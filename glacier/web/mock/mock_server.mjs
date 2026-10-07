@@ -41,6 +41,7 @@ const runs = new Map() // run_id -> run record
 const vault = new Map() // path -> body
 const memoryMeta = new Map()
 const memoryHistory = new Map()
+const renames = new Map()
 const assistantProposals = new Map()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 let starterApplied = false
@@ -127,8 +128,30 @@ const server = http.createServer(async (req, res) => {
         return send(200, { nodes: [...nodes.values()], edges })
       }
       if (req.method === 'GET' && p === '/api/memory/history') return send(200, memoryHistory.get(url.searchParams.get('path')) ?? [])
+      const renameNote = (from, to) => {
+        if (!vault.has(from)) return [404, { detail: 'That note could not be found' }]
+        if (vault.has(to)) return [409, { detail: 'A note already exists at that path' }]
+        vault.set(to, vault.get(from)); vault.delete(from)
+        memoryMeta.set(to, memoryMeta.get(from)); memoryMeta.delete(from)
+        memoryHistory.set(to, memoryHistory.get(from) ?? []); memoryHistory.delete(from)
+        const a = clean(from), b = clean(to)
+        for (const [other, text] of vault) if (other !== to) {
+          const next = text.replace(/\[\[([^\]|#]+)([^\]]*)\]\]/g, (all, target, rest) => clean(target.trim()) === a ? `[[${b}${rest}]]` : all)
+          if (next !== text) vault.set(other, next)
+        }
+        const commit = commitId(); renames.set(commit, { from, to })
+        broadcast({ type: 'memory', path: to, change: 'created', author: 'owner', run_id: '' })
+        return [200, { path: to, commit }]
+      }
+      if (req.method === 'POST' && p === '/api/memory/rename') {
+        const item = await readBody()
+        if (!item?.from || !item?.to || !String(item.to).endsWith('.md')) return send(400, { detail: 'Provide the old and new note paths' })
+        return send(...renameNote(item.from, item.to))
+      }
       if (req.method === 'POST' && p === '/api/memory/undo') {
         const item = await readBody()
+        const rn = item?.commit && [...renames].find(([c]) => c.startsWith(item.commit))
+        if (rn) { const [status, out] = renameNote(rn[1].to, rn[1].from); return send(status, status === 200 ? { path: item.path, commit: out.commit } : { detail: "That rename can't be undone because a note now uses the old name" }) }
         const path = String(item?.path ?? '').replaceAll('\\', '/').split('/').filter(x => x && x !== '.').join('/')
         if (!path.endsWith('.md')) return send(400, { detail: 'That note path is not allowed' })
         if (path === 'claims.md' || path.startsWith('claims/')) return send(400, { detail: "Claims can't be edited from memory" })

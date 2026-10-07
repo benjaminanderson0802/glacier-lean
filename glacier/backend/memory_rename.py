@@ -15,6 +15,8 @@ import memory_links
 import vault
 
 
+FROM_TRAILER = "Glacier-Rename-From: "
+TO_TRAILER = "Glacier-Rename-To: "
 _WINDOWS_INVALID = re.compile(r'[<>:"/\\|?*\x00-\x1f\x7f]')
 _DEVICE = re.compile(r"^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\..*)?$", re.I)
 
@@ -168,8 +170,14 @@ def rename(source: str, target: str) -> dict:
                     stream.write(old_text)
                 index.add([new])
             actor = git.Actor("owner", "glacier@localhost")
-            commit = index.commit(f"[owner] rename {old} to {new}", author=actor, committer=actor)
+            message = f"[owner] rename {old} to {new}\n\n{FROM_TRAILER}{old}\n{TO_TRAILER}{new}\n"
+            commit = index.commit(message, author=actor, committer=actor)
         except Exception:
+            # Drop anything staged for this rename; the working tree is restored below.
+            try:
+                vault._repo.index.reset()
+            except Exception:
+                pass
             # Restore the working tree if the one Git transaction could not be saved.
             if os.path.exists(new_full):
                 os.makedirs(os.path.dirname(old_full), exist_ok=True)
@@ -210,3 +218,16 @@ def rename(source: str, target: str) -> dict:
     except (ImportError, AttributeError):
         pass
     return {"path": new, "commit": commit.hexsha[:8]}
+
+
+def renamed_paths(commit) -> tuple[str, str] | None:
+    """(old, new) recorded in a rename commit made by rename(), else None."""
+    message = getattr(commit, "message", "") or ""
+    if not message.startswith("[owner] rename "):
+        return None
+    found = {}
+    for line in message.splitlines():
+        for key, prefix in (("from", FROM_TRAILER), ("to", TO_TRAILER)):
+            if line.startswith(prefix):
+                found[key] = line[len(prefix):].strip()
+    return (found["from"], found["to"]) if "from" in found and "to" in found else None
