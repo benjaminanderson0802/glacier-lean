@@ -34,7 +34,7 @@ def _start(tmp_path, monkeypatch, *, route="auto", codex=True, signed_in=True, o
                         {"reply": "Hello from Codex.", "automation": False})
     monkeypatch.setattr(system_check, "default_local_model", lambda: "fake-model")
     import vault
-    monkeypatch.setattr(vault, "write_note", lambda *args, **kwargs: None)
+    vault.init(str(tmp_path / "vault"))  # a real temporary vault, so path checks behave the same on every OS
     return calls
 
 

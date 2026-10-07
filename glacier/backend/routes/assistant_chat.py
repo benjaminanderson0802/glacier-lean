@@ -82,7 +82,10 @@ def ask_route() -> tuple[str | None, str]:
         if configured in {"local", "codex"}:
             return configured, f"Ask is set to use {configured.title()} directly."
         configured = "auto"
-    if shutil.which(codex) and _codex_signed_in():
+    # A configured chat program given as a full path counts as found even when Windows would not
+    # treat its file type as runnable on its own (shell_commands handles running it).
+    found = shutil.which(codex) or (os.path.isabs(codex) and os.path.isfile(codex))
+    if found and _codex_signed_in():
         return "codex", "Codex is installed and signed in."
     if _ollama_answers():
         return "local", "Codex is unavailable or signed out, so Ask will use Ollama on this computer."
