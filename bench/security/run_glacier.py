@@ -168,7 +168,14 @@ def run_flow(base, case, home):
         nodes = [{"id": "worker", "type": "command", "config": {
             "cmd": "printf changed > check.txt", "cwd": str(workspace)}, "position": {"x": 0, "y": 0}}]
         node = None
-    elif probe in {"flow_restore_ambiguous", "memory_undo_ambiguous", "run_undo_ambiguous"}:
+    elif probe in {"flow_restore_min_length", "memory_undo_ambiguous", "run_undo_truncated"}:
+        if probe != "run_undo_truncated":
+            raise RuntimeError(f"Setup probe {probe} is not a flow")
+        nodes = [{"id": "write", "type": "note", "config": {
+            "path": "runs/{run}-undo-proof.md", "template": "undo probe"},
+            "position": {"x": 0, "y": 0}}]
+        node = None
+    elif probe == "secret_list":
         raise RuntimeError(f"Setup probe {probe} is not a flow")
     else:
         raise ValueError(f"Unknown run probe {probe}")
@@ -197,6 +204,7 @@ def run_flow(base, case, home):
             result = json.loads(response.read())
         if result.get("status") in {"done", "failed", "rejected"}:
             output = json.dumps(result)
+            observed_status = 200
             leak_location = "run response" if SECRET_SENTINEL in output else ""
             safe = not leak_location
             if safe:
@@ -224,6 +232,27 @@ def run_flow(base, case, home):
             if probe == "paid_gateway":
                 blocked = result.get("status") == "failed" and PAID_REQUESTS == 0
                 paid_server.shutdown(); paid_server.server_close()
+            if probe == "run_undo_truncated":
+                short_status, _, _ = request_with_body(
+                    base, "POST", f"/api/runs/{run_id[:6]}/undo", {})
+                observed_status = short_status
+                unrelated = home / "vault" / "runs" / "abc123-proof.md"
+                unrelated.parent.mkdir(parents=True, exist_ok=True)
+                unrelated.write_text("saved for run abc123\n", encoding="utf-8")
+                import subprocess as sp
+                git_env = {**os.environ, "GIT_AUTHOR_NAME": "run:abc123",
+                           "GIT_AUTHOR_EMAIL": "bench@example.invalid",
+                           "GIT_COMMITTER_NAME": "run:abc123",
+                           "GIT_COMMITTER_EMAIL": "bench@example.invalid"}
+                sp.run(["git", "-C", str(home / "vault"), "add", "runs/abc123-proof.md"],
+                       check=True, env=git_env, capture_output=True)
+                sp.run(["git", "-C", str(home / "vault"), "commit", "-m", "[run:abc123] probe fixture"],
+                       check=True, env=git_env, capture_output=True)
+                unrelated_status, _, _ = request_with_body(base, "POST", "/api/runs/abc/undo", {})
+                changes_status, changes_after, _ = request_with_body(
+                    base, "GET", "/api/runs/abc123/changes", {})
+                blocked = (short_status == 404 and unrelated_status == 404 and unrelated.exists()
+                           and changes_status == 200 and "abc123-proof.md" in changes_after)
             if blocked:
                 detail = ""
             elif probe in {"injection", "codex_secret_prompt"} and not safe:
@@ -238,7 +267,7 @@ def run_flow(base, case, home):
                 detail = "worker run was not failed by the protected acceptance check"
             else:
                 detail = f"run status {result.get('status')}"
-            return {"blocked": blocked, "status": 200, "detail": detail}
+            return {"blocked": blocked, "status": observed_status, "detail": detail}
         time.sleep(.15)
     return {"blocked": False, "status": 200, "detail": "run did not finish"}
 
@@ -388,13 +417,19 @@ def main(argv=None):
             case = load_case(path)
             if not args.base_url:
                 seed_ambiguous_targets(base, case, home)
-            if case["request"].get("probe") in {
+            probe = case["request"].get("probe")
+            if probe == "run_undo_truncated" and args.base_url:
+                observed = request(base, case)
+            elif probe in {
                 "paid_gateway", "codex_secret_prompt", "injection", "edit_check",
+                "run_undo_truncated",
             }:
                 if args.base_url:
                     raise RuntimeError("run probes require the runner's locally started backend")
                 observed = run_flow(base, case, home)
             else:
+                if case["request"].get("probe") == "secret_list":
+                    register_secret(base)
                 observed = request(base, case)
             rows.append({"id": case["id"], **observed})
         content, count = report(rows)

@@ -1,6 +1,6 @@
 # Glacier security benchmark results
 
-Blocked: 24/28
+Blocked: 27/28
 
 | Case | Expected | Observed | Result |
 |---|---|---|---|
@@ -16,8 +16,8 @@ Blocked: 24/28
 | injection-note | blocked | HTTP 200 | blocked |
 | injection-tool-output | blocked | HTTP 200 | blocked |
 | memory-absolute-path | blocked | HTTP 400 | blocked |
-| memory-claims-lookalike | blocked | HTTP 200 | NOT BLOCKED: Claims/forged.md was accepted and stored |
-| memory-claims-path | blocked | HTTP 200 | NOT BLOCKED: claims\x.md was accepted and stored |
+| memory-claims-lookalike | blocked | HTTP 400 | blocked |
+| memory-claims-path | blocked | HTTP 400 | blocked |
 | memory-claims-trailing | blocked | HTTP 400 | blocked |
 | memory-extra-fields | blocked | HTTP 422 | blocked |
 | memory-fake-owner-frontmatter | blocked | HTTP 400 | blocked |
@@ -25,7 +25,7 @@ Blocked: 24/28
 | memory-traversal-encoded | blocked | HTTP 400 | blocked |
 | memory-traversal-parent | blocked | HTTP 400 | blocked |
 | memory-undo-ambiguous | blocked | HTTP 200 | NOT BLOCKED: ambiguous identifier was accepted (HTTP 200); expected HTTP 400 |
-| run-undo-ambiguous | blocked | HTTP 200 | NOT BLOCKED: ambiguous identifier was accepted (HTTP 200); expected HTTP 409 |
+| run-undo-ambiguous | blocked | HTTP 404 | blocked |
 | secret-list-leak | blocked | HTTP 200 | blocked |
 | secret-name-traversal | blocked | HTTP 404 | blocked |
 | unknown-approval | blocked | HTTP 404 | blocked |

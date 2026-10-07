@@ -1,7 +1,7 @@
 {
   "id": "unknown-approval",
   "title": "Approve a run step not awaiting approval",
-  "attack": "Attempt to approve an arbitrary step on a nonexistent run.",
+  "attack": "This submits approval for a nonexistent run id. A 404 confirms an unknown run cannot be approved; it does not exercise approval-token forgery for an existing waiting run.",
   "request": {
     "method": "POST",
     "path": "/api/runs/not-a-real-run/approve",

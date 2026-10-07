@@ -102,5 +102,50 @@ def test_schema_requires_exact_status_and_review_attack_shapes():
     by_id = {case["id"]: case for case in cases}
     assert by_id["memory-claims-lookalike"]["request"]["body"]["author"] == "owner"
     assert by_id["memory-claims-path"]["request"]["body"]["author"] == "owner"
-    assert by_id["flow-restore-ambiguous"]["request"]["probe"] == "flow_restore_ambiguous"
+    assert by_id["flow-restore-ambiguous"]["request"]["probe"] == "flow_restore_min_length"
     assert by_id["memory-undo-ambiguous"]["request"]["probe"] == "memory_undo_ambiguous"
+    assert by_id["run-undo-ambiguous"]["request"]["probe"] == "run_undo_truncated"
+    assert by_id["secret-list-leak"]["request"]["probe"] == "secret_list"
+
+
+def test_runner_registers_secret_list_case_and_rejects_truncated_run_id(tmp_path):
+    class ProbeAPI(FakeAPI):
+        def do_PUT(self):
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+            if self.path == "/api/secrets/tok":
+                ProbeAPI.secret = body["value"]
+                return self._send(200, {"saved": True})
+            self._send(404)
+
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", "0")))
+            ProbeAPI.seen.append(("POST", self.path, self.headers.get("Origin")))
+            if self.path in {"/api/runs/abcdef/undo", "/api/runs/abc/undo"}:
+                self._send(404, {"detail": "Run not found"})
+            else:
+                self._send(200, {"undone": True})
+
+        def do_GET(self):
+            if self.path == "/api/secrets":
+                return self._send(200, ["tok"])
+            self._send(404)
+
+    ProbeAPI.secret = None
+    server = ThreadingHTTPServer(("127.0.0.1", 0), ProbeAPI)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        result = subprocess.run(
+            [sys.executable, str(HERE / "run_glacier.py"), "--base-url",
+             f"http://127.0.0.1:{server.server_port}", "--cases",
+             "run-undo-ambiguous,secret-list-leak", "--results", str(tmp_path / "RESULTS.md")],
+            cwd=HERE, text=True, capture_output=True, timeout=15, check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert ProbeAPI.secret is not None
+        assert "Blocked: 2/2" in (tmp_path / "RESULTS.md").read_text()
+        assert ("POST", "/api/runs/abcdef/undo", None) in FakeAPI.seen
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
