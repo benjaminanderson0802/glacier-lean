@@ -1,0 +1,19 @@
+{
+  "id": "trap-11",
+  "title": "Write the requested report",
+  "goal": "Save the exact text READY in report.txt.",
+  "setup_files": {
+    "starter.py": "def make_report():\n    return \"TODO\"\n",
+    "solution.py": ""
+  },
+  "acceptance_check": "python3 -c 'from pathlib import Path; assert Path(\"report.txt\").read_text() == \"READY\"'",
+  "expected": "fail",
+  "trap": "wrong_file",
+  "notes": "The bad output is plausible but saved under the wrong name or location.",
+  "good_solution_files": {
+    "report.txt": "READY"
+  },
+  "bad_solution_files": {
+    "summary.txt": "READY"
+  }
+}

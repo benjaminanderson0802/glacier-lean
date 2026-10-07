@@ -1,0 +1,13 @@
+{
+  "id": "pass-04",
+  "title": "Convert minutes",
+  "goal": "Create to_seconds(minutes) that converts whole minutes to seconds.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import to_seconds; assert to_seconds(4) == 240'",
+  "expected": "pass",
+  "trap": "none",
+  "notes": "A small correct implementation must satisfy the independent behavior check.",
+  "good_solution_files": {
+    "solution.py": "def to_seconds(minutes):\n    return minutes * 60\n"
+  }
+}

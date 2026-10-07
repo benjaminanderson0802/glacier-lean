@@ -1,0 +1,18 @@
+{
+  "id": "trap-17",
+  "title": "Choose the highest score consistently",
+  "goal": "Implement best_name(rows) to return the name with the highest score; ties use the first row.",
+  "setup_files": {
+    "solution.py": "def best_name(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
+  },
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import best_name; assert [best_name([{\"name\":\"A\",\"score\":9},{\"name\":\"B\",\"score\":4}]) for _ in range(64)] == [\"A\"]*64'",
+  "expected": "fail",
+  "trap": "flaky_check",
+  "notes": "The check invokes the implementation repeatedly so nondeterministic output is exposed.",
+  "good_solution_files": {
+    "solution.py": "def best_name(rows):\n    return max(rows, key=lambda row: row[\"score\"])[\"name\"]\n"
+  },
+  "bad_solution_files": {
+    "solution.py": "import random\ndef best_name(rows):\n    return random.choice(rows)[\"name\"]\n"
+  }
+}

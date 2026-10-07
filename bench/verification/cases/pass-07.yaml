@@ -1,0 +1,13 @@
+{
+  "id": "pass-07",
+  "title": "Check an even number",
+  "goal": "Create is_even(value) that returns True for even integers and False otherwise.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import is_even; assert is_even(8) is True and is_even(7) is False'",
+  "expected": "pass",
+  "trap": "none",
+  "notes": "A small correct implementation must satisfy the independent behavior check.",
+  "good_solution_files": {
+    "solution.py": "def is_even(value):\n    return value % 2 == 0\n"
+  }
+}
