@@ -29,6 +29,8 @@ export interface RunState {
   verified?: boolean | null
   waiting_prompt?: string
 }
+/** Plain-language explanation of a run (GET /api/runs/{id}/explain). */
+export interface RunExplanation { summary: string; steps: { node_id: string; label: string; state: NodeState; sentence: string }[]; verified: boolean | null; needs_you: string | null }
 export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
 /** Live memory event (docs/CONTRACT.md): a note was created, updated or deleted. */
 export interface MemoryEvent { type: 'memory'; path: string; change: 'created' | 'updated' | 'deleted'; author: string; run_id: string }
@@ -91,6 +93,7 @@ export const api = {
   getNote: (path: string) => req<{ path: string; body: string }>('GET', `/api/vault/note?path=${enc(path)}`),
   home: () => req<HomeSummary>('GET', '/api/home'),
   runChanges: (runId: string) => req<{ path: string; commit: string; author: string; repo: string }[]>('GET', `/api/runs/${enc(runId)}/changes`),
+  explain: (runId: string) => req<RunExplanation>('GET', `/api/runs/${enc(runId)}/explain`),
   undoRun: (runId: string) => req<Record<string, unknown>>('POST', `/api/runs/${enc(runId)}/undo`),
 }
 

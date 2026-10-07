@@ -318,6 +318,38 @@ const server = http.createServer(async (req, res) => {
       const r = runs.get(decodeURIComponent(m[1]))
       return r ? send(200, publicRun(r)) : send(404, { detail: 'run not found' })
     }
+    if (req.method === 'GET' && (m = p.match(/^\/api\/runs\/([^/]+)\/explain$/))) {
+      const r = runs.get(decodeURIComponent(m[1]))
+      if (!r) return send(404, { detail: 'run not found' })
+      const labels = new Map(CATALOG.map(item => [item.type, item.label]))
+      const steps = r.graph.nodes.map((node, index) => {
+        const state = r.node_states[node.id] ?? 'pending'
+        const label = labels.get(node.type) ?? 'Step'
+        const output = String(r.outputs[node.id] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120)
+        const sentence = state === 'failed'
+          ? `Step ${index + 1} (${label}) failed: ${/missing (?:secret|password)|password is missing/i.test(output) ? 'Add the missing password in Settings > Secrets, then run again.' : /command not found/i.test(output) ? 'Install the missing program, then run again.' : /timed out|timeout/i.test(output) ? 'The step took too long. Check its time limit or try again.' : /check failed|check .*-> no/i.test(output) ? 'The check did not pass. Review its result and fix the earlier step.' : 'It stopped with an error. Open the step\'s output for details.'}`
+          : state === 'waiting' ? `Step ${index + 1} (${label}) is waiting for your approval.`
+            : state === 'done' ? `Step ${index + 1} (${label}) finished.${output ? ` ${output}` : ''}`
+              : state === 'skipped' ? `Step ${index + 1} (${label}) was skipped.`
+                : state === 'running' ? `Step ${index + 1} (${label}) is running.`
+                  : `Step ${index + 1} (${label}) has not started.`
+        return { node_id: node.id, label, state, sentence }
+      })
+      const acceptance = r.graph.acceptance ?? []
+      const verified = acceptance.length && ['done', 'failed', 'rejected'].includes(r.status)
+        ? r.status === 'done' && acceptance.every((_, index) => r.checks?.[index] === true)
+        : null
+      const waitingNode = r.graph.nodes.find(node => node.id === r.waiting_on)
+      const prompt = waitingNode?.config?.prompt ?? ''
+      const needs_you = r.status === 'waiting' ? `Decide whether to approve${prompt ? `: ${prompt}` : ' this step.'}` : null
+      const name = r.graph.name ?? 'This run'
+      const failed = steps.find(step => step.state === 'failed')
+      const summary = r.status === 'waiting' ? `${name} is waiting for your decision.`
+        : r.status === 'rejected' ? `${name} stopped because an approval was rejected.`
+          : r.status === 'failed' ? (failed ? `${failed.sentence}` : `${name} stopped before it finished. Open the step's output for details.`)
+            : `${name} finished ${steps.filter(step => step.state === 'done').length} steps.${verified === true ? ' Every check passed.' : acceptance.length ? ' The run finished, but not every check passed.' : ''}`
+      return send(200, { summary, steps, verified, needs_you })
+    }
     if (req.method === 'POST' && (m = p.match(/^\/api\/runs\/([^/]+)\/approve$/))) {
       const r = runs.get(decodeURIComponent(m[1]))
       if (!r) return send(404, { detail: 'run not found' })
@@ -358,7 +390,7 @@ function startRun(env, depth = 0) {
   const run_id = `run-${crypto.randomBytes(4).toString('hex')}`
   const r = {
     run_id, env_id: env.id, status: 'running', started_at: new Date().toISOString(),
-    node_states: Object.fromEntries(env.nodes.map(n => [n.id, 'pending'])), outputs: {}, waiting_on: null, resolve: null,
+    graph: structuredClone(env), checks: {}, usage: {}, node_states: Object.fromEntries(env.nodes.map(n => [n.id, 'pending'])), outputs: {}, waiting_on: null, resolve: null,
   }
   runs.set(run_id, r)
   execute(structuredClone(env), r, depth).catch(e => { r.status = 'failed'; console.error(e) })
@@ -420,6 +452,7 @@ async function execute(env, r, depth = 0) {
         let ok = false
         try { ok = !!Function('exit_code', 'output', `return (${c.expr || 'false'})`)(ctx.exit_code, ctx.output ?? '') } catch { ok = false }
         result = ctx
+        r.checks[env.acceptance ? Math.max(0, env.acceptance.findIndex(check => check.kind === 'command')) : 0] = ok
         setState(r, id, 'done', `check ${c.expr} -> ${ok ? 'yes' : 'no'}\n`)
         next = out(id).filter(e => e.label === (ok ? 'yes' : 'no'))
         break
