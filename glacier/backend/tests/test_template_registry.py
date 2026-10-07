@@ -88,6 +88,22 @@ def test_all_requested_risky_command_forms_are_reported(tmp_path, monkeypatch):
         assert pattern in findings
 
 
+def test_destructive_command_heuristic_flags_posix_and_powershell_forms(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    commands = [
+        "rm -rf /tmp/x", "rm -rfv /tmp/x", "rm -fr /tmp/x", "rm -r -f /tmp/x",
+        "rm -f -r /tmp/x", "rm --recursive /tmp/x", "Remove-Item C:\\temp\\x -Recurse",
+        "del /s C:\\temp\\x", "rd /s C:\\temp\\x", "find . -delete",
+    ]
+    flow = _clean_flow()
+    flow["nodes"][0]["config"]["cmd"] = "; ".join(commands)
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is False
+    findings = "\n".join(result["review"]).casefold()
+    for command in ("rm", "remove-item", "del /s", "rd /s", "find", "-delete"):
+        assert command in findings
+
+
 def test_gateway_engine_is_not_paid_by_itself_and_missing_paid_flag_is_paid(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     flow = _clean_flow()

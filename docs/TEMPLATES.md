@@ -2,7 +2,13 @@
 
 Bundled templates are listed in `templates/MANIFEST.json`. Each entry records its author, Apache-2.0 license, SHA-256 digest, and review date. The API reports a bundled item as **changed since review** and marks it unavailable for installation if the file digest differs from the manifest.
 
-Community templates use the portable flow file format from `portable.py`. Import runs structural validation and a safety review. Flows with missing or invalid goal acceptance checks, paid model routing, flagged shell commands (`curl`, `wget`, `nc`, `ssh`, `scp`, `rm -rf`, or `sudo`), or secret placeholders are rejected with plain findings. Codex steps in accepted proposals are set to read-only.
+Community templates use the portable flow file format from `portable.py`. Import runs structural validation and a safety review. Flows with missing or invalid goal acceptance checks, paid model routing, secret placeholders, or commands containing these flagged forms are rejected with plain findings:
+
+- Network or remote access: `curl`, `wget`, `nc`, `ssh`, `scp`.
+- Recursive deletion: `rm` with a recursive flag (including combined flags such as `-rfv`, `-fr`, `--recursive`, and separated flags such as `rm -f -r`), `Remove-Item ... -Recurse`, `del /s`, `rd /s`, and `find ... -delete`.
+- Elevated or indirect execution: `sudo`, `bash`, `sh`, `python -c`, `perl -e`, `node -e`, `Invoke-WebRequest`, `iwr`, `certutil`, `eval`, `exec`, and encoded commands.
+
+This command scan is a heuristic, not a guarantee that a template is safe. An accepted import is saved as a pending proposal; before approving it, the owner must read every entry in `commands_for_review` and decide whether those commands are appropriate. Codex steps in accepted proposals are set to read-only.
 
 An accepted import is saved as a pending proposal. The owner reviews it and approves it through `POST /api/templates/import/{id}/approve`; approved templates then appear in `GET /api/templates`. Pending proposals are not offered as installable templates.
 
