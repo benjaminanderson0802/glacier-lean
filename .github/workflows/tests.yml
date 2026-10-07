@@ -43,7 +43,7 @@ jobs:
 
   backend-windows:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -56,9 +56,10 @@ jobs:
         run: |
           $bash = @("$env:ProgramFiles\Git\bin\bash.exe", "${env:ProgramFiles(x86)}\Git\bin\bash.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $bash) { throw "Git Bash was not found. Install Git for Windows to run the backend tests." }
-          & $bash -lc 'python -m pytest -q tests -rf' 2>&1 | Tee-Object -FilePath windows-results.txt
+          & $bash -lc 'python -m pytest -q tests -rf -o faulthandler_timeout=240 --durations=15' 2>&1 | Tee-Object -FilePath windows-results.txt
           $testExit = $LASTEXITCODE
           if ($testExit -ne 0) { exit $testExit }
         shell: pwsh
       - uses: actions/upload-artifact@v4
+        if: always()
         with: {name: windows-results, path: glacier/backend/windows-results.txt}
