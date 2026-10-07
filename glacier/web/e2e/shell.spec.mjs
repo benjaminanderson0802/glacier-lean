@@ -28,6 +28,11 @@ try {
   const errors = []
   page.on('pageerror', e => errors.push(String(e)))
   await page.goto(UI, { waitUntil: 'networkidle' })
+  await page.getByTestId('splash').waitFor()
+  check(true, 'start screen shows on launch')
+  await page.keyboard.press('Enter')
+  await page.getByTestId('screen-home').waitFor()
+  check(await page.getByTestId('splash').count() === 0, 'Enter on the start screen continues to Home')
 
   const tabs = await page.locator('[role=tablist] [role=tab]').allTextContents()
   check(tabs.length === 5 && tabs.join(',') === 'Home,Ask,Automations,Memory,Settings', `exactly five options (got ${tabs.join(',')})`)

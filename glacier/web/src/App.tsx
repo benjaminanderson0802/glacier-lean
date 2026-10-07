@@ -8,6 +8,10 @@ import { AutomationsScreen } from './screens/Automations.tsx'
 import { MemoryScreen } from './screens/Memory.tsx'
 import { SettingsScreen } from './screens/Settings.tsx'
 import { CommandPalette } from './screens/CommandPalette.tsx'
+import { Splash } from './screens/Splash.tsx'
+
+// Show the start screen once per launch, only when the app opens without a specific address.
+let splashSeen = location.hash.replace(/^#\/?/, '') !== ''
 
 const BuildScreen = lazy(() => import('./screens/Build.tsx'))
 
@@ -23,6 +27,7 @@ export default function App() {
   const { tab, rest } = useRoute()
   const [palette, setPalette] = useState(false)
   const [status, setStatus] = useState('Ready.')
+  const [splash, setSplash] = useState(!splashSeen)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,6 +80,7 @@ export default function App() {
         <span className="g-ready" data-testid="status-line">{status}</span>
       </footer>
       {palette && <CommandPalette onClose={() => setPalette(false)} />}
+      {splash && <Splash version={__APP_VERSION__} onDone={to => { splashSeen = true; setSplash(false); if (to === 'exit') winAction('close'); else go(to) }} />}
     </div>
   )
 }
