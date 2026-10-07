@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-07  # latest: statuses through PR #58; engine token (PR #57)
+last_amended: 2026-10-07  # latest: PH7.5 done (PR #42 recovery benchmark), conversion fix PR #61
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -303,7 +303,7 @@ phases:
       - {id: PH7.2, item: "Prompt-injection / lethal-trifecta test suite in CI (M-SECURITY)", status: done, evidence: "PR #24 bench/security; PR #57 per-install engine token: every /api call and the events socket need it (0 unauthenticated listeners). Blocked 30/30 on main incl. no-token and forged-origin cases"}
       - {id: PH7.3, item: "Secrets via OS keychain only; never in vault, logs or prompts", status: done, evidence: "PR #15 keychain store + PR #22 secrets resolved only in command steps, redacted everywhere; codex prompts with secrets refused"}
       - {id: PH7.4, item: "Reviewed/pinned capability catalog (MCP servers) with provenance", status: done, evidence: "PR #17 tools/catalog pinned capability catalog (digests, current versions, advisories reviewed)"}
-      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)", status: in_progress, evidence: "PR #11 rollback + PR #30 exact undo ids + PR #45 code-workspace undo + PR #46 serialized vault Git access; M-RECOVER benchmark re-running (PR #42)"}
+      - {id: PH7.5, item: "One-action rollback for vault, Environments and code changes (M-RECOVER)", status: done, evidence: "PR #11, #30, #45, #46; PR #42 bench/recover: run notes 0.49 s, flow restore 0.02 s, note undo 0.02 s, coding-run undo 0.19 s, exact prior state restored in all 4, audit 100% (66/66)"}
     exit: "M-SECURITY 100%, M-AUDIT 100%, M-RECOVER < 2 min."
 
   - id: PH8
