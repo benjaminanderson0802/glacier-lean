@@ -58,7 +58,13 @@ try {
     $ready = $false
     $deadline = [DateTime]::UtcNow.AddSeconds(60)
     while ([DateTime]::UtcNow -lt $deadline) {
-        if ($backend.HasExited) { Stop-Smoke "the bundled backend exited during startup" }
+        if ($backend.HasExited) {
+            foreach ($log in "backend.log", "backend-error.log") {
+                $logPath = Join-Path $dataDir $log
+                if (Test-Path -LiteralPath $logPath) { Write-Host "--- last lines of $log ---"; Get-Content -LiteralPath $logPath -Tail 40 | ForEach-Object { Write-Host $_ } }
+            }
+            Stop-Smoke "the bundled backend exited during startup (exit code $($backend.ExitCode))"
+        }
         try {
             $health = Invoke-WebRequest -Uri "$baseUrl/api/health" -TimeoutSec 2
             if ($health.StatusCode -eq 200) { $ready = $true; break }
