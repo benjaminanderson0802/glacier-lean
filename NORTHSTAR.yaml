@@ -2,7 +2,7 @@
 # Read this file in full before any task. Every unit of work must map to an item in `phases`.
 # Change policy: see `amendment`. Never edit silently; never weaken an invariant to make a task "pass".
 schema_version: 1
-last_amended: 2026-10-07  # latest: statuses through PR #52 (retro UI shell), repo public note on D1
+last_amended: 2026-10-07  # latest: statuses through PR #56 (all mockup screens), PR #47 self-build
 status_legend: {done: "verified by linked evidence", in_progress: "work started, not verified", todo: "not started", blocked: "needs a human decision (see open_decisions)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ phases:
       - {id: PH2.2, item: "Local-model worker (Ollama/llama.cpp) via MAF agent node", status: done, test: "local model completes a task offline; result verified", evidence: "PR #6 nodes/local_ai.py; backend tests with a fake Ollama server (offline); live model check on the owner's PC pending PC installs"}
       - {id: PH2.3, item: "Model gateway (Bifrost) with per-node route, fallback chain and quota awareness", status: done, test: "primary unavailable → fallback used, logged, run still verified", evidence: "PR #19 gateway.py: fallback chain, daily caps, free-only (paid always refused, one policy claim per day); fake-server tests"}
       - {id: PH2.4, item: "ACP harness driver: OpenCode / Hermes / Gemini CLI etc. as worker nodes", status: in_progress, test: "same goal completes via >= 2 ACP harnesses", evidence: "PR #10 ACP worker + PR #34 presets (codex-acp, opencode, custom); two different fake ACP agents pass the same check; live two-harness proof pending a free local model"}
-      - {id: PH2.5, item: "Per-run cost & route shown in UI (M-COST, M-LOCAL)", status: in_progress, evidence: "backend: per-step usage table + GET run usage, per-run cost/route summary PR #13 (f58c5f4); screen part is with the UI designer"}
+      - {id: PH2.5, item: "Per-run cost & route shown in UI (M-COST, M-LOCAL)", status: done, evidence: "backend PR #13; screen PR #54 Run view Usage panel (model, route, tokens, cost per run) + PR #56 Settings > Usage (spent, $0 paid cap, share done locally)"}
       - {id: PH2.6, item: "Laptop / second machine as a model provider over a private network", status: done, test: "gateway prefers laptop when online, falls back when offline", evidence: "PR #43 (cffd976): tests/test_gateway_preferred.py online route answers first, offline falls back to local with usage naming the route, health cached 30s; tested with a simulated second machine, real laptop check at the owner PC install"}
     exit: "M-PORTABLE swap test passes across >= 3 backends."
 
@@ -247,7 +247,7 @@ phases:
       - {id: PH3.6, item: "Claim filing: file_claim tool (vault MCP) available to every worker; claim files git-tracked", test: "worker hitting an out-of-lane error files a correct claim and parks its task", status: done, evidence: "PR #22: MCP file_claim tool (validated worker author); claims git-tracked"}
       - {id: PH3.7, item: "Automatic claim research workflow (vault search → free/OSS search → sandbox trial → findings)", test: "seeded claim with a known OSS fix is resolved with no human, with sources and passing test", status: done, evidence: "commit 6a7f4ed: research workflow (past fixes, free/OSS research via Codex, routing); test_claims_research.py"}
       - {id: PH3.8, item: "Triage + routing to the 4 specialist roles (researcher, fixer, debugger, verifier) and parked-task resume", test: "routed claim fixed by specialist; original task resumes and passes its check", status: done, evidence: "commit 8fae168: specialist repairs, proof re-run, resolved only on evidence else escalated to owner; test_claims_specialist.py + test_verification stuck test"}
-      - {id: PH3.9, item: "Gap proposals in the screen: owner sees options/costs and approves or rejects", test: "claim with no OSS option produces a proposal; approve/reject updates claim and task", status: in_progress, evidence: "backend proposals + decision API done; proposals screen is with the UI designer"}
+      - {id: PH3.9, item: "Gap proposals in the screen: owner sees options/costs and approves or rejects", test: "claim with no OSS option produces a proposal; approve/reject updates claim and task", status: in_progress, evidence: "backend proposals + decision API; PR #54 Claims list + Claim Detail with Approve / Reject / Ask for more research (e2e: decision updates the claim); task update after approval not yet shown"}
     exit: "M-FALSE-DONE < 2% and M-VERIFIED >= 98% on the benchmark; claim auto-resolution meets the per-type targets in claims.metrics."
 
   - id: PH4
@@ -259,10 +259,10 @@ phases:
       - {id: PH4.1, item: "Vault service: single writer, git commit per change, keyword search, links, event log", status: done, evidence: "evidence/RESULTS.md memory test; backend vault.py"}
       - {id: PH4.2, item: "Vault exposed to every worker (MCP server + context injection for MAF/ACP/Codex)", status: done, test: "two different backends read a note written by a third", evidence: "memory context for Codex/plug-in steps (17124fc) + MCP server read/write/search (PR #12)"}
       - {id: PH4.3, item: "Meaning search (local embeddings) as rebuildable index", status: done, evidence: "PR #7 memory_index.py (sqlite-vec, rebuildable)"}
-      - {id: PH4.4, item: "Memory view (core consumer feature): live graph of everything Glacier knows (projects, decisions, notes, people, and the runs/workers that wrote them); nodes light up as AI writes memory during a run", status: todo, test: "a run that writes a note makes that node appear/highlight live; graph stays readable at 2,000 notes"}
-      - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: in_progress, evidence: "PR #52 Memory screen shows links to / linked from for the open note; graph neighbourhood view is card W13-ui-memory", test: "selecting a note shows exactly its incoming and outgoing links"}
-      - {id: PH4.8, item: "Friendly editor (no markdown syntax required): [[ link suggestions while typing, tags, search; saves as plain markdown", status: todo, test: "first-time non-programmer creates a linked note without help; file on disk is plain markdown"}
-      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: in_progress, test: "each note shows author/run; undo restores the previous version via git", evidence: "backend done: author/run front matter, history, undo (PR #12, #30); trust details screen is UI"}
+      - {id: PH4.4, item: "Memory view (core consumer feature): live graph of everything Glacier knows (projects, decisions, notes, people, and the runs/workers that wrote them); nodes light up as AI writes memory during a run", status: in_progress, test: "a run that writes a note makes that node appear/highlight live; graph stays readable at 2,000 notes", evidence: "PR #55 Memory > Map: pixel graph of notes, runs, flows and writers with stats; live highlight during a run and the 2,000-note readability test not done yet"}
+      - {id: PH4.7, item: "Focus mode: click a note to see its neighborhood, 'linked from' and 'links to' lists", status: in_progress, evidence: "PR #52 note reader shows links to / linked from; PR #55 map neighbourhood; exactness test against the real engine still to add", test: "selecting a note shows exactly its incoming and outgoing links"}
+      - {id: PH4.8, item: "Friendly editor (no markdown syntax required): [[ link suggestions while typing, tags, search; saves as plain markdown", status: in_progress, test: "first-time non-programmer creates a linked note without help; file on disk is plain markdown", evidence: "PR #54 editor: plain text, [[ link suggestions while typing, saves plain markdown, undo (e2e); first-time-user test not done"}
+      - {id: PH4.9, item: "Trust details on every note: written by (owner or which AI), when, from which run; one-click undo", status: in_progress, test: "each note shows author/run; undo restores the previous version via git", evidence: "backend PR #12, #30; PR #52/#54 reader shows each saved version with author and an Undo after saving; run link per note not shown yet"}
       - {id: PH4.10, item: "Compatibility: the same folder opens in any markdown editor (tested with Obsidian and Zettlr)", status: in_progress, test: "links and notes render correctly in both", evidence: "PR #26 conformance checker (YAML front matter, Obsidian link rules, Windows names); owner to open the folder in Obsidian and Zettlr"}
       - {id: PH4.5, item: "Status notes generated from the event log (I-12); per-worker and per-project folders", status: done, evidence: "PR #8 status_notes.py + routes/status.py"}
       - {id: PH4.6, item: "Memory hygiene: dedupe/expiry proposals approved by user", status: done, evidence: "PR #18 memory hygiene: dedupe/expiry proposals, owner approves, links rewritten, git-tracked"}
@@ -278,7 +278,7 @@ phases:
       - {id: PH5.2, item: "Goal → proposed Environment + acceptance checks shown before running (plan view)", test: "user can accept/edit/reject the plan", status: in_progress, evidence: "backend planner done (ca8ec21, POST /api/assistant/plan, proposes only); plan view is with the UI designer"}
       - {id: PH5.3, item: "Assistant edits Environments only through the same API and approvals as the user; all changes versioned", test: "assistant change is revertible and audited", status: done, evidence: "PR #28: assistant applies only with owner approval, same validation as PUT, one commit authored assistant, undo_id returned"}
       - {id: PH5.4, item: "Simple/Standard/Full layouts (complexity optional) and plain-language explanations of any run", test: "M-TTFA measured with first-time users"}
-      - {id: PH5.5, item: "Templates gallery for common goals (reports, monitoring, inbox triage, code fixes, research)", status: in_progress, evidence: "10 templates merged (templates/); gallery screen is with the UI designer"}
+      - {id: PH5.5, item: "Templates gallery for common goals (reports, monitoring, inbox triage, code fixes, research)", status: done, evidence: "10 templates (templates/) + PR #54 Templates gallery: pick a template, Use this template creates the flow and opens it (e2e)"}
     exit: "M-TTFA < 30 min in a moderated test (n >= 10) with M-VERIFIED held."
 
   - id: PH6
@@ -287,9 +287,9 @@ phases:
     goal: "Glacier can be the daily home for AI work, not just automation."
     status: in_progress
     checkpoints:
-      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory", status: in_progress, evidence: "importers merged (glacier/importers/); refresh button is UI"}
+      - {id: PH6.1, item: "Import ChatGPT/Claude exports (refresh button), deduplicated, searchable in memory", status: in_progress, evidence: "importers merged; PR #55 Memory > Add > Chat import (ChatGPT/Claude export upload); refresh button not built yet"}
       - {id: PH6.2, item: "Live mirror of local coding-agent sessions (Codex, OpenCode, etc.) via their official interfaces", status: in_progress, evidence: "PR #29 read-only Codex session mirror (list/detail/save to memory, redacted); other harnesses documented as readers to add"}
-      - {id: PH6.3, item: "File drop, images, projects, chat rename, search", status: in_progress, evidence: "backend done: PR #27 file drop, projects, MarkItDown notes, dedupe; screen is UI"}
+      - {id: PH6.3, item: "File drop, images, projects, chat rename, search", status: in_progress, evidence: "backend PR #27; PR #55 Memory > Add: file drop with optional project, text notes; memory search in PR #52; chat rename not built"}
       - {id: PH6.4, item: "Documents/web tools (MarkItDown/Docling, search/scrape) as nodes with egress rules", status: in_progress, evidence: "PR #9 read_document step (MarkItDown); egress rules wait on PH7.1"}
     exit: "Owner uses Glacier as primary AI workspace for 2 consecutive weeks (self-reported + usage log)."
 
@@ -326,7 +326,7 @@ phases:
     status: in_progress  # started after the owner-approved PH3 exit (2026-10-07); PH5/PH7 still in progress, so self-build stays owner-approved and verified-merge only
     checkpoints:
       - {id: PH9.1, item: "Repo-maintenance Environment: dependency watch, test board, proposed upgrades (human-approved)"}
-      - {id: PH9.2, item: "Feature Environment: goal → worktree → workers → verifier → merge queue"}
+      - {id: PH9.2, item: "Feature Environment: goal → worktree → workers → verifier → merge queue", status: in_progress, evidence: "PR #47: feature flow (goal -> isolated worktree -> approved worker -> independent checks -> verified merge only) + protected-check guard (new tests allowed, edits/deletes fail, NORTHSTAR/contract changes stop for the owner); not yet run on a real Glacier card"}
       - {id: PH9.3, item: "Tool discovery: periodic scan of MCP registry / model catalogs → proposals, never auto-adoption (I-09)", status: todo, evidence: "PR #16 proposal-only scanner built early (review round 1); counts only after PH3 exit per guard"}
     exit: "3 consecutive real features shipped through Glacier with M-FALSE-DONE < 2%."
     guard: "Cannot start before PH3 exit; self-modification never loosens invariants (I-14)."
