@@ -87,7 +87,7 @@ def test_clean_template_is_pending_then_approved_and_listed(tmp_path, monkeypatc
     approved = client.post(f"/api/templates/import/{proposal['id']}/approve")
     assert approved.status_code == 200
     assert approved.json()["status"] == "approved"
-    assert any(item["id"] == "community-community-safe" for item in client.get("/api/templates").json())
+    assert any(item["id"] == "community-safe" for item in client.get("/api/templates").json())
 
 
 def test_scans_commands_in_acceptance_and_nested_plugin_config(tmp_path, monkeypatch):

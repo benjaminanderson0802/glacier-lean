@@ -151,7 +151,7 @@ def review_import(text: str) -> dict:
     proposal_id = uuid.uuid4().hex
     original_id = flow["id"]
     flow["source_id"] = original_id
-    flow["id"] = f"community-{original_id}"
+    flow["id"] = original_id if original_id.startswith("community-") else f"community-{original_id}"
     proposal = {"id": proposal_id, "status": "pending", "author": flow.get("author", "Community contributor"), "template": flow}
     pending = _home() / "templates" / "pending"
     pending.mkdir(parents=True, exist_ok=True)
