@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -89,8 +88,9 @@ class API:
 
     def file_claim(self, case: dict, run_id: str = "") -> str:
         payload = {key: case[key] for key in ("kind", "summary", "evidence")}
+        payload["summary"] += f" [case:{case['id']}]"
         payload["evidence"] += f"\nBenchmark case: {case['id']}"
-        if self.home is not None:
+        if self.home is not None and case["id"] in self.seeded_envs:
             payload["evidence"] += f"\nBENCHMARK_REPAIR_FILE={self.home / 'workspaces' / self._env_id_for_case(case) / 'repair-needed.txt'}"
         if run_id:
             payload["run_id"] = run_id
@@ -114,7 +114,7 @@ def fake_workers(root: Path) -> dict[str, str]:
     """Create local fake Codex/research/specialist commands, no model or network needed."""
     root.mkdir(parents=True, exist_ok=True)
     script = root / "fake_worker.py"
-    script.write_text('''import os, sys, re\nargs = sys.argv[1:]\nout = args[args.index("-o") + 1]\nprompt = args[-1].lower()\nif "free and open-source" in prompt:\n    free = "capability-free-tool" in prompt or "capability-local-index" in prompt\n    open(out, "w").write("VERDICT: FREE OPTION FOUND" if free else "VERDICT: NO FREE OPTION FITS")\nelif "fix the cause" in prompt:\n    target = re.search(r"benchmark_repair_file=([^\\s]+)", prompt)\n    if target:\n        open(target.group(1), "w").write("fixed\\n")\n    open(out, "w").write("Seeded repair applied; independent acceptance command will prove it.")\nelse:\n    open(out, "w").write("Fake Codex completed the seeded task.")\n''', encoding="utf-8")
+    script.write_text('''import os, sys, re\nargs = sys.argv[1:]\nout = args[args.index("-o") + 1]\nprompt = args[-1].lower()\nif "free and open-source" in prompt:\n    free = "[case:capability-free-tool]" in prompt or "[case:capability-local-index]" in prompt\n    open(out, "w").write("VERDICT: FREE OPTION FOUND" if free else "VERDICT: NO FREE OPTION FITS")\nelif "fix the cause" in prompt:\n    target = re.search(r"benchmark_repair_file=([^\\s]+)", prompt)\n    if target:\n        open(target.group(1), "w").write("fixed\\n")\n    open(out, "w").write("Seeded repair applied; independent acceptance command will prove it.")\nelse:\n    open(out, "w").write("Fake Codex completed the seeded task.")\n''', encoding="utf-8")
     wrapper = root / "fake_worker.sh"
     wrapper.write_text(f"#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(script))} \"$@\"\n", encoding="utf-8")
     wrapper.chmod(0o755)
@@ -146,7 +146,10 @@ def _has_evidence(claim: dict) -> bool:
 def run_cases(api, cases: list[dict], timeout: float = 180) -> list[dict]:
     rows = []
     for case in cases:
-        run_id = api.seed_stuck_flow(case) if hasattr(api, "seed_stuck_flow") else ""
+        # A capability gap routed to a fixer needs an originating run so the
+        # specialist can prove its repair by rerunning that flow.
+        needs_run = case.get("expected_outcome") == "resolved" and case["kind"] in {"environment", "bug", "skill_gap", "capability_gap"}
+        run_id = api.seed_stuck_flow(case) if hasattr(api, "seed_stuck_flow") and needs_run else ""
         claim_id = api.file_claim(case, run_id) if hasattr(api, "home") else api.file_claim(case)
         deadline = time.monotonic() + timeout
         claim = api.get_claim(claim_id)
@@ -190,6 +193,9 @@ def build_report(rows: list[dict]) -> tuple[str, bool]:
     env_rate = env["resolved"] / env["total"] if env["total"] else 0.0
     skill_rate = skill["resolved"] / skill["total"] if skill["total"] else 0.0
     overall = all_resolved / total if total else 0.0
+    auto_rows = [row for row in rows if row.get("expected_outcome") == "resolved"]
+    auto_resolvable = sum(row["resolved_with_evidence"] for row in auto_rows)
+    auto_resolvable_rate = auto_resolvable / len(auto_rows) if auto_rows else 0.0
     false_auto = [row for row in rows if row["wrongly_auto_resolved"]]
     # NORTHSTAR sets ranges for skill and overall; the high end is a stretch goal,
     # so acceptance uses the lower bound and records the full observed rate.
@@ -206,6 +212,7 @@ def build_report(rows: list[dict]) -> tuple[str, bool]:
         pct = lambda key: f"{g[key]}/{n} ({g[key] / n:.0%})" if n else "—"
         lines.append(f"| {kind} | {pct('routed')} | {pct('resolved')} | {pct('escalated')} | {targets.get(kind, 'routing and safety recorded')} |")
     lines += [f"| overall | — | {all_resolved}/{total} ({overall:.0%}) | — | {targets['overall']} |",
+              f"| auto-resolvable expected cases | — | {auto_resolvable}/{len(auto_rows)} ({auto_resolvable_rate:.0%}) | — | diagnostic rate |",
               f"| false fixed | — | {len(false_auto)}/{total} ({len(false_auto) / total if total else 0:.0%}) | — | {targets['false fixed']} |", "",
               f"**Result: {'PASS' if passed else 'FAIL'}**", "",
               "| Case | Kind | Routed correctly | Evidence | Escalated | Wrong auto-resolution | Final status |", "|---|---|---:|---:|---:|---:|---|"]
