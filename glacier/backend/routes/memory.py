@@ -113,7 +113,12 @@ def graph(limit: int | None = None):
     nodes, edges = [], []
     known = set()
     items = _all()
-    items.sort(key=lambda item: os.stat(vault.safe_path(item["path"])).st_mtime_ns, reverse=True)
+    def _mtime(item: dict) -> int:
+        try:
+            return os.stat(vault.safe_path(item["path"])).st_mtime_ns
+        except OSError:  # removed since it was listed
+            return 0
+    items.sort(key=_mtime, reverse=True)
     if limit is not None:
         items = items[:limit]
     refs = []
@@ -139,12 +144,14 @@ def graph(limit: int | None = None):
 @router.get("/api/memory/history")
 def history(path: str):
     _path(path)
+    # Commit details load lazily through the shared Git pipe, so read them while holding the lock.
     try:
         with vault._lock:
-            commits = list(vault._repo.iter_commits(paths=path))
+            return [{"commit": c.hexsha[:8], "author": c.author.name,
+                     "date": c.committed_datetime.astimezone(timezone.utc).isoformat(),
+                     "message": c.message.strip()} for c in vault._repo.iter_commits(paths=path)]
     except Exception:
-        commits = []
-    return [{"commit": c.hexsha[:8], "author": c.author.name, "date": c.committed_datetime.astimezone(timezone.utc).isoformat(), "message": c.message.strip()} for c in commits]
+        return []
 
 
 @router.post("/api/memory/undo")
@@ -154,15 +161,15 @@ def undo(item: Undo):
         raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
     with vault._lock:
         commits = list(vault._repo.iter_commits(paths=path))
-    if not commits:
-        raise HTTPException(404, "No saved version exists for this note")
-    matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
-    if item.commit and not matching:
-        raise HTTPException(404, "That saved version was not found")
-    if len(matching) > 1:
-        raise HTTPException(400, "More than one saved version matches. Enter more of the version ID.")
-    selected = matching[0] if item.commit else commits[0]
-    target = selected.parents[0] if selected.parents else None
+        if not commits:
+            raise HTTPException(404, "No saved version exists for this note")
+        matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
+        if item.commit and not matching:
+            raise HTTPException(404, "That saved version was not found")
+        if len(matching) > 1:
+            raise HTTPException(400, "More than one saved version matches. Enter more of the version ID.")
+        selected = matching[0] if item.commit else commits[0]
+        target = selected.parents[0] if selected.parents else None
     if target is None:
         raise HTTPException(400, "There is no earlier version to restore")
     try:
