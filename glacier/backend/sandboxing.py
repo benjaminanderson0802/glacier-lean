@@ -158,17 +158,25 @@ def _seccomp_instructions(machine):
         instructions.append(_SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM))
     if machine in ("x86_64", "amd64"):
         signal_syscalls = (62, 200, 234)  # kill, tkill, tgkill
+        denied_signal_syscalls = (129, 297, 424)  # rt_sigqueueinfo, rt_tgsigqueueinfo, pidfd_send_signal
     else:
-        signal_syscalls = (129, 130, 131)
-    # Deny positive pid targets and process-group-wide kill(0/-1). Callers
-    # should launch this argv with start_new_session=True for containment.
+        signal_syscalls = (129, 130, 131)  # kill, tkill, tgkill
+        denied_signal_syscalls = (138, 240, 424)  # rt_sigqueueinfo, rt_tgsigqueueinfo, pidfd_send_signal
+    # Landlock ABI 6 scopes signal delivery to this process tree. Older kernels
+    # cannot distinguish arbitrary target pids in seccomp, so deny kill(-1)
+    # here and rely on a new session to contain process-group signaling.
     for number in signal_syscalls:
         instructions.extend([
             _SockFilter(_BPF_JMP_JEQ_K, 0, 3, number),
             _SockFilter(_BPF_LD_W_ABS, 0, 0, 16),  # args[0] low word (pid/tid)
-            _SockFilter(_BPF_JMP_JEQ_K, 0, 1, 0),
+            _SockFilter(_BPF_JMP_JEQ_K, 0, 1, 0xFFFFFFFF),
             _SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM),
             _SockFilter(_BPF_LD_W_ABS, 0, 0, 0),
+        ])
+    for number in denied_signal_syscalls:
+        instructions.extend([
+            _SockFilter(_BPF_JMP_JEQ_K, 0, 1, number),
+            _SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM),
         ])
     instructions.append(_SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ALLOW))
     return instructions
@@ -229,9 +237,12 @@ def _apply_policy(workdir):
         )
         if abi >= 3:
             device_rights |= _LANDLOCK_ACCESS_FS["truncate"]
-        for path in ("/dev/null", "/dev/zero", "/dev/tty"):
+        for path in ("/dev/null", "/dev/zero", "/dev/tty", "/dev/urandom"):
             if abi >= 3 and os.path.exists(path):
-                _add_path_rule(ruleset_fd, path, device_rights)
+                rights = device_rights
+                if path == "/dev/urandom":
+                    rights = _LANDLOCK_ACCESS_FS["read_file"]
+                _add_path_rule(ruleset_fd, path, rights)
 
         libc = ctypes.CDLL(None, use_errno=True)
         if libc.prctl(_PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0:
@@ -245,6 +256,11 @@ def _apply_policy(workdir):
 
 
 def _exec_command(command, workdir, allowed_env=None):
+    try:
+        os.setsid()
+    except OSError as exc:
+        if exc.errno != errno.EPERM:
+            raise
     _apply_policy(workdir)
     workdir = os.path.realpath(workdir)
     os.chdir(workdir)

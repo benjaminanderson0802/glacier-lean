@@ -117,6 +117,52 @@ def test_sandbox_creates_writable_tmp_directory(tmp_path):
     assert result.returncode == 0
 
 
+def test_sandbox_allows_reading_urandom(tmp_path):
+    _sandbox_or_skip()
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+
+    result = _run("head -c 1 /dev/urandom | wc -c", workdir)
+
+    assert result.returncode == 0
+    assert result.stdout.strip() == "1"
+
+
+def test_sandbox_refuses_signal_to_all_processes(tmp_path):
+    _sandbox_or_skip()
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+
+    result = _run("kill -0 -1", workdir)
+
+    assert result.returncode != 0
+    assert "operation not permitted" in result.stderr.lower()
+
+
+def test_sandbox_documents_known_pid_signal_fallback_limitation():
+    from pathlib import Path
+
+    docs = Path(__file__).resolve().parents[3] / "docs" / "SANDBOXING.md"
+    assert "can still signal a specific same-user process" in docs.read_text(encoding="utf-8")
+
+
+def test_sandbox_refuses_signal_zero_to_parent_on_landlock_abi_six(tmp_path):
+    """ABI < 6 cannot distinguish this PID; ABI 6 scopes signals to the sandbox."""
+    _sandbox_or_skip()
+    abi = sandboxing._landlock_abi()
+    if abi < 6:
+        pytest.skip(f"Landlock ABI {abi} cannot restrict signals to the sandbox process tree")
+
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+    parent_pid = os.getpid()
+
+    result = _run(f"kill -0 {parent_pid}", workdir)
+
+    assert result.returncode != 0
+    assert "operation not permitted" in result.stderr.lower()
+
+
 def test_available_reports_subprocess_failures(monkeypatch):
     def fail(*args, **kwargs):
         raise subprocess.TimeoutExpired(args[0], kwargs.get("timeout"))

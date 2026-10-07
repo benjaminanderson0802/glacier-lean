@@ -43,14 +43,17 @@ The wrapper process restricts itself and then replaces itself with `/bin/sh
 configuration trees are read-only. Other filesystem locations are denied.
 The child receives only `PATH`, `HOME`, `TMPDIR`, and `LANG` by default.
 Landlock ABI 6 scopes signal delivery and abstract Unix sockets to the sandbox.
-On older ABIs, seccomp blocks cross-process `kill`, `tkill`, and `tgkill`.
-Callers must launch the returned argv with `start_new_session=True` for the
-signal fallback; `wrap()` returns argv and cannot set process-creation flags.
+On older ABIs, the bootstrap starts a new session before applying seccomp.
+Seccomp rejects `kill`, `tkill`, and `tgkill` when the target is `-1`, and
+rejects `pidfd_send_signal`, `rt_sigqueueinfo`, and `rt_tgsigqueueinfo`
+outright. Seccomp cannot distinguish other target pids, so below Landlock ABI
+6 a command can still signal a specific same-user process if it knows that
+process's pid. Landlock ABI 6 scopes signal delivery to the sandbox process
+tree. `/dev/urandom` is exposed read-only; `/dev/null`, `/dev/zero`, and
+`/dev/tty` (when present) receive file-only read/write and truncate rights.
 This fallback cannot isolate abstract Unix sockets from other host processes.
-From Landlock ABI 3, `/dev/null`,
-`/dev/zero`, and `/dev/tty` (when present) receive file-only read/write and
-truncate rights. The `TRUNCATE` right is needed for shell output redirection;
-directory rights cannot be granted on a single device file.
+The `TRUNCATE` right on writable devices is needed for shell output
+redirection; directory rights cannot be granted on a single device file.
 The kernel's TCP connect/bind rights are handled without granting any ports,
 so the current implementation blocks network access for every command.
 `allow_hosts=[]` is supported. A non-empty `allow_hosts` raises a clear
