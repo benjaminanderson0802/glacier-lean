@@ -90,7 +90,7 @@ class LocalRequestGuard:
     def _has_token(scope, headers) -> bool:
         """Install token required on /api (except the open health check and CORS preflight)."""
         path = scope.get("path", "")
-        if not path.startswith("/api") or path in OPEN_PATHS or scope.get("method", "").upper() == "OPTIONS":
+        if not (path.startswith("/api") or path == "/a2a") or path in OPEN_PATHS or scope.get("method", "").upper() == "OPTIONS":
             return True
         query = scope.get("query_string", b"").decode("latin1") if scope["type"] == "websocket" else ""
         return local_token.matches(local_token.from_headers_or_query(headers, query))

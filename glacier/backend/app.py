@@ -117,6 +117,7 @@ def get_run(run_id: str):
     if not run:
         raise HTTPException(404, f"run {run_id} not found")
     run["usage"] = store.usage_of(run_id)  # model, route, tokens and cost per step
+    run["author"] = store.get_run(run_id).get("author", "owner")
     graph = store.graph_of(run_id)
     acceptance = graph.get("acceptance") or []
     checks = store.checks_of(run_id)

@@ -137,11 +137,13 @@ def usage_of(run_id: str) -> dict:
 
 def get_run(run_id: str) -> dict | None:
     with _conn() as c:
-        row = c.execute("SELECT run_id, env_id, status, waiting_on FROM glacier_runs WHERE run_id=?", (run_id,)).fetchone()
+        row = c.execute("SELECT run_id, env_id, status, waiting_on, graph FROM glacier_runs WHERE run_id=?", (run_id,)).fetchone()
         if not row:
             return None
         nodes = c.execute("SELECT node_id, state, output FROM glacier_nodes WHERE run_id=?", (run_id,)).fetchall()
+    snapshot = json.loads(row[4])
     return {"run_id": row[0], "env_id": row[1], "status": row[2], "waiting_on": row[3],
+            "author": snapshot.get("_author", "owner"),
             "node_states": {n: s for n, s, _ in nodes}, "outputs": {n: o for n, _, o in nodes if o is not None}}
 
 

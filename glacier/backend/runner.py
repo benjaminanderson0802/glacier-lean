@@ -408,7 +408,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             out[e["source"]].append(e)
     targets = {e["target"] for es in out.values() for e in es}
     queue = deque([n for n in nodes if n not in targets] or list(nodes)[:1])
-    last, status, executions = None, "done", 0
+    last, status, executions = ({"output": graph.get("_a2a_input", ""), "exit_code": 0}
+                                if graph.get("_author") == "a2a" else None), "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
     loop_counts, flow_visits, failures = defaultdict(int), defaultdict(int), defaultdict(list)
     isolate = bool(graph.get("isolate"))
