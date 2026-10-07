@@ -58,6 +58,9 @@ def set_run(run_id: str, status: str, waiting_on: str | None = None) -> None:
 
 
 def set_node(run_id: str, env_id: str, node_id: str, state: str, output: str | None = None) -> None:
+    if output is not None:
+        import secrets_store
+        output = secrets_store.redact(str(output))
     with _conn() as c:
         if output is None:
             c.execute("UPDATE glacier_nodes SET state=? WHERE run_id=? AND node_id=?", (state, run_id, node_id))
@@ -86,9 +89,16 @@ def list_runs(env_id: str | None) -> list[dict]:
 
 
 def record_usage(run_id: str, node_id: str, u: dict) -> None:
-    """Model, route and cost per step (roadmap: cost and route visible per run). Last execution of a step wins."""
+    """Accumulate token and cost totals; model and route describe the latest execution."""
     with _conn() as c:
-        c.execute("INSERT OR REPLACE INTO glacier_usage VALUES (?,?,?,?,?,?,?)",
+        # Existing installations already have this table and primary key; an UPSERT
+        # preserves all existing rows while accumulating subsequent executions.
+        c.execute("""INSERT INTO glacier_usage VALUES (?,?,?,?,?,?,?)
+                     ON CONFLICT(run_id,node_id) DO UPDATE SET
+                     model=excluded.model, route=excluded.route,
+                     tokens_in=glacier_usage.tokens_in+excluded.tokens_in,
+                     tokens_out=glacier_usage.tokens_out+excluded.tokens_out,
+                     cost_usd=glacier_usage.cost_usd+excluded.cost_usd""",
                   (run_id, node_id, str(u.get("model") or ""), str(u.get("route") or ""), int(u.get("tokens_in") or 0),
                    int(u.get("tokens_out") or 0), float(u.get("cost_usd") or 0.0)))
 

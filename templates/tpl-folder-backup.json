@@ -3,9 +3,9 @@
   "name": "Folder backup",
   "nodes": [
     {"id": "schedule", "type": "schedule", "config": {"cron": "0 2 * * *"}, "position": {"x": 0, "y": 0}},
-    {"id": "copy_folder", "type": "command", "config": {"cmd": "cd \"${GLACIER_HOME:-data}/workspaces/tpl-folder-backup\" && GLACIER_HOME=\"$(cd ../.. && pwd)\" && export GLACIER_HOME && d=\"${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)\"; test ! -e \"$d\" && mkdir -p \"$d\" && cp -a . \"$d\"", "timeout": "900"}, "position": {"x": 260, "y": 0}},
+    {"id": "copy_folder", "type": "command", "config": {"cmd": "d=\"${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)\"; test ! -e \"$d\" && mkdir -p \"$d\" && cp -a . \"$d\"", "timeout": "900"}, "position": {"x": 260, "y": 0}},
     {"id": "copy_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 520, "y": 0}},
-    {"id": "verify_copy", "type": "command", "config": {"cmd": "cd \"${GLACIER_HOME:-data}/workspaces/tpl-folder-backup\" && GLACIER_HOME=\"$(cd ../.. && pwd)\" && export GLACIER_HOME && d=\"${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)\" && diff -qr . \"$d\"", "timeout": "900"}, "position": {"x": 780, "y": -140}},
+    {"id": "verify_copy", "type": "command", "config": {"cmd": "d=\"${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)\" && diff -qr . \"$d\"", "timeout": "900"}, "position": {"x": 780, "y": -140}},
     {"id": "verify_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 1040, "y": -140}},
     {"id": "verified_note", "type": "note", "config": {"path": "backups/verified-{run}.md", "template": "The folder backup was checked successfully in run {run}.\n\n{summary}"}, "position": {"x": 1300, "y": -280}},
     {"id": "copy_failed_note", "type": "note", "config": {"path": "backups/copy-failed-{run}.md", "template": "The folder could not be copied in run {run}.\n\n{summary}"}, "position": {"x": 780, "y": 140}},

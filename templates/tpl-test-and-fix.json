@@ -3,14 +3,14 @@
   "name": "Test and fix",
   "nodes": [
     {"id": "schedule", "type": "schedule", "config": {"cron": "0 9 * * 1-5"}, "position": {"x": 0, "y": 0}},
-    {"id": "first_tests", "type": "command", "config": {"cmd": "cd \"${GLACIER_HOME:-data}/workspaces/tpl-test-and-fix\" && python3 -m pytest -q", "retries": "0", "timeout": "900"}, "position": {"x": 260, "y": 0}},
+    {"id": "first_tests", "type": "command", "config": {"cmd": "python3 -m pytest -q", "retries": "0", "timeout": "900"}, "position": {"x": 260, "y": 0}},
     {"id": "first_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 520, "y": 0}},
     {"id": "passed_note", "type": "note", "config": {"path": "test-runs/passed-{run}.md", "template": "Tests passed in run {run}.\n\n{summary}"}, "position": {"x": 780, "y": -140}},
     {"id": "approve_fix", "type": "approval", "config": {"prompt": "The tests failed. Approve letting Codex edit files in this workspace to try to fix them?"}, "position": {"x": 780, "y": 140}},
     {"id": "repair_loop", "type": "loop", "config": {"times": "3"}, "position": {"x": 1040, "y": 140}},
     {"id": "fix_with_codex", "type": "codex", "config": {"prompt": "Fix the test failures shown in {prev_output}. Make a focused change, then explain what changed. Do not skip, weaken, or remove tests.", "sandbox": "workspace-write", "retries": "0", "timeout": "1800"}, "position": {"x": 1300, "y": 280}},
     {"id": "fix_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 1560, "y": 280}},
-    {"id": "rerun_tests", "type": "command", "config": {"cmd": "cd \"${GLACIER_HOME:-data}/workspaces/tpl-test-and-fix\" && python3 -m pytest -q", "retries": "0", "timeout": "900"}, "position": {"x": 1820, "y": 280}},
+    {"id": "rerun_tests", "type": "command", "config": {"cmd": "python3 -m pytest -q", "retries": "0", "timeout": "900"}, "position": {"x": 1820, "y": 280}},
     {"id": "rerun_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 2080, "y": 280}},
     {"id": "attempts_done_note", "type": "note", "config": {"path": "test-runs/needs-help-{run}.md", "template": "Tests still need attention after up to three repair attempts in run {run}.\n\n{summary}"}, "position": {"x": 1040, "y": 0}},
     {"id": "declined_note", "type": "note", "config": {"path": "test-runs/fix-not-approved-{run}.md", "template": "The test repair was not approved in run {run}. No files were changed."}, "position": {"x": 780, "y": 280}}
