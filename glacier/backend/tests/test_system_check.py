@@ -82,7 +82,7 @@ def test_low_resource_default_fits_a_modest_pc():
 
 def test_unknown_memory_is_not_treated_as_low(monkeypatch):
     monkeypatch.setattr(system_check.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(system_check.os, "sysconf", lambda key: (_ for _ in ()).throw(ValueError("unknown")))
+    monkeypatch.setattr(system_check.os, "sysconf", lambda key: (_ for _ in ()).throw(ValueError("unknown")), raising=False)
     monkeypatch.setattr(system_check.shutil, "disk_usage", lambda _path: type("Usage", (), {"free": 20 * 1024**3})())
     cores, memory, _disk = system_check._machine_stats()
     assert cores >= 1
