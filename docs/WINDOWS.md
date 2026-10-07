@@ -53,10 +53,12 @@ The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Portabi
 | 5 | `The step sandbox needs Linux; this step can't run sandboxed on Windows` where tests expect validation/errors | Landlock enforcement tests skip on Windows with a reason; sandbox requests retain their existing plain-language limitation. |
 | 3 | Fake worker returns `cancelled`/502 or lacks assistant stream events | Covered by launching Python fake commands through the active interpreter. |
 | 2 | `AttributeError: os.sysconf` and fake Ollama lookup failure | Windows RAM detection uses `GlobalMemoryStatusEx`; fake Ollama uses a Python fixture on Windows. |
-| 2 | `CalledProcessError` for vault note containing `[run:abc]`; missing nested Windows-named file | Windows vault input paths are normalized and listed paths use `/`. |
-| 1 | Template manifest SHA mismatch | No Windows-specific cause was established; unchanged. |
+| 2 | `CalledProcessError` for vault note containing `[run:abc]`; missing nested Windows-named file | Windows vault input paths are normalized and listed paths use `/`; compatibility fixtures seed restricted names through extended Windows paths. |
+| 1 | Template manifest SHA mismatch | Repository text files use LF checkout rules so reviewed hashes remain identical on Windows and Linux. |
 | 1 | `assert 3 == 4` in vault compatibility report | Re-evaluated after vault path normalization. |
 | 1 | Claim research expected proposal/routing but got different status | Covered by launching the Python fake researcher through the active interpreter. |
 | 1 | `KeyError: 'x'` in Codex route test | Covered by launching Python fakes through the active interpreter. |
 
 Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The earlier Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. The workflow keeps `continue-on-error` until two consecutive Windows backend runs pass.
+
+Compatibility tests account for Windows filename rules: backslashes in links resolve to nested notes, and events may include memory changes alongside node changes, so node-event checks select messages with `node_id`.
