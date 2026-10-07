@@ -42,11 +42,13 @@ Sources: [bubblewrap project and design](https://github.com/containers/bubblewra
 Sandboxing is off by default for now. Set `sandbox: "on"` on a command step,
 set `sandbox: "on"` on the flow to apply it to command steps without their own
 setting, or set `GLACIER_SANDBOX=on` to require it for all command steps. The
-environment setting is a floor: a step cannot turn it off. Only `on` and `off`
-are accepted. The step workspace is the only writable folder. Network access
-stays blocked by default. A sandboxed step that asks for `network: "allow"`
-fails clearly until a filtered proxy is available; it never gets unrestricted
-network access.
+environment setting is a floor: a command step cannot turn it off. Only `on`
+and `off` are accepted. `GLACIER_SANDBOX=on` covers command steps only;
+acceptance-check commands and plug-in workers, including ACP steps, run outside
+it. The step workspace is the only writable folder. Network access stays
+blocked by default. A sandboxed step that asks for `network: "allow"` fails
+clearly until a filtered proxy is available; it never gets unrestricted network
+access.
 
 Codex keeps its own sandbox mode. `GLACIER_CODEX_SANDBOX` supplies the default
 for Codex steps that do not choose a mode; an explicit `sandbox` setting on a

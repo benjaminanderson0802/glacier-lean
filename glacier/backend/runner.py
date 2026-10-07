@@ -3,7 +3,6 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
-from dbos._error import DBOSException
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
@@ -17,19 +16,9 @@ OUTPUT_LIMIT = 20000
 CODEX_TIMEOUT = 30 * 60
 PREV_LIMIT = 8000
 CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
-RUN_QUEUE_NAME = "glacier-runs"
 RUN_WAITING_MESSAGE = "Waiting for another run to finish"
 MAX_PARALLEL_RUNS = max(1, int(system_check.effective_settings().get("max_parallel_runs", 1)))
 _execution_slots = threading.BoundedSemaphore(MAX_PARALLEL_RUNS)
-# Declare at import when DBOS is already live. DBOS 3.2 requires its system
-# database to be launched first, so app startup uses the one-time fallback in
-# start_run; the queue is then persisted and reused for subsequent runs.
-try:
-    RUN_QUEUE = DBOS.register_queue(RUN_QUEUE_NAME)
-except DBOSException as exc:  # standalone unit tests import runner without launching DBOS
-    if not any(reason in str(exc) for reason in ("No DBOS was created yet", "System database accessed before DBOS was launched")):
-        raise
-    RUN_QUEUE = None
 # steps with an exit_code that check nodes branch on: see plugins.is_worker
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
@@ -61,15 +50,8 @@ def start_run(env_id: str) -> str:
     run_id = uuid.uuid4().hex[:12]
     graph = load_env(env_id)
     store.create_run(run_id, env_id, graph)
-    global RUN_QUEUE
-    if RUN_QUEUE is None:
-        RUN_QUEUE = DBOS.register_queue(RUN_QUEUE_NAME)
-    pending = DBOS.list_workflows(status=["ENQUEUED", "PENDING"], queue_name=RUN_QUEUE_NAME,
-                                  limit=MAX_PARALLEL_RUNS, load_input=False, load_output=False)
-    if len(pending) >= MAX_PARALLEL_RUNS:
-        store.set_run(run_id, "queued", RUN_WAITING_MESSAGE)
     with SetWorkflowID(run_id):
-        RUN_QUEUE.enqueue(run_environment, env_id, run_id)
+        DBOS.start_workflow(run_environment, env_id, run_id)
     return run_id
 
 
@@ -288,9 +270,16 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
 @DBOS.step()
 def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
     """Run one step while respecting the hardware-derived execution limit."""
-    with _execution_slots:
+    acquired = _execution_slots.acquire(blocking=False)
+    if not acquired:
+        store.set_run(run_id, "queued", RUN_WAITING_MESSAGE)
+        store.set_node(run_id, env_id, node["id"], "queued", RUN_WAITING_MESSAGE)
+        _execution_slots.acquire()
+    try:
         store.set_run(run_id, "running")
         return _run_node_impl(env_id, run_id, node, last, ws)
+    finally:
+        _execution_slots.release()
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)

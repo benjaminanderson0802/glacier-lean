@@ -104,7 +104,7 @@ def test_sandbox_requires_workspace(tmp_path, monkeypatch):
 
 def test_codex_setting_is_default_and_explicit_readonly_wins(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_CODEX_SANDBOX", "workspace-write")
-    monkeypatch.setattr(runner, "CODEX_BIN", FAKE_CODEX, raising=False)
+    monkeypatch.setenv("CODEX_BIN", FAKE_CODEX)
     monkeypatch.setattr(store, "set_node", lambda *args, **kwargs: None)
     seen = {}
     popen = runner.subprocess.Popen
@@ -116,8 +116,9 @@ def test_codex_setting_is_default_and_explicit_readonly_wins(tmp_path, monkeypat
     assert seen["sandbox"] == "read-only"
 
 
-def test_run_queue_waits_at_effective_limit(server, monkeypatch):
+def test_run_waits_at_effective_limit(make_server, monkeypatch):
     monkeypatch.setenv("GLACIER_MAX_PARALLEL_RUNS", "1")
+    server = make_server().start()
     server.put("/api/environments/limited", env("limited", [
         ("wait", "command", {"cmd": "sleep 1; echo finished"})
     ], []))
@@ -139,6 +140,33 @@ def test_run_queue_waits_at_effective_limit(server, monkeypatch):
     assert second["waiting_on"] == "Waiting for another run to finish"
     assert server.wait_run(first_id)["status"] == "done"
     assert server.wait_run(second_id, timeout=10)["status"] == "done"
+
+
+def test_run_node_marks_queued_only_when_no_execution_slot_is_available(monkeypatch):
+    events = []
+
+    class OccupiedSlot:
+        def acquire(self, blocking=True):
+            events.append(("acquire", blocking))
+            return blocking
+
+        def release(self):
+            events.append(("release",))
+
+    monkeypatch.setattr(runner, "_execution_slots", OccupiedSlot())
+    monkeypatch.setattr(store, "set_run", lambda run_id, status, waiting_on=None:
+                        events.append(("run", status, waiting_on)))
+    monkeypatch.setattr(store, "set_node", lambda run_id, env_id, node_id, state, output=None:
+                        events.append(("node", state, output)))
+    monkeypatch.setattr(runner, "_run_node_impl", lambda *args: {"state": "done", "output": "ok"})
+
+    result = runner.run_node("flow", "run-queued", _node("run-queued", {"cmd": "true"}), None)
+
+    assert result["state"] == "done"
+    assert ("run", "queued", "Waiting for another run to finish") in events
+    assert ("node", "queued", "Waiting for another run to finish") in events
+    assert events.index(("run", "running", None)) > events.index(
+        ("run", "queued", "Waiting for another run to finish"))
 
 
 def test_approval_wait_does_not_consume_step_limit(server, monkeypatch):
