@@ -1,6 +1,7 @@
 """Browser request checks for the loopback engine."""
 
 from urllib.parse import urlsplit
+import os
 
 from starlette.responses import JSONResponse
 
@@ -25,13 +26,16 @@ def _allowed_origin(origin: str, request) -> bool:
     own_port = request.url.port
     if parsed.hostname.lower() == host and port == own_port:
         return True
-    return port in {5173, 4173}
+    return os.environ.get("GLACIER_DEV") == "1" and port in {5173, 4173}
 
 
 def _host_is_loopback(host_header: str) -> bool:
     try:
         parsed = urlsplit("//" + host_header)
-        return parsed.hostname in {"localhost", "127.0.0.1"} and parsed.username is None and parsed.password is None
+        port = parsed.port  # Access validates that an optional port is numeric and in range.
+        return (parsed.hostname in {"localhost", "127.0.0.1"} and parsed.username is None
+                and parsed.password is None and parsed.path == "" and parsed.query == "" and parsed.fragment == ""
+                and (port is None or 1 <= port <= 65535))
     except ValueError:
         return False
 
@@ -41,14 +45,21 @@ class LocalRequestGuard:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
+        if scope["type"] not in {"http", "websocket"}:
             await self.app(scope, receive, send)
             return
         headers = {key.decode("latin1").lower(): value.decode("latin1") for key, value in scope.get("headers", [])}
         host = headers.get("host", "")
         if not _host_is_loopback(host):
-            response = JSONResponse({"detail": BLOCKED}, status_code=403)
-            await response(scope, receive, send)
+            await self._reject(scope, receive, send)
+            return
+
+        if scope["type"] == "websocket":
+            origin = headers.get("origin")
+            if origin and not _allowed_origin(origin, _RequestView(scope, headers)):
+                await self._reject(scope, receive, send)
+                return
+            await self.app(scope, receive, send)
             return
 
         method = scope.get("method", "").upper()
@@ -56,24 +67,37 @@ class LocalRequestGuard:
             origin = headers.get("origin")
             fetch_site = headers.get("sec-fetch-site", "").lower()
             if (origin and not _allowed_origin(origin, _RequestView(scope, headers))) or (not origin and fetch_site == "cross-site"):
-                response = JSONResponse({"detail": BLOCKED}, status_code=403)
-                await response(scope, receive, send)
+                await self._reject(scope, receive, send)
                 return
             content_type = headers.get("content-type", "").split(";", 1)[0].strip().lower()
-            if content_type in FORM_TYPES and scope.get("path") != "/api/files":
+            if content_type in FORM_TYPES and scope.get("path") not in {"/api/files", "/api/imports"}:
                 response = JSONResponse({"detail": "This form cannot be used for this request."}, status_code=415)
                 await response(scope, receive, send)
                 return
         await self.app(scope, receive, send)
 
+    @staticmethod
+    async def _reject(scope, receive, send):
+        if scope["type"] == "websocket":
+            await send({"type": "websocket.close", "code": 1008})
+            return
+        response = JSONResponse({"detail": BLOCKED}, status_code=403)
+        await response(scope, receive, send)
+
 
 class _RequestView:
     """Small URL view used without constructing a framework Request."""
     def __init__(self, scope, headers):
-        from starlette.requests import Request
-        self._request = Request(scope)
+        self.scope = scope
         self.headers = headers
 
     @property
     def url(self):
-        return self._request.url
+        from starlette.datastructures import URL
+        if self.scope["type"] == "websocket":
+            server = self.scope.get("server")
+            if server:
+                scheme = "https" if self.scope.get("scheme") == "wss" else "http"
+                return URL(scheme=scheme, hostname=server[0], port=server[1])
+        from starlette.requests import Request
+        return Request(self.scope).url
