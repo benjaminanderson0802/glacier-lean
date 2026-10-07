@@ -320,3 +320,16 @@ export const settingsApi = {
   costs: (days = 30) => req<Costs>('GET', `/api/costs?days=${days}`),
   compat: () => req<VaultCompat>('GET', '/api/memory/compat'),
 }
+
+// ---------- First-run starter setup ----------
+export interface StarterProposal {
+  applied: boolean
+  mode: 'low' | 'standard'; local_model: string; reason: string
+  coding_agents_found: { id: string; name: string; found: boolean; version: string; usable_as_step: boolean }[]
+  suggested_automations: { template_id: string; name: string; why: string; requires_local_model: boolean }[]
+  missing_but_useful: { name: string; why: string; license: string; download_page: string }[]
+}
+export const starterApi = {
+  get: () => req<StarterProposal>('GET', '/api/starter'),
+  apply: (template_ids: string[], mode: string) => req<{ created: { template_id: string; id: string; name: string }[]; mode: string; local_model: string }>('POST', '/api/starter/apply', { template_ids, mode }),
+}

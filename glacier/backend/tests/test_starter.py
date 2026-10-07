@@ -101,3 +101,12 @@ def test_failing_hardware_check_falls_back_to_the_small_model(monkeypatch):
         raise RuntimeError("no hardware info")
     monkeypatch.setattr(system_check, "effective_settings", broken)
     assert system_check.default_local_model() == "qwen3:0.6b"
+
+
+def test_proposal_says_whether_the_starter_was_already_applied(tmp_path, monkeypatch):
+    import starter
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.setattr(starter, "_agent_discovery", lambda: [])
+    assert starter.proposal()["applied"] is False
+    (tmp_path / "starter_templates.json").write_text("[]", encoding="utf-8")
+    assert starter.proposal()["applied"] is True

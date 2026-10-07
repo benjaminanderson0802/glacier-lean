@@ -126,7 +126,7 @@ def proposal() -> dict:
         missing_useful.append({"name": name, "why": why, "license": license_name, "download_page": url})
         if len(missing_useful) == 3:
             break
-    return {"mode": mode, "local_model": model, "reason": reason,
+    return {"applied": (_home() / "starter_templates.json").exists(), "mode": mode, "local_model": model, "reason": reason,
             "coding_agents_found": agents, "suggested_automations": suggestions,
             "missing_but_useful": missing_useful}
 
