@@ -1,5 +1,7 @@
-# Code of Conduct
+# Contributor Covenant Code of Conduct
 
-Glacier follows the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). This short summary is not a replacement for the linked text.
+This project follows the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-We expect welcoming, respectful collaboration; listen to different experiences; give and receive constructive feedback; and focus criticism on ideas and work. Harassment, discrimination, personal attacks, and unwanted sexual attention are not acceptable. Report concerns privately to the project owner using the contact route provided with the repository. The owner will review reports fairly and may take corrective action, including removing content or excluding a contributor. Before public release, the owner will add a real conduct contact here.
+We expect welcoming, respectful collaboration. Listen to different experiences, give and receive constructive feedback, and keep criticism focused on ideas and work. Harassment, discrimination, personal attacks, and unwanted sexual attention are not acceptable.
+
+To report a concern, use this repository's GitHub private vulnerability reporting route (**Security** tab > **Report a vulnerability**) or contact a maintainer. A maintainer will review reports fairly and may take corrective action, including removing content or excluding a contributor.
