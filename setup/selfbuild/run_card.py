@@ -69,6 +69,9 @@ def install_maintenance(client: httpx.Client, repo: Path) -> None:
         config = node.get("config", {})
         if config.get("cwd") == "{repo}":
             config["cwd"] = str(repo)
+        if node.get("id") == "maintenance":
+            script = repo / "setup" / "selfbuild" / "maintenance.py"
+            config["cmd"] = f"{sys.executable} {script} --repo {repo} --run {{run}}"
     saved = client.put(f"/api/environments/{flow['id']}", json=flow)
     saved.raise_for_status()
 
