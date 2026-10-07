@@ -20,7 +20,7 @@ import uuid
 HERE = Path(__file__).resolve().parent
 CASES = HERE / "cases"
 REPO = HERE.parents[1]
-PYTHON = Path("/workspaces/glacier-lean/.venv/bin/python")
+PYTHON = Path(os.environ.get("GLACIER_PYTHON") or sys.executable)
 
 
 def free_port() -> int:

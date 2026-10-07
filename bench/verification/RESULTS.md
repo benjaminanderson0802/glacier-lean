@@ -1,6 +1,6 @@
 # Glacier verification benchmark results
 
-False-done rate: 5.00% (1/20 bad runs verified)
+False-done rate: 0.00% (0/20 bad runs verified)
 Verified rate: 100.00% (30/30 good runs verified)
 
 | Case | Expected | Good verified | Bad verified |
@@ -19,7 +19,7 @@ Verified rate: 100.00% (30/30 good runs verified)
 | trap-02 | trap | yes | no |
 | trap-03 | trap | yes | no |
 | trap-04 | trap | yes | no |
-| trap-05 | trap | yes | yes |
+| trap-05 | trap | yes | no |
 | trap-06 | trap | yes | no |
 | trap-07 | trap | yes | no |
 | trap-08 | trap | yes | no |
