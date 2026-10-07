@@ -3,6 +3,7 @@ Importable (call init(path) once) and runnable as an MCP server: `python vault.p
 Every write is: atomic file write -> git commit -> index update. No AI models."""
 import os, re, json, sqlite3, tempfile, threading
 import git
+import memory_meta
 
 VAULT: str = ""
 _repo = None
@@ -34,27 +35,80 @@ def safe_path(path: str) -> str:
     return full
 
 
-def write_note(path: str, body: str, agent: str = "unknown") -> str:
-    """Create or replace a note; returns the short commit sha."""
+def write_note(path: str, body: str, agent: str = "unknown", *, author: str | None = None, run_id: str = "") -> str:
+    """Create or replace a note; returns the short commit sha. Legacy agent callers remain supported."""
     full = safe_path(path)
+    if run_id and not re.fullmatch(r"[A-Za-z0-9-]{1,64}", run_id):
+        raise ValueError("Run id must contain only letters, numbers, and hyphens (up to 64 characters)")
+    if author and author.startswith("worker:") and not re.fullmatch(r"worker:[A-Za-z0-9._-]{1,64}", author):
+        raise ValueError("Worker author must be worker:<model> using letters, numbers, dot, underscore, or hyphen")
     with _lock:
+        previous = None
+        try:
+            with open(full, encoding="utf-8") as f:
+                previous = f.read()
+        except FileNotFoundError:
+            pass
+        # Keep the historical `agent=` call shape, while run note steps carry an
+        # explicit run identity in the service-owned author field.
+        metadata_run_id = run_id
+        if path.startswith("runs/") and not metadata_run_id and agent == "glacier-runner":
+            match = re.search(r"(?<![a-f0-9])([a-f0-9]{12})(?![a-f0-9])", path + "\n" + body, re.I)
+            if match:
+                metadata_run_id = match.group(1)
+        # Legacy internal writers (not the HTTP screen) encode their domain fields in
+        # front matter. Carry a claim's run id into the service field when available.
+        if path.endswith(".md") and not metadata_run_id and author is None and agent != "unknown":
+            incoming = re.match(r"\A---\s*\n(.*?)\n---\s*\n?", body, re.S)
+            if incoming:
+                run_line = re.search(r"(?m)^run_id:\s*(.*)$", incoming.group(1))
+                if run_line:
+                    metadata_run_id = run_line.group(1).strip().strip('"')
+        writer = author or (f"run:{metadata_run_id}" if metadata_run_id and agent == "glacier-runner" else
+                            f"run:{run_id}" if run_id else agent)
+        stored_body = memory_meta.render(path, body, writer, metadata_run_id, previous)[1] if path.endswith(".md") else body
         os.makedirs(os.path.dirname(full), exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=os.path.dirname(full))
-        os.write(fd, body.encode()); os.close(fd); os.replace(tmp, full)
+        os.write(fd, stored_body.encode()); os.close(fd); os.replace(tmp, full)
         _repo.index.add([os.path.relpath(full, VAULT)])
-        sha = _repo.index.commit(f"[{agent}] write {path}").hexsha[:8]
+        git_writer = "glacier-runner" if agent == "glacier-runner" else writer
+        message_writer = f"run:{metadata_run_id}" if agent == "glacier-runner" and metadata_run_id else writer
+        message = f"[{message_writer}] write {path}"
+        if agent == "glacier-runner" and metadata_run_id:
+            message += f" [run:{metadata_run_id}]"
+        actor = git.Actor(git_writer, "glacier@localhost")
+        sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
         c = _db()
-        c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, body))
+        indexed_body = memory_meta.parse(stored_body, path)[1] if path.endswith(".md") else stored_body
+        c.execute("DELETE FROM fts WHERE path=?", (path,)); c.execute("INSERT INTO fts VALUES (?,?)", (path, indexed_body))
         c.execute("DELETE FROM links WHERE src=?", (path,))
-        for dst in re.findall(r"\[\[([^\]|#]+)", body):
-            c.execute("INSERT INTO links VALUES (?,?)", (path, dst.strip()))
-        c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)", (agent, "write_note", json.dumps({"path": path, "commit": sha})))
+        for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
+            c.execute("INSERT INTO links VALUES (?,?)", (path, dst.split("|", 1)[0].strip().removesuffix(".md")))
+        c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)", (writer, "write_note", json.dumps({"path": path, "commit": sha})))
         c.commit(); c.close()
+        # Keep the change notification on the existing event channel without changing run-step events.
+        try:
+            import store
+            event = {"type": "memory", "path": path,
+                     "change": "created" if previous is None else "updated",
+                     "author": writer, "run_id": metadata_run_id or ""}
+            if writer.startswith("run:"):
+                # Let the associated run-step completion event reach clients first.
+                threading.Timer(0.1, store.broadcaster.publish, args=(event,)).start()
+            else:
+                store.broadcaster.publish(event)
+        except (ImportError, AttributeError):
+            pass
     return sha
 
 
 def read_note(path: str) -> str:
-    with open(safe_path(path)) as f:
+    return memory_meta.legacy_read(read_raw_note(path))
+
+
+def read_raw_note(path: str) -> str:
+    """Read the stored note, including service and caller front matter."""
+    with open(safe_path(path), encoding="utf-8") as f:
         return f.read()
 
 
@@ -84,31 +138,9 @@ def last_commit(path: str) -> str | None:
 
 
 def main() -> None:
-    from mcp.server.fastmcp import FastMCP
-    init(os.environ.get("GLACIER_VAULT", "vault"))
-    mcp = FastMCP("glacier-memory")
-
-    @mcp.tool(name="write_note")
-    def _write(path: str, body: str, agent: str = "unknown") -> str:
-        """Create or replace a markdown note in the shared vault (path like projects/x.md)."""
-        return f"saved {path} (commit {write_note(path, body, agent)})"
-
-    @mcp.tool(name="search")
-    def _search(query: str, k: int = 5) -> str:
-        """Keyword search of the shared vault (any word matches). Returns matching note paths, best first."""
-        return json.dumps(search(query, k))
-
-    @mcp.tool(name="links")
-    def _links(path: str) -> str:
-        """Notes this note links to with [[wiki links]]."""
-        return json.dumps(links(path))
-
-    @mcp.tool(name="read_note")
-    def _read(path: str) -> str:
-        """Read a note from the shared vault."""
-        return read_note(path)
-
-    mcp.run()
+    # MCP is implemented in mem_server.py; this entry point remains for older launchers.
+    import mem_server
+    mem_server.main()
 
 
 if __name__ == "__main__":
