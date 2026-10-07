@@ -1,0 +1,13 @@
+{
+  "id": "tpl-weekly-research",
+  "name": "Weekly research summary",
+  "nodes": [
+    {"id": "schedule", "type": "schedule", "config": {"cron": "0 9 * * 1"}, "position": {"x": 0, "y": 0}},
+    {"id": "research", "type": "codex", "config": {"prompt": "Prepare a short weekly research summary on the topic the user has written into this prompt. Use information available to you, name sources and dates, separate confirmed facts from open questions, and say clearly if you cannot verify something. Do not change files or take external actions.\n\nTopic:", "sandbox": "read-only", "timeout": "1800"}, "position": {"x": 260, "y": 0}},
+    {"id": "save_summary", "type": "note", "config": {"path": "research/weekly-{run}.md", "template": "Weekly research summary for run {run}:\n\n{summary}"}, "position": {"x": 520, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "schedule", "target": "research", "label": ""},
+    {"id": "e2", "source": "research", "target": "save_summary", "label": ""}
+  ]
+}
