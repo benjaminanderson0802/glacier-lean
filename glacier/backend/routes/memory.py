@@ -144,13 +144,18 @@ def history(path: str):
 @router.post("/api/memory/undo")
 def undo(item: Undo):
     path = _normalised_path(item.path)
+    if item.commit and not re.fullmatch(r"[0-9a-fA-F]{7,40}", item.commit):
+        raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
     commits = list(vault._repo.iter_commits(paths=path))
     if not commits:
         raise HTTPException(404, "No saved version exists for this note")
-    index = next((i for i, c in enumerate(commits) if item.commit and c.hexsha.startswith(item.commit)), 0) if item.commit else 0
-    if item.commit and not any(c.hexsha.startswith(item.commit) for c in commits):
+    matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
+    if item.commit and not matching:
         raise HTTPException(404, "That saved version was not found")
-    target = commits[index].parents[0] if commits[index].parents else None
+    if len(matching) > 1:
+        raise HTTPException(400, "More than one saved version matches. Enter more of the version ID.")
+    selected = matching[0] if item.commit else commits[0]
+    target = selected.parents[0] if selected.parents else None
     if target is None:
         raise HTTPException(400, "There is no earlier version to restore")
     try:
