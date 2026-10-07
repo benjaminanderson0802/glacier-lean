@@ -18,6 +18,44 @@ The first window shows the bundled first-run page while the backend starts. It c
 
 `desktop/sidecar.json` enables low-resource mode. The sidecar sets `GLACIER_LOCAL_MODEL=qwen3:0.6b` and `GLACIER_MAX_PARALLEL_RUNS=1` for the backend. The data location is user-local application data. The backend binds only to `127.0.0.1`.
 
+## Linux packages
+
+Linux release packages contain the Glacier backend Python source, its requirements file, and the node type catalog. They do not contain Python or a private Python environment. Install Python 3.12 on the machine before running Glacier; the first-run page explains this requirement if the `python3.12` command is missing. Backend Python dependencies must also be installed for the selected Python runtime as listed in the bundled `backend/requirements.txt`.
+
+On Debian 12/Ubuntu 24.04 or a compatible distribution, install the Tauri Linux build prerequisites and build both packages from the repository checkout:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev patchelf
+cd desktop
+npm ci
+./package_linux.sh
+```
+
+The script checks the system packages, builds the screen, and runs `npx tauri build --bundles deb,appimage`. The `.deb` and `.AppImage` files are written under `src-tauri/target/release/bundle/`. `file` is needed to build the AppImage. FUSE is not required to inspect or extract an AppImage, though starting it for the packaging check uses `xvfb-run` when available.
+
+Check the package contents and headless AppImage launch with:
+
+```sh
+cd desktop
+./test_packaging.sh
+```
+
+The `.deb` check confirms the backend source, requirements and contract catalog are present. The AppImage check runs `--help` under `xvfb-run`; if that tool is missing, it prints a skip message.
+
+## macOS (needs a Mac to build and sign)
+
+Build macOS packages on a Mac with current Xcode command line tools, Rust 1.92, and Node.js/npm installed. The package includes backend source only, so install Python 3.12 and the packages listed in `backend/requirements.txt` on the target Mac.
+
+```sh
+xcode-select --install
+cd desktop
+npm ci
+npx tauri build --bundles app,dmg
+```
+
+The `.app` and `.dmg` are written under `src-tauri/target/release/bundle/`. Signing and notarization require Apple developer credentials and are not performed by these commands.
+
 ## Linux sandbox build
 
 The sandbox acceptance script builds the screen and Tauri application, then checks the executable:

@@ -74,7 +74,14 @@ fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf),
             }
         }
     }
-    command.spawn().map(|child| (child, log_path.clone())).map_err(|e| format!("{e}; log: {}", log_path.display()))
+    command.spawn().map(|child| (child, log_path.clone())).map_err(|e| {
+        let detail = if sidecar == "python3.12" {
+            "Python 3.12 was not found. Install Python 3.12 to run Glacier's local engine".to_string()
+        } else {
+            e.to_string()
+        };
+        format!("{detail}; log: {}", log_path.display())
+    })
 }
 
 fn backend_ready(port: u16) -> bool {
