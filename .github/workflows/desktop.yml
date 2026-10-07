@@ -21,7 +21,9 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: |
+            desktop/package-lock.json
+            glacier/web/package-lock.json
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -36,6 +38,9 @@ jobs:
           restore-keys: windows-cargo-1.92-
       - name: Build bundled Windows Python runtime
         run: python setup/pybundle/build_runtime.py --platform x86_64-pc-windows-msvc
+      - name: Install screen dependencies
+        working-directory: glacier/web
+        run: npm ci --no-audit --no-fund
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm ci --no-audit --no-fund
