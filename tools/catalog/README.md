@@ -1,35 +1,29 @@
 # MCP capability catalog
 
-`check.py` checks the catalog's required fields, OSI-approved license identifiers, immutable version pins, and declared permissions. It prints a compact summary when the catalog passes.
+`capabilities.yaml` is a short, reviewed shortlist of MCP servers Glacier may offer to workers. It is not an automatic installer or a trust guarantee. Before enabling a server, keep filesystem access narrow, provide only named secrets, and enforce each listed network host outside the server as well. Servers and dependencies must be reviewed again before changing their pins.
 
-Run it from the repository root:
+Run the catalog checker from the repository root:
 
 ```sh
 /workspaces/glacier-lean/.venv/bin/python tools/catalog/check.py
 ```
 
-The catalog is a reviewed shortlist, not an automatic installer or a trust guarantee. Before enabling a server, keep filesystem access narrow, provide only named secrets, and enforce each listed network host outside the server as well. Servers and dependencies must be reviewed again before changing their pins.
+The checker validates the required fields, OSI-approved license identifiers, exact install pins, Docker image digests, and declared permissions, then prints a summary table.
 
-Each `source` points to the upstream repository used for review. `reviewed_by` and `reviewed_on` record the review provenance. Risk notes call out relevant effects such as remote access, prompt injection from web pages, browser control, or irreversible external writes.
-
-The checker requires permission maps with exactly these keys:
-
-- `files`: filesystem paths and access levels, such as `workspace:read`.
-- `network_access`: whether the server can make outbound network requests.
-- `network_hosts`: allowed destination hostnames; must be non-empty when network access is enabled.
-- `secrets`: secret names the server may receive; never secret values.
+Each `source` points to the upstream repository used for review. `reviewed_by` and `reviewed_on` record provenance. Network-enabled entries list the allowed hostnames and explicitly say that Glacier's network sandbox must enforce the list; a server's own code is not treated as an egress boundary.
 
 ## Upstream source review
 
-The source repositories, licenses, release pins, and install instructions were checked on 2026-10-07. Each catalog row links to its upstream repository; these official upstream pages document the server's purpose, setup, or license. Pins are deliberately exact and must be reviewed again before changing.
+The following official upstream repositories document each server's purpose, install method, license, and/or release pin:
 
-- [MCP filesystem server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem): local directory access and package release details; only configured directories should be exposed.
-- [MCP git server](https://github.com/modelcontextprotocol/servers/tree/main/src/git): local repository operations, install guidance, and MIT license. Git tools can change content, so only approved checkouts should be exposed.
-- [MCP fetch server](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch): web fetching and conversion; its project metadata declares MIT and its README warns about access to local/internal addresses.
-- [MCP memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory): local knowledge graph storage. This is separate from Glacier's plain-file vault contract and must not become the only copy of user memory.
-- [Playwright MCP](https://github.com/microsoft/playwright-mcp): browser automation; the official package metadata lists Apache-2.0 and its README warns that the server is not a security boundary.
-- [GitHub MCP Server](https://github.com/github/github-mcp-server): GitHub repository, issue, and pull request tools; upstream repository declares MIT and documents token-based access.
-- [Database MCP SQLite server](https://github.com/arifulislamat/database-mcp): SQLite queries; its published package documents MIT, read-only defaults, row caps, and query timeouts.
-- [Postgres MCP](https://github.com/crystaldba/postgres-mcp): PostgreSQL inspection and queries; upstream project metadata declares MIT, with restricted access mode for read-only use.
+- [MCP filesystem server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem): local directory tools and configured directory access. Its package metadata lists version 0.6.3; use only approved paths.
+- [MCP git server](https://github.com/modelcontextprotocol/servers/tree/main/src/git): repository inspection and modification; MIT license and PyPI package pin 0.6.2. Expose only approved checkouts.
+- [MCP fetch server](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch): web fetching and conversion; MIT license and package pin 0.6.3. Upstream warns about internal/local address access, so use an egress allowlist.
+- [MCP memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory): local knowledge-graph storage and `MEMORY_FILE_PATH` configuration; package version 0.6.3. This separate JSONL store does not replace Glacier's plain Markdown vault.
+- [Playwright MCP](https://github.com/microsoft/playwright-mcp): browser automation; Apache-2.0 license and package pin 0.0.83. The browser is not an egress boundary, and page content may prompt-inject the worker.
+- [GitHub MCP Server](https://github.com/github/github-mcp-server): GitHub repository, issue, and pull request tools; MIT license. The Docker image is pinned to the published `sha256:f1c51d1df58bebaeeb672e01c91692d87a7a6e22f44b9ca75263375b5e35b7fe` digest. Token scopes control consequential remote changes.
+- [Postgres MCP](https://github.com/crystaldba/postgres-mcp): PostgreSQL inspection and queries; MIT license and package pin 0.3.0. Restricted mode is intended for read-only use; use a least-privilege database account.
+- [MCP time server](https://github.com/modelcontextprotocol/servers/tree/main/src/time): time and timezone conversion; MIT license and package pin 0.6.2.
+- [MCP sequential-thinking server](https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking): structured, revisable reasoning; MIT license and release pin 2026.8.31. Its output still needs independent verification.
 
-The SQLite, Postgres, and GitHub servers can expose or change important project data. Keep read-only access as the default, provide only the specific files or database credentials each worker needs, and use approval gates before writes.
+SQLite is omitted because its publisher and package scope could not be verified against its upstream repository. A calendar or email server is **to add after a maintained official repository, OSI license, and exact pin are verified**.

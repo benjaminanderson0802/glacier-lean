@@ -44,6 +44,8 @@ REQUIRED_FIELDS = {
 PERMISSION_FIELDS = {"files", "network_access", "network_hosts", "secrets"}
 VERSION_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 COMMIT_RE = re.compile(r"^[0-9a-fA-F]{40}$")
+DOCKER_DIGEST_RE = re.compile(r"@sha256:[0-9a-fA-F]{64}(?:\s|$)")
+DIGEST_RE = re.compile(r"^sha256:[0-9a-fA-F]{64}$")
 
 
 class CatalogError(ValueError):
@@ -82,16 +84,24 @@ def validate(document: Any) -> list[dict[str, Any]]:
             raise CatalogError(f"{entry['name']} license must be an OSI-approved license.")
         pin = entry["version"].strip()
         if pin.lower() in {"latest", "main", "master", "stable", "*"} or not (
-            VERSION_RE.fullmatch(pin) or COMMIT_RE.fullmatch(pin)
+            VERSION_RE.fullmatch(pin) or COMMIT_RE.fullmatch(pin) or DIGEST_RE.fullmatch(pin)
         ):
             raise CatalogError(f"{entry['name']} needs an exact version or commit pin.")
         if not entry["source"].startswith("https://"):
             raise CatalogError(f"{entry['name']} source must be an HTTPS repository URL.")
         if "@latest" in entry["install"].lower() or re.search(r"\b(latest|main|master)\b", entry["install"], re.I):
             raise CatalogError(f"{entry['name']} install command must use its exact pin.")
+        install = entry["install"]
         normalized_pin = pin.removeprefix("v")
-        if pin not in entry["install"] and normalized_pin not in entry["install"]:
+        pin_tokens = {re.escape(pin)}
+        if DIGEST_RE.fullmatch(pin):
+            pin_tokens.add(re.escape(pin.removeprefix("sha256:")))
+        if normalized_pin != pin:
+            pin_tokens.add(re.escape(normalized_pin))
+        if not any(re.search(rf"(?:@|==|:)({token})(?=\s|$)", install) for token in pin_tokens):
             raise CatalogError(f"{entry['name']} install command must include its exact version or commit pin.")
+        if re.search(r"\bdocker\s+run\b", install, re.I) and not DOCKER_DIGEST_RE.search(install):
+            raise CatalogError(f"{entry['name']} Docker install command must pin an image digest.")
 
         permissions = entry["permissions"]
         if not isinstance(permissions, dict) or set(permissions) != PERMISSION_FIELDS:
@@ -106,6 +116,17 @@ def validate(document: Any) -> list[dict[str, Any]]:
             raise CatalogError(f"{entry['name']} permission 'network_access' must be true or false.")
         if permissions["network_access"] and not permissions["network_hosts"]:
             raise CatalogError(f"{entry['name']} network access must name at least one allowed network host.")
+        if permissions["network_access"]:
+            declared = entry.get("network_enforcement")
+            if not _nonempty(declared):
+                raise CatalogError(
+                    f"{entry['name']} needs declared network host enforcement for outbound access."
+                )
+            for host in permissions["network_hosts"]:
+                if host.lower() not in declared.lower():
+                    raise CatalogError(
+                        f"{entry['name']} network enforcement must name declared network host '{host}'."
+                    )
         if not permissions["network_access"] and permissions["network_hosts"]:
             raise CatalogError(f"{entry['name']} lists network hosts while network access is disabled.")
 

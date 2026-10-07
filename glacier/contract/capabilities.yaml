@@ -3,8 +3,8 @@ capabilities:
     description: Lets a worker read and change files inside named folders.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem
     license: MIT
-    version: 2026.8.31
-    install: npx -y @modelcontextprotocol/server-filesystem@2026.8.31 /approved/workspace
+    version: 0.6.3
+    install: npx -y @modelcontextprotocol/server-filesystem@0.6.3 /approved/workspace
     permissions:
       files: ["/approved/workspace:read-write"]
       network_access: false
@@ -18,8 +18,8 @@ capabilities:
     description: Lets a worker inspect and change a named local Git repository.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/git
     license: MIT
-    version: 2026.8.18
-    install: uvx --from mcp-server-git==2026.8.18 mcp-server-git --repository /approved/repo
+    version: 0.6.2
+    install: uvx --from mcp-server-git==0.6.2 mcp-server-git --repository /approved/repo
     permissions:
       files: ["/approved/repo:read-write"]
       network_access: false
@@ -35,6 +35,7 @@ capabilities:
     license: MIT
     version: 0.6.3
     install: uvx --from mcp-server-fetch==0.6.3 mcp-server-fetch
+    network_enforcement: "Glacier network sandbox allowlist: approved-host.example"
     permissions:
       files: []
       network_access: true
@@ -48,8 +49,8 @@ capabilities:
     description: Lets a worker store and search simple entities and relationships.
     source: https://github.com/modelcontextprotocol/servers/tree/main/src/memory
     license: MIT
-    version: 2026.1.26
-    install: npx -y @modelcontextprotocol/server-memory@2026.1.26
+    version: 0.6.3
+    install: MEMORY_FILE_PATH=/approved/mcp-memory.jsonl npx -y @modelcontextprotocol/server-memory@0.6.3
     permissions:
       files: ["/approved/mcp-memory.jsonl:read-write"]
       network_access: false
@@ -65,6 +66,7 @@ capabilities:
     license: Apache-2.0
     version: 0.0.83
     install: npx -y @playwright/mcp@0.0.83
+    network_enforcement: "Glacier network sandbox allowlist: approved-site.example"
     permissions:
       files: ["browser-profile:temporary"]
       network_access: true
@@ -78,8 +80,9 @@ capabilities:
     description: Lets a worker read and manage repositories, issues, and pull requests.
     source: https://github.com/github/github-mcp-server
     license: MIT
-    version: v1.9.0
-    install: docker run -i --rm ghcr.io/github/github-mcp-server:v1.9.0
+    version: sha256:f1c51d1df58bebaeeb672e01c91692d87a7a6e22f44b9ca75263375b5e35b7fe
+    install: docker run -i --rm ghcr.io/github/github-mcp-server@sha256:f1c51d1df58bebaeeb672e01c91692d87a7a6e22f44b9ca75263375b5e35b7fe
+    network_enforcement: "Glacier network sandbox allowlist: api.github.com, github.com"
     permissions:
       files: []
       network_access: true
@@ -89,32 +92,48 @@ capabilities:
     reviewed_by: Glacier catalog review
     reviewed_on: 2026-10-07
 
-  - name: SQLite
-    description: Lets a worker query and update a SQLite database.
-    source: https://github.com/arifulislamat/database-mcp/tree/main/sqlite
-    license: MIT
-    version: 0.4.2
-    install: npx -y @database-mcp/sqlite@0.4.2 --dsn /approved/data.sqlite
-    permissions:
-      files: ["/approved/data.sqlite:read-write"]
-      network_access: false
-      network_hosts: []
-      secrets: []
-    risk_notes: Database writes can damage or expose stored data; use a copy and make read-only access the default.
-    reviewed_by: Glacier catalog review
-    reviewed_on: 2026-10-07
-
   - name: PostgreSQL
     description: Lets a worker inspect and query an approved PostgreSQL database.
     source: https://github.com/crystaldba/postgres-mcp
     license: MIT
     version: 0.3.0
     install: uvx postgres-mcp==0.3.0 --access-mode restricted
+    network_enforcement: "Glacier network sandbox allowlist: approved-database.example"
     permissions:
       files: []
       network_access: true
       network_hosts: ["approved-database.example"]
       secrets: ["POSTGRES_CONNECTION_STRING"]
     risk_notes: Restricted mode is intended to limit operations to read-only queries, but a connection still exposes database contents; use a least-privilege account.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Time
+    description: Lets a worker check the current time and convert times between time zones.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/time
+    license: MIT
+    version: 0.6.2
+    install: uvx --from mcp-server-time==0.6.2 mcp-server-time
+    permissions:
+      files: []
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: Time zone conversion depends on the bundled time zone database and system configuration.
+    reviewed_by: Glacier catalog review
+    reviewed_on: 2026-10-07
+
+  - name: Sequential thinking
+    description: Lets a worker organize a problem into revisable steps and alternatives.
+    source: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
+    license: MIT
+    version: 2026.8.31
+    install: npx -y @modelcontextprotocol/server-sequential-thinking@2026.8.31
+    permissions:
+      files: []
+      network_access: false
+      network_hosts: []
+      secrets: []
+    risk_notes: The server is a reasoning aid; its output still needs an independent check.
     reviewed_by: Glacier catalog review
     reviewed_on: 2026-10-07
