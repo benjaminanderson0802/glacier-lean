@@ -46,10 +46,14 @@ def test_settings_environment_overrides_recommendation(monkeypatch):
     system_check.clear_cache()
     monkeypatch.setattr(system_check, "_machine_stats", lambda: (8, 16.0, 10.0))
     monkeypatch.setattr(system_check, "_ollama_models", lambda: ["qwen3:0.6b"])
+    monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
     monkeypatch.setenv("GLACIER_LOCAL_MODEL", "custom:1b")
     monkeypatch.setenv("GLACIER_MAX_PARALLEL_RUNS", "3")
     assert system_check.effective_settings() == {
         "mode": "standard", "local_model": "custom:1b", "max_parallel_runs": 3
+    }
+    assert system_check.check_system()["recommended"] == {
+        "mode": "standard", "local_model": "qwen3:0.6b", "max_parallel_runs": 4
     }
 
 
@@ -79,6 +83,7 @@ def test_unknown_memory_is_not_treated_as_low(monkeypatch):
 
 
 def test_tool_with_nonzero_version_exit_is_not_found(monkeypatch):
+    system_check.clear_cache()
     monkeypatch.setattr(system_check.shutil, "which", lambda name: "/fake/python" if name == "python" else None)
     monkeypatch.setattr(system_check, "_run", lambda _command, **_kwargs: "" )
     result = system_check.check_system()

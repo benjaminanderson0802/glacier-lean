@@ -149,7 +149,7 @@ def clear_cache():
 
 
 def effective_settings():
-    result = check_system()["recommended"]
+    result = dict(check_system()["recommended"])
     local_model = os.environ.get("GLACIER_LOCAL_MODEL", "").strip()
     if local_model:
         result["local_model"] = local_model
