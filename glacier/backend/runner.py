@@ -282,8 +282,12 @@ def finish_human_check(env_id: str, run_id: str, idx: int, msg: dict | None) -> 
 
 
 @DBOS.step(retries_allowed=True, max_attempts=3)
-def file_stuck_claim(env_id: str, run_id: str, node_id: str, attempts: int, output: str) -> str:
-    """Stuck signal (same failure twice, or too many failures): stop repairing and file a claim (rules I-11, I-15)."""
+def file_stuck_claim(env_id: str, run_id: str, node_id: str, attempts: int, output: str, rerun_of: str = "") -> str:
+    """Stuck signal (same failure twice, or too many failures): stop repairing and file a claim (rules I-11, I-15).
+    A proof re-run for an existing claim reports back to that claim instead of filing a new one."""
+    if rerun_of:
+        store.set_node(run_id, env_id, node_id, "failed", output[-OUTPUT_LIMIT:] + f"\n[stopped: still stuck after {attempts} attempts; reported to claim {rerun_of}]")
+        return rerun_of
     c = claims.file_claim("bug", f"Step {node_id} in flow {env_id} keeps failing the same way",
                           f"Run {run_id}, step {node_id}, {attempts} failed attempts. Last output:\n\n{output[-2000:]}",
                           run_id=run_id, node_id=node_id, attempts_made=attempts, filed_by="glacier-runner")
@@ -385,9 +389,10 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                 failures[nid].append(res.get("output", "")[-500:])
                 f = failures[nid]
                 if (len(f) >= 2 and f[-1] == f[-2]) or len(f) >= MAX_STEP_FAILURES:
-                    cid = file_stuck_claim(env_id, run_id, nid, len(f), res.get("output", ""))
-                    import claims_research
-                    claims_research.start(cid)
+                    cid = file_stuck_claim(env_id, run_id, nid, len(f), res.get("output", ""), graph.get("_rerun_of", ""))
+                    if not graph.get("_rerun_of"):  # a re-run made to prove a fix never starts another repair cycle
+                        import claims_research
+                        claims_research.start(cid)
                     status = "failed"
                     break
             if res["exit_code"] != 0 and not any(nodes[e["target"]]["type"] == "check" for e in edges):

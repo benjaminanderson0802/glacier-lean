@@ -48,10 +48,12 @@ def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str
             if os.path.exists(original):
                 with open(original, errors="replace") as f:
                     if f.read() != content:
-                        notes.append(f"the worker changed {rel}; the saved original was used")
+                        notes.append(f"the worker changed {rel} (a protected check file)")
             os.makedirs(os.path.dirname(target), exist_ok=True)
             with open(target, "w") as f:
                 f.write(content)
+        if notes:  # rule I-04: touching the check that judges you is never accepted, even if the work is right
+            return {"passed": False, "evidence": "\n".join(notes + ["not accepted: the worker changed a protected check file"])}
         if kind == "command":
             try:
                 p = subprocess.run(check["cmd"], shell=True, cwd=copy, capture_output=True, text=True, timeout=CHECK_TIMEOUT,

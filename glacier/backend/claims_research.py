@@ -83,7 +83,7 @@ def record_and_route(cid: str, fixes: list, findings: str) -> dict:
     meta.update(status=status, assigned_to=assigned, updated=claims._now())
     vault.write_note(claims._path(cid), claims._render(meta, body), agent="glacier-researcher")
     store.broadcaster.publish({"type": "claim", "id": cid, "status": status})
-    return {"status": status, "assigned_to": assigned}
+    return {"status": status, "assigned_to": assigned, "has_run": bool(meta.get("run_id"))}
 
 
 @DBOS.workflow()
@@ -91,7 +91,11 @@ def research_claim(cid: str) -> dict:
     fixes = past_fixes(cid)
     kind = claims.get_claim(cid)["meta"].get("kind")
     findings = research(cid) if kind in ("capability_gap", "skill_gap") and not fixes else ""
-    return record_and_route(cid, fixes, findings)
+    r = record_and_route(cid, fixes, findings)
+    if r.get("has_run") and r["status"] == "routed":
+        import claims_specialist
+        claims_specialist.maybe_start(cid, r["assigned_to"])  # specialists repair, then the flow is re-run as proof
+    return r
 
 
 def start(cid: str) -> None:

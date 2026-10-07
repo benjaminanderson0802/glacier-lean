@@ -55,7 +55,7 @@ def test_worker_cannot_weaken_the_check(server):
                                              goal="Write hello to out.txt"))
     run = server.wait_run(server.post("/api/environments/g3/run")["run_id"])
     assert run["status"] == "failed" and run["verified"] is False, run
-    assert "changed" in run["verification"][0]["evidence"].lower()
+    assert "changed check.sh" in run["verification"][0]["evidence"] and "not accepted" in run["verification"][0]["evidence"]
     assert open(os.path.join(d, "check.sh")).read() == "exit 0"  # the worker's folder is left as the worker left it
 
 
@@ -101,14 +101,17 @@ def test_stuck_repair_loop_stops_and_files_a_claim(server):
     server.put("/api/environments/stuck", e)
     run = server.wait_run(server.post("/api/environments/stuck/run")["run_id"])
     assert run["status"] == "failed", run
-    deadline = time.time() + 30
+    # research routes it to the debugger; the debugger's attempt cannot fix this, the proof re-run stays stuck,
+    # so the claim is escalated to the owner (and the re-run does not start yet another repair cycle)
+    deadline = time.time() + 90
     while time.time() < deadline:
         claims = server.get("/api/claims")
-        if claims and claims[0]["status"] == "routed":
+        if claims and claims[0]["status"] == "proposed":
             break
         time.sleep(0.5)
-    assert len(claims) == 1 and claims[0]["kind"] == "bug" and claims[0]["status"] == "routed", claims
-    assert claims[0]["assigned_to"] == "debugger"  # research routed the stuck step to the debugger role
+    assert len(claims) == 1 and claims[0]["kind"] == "bug" and claims[0]["status"] == "proposed", claims
+    body = server.get(f"/api/claims/{claims[0]['id']}")["body"]
+    assert "Specialist attempt (debugger)" in body and "Escalated" in body
     c = server.get(f"/api/claims/{claims[0]['id']}")
     assert "no module named zap" in c["body"] and c["meta"]["attempts_made"] == 2 and c["meta"]["run_id"] == run["run_id"]
 
@@ -133,3 +136,14 @@ def _claims_api_and_decision(server):
     assert c["meta"]["status"] == "closed" and "rejected" in c["body"].lower()
     bad = httpx.post(server.url + "/api/claims", json={"kind": "whatever", "summary": "x", "evidence": "y"}, timeout=30)
     assert bad.status_code == 400
+
+
+def test_tampering_fails_even_when_the_work_is_right(server):
+    """Correct work + an edited check file is still rejected: the rule against touching your own check is absolute."""
+    d = ws(server.home, "g7")
+    cmd = f"mkdir -p {d} && echo hello > {d}/out.txt && printf 'exit 0' > {d}/check.sh && echo done"
+    server.put("/api/environments/g7", flow("g7", [("c", "command", {"cmd": cmd})], [],
+                                             acceptance=[{"kind": "command", "cmd": "sh check.sh", "files": {"check.sh": "grep -q hello out.txt"}}],
+                                             goal="Write hello"))
+    run = server.wait_run(server.post("/api/environments/g7/run")["run_id"])
+    assert run["verified"] is False and "not accepted" in run["verification"][0]["evidence"], run
