@@ -1,0 +1,11 @@
+{
+  "id": "tpl-explain-error",
+  "name": "Explain an error",
+  "nodes": [
+    {"id": "explain", "type": "codex", "config": {"prompt": "Explain the error text in this prompt in plain language. Say what it means, a likely cause, and one safe next step. If no error text is included, say that clearly. Do not change files.\n\nError text:\n", "sandbox": "read-only"}, "position": {"x": 0, "y": 0}},
+    {"id": "save_explanation", "type": "note", "config": {"path": "explanations/error-{run}.md", "template": "Explanation for run {run}:\n\n{summary}"}, "position": {"x": 260, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "explain", "target": "save_explanation", "label": ""}
+  ]
+}
