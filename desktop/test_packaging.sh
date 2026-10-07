@@ -2,6 +2,32 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+sidecar = json.loads(Path("sidecar.json").read_text(encoding="utf-8"))
+script = Path("scripts/smoke_windows.ps1").read_text(encoding="utf-8")
+lib_rs = Path("src-tauri/src/lib.rs").read_text(encoding="utf-8")
+runtime = sidecar["runtime_by_platform"]["x86_64-pc-windows-msvc"]
+args = ['"-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "$port"']
+lib_args = '.args(["-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", &port_text])'
+required = [
+    runtime.replace("/", "\\"),
+    *args,
+    '$env:GLACIER_HOME = $dataDir',
+]
+missing = [value for value in required if value not in script]
+if lib_args not in lib_rs:
+    missing.append("lib.rs backend argument list")
+for key, value in sidecar["low_resource_env"].items():
+    if f'$env:{key} = "{value}"' not in script:
+        missing.append(f"sidecar low-resource setting {key}")
+if missing:
+    raise SystemExit("Windows smoke script does not match sidecar/lib.rs startup settings: " + ", ".join(missing))
+print("Windows smoke startup arguments match sidecar.json and lib.rs")
+PY
+
 bundle_dir="src-tauri/target/release/bundle"
 deb="$(find "$bundle_dir/deb" -maxdepth 1 -type f -name '*.deb' -print -quit 2>/dev/null || true)"
 appimage="$(find "$bundle_dir/appimage" -maxdepth 1 -type f -name '*.AppImage' -print -quit 2>/dev/null || true)"
