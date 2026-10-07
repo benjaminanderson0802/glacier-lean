@@ -1,7 +1,8 @@
 """Git-backed rollback helpers for run changes and saved flows."""
 from __future__ import annotations
 
-import os
+import json
+import re
 
 import git
 
@@ -11,19 +12,35 @@ def repo():
     return vault._repo
 
 
-def run_commits(run_id: str) -> list[git.Commit]:
-    marker = f"run:{run_id}".lower()
+def _run_commits(run_id: str) -> list[git.Commit]:
+    """Find only commits attributable to this exact run."""
+    r = repo()
+    tag = re.compile(r"\[run:" + re.escape(run_id) + r"\]", re.IGNORECASE)
+    path_id = re.compile(r"(?<![A-Za-z0-9])" + re.escape(run_id) + r"(?![A-Za-z0-9])", re.IGNORECASE)
+    author = f"run:{run_id}".casefold()
     out = []
-    for commit in repo().iter_commits():
-        if marker in commit.message.lower() or marker in commit.author.name.lower() or commit.author.name.lower() == "glacier-runner" and run_id.lower() in commit.message.lower():
+    for commit in r.iter_commits():  # newest first
+        message = commit.message
+        if message.casefold().startswith("revert"):
+            continue
+        if tag.search(message) or tag.search(commit.author.name) or commit.author.name.casefold() == author:
+            out.append(commit)
+            continue
+        if commit.author.name.casefold() == "glacier-runner" and any(
+            path_id.search(path) for path in _commit_paths(commit)
+        ):
             out.append(commit)
     return out
 
 
+def run_commits(run_id: str) -> list[git.Commit]:
+    return _run_commits(run_id)
+
+
 def changes(run_id: str) -> list[dict]:
     result = []
-    for commit in run_commits(run_id):
-        for path in commit.stats.files:
+    for commit in _run_commits(run_id):
+        for path in sorted(_commit_paths(commit)):
             result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name})
     return result
 
@@ -38,38 +55,65 @@ def _commit_paths(commit: git.Commit) -> set[str]:
 
 def undo(run_id: str) -> dict:
     r = repo()
-    commits = run_commits(run_id)
+    commits = _run_commits(run_id)
     if not commits:
         raise ValueError(f"No saved changes were found for run {run_id}.")
-    targets = {c.hexsha for c in commits}
-    touched = set().union(*(_commit_paths(c) for c in commits))
-    conflicts = set()
-    for c in r.iter_commits():
-        if c.hexsha in targets:
-            break
-        if c.author.name.lower() != "glacier-runner" and c.author.name.lower() != f"run:{run_id}".lower():
-            conflicts.update(touched & _commit_paths(c))
-    if conflicts:
-        raise RuntimeError("These files have later changes by someone else and were left alone: " + ", ".join(sorted(conflicts)))
 
-    reverted = []
-    for commit in commits:  # git history iteration is newest first
-        r.git.revert(commit.hexsha, no_edit=True)
-        reverted.append(commit.hexsha[:8])
-    return {"reverted": reverted, "new_commit": r.head.commit.hexsha[:8]}
+    targets = {commit.hexsha for commit in commits}
+    touched = set().union(*(_commit_paths(commit) for commit in commits))
+    oldest = commits[-1]
+    later_commits = []
+    for commit in r.iter_commits():  # newest first, up to the oldest run commit
+        if commit.hexsha == oldest.hexsha:
+            break
+        if commit.hexsha not in targets:
+            later_commits.append(commit)
+    conflicts = set().union(*(
+        touched & _commit_paths(commit) for commit in later_commits
+    )) if later_commits else set()
+    if conflicts:
+        raise RuntimeError(
+            "These files have later changes by someone else and were left alone: "
+            + ", ".join(sorted(conflicts))
+        )
+
+    start = r.head.commit.hexsha
+    try:
+        for commit in commits:  # newest first; stage each inverse, then commit once
+            r.git.revert(commit.hexsha, no_commit=True)
+        message = f"Undo changes from run {run_id}"
+        new_commit = r.index.commit(message)
+    except Exception as exc:
+        try:
+            r.git.revert("--abort")
+        except Exception:
+            pass
+        r.git.reset("--hard", start)
+        raise RuntimeError(
+            "Undo could not be completed; the vault was restored to its starting version. "
+            "Files that could not be safely reverted: " + ", ".join(sorted(touched))
+        ) from exc
+    return {"reverted": [commit.hexsha[:8] for commit in commits], "new_commit": new_commit.hexsha[:8]}
 
 
 def restore_flow(env_id: str, short_commit: str) -> str:
+    import app
+    import runner
     import vault
-    path = f"environments/{env_id}.json"
+
+    path = runner.env_path(env_id)
     vault.safe_path(path)
-    r = repo()
-    matches = list(r.iter_commits(paths=path))
-    selected = next((c for c in matches if c.hexsha.startswith(short_commit)), None)
+    matches = list(repo().iter_commits(paths=path))
+    selected = next((commit for commit in matches if commit.hexsha.startswith(short_commit)), None)
     if selected is None:
         raise ValueError(f"Saved version {short_commit} was not found for this flow.")
     try:
-        body = selected.tree / path
+        saved = selected.tree / path
     except KeyError:
         raise ValueError("That saved version does not contain this flow.")
-    return vault.write_note(path, body.data_stream.read().decode("utf-8"), agent="owner")
+    try:
+        env = json.loads(saved.data_stream.read().decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("That saved flow version is not valid JSON.") from exc
+    result = app.save_environment(env_id, env)
+    return result["commit"]
