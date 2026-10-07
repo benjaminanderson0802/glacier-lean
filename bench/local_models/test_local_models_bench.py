@@ -75,3 +75,19 @@ def test_report_includes_pass_counts_resource_and_task_rows():
     assert "1.0 MiB" in report
     assert "4.00" in report
     assert "addition" in report
+
+
+def test_task_checker_compares_json_values_and_lists_but_stays_strict():
+    json_task = {"expected": "{\"name\":\"Mira Chen\",\"date\":\"2026-11-14\"}", "match": "json"}
+    assert run_eval.task_passes('{"date": "2026-11-14", "name": "Mira Chen"}', json_task) is True
+    assert run_eval.task_passes('{"name": "Mira"}', json_task) is False
+    assert run_eval.task_passes("name: Mira Chen", json_task) is False
+    list_task = {"expected": "apple,pear,plum", "match": "list"}
+    assert run_eval.task_passes("apple, pear, plum", list_task) is True
+    assert run_eval.task_passes("pear, apple, plum", list_task) is False
+    assert run_eval.task_passes("Paris.", {"expected": "Paris"}) is False
+
+
+def test_missing_field_task_really_has_one_missing_field():
+    tasks = {t["id"]: t for t in json.loads((Path(run_eval.__file__).parent / "tasks.json").read_text())}
+    assert "Friday" not in tasks["missing_field"]["prompt"]
