@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import os
+import sys
 
 import pytest
 
@@ -38,6 +39,7 @@ def _run(command, workdir):
     )
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_blocks_writes_outside_workdir(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -50,6 +52,7 @@ def test_sandbox_blocks_writes_outside_workdir(tmp_path):
     assert not outside.exists()
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_can_read_system_hostname(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -61,6 +64,7 @@ def test_sandbox_can_read_system_hostname(tmp_path):
     assert result.stdout.strip()
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_blocks_network_when_allowlist_is_empty(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -80,6 +84,7 @@ def test_sandbox_blocks_network_when_allowlist_is_empty(tmp_path):
     assert result.returncode != 0
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_preserves_command_output_and_exit_code(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -101,6 +106,7 @@ def test_seccomp_checks_architecture_before_syscall_number():
     assert instructions[2].k == sandboxing._SECCOMP_RET_KILL_PROCESS
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_does_not_expose_parent_environment(tmp_path, monkeypatch):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -112,6 +118,7 @@ def test_sandbox_does_not_expose_parent_environment(tmp_path, monkeypatch):
     assert result.returncode == 0
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_allows_standard_null_device(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -122,6 +129,7 @@ def test_sandbox_allows_standard_null_device(tmp_path):
     assert result.returncode == 0
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_creates_writable_tmp_directory(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -132,6 +140,7 @@ def test_sandbox_creates_writable_tmp_directory(tmp_path):
     assert result.returncode == 0
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_allows_reading_urandom(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -143,6 +152,7 @@ def test_sandbox_allows_reading_urandom(tmp_path):
     assert result.stdout.strip() == "1"
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_refuses_signal_to_all_processes(tmp_path):
     _sandbox_or_skip()
     workdir = tmp_path / "work"
@@ -161,6 +171,7 @@ def test_sandbox_documents_known_pid_signal_fallback_limitation():
     assert "can still signal a specific same-user process" in docs.read_text(encoding="utf-8")
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_sandbox_refuses_signal_zero_to_parent_on_landlock_abi_six(tmp_path):
     """ABI < 6 cannot distinguish this PID; ABI 6 scopes signals to the sandbox."""
     _sandbox_or_skip()
@@ -178,6 +189,7 @@ def test_sandbox_refuses_signal_zero_to_parent_on_landlock_abi_six(tmp_path):
     assert "operation not permitted" in result.stderr.lower()
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Landlock and seccomp sandbox enforcement are Linux-only")
 def test_available_reports_subprocess_failures(monkeypatch):
     def fail(*args, **kwargs):
         raise subprocess.TimeoutExpired(args[0], kwargs.get("timeout"))

@@ -7,6 +7,7 @@ import asyncio
 import os
 import shlex
 import shutil
+import sys
 from pathlib import Path
 
 PREV_LIMIT = 8000
@@ -152,8 +153,12 @@ def run(ctx):
     else:
         if harness != "custom":
             return {"state": "failed", "output": f"Unknown coding agent '{harness}'. Choose codex-acp, opencode, or custom.", "exit_code": 1}
+        configured_command = config.get("command") or ""
         try:
-            command = shlex.split(config.get("command") or "")
+            if isinstance(configured_command, (list, tuple)):
+                command = [str(part) for part in configured_command]
+            else:
+                command = shlex.split(configured_command)
         except ValueError as exc:
             return {"state": "failed", "output": f"Invalid coding agent command: {exc}", "exit_code": 1}
         if not command:
@@ -161,7 +166,10 @@ def run(ctx):
         missing_message = f"This coding agent isn't installed: {command[0]}"
 
     if shutil.which(command[0]) is None:
-        return {"state": "failed", "output": missing_message, "exit_code": 1}
+        if os.name == "nt" and command[0].lower().endswith(".py") and os.path.isfile(command[0]):
+            command.insert(0, sys.executable)
+        else:
+            return {"state": "failed", "output": missing_message, "exit_code": 1}
 
     prompt = config.get("prompt") or ""
     prompt = prompt.replace("{env}", str(ctx["env_id"])).replace("{run}", str(ctx["run_id"]))

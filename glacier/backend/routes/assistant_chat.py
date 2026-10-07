@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+import shell_commands
 from pydantic import BaseModel
 
 import assistant
@@ -47,9 +48,9 @@ def _ask(message: str) -> dict:
         schema_path, output_path = os.path.join(directory, "schema.json"), os.path.join(directory, "answer.json")
         with open(schema_path, "w", encoding="utf-8") as schema_file:
             json.dump(_chat_schema(), schema_file)
-        args = [os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
+        args = shell_commands.executable_invocation(os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
                 "--skip-git-repo-check", "-s", "read-only", "-C", directory,
-                "--output-schema", schema_path, "-o", output_path, "--", message]
+                "--output-schema", schema_path, "-o", output_path, "--", message)
         result = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=600)
         if result.returncode or not os.path.isfile(output_path):
             raise RuntimeError("The assistant could not answer. Please try again.")

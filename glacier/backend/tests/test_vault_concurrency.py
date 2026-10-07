@@ -65,7 +65,7 @@ def _round(server, round_number):
                 assert isinstance(changes_response.json(), list)
                 restore_response = httpx.post(server.url + f"/api/environments/{base}-flow/restore",
                                               timeout=10, json={"commit": old_commit})
-                restore_response.raise_for_status()
+                assert restore_response.status_code == 200, restore_response.text  # same check, with the reason shown
 
         readers = [pool.submit(read_loop) for _ in range(4)]
         for task in writers + readers:

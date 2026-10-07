@@ -5,6 +5,7 @@ import sys
 import time
 
 import httpx
+import pytest
 
 
 def git(home, *args):
@@ -143,6 +144,7 @@ def test_run_ids_match_exact_tag_not_prefix(server):
     assert note_body(server, "runs/abc123.md") == "runner note for longer id"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="':' is not allowed in Windows file names")
 def test_run_tag_in_path_is_not_a_run_change(server):
     unrelated = write(server, "notes/[run:abc].md", "owner note", "owner")
 
@@ -150,6 +152,16 @@ def test_run_tag_in_path_is_not_a_run_change(server):
     response = httpx.post(server.url + "/api/runs/abc/undo", timeout=30)
     assert response.status_code == 404
     assert read(server, "notes/[run:abc].md") is not None
+    assert git(server.home, "rev-parse", "HEAD") == git(server.home, "rev-parse", unrelated)
+
+
+def test_bracketed_run_tag_in_path_is_not_a_run_change(server):
+    unrelated = write(server, "notes/[run-abc].md", "owner note", "owner")
+
+    assert server.get("/api/runs/abc/changes") == []
+    response = httpx.post(server.url + "/api/runs/abc/undo", timeout=30)
+    assert response.status_code == 404
+    assert read(server, "notes/[run-abc].md") is not None
     assert git(server.home, "rev-parse", "HEAD") == git(server.home, "rev-parse", unrelated)
 
 

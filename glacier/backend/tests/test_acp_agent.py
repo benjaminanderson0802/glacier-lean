@@ -8,8 +8,12 @@ from conftest import env
 FAKE_AGENT = os.path.join(os.path.dirname(__file__), "fake_acp_agent.py")
 
 
+def _python_command(agent):
+    return [sys.executable, os.path.abspath(agent)]
+
+
 def _run(server, env_id, workdir, permission_path):
-    command = f'"{sys.executable}" "{FAKE_AGENT}"'
+    command = _python_command(FAKE_AGENT)
     server.put(f"/api/environments/{env_id}", env(env_id, [
         ("agent", "acp_agent", {
             "harness": "custom",
@@ -53,7 +57,7 @@ def test_acp_supplies_real_previous_output(server, tmp_path):
     server.put("/api/environments/acp-prev", env("acp-prev", [
         ("previous", "command", {"cmd": "echo earlier result"}),
         ("agent", "acp_agent", {
-            "harness": "custom", "command": f'"{sys.executable}" "{FAKE_AGENT}"',
+            "harness": "custom", "command": _python_command(FAKE_AGENT),
             "workdir": str(workdir),
             "prompt": "Previous result: {prev_output}. Task for {env} in {run}. Permission request: " + str(workdir / "ok.txt"),
             "timeout": 10,
@@ -143,8 +147,9 @@ def test_acp_catalog_has_expected_fields(server):
 
 
 def test_acp_missing_harness_binary_has_friendly_error(make_server, tmp_path, monkeypatch):
+    git_executable = shutil.which("git") or "git"
     monkeypatch.setenv("PATH", str(tmp_path))
-    monkeypatch.setenv("GIT_PYTHON_GIT_EXECUTABLE", shutil.which("git") or "/usr/bin/git")
+    monkeypatch.setenv("GIT_PYTHON_GIT_EXECUTABLE", git_executable)
     server = make_server().start()
     server.put("/api/environments/acp-missing", env("acp-missing", [
         ("agent", "acp_agent", {"harness": "opencode", "prompt": "Say hello"}),

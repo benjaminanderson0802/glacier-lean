@@ -1,5 +1,6 @@
 """Acceptance tests for the assistant chat stream and approval gated proposals."""
 import json
+import os
 import subprocess
 import sys
 import textwrap
@@ -43,10 +44,12 @@ def _chat_server(tmp_path, monkeypatch):
           "edges":[], "acceptance":acceptance}}
         open(out,"w").write(json.dumps(result))
     '''))
-    wrapper = tmp_path / "planner.sh"
-    wrapper.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
-    wrapper.chmod(0o755)
-    monkeypatch.setenv("GLACIER_PLANNER_BIN", str(wrapper))
+    planner = script
+    if os.name != "nt":
+        planner = tmp_path / "planner.sh"
+        planner.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
+        planner.chmod(0o755)
+    monkeypatch.setenv("GLACIER_PLANNER_BIN", str(planner))
     chat_script = tmp_path / "chat.py"
     chat_script.write_text(textwrap.dedent('''
         import json, sys
@@ -54,10 +57,12 @@ def _chat_server(tmp_path, monkeypatch):
         if "FAIL" in prompt: sys.exit(1)
         open(out,"w").write(json.dumps({"reply":"I can help with that.","automation":"make me" in prompt.lower()}))
     '''))
-    chat_wrapper = tmp_path / "chat.sh"
-    chat_wrapper.write_text(f"#!/bin/sh\nexec {sys.executable} {chat_script} \"$@\"\n")
-    chat_wrapper.chmod(0o755)
-    monkeypatch.setenv("GLACIER_CHAT_BIN", str(chat_wrapper))
+    chat = chat_script
+    if os.name != "nt":
+        chat = tmp_path / "chat.sh"
+        chat.write_text(f"#!/bin/sh\nexec {sys.executable} {chat_script} \"$@\"\n")
+        chat.chmod(0o755)
+    monkeypatch.setenv("GLACIER_CHAT_BIN", str(chat))
     memory_keyring = MemoryKeyring()
     keyring.set_keyring(memory_keyring)
     monkeypatch.setenv("PYTHON_KEYRING_BACKEND", "keyring.backends.fail.Keyring")

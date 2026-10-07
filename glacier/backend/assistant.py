@@ -5,6 +5,7 @@ Engines are free (owner policy): "codex" (Codex CLI default model, structured ou
 A plan that fails validation gets exactly one repair attempt with the errors (self-fix budget), then the errors are shown."""
 import json, os, re, subprocess, tempfile, urllib.request
 import verify
+import shell_commands
 
 MAX_STEPS = 12
 
@@ -47,8 +48,8 @@ def _ask_codex(prompt: str, schema: dict) -> dict:
     with tempfile.TemporaryDirectory() as d:
         sp, out = os.path.join(d, "schema.json"), os.path.join(d, "out.txt")
         json.dump(schema, open(sp, "w"))
-        args = [os.environ.get("GLACIER_PLANNER_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
-                "--skip-git-repo-check", "-s", "read-only", "-C", d, "--output-schema", sp, "-o", out, "--", prompt]
+        args = shell_commands.executable_invocation(os.environ.get("GLACIER_PLANNER_BIN") or os.environ.get("CODEX_BIN", "codex"), "exec", "--json",
+                "--skip-git-repo-check", "-s", "read-only", "-C", d, "--output-schema", sp, "-o", out, "--", prompt)
         p = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=600)
         if not os.path.exists(out):
             raise RuntimeError(f"the planner did not answer (exit {p.returncode}): {(p.stdout + p.stderr)[-300:]}")

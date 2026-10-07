@@ -23,7 +23,11 @@ def _home():
 def _connect():
     os.makedirs(_home(), exist_ok=True)
     connection = sqlite3.connect(os.path.join(_home(), _DB_NAME), timeout=30)
-    sqlite_vec.load(connection)
+    try:
+        sqlite_vec.load(connection)
+    except sqlite3.OperationalError as exc:
+        connection.close()
+        raise RuntimeError(f"meaning search unavailable: vector search is unavailable: {exc}") from exc
     connection.execute(
         "CREATE TABLE IF NOT EXISTS meaning_chunks "
         "(id INTEGER PRIMARY KEY, path TEXT NOT NULL, content TEXT NOT NULL)"

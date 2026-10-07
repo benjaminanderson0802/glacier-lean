@@ -13,8 +13,12 @@ SPECIALIST = textwrap.dedent('''
 
 def test_stuck_flow_is_fixed_and_proven(tmp_path, monkeypatch):
     script = tmp_path / "specialist.py"; script.write_text(SPECIALIST)
-    wrapper = tmp_path / "spec.sh"; wrapper.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n"); wrapper.chmod(0o755)
-    monkeypatch.setenv("GLACIER_SPECIALIST_BIN", str(wrapper))
+    executable = script
+    if os.name != "nt":
+        executable = tmp_path / "spec.sh"
+        executable.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
+        executable.chmod(0o755)
+    monkeypatch.setenv("GLACIER_SPECIALIST_BIN", str(executable))
     home = tmp_path / "home"; home.mkdir()
     s = Server(home).start()
     try:

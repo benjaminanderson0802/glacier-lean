@@ -16,9 +16,12 @@ RESEARCHER = textwrap.dedent('''
 def _server(tmp_path, monkeypatch, reply):
     script = tmp_path / "researcher.py"
     script.write_text(RESEARCHER)
-    wrapper = tmp_path / "researcher.sh"
-    wrapper.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n"); wrapper.chmod(0o755)
-    monkeypatch.setenv("GLACIER_RESEARCH_BIN", str(wrapper))
+    executable = script
+    if os.name != "nt":
+        executable = tmp_path / "researcher.sh"
+        executable.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
+        executable.chmod(0o755)
+    monkeypatch.setenv("GLACIER_RESEARCH_BIN", str(executable))
     monkeypatch.setenv("FAKE_RESEARCH_REPLY", reply)
     home = tmp_path / "home"; home.mkdir()
     return Server(home).start()

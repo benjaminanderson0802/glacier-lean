@@ -5,6 +5,7 @@ and routing. Engines (free first, per the owner's model policy):
   - "auto":  local if Ollama answers, otherwise codex
 A paid engine (OpenAI Decisions API) is deliberately absent: it needs an owner-approved proposal first."""
 import json, os, subprocess, tempfile, urllib.request
+import shell_commands
 
 ENGINES = ("auto", "local", "codex")
 MAX_OPTIONS = 12
@@ -49,8 +50,8 @@ def _codex(question, options, context, model):
         schema, out = os.path.join(d, "schema.json"), os.path.join(d, "out.txt")
         with open(schema, "w") as f:
             json.dump(_schema(options), f)
-        args = [os.environ.get("CODEX_BIN", "codex"), "exec", "--skip-git-repo-check", "-s", "read-only", "-C", d,
-                "--output-schema", schema, "-o", out] + (["-m", model] if model else []) + ["--", _prompt(question, options, context)]
+        args = shell_commands.executable_invocation(os.environ.get("CODEX_BIN", "codex"), "exec", "--skip-git-repo-check", "-s", "read-only", "-C", d,
+                "--output-schema", schema, "-o", out) + (["-m", model] if model else []) + ["--", _prompt(question, options, context)]
         p = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True,
                            timeout=int(os.environ.get("GLACIER_DECIDE_TIMEOUT", "300")))
         if p.returncode != 0:

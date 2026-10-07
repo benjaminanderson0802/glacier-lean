@@ -1,5 +1,5 @@
 """The assistant turns a goal into a proposed flow with checks; it never saves or runs anything itself."""
-import json, sys, textwrap
+import json, os, sys, textwrap
 import httpx
 from conftest import Server
 
@@ -23,8 +23,12 @@ PLANNER = textwrap.dedent('''
 
 def _server(tmp_path, monkeypatch, mode):
     script = tmp_path / "planner.py"; script.write_text(PLANNER)
-    wrapper = tmp_path / "planner.sh"; wrapper.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n"); wrapper.chmod(0o755)
-    monkeypatch.setenv("GLACIER_PLANNER_BIN", str(wrapper)); monkeypatch.setenv("FAKE_PLANNER", mode)
+    executable = script
+    if os.name != "nt":
+        executable = tmp_path / "planner.sh"
+        executable.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
+        executable.chmod(0o755)
+    monkeypatch.setenv("GLACIER_PLANNER_BIN", str(executable)); monkeypatch.setenv("FAKE_PLANNER", mode)
     home = tmp_path / "home"; home.mkdir()
     return Server(home).start()
 

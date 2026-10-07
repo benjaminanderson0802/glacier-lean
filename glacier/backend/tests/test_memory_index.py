@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -39,6 +40,14 @@ class _EmbedHandler(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def embed_server(monkeypatch, tmp_path):
+    connection = sqlite3.connect(":memory:")
+    try:
+        memory_index.sqlite_vec.load(connection)
+    except Exception as exc:
+        pytest.skip(f"Meaning search needs SQLite vector support, but the extension cannot load: {exc}")
+        raise
+    finally:
+        connection.close()
     server = ThreadingHTTPServer(("127.0.0.1", 0), _EmbedHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -55,6 +64,14 @@ def _put(vault, path, body):
     target = vault / path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(body, encoding="utf-8")
+
+
+def test_connect_reports_vector_extension_load_error_as_runtime_error(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.setattr(memory_index.sqlite_vec, "load", lambda _connection: (_ for _ in ()).throw(sqlite3.OperationalError("not authorized")))
+
+    with pytest.raises(RuntimeError, match="vector search is unavailable"):
+        memory_index._connect()
 
 
 def test_meaning_search_ranks_closest_note_first(embed_server, tmp_path):

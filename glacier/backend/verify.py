@@ -3,6 +3,7 @@ Each check runs on a fresh copy of the flow's workspace; files the check owns ("
 flow, so a worker that edits or weakens them changes nothing."""
 import json, os, shutil, subprocess, tempfile
 import decider
+import shell_commands
 
 KINDS = ("command", "schema", "rubric", "human")
 CHECK_TIMEOUT = 600
@@ -56,9 +57,10 @@ def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str
             return {"passed": False, "evidence": "\n".join(notes + ["not accepted: the worker changed a protected check file"])}
         if kind == "command":
             try:
-                p = subprocess.run(check["cmd"], shell=True, cwd=copy, capture_output=True, text=True, timeout=CHECK_TIMEOUT,
+                command, shell, warning = shell_commands.command_invocation(check["cmd"])
+                p = subprocess.run(command, shell=shell, cwd=copy, capture_output=True, text=True, timeout=CHECK_TIMEOUT,
                                    stdin=subprocess.DEVNULL)
-                ok, out = p.returncode == 0, (p.stdout + p.stderr)[-1500:]
+                ok, out = p.returncode == 0, (warning + p.stdout + p.stderr)[-1500:]
             except subprocess.TimeoutExpired:
                 ok, out = False, f"check timed out after {CHECK_TIMEOUT}s"
             ev = f"`{check['cmd']}` exited {'0' if ok else 'non-zero'}" + (f"\n{out}" if out.strip() else "")

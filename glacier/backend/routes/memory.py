@@ -227,5 +227,6 @@ def search(q: str = "", mode: str = "keyword"):
         row = {"path": path, "title": meta["title"], "score": float(score or 0), "snippet": snippet}
         if fallback:
             row["fallback"] = True
+            row["message"] = "Meaning search is unavailable. Showing keyword matches instead."
         results.append(row)
     return results
