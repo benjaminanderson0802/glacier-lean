@@ -38,9 +38,7 @@ def safe_path(path: str) -> str:
 def write_note(path: str, body: str, agent: str = "unknown", *, author: str | None = None, run_id: str = "") -> str:
     """Create or replace a note; returns the short commit sha. Legacy agent callers remain supported."""
     full = safe_path(path)
-    assistant_tag = run_id.startswith("assistant:")
-    run_value = run_id.removeprefix("assistant:") if assistant_tag else run_id
-    if run_id and not (assistant_tag and re.fullmatch(r"[0-9a-fA-F-]{36}", run_value)) and not re.fullmatch(r"[A-Za-z0-9-]{1,64}", run_id):
+    if run_id and not re.fullmatch(r"[A-Za-z0-9-]{1,64}", run_id):
         raise ValueError("Run id must contain only letters, numbers, and hyphens (up to 64 characters)")
     if author and author.startswith("worker:") and not re.fullmatch(r"worker:[A-Za-z0-9._-]{1,64}", author):
         raise ValueError("Worker author must be worker:<model> using letters, numbers, dot, underscore, or hyphen")
@@ -53,7 +51,7 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
             pass
         # Keep the historical `agent=` call shape, while run note steps carry an
         # explicit run identity in the service-owned author field.
-        metadata_run_id = "" if assistant_tag else run_id
+        metadata_run_id = run_id
         if path.startswith("runs/") and not metadata_run_id and agent == "glacier-runner":
             match = re.search(r"(?<![a-f0-9])([a-f0-9]{12})(?![a-f0-9])", path + "\n" + body, re.I)
             if match:
@@ -66,8 +64,7 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
                 run_line = re.search(r"(?m)^run_id:\s*(.*)$", incoming.group(1))
                 if run_line:
                     metadata_run_id = run_line.group(1).strip().strip('"')
-        writer = author or ("assistant" if assistant_tag and agent == "assistant" else
-                            f"run:{metadata_run_id}" if metadata_run_id and agent == "glacier-runner" else
+        writer = author or (f"run:{metadata_run_id}" if metadata_run_id and agent == "glacier-runner" else
                             f"run:{run_id}" if run_id else agent)
         stored_body = memory_meta.render(path, body, writer, metadata_run_id, previous)[1] if path.endswith(".md") else body
         os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -75,7 +72,7 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         os.write(fd, stored_body.encode()); os.close(fd); os.replace(tmp, full)
         _repo.index.add([os.path.relpath(full, VAULT)])
         git_writer = "glacier-runner" if agent == "glacier-runner" else writer
-        message_writer = f"assistant:{run_value}" if assistant_tag else (f"run:{metadata_run_id}" if agent == "glacier-runner" and metadata_run_id else writer)
+        message_writer = f"run:{metadata_run_id}" if agent == "glacier-runner" and metadata_run_id else writer
         message = f"[{message_writer}] write {path}"
         if agent == "glacier-runner" and metadata_run_id:
             message += f" [run:{metadata_run_id}]"

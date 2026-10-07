@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import tempfile
+import threading
 import uuid
 from datetime import datetime, timezone
 
@@ -19,6 +20,7 @@ import git
 
 router = APIRouter()
 _proposals: dict[str, dict] = {}
+_proposals_lock = threading.Lock()
 MAX_PROPOSALS = 100
 
 
@@ -102,9 +104,10 @@ def chat(request: ChatRequest):
                 if plan.get("problems") or not plan.get("flow"):
                     raise RuntimeError("I could not make a valid plan yet. Please try changing the request.")
                 proposal = {"id": proposal_id, "conversation_id": conversation_id, **plan}
-                _proposals[proposal_id] = proposal
-                while len(_proposals) > MAX_PROPOSALS:
-                    _proposals.pop(next(iter(_proposals)))
+                with _proposals_lock:
+                    _proposals[proposal_id] = proposal
+                    while len(_proposals) > MAX_PROPOSALS:
+                        _proposals.pop(next(iter(_proposals)))
                 _append_conversation(conversation_id, request.message,
                                      f"{plan['explanation']} Proposal {proposal_id} is ready for your review.")
                 tool_id = str(uuid.uuid4())
@@ -134,12 +137,14 @@ def chat(request: ChatRequest):
 
 @router.post("/api/assistant/proposals/{proposal_id}/apply")
 def apply_proposal(proposal_id: str, request: ApplyRequest):
-    proposal = _proposals.get(proposal_id)
+    with _proposals_lock:
+        proposal = _proposals.get(proposal_id)
     if proposal is None:
         from fastapi import HTTPException
         raise HTTPException(404, "proposal not found")
     if not request.approve:
-        _proposals.pop(proposal_id, None)
+        with _proposals_lock:
+            _proposals.pop(proposal_id, None)
         return {"discarded": True}
     import app
     import runner
@@ -155,10 +160,6 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
         from fastapi import HTTPException
         raise HTTPException(400, str(error))
 
-    if os.path.exists(vault.safe_path(path)):
-        from fastapi import HTTPException
-        raise HTTPException(409, "A flow with this name already exists")
-    app.validate_environment(flow["id"], flow)
     if flow.get("goal") and not flow.get("acceptance"):
         from fastapi import HTTPException
         raise HTTPException(400, "This goal has no check yet. Add a way to check it is done before running it.")
@@ -166,9 +167,21 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
     body = json.dumps(flow, indent=2)
     full_path = vault.safe_path(path)
     with vault._lock:
+        if os.path.exists(full_path):
+            from fastapi import HTTPException
+            raise HTTPException(409, "A flow with this name already exists")
+        app.validate_environment(flow["id"], flow)
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, "w", encoding="utf-8") as output:
-            output.write(body)
+        fd, temporary_path = tempfile.mkstemp(dir=os.path.dirname(full_path))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as output:
+                output.write(body)
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary_path, full_path)
+        finally:
+            if os.path.exists(temporary_path):
+                os.unlink(temporary_path)
         vault._repo.index.add([os.path.relpath(full_path, vault.VAULT)])
         actor = git.Actor("assistant", "assistant@glacier.local")
         commit_obj = vault._repo.index.commit(
@@ -194,8 +207,9 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
                                        "author": "assistant", "run_id": run_id})
         except (ImportError, AttributeError):
             pass
-    result = {"saved": True, "commit": commit}
-    _proposals.pop(proposal_id, None)
+    result = {"saved": True, "commit": commit, "undo_id": run_id}
+    with _proposals_lock:
+        _proposals.pop(proposal_id, None)
     proposal["run_id"] = run_id
     _append_conversation(proposal["conversation_id"], "Approved proposal", f"Saved flow {proposal['flow']['name']}.")
     return result

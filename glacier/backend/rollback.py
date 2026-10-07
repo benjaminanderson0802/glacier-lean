@@ -16,9 +16,7 @@ def repo():
 def _run_commits(run_id: str) -> list[git.Commit]:
     """Find only commits attributable to this exact run."""
     r = repo()
-    assistant_tag = run_id.startswith("assistant:")
-    tag_kind, tag_value = ("assistant", run_id.split(":", 1)[1]) if assistant_tag else ("run", run_id)
-    tag = re.compile(r"\[" + tag_kind + r":" + re.escape(tag_value) + r"\]", re.IGNORECASE)
+    tag = re.compile(r"\[run:" + re.escape(run_id) + r"\]", re.IGNORECASE)
     path_id = re.compile(r"(?<![A-Za-z0-9])" + re.escape(run_id) + r"(?![A-Za-z0-9])", re.IGNORECASE)
     author = f"run:{run_id}".casefold()
     out = []
@@ -26,7 +24,7 @@ def _run_commits(run_id: str) -> list[git.Commit]:
         message = commit.message
         if message.casefold().startswith("revert"):
             continue
-        if tag.match(message) or tag.search(commit.author.name) or (not assistant_tag and commit.author.name.casefold() == author):
+        if tag.match(message) or tag.search(commit.author.name) or commit.author.name.casefold() == author:
             out.append(commit)
             continue
         if commit.author.name.casefold() == "glacier-runner" and any(

@@ -11,8 +11,10 @@ Its arguments include a proposal `id`, proposed `flow`, explanation, and accepta
 the flow. Chat history is kept as a plain Markdown note under `conversations/` in the vault.
 
 `POST /api/assistant/proposals/{id}/apply` accepts `{"approve": true}` to save or `{"approve": false}` to discard.
-Approval is required before the proposed flow is saved. Apply performs the same node-type, acceptance-check, vault-path,
-and schedule validation as `PUT /api/environments/{id}`, then writes through the vault service as `assistant`. Its single
-flow commit includes the conversation ID as a `[run:<id>]` tag, so the existing `POST /api/runs/{id}/undo` route can
-restore the saved flow. Proposals live in backend memory until they are applied or discarded, so a restart clears
-unreviewed proposals.
+Approval is required before the proposed flow is saved. Apply refuses a goal without acceptance checks with a plain
+message explaining that a check is needed, before validating or registering a schedule. For an approved flow with checks,
+apply performs the same node-type, acceptance-check, vault-path, and schedule validation as `PUT /api/environments/{id}`,
+then writes the flow atomically in one git commit authored as `assistant`. The response includes a server-generated
+`undo_id` UUID; use it with `POST /api/runs/{undo_id}/undo` to restore the previous state. The commit message also
+includes the conversation ID for auditing. Proposals live in backend memory until they are applied or discarded, so a
+restart clears unreviewed proposals.

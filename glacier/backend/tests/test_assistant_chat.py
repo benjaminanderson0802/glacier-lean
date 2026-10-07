@@ -124,6 +124,7 @@ def test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone(tmp_path
         response = httpx.post(server.url + f"/api/assistant/proposals/{proposal['id']}/apply",
                               json={"approve": True}, timeout=30)
         assert response.status_code == 200 and response.json()["saved"] is True
+        undo_id = response.json()["undo_id"]
         repo = server.home + "/vault"
         commits = subprocess.run(["git", "log", "--format=%H", "--", path], cwd=repo,
                                  capture_output=True, text=True, check=True).stdout.splitlines()
@@ -133,11 +134,10 @@ def test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone(tmp_path
         assert author == "assistant"
         message = subprocess.run(["git", "show", "-s", "--format=%s", commits[0]], cwd=repo,
                                  capture_output=True, text=True, check=True).stdout.strip()
-        assert message.startswith("[run:") and proposal["conversation_id"] in message
+        assert message.startswith(f"[run:{undo_id}]") and proposal["conversation_id"] in message
         assert author == "assistant"
-        run_id = message.split("[run:", 1)[1].split("]", 1)[0]
-        assert len(run_id) == 36
-        undo = httpx.post(server.url + f"/api/runs/{run_id}/undo", timeout=30)
+        assert len(undo_id) == 36
+        undo = httpx.post(server.url + f"/api/runs/{undo_id}/undo", timeout=30)
         assert undo.status_code == 200
         assert server.get("/api/environments") == []
     finally:
@@ -196,17 +196,34 @@ def test_conversation_note_redacts_user_and_assistant_text(tmp_path, monkeypatch
         keyring.set_keyring(previous)
 
 
-def test_apply_rejects_goal_without_check_while_put_preserves_existing_behavior(tmp_path, monkeypatch):
-    server = _chat_server(tmp_path, monkeypatch)
+def test_apply_rejects_goal_without_check_with_goal_message(tmp_path, monkeypatch):
+    import routes.assistant_chat as assistant_chat
+    import vault
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    vault.init(str(tmp_path / "vault"))
+    proposal_id = "e" * 36
+    assistant_chat._proposals[proposal_id] = {
+        "id": proposal_id,
+        "conversation_id": "f" * 36,
+        "flow": {"id": "unchecked", "name": "Unchecked", "goal": "a goal", "nodes": [], "edges": [], "acceptance": []},
+    }
     try:
-        proposal = _proposal(server)
-        flow = proposal["flow"]
-        flow["goal"] = "a checked goal"
-        flow["acceptance"] = []
-        put = httpx.put(server.url + f"/api/environments/{flow['id']}", json=flow, timeout=30)
-        assert put.status_code == 200
+        from fastapi import HTTPException
+        import app
+        from routes.assistant_chat import ApplyRequest
+
+        monkeypatch.setattr(app, "validate_environment", lambda *_: (_ for _ in ()).throw(AssertionError("must not validate")))
+        try:
+            assistant_chat.apply_proposal(proposal_id, ApplyRequest(approve=True))
+            assert False, "an unchecked goal must be refused"
+        except HTTPException as error:
+            assert error.status_code == 400
+            assert error.detail == "This goal has no check yet. Add a way to check it is done before running it."
+        assert vault.list_notes(".json", "environments") == []
     finally:
-        server.stop()
+        assistant_chat._proposals.pop(proposal_id, None)
 
 
 def test_model_failure_returns_plain_run_error(server):
