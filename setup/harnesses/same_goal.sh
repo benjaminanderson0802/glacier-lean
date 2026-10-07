@@ -7,7 +7,20 @@ BACKEND="$ROOT/glacier/backend"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-for preset in codex-acp opencode; do
+if [[ $# -gt 1 ]]; then
+  echo "Usage: $0 [codex-acp|opencode]" >&2
+  exit 2
+fi
+if [[ $# -eq 1 ]]; then
+  case "$1" in
+    codex-acp|opencode) presets=("$1") ;;
+    *) echo "Unknown harness: $1 (choose codex-acp or opencode)" >&2; exit 2 ;;
+  esac
+else
+  presets=(codex-acp opencode)
+fi
+
+for preset in "${presets[@]}"; do
   workdir="$TMP/$preset"
   mkdir -p "$workdir"
   case "$preset" in
@@ -35,6 +48,10 @@ while True:
 if run.get("status") != "done": raise SystemExit(f"{preset}: run {run.get('status')}: {run.get('outputs')}")
 print(f"{preset}: agent output: {run.get('outputs', {}).get('agent', '')}")
 PY
+  if [[ ! -f "$workdir/hello.txt" ]]; then
+    echo "${preset}: hello.txt acceptance check failed (file was not created)" >&2
+    exit 1
+  fi
   test "$(cat "$workdir/hello.txt")" = "hi" || { echo "${preset}: hello.txt acceptance check failed" >&2; exit 1; }
   echo "${preset}: PASS — hello.txt contains hi"
 done
