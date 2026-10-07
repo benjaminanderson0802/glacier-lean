@@ -3,6 +3,7 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
+from dbos._error import DBOSException
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
@@ -18,6 +19,17 @@ PREV_LIMIT = 8000
 CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
 RUN_QUEUE_NAME = "glacier-runs"
 RUN_WAITING_MESSAGE = "Waiting for another run to finish"
+MAX_PARALLEL_RUNS = max(1, int(system_check.effective_settings().get("max_parallel_runs", 1)))
+_execution_slots = threading.BoundedSemaphore(MAX_PARALLEL_RUNS)
+# Declare at import when DBOS is already live. DBOS 3.2 requires its system
+# database to be launched first, so app startup uses the one-time fallback in
+# start_run; the queue is then persisted and reused for subsequent runs.
+try:
+    RUN_QUEUE = DBOS.register_queue(RUN_QUEUE_NAME)
+except DBOSException as exc:  # standalone unit tests import runner without launching DBOS
+    if not any(reason in str(exc) for reason in ("No DBOS was created yet", "System database accessed before DBOS was launched")):
+        raise
+    RUN_QUEUE = None
 # steps with an exit_code that check nodes branch on: see plugins.is_worker
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
@@ -49,16 +61,15 @@ def start_run(env_id: str) -> str:
     run_id = uuid.uuid4().hex[:12]
     graph = load_env(env_id)
     store.create_run(run_id, env_id, graph)
-    limit = max(1, int(system_check.effective_settings().get("max_parallel_runs", 1)))
-    queue = DBOS.register_queue(RUN_QUEUE_NAME, global_concurrency=limit)
-    active = DBOS.list_workflows(status=["ENQUEUED", "PENDING", "SUCCESS", "ERROR", "CANCELLED"],
-                                 queue_name=RUN_QUEUE_NAME, limit=limit, load_input=False, load_output=False)
-    active = [w for w in active if getattr(w, "status", "") in ("ENQUEUED", "PENDING", "SUCCESS")]
-    active_runs = [run for run in store.list_runs(None) if run["status"] in ("running", "waiting")]
-    if len(active) + len(active_runs) >= limit:
+    global RUN_QUEUE
+    if RUN_QUEUE is None:
+        RUN_QUEUE = DBOS.register_queue(RUN_QUEUE_NAME)
+    pending = DBOS.list_workflows(status=["ENQUEUED", "PENDING"], queue_name=RUN_QUEUE_NAME,
+                                  limit=MAX_PARALLEL_RUNS, load_input=False, load_output=False)
+    if len(pending) >= MAX_PARALLEL_RUNS:
         store.set_run(run_id, "queued", RUN_WAITING_MESSAGE)
     with SetWorkflowID(run_id):
-        queue.enqueue(run_environment, env_id, run_id)
+        RUN_QUEUE.enqueue(run_environment, env_id, run_id)
     return run_id
 
 
@@ -72,9 +83,8 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     if not prompt.strip():
         raise ValueError("codex node has no prompt")
     prompt += memory_context.block(prompt, cfg)
-    # Codex's own Linux sandbox can't start inside some containers (e.g. Codespaces); there the container itself is
-    # the isolation, so GLACIER_CODEX_SANDBOX (when set) forces the mode for every codex node.
-    sandbox = cfg.get("sandbox") or os.environ.get("GLACIER_CODEX_SANDBOX") or "workspace-write"
+    # GLACIER_CODEX_SANDBOX supplies the default only when this step has no setting.
+    sandbox = cfg.get("sandbox") if cfg.get("sandbox") is not None else os.environ.get("GLACIER_CODEX_SANDBOX", "workspace-write")
     if sandbox not in ("read-only", "workspace-write", "danger-full-access"):
         raise ValueError(f"unsupported sandbox {sandbox!r}")
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
@@ -150,9 +160,13 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         os.makedirs(ws, exist_ok=True)
     command = cfg["cmd"]
     if sandbox:
-        command = sandboxing.wrap(command, os.path.abspath(ws), ["*"] if cfg.get("network") == "allow" else [])
+        if not ws:
+            raise ValueError("the sandbox needs a work folder")
+        if cfg.get("network") == "allow":
+            raise ValueError("Network access is not available for sandboxed steps yet")
+        command = sandboxing.wrap(command, os.path.abspath(ws), [])
         env = None
-    p = subprocess.Popen(command, shell=not sandbox, cwd=cfg.get("cwd") or ws or None, env=env, stdout=subprocess.PIPE,
+    p = subprocess.Popen(command, shell=not sandbox, cwd=(ws if sandbox else cfg.get("cwd") or ws or None), env=env, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, start_new_session=True)
     try:
         out, _ = p.communicate(timeout=timeout)
@@ -187,8 +201,7 @@ def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
     return "sent" if ok else "alert failed"
 
 
-@DBOS.step()
-def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
+def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
     """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
     nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
     store.set_node(run_id, env_id, nid, "running")
@@ -212,9 +225,15 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
             timeout = max(1, min(int(cfg.get("timeout") or default_timeout), 24 * 3600))
             for attempt in range(1, retries + 2):
                 if kind == "command":
-                    sandbox_setting = execution_cfg.get("sandbox") or os.environ.get("GLACIER_SANDBOX", "off")
+                    sandbox_setting = execution_cfg.get("sandbox", "off")
+                    env_sandbox = os.environ.get("GLACIER_SANDBOX", "off")
                     try:
-                        res = run_command(execution_cfg, timeout, ws, sandbox_setting == "on")
+                        if env_sandbox not in ("on", "off"):
+                            raise ValueError("GLACIER_SANDBOX must be 'on' or 'off'")
+                        if sandbox_setting not in ("on", "off"):
+                            raise ValueError("sandbox must be 'on' or 'off'")
+                        sandbox_on = env_sandbox == "on" or sandbox_setting == "on"
+                        res = run_command(execution_cfg, timeout, ws, sandbox_on)
                     except (RuntimeError, NotImplementedError, ValueError) as exc:
                         res = {"state": "failed", "output": str(exc), "exit_code": 1}
                 else:
@@ -264,6 +283,14 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
         store.record_usage(run_id, nid, res["usage"])
     store.set_node(run_id, env_id, nid, res["state"], res["output"])
     return res
+
+
+@DBOS.step()
+def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
+    """Run one step while respecting the hardware-derived execution limit."""
+    with _execution_slots:
+        store.set_run(run_id, "running")
+        return _run_node_impl(env_id, run_id, node, last, ws)
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)

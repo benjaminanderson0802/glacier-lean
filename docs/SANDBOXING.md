@@ -41,13 +41,12 @@ Sources: [bubblewrap project and design](https://github.com/containers/bubblewra
 
 Sandboxing is off by default for now. Set `sandbox: "on"` on a command step,
 set `sandbox: "on"` on the flow to apply it to command steps without their own
-setting, or set `GLACIER_SANDBOX=on` to enable it for all command steps. The
-step workspace is the only writable folder. Network access stays blocked by
-default. The current adapter does not yet implement host allowlisting, so a
-step that asks for `network: "allow"` fails clearly until a filtered proxy is
-available; it never gets unrestricted network access. (The runner's current
-sandbox adapter blocks this option with a clear error because host filtering is
-not implemented yet.)
+setting, or set `GLACIER_SANDBOX=on` to require it for all command steps. The
+environment setting is a floor: a step cannot turn it off. Only `on` and `off`
+are accepted. The step workspace is the only writable folder. Network access
+stays blocked by default. A sandboxed step that asks for `network: "allow"`
+fails clearly until a filtered proxy is available; it never gets unrestricted
+network access.
 
 Codex keeps its own sandbox mode. `GLACIER_CODEX_SANDBOX` supplies the default
 for Codex steps that do not choose a mode; an explicit `sandbox` setting on a
