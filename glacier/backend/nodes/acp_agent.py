@@ -153,8 +153,12 @@ def run(ctx):
     else:
         if harness != "custom":
             return {"state": "failed", "output": f"Unknown coding agent '{harness}'. Choose codex-acp, opencode, or custom.", "exit_code": 1}
+        configured_command = config.get("command") or ""
         try:
-            command = shlex.split(config.get("command") or "")
+            if isinstance(configured_command, (list, tuple)):
+                command = [str(part) for part in configured_command]
+            else:
+                command = shlex.split(configured_command)
         except ValueError as exc:
             return {"state": "failed", "output": f"Invalid coding agent command: {exc}", "exit_code": 1}
         if not command:

@@ -1,6 +1,5 @@
 """Acceptance tests for interchangeable ACP harnesses."""
 import os
-import shlex
 import sys
 
 from conftest import env
@@ -12,7 +11,7 @@ FAKE_SECOND = os.path.join(HERE, "fake_acp_agent_second.py")
 
 
 def _python_command(agent):
-    return " ".join(shlex.quote(part) for part in (sys.executable, os.path.abspath(agent)))
+    return [sys.executable, os.path.abspath(agent)]
 
 
 def _run(server, env_id, agent, workdir, command, harness="custom", permission_target=None):
