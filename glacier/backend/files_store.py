@@ -149,7 +149,7 @@ def _convert_in_child(path: Path) -> str:
         "import sys\n"
         "try:\n"
         "    import resource\n"
-        "    cap = 1024 * 1024 * 1024\n"
+        "    cap = 2 * 1024 * 1024 * 1024\n"
         "    resource.setrlimit(resource.RLIMIT_AS, (cap, cap))\n"
         "except ImportError:\n"
         "    pass\n"
@@ -157,8 +157,13 @@ def _convert_in_child(path: Path) -> str:
         "r = MarkItDown().convert(sys.argv[1])\n"
         "sys.stdout.buffer.write((r.text_content or '').encode('utf-8')[:2097152])\n"
     )
+    # The address-space cap guards against hostile documents. The file-type detector (onnxruntime) starts one
+    # thread per CPU core and glibc reserves a malloc arena per thread, so on 16+ thread machines the default
+    # arenas alone exceed a tight cap (measured: 1 GB cap succeeded 1 in 5 times on a 16-thread laptop).
+    # Two arenas keep the reservation small and well under the cap.
+    env = dict(os.environ, MALLOC_ARENA_MAX="2")
     result = subprocess.run([sys.executable, "-c", script, str(path)], capture_output=True,
-                            timeout=60, check=False)
+                            timeout=60, check=False, env=env)
     if result.returncode:
         raise RuntimeError("document conversion failed")
     return result.stdout[:_MAX_TEXT_BYTES].decode("utf-8", errors="replace")
