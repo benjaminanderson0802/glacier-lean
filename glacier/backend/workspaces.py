@@ -91,7 +91,7 @@ def finish(home: str, env_id: str, run_id: str, verified: bool) -> dict:
                 result["note"] = "main has uncommitted changes; merge skipped so nothing is overwritten"
             else:
                 p = subprocess.run(["git", "-c", "user.name=glacier", "-c", "user.email=glacier@localhost", "merge",
-                                    "--no-ff", "-q", "-m", f"Glacier: merge verified run {run_id}", branch],
+                                    "--no-ff", "-q", "-m", f"[run:{run_id}] Glacier: merge verified run {run_id}", branch],
                                    cwd=ws, capture_output=True, text=True)
                 if p.returncode == 0:
                     result.update(merged=True, commit=_git(ws, "rev-parse", "--short", "HEAD"))
