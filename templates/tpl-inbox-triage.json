@@ -1,0 +1,92 @@
+{
+  "id": "tpl-inbox-triage",
+  "name": "Sort incoming messages",
+  "nodes": [
+    {
+      "id": "incoming_text",
+      "type": "command",
+      "config": {
+        "cmd": "printf '%s\\n' 'Sample incoming message: I need help with my account.'"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "sort_message",
+      "type": "decide",
+      "config": {
+        "question": "Sort this incoming message into the best category: {prev_output}",
+        "options": "Needs a reply, For your information, Junk",
+        "engine": "auto"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "reply_note",
+      "type": "note",
+      "config": {
+        "path": "inbox/reply-{run}.md",
+        "template": "This message needs a reply. Run {run}: {summary}"
+      },
+      "position": {
+        "x": 520,
+        "y": -140
+      }
+    },
+    {
+      "id": "information_note",
+      "type": "note",
+      "config": {
+        "path": "inbox/information-{run}.md",
+        "template": "This message is for your information. Run {run}: {summary}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    },
+    {
+      "id": "junk_note",
+      "type": "note",
+      "config": {
+        "path": "inbox/junk-{run}.md",
+        "template": "This message was sorted as junk for your review. Run {run}: {summary}"
+      },
+      "position": {
+        "x": 520,
+        "y": 140
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "incoming_text",
+      "target": "sort_message",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "sort_message",
+      "target": "reply_note",
+      "label": "Needs a reply"
+    },
+    {
+      "id": "e3",
+      "source": "sort_message",
+      "target": "information_note",
+      "label": "For your information"
+    },
+    {
+      "id": "e4",
+      "source": "sort_message",
+      "target": "junk_note",
+      "label": "Junk"
+    }
+  ]
+}

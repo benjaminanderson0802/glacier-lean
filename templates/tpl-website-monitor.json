@@ -1,0 +1,23 @@
+{
+  "id": "tpl-website-monitor",
+  "name": "Website monitor",
+  "nodes": [
+    {"id": "schedule", "type": "schedule", "config": {"cron": "0 * * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "check_site", "type": "command", "config": {"cmd": "curl --fail --silent --show-error --output /dev/null --max-time 10 https://example.com"}, "position": {"x": 260, "y": 0}},
+    {"id": "site_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 520, "y": 0}},
+    {"id": "healthy_note", "type": "note", "config": {"path": "monitor/healthy-{run}.md", "template": "The website check passed for run {run}."}, "position": {"x": 780, "y": -140}},
+    {"id": "approve_alert", "type": "approval", "config": {"prompt": "The website check failed. Approve triggering the configured failure alert?"}, "position": {"x": 780, "y": 140}},
+    {"id": "alert_approved_note", "type": "note", "config": {"path": "monitor/alert-approved-{run}.md", "template": "Alert approved for the failed website check in run {run}. The flow will now end as failed so configured failure alerts can be sent."}, "position": {"x": 1040, "y": 0}},
+    {"id": "trigger_alert", "type": "command", "config": {"cmd": "false"}, "position": {"x": 1300, "y": 0}},
+    {"id": "alert_declined_note", "type": "note", "config": {"path": "monitor/alert-declined-{run}.md", "template": "Alert not approved for the failed website check in run {run}. No failure alert was triggered."}, "position": {"x": 1040, "y": 280}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "schedule", "target": "check_site", "label": ""},
+    {"id": "e2", "source": "check_site", "target": "site_result", "label": ""},
+    {"id": "e3", "source": "site_result", "target": "healthy_note", "label": "yes"},
+    {"id": "e4", "source": "site_result", "target": "approve_alert", "label": "no"},
+    {"id": "e5", "source": "approve_alert", "target": "alert_approved_note", "label": "yes"},
+    {"id": "e6", "source": "alert_approved_note", "target": "trigger_alert", "label": ""},
+    {"id": "e7", "source": "approve_alert", "target": "alert_declined_note", "label": "no"}
+  ]
+}
