@@ -101,13 +101,28 @@ def test_stuck_repair_loop_stops_and_files_a_claim(server):
     server.put("/api/environments/stuck", e)
     run = server.wait_run(server.post("/api/environments/stuck/run")["run_id"])
     assert run["status"] == "failed", run
-    claims = server.get("/api/claims")
-    assert len(claims) == 1 and claims[0]["status"] == "filed" and claims[0]["kind"] == "bug", claims
+    deadline = time.time() + 30
+    while time.time() < deadline:
+        claims = server.get("/api/claims")
+        if claims and claims[0]["status"] == "routed":
+            break
+        time.sleep(0.5)
+    assert len(claims) == 1 and claims[0]["kind"] == "bug" and claims[0]["status"] == "routed", claims
+    assert claims[0]["assigned_to"] == "debugger"  # research routed the stuck step to the debugger role
     c = server.get(f"/api/claims/{claims[0]['id']}")
     assert "no module named zap" in c["body"] and c["meta"]["attempts_made"] == 2 and c["meta"]["run_id"] == run["run_id"]
 
 
-def test_claims_api_and_owner_decision(server):
+def test_claims_api_and_owner_decision(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_AUTO_RESEARCH", "0")  # keep the claim still while the owner decides
+    server = Server(tmp_path).start()
+    try:
+        _claims_api_and_decision(server)
+    finally:
+        server.stop()
+
+
+def _claims_api_and_decision(server):
     r = server.post("/api/claims", {"kind": "capability_gap", "summary": "Need a PDF table reader",
                                      "evidence": "MarkItDown loses table layout"})
     cid = r["id"]

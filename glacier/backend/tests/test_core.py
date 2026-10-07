@@ -277,7 +277,7 @@ def test_self_calling_flow_is_depth_limited(server):
 def test_node_types_catalog_served_and_enforced(server):
     cat = server.get("/api/node-types")
     kinds = [t["type"] for t in cat]
-    assert kinds == ["schedule", "command", "codex", "check", "approval", "decide", "note", "loop", "flow"]
+    assert kinds[:9] == ["schedule", "command", "codex", "check", "approval", "decide", "note", "loop", "flow"]  # step plug-ins come after
     for t in cat:
         assert t["label"] and isinstance(t["fields"], list) and (t["branches"] is None or len(t["branches"]) == 2)
         assert t["branches"] is None or "branches_from" not in t
