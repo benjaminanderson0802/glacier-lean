@@ -29,19 +29,43 @@ class FakeAgent:
 
     async def prompt(self, session_id, prompt, **kwargs):
         text = "".join(block.text for block in prompt if isinstance(block, TextContentBlock))
-        match = re.search(r"Permission path: (.+)$", text)
-        path = match.group(1) if match else ""
+        match = re.search(r"Permission request: (.*)$", text)
+        request = match.group(1) if match else ""
+        kind, _, value = request.partition(":")
+        if not _:
+            kind, value = "read", request
+        locations = []
+        raw_input = {}
+        if kind in ("read", "edit", "delete") and value:
+            locations = [ToolCallLocation(path=value)]
+        elif kind == "move":
+            source, _, destination = value.partition(":")
+            raw_input = {"source": source, "destination": destination}
+        elif kind == "execute":
+            raw_input = {"command": f"sh {value}"}
+        elif kind == "both":
+            locations = [ToolCallLocation(path=value)]
+        elif kind == "nested":
+            raw_input = {"changes": [{"new_path": value}]}
+        options = [PermissionOption(option_id="once", name="Allow once", kind="allow_once")]
+        if kind == "both":
+            options.insert(0, PermissionOption(option_id="always", name="Always allow", kind="allow_always"))
         result = await self.connection.request_permission(
             session_id=session_id,
             tool_call=ToolCallUpdate(
                 tool_call_id="fake-write",
                 title="Write requested file",
-                locations=[ToolCallLocation(path=path)],
+            kind={"shell": "execute", "none": None, "move": "move", "read": "read",
+                  "edit": "edit", "delete": "delete", "both": "edit"}.get(kind, kind),
+            locations=locations,
+            raw_input=raw_input,
             ),
-            options=[PermissionOption(option_id="allow", name="Allow", kind="allow_once")],
+            options=options,
         )
         outcome = result.outcome.outcome
-        permission = "selected" if outcome == "selected" else "cancelled"
+        permission = "cancelled"
+        if outcome == "selected":
+            permission = "once" if result.outcome.option_id == "once" else "always"
         message = f"done: {text} (permission={permission})"
         await self.connection.session_update(
             session_id=session_id,

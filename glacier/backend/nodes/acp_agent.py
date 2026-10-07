@@ -1,4 +1,8 @@
-"""Run a coding agent that speaks the Agent Client Protocol over stdio."""
+"""Run a coding agent that speaks ACP over stdio.
+
+Permission checks only protect when the agent asks permission first; this is not
+an operating-system sandbox. OS sandboxing is provided by the sandboxing card.
+"""
 import asyncio
 import os
 import shlex
@@ -42,21 +46,44 @@ def _inside(path_value: str, workdir: str) -> bool:
         return False
 
 
+def _permission_kind(tool_call) -> str:
+    kind = getattr(tool_call, "kind", None)
+    if kind:
+        return str(getattr(kind, "value", kind)).lower()
+    raw = getattr(tool_call, "raw_input", None)
+    if isinstance(raw, dict):
+        kind = raw.get("kind") or raw.get("type")
+        if kind:
+            return str(getattr(kind, "value", kind)).lower()
+    return ""
+
+
 def _permission_paths(tool_call) -> list[str]:
-    """Get explicit affected paths from the standard ACP locations or raw input."""
+    """Collect path-like strings from every nested request field."""
     paths = [location.path for location in (getattr(tool_call, "locations", None) or []) if getattr(location, "path", None)]
     raw = getattr(tool_call, "raw_input", None)
+    path_keys = {"path", "file", "file_path", "filepath", "target", "source", "destination", "dest",
+                 "new_path", "old_path", "to", "from", "cwd", "workdir", "directory"}
+
+    def is_path(value: str, key: str) -> bool:
+        if key.lower() in path_keys:
+            return True
+        # Path-like strings outside named fields must also be checked, while
+        # prose and shell commands are not interpreted as permission paths.
+        return value.startswith(("/", "./", "../", "~")) or "/" in value or "\\" in value
 
     def visit(value, key=""):
         if isinstance(value, dict):
             for name, child in value.items():
-                if name.lower() in {"path", "file", "file_path", "filepath", "target"} and isinstance(child, str):
+                if isinstance(child, str) and is_path(child, name):
                     paths.append(child)
                 else:
                     visit(child, name)
         elif isinstance(value, (list, tuple)):
             for child in value:
                 visit(child, key)
+        elif isinstance(value, str) and is_path(value, key):
+            paths.append(value)
 
     visit(raw)
     return paths
@@ -72,9 +99,12 @@ def _acp_client(workdir: str, messages: list[str]):
                     messages.append(text)
 
         async def request_permission(self, session_id, tool_call, options, **kwargs):
+            kind = _permission_kind(tool_call)
+            if kind not in {"read", "edit", "delete", "move"}:
+                return RequestPermissionResponse(outcome=DeniedOutcome(outcome="cancelled"))
             paths = _permission_paths(tool_call)
             if paths and all(_inside(path, workdir) for path in paths):
-                allowed = next((option for option in options if option.kind in ("allow_once", "allow_always")), None)
+                allowed = next((option for option in options if option.kind == "allow_once"), None)
                 if allowed:
                     return RequestPermissionResponse(outcome=AllowedOutcome(outcome="selected", option_id=allowed.option_id))
             return RequestPermissionResponse(outcome=DeniedOutcome(outcome="cancelled"))
