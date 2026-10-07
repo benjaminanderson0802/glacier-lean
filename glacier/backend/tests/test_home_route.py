@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 def test_home_empty_state(server):
     body = server.get("/api/home")
-    assert isinstance(body["local_ai"]["online"], bool)
+    assert body["local_ai"]["online"] in (True, False, None)  # None = first probe still running
     assert body["local_ai"]["model"] is None or isinstance(body["local_ai"]["model"], str)
     assert body["counts"] == {"running": 0, "need_you": 0}
     assert body["needs_you"] == []
@@ -46,7 +46,7 @@ def test_home_collects_each_need_you_kind_and_counts_steps(server):
     server.put("/api/memory/note", {"path": "recent.md", "body": "# Recent\nA saved note.", "author": "owner"})
     body = server.get("/api/home")
 
-    assert isinstance(body["local_ai"]["online"], bool)
+    assert body["local_ai"]["online"] in (True, False, None)  # None = first probe still running
     assert body["counts"] == {"running": 3, "need_you": 3}
     by_kind = {item["kind"]: item for item in body["needs_you"]}
     assert set(by_kind) == {"approval", "claim", "failed_run"}
@@ -81,3 +81,23 @@ def test_home_orders_and_caps_needs_and_notes(server):
     assert len(body["recent_notes"]) == 10
     assert body["recent_notes"][0]["path"] == "notes/11.md"
     assert body["recent_notes"][-1]["path"] == "notes/02.md"
+
+
+def test_home_local_ai_becomes_known_after_first_probe(server):
+    import time
+    first = server.get("/api/home")["local_ai"]["online"]
+    assert first in (True, False, None)
+    deadline = time.monotonic() + 30
+    online = first
+    while online is None and time.monotonic() < deadline:
+        time.sleep(0.5)
+        online = server.get("/api/home")["local_ai"]["online"]
+    assert isinstance(online, bool)
+
+
+def test_home_recent_notes_scan_is_bounded_and_locked(server):
+    for i in range(12):
+        server.put("/api/memory/note", {"path": f"bulk/n{i}.md", "body": f"# N{i}\nline {i}", "author": "owner"})
+    notes = server.get("/api/home")["recent_notes"]
+    assert len(notes) == 10
+    assert notes[0]["path"] == "bulk/n11.md"

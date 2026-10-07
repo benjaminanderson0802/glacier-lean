@@ -19,7 +19,7 @@ import vault
 router = APIRouter()
 _LOCAL_AI_CACHE_SECONDS = 10
 _local_ai_lock = threading.Lock()
-_local_ai = {"online": False, "model": None}
+_local_ai = {"online": None, "model": None}  # None = first probe still running
 _local_ai_at = 0.0
 _local_ai_refreshing = False
 
@@ -78,39 +78,39 @@ def _iso(value) -> str:
     return parsed.astimezone(timezone.utc).isoformat()
 
 
-def _recent_notes() -> list[dict]:
-    """Use committed memory history, retaining only the latest change for each Markdown note."""
-    notes = []
+def _recent_notes(max_commits: int = 300) -> list[dict]:
+    """Latest change per Markdown note from the vault history (newest first, at most 10).
+
+    Git work happens under the vault lock (see vault.py access policy); the history scan is bounded.
+    """
+    changed: list[tuple[str, str]] = []
     seen = set()
     try:
-        commits = vault._repo.iter_commits()
-        for commit in commits:
-            paths = set()
-            parents = commit.parents[:1]
-            diffs = commit.tree.diff(parents[0].tree) if parents else commit.tree.diff(NULL_TREE)
-            for diff in diffs:
-                path = (diff.b_path or diff.a_path or "").replace("\\", "/")
-                if path.endswith(".md"):
-                    paths.add(path)
-            for path in sorted(paths):
-                if path in seen or path.startswith("claims/"):
-                    continue
-                seen.add(path)
-                try:
-                    _, body = memory_meta.parse(vault.read_raw_note(path), path)
-                except (OSError, ValueError):
-                    continue
-                summary = next((re.sub(r"\s+", " ", line).strip(" #") for line in body.splitlines()
-                                if line.strip() and not line.lstrip().startswith(("#", "-", "*"))), "")
-                if not summary:
-                    summary = next((line.strip().lstrip("# ") for line in body.splitlines() if line.strip()), "")
-                notes.append({"path": path, "summary": summary[:240],
-                              "at": commit.committed_datetime.astimezone(timezone.utc).isoformat()})
-                if len(notes) >= 10:
-                    return notes
+        with vault._lock:
+            for commit in vault._repo.iter_commits(max_count=max_commits):
+                parents = commit.parents[:1]
+                diffs = commit.tree.diff(parents[0].tree) if parents else commit.tree.diff(NULL_TREE)
+                at = commit.committed_datetime.astimezone(timezone.utc).isoformat()
+                for path in sorted({(d.b_path or d.a_path or "").replace("\\", "/") for d in diffs}):
+                    if path.endswith(".md") and path not in seen and not path.startswith("claims/"):
+                        seen.add(path)
+                        changed.append((path, at))
+                if len(changed) >= 10:
+                    break
     except Exception:
-        return notes[:10]
-    return notes[:10]
+        pass
+    notes = []
+    for path, at in changed[:10]:
+        try:
+            _, body = memory_meta.parse(vault.read_raw_note(path), path)
+        except (OSError, ValueError):
+            continue
+        summary = next((re.sub(r"\s+", " ", line).strip(" #") for line in body.splitlines()
+                        if line.strip() and not line.lstrip().startswith(("#", "-", "*"))), "")
+        if not summary:
+            summary = next((line.strip().lstrip("# ") for line in body.splitlines() if line.strip()), "")
+        notes.append({"path": path, "summary": summary[:240], "at": at})
+    return notes
 
 
 @router.get("/api/home")

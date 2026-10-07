@@ -50,7 +50,7 @@ New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/con
                                                   node_states: {node_id: pending|running|done|failed|waiting|skipped},
                                                   outputs: {node_id: "text"}, waiting_on: node_id|null,
                                                   usage: {node_id: {model, route, tokens_in, tokens_out, cost_usd}}}
-- GET  /api/home                             -> {local_ai:{online,model}, counts:{running,need_you},
+- GET  /api/home                             -> {local_ai:{online,model}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
                                                   needs_you:[{kind,title,detail,at,ref}],
                                                   running:[{run_id,env_id,name,status,step,steps,started_at}],
                                                   recent_notes:[{path,summary,at}]}; one read-only Home summary.
