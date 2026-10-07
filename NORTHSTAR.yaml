@@ -353,7 +353,7 @@ phases:
     checkpoints:
       - {id: PH11.1, item: "Automated integration health checks (M-SURVIVE) and pinned-upgrade cadence", status: done, evidence: "PR #33 setup/health_check.py (fresh venv, all suites, 3 benchmarks, upgrade proposals); weekly run is local (Task Scheduler/cron) while GitHub Actions is paused"}
       - {id: PH11.2, item: "Governance: amendment process, maintainers, security disclosure policy", status: done, evidence: "PR #38 merged: GOVERNANCE.md, CONTRIBUTING.md, SECURITY.md, amendment process; private vulnerability reporting enabled on the public repo; PR #76: SECURITY.md (private reporting, no email, scope, 7/30-day targets), GOVERNANCE.md, CONTRIBUTING.md (theme tokens + lint), Code of Conduct, issue/PR templates, tests"}
-      - {id: PH11.3, item: "Funding/maintenance model that does not compromise local-first or portability"}
+      - {id: PH11.3, item: "Funding/maintenance model that does not compromise local-first or portability", status: in_progress, evidence: "funding PR: docs/FUNDING_PROPOSAL.md compares six options that keep Glacier free, local and portable (GitHub Sponsors, Open Collective, NLnet-style grants, Sovereign Tech Agency, paid support, donated CI) with fees and sources; recommended first step awaits an owner decision"}
       - {id: PH11.4, item: "Annual review of this file against the gap (is the gap still unfilled? what changed?)"}
 
 # ─────────────────────────────────────────────────────────────────────────────
