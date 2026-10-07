@@ -25,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 PYTHON = Path(os.environ.get("GLACIER_PYTHON") or sys.executable)
 LIMIT_SECONDS = 120
+BENCHMARK_TOKEN = "glacier-recovery-benchmark-token"
 CASES = [
     {"id": "run_notes", "title": "run writes 50 notes", "recovery_path": "/api/runs/{run_id}/undo"},
     {"id": "flow_restore", "title": "restore an earlier flow version", "recovery_path": "/api/environments/{env_id}/restore"},
@@ -46,6 +47,7 @@ def request(base: str, method: str, path: str, body: dict | None = None, timeout
     PROGRESS["inflight"] = f"{method} {path}"
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(base + path, data=data, method=method)
+    req.add_header("Authorization", f"Bearer {os.environ.get('GLACIER_TOKEN', BENCHMARK_TOKEN)}")
     if data is not None:
         req.add_header("Content-Type", "application/json")
     try:
@@ -94,6 +96,7 @@ def start_backend(home: Path, port: int, log_path: Path, diagnostic_dir: Path, p
     env = {k: v for k, v in os.environ.items() if k not in {"CODEX_HOME", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"}}
     env.update({"GLACIER_HOME": str(home), "GLACIER_CODEX_BIN": str(HERE / "fake_codex.py"),
                 "GLACIER_SANDBOX": "off", "CODEX_BIN": str(HERE / "fake_codex.py"),
+                "GLACIER_TOKEN": BENCHMARK_TOKEN,
                 "PYTHONUNBUFFERED": "1", "GLACIER_MAX_PARALLEL_RUNS": str(parallel_runs),
                 "PYTHONPATH": str(diagnostic_dir) + os.pathsep + env.get("PYTHONPATH", "")})
     log = log_path.open("w", encoding="utf-8", buffering=1)
@@ -332,7 +335,8 @@ def exercise(base: str, home: Path) -> list[dict]:
     before_hash = file_hash(target)
     cmd = "python -c \"from pathlib import Path; Path('answer.txt').write_text('after\\\\n')\""
     codeflow = {"id": env_id, "name": env_id, "isolate": True, "nodes": [{"id": "write", "type": "command",
-        "config": {"cmd": cmd}, "position": {"x": 0, "y": 0}}], "edges": []}
+        "config": {"cmd": cmd}, "position": {"x": 0, "y": 0}}], "edges": [],
+        "goal": "Update a workspace file", "acceptance": [{"kind": "command", "cmd": "grep -q after answer.txt"}]}
     save_flow(base, env_id, codeflow)
     run_id = request(base, "POST", f"/api/environments/{env_id}/run")["run_id"]
     result = wait_run(base, run_id)

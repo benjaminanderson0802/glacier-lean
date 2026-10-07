@@ -45,6 +45,7 @@ def test_recovery_case_matrix_covers_four_required_actions():
 
 def test_api_request_encodes_body_and_decodes_json(monkeypatch):
     captured = {}
+    monkeypatch.setenv("GLACIER_TOKEN", "benchmark-token")
 
     def fake_urlopen(request, timeout):
         captured["request"] = request
@@ -55,6 +56,7 @@ def test_api_request_encodes_body_and_decodes_json(monkeypatch):
     assert recover.request("http://local", "POST", "/api/test", {"value": 1}) == {"ok": True}
     assert captured["request"].get_method() == "POST"
     assert captured["request"].get_header("Content-type") == "application/json"
+    assert captured["request"].get_header("Authorization") == "Bearer benchmark-token"
     assert captured["timeout"] > 0
 
 
