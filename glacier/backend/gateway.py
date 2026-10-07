@@ -17,6 +17,7 @@ _HEALTH_TIMEOUT = 1.5
 _HEALTH_CACHE_SECONDS = 30.0
 _health_cache: dict[str, tuple[float, bool]] = {}
 _health_lock = threading.Lock()
+_offline_warning_cache: set[str] = set()
 
 FRIENDLY_FAILURE = "No free model is available right now. A paid option needs your approval (a claim was filed)."
 DEFAULT_ROUTE = {
@@ -119,10 +120,29 @@ def _is_online(route: dict) -> bool:
     with _health_lock:
         cached = _health_cache.get(url)
         if cached and now - cached[0] < _HEALTH_CACHE_SECONDS:
-            return cached[1]
+            online = cached[1]
+            should_log_offline = not online and url not in _offline_warning_cache
+            if should_log_offline:
+                _offline_warning_cache.add(url)
+        else:
+            online = None
+            should_log_offline = False
+    if online is not None:
+        if should_log_offline:
+            logger.warning("Skipping preferred model route %s because it is offline", route.get("name", "unnamed"))
+        return online
     online = _probe_health(url)
     with _health_lock:
         _health_cache[url] = (time.monotonic(), online)
+        if online:
+            _offline_warning_cache.discard(url)
+        elif url not in _offline_warning_cache:
+            _offline_warning_cache.add(url)
+            should_log_offline = True
+        else:
+            should_log_offline = False
+    if not online and should_log_offline:
+        logger.warning("Skipping preferred model route %s because it is offline", route.get("name", "unnamed"))
     return online
 
 
@@ -174,8 +194,6 @@ def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = 
         if route.get("prefer_when_online"):
             if _is_online(route):
                 preferred_online.append(route)
-            else:
-                logger.warning("Skipping preferred model route %s because it is offline", route.get("name", "unnamed"))
     ordered_routes = preferred_online + [
         route for route in eligible_routes
         if not route.get("prefer_when_online")

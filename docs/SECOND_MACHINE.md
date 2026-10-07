@@ -4,10 +4,12 @@ Glacier can prefer an Ollama model running on another computer while it is reach
 
 ## Connect the computers privately
 
-Choose one free option:
+Recommended open-source options:
 
-- **Tailscale personal tier:** install Tailscale on both computers and use their private tailnet addresses or MagicDNS names. Tailscale's coordination server is not open source. [Headscale](https://headscale.net/) is the open-source, self-hosted alternative.
 - **WireGuard:** configure a tunnel between the computers and use the laptop's tunnel address.
+- **Headscale:** run this open-source, self-hosted coordination server with the open-source Tailscale clients on both computers.
+
+Hosted Tailscale's personal tier is an optional alternative. Its clients are open source, but its coordination server is not.
 
 Both options create a private network path; neither requires exposing Ollama through a public router address.
 

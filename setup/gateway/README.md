@@ -37,7 +37,7 @@ Future API-key support must read keys from `secrets_store` (the OS keychain), ne
 
 ## Use another computer on a private network
 
-Install [Tailscale](https://tailscale.com/) on both computers and use its free tier for personal devices, or create a WireGuard tunnel between them. Tailscale uses a coordination server that is not open source; [Headscale](https://headscale.net/) is an open-source, self-hosted alternative. Keep the laptop route `paid: false` only when it uses a model you run yourself.
+Recommended open-source options are **WireGuard**, configured as a tunnel between both computers, or **Headscale**, a self-hosted coordination server used with the open-source Tailscale clients. Hosted Tailscale's personal tier is an optional alternative; its coordination server is not open source. Keep the laptop route `paid: false` only when it uses a model you run yourself.
 
 On the laptop, install Ollama and download a model, then allow its port 11434 only on the private-network interface. For example, configure Ollama's `OLLAMA_HOST` to the laptop's private Tailscale/WireGuard address and add a host firewall rule that permits TCP 11434 only from the other computer's private address. Do not bind Ollama to `0.0.0.0` on a network with public access, do not forward port 11434 on the router, and do not create a public firewall allow rule. From the gateway computer, verify that `http://laptop.tailnet:11434/api/tags` opens over the private connection, then use that same private address in `base_url` and `health_url`.
 

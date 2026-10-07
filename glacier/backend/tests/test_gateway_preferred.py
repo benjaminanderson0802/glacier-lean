@@ -75,6 +75,10 @@ def test_offline_preferred_route_falls_back_and_usage_names_local(tmp_path, monk
         assert result["usage"]["route"] == "gateway/local"
         assert not laptop.requests and len(local.requests) == 1
         assert "laptop" in caplog.text and "offline" in caplog.text.lower()
+        warning_count = caplog.text.count("Skipping preferred model route laptop because it is offline")
+        assert warning_count == 1
+        gateway.complete(_ctx(tmp_path), routes=_routes(laptop, local))
+        assert caplog.text.count("Skipping preferred model route laptop because it is offline") == warning_count
     finally:
         laptop.close()
         local.close()
