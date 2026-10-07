@@ -21,6 +21,7 @@ const runs = new Map() // run_id -> run record
 const vault = new Map() // path -> body
 const memoryMeta = new Map()
 const memoryHistory = new Map()
+const assistantProposals = new Map()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 const commitId = () => crypto.randomBytes(20).toString('hex').slice(0, 7)
 
@@ -124,6 +125,56 @@ const server = http.createServer(async (req, res) => {
       }
     }
     if (req.method === 'GET' && p === '/api/node-types') return send(200, CATALOG)
+    if (req.method === 'POST' && p === '/api/assistant/chat') {
+      const body = await readBody()
+      if (!body?.message) return send(400, { detail: 'message is required' })
+      const conversationId = body.conversation_id ?? crypto.randomUUID()
+      const runId = crypto.randomUUID()
+      const messageId = crypto.randomUUID()
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
+      const emit = (type, data = {}) => res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`)
+      emit('RUN_STARTED', { runId })
+      const automation = /make me|automate|every day|daily/i.test(body.message)
+      let reply = `I can help with: ${body.message}`
+      if (automation) {
+        const id = crypto.randomUUID()
+        const flowId = body.message.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'new-flow'
+        const flow = { id: flowId, name: 'Daily backup', goal: body.message, created_by: 'assistant',
+          nodes: [{ id: 'backup', type: 'command', config: { cmd: 'tar -czf backup.tgz data' }, position: { x: 60, y: 60 } }],
+          edges: [], acceptance: [{ kind: 'human', question: 'Did the backup finish?' }] }
+        const proposal = { id, conversation_id: conversationId, flow, explanation: 'Creates a daily backup flow.', problems: [] }
+        assistantProposals.set(id, proposal)
+        const toolCallId = crypto.randomUUID()
+        emit('TOOL_CALL_START', { toolCallId, toolCallName: 'propose_flow', messageId })
+        emit('TOOL_CALL_ARGS', { toolCallId, delta: JSON.stringify(proposal) })
+        emit('TOOL_CALL_END', { toolCallId })
+        reply = proposal.explanation
+      }
+      emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+      emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply })
+      emit('TEXT_MESSAGE_END', { messageId })
+      const conversationPath = `conversations/${conversationId.replace(/[^a-zA-Z0-9_-]+/g, '-')}.md`
+      vault.set(conversationPath, `${vault.get(conversationPath) ?? `# Conversation ${conversationId}\n`}\n\n**You:** ${body.message}\n\n**Assistant:** ${reply}\n`)
+      emit('RUN_FINISHED', { runId })
+      return res.end()
+    }
+    if ((m = p.match(/^\/api\/assistant\/proposals\/([^/]+)\/apply$/)) && req.method === 'POST') {
+      const proposal = assistantProposals.get(decodeURIComponent(m[1]))
+      if (!proposal) return send(404, { detail: 'proposal not found' })
+      const body = await readBody()
+      if (body?.approve !== true) {
+        assistantProposals.delete(proposal.id)
+        return send(200, { discarded: true })
+      }
+      const flow = proposal.flow
+      const bad = flow.nodes.map(node => node.type).filter(type => !CATALOG.some(item => item.type === type))
+      if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
+      envs.set(flow.id, flow)
+      const commit = commitId()
+      vault.set(`environments/${flow.id}.json`, JSON.stringify(flow, null, 2))
+      assistantProposals.delete(proposal.id)
+      return send(200, { saved: true, commit })
+    }
     if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name })))
     if ((m = p.match(/^\/api\/environments\/([^/]+)$/))) {
       const id = decodeURIComponent(m[1])
