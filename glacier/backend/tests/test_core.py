@@ -126,6 +126,8 @@ def test_websocket_receives_node_events(server):
         seen = []
         while ("n", "done") not in seen:
             msg = json.loads(ws.recv(timeout=15))
+            if "node_id" not in msg:
+                continue
             assert msg["run_id"] == run_id and msg["env_id"] == "ws"
             seen.append((msg["node_id"], msg["state"]))
             if (msg["node_id"], msg["state"]) == ("c", "done"):
