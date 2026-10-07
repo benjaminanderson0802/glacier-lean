@@ -79,6 +79,7 @@ def test_upgrade_parser_reports_newer_pypi_version_as_proposal():
 
 def test_missing_security_suite_is_reported_as_failure(monkeypatch, tmp_path):
     monkeypatch.setattr(health_check, "REPO", tmp_path)
+    monkeypatch.setattr(health_check, "run_commands", lambda specs, python, quick: [])
     sections = health_check.run_health_sections(quick=True)
 
     security = next(section for section in sections if section["name"] == "security suite")
@@ -113,6 +114,22 @@ def test_upgrade_check_uses_bounded_pip_and_stops_after_network_failure(monkeypa
     assert len(calls) == 1
     assert calls[0][0][-7:] == ["index", "versions", "one", "--timeout", "5", "--retries", "0"]
     assert calls[0][1]["timeout"] <= health_check.UPGRADE_BUDGET_SECONDS
+
+
+def test_upgrade_check_uses_project_python_for_pip(monkeypatch):
+    calls = []
+    project_python = Path("/project/.venv/bin/python")
+    monkeypatch.setattr(health_check, "pinned_requirements", lambda: ["one==1.0"])
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, "Available versions: 1.0\n", "")
+
+    monkeypatch.setattr(health_check.subprocess, "run", fake_run)
+    health_check.check_upgrades(project_python)
+
+    assert calls == [[str(project_python), "-m", "pip", "index", "versions", "one",
+                      "--timeout", "5", "--retries", "0"]]
 
 
 def test_default_report_path_is_ignored():

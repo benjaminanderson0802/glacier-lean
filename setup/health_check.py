@@ -8,7 +8,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -57,16 +56,13 @@ def check_upgrades(python: Path | None = None) -> tuple[list[dict], str]:
     python = python or Path(sys.executable)
     proposals: list[dict] = []
     deadline = time.monotonic() + UPGRADE_BUDGET_SECONDS
-    pip_executable = shutil.which("pip")
     for requirement in pinned_requirements():
         package = requirement.split("==", 1)[0].strip()
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             return proposals, "Upgrade check stopped at its 90-second time limit"
-        command = ([pip_executable, "index", "versions", package, "--timeout", "5", "--retries", "0"]
-                   if pip_executable else
-                   [str(python), "-m", "pip", "index", "versions", package,
-                    "--timeout", "5", "--retries", "0"])
+        command = [str(python), "-m", "pip", "index", "versions", package,
+                   "--timeout", "5", "--retries", "0"]
         try:
             result = subprocess.run(command, cwd=REPO, text=True, capture_output=True,
                                     timeout=min(remaining, 10))
