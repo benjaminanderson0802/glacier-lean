@@ -326,7 +326,7 @@ phases:
     goal: "Glacier's own development runs as Glacier Environments under the same verification rules."
     status: in_progress  # started after the owner-approved PH3 exit (2026-10-07); PH5/PH7 still in progress, so self-build stays owner-approved and verified-merge only
     checkpoints:
-      - {id: PH9.1, item: "Repo-maintenance Environment: dependency watch, test board, proposed upgrades (human-approved)"}
+      - {id: PH9.1, item: "Repo-maintenance Environment: dependency watch, test board, proposed upgrades (human-approved)", status: in_progress, evidence: "maintenance PR: weekly flow checks outdated pip/npm packages, keeps only OSI-licensed upgrades, runs the backend and screen checks, saves one proposal note (proposals/maintenance-<date>.md); proposal-only, never edits the repo; offline tests with stubbed commands. First live weekly run pending"}
       - {id: PH9.2, item: "Feature Environment: goal → worktree → workers → verifier → merge queue", status: in_progress, evidence: "PR #47: feature flow (goal -> isolated worktree -> approved worker -> independent checks -> verified merge only) + protected-check guard (new tests allowed, edits/deletes fail, NORTHSTAR/contract changes stop for the owner); not yet run on a real Glacier card"}
       - {id: PH9.3, item: "Tool discovery: periodic scan of MCP registry / model catalogs → proposals, never auto-adoption (I-09)", status: todo, evidence: "PR #16 proposal-only scanner built early (review round 1); counts only after PH3 exit per guard"}
     exit: "3 consecutive real features shipped through Glacier with M-FALSE-DONE < 2%."
