@@ -1,0 +1,4 @@
+[
+  {"id":"tiny-1","title":"Branch demo","create_time":0,"current_node":"answer","mapping":{"answer":{"parent":"question","message":{"author":{"role":"assistant"},"content":{"parts":["Visible answer"]}}},"branch":{"parent":"question","message":{"author":{"role":"assistant"},"content":{"parts":["Hidden branch"]}}},"question":{"parent":"root","message":{"author":{"role":"user"},"content":{"parts":["Visible question"]}}},"root":{"parent":null,"message":{"author":{"role":"system"},"content":{"parts":["System text"]}}}}},
+  {"conversation_id":"tiny-2","title":"","create_time":1,"current_node":"empty","mapping":{"empty":{"parent":null,"message":{"author":{"role":"user"},"content":{"parts":[""]}}}}}
+]
