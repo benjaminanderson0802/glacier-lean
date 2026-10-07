@@ -169,7 +169,7 @@ def clear_cache():
     _check_cache_key = None
 
 
-def effective_settings():
+def effective_settings(include_ask_route: bool = False):
     result = dict(check_system()["recommended"])
     settings_path = Path(os.environ.get("GLACIER_HOME", "data")) / "settings.json"
     try:
@@ -191,6 +191,11 @@ def effective_settings():
             result["max_parallel_runs"] = max(1, int(max_runs))
         except ValueError:
             pass
+    if include_ask_route:
+        import routes.assistant_chat as assistant_chat
+        route, reason = assistant_chat.ask_route()
+        result["ask_route"] = route or "unavailable"
+        result["ask_route_reason"] = reason
     return result
 
 
