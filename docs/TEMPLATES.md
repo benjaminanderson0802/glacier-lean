@@ -1,6 +1,6 @@
 # Flow templates
 
-Bundled templates are listed in `templates/MANIFEST.json`. Each entry records its author, Apache-2.0 license, SHA-256 digest, and review date. The API reports a bundled item as **changed since review** and marks it unavailable for installation if the file digest differs from the manifest.
+Bundled templates are listed in `templates/manifest/MANIFEST.json`. Each entry records its author, Apache-2.0 license, SHA-256 digest, and review date. The API reports a bundled item as **changed since review** and marks it unavailable for installation if the file digest differs from the manifest.
 
 Community templates use the portable flow file format from `portable.py`. Import runs structural validation and a safety review. Flows with missing or invalid goal acceptance checks, paid model routing, secret placeholders, or commands containing these flagged forms are rejected with plain findings:
 

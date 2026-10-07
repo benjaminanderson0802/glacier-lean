@@ -32,7 +32,7 @@ def _clean_flow():
 
 
 def test_manifest_hashes_match_all_bundled_templates():
-    manifest = json.loads((ROOT / "templates" / "MANIFEST.json").read_text())
+    manifest = json.loads((ROOT / "templates" / "manifest" / "MANIFEST.json").read_text())
     entries = manifest["templates"]
     files = {path.name for path in (ROOT / "templates").glob("*.json") if path.name != "MANIFEST.json"}
     assert {entry["file"] for entry in entries} == files
@@ -46,7 +46,8 @@ def test_manifest_hashes_match_all_bundled_templates():
 def test_tampered_template_is_marked_and_cannot_be_installed(tmp_path, monkeypatch):
     entry = {"file": "one.json", "id": "one", "name": "One", "description": "One", "author": "Glacier", "license": "Apache-2.0", "sha256": "0" * 64, "reviewed_by": "owner", "reviewed_on": "2026-10-07"}
     (tmp_path / "one.json").write_text(json.dumps(_clean_flow()))
-    (tmp_path / "MANIFEST.json").write_text(json.dumps({"templates": [entry]}))
+    (tmp_path / "manifest").mkdir()
+    (tmp_path / "manifest" / "MANIFEST.json").write_text(json.dumps({"templates": [entry]}))
     monkeypatch.setattr(template_registry, "BUNDLED_DIR", tmp_path)
     result = template_registry.list_templates()
     assert result[0]["review_status"] == "changed since review"

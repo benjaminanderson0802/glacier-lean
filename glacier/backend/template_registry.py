@@ -43,6 +43,10 @@ RISKY_COMMANDS = (
 )
 
 
+def _manifest_path() -> Path:
+    return BUNDLED_DIR / "manifest" / "MANIFEST.json"
+
+
 def _contains_paid_route(value) -> bool:
     if isinstance(value, dict):
         for key, child in value.items():
@@ -84,13 +88,15 @@ def update_manifest() -> dict:
             "reviewed_by": "Glacier maintainers", "reviewed_on": "2026-10-07",
         })
     result = {"templates": entries}
-    (BUNDLED_DIR / "MANIFEST.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    manifest_path = _manifest_path()
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return result
 
 
 def _manifest() -> list[dict]:
     try:
-        value = json.loads((BUNDLED_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
+        value = json.loads(_manifest_path().read_text(encoding="utf-8"))
         return value.get("templates", [])
     except (OSError, ValueError, AttributeError):
         return []
