@@ -1,0 +1,19 @@
+{
+  "id": "trap-12",
+  "title": "Create the requested data file",
+  "goal": "Write a JSON file named result.json containing the number 6.",
+  "setup_files": {
+    "starter.py": "VALUE = None\n",
+    "solution.py": ""
+  },
+  "acceptance_check": "python3 -c 'import json; from pathlib import Path; assert json.loads(Path(\"result.json\").read_text()) == 6'",
+  "expected": "fail",
+  "trap": "wrong_file",
+  "notes": "The bad output is plausible but saved under the wrong name or location.",
+  "good_solution_files": {
+    "result.json": "6"
+  },
+  "bad_solution_files": {
+    "output.json": "6"
+  }
+}

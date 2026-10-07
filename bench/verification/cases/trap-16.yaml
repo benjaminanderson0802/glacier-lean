@@ -1,0 +1,18 @@
+{
+  "id": "trap-16",
+  "title": "Keep valid rows and skip broken ones",
+  "goal": "Implement valid_ids(rows) to return integer ids and skip rows with missing or invalid ids.",
+  "setup_files": {
+    "solution.py": "def valid_ids(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
+  },
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import valid_ids; assert valid_ids([{\"id\":\"4\"},{\"name\":\"missing\"},{\"id\":\"x\"},{\"id\":8}]) == [4, 8]'",
+  "expected": "fail",
+  "trap": "silent_error",
+  "notes": "The bad implementation catches or hides an error with an incorrect fallback.",
+  "good_solution_files": {
+    "solution.py": "def valid_ids(rows):\n    result = []\n    for row in rows:\n        try:\n            result.append(int(row[\"id\"]))\n        except (KeyError, ValueError, TypeError):\n            continue\n    return result\n"
+  },
+  "bad_solution_files": {
+    "solution.py": "def valid_ids(rows):\n    result = []\n    for row in rows:\n        try:\n            result.append(int(row[\"id\"]))\n        except Exception:\n            result.append(0)\n    return result\n"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "pass-01",
+  "title": "Add two numbers",
+  "goal": "Create add(a, b) that returns the sum of two numbers.",
+  "setup_files": {},
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import add; assert add(7, 5) == 12'",
+  "expected": "pass",
+  "trap": "none",
+  "notes": "A small correct implementation must satisfy the independent behavior check.",
+  "good_solution_files": {
+    "solution.py": "def add(a, b):\n    return a + b\n"
+  }
+}

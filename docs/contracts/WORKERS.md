@@ -3,7 +3,7 @@
 ## Adding a step type (no shared files touched)
 Create `glacier/backend/nodes/<name>.py` defining `NODE = {"catalog": {...}, "run": fn}` (full rules in `glacier/backend/plugins.py`).
 - `catalog`: same shape as an entry of `glacier/contract/node_types.json` (`type, label, description, fields, branches`, optional `branches_from`), plus `"worker": true` for steps that do work and have an exit code.
-- `run(ctx) -> result`. ctx: `env_id, run_id, node_id, config, prev, home, log(text)`. result: `state` (done|failed), `output` (text), `exit_code` (workers), optional `branch`, optional `usage`.
+- `run(ctx) -> result`. ctx: `env_id, run_id, node_id, config, prev, home, workspace, log(text), memory(task) -> "Relevant notes" text to append to an AI task (empty if none or the step's use_memory is "no")`. result: `state` (done|failed), `output` (text), `exit_code` (workers), optional `branch`, optional `usage`.
 - The step appears automatically in GET /api/node-types and on the screen. Never edit runner.py, app.py or node_types.json for a new step.
 - Tests go in `glacier/backend/tests/test_<name>.py` and run from glacier/backend: `python -m pytest -q tests`.
 

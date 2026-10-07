@@ -3,7 +3,7 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
-import store, vault, decider, plugins, verify, claims
+import store, vault, decider, plugins, verify, claims, workspaces, memory_context
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
@@ -51,20 +51,21 @@ def start_run(env_id: str) -> str:
     return run_id
 
 
-def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, timeout: int = CODEX_TIMEOUT) -> dict:
+def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, timeout: int = CODEX_TIMEOUT, ws: str = "") -> dict:
     """Hand the prompt to `codex exec` (ChatGPT sign-in, no API key). Streams a short live log into the node output
     every ~2s; the final output is "codex exit <code>" plus Codex's last message."""
     fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev_output[-PREV_LIMIT:])
     prompt = fill(cfg.get("prompt") or "")
     if not prompt.strip():
         raise ValueError("codex node has no prompt")
+    prompt += memory_context.block(prompt, cfg)
     # Codex's own Linux sandbox can't start inside some containers (e.g. Codespaces); there the container itself is
     # the isolation, so GLACIER_CODEX_SANDBOX (when set) forces the mode for every codex node.
     sandbox = os.environ.get("GLACIER_CODEX_SANDBOX") or cfg.get("sandbox") or "workspace-write"
     if sandbox not in ("read-only", "workspace-write", "danger-full-access"):
         raise ValueError(f"unsupported sandbox {sandbox!r}")
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
-    workdir = cfg.get("workdir") or os.path.join(home, "workspaces", env_id)
+    workdir = cfg.get("workdir") or ws or os.path.join(home, "workspaces", env_id)
     os.makedirs(workdir, exist_ok=True)
     fd, last_file = tempfile.mkstemp(prefix="codex-last-", suffix=".txt"); os.close(fd)
     args = [os.environ.get("CODEX_BIN", "codex"), "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
@@ -127,10 +128,13 @@ def snapshot_scheduled_run(env_id: str, run_id: str) -> None:
     store.create_run(run_id, env_id, load_env(env_id))
 
 
-def run_command(cfg: dict, timeout: int) -> dict:
+def run_command(cfg: dict, timeout: int, ws: str = "") -> dict:
     """Run a shell command in its own process group so a time limit stops it and everything it started."""
     import signal
-    p = subprocess.Popen(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or None, stdout=subprocess.PIPE,
+    env = dict(os.environ, GLACIER_WORKSPACE=ws) if ws else None
+    if ws:
+        os.makedirs(ws, exist_ok=True)
+    p = subprocess.Popen(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or ws or None, env=env, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, start_new_session=True)
     try:
         out, _ = p.communicate(timeout=timeout)
@@ -166,7 +170,7 @@ def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
 
 
 @DBOS.step()
-def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
+def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
     """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
     nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
     store.set_node(run_id, env_id, nid, "running")
@@ -178,9 +182,9 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
             timeout = max(1, min(int(cfg.get("timeout") or default_timeout), 24 * 3600))
             for attempt in range(1, retries + 2):
                 if kind == "command":
-                    res = run_command(cfg, timeout)
+                    res = run_command(cfg, timeout, ws)
                 else:
-                    res = run_codex(env_id, run_id, nid, cfg, (last or {}).get("output") or "", timeout)
+                    res = run_codex(env_id, run_id, nid, cfg, (last or {}).get("output") or "", timeout, ws)
                 if retries:
                     res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
                 if res["exit_code"] == 0 or attempt > retries:
@@ -207,7 +211,8 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
             res["output"] = f"{path} (commit {sha})"
         elif kind in plugins.NODES:
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
-            ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home,
+            ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home, "workspace": ws,
+                   "memory": lambda task: memory_context.block(task, cfg),
                    "log": lambda text: store.set_node(run_id, env_id, nid, "running", str(text)[-OUTPUT_LIMIT:])}
             res = plugins.NODES[kind]["run"](ctx)
             if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
@@ -243,12 +248,24 @@ def finish_approval(env_id: str, run_id: str, node_id: str, msg: dict | None) ->
     return res
 
 
+@DBOS.step(retries_allowed=True, max_attempts=3)
+def prepare_workspace(env_id: str, run_id: str, isolate: bool) -> str:
+    return workspaces.prepare(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), env_id, run_id, isolate)
+
+
 @DBOS.step()
-def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str) -> dict:
+def finish_workspace(env_id: str, run_id: str, verified: bool) -> dict:
+    r = workspaces.finish(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), env_id, run_id, verified)
+    store.record_workspace(run_id, r)
+    return r
+
+
+@DBOS.step()
+def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str, ws: str = "") -> dict:
     """Runs one acceptance check outside the worker's control (rule I-04) and records the evidence."""
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
     try:
-        r = verify.run_check(home, env_id, check, last_output)
+        r = verify.run_check(home, env_id, check, last_output, ws)
     except Exception as e:
         r = {"passed": False, "evidence": f"the check could not run: {e}"}
     store.record_check(run_id, idx, check["kind"], r["passed"], r["evidence"])
@@ -328,6 +345,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
     last, status, executions = None, "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
     loop_counts, flow_visits, failures = defaultdict(int), defaultdict(int), defaultdict(list)
+    isolate = bool(graph.get("isolate"))
+    ws = prepare_workspace(env_id, run_id, isolate)
     while queue:
         if executions >= limit:
             status = "failed"
@@ -355,7 +374,7 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                     handle = DBOS.start_workflow(run_environment, child_env, child_run, depth + 1)
                 res = finish_child(env_id, run_id, nid, child_env, child_run, handle.get_result())
         else:
-            res = run_node(env_id, run_id, node, last)
+            res = run_node(env_id, run_id, node, last, ws)
         edges = out[nid]
         if res.get("error"):
             status = "failed"
@@ -387,9 +406,11 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                 mark_waiting(env_id, run_id, f"check-{i}")
                 r = finish_human_check(env_id, run_id, i, DBOS.recv(topic=f"check-{i}", timeout_seconds=APPROVAL_TIMEOUT))
             else:
-                r = run_acceptance_check(env_id, run_id, i, check, last_output)
+                r = run_acceptance_check(env_id, run_id, i, check, last_output, ws)
             if not r["passed"] and check.get("required", True):
                 status = "failed"
+    if isolate:
+        finish_workspace(env_id, run_id, status == "done")
     finish_run(env_id, run_id, status)
     if status == "failed" and depth == 0:  # sub-flow failures are reported once, by the top-level run
         send_failure_alert(env_id, run_id, graph.get("alert_urls") or [])

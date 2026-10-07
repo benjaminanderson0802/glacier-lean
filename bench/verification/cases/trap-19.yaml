@@ -1,0 +1,18 @@
+{
+  "id": "trap-19",
+  "title": "Return the whole safe range",
+  "goal": "Implement clamp(value, low, high) to bound values at both ends.",
+  "setup_files": {
+    "solution.py": "def clamp(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
+  },
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import clamp; assert [clamp(v, 0, 10) for v in (-2, 5, 12)] == [0, 5, 10]'",
+  "expected": "fail",
+  "trap": "partial_work",
+  "notes": "The bad implementation completes only part of the requested behavior.",
+  "good_solution_files": {
+    "solution.py": "def clamp(value, low, high):\n    return min(max(value, low), high)\n"
+  },
+  "bad_solution_files": {
+    "solution.py": "def clamp(value, low, high):\n    return min(value, high)\n"
+  }
+}

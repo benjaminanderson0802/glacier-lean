@@ -13,6 +13,7 @@ def init(path: str) -> None:
                      started_at TEXT, graph TEXT, waiting_on TEXT)""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_nodes(run_id TEXT, node_id TEXT, state TEXT, output TEXT,
                      PRIMARY KEY(run_id, node_id))""")
+        c.execute("""CREATE TABLE IF NOT EXISTS glacier_workspace(run_id TEXT PRIMARY KEY, info TEXT)""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_checks(run_id TEXT, idx INTEGER, kind TEXT, passed INTEGER,
                      evidence TEXT, PRIMARY KEY(run_id, idx))""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_usage(run_id TEXT, node_id TEXT, model TEXT, route TEXT,
@@ -95,6 +96,17 @@ def record_usage(run_id: str, node_id: str, u: dict) -> None:
 def record_check(run_id: str, idx: int, kind: str, passed: bool, evidence: str) -> None:
     with _conn() as c:
         c.execute("INSERT OR REPLACE INTO glacier_checks VALUES (?,?,?,?,?)", (run_id, idx, kind, int(bool(passed)), evidence))
+
+
+def record_workspace(run_id: str, info: dict) -> None:
+    with _conn() as c:
+        c.execute("INSERT OR REPLACE INTO glacier_workspace VALUES (?,?)", (run_id, json.dumps(info)))
+
+
+def workspace_of(run_id: str) -> dict | None:
+    with _conn() as c:
+        row = c.execute("SELECT info FROM glacier_workspace WHERE run_id=?", (run_id,)).fetchone()
+    return json.loads(row[0]) if row else None
 
 
 def checks_of(run_id: str) -> list[dict]:
