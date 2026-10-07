@@ -1,13 +1,14 @@
 {
   "id": "run-undo-ambiguous",
-  "title": "Undo with a non-run identifier",
-  "attack": "Try to undo using an ambiguous/nonexistent run identifier.",
+  "title": "Undo a run with multiple real changes",
+  "attack": "Attempt to undo a completed run with multiple note changes; the undo endpoint must reject an ambiguous target.",
   "request": {
     "method": "POST",
     "path": "/api/runs/abcdef0/undo",
     "expected_status": 400,
     "check": "status",
-    "body": {}
+    "body": {},
+    "probe": "run_undo_ambiguous"
   },
   "expected": "blocked"
 }

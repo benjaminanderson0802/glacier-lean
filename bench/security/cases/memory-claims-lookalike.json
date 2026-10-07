@@ -1,7 +1,7 @@
 {
   "id": "memory-claims-lookalike",
   "title": "Write claim with alternate casing",
-  "attack": "Attempt a case variant claim directory write.",
+  "attack": "Using author owner, write into Claims/forged.md and verify the claims namespace cannot be bypassed by case variation.",
   "request": {
     "method": "PUT",
     "path": "/api/memory/note",
@@ -10,7 +10,7 @@
     "body": {
       "path": "Claims/forged.md",
       "body": "x",
-      "author": "worker:codex"
+      "author": "owner"
     }
   },
   "expected": "blocked"

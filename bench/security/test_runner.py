@@ -42,6 +42,10 @@ class FakeAPI(BaseHTTPRequestHandler):
         self.rfile.read(int(self.headers.get("Content-Length", "0")))
         return self._send(400, {"detail": "Claims can't be edited from memory"})
 
+    def do_POST(self):
+        self.rfile.read(int(self.headers.get("Content-Length", "0")))
+        return self._send(404, {"detail": "not found"})
+
 
 def test_runner_counts_blocked_http_probes_and_writes_report(tmp_path):
     FakeAPI.seen = []
@@ -59,6 +63,7 @@ def test_runner_counts_blocked_http_probes_and_writes_report(tmp_path):
         assert result.returncode == 0, result.stdout + result.stderr
         assert "Blocked: 2/2" in report
         assert ("OPTIONS", "/api/memory/notes", "https://random.example") in FakeAPI.seen
+        assert "NOT BLOCKED" not in report
     finally:
         server.shutdown()
         server.server_close()
@@ -90,3 +95,12 @@ def test_runner_exits_nonzero_when_probe_is_not_blocked(tmp_path):
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_schema_requires_exact_status_and_review_attack_shapes():
+    cases = [json.loads(path.read_text()) for path in sorted((HERE / "cases").glob("*.json"))]
+    by_id = {case["id"]: case for case in cases}
+    assert by_id["memory-claims-lookalike"]["request"]["body"]["author"] == "owner"
+    assert by_id["memory-claims-path"]["request"]["body"]["author"] == "owner"
+    assert by_id["flow-restore-ambiguous"]["request"]["probe"] == "flow_restore_ambiguous"
+    assert by_id["memory-undo-ambiguous"]["request"]["probe"] == "memory_undo_ambiguous"

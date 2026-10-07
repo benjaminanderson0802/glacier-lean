@@ -9,7 +9,8 @@
     "check": "status",
     "body": {
       "commit": "abcdef0"
-    }
+    },
+    "probe": "flow_restore_ambiguous"
   },
   "expected": "blocked"
 }

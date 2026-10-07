@@ -6,11 +6,12 @@
     "method": "POST",
     "path": "/api/memory/undo",
     "expected_status": 400,
-    "check": "status",
+    "check": "ambiguous_rejected",
     "body": {
       "path": "missing.md",
       "commit": "abcdef0"
-    }
+    },
+    "probe": "memory_undo_ambiguous"
   },
   "expected": "blocked"
 }

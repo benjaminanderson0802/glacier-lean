@@ -5,7 +5,7 @@
   "request": {
     "method": "POST",
     "path": "/api/runs/not-a-real-run/approve",
-    "expected_status": 400,
+    "expected_status": 404,
     "check": "status",
     "body": {
       "node_id": "danger",
