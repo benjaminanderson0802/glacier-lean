@@ -36,6 +36,9 @@ Node configs:
             exit_code 0 when the sub-run is done, else 1 (so a check can branch on it); nesting deeper than 5 fails
 A failing command/codex/flow node only continues when it feeds a check node. A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max_steps node executions per run (default 500).
 
+## Plug-ins and further contracts
+New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/contracts/WORKERS.md). Memory v2: docs/contracts/MEMORY.md. Verification and claims: docs/contracts/VERIFICATION.md.
+
 ## HTTP API (backend on :8000, all JSON, prefix /api)
 - GET  /api/node-types                        -> [{type,label,description,fields:[{key,label,placeholder,default,optional?,multiline?,options?,picker?}],branches:[a,b]|null,branches_from?:"options"}]
 - GET  /api/environments                      -> [{id,name}]
@@ -45,7 +48,8 @@ A failing command/codex/flow node only continues when it feeds a check node. A n
 - GET  /api/runs?env_id=...                   -> [{run_id, env_id, status, started_at}]
 - GET  /api/runs/{run_id}                     -> {run_id, env_id, status: running|waiting|done|failed|rejected,
                                                   node_states: {node_id: pending|running|done|failed|waiting|skipped},
-                                                  outputs: {node_id: "text"}, waiting_on: node_id|null}
+                                                  outputs: {node_id: "text"}, waiting_on: node_id|null,
+                                                  usage: {node_id: {model, route, tokens_in, tokens_out, cost_usd}}}
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
 - WS   /api/events  -> messages {"run_id","env_id","node_id","state","output"?} on every node state change

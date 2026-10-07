@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from dbos import DBOS, DBOSConfig
-import store, vault
+import store, vault, plugins
 
 HOME = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
 os.makedirs(HOME, exist_ok=True)
@@ -17,6 +17,7 @@ import runner  # noqa: E402  (registers workflows after DBOS is configured)
 CATALOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "contract", "node_types.json")
 with open(CATALOG_PATH) as _f:
     NODE_CATALOG = json.load(_f)["types"]  # single source of truth shared with the screen and the mock server
+NODE_CATALOG = NODE_CATALOG + plugins.load_nodes({t["type"] for t in NODE_CATALOG})  # step plug-ins (nodes/)
 NODE_TYPES = {t["type"] for t in NODE_CATALOG}
 
 
@@ -29,6 +30,7 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="Glacier", lifespan=lifespan)
+plugins.load_routes(app)  # route plug-ins (routes/)
 
 
 def _env_or_404(env_id: str) -> dict:
@@ -87,6 +89,7 @@ def get_run(run_id: str):
     run = store.get_run(run_id)
     if not run:
         raise HTTPException(404, f"run {run_id} not found")
+    run["usage"] = store.usage_of(run_id)  # model, route, tokens and cost per step
     return run
 
 

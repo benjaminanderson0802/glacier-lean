@@ -3,7 +3,7 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
-import store, vault, decider
+import store, vault, decider, plugins
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
@@ -15,7 +15,7 @@ OUTPUT_LIMIT = 20000
 CODEX_TIMEOUT = 30 * 60
 PREV_LIMIT = 8000
 CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
-WORKERS = ("command", "codex", "flow")  # nodes with an exit_code that check nodes branch on
+# steps with an exit_code that check nodes branch on: see plugins.is_worker
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
 
@@ -74,7 +74,7 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
         os.unlink(last_file)
         raise RuntimeError(f"Codex CLI not found ({args[0]}); install it, then run: codex login --device-auth")
     timer = threading.Timer(timeout, p.kill); timer.start()
-    log, errs, agent_msg, started = [], [], "", time.time()
+    log, errs, agent_msg, started, tok = [], [], "", time.time(), {}
     flushed = started
     try:
         for line in p.stdout:
@@ -90,6 +90,8 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
                 kind = item.get("type") if str(ev.get("type", "")).startswith("item.") else ev.get("type") or item.get("type")
                 text = str(item.get("text") or item.get("message") or (err.get("message") if isinstance(err, dict) else err)
                            or ev.get("message") or "")
+                if isinstance(ev.get("usage"), dict):
+                    tok = ev["usage"]
                 if kind == "agent_message" and text:
                     agent_msg = text
                 elif "error" in str(kind) or "failed" in str(kind):
@@ -112,7 +114,9 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     if code != 0 and time.time() - started >= timeout:
         body += f"\n[timed out after {timeout}s]"
     out = f"codex exit {code}\n{body}"
-    return {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code}
+    usage = {"model": cfg.get("model") or "default (sandbox Codex setting)", "route": "codex/chatgpt-plan", "cost_usd": 0.0,
+             "tokens_in": tok.get("input_tokens", 0), "tokens_out": tok.get("output_tokens", 0)}
+    return {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code, "usage": usage}
 
 
 # ---- steps -------------------------------------------------------------------------------
@@ -200,10 +204,22 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None) -> dict:
             path = fill(cfg.get("path") or "runs/{env}-{run}.md")
             sha = vault.write_note(path, fill(cfg.get("template") or "Run {run} of {env}: {summary}"), agent="glacier-runner")
             res["output"] = f"{path} (commit {sha})"
+        elif kind in plugins.NODES:
+            home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+            ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home,
+                   "log": lambda text: store.set_node(run_id, env_id, nid, "running", str(text)[-OUTPUT_LIMIT:])}
+            res = plugins.NODES[kind]["run"](ctx)
+            if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
+                raise ValueError(f"step plug-in {kind!r} returned an invalid result")
+            if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
+                res["exit_code"] = 0 if res["state"] == "done" else 1
+            res["output"] = res.get("output", "")[-OUTPUT_LIMIT:]
         elif kind != "schedule":
             raise ValueError(f"unknown node type {kind!r}")
     except Exception as e:  # a broken node fails itself, not the whole server
         res = {"state": "failed", "output": f"error: {e}", "error": True}
+    if isinstance(res.get("usage"), dict):
+        store.record_usage(run_id, nid, res["usage"])
     store.set_node(run_id, env_id, nid, res["state"], res["output"])
     return res
 
@@ -312,7 +328,7 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
         if res.get("error"):
             status = "failed"
             break
-        if node["type"] in WORKERS:
+        if plugins.is_worker(node["type"]):
             last = res
             if res["exit_code"] != 0 and not any(nodes[e["target"]]["type"] == "check" for e in edges):
                 status = "failed"  # a failing command only continues when a check handles it

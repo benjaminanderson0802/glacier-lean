@@ -13,6 +13,8 @@ def init(path: str) -> None:
                      started_at TEXT, graph TEXT, waiting_on TEXT)""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_nodes(run_id TEXT, node_id TEXT, state TEXT, output TEXT,
                      PRIMARY KEY(run_id, node_id))""")
+        c.execute("""CREATE TABLE IF NOT EXISTS glacier_usage(run_id TEXT, node_id TEXT, model TEXT, route TEXT,
+                     tokens_in INTEGER, tokens_out INTEGER, cost_usd REAL, PRIMARY KEY(run_id, node_id))""")
 
 
 _lock = threading.Lock()
@@ -78,6 +80,21 @@ def list_runs(env_id: str | None) -> list[dict]:
     with _conn() as c:
         rows = c.execute(q + " ORDER BY started_at DESC, rowid DESC", args).fetchall()
     return [dict(zip(("run_id", "env_id", "status", "started_at"), r)) for r in rows]
+
+
+def record_usage(run_id: str, node_id: str, u: dict) -> None:
+    """Model, route and cost per step (roadmap: cost and route visible per run). Last execution of a step wins."""
+    with _conn() as c:
+        c.execute("INSERT OR REPLACE INTO glacier_usage VALUES (?,?,?,?,?,?,?)",
+                  (run_id, node_id, str(u.get("model") or ""), str(u.get("route") or ""), int(u.get("tokens_in") or 0),
+                   int(u.get("tokens_out") or 0), float(u.get("cost_usd") or 0.0)))
+
+
+def usage_of(run_id: str) -> dict:
+    with _conn() as c:
+        rows = c.execute("SELECT node_id, model, route, tokens_in, tokens_out, cost_usd FROM glacier_usage WHERE run_id=?",
+                         (run_id,)).fetchall()
+    return {n: {"model": m, "route": r, "tokens_in": ti, "tokens_out": to, "cost_usd": cu} for n, m, r, ti, to, cu in rows}
 
 
 def get_run(run_id: str) -> dict | None:
