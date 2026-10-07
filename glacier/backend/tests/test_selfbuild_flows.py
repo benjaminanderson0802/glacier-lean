@@ -140,9 +140,17 @@ def test_run_card_posts_card_and_prints_watch_instructions(tmp_path):
 
     api = HTTPServer(("127.0.0.1", 0), API)
     threading.Thread(target=api.serve_forever, daemon=True).start()
+    # A tiny source repository with a main branch, and a scratch home: the test must not depend on how the
+    # outer checkout was made (CI checks out pull requests without a local main) or write into the repo.
+    source = tmp_path / "source"
+    subprocess.run(["git", "init", "-q", "-b", "main", str(source)], check=True)
+    (source / "README.md").write_text("toy", encoding="utf-8")
+    subprocess.run(["git", "-C", str(source), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(source), "-c", "user.name=t", "-c", "user.email=t@x", "commit", "-qm", "start"], check=True)
     try:
         result = subprocess.run([sys.executable, str(ROOT / "setup/selfbuild/run_card.py"), str(card),
-                                 "--api", f"http://127.0.0.1:{api.server_port}"], text=True, capture_output=True)
+                                 "--api", f"http://127.0.0.1:{api.server_port}",
+                                 "--home", str(tmp_path / "home"), "--source", str(source)], text=True, capture_output=True)
         assert result.returncode == 0, result.stderr
         assert "abc123" in result.stdout and "/api/runs/abc123" in result.stdout
         assert "Build a tiny feature" in seen["flow"]["nodes"][0]["config"]["cmd"]

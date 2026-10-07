@@ -80,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Glacier API base URL")
     parser.add_argument("--home", type=Path, default=Path(os.environ.get("GLACIER_HOME", ROOT / "data")),
                         help="Glacier data folder (default: GLACIER_HOME)")
+    parser.add_argument("--source", type=Path, default=ROOT,
+                        help="Glacier repository to clone for self-build runs (default: this checkout)")
     args = parser.parse_args(argv)
     card_path = Path(args.card).expanduser().resolve()
     try:
@@ -87,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as error:
         parser.error(f"Could not read card file {card_path}: {error}")
     try:
-        repo = prepare_checkout(args.home.expanduser().resolve(), ROOT)
+        repo = prepare_checkout(args.home.expanduser().resolve(), args.source.expanduser().resolve())
     except (OSError, subprocess.CalledProcessError, RuntimeError) as error:
         print(f"Could not prepare the self-build checkout: {error}", file=sys.stderr)
         return 1
