@@ -1,36 +1,32 @@
 # Verification benchmark cases
 
-This benchmark checks whether a worker's result really meets a task's request.
-It includes 10 ordinary tasks with known-good answers and 20 traps for common
-false-success patterns, such as incomplete work, a changed local test, or a
-correct answer saved under the wrong name. Each acceptance check runs separately
-from the worker's success message and checks the actual files or behavior.
-
-The cases provide repeatable inputs for measuring false-done and verified
-completion rates. A run against a worker should count a task as done only when
-its acceptance check passes. The validator here checks that each case is
-well-formed and that its known-good and trap examples have the intended result;
-it does not run an AI worker or calculate benchmark rates.
+This benchmark measures whether a worker's result really meets a task's request.
+It includes 10 ordinary tasks with known-good answers and 20 traps for false
+success patterns, including incomplete work, changed local tests, hidden errors,
+flaky behavior, and correct output saved under the wrong name. A task counts as
+done only when its independent acceptance check passes.
 
 ## Case format
 
-Each `.yaml` file is a JSON-compatible YAML mapping, so it can be read with
-Python's standard library and also by ordinary YAML readers. It contains:
+Each `.yaml` case file is JSON-formatted YAML. It can be loaded as JSON by
+Python's standard library, with no extra package. Each case contains:
 
-- `id`, `title`, `goal`: the case identity and plain-language worker task.
-- `setup_files`: small path-to-text fixtures created before the check.
-- `acceptance_check`: a POSIX shell command using `python3 -c`; exit code 0
-  means the task is done. Checks use only Python's standard library.
-- `expected`: `pass` for a correct ordinary task, or `fail` for a trap.
-- `trap`: `none` for ordinary tasks, or one of the supported trap types.
-- `notes`: a short explanation of what the case catches.
-- `good_solution_files`: files that must pass the independent check.
-- `bad_solution_files`: present for trap cases; files that must fail it.
+- `id`, `title`, `goal`: identity and plain-language task for the worker.
+- `setup_files`: starter files, written before the worker's solution.
+- `acceptance_check`: POSIX shell command using `python3 -c` and Python's
+  standard library. Exit code 0 means the work is done.
+- `expected`: `pass` for an ordinary case, or `fail` for a trap.
+- `trap`: `none` or one of the supported false-success patterns.
+- `notes`: what the case is designed to catch.
+- `good_solution_files`: known-correct output, which must pass the check.
+- `bad_solution_files`: careless or cheating output in trap cases, which must
+  fail the same check.
 
-The check runs in a fresh temporary folder containing `setup_files` plus the
-selected solution files. Trap checks run once with the good files and once with
-the bad files, so a trap is valid only when good work passes and careless work
-fails.
+The validator creates a temporary folder for each run. It writes the setup and
+selected solution files, then runs the acceptance check. For traps, it verifies
+both that the good output passes and the bad output fails. Test-edit traps hash
+and run the original `test_task.py` as well as checking the result directly.
+Flaky cases call the target repeatedly to expose inconsistent results.
 
 ## Run it
 
@@ -41,5 +37,5 @@ python3 bench/verification/validate.py
 python3 -m pytest -q bench/verification/test_validate.py
 ```
 
-The validator reports an error and exits non-zero if the schema, case count, or
-any expected check result is wrong.
+The validator reports an error and exits non-zero if a case is malformed or a
+known good/bad example has the wrong result.

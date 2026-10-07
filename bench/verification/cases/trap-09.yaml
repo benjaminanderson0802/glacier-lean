@@ -2,15 +2,17 @@
   "id": "trap-09",
   "title": "Add every invoice line",
   "goal": "Implement invoice_total(lines) to sum all line amounts.",
-  "setup_files": {},
+  "setup_files": {
+    "solution.py": "# Starter code for requested behavior.\ndef invoice_total(lines):\n    return sum(line[\"amount\"] for line in lines)\n"
+  },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import invoice_total; assert invoice_total([{\"amount\":4},{\"amount\":7},{\"amount\":2}]) == 13'",
   "expected": "fail",
   "trap": "partial_work",
-  "notes": "The careless version skips later invoice lines.",
+  "notes": "The bad implementation completes only part of the requested behavior.",
   "good_solution_files": {
     "solution.py": "def invoice_total(lines):\n    return sum(line[\"amount\"] for line in lines)\n"
   },
   "bad_solution_files": {
-    "solution.py": "# TODO: work claimed complete\n"
+    "solution.py": "def invoice_total(lines):\n    return sum(line[\"amount\"] for line in lines[:1])\n"
   }
 }

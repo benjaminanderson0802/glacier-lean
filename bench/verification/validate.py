@@ -150,6 +150,15 @@ def _run_check(case: dict, solution_key: str, should_pass: bool) -> None:
         )
 
 
+def _require_bad_target(case: dict) -> None:
+    """Require trap implementations to contain a function, except wrong-file traps."""
+    if case["trap"] == "wrong_file":
+        return
+    code = "\n".join(case["bad_solution_files"].values())
+    if "def " not in code:
+        raise ValidationError(f"{case['id']}: bad solution must define its target function")
+
+
 def validate() -> int:
     paths = sorted(CASES_DIR.glob("*.yaml"))
     if len(paths) != 30:
@@ -166,6 +175,7 @@ def validate() -> int:
     for case in cases:
         _run_check(case, "good_solution_files", should_pass=True)
         if case["trap"] != "none":
+            _require_bad_target(case)
             _run_check(case, "bad_solution_files", should_pass=False)
     return len(cases)
 

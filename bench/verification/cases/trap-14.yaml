@@ -2,15 +2,17 @@
   "id": "trap-14",
   "title": "Report a missing file clearly",
   "goal": "Implement read_message(path) to return the file contents, or None if the file is missing.",
-  "setup_files": {},
+  "setup_files": {
+    "solution.py": "# Starter code for requested behavior.\nfrom pathlib import Path\ndef read_message(path):\n    try:\n        return Path(path).read_text()\n    except FileNotFoundError:\n        return None\n"
+  },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import read_message; assert read_message(\"missing.txt\") is None'",
   "expected": "fail",
   "trap": "silent_error",
-  "notes": "Hiding an exception with an empty string is not the required missing-file result.",
+  "notes": "The bad implementation catches or hides an error with an incorrect fallback.",
   "good_solution_files": {
     "solution.py": "from pathlib import Path\ndef read_message(path):\n    try:\n        return Path(path).read_text()\n    except FileNotFoundError:\n        return None\n"
   },
   "bad_solution_files": {
-    "solution.py": "# TODO: work claimed complete\n"
+    "solution.py": "def read_message(path):\n    try:\n        return open(path).read()\n    except Exception:\n        return \"\"\n"
   }
 }
