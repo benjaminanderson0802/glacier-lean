@@ -100,6 +100,16 @@
      "placeholder": "default",
      "default": "",
      "optional": true
+    },
+    {
+     "key": "use_memory",
+     "label": "Use memory (adds up to 5 related notes)",
+     "placeholder": "",
+     "default": "yes",
+     "options": [
+      "yes",
+      "no"
+     ]
     }
    ],
    "branches": null

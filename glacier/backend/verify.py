@@ -21,13 +21,13 @@ def validate(acceptance) -> None:
             raise ValueError(f"check {i + 1} ({c['kind']}) needs '{need}'")
 
 
-def workspace(home: str, env_id: str, check: dict) -> str:
-    return check.get("cwd") or os.path.join(home, "workspaces", env_id)
+def workspace(home: str, env_id: str, check: dict, ws: str = "") -> str:
+    return check.get("cwd") or ws or os.path.join(home, "workspaces", env_id)
 
 
-def run_check(home: str, env_id: str, check: dict, last_output: str) -> dict:
+def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str = "") -> dict:
     kind = check["kind"]
-    ws = workspace(home, env_id, check)
+    ws = workspace(home, env_id, check, run_ws)
     if kind == "rubric":
         q = ("You are an independent reviewer. Judge ONLY whether the work below meets the criteria. "
              f"Criteria: {check['rubric']}\nAnswer pass or fail.")

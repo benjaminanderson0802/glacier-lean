@@ -100,6 +100,7 @@ def get_run(run_id: str):
     acceptance = graph.get("acceptance") or []
     checks = store.checks_of(run_id)
     run["verification"] = checks
+    run["workspace"] = store.workspace_of(run_id)  # isolated runs: branch, merged or not, and why
     if not acceptance:
         run["verified"] = None
     elif run["status"] in ("done", "failed", "rejected"):
