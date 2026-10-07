@@ -205,7 +205,8 @@ export const system = {
 }
 
 // ---------- Assistant chat (POST /api/assistant/chat, server-sent AG-UI events) ----------
-export interface ChatProposal { id: string; explanation?: string; flow?: { id?: string; name?: string; nodes?: unknown[]; edges?: unknown[] }; [k: string]: unknown }
+export interface ProposalCheck { kind?: string; cmd?: string; rubric?: string; question?: string; schema?: unknown }
+export interface ChatProposal { id: string; explanation?: string; flow?: { id?: string; name?: string; goal?: string; nodes?: unknown[]; edges?: unknown[]; acceptance?: ProposalCheck[] }; [k: string]: unknown }
 export type ChatEvent =
   | { type: 'text'; delta: string }
   | { type: 'proposal'; proposal: ChatProposal }
