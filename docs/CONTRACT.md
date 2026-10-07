@@ -40,6 +40,9 @@ A failing command/codex/flow node only continues when it feeds a check node. A n
 ## Plug-ins and further contracts
 New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/contracts/WORKERS.md). Memory v2: docs/contracts/MEMORY.md. Verification and claims: docs/contracts/VERIFICATION.md.
 
+## A2A
+The local backend serves an A2A 1.0 JSON-RPC interface at `/a2a` and the Agent Card at `/.well-known/agent-card.json`. Only flows with `share_a2a: true` are discoverable or runnable. Calls require the engine token and local Host/Origin checks; details and task methods are in [A2A.md](A2A.md).
+
 ## HTTP API (backend on :8000, all JSON, prefix /api)
 - GET  /api/node-types                        -> [{type,label,description,fields:[{key,label,placeholder,default,optional?,multiline?,options?,picker?}],branches:[a,b]|null,branches_from?:"options"}]
 - GET  /api/environments                      -> [{id,name}]

@@ -46,6 +46,8 @@ def health():
     return {"ok": True}
 
 plugins.load_routes(app)  # registers routers in routes/, including the Home summary endpoint
+import a2a_routes  # noqa: E402  A2A lives at /a2a and /.well-known/ (outside /api), token-protected like /api
+app.include_router(a2a_routes.router)
 
 
 def _env_or_404(env_id: str) -> dict:
@@ -117,6 +119,7 @@ def get_run(run_id: str):
     if not run:
         raise HTTPException(404, f"run {run_id} not found")
     run["usage"] = store.usage_of(run_id)  # model, route, tokens and cost per step
+    run["author"] = store.get_run(run_id).get("author", "owner")
     graph = store.graph_of(run_id)
     acceptance = graph.get("acceptance") or []
     checks = store.checks_of(run_id)

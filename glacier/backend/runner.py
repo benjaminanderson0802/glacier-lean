@@ -45,10 +45,12 @@ def load_env(env_id: str) -> dict:
     return json.loads(vault.read_note(env_path(env_id)))
 
 
-def start_run(env_id: str) -> str:
-    """Snapshot the saved graph into a new run and start its workflow."""
+def start_run(env_id: str, run_settings: dict | None = None) -> str:
+    """Snapshot the saved graph into a new run and start its workflow. run_settings are underscore keys
+    for this run only (e.g. who started it), never saved into the flow."""
     run_id = uuid.uuid4().hex[:12]
     graph = load_env(env_id)
+    graph.update({k: v for k, v in (run_settings or {}).items() if k.startswith("_")})
     store.create_run(run_id, env_id, graph)
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)
@@ -408,7 +410,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             out[e["source"]].append(e)
     targets = {e["target"] for es in out.values() for e in es}
     queue = deque([n for n in nodes if n not in targets] or list(nodes)[:1])
-    last, status, executions = None, "done", 0
+    last, status, executions = ({"output": graph.get("_a2a_input", ""), "exit_code": 0}
+                                if graph.get("_author") == "a2a" else None), "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
     loop_counts, flow_visits, failures = defaultdict(int), defaultdict(int), defaultdict(list)
     isolate = bool(graph.get("isolate"))
