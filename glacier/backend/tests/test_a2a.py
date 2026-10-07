@@ -78,3 +78,29 @@ def test_cancel_task(server):
 def test_unknown_method_has_method_not_found_code(server):
     _, result = rpc(server, "unknown/method", {})
     assert result["error"]["code"] == -32601
+
+
+def test_agent_card_requires_engine_token(server):
+    for path in ("/.well-known/agent-card.json", "/.well-known/agent.json"):
+        assert raw_httpx["get"](server.url + path, timeout=30).status_code == 401
+
+
+def test_tasks_get_cannot_read_runs_started_elsewhere(server):
+    server.put("/api/environments/mine", make_env("mine", [("echo", "command", {"cmd": "echo private"})], []))
+    run_id = server.post("/api/environments/mine/run")["run_id"]
+    server.wait_run(run_id)
+    _, got = rpc(server, "tasks/get", {"id": run_id})
+    assert got["error"]["code"] == -32004
+    _, canceled = rpc(server, "tasks/cancel", {"id": run_id})
+    assert canceled["error"]["code"] == -32004
+
+
+def test_goal_without_check_is_refused_like_the_run_button(server):
+    flow = make_env("goal", [("echo", "command", {"cmd": "echo hi"})], [])
+    flow["share_a2a"] = True
+    flow["goal"] = "Say hi"
+    server.put("/api/environments/goal", flow)
+    _, result = rpc(server, "message/send", {"message": {"messageId": "m4", "role": "user",
+        "parts": [{"text": "go"}], "metadata": {"skillId": "goal"}}})
+    assert result["error"]["code"] == -32602
+    assert "no check" in result["error"]["message"]

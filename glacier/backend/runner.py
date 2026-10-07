@@ -45,10 +45,12 @@ def load_env(env_id: str) -> dict:
     return json.loads(vault.read_note(env_path(env_id)))
 
 
-def start_run(env_id: str) -> str:
-    """Snapshot the saved graph into a new run and start its workflow."""
+def start_run(env_id: str, run_settings: dict | None = None) -> str:
+    """Snapshot the saved graph into a new run and start its workflow. run_settings are underscore keys
+    for this run only (e.g. who started it), never saved into the flow."""
     run_id = uuid.uuid4().hex[:12]
     graph = load_env(env_id)
+    graph.update({k: v for k, v in (run_settings or {}).items() if k.startswith("_")})
     store.create_run(run_id, env_id, graph)
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)

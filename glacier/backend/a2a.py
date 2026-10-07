@@ -1,6 +1,5 @@
 """Small A2A v1.0 JSON-RPC adapter for explicitly shared Glacier flows."""
 import json
-import uuid
 
 import runner
 import store
@@ -71,21 +70,22 @@ def start_task(params: dict) -> dict:
     if not flow:
         raise LookupError("That shared flow is not available.")
     user_text = _text(message)
-    run_id = uuid.uuid4().hex[:12]
-    flow = dict(flow)
-    flow["_author"] = "a2a"
-    flow["_a2a_input"] = user_text[-8000:]
-    store.create_run(run_id, skill_id, flow)
-    from dbos import DBOS, SetWorkflowID
-    with SetWorkflowID(run_id):
-        DBOS.start_workflow(runner.run_environment, skill_id, run_id)
+    if flow.get("goal") and not flow.get("acceptance"):
+        raise ValueError("This flow has a goal but no check yet, so it cannot be started.")
+    run_id = runner.start_run(skill_id, {"_author": "a2a", "_a2a_input": user_text[-8000:]})
     return task_for_run(run_id)
 
 
-def task_for_run(run_id: str) -> dict:
+def _a2a_run(run_id: str) -> dict:
+    """Only runs started through A2A are visible to A2A callers."""
     run = store.get_run(run_id)
-    if not run:
+    if not run or run.get("author") != "a2a":
         raise LookupError("That task could not be found.")
+    return run
+
+
+def task_for_run(run_id: str) -> dict:
+    run = _a2a_run(run_id)
     graph = store.graph_of(run_id)
     outputs = run.get("outputs") or {}
     final_output = next((outputs[n.get("id")] for n in reversed(graph.get("nodes", []))
@@ -98,9 +98,7 @@ def task_for_run(run_id: str) -> dict:
 
 
 def cancel_task(run_id: str) -> dict:
-    run = store.get_run(run_id)
-    if not run:
-        raise LookupError("That task could not be found.")
+    run = _a2a_run(run_id)
     if run["status"] not in ("done", "failed", "rejected", "canceled"):
         from dbos import DBOS
         try:

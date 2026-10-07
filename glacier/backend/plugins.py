@@ -54,9 +54,6 @@ def load_routes(app) -> None:
         router = getattr(mod, "router", None)
         if router is None:
             raise RuntimeError(f"route plug-in {path} must define `router` (fastapi.APIRouter)")
-        if path.endswith("/routes/a2a.py"):
-            app.include_router(router)
-            continue
         for r in router.routes:
             if not getattr(r, "path", "").startswith("/api/"):
                 raise RuntimeError(f"route plug-in {path}: path {r.path!r} must start with /api/")

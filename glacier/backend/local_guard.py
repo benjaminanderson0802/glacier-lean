@@ -11,6 +11,7 @@ from starlette.responses import JSONResponse
 BLOCKED = "This request came from another website and was blocked."
 NOT_OURS = "This request isn't from your Glacier app."
 OPEN_PATHS = {"/api/health"}
+A2A_PATHS = {"/a2a", "/.well-known/agent-card.json", "/.well-known/agent.json"}  # same install token as /api
 TAURI_ORIGINS = {"tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"}
 FORM_TYPES = {"application/x-www-form-urlencoded", "multipart/form-data", "text/plain"}
 STATE_CHANGING = {"POST", "PUT", "PATCH", "DELETE"}
@@ -90,7 +91,7 @@ class LocalRequestGuard:
     def _has_token(scope, headers) -> bool:
         """Install token required on /api (except the open health check and CORS preflight)."""
         path = scope.get("path", "")
-        if not (path.startswith("/api") or path == "/a2a") or path in OPEN_PATHS or scope.get("method", "").upper() == "OPTIONS":
+        if not (path.startswith("/api") or path in A2A_PATHS) or path in OPEN_PATHS or scope.get("method", "").upper() == "OPTIONS":
             return True
         query = scope.get("query_string", b"").decode("latin1") if scope["type"] == "websocket" else ""
         return local_token.matches(local_token.from_headers_or_query(headers, query))
