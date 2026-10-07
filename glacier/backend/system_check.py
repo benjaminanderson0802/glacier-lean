@@ -6,8 +6,19 @@ import subprocess
 import time
 
 
-DEFAULT_MODEL = "llama3.2:3b"
-RECOMMENDED_MODELS = {"low": "llama3.2:3b", "standard": "llama3.2:3b"}
+DEFAULT_MODEL = "granite3.3:2b"
+# All entries are small, instruct-tuned models under OSI-approved licenses.
+# Order from smallest download upward so an installed small model is reused.
+RECOMMENDED_MODELS = {
+    "low": DEFAULT_MODEL,
+    "standard": DEFAULT_MODEL,
+}
+INSTALLED_MODEL_ORDER = (
+    "qwen3:0.6b",
+    "qwen3:1.7b",
+    "granite3.3:2b",
+    "smollm2:1.7b",
+)
 CACHE_SECONDS = 60
 _check_cache = None
 _check_cache_at = 0.0
@@ -90,7 +101,8 @@ def recommend(machine):
     memory = float(raw_memory) if raw_memory is not None else None
     low = (memory is not None and memory <= 8) or cores <= 4
     mode = "low" if low else "standard"
-    model = RECOMMENDED_MODELS[mode]
+    installed = set(machine.get("ollama_models") or [])
+    model = next((name for name in INSTALLED_MODEL_ORDER if name in installed), RECOMMENDED_MODELS[mode])
     return {"mode": mode, "local_model": model,
             "max_parallel_runs": 1 if low else min(4, max(1, cores // 2))}
 

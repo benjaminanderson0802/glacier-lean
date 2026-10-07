@@ -2,30 +2,29 @@
 
 ## Recommendation
 
-No candidate reached the requested 8/10 pass threshold under the strict independent output checks. `llama3.2:3b` had the highest score (4/10) and is the best under 5 GB among these candidates. It is set as the best-effort low-resource and standard-mode default; it does **not** pass the low-resource target. A follow-up candidate search is needed to meet that target.
+No candidate met the low-resource threshold of 8/10. `granite3.3:2b` is the highest scoring allowed model (4/10), and is the best result among these candidates with an Ollama download under 3 GB. It is the fallback default for both modes. The measured resident memory peak was about 5.13 GiB for Granite on this host, so this default is not proven to fit a 4 GB PC. Glacier chooses the smallest evaluated model already installed before falling back to the default.
 
 ## Evaluation setup
 
-- Ollama was already installed (`ollama --version`: 0.40.0); no installer was run. Its server was not running, so I started it on `127.0.0.1:11434`. No cloud model was used. The four models were downloaded with `ollama pull`; all four were absent before this evaluation.
-- Host: Linux x86_64 VM, AMD EPYC 7763, 4 logical CPUs, 15 GiB RAM visible, no swap. This is a constrained shared VM, not a physical modest PC; measurements should be treated as a reference point.
-- Backend: this worktree’s FastAPI app at `127.0.0.1:8427`, isolated `GLACIER_HOME=/tmp/w11-model-bench`. For every prompt the flow had a real `local_ai` node using the candidate model, followed by a `check` node with `exit_code == 0`, matching the live test’s flow.
-- Each model received the same ten prompts in the same order. The separate rubric compared each node’s raw output with the expected answer after whitespace normalization and trimming surrounding backticks. It required the exact answer requested, so case changes, Markdown fences, explanations, wrong values and timeouts failed. Run JSON, raw node output, expected value and task run ID are in the results below.
-- RAM is the Ollama server + descendant runner peak RSS minus the idle server RSS, sampled every 100 ms during each model’s ten backend runs.
-- CPU generation speed is measured separately from answer scoring with one identical Ollama chat request per model, using the response’s `eval_count / eval_duration` (64-token cap). This isolates generation speed from DBOS and HTTP polling.
-- Download size is Ollama’s pulled quantized artifact size. The sizes and licenses are shown on each linked Ollama model page. All four licenses are among the terms allowed by this card.
+- Ollama 0.40.0 was already installed. The existing shared daemon/model store was left untouched. A separate Ollama server at `127.0.0.1:11435` was started by this evaluation with `OLLAMA_LLM_LIBRARY=cpu`; its log reported CPU inference. Models were pulled to the evaluation user’s Ollama store.
+- Host: Linux x86_64 VM, AMD EPYC 7763, 4 logical CPUs. Ollama reported 7.6 GiB total memory available to the CPU runner (container-visible memory); this is not a physical modest PC.
+- Each model ran the same ten prompts below, in the same order, through a real Glacier backend `local_ai` node followed by a `check` node (`exit_code == 0`). A separate harness compared the raw AI node result to the expected answer after trimming outer whitespace and backtick characters. Task correctness is independent of the workflow completion check.
+- Glacier’s request contains Ollama `"think": false`. Results were checked for `<think>...</think>`; no output contained a think block in this run, so no stripping workaround was needed for scoring. The local-AI request already disables thinking.
+- Peak RAM is the maximum sampled RSS of the CPU `llama-server` runner during each model’s ten backend runs (sampled every 200 ms); it is runner RSS, not total host memory. Tokens/sec is Ollama `eval_count / eval_duration` from one separate CPU request with `num_predict=64`.
+- Download sizes are the actual Ollama `list` sizes for pulled quantized tags. Each linked Ollama model page lists an Apache-2.0 license.
 
-## Results
+## Summary results
 
-| Model | License | Download | Peak model RSS | CPU generation | Independent pass rate |
+| Model | License | Download | Peak runner RSS | CPU tokens/sec | Strict pass rate |
 |---|---|---:|---:|---:|---:|
-| [`qwen3:0.6b`](https://ollama.com/library/qwen3:0.6b) | Apache-2.0 | 522 MB | 1,090 MB | 47.30 tok/s | 1/10 |
-| [`qwen3:1.7b`](https://ollama.com/library/qwen3:1.7b) | Apache-2.0 | 1.4 GB | 1,849 MB | 21.92 tok/s | 2/10 |
-| [`llama3.2:3b`](https://ollama.com/library/llama3.2:3b) | Llama 3.2 Community License | 2.0 GB | 2,514 MB | 11.38 tok/s | 4/10 |
-| [`gemma3:1b`](https://ollama.com/library/gemma3:1b) | Gemma Terms of Use | 815 MB | 1,769 MB | 23.66 tok/s | 1/10 |
+| [`qwen3:0.6b`](https://ollama.com/library/qwen3:0.6b) | Apache-2.0 | 522 MB | 1.06 GiB (1083 MiB) | 81.54 | 1/10 |
+| [`qwen3:1.7b`](https://ollama.com/library/qwen3:1.7b) | Apache-2.0 | 1.4 GB | 3.31 GiB (3386 MiB) | 33.11 | 2/10 |
+| [`granite3.3:2b`](https://ollama.com/library/granite3.3:2b) | Apache-2.0 | 1.5 GB | 5.13 GiB (5251 MiB) | 24.16 | 4/10 |
+| [`smollm2:1.7b`](https://ollama.com/library/smollm2:1.7b) | Apache-2.0 | 1.8 GB | 5.90 GiB (6038 MiB) | 26.53 | 0/10 |
 
-The smallest passing 8/10 candidate **does not exist in this sample**. `llama3.2:3b` is the best observed standard-mode model under 5 GB and is also the best-effort default for low-resource mode, but it scored only 4/10. It uses about 2.5 GB runner RSS on this host; the target machine should have enough memory for the model plus Glacier and the operating system.
+No model reached 8/10. Granite 3.3 2B is the measured accuracy winner. Qwen3 0.6B is smallest and fastest, but scored 1/10. The standard fallback uses Granite because its download is 1.5 GB (<3 GB); actual runner memory is substantially higher than download size.
 
-## Task set and expected answers
+## Tasks and expected outputs
 
 | Task | Prompt | Expected output |
 |---|---|---|
@@ -40,87 +39,288 @@ The smallest passing 8/10 candidate **does not exist in this sample**. `llama3.2
 | missing_field | A work request must contain a person, a date, and a place. Reply with only the missing field name. Request: "Meet Alex at the library on Friday." | `date` |
 | slug | Turn this title into a lowercase hyphen-separated filename slug, with no extension: "Quarterly Safety Review" | `quarterly-safety-review` |
 
-## Raw outputs: `qwen3:0.6b`
+## Raw outputs
 
-| Task | Run ID | Result | Raw local-AI output |
-|---|---|---|---|
-| classify_billing | `b3dff8a3e620` | FAIL | `The message: **"I was charged twice for my subscription."** **Classification:** **billing**.` |
-| classify_technical | `b3f714e75759` | FAIL | `The message is classified as **technical**.` |
-| classify_sales | `de58a17bf4c7` | FAIL | `The message is: **sales**.` |
-| extract_json | `5eec13d9ffb0` | FAIL | `\`\`\`json {"name": "Mira Chen", "date": "2026-11-14"} \`\`\`` |
-| arithmetic | `2f67ae58e36b` | FAIL | `19 + 23 = 42 **Integer answer:** 42` |
-| sort_csv | `a8b9c3bca116` | FAIL | `apple, pear, plum` |
-| urgent_route | `faf57c8d1c40` | FAIL | `Normal` |
-| nonurgent_route | `8a56dd341b0a` | FAIL | `**Urgent**` |
-| missing_field | `71c60229c781` | FAIL | `- person: person - date: date - place: place` |
-| slug | `622e27adceaf` | PASS | `quarterly-safety-review` |
+`PASS` means the complete raw output equals the expected value under the independent comparison above. Results include backend run IDs.
 
-## Raw outputs: `qwen3:1.7b`
+### `qwen3:0.6b`
 
-| Task | Run ID | Result | Raw local-AI output |
-|---|---|---|---|
-| classify_billing | `33547ab36e47` | FAIL | `**billing**` |
-| classify_technical | `b7d47289bbce` | FAIL | `**Sales**` |
-| classify_sales | `26f75e4571da` | FAIL | `**Sales**` |
-| extract_json | `2c99e853d212` | FAIL | `{"name": "Mira Chen", "date": "2026-11-14"}` |
-| arithmetic | `c93b2321f93a` | FAIL | `19 + 23 = 42` |
-| sort_csv | `b23a63796929` | FAIL | `Local AI took longer than 600 seconds.` |
-| urgent_route | `446663083d9b` | FAIL | `**Normal** The message indicates that the service is currently down, but it doesn't specify the urgency. Since the situation is likely critical for customers, the appropriate label would be **urgent**. However, if the context implies a general service outage without immediate impact, **normal** might be more appropriate. **Final Answer: Urgent**` |
-| nonurgent_route | `c69551f193f3` | FAIL | `**Normal** The message "Please change my profile picture when convenient." is not urgent, so the appropriate label is **Normal**.` |
-| missing_field | `2c5547415cde` | PASS | `date` |
-| slug | `3cd92623b1d9` | PASS | `quarterly-safety-review` |
+<details><summary>classify_billing — FAIL — run 03905820173f</summary>
 
-## Raw outputs: `llama3.2:3b`
+<pre>The message &quot;I was charged twice for my subscription&quot; is classified as **sales**.</pre>
 
-| Task | Run ID | Result | Raw local-AI output |
-|---|---|---|---|
-| classify_billing | `2f03715130a6` | FAIL | `technical` |
-| classify_technical | `f1783303f950` | FAIL | `billing is not relevant, as the message does not mention payment or financial issues. Technical is the most suitable classification, as the message describes a technical problem with the app (crashing) and a specific action that triggers the issue (uploading a PDF).` |
-| classify_sales | `42d01005adf7` | PASS | `sales` |
-| extract_json | `381fe9308bd5` | FAIL | `Here is the JSON object with the extracted fields: { "name": "Mira Chen", "date": "2026-11-14" }` |
-| arithmetic | `069237d27fed` | PASS | `42` |
-| sort_csv | `e219c3e7c124` | FAIL | `apple, pear, plum` |
-| urgent_route | `517508e38b50` | PASS | `urgent` |
-| nonurgent_route | `7bcb3914133c` | FAIL | `urgent` |
-| missing_field | `7996aa5bef98` | FAIL | `Date` |
-| slug | `bccdfb9e3de1` | PASS | `quarterly-safety-review` |
+</details>
 
-## Raw outputs: `gemma3:1b`
+<details><summary>classify_technical — FAIL — run 4c1dc4df3031</summary>
 
-| Task | Run ID | Result | Raw local-AI output |
-|---|---|---|---|
-| classify_billing | `e8a4dd235071` | FAIL | `Billing` |
-| classify_technical | `c7dbc1623fb9` | FAIL | `Technical` |
-| classify_sales | `ffc7406efc05` | PASS | `sales` |
-| extract_json | `93c1a420d122` | FAIL | `\`\`\`json { "name": "Mira Chen", "date": "2026-11-14" } \`\`\`` |
-| arithmetic | `5c7747bbb62e` | FAIL | `1` |
-| sort_csv | `9561288460f9` | FAIL | `apple, pear, plum` |
-| urgent_route | `18f9f744f5eb` | FAIL | `Urgent` |
-| nonurgent_route | `f29db807bb8a` | FAIL | `Normal` |
-| missing_field | `37e81d234a8b` | FAIL | `Person Date Place` |
-| slug | `95e9a0c659ff` | FAIL | `quarterly-safety-review slug- hyphen` |
+<pre>The message: &quot;The app crashes every time I upload a PDF.&quot;
+**Classification:** **technical**
 
-## Throughput request raw data
+**Reasoning:** The message indicates a technical issue with the app, specifically that it crashes when uploading PDF files.</pre>
 
-The same request asked for these ten comma-separated words: `alpha, beta, gamma, delta, epsilon, zeta, eta, theta, iota, kappa.` Ollama generation counters, not backend wall time, supply this rate. All requests ran on CPU; `num_predict` was capped at 64.
+</details>
 
-| Model | Generated tokens | Eval time | Tokens/sec |
-|---|---:|---:|---:|
-| qwen3:0.6b | 22 | 0.4652 s | 47.30 |
-| qwen3:1.7b | 21 | 0.9582 s | 21.92 |
-| llama3.2:3b | 21 | 1.8455 s | 11.38 |
-| gemma3:1b | 21 | 0.8877 s | 23.66 |
+<details><summary>classify_sales — FAIL — run 77dc1afe85cd</summary>
 
-## Candidate selection
+<pre>The message is: **&quot;Can I get a quote for 40 team seats?&quot;**
 
-`llama3.2:3b` scored 4/10, the best strict result. The 1.7B Qwen scored 2/10; its sort task timed out after 600 seconds, and the full ten-task run measured 1.85 GB incremental runner RSS. The 0.6B Qwen scored 1/10, consistent with the prior live test’s failed independent verification; Gemma 3 1B scored 1/10. Since no candidate meets 8/10, the default is an explicit best-effort choice, not evidence that the low-resource acceptance target has passed.
+**Classification:** **sales** (the message is asking for a quote, likely related to pricing or sales information).</pre>
 
-## Raw download observations
+</details>
+
+<details><summary>extract_json — FAIL — run 4835898c607d</summary>
+
+<pre>```json
+{&quot;name&quot;: &quot;Mira Chen&quot;, &quot;date&quot;: &quot;2026-11-14&quot;}
+```</pre>
+
+</details>
+
+<details><summary>arithmetic — FAIL — run 9d471191d462</summary>
+
+<pre>19 + 23 = 42.
+**Integer answer:** 42.</pre>
+
+</details>
+
+<details><summary>sort_csv — FAIL — run 1687ab446561</summary>
+
+<pre>apple, pear, plum.</pre>
+
+</details>
+
+<details><summary>urgent_route — FAIL — run c26770ee471f</summary>
+
+<pre>**Urgent**</pre>
+
+</details>
+
+<details><summary>nonurgent_route — FAIL — run 195901ce3a9d</summary>
+
+<pre>**Urgent**</pre>
+
+</details>
+
+<details><summary>missing_field — FAIL — run 1988fec534cc</summary>
+
+<pre>- person: person
+- date: date
+- place: place</pre>
+
+</details>
+
+<details><summary>slug — PASS — run 48d5a0186d17</summary>
+
+<pre>quarterly-safety-review</pre>
+
+</details>
+
+### `qwen3:1.7b`
+
+<details><summary>classify_billing — FAIL — run 6ebdb67f13a8</summary>
+
+<pre>**billing**</pre>
+
+</details>
+
+<details><summary>classify_technical — FAIL — run aed817237496</summary>
+
+<pre>**Sales**</pre>
+
+</details>
+
+<details><summary>classify_sales — FAIL — run 2c5f95b1e218</summary>
+
+<pre>**Sales**
+
+Explanation: The message is a request for a quote, which is typically associated with **sales**. The phrase &quot;get a quote&quot; is a common sales-oriented request.</pre>
+
+</details>
+
+<details><summary>extract_json — FAIL — run 4d911e55b2b8</summary>
+
+<pre>{&quot;name&quot;: &quot;Mira Chen&quot;, &quot;date&quot;: &quot;2026-11-14&quot;}</pre>
+
+</details>
+
+<details><summary>arithmetic — FAIL — run 058e788b9f2a</summary>
+
+<pre>19 + 23 = 42</pre>
+
+</details>
+
+<details><summary>sort_csv — FAIL — run 023885c9535a</summary>
+
+<pre>Local AI took longer than 180 seconds.</pre>
+
+</details>
+
+<details><summary>urgent_route — FAIL — run 61a51dd9916c</summary>
+
+<pre>**Normal**.</pre>
+
+</details>
+
+<details><summary>nonurgent_route — FAIL — run 52e1dee61a7f</summary>
+
+<pre>**Normal**
+
+The message &quot;Please change my profile picture when convenient.&quot; is not urgent. It is a general request and does not require immediate action. Therefore, the appropriate label is **Normal**.</pre>
+
+</details>
+
+<details><summary>missing_field — PASS — run 791a82c24068</summary>
+
+<pre>date</pre>
+
+</details>
+
+<details><summary>slug — PASS — run 9bea5cebe004</summary>
+
+<pre>quarterly-safety-review</pre>
+
+</details>
+
+### `granite3.3:2b`
+
+<details><summary>classify_billing — PASS — run 56c22842877c</summary>
+
+<pre>billing</pre>
+
+</details>
+
+<details><summary>classify_technical — FAIL — run 855bff8bcb7e</summary>
+
+<pre>The message &quot;The app crashes every time I upload a PDF.&quot; can be classified under the &quot;technical&quot; label. This is because the issue described pertains to the functionality of the application (the &quot;app&quot;), specifically a problem with uploading a file (PDF), which is a technical aspect of software usage.</pre>
+
+</details>
+
+<details><summary>classify_sales — FAIL — run 7894dfaa48bd</summary>
+
+<pre>The message &quot;Can I get a quote for 40 team seats?&quot; can be classified as &#x27;sales&#x27;. This is because the inquiry is about obtaining pricing for a bulk purchase, which is a sales-oriented concern.</pre>
+
+</details>
+
+<details><summary>extract_json — FAIL — run 0c8429cff05b</summary>
+
+<pre>{
+  &quot;name&quot;: &quot;Mira Chen&quot;,
+  &quot;date&quot;: &quot;2026-11-14&quot;
+}</pre>
+
+</details>
+
+<details><summary>arithmetic — PASS — run a3be9743797e</summary>
+
+<pre>42</pre>
+
+</details>
+
+<details><summary>sort_csv — FAIL — run e07d308977ee</summary>
+
+<pre>apple, pear, plum</pre>
+
+</details>
+
+<details><summary>urgent_route — FAIL — run 0ceb05007109</summary>
+
+<pre>&quot;urgent&quot;</pre>
+
+</details>
+
+<details><summary>nonurgent_route — PASS — run bc5d67f40502</summary>
+
+<pre>normal</pre>
+
+</details>
+
+<details><summary>missing_field — FAIL — run 17867f285ceb</summary>
+
+<pre>The missing field is &quot;reason&quot;.</pre>
+
+</details>
+
+<details><summary>slug — PASS — run 6f85a377279b</summary>
+
+<pre>quarterly-safety-review</pre>
+
+</details>
+
+### `smollm2:1.7b`
+
+<details><summary>classify_billing — FAIL — run 80656dcd3674</summary>
+
+<pre>Local AI took longer than 180 seconds.</pre>
+
+</details>
+
+<details><summary>classify_technical — FAIL — run bb654bf6e565</summary>
+
+<pre>The message is classified as &#x27;technical&#x27;.</pre>
+
+</details>
+
+<details><summary>classify_sales — FAIL — run 9d478eb28f66</summary>
+
+<pre>The message &quot;Can I get a quote for 40 team seats?&quot; is classified under the &quot;billing&quot; label.</pre>
+
+</details>
+
+<details><summary>extract_json — FAIL — run aca8c1004af3</summary>
+
+<pre>{
+  &quot;name&quot;: &quot;Mira Chen&quot;,
+  &quot;date&quot;: &quot;2026-11-14&quot;
+}</pre>
+
+</details>
+
+<details><summary>arithmetic — FAIL — run f9bf1209fe13</summary>
+
+<pre>The integer answer to 19 + 23 is 42.</pre>
+
+</details>
+
+<details><summary>sort_csv — FAIL — run 812620d79d80</summary>
+
+<pre>apple, pear, plum</pre>
+
+</details>
+
+<details><summary>urgent_route — FAIL — run a58252abf546</summary>
+
+<pre>The message you provided doesn&#x27;t contain enough information to accurately label it as either urgent or normal. Please provide more context or details about the message for accurate classification.</pre>
+
+</details>
+
+<details><summary>nonurgent_route — FAIL — run 9e8dba4e38f1</summary>
+
+<pre>urgent</pre>
+
+</details>
+
+<details><summary>missing_field — FAIL — run 7ce0933a25d0</summary>
+
+<pre>Date</pre>
+
+</details>
+
+<details><summary>slug — FAIL — run 5dbcd71aed13</summary>
+
+<pre>&quot;quarterly-safety-review&quot;</pre>
+
+</details>
+
+## Ollama artifact observations
 
 ```text
 Ollama version: 0.40.0
-qwen3:0.6b   7df6b6e09427   522 MB
-qwen3:1.7b   8f68893c685c   1.4 GB
-llama3.2:3b  a80c4f17acd5   2.0 GB
-gemma3:1b    8648f39daa8f   815 MB
+CPU-only server: 127.0.0.1:11435; OLLAMA_LLM_LIBRARY=cpu
+Model                         Ollama size / artifact ID
+qwen3:0.6b                    522 MB / 7df6b6e09427
+qwen3:1.7b                    1.4 GB / 8f68893c685c
+granite3.3:2b                 1.5 GB / 07bd1f170855
+smollm2:1.7b                  1.8 GB / cef4a1e09247
 ```
+
+Runner RSS varied widely from model file size on this container and should be treated as a measurement of this VM configuration, not a hardware requirement. The earlier shared-daemon run was discarded for performance/RAM reporting because Ollama reported GPU execution and its RSS sampler targeted the wrong process name. Pass rates above come from the corrected CPU-only backend run.
