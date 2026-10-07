@@ -146,12 +146,12 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         os.makedirs(ws, exist_ok=True)
     command = cfg["cmd"]
     if sandbox:
-        if os.name == "nt":
-            raise RuntimeError("The step sandbox needs Linux; this step can't run sandboxed on Windows")
         if not ws:
             raise ValueError("the sandbox needs a work folder")
         if cfg.get("network") == "allow":
             raise ValueError("Network access is not available for sandboxed steps yet")
+        if os.name == "nt":
+            raise RuntimeError("The step sandbox needs Linux; this step can't run sandboxed on Windows")
         command = sandboxing.wrap(command, os.path.abspath(ws), [])
         env = None
     options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
@@ -159,7 +159,10 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
     warning = ""
     if not sandbox:
         command, shell, warning = shell_commands.command_invocation(command)
-    p = subprocess.Popen(command, shell=shell, cwd=(ws if sandbox else cfg.get("cwd") or ws or None), env=env, stdout=subprocess.PIPE,
+    cwd = ws if sandbox else cfg.get("cwd") or ws or None
+    if os.name == "nt" and cwd and not sandbox:
+        cwd = os.path.abspath(cwd)
+    p = subprocess.Popen(command, shell=shell, cwd=cwd, env=env, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, text=True, **options)
     try:
         out, _ = p.communicate(timeout=timeout)

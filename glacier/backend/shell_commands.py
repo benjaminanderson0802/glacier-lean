@@ -1,5 +1,6 @@
 """Choose a shell for configured commands while keeping Linux behavior unchanged."""
 import os
+import re
 import shutil
 import sys
 import threading
@@ -20,6 +21,12 @@ def command_invocation(command: str):
         if os.path.isfile(candidate):
             bash = candidate
     if bash:
+        def windows_path(match):
+            drive = match.group(1).lower()
+            path = match.group(2).replace("\\", "/")
+            return f"/{drive}/{path}"
+
+        command = re.sub(r"(?<![A-Za-z0-9_])([A-Za-z]):\\([^\s\"';&|<>]+)", windows_path, command)
         return [bash, "-lc", command], False, ""
 
     global _fallback_warning_emitted
@@ -28,7 +35,7 @@ def command_invocation(command: str):
         if not _fallback_warning_emitted:
             warning = "Git Bash was not found; this command is running in Windows Command Prompt.\n"
             _fallback_warning_emitted = True
-    return command, True, warning
+    raise RuntimeError(warning.strip() or "Git Bash was not found; install Git for Windows to run this command")
 
 
 def executable_invocation(executable: str, *args: str) -> list[str]:
