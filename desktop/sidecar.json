@@ -1,0 +1,9 @@
+{
+  "venv_python": "backend/.venv/bin/python",
+  "low_resource": true,
+  "low_resource_env": {
+    "GLACIER_LOCAL_MODEL": "qwen3:0.6b",
+    "GLACIER_MAX_PARALLEL_RUNS": "1"
+  },
+  "data_location": "user-local-app-data"
+}

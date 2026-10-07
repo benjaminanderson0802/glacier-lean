@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up Glacier</title>
+  <style>
+    body { margin: 0; font: 17px/1.5 system-ui, sans-serif; color: #182331; background: #f4f7fb; }
+    main { max-width: 650px; margin: 8vh auto; padding: 32px; background: white; border-radius: 16px; box-shadow: 0 8px 32px #172b4d14; }
+    h1 { margin-top: 0; font-size: 2rem; } p { color: #526174; }
+    ul { padding: 0; list-style: none; } li { padding: 11px 0; border-bottom: 1px solid #e8edf3; }
+    .yes { color: #16734a; } .no { color: #6b7480; }
+    button { border: 0; border-radius: 9px; padding: 12px 18px; font: inherit; color: white; background: #2459d3; }
+    .note { font-size: .9rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Welcome to Glacier</h1>
+  <p>Glacier keeps your work on this computer. These optional tools help Glacier connect to assistants and local models you may already use.</p>
+  <h2>Tools on this computer</h2>
+  <ul id="tools"><li>Checking this computer…</li></ul>
+  <p class="note">You can continue without any of these tools. Glacier will not send this list anywhere.</p>
+  <p id="startup-error" role="alert" hidden></p>
+  <button id="check-again">Check again</button>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
