@@ -142,7 +142,7 @@ def run(ctx):
         return {"state": "failed", "output": "Coding agent support is not installed", "exit_code": 1}
 
     config = ctx["config"]
-    harness = config.get("harness") or ""
+    harness = config.get("harness") or "opencode"
     if harness == "opencode":
         command = ["opencode", "acp"]
         missing_message = "This coding agent isn't installed: opencode"
@@ -151,7 +151,7 @@ def run(ctx):
         missing_message = "This coding agent isn't installed: codex-acp"
     else:
         if harness != "custom":
-            return {"state": "failed", "output": f"This coding agent isn't installed: {harness}", "exit_code": 1}
+            return {"state": "failed", "output": f"Unknown coding agent '{harness}'. Choose codex-acp, opencode, or custom.", "exit_code": 1}
         try:
             command = shlex.split(config.get("command") or "")
         except ValueError as exc:

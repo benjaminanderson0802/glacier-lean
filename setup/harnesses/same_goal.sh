@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-PYTHON="${PYTHON:-/workspaces/glacier-lean/.venv/bin/python}"
+PYTHON="${GLACIER_PYTHON:-python3}"
 BACKEND="$ROOT/glacier/backend"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -33,6 +33,7 @@ while True:
     if run.get("status") in {"done", "failed", "cancelled"}: break
     time.sleep(1)
 if run.get("status") != "done": raise SystemExit(f"{preset}: run {run.get('status')}: {run.get('outputs')}")
+print(f"{preset}: agent output: {run.get('outputs', {}).get('agent', '')}")
 PY
   test "$(cat "$workdir/hello.txt")" = "hi" || { echo "${preset}: hello.txt acceptance check failed" >&2; exit 1; }
   echo "${preset}: PASS — hello.txt contains hi"
