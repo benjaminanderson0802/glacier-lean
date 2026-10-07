@@ -6,9 +6,9 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 import import_service
-from routes.files import _read_bounded_body
 
 router = APIRouter()
+IMPORT_REQUEST_LIMIT = 200 * 1024 * 1024 + 64 * 1024
 
 
 class ImportRequest(BaseModel):
@@ -25,7 +25,7 @@ def _error(exc: ValueError) -> HTTPException:
 async def import_conversations(request: Request):
     content_type = request.headers.get("content-type", "")
     if content_type.startswith("multipart/form-data"):
-        await _read_bounded_body(request)
+        await _read_bounded_body(request, IMPORT_REQUEST_LIMIT)
         form = await request.form()
         try:
             source = form.get("source")
@@ -60,3 +60,22 @@ def refresh_imports():
 @router.get("/api/imports")
 def list_imports():
     return import_service.list_imports()
+
+
+async def _read_bounded_body(request: Request, limit: int) -> None:
+    """Buffer an upload request only when it fits the import request limit."""
+    try:
+        declared = int(request.headers.get("content-length", "0"))
+    except ValueError:
+        declared = 0
+    if declared > limit:
+        raise HTTPException(413, "This export file is too large")
+
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(413, "This export file is too large")
+        chunks.append(chunk)
+    request._body = b"".join(chunks)

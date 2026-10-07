@@ -116,10 +116,10 @@ def test_path_variant_accepts_only_zip_or_json(setup_imports):
         import_service.import_export("chatgpt", path)
 
 
-def test_upload_body_reader_uses_one_gib_cap(monkeypatch):
+def test_import_upload_body_reader_uses_import_cap(monkeypatch):
     from fastapi import HTTPException
     from starlette.requests import Request
-    from routes.files import _read_bounded_body
+    from routes import imports
     import asyncio
 
     consumed = []
@@ -131,8 +131,8 @@ def test_upload_body_reader_uses_one_gib_cap(monkeypatch):
              "raw_path": b"/api/imports", "query_string": b"", "headers": [], "server": ("test", 80),
              "client": ("test", 1), "scheme": "http"}
     request = Request(scope, receive)
-    monkeypatch.setattr("routes.files.files_store.max_upload_bytes", lambda: 50)
+    monkeypatch.setattr(imports, "IMPORT_REQUEST_LIMIT", 50)
     with pytest.raises(HTTPException) as error:
-        asyncio.run(_read_bounded_body(request))
+        asyncio.run(imports._read_bounded_body(request, imports.IMPORT_REQUEST_LIMIT))
     assert error.value.status_code == 413
     assert len(consumed) == 1

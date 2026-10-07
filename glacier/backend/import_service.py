@@ -119,9 +119,10 @@ def _json_bytes(path: Path) -> bytes:
         raise ValueError("This export ZIP is damaged") from exc
 
 
-def _existing_notes(source: str) -> dict[str, tuple[str, str]]:
+def _existing_notes(source: str) -> tuple[dict[str, tuple[str, str]], set[str]]:
     result = {}
-    for path in vault.list_notes(".md", f"imports/{source}"):
+    paths = set(vault.list_notes(".md", f"imports/{source}"))
+    for path in paths:
         try:
             body = vault.read_raw_note(path)
         except (OSError, ValueError):
@@ -130,7 +131,7 @@ def _existing_notes(source: str) -> dict[str, tuple[str, str]]:
         digest = _field(body, "content_hash")
         if source_id:
             result[source_id] = (path, digest)
-    return result
+    return result, paths
 
 
 def _field(body: str, field: str) -> str:
@@ -145,7 +146,7 @@ def _process(source: str, path: Path) -> dict[str, int]:
         notes = _SOURCES[source].parse(raw.decode("utf-8-sig"))
     except (UnicodeDecodeError, ValueError) as exc:
         raise ValueError(f"This does not look like a valid {source.title()} export") from exc
-    known = _existing_notes(source)
+    known, existing_paths = _existing_notes(source)
     counts = {"added": 0, "updated": 0, "unchanged": 0}
     seen_ids = set()
     for note in notes:
@@ -165,9 +166,7 @@ def _process(source: str, path: Path) -> dict[str, int]:
             continue
         path_to_write = prior[0] if prior else note.path
         if not prior:
-            existing_path = next((item for item in vault.list_notes(".md", f"imports/{source}")
-                                  if item == path_to_write), None)
-            if existing_path:
+            if path_to_write in existing_paths:
                 suffix = hashlib.sha256(source_id.encode("utf-8")).hexdigest()[:8]
                 path_to_write = f"{Path(note.path).with_suffix('').as_posix()}-{suffix}.md"
         custom = safe_body.split("\n", 1)
@@ -179,6 +178,7 @@ def _process(source: str, path: Path) -> dict[str, int]:
         else:
             safe_body = f"---\ncontent_hash: {digest}\n---\n\n{safe_body}"
         vault.write_note(path_to_write, safe_body, author="glacier-import")
+        existing_paths.add(path_to_write)
         counts["updated" if prior else "added"] += 1
     return counts
 
