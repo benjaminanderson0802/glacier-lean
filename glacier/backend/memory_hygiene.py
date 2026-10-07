@@ -81,6 +81,33 @@ def _public(proposal):
     return {key: proposal[key] for key in ("id", "kind", "paths", "reason")}
 
 
+def _read_raw(path):
+    read = getattr(vault, "read_raw_note", vault.read_note)
+    return read(path)
+
+
+def _eligible_merge_path(path):
+    return not path.startswith(("claims/", "archive/"))
+
+
+def _link_path(target):
+    target = target.strip().replace("\\", "/").lstrip("/")
+    return target if target.endswith(".md") else target + ".md"
+
+
+def _rewrite_links(raw, removed_paths, keeper):
+    removed = {_link_path(path) for path in removed_paths}
+
+    def replace(match):
+        target, suffix = match.groups()
+        if _link_path(target) not in removed:
+            return match.group(0)
+        replacement = keeper if target.strip().endswith(".md") else keeper[:-3]
+        return f"[[{replacement}{suffix}]]"
+
+    return re.sub(r"\[\[([^\]|#]+)([^\]]*)\]\]", replace, raw)
+
+
 def _linked_targets(raw):
     targets = set()
     for link in re.findall(r"\[\[([^\]|#]+)", raw):
@@ -119,11 +146,12 @@ def scan():
     raw_by_path = {}
     for path in paths:
         try:
-            raw = vault.read_note(path)
+            raw = _read_raw(path)
         except (OSError, ValueError):
             continue
         raw_by_path[path] = raw
-        notes.append((path, _body(raw).strip()))
+        if _eligible_merge_path(path):
+            notes.append((path, _body(raw).strip()))
 
     grouped = {}
     for path, body in notes:
@@ -146,8 +174,6 @@ def scan():
     cutoff = dt.datetime.now(dt.timezone.utc).timestamp() - stale_days * 86400
     incoming = set()
     for path, raw in raw_by_path.items():
-        if path.startswith("archive/"):
-            continue
         incoming.update(_linked_targets(raw))
     for path, raw in raw_by_path.items():
         if not path.startswith("runs/") or path in incoming:
@@ -182,27 +208,53 @@ def list_proposals():
 def _commit_changes(changes, removals, agent="glacier-hygiene"):
     """Write a set of note changes and removals as one reversible git commit."""
     with vault._lock:
+        touched = sorted(set(changes) | set(removals))
+        if not touched:
+            raise FileNotFoundError("the notes in this proposal are no longer available")
+        original_files = {
+            path: open(vault.safe_path(path), "rb").read()
+            if os.path.exists(vault.safe_path(path)) else None
+            for path in touched
+        }
         changed_paths = []
         removed_paths = []
-        for path, content in changes.items():
-            full = vault.safe_path(path)
-            os.makedirs(os.path.dirname(full), exist_ok=True)
-            with open(full, "w", encoding="utf-8") as note:
-                note.write(content)
-            changed_paths.append(path)
-        for path in removals:
-            full = vault.safe_path(path)
-            if os.path.exists(full):
-                os.remove(full)
-                removed_paths.append(path)
         index = vault._repo.index
-        if changed_paths:
-            index.add(changed_paths)
-        if removed_paths:
-            index.remove(removed_paths, working_tree=True)
-        if not changed_paths and not removed_paths:
-            raise FileNotFoundError("the notes in this proposal are no longer available")
-        commit = index.commit(f"[{agent}] apply memory hygiene proposal")
+        head = vault._repo.head.commit.hexsha
+        try:
+            for path, content in changes.items():
+                full = vault.safe_path(path)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "w", encoding="utf-8") as note:
+                    note.write(content)
+                changed_paths.append(path)
+            for path in removals:
+                full = vault.safe_path(path)
+                if os.path.exists(full):
+                    os.remove(full)
+                    removed_paths.append(path)
+            if not changed_paths and not removed_paths:
+                raise FileNotFoundError("the notes in this proposal are no longer available")
+            if changed_paths:
+                index.add(changed_paths)
+            if removed_paths:
+                index.remove(removed_paths, working_tree=True)
+            commit = index.commit(f"[{agent}] apply memory hygiene proposal")
+        except Exception as exc:
+            for path in touched:
+                full = vault.safe_path(path)
+                previous = original_files.get(path)
+                if previous is None:
+                    if os.path.exists(full):
+                        os.remove(full)
+                else:
+                    os.makedirs(os.path.dirname(full), exist_ok=True)
+                    with open(full, "wb") as note:
+                        note.write(previous)
+            if vault._repo.head.commit.hexsha != head:
+                vault._repo.git.reset("--soft", head)
+            vault._repo.git.reset("HEAD", "--", *touched)
+            index.reset()
+            raise ValueError("the memory changes could not be saved. Your notes were restored; please try again.") from exc
 
         connection = vault._db()
         for path in removed_paths:
@@ -237,22 +289,31 @@ def decide(proposal_id, approve):
         paths = proposal["paths"]
         try:
             for path in paths:
-                current = vault.read_note(path)
+                current = _read_raw(path)
                 expected = proposal.get("_snapshots", {}).get(path)
                 if expected and hashlib.sha256(current.encode("utf-8")).hexdigest() != expected:
                     raise ValueError("a note changed after this proposal was created; scan again before approving")
             if proposal["kind"] == "merge":
-                existing = [(path, vault.read_note(path)) for path in paths]
+                existing = [(path, _read_raw(path)) for path in paths]
                 existing.sort(key=lambda item: (_date(item[1], vault.safe_path(item[0])), item[0]))
                 keeper, content = existing[0]
-                additions = "".join(f"\n## Merged from {path}\n\n{_body(body).strip()}\n" for path, body in existing[1:])
-                commit = _commit_changes({keeper: content.rstrip() + additions}, [path for path, _ in existing[1:]])
+                additions = "".join(f"\n## Merged from {path}\n\n{body.strip()}\n" for path, body in existing[1:])
+                removed_paths = [path for path, _ in existing[1:]]
+                changes = {keeper: content.rstrip() + additions}
+                for path in vault.list_notes(".md"):
+                    if path == keeper or path in removed_paths:
+                        continue
+                    raw = _read_raw(path)
+                    rewritten = _rewrite_links(raw, removed_paths, keeper)
+                    if rewritten != raw:
+                        changes[path] = rewritten
+                commit = _commit_changes(changes, removed_paths)
             elif proposal["kind"] == "archive":
                 source = paths[0]
                 destination = "archive/" + source
                 if os.path.exists(vault.safe_path(destination)):
                     raise ValueError("an archived note already exists at the destination")
-                content = vault.read_note(source)
+                content = _read_raw(source)
                 commit = _commit_changes({destination: content}, [source])
             else:
                 raise ValueError("unknown proposal type")

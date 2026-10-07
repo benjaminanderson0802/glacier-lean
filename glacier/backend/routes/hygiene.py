@@ -15,6 +15,11 @@ class HygieneDecision(BaseModel):
 
 @router.get("/api/memory/hygiene")
 def list_hygiene_proposals():
+    return memory_hygiene.list_proposals()
+
+
+@router.post("/api/memory/hygiene/scan")
+def scan_hygiene_proposals():
     return memory_hygiene.scan()
 
 
