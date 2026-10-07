@@ -1,0 +1,30 @@
+{
+  "id": "self-feature",
+  "name": "Build a Glacier feature",
+  "goal": "Use the approved card to make a Glacier change, prove it with independent checks, and merge only when every required check passes.",
+  "isolate": true,
+  "nodes": [
+    {"id": "load_card", "type": "command", "config": {"cmd": "printf '%s' 'Card text is supplied by setup/selfbuild/run_card.py'", "timeout": "30"}, "position": {"x": 0, "y": 0}},
+    {"id": "approve_start", "type": "approval", "config": {"prompt": "Review the loaded card. Approve starting this feature work in an isolated worktree?"}, "position": {"x": 260, "y": 0}},
+    {"id": "build_feature", "type": "codex", "config": {"prompt": "Implement the feature described by this card. Follow the project rules and AGENTS.md exactly. Do not edit or weaken acceptance checks, invariants, or safety rules.\n\nCARD:\n{prev_output}\n\nPROJECT RULES:\nFollow AGENTS.md, NORTHSTAR.yaml, ORCHESTRATION.yaml, docs/contracts/VERIFICATION.md, and I-14. Do not modify protected verification rules. Do not push to GitHub. The acceptance checks and merge queue are controlled outside your worktree.", "sandbox": "workspace-write", "retries": "0", "timeout": "1800"}, "position": {"x": 520, "y": 0}},
+    {"id": "worker_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 780, "y": 0}},
+    {"id": "worker_failed", "type": "note", "config": {"path": "self-build/worker-failed-{run}.md", "template": "The feature worker failed. Its isolated branch was not accepted for merging. See run {run} and its event log.\n\n{summary}"}, "position": {"x": 1040, "y": 180}},
+    {"id": "feature_report", "type": "note", "config": {"path": "self-build/feature-{run}.md", "template": "Feature worker completed for run {run}. Independent acceptance checks and any required owner sign-off determine whether the isolated branch enters the local main branch. GitHub pushing requires a separate approval.\n\n{summary}"}, "position": {"x": 1040, "y": -140}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "load_card", "target": "approve_start", "label": ""},
+    {"id": "e2", "source": "approve_start", "target": "build_feature", "label": "yes"},
+    {"id": "e3", "source": "build_feature", "target": "worker_result", "label": ""},
+    {"id": "e4", "source": "worker_result", "target": "feature_report", "label": "yes"},
+    {"id": "e5", "source": "worker_result", "target": "worker_failed", "label": "no"}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python {guard} --repo . --baseline-root {baseline}", "timeout": 120, "required": true},
+    {"kind": "command", "cmd": "cd glacier/backend && python -m pytest -q tests", "timeout": 720, "required": true},
+    {"kind": "command", "cmd": "python -m pytest -q glacier/importers templates bench tools/scan tools/catalog", "timeout": 600, "required": true},
+    {"kind": "command", "cmd": "python bench/verification/run_glacier.py --results verification-results.md", "timeout": 600, "required": true},
+    {"kind": "command", "cmd": "python bench/security/run_glacier.py --results security-results.md", "timeout": 600, "required": true},
+    {"kind": "human", "question": "Approve only if you reviewed the protected-path list above", "required": true}
+  ],
+  "max_steps": 50
+}
