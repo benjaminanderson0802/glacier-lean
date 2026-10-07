@@ -8,8 +8,19 @@ import yaml
 import vault
 
 
-_BAD_NAME_CHARACTERS = set(':*?"<>|')
+_BAD_NAME_CHARACTERS = set(':*?"<>|\\')
+_OBSIDIAN_LINK_CHARACTERS = set('#^[]')
+_RESERVED_WINDOWS_NAMES = {"CON", "PRN", "AUX", "NUL"} | {
+    f"{prefix}{number}" for prefix in ("COM", "LPT") for number in range(1, 10)
+}
 _WIKILINK = re.compile(r"(!?)\[\[([^\]]+)\]\]")
+_FENCE = re.compile(r"(?m)^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?^ {0,3}\1[^\n]*(?:\n|$)", re.S)
+
+
+def _without_code(text: str) -> str:
+    """Mask fenced and inline code while preserving offsets and line endings."""
+    text = _FENCE.sub(lambda match: re.sub(r"[^\n]", " ", match.group(0)), text)
+    return re.sub(r"(`+)(.+?)\1", lambda match: re.sub(r"[^\n]", " ", match.group(0)), text, flags=re.S)
 
 
 def _front_matter(text: str):
@@ -26,7 +37,10 @@ def _front_matter(text: str):
 
 
 def _valid_name(name: str) -> bool:
-    return not (any(char in _BAD_NAME_CHARACTERS for char in name) or name.endswith((".", " ")))
+    if any(char in _BAD_NAME_CHARACTERS or ord(char) < 32 for char in name) or name.endswith((".", " ")):
+        return False
+    stem = name.split(".", 1)[0].upper()
+    return stem not in _RESERVED_WINDOWS_NAMES
 
 
 def _files():
@@ -50,14 +64,19 @@ def _resolve(target: str, files: list[str]) -> tuple[str, list[str]]:
     exact = [path for path in files if path == target]
     if exact:
         return "found", exact
-    if target.lower().endswith(".md"):
-        path_matches = [path for path in files if path.lower() == target.lower()]
-    else:
-        path_matches = [path for path in files if path.lower() == (target + ".md").lower()]
+    candidates = {target.lower()}
+    if not target.lower().endswith(".md"):
+        candidates.add((target + ".md").lower())
+    path_matches = [path for path in files if path.lower() in candidates or
+                    any(path.lower().endswith("/" + candidate) for candidate in candidates)]
     if len(path_matches) == 1:
         return "found", path_matches
     if len(path_matches) > 1:
         return "ambiguous", path_matches
+    # A path-like target must identify its trailing path; basename fallback applies
+    # only when the link itself is a short name.
+    if "/" in target:
+        return "missing", []
     basename = os.path.basename(target)
     short_matches = [path for path in files if os.path.basename(path).lower() == basename.lower() or
                      (path.lower().endswith(".md") and os.path.splitext(os.path.basename(path))[0].lower() == basename.lower())]
@@ -87,6 +106,10 @@ def check_vault() -> dict:
             report(path, "invalid_filename",
                    "This file or folder name contains characters that Obsidian or Windows cannot use.",
                    "Rename it using letters, numbers, spaces, hyphens, or underscores, and avoid a dot or space at the end.")
+        elif any(any(char in _OBSIDIAN_LINK_CHARACTERS for char in part) for part in parts):
+            report(path, "link_unsafe_filename",
+                   "This name contains #, ^, [ or ], which can break Obsidian links.",
+                   "Rename it without #, ^, [ or ] so wiki links can point to it reliably.")
 
     for path in notes:
         try:
@@ -117,7 +140,7 @@ def check_vault() -> dict:
             closing = body.find("\n---")
             body = body[closing + 4:] if closing >= 0 else body
 
-        for embedded, raw_target in _WIKILINK.findall(body):
+        for embedded, raw_target in _WIKILINK.findall(_without_code(body)):
             target = raw_target.split("|", 1)[0].split("#", 1)[0].strip()
             state, matches = _resolve(target, files)
             if embedded:

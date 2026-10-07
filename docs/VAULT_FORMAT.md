@@ -50,9 +50,14 @@ an exclamation mark, and the referenced file must be present in the vault:
 ## File and folder names
 
 For compatibility with Obsidian and Windows, do not use `:`, `*`, `?`, `"`,
-`<`, `>`, or `|` in file or folder names. Names must not end in a dot or a
-space. Keep attachments alongside the notes that use them or in a shared folder
-such as `images/`.
+`<`, `>`, `|`, or `\` in file or folder names. Names must not contain control
+characters (0–31), end in a dot or a space, or use Windows device names such as
+`CON`, `NUL`, `COM1`, or `LPT1` (including names with extensions). For reliable
+Obsidian links, also avoid `#`, `^`, `[` and `]`. Keep attachments alongside the
+notes that use them or in a shared folder such as `images/`.
+
+Wiki links in normal Markdown text are checked; examples inside inline code and
+fenced code blocks are treated as examples and are not checked as links.
 
 ## Check the folder
 

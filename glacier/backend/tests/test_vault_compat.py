@@ -65,3 +65,55 @@ def test_missing_embedded_attachment_is_reported(server):
 
     assert [p["kind"] for p in result["problems"]] == ["missing_attachment"]
     assert result["problems"][0]["fix_hint"]
+
+
+def test_compatibility_checks_windows_names_and_warns_on_obsidian_link_characters(server):
+    vault_path = os.path.join(server.home, "vault")
+    for name in ("nul.md", "a\\b.md", "control\x01.md", "hash#name.md", "caret^name.md", "bracket[name].md"):
+        with open(os.path.join(vault_path, name), "w", encoding="utf-8") as note:
+            note.write("# Name\n")
+
+    result = server.get("/api/memory/compat")
+    problems = result["problems"]
+
+    assert {(p["path"], p["kind"]) for p in problems} == {
+        ("nul.md", "invalid_filename"),
+        ("a\\b.md", "invalid_filename"),
+        ("control\x01.md", "invalid_filename"),
+        ("hash#name.md", "link_unsafe_filename"),
+        ("caret^name.md", "link_unsafe_filename"),
+        ("bracket[name].md", "link_unsafe_filename"),
+    }
+    assert all(p["fix_hint"] for p in problems)
+
+
+def test_link_checks_ignore_inline_and_fenced_code_and_partial_paths_match_folder(server):
+    vault_path = os.path.join(server.home, "vault")
+    os.makedirs(os.path.join(vault_path, "b"), exist_ok=True)
+    os.makedirs(os.path.join(vault_path, "other"), exist_ok=True)
+    with open(os.path.join(vault_path, "b", "c.md"), "w", encoding="utf-8") as note:
+        note.write("# C in b\n")
+    with open(os.path.join(vault_path, "other", "c.md"), "w", encoding="utf-8") as note:
+        note.write("# C elsewhere\n")
+    with open(os.path.join(vault_path, "links.md"), "w", encoding="utf-8") as note:
+        note.write("Inline `[[missing-inline]]` and fenced:\n\n```md\n[[missing-fenced]]\n```\n\nReal [[b/c]].\n")
+
+    result = server.get("/api/memory/compat")
+
+    assert result["problems"] == []
+
+
+def test_partial_path_does_not_fall_back_to_ambiguous_basename(server):
+    vault_path = os.path.join(server.home, "vault")
+    os.makedirs(os.path.join(vault_path, "a"), exist_ok=True)
+    os.makedirs(os.path.join(vault_path, "b"), exist_ok=True)
+    with open(os.path.join(vault_path, "a", "c.md"), "w", encoding="utf-8") as note:
+        note.write("# A\n")
+    with open(os.path.join(vault_path, "b", "c.md"), "w", encoding="utf-8") as note:
+        note.write("# B\n")
+    with open(os.path.join(vault_path, "source.md"), "w", encoding="utf-8") as note:
+        note.write("[[missing/c]]\n")
+
+    result = server.get("/api/memory/compat")
+
+    assert [(p["path"], p["kind"]) for p in result["problems"]] == [("source.md", "unresolved_link")]
