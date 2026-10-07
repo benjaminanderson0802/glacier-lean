@@ -50,6 +50,16 @@ New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/con
                                                   node_states: {node_id: pending|running|done|failed|waiting|skipped},
                                                   outputs: {node_id: "text"}, waiting_on: node_id|null,
                                                   usage: {node_id: {model, route, tokens_in, tokens_out, cost_usd}}}
+- GET  /api/home                             -> {local_ai:{online,model}, counts:{running,need_you},
+                                                  needs_you:[{kind,title,detail,at,ref}],
+                                                  running:[{run_id,env_id,name,status,step,steps,started_at}],
+                                                  recent_notes:[{path,summary,at}]}; one read-only Home summary.
+                                                  Needs-you rows are newest first (up to 20): waiting approvals,
+                                                  claims proposed for an owner decision, and failures from the last
+                                                  seven days. Running includes running, queued and waiting runs;
+                                                  step/steps counts completed/total nodes. Recent committed memory
+                                                  notes are newest first (up to 10). Local AI discovery is cached
+                                                  for 10 seconds and does not block the response on tool probes.
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
 - WS   /api/events  -> messages {"run_id","env_id","node_id","state","output"?} on every node state change
