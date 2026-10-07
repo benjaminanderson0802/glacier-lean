@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
+bash test_first_run_theme.sh
 (cd ../glacier/web && npm run build)
 rm -rf dist
 mkdir -p dist
