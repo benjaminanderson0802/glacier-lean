@@ -1,0 +1,14 @@
+{
+  "id": "api-stolen-origin-no-token",
+  "title": "Request claims the Glacier app's own origin but has no token",
+  "attack": "Forge the desktop app's Origin header to change a flow without the install token.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/environments/forged",
+    "body": {"id": "forged", "name": "forged", "nodes": [], "edges": []},
+    "headers": {"Origin": "http://tauri.localhost"},
+    "expected_status": 401,
+    "no_token": true
+  },
+  "expected": "blocked"
+}

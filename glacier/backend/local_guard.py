@@ -3,10 +3,14 @@
 from urllib.parse import urlsplit
 import os
 
+import local_token
+
 from starlette.responses import JSONResponse
 
 
 BLOCKED = "This request came from another website and was blocked."
+NOT_OURS = "This request isn't from your Glacier app."
+OPEN_PATHS = {"/api/health"}
 TAURI_ORIGINS = {"tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"}
 FORM_TYPES = {"application/x-www-form-urlencoded", "multipart/form-data", "text/plain"}
 STATE_CHANGING = {"POST", "PUT", "PATCH", "DELETE"}
@@ -59,6 +63,9 @@ class LocalRequestGuard:
             if origin and not _allowed_origin(origin, _RequestView(scope, headers)):
                 await self._reject(scope, receive, send)
                 return
+            if not self._has_token(scope, headers):
+                await self._unauthorized(scope, receive, send)
+                return
             await self.app(scope, receive, send)
             return
 
@@ -74,7 +81,28 @@ class LocalRequestGuard:
                 response = JSONResponse({"detail": "This form cannot be used for this request."}, status_code=415)
                 await response(scope, receive, send)
                 return
+        if not self._has_token(scope, headers):
+            await self._unauthorized(scope, receive, send)
+            return
         await self.app(scope, receive, send)
+
+    @staticmethod
+    def _has_token(scope, headers) -> bool:
+        """Install token required on /api (except the open health check and CORS preflight)."""
+        path = scope.get("path", "")
+        if not path.startswith("/api") or path in OPEN_PATHS or scope.get("method", "").upper() == "OPTIONS":
+            return True
+        query = scope.get("query_string", b"").decode("latin1") if scope["type"] == "websocket" else ""
+        return local_token.matches(local_token.from_headers_or_query(headers, query))
+
+
+    @staticmethod
+    async def _unauthorized(scope, receive, send):
+        if scope["type"] == "websocket":
+            await send({"type": "websocket.close", "code": 1008, "reason": NOT_OURS})
+            return
+        response = JSONResponse({"detail": NOT_OURS}, status_code=401)
+        await response(scope, receive, send)
 
     @staticmethod
     async def _reject(scope, receive, send):

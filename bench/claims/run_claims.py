@@ -15,6 +15,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import engine_token  # noqa: E402  (fresh install token for the engine this benchmark starts)
 import uuid
 
 HERE = Path(__file__).resolve().parent
@@ -104,7 +106,7 @@ class API:
 
 
 def start_backend(home: Path, port: int, env: dict | None = None) -> subprocess.Popen:
-    child_env = {**os.environ, **(env or {}), "GLACIER_HOME": str(home)}
+    child_env = engine_token.server_env({**os.environ, **(env or {}), "GLACIER_HOME": str(home)})
     return subprocess.Popen([str(PYTHON), "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", str(port)],
                             cwd=BACKEND, env=child_env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
                             start_new_session=True)

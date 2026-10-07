@@ -35,7 +35,16 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 app.add_middleware(CORSMiddleware, allow_origins=["tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"],
                    allow_methods=["*"], allow_headers=["*"])
 from local_guard import LocalRequestGuard  # noqa: E402
+import local_token  # noqa: E402
 app.add_middleware(LocalRequestGuard)
+local_token.get_token()  # create the per-install token file at startup so the desktop app can read it
+
+
+@app.get("/api/health")
+def health():
+    """Open liveness check (no data); every other /api path needs the install token."""
+    return {"ok": True}
+
 plugins.load_routes(app)  # registers routers in routes/, including the Home summary endpoint
 
 

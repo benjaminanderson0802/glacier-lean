@@ -56,11 +56,14 @@ export class ApiError extends Error {
 
 /** Desktop app sets window.__GLACIER_API__ (e.g. http://127.0.0.1:43123); empty = same origin. */
 const BASE: string = ((globalThis as { __GLACIER_API__?: string }).__GLACIER_API__ ?? '').replace(/\/$/, '')
+/** Desktop app sets window.__GLACIER_TOKEN__ (the per-install engine token). In the browser dev setup the Vite proxy adds it. */
+const TOKEN: string = (globalThis as { __GLACIER_TOKEN__?: string }).__GLACIER_TOKEN__ ?? ''
+const auth = (h: Record<string, string> = {}): Record<string, string> => (TOKEN ? { ...h, Authorization: `Bearer ${TOKEN}` } : h)
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(BASE + path, {
     method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    headers: auth(body === undefined ? {} : { 'Content-Type': 'application/json' }),
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (!res.ok) {
@@ -149,7 +152,7 @@ export function subscribeEvents(onEvent: (e: RunEvent) => void, onStatus: (conne
   const connect = () => {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     const host = BASE ? new URL(BASE).host : location.host
-    ws = new WebSocket(`${BASE.startsWith('https') ? 'wss' : BASE ? 'ws' : proto}://${host}/api/events`)
+    ws = new WebSocket(`${BASE.startsWith('https') ? 'wss' : BASE ? 'ws' : proto}://${host}/api/events${TOKEN ? `?token=${encodeURIComponent(TOKEN)}` : ''}`)
     ws.onopen = () => onStatus(true)
     ws.onmessage = m => {
       try { onEvent(JSON.parse(String(m.data)) as RunEvent) } catch { /* ignore malformed */ }
@@ -206,7 +209,7 @@ export type ChatEvent =
 
 export async function chat(message: string, conversationId: string | null, onEvent: (e: ChatEvent) => void): Promise<void> {
   const res = await fetch(BASE + '/api/assistant/chat', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: auth({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ message, conversation_id: conversationId }),
   })
   if (!res.ok || !res.body) throw new ApiError(res.status, `POST /api/assistant/chat -> ${res.status}`)
@@ -274,7 +277,7 @@ export const memoryMore = {
 
 /** Multipart upload helpers (file drop and chat-export import). */
 async function upload<T>(path: string, form: FormData): Promise<T> {
-  const res = await fetch(BASE + path, { method: 'POST', body: form })
+  const res = await fetch(BASE + path, { method: 'POST', body: form, headers: auth() })
   if (!res.ok) {
     let detail = res.statusText
     try { const j = await res.json(); detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail ?? j) } catch { /* not json */ }
