@@ -6,6 +6,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 import import_service
+from routes.files import _read_bounded_body
 
 router = APIRouter()
 
@@ -24,6 +25,7 @@ def _error(exc: ValueError) -> HTTPException:
 async def import_conversations(request: Request):
     content_type = request.headers.get("content-type", "")
     if content_type.startswith("multipart/form-data"):
+        await _read_bounded_body(request)
         form = await request.form()
         try:
             source = form.get("source")

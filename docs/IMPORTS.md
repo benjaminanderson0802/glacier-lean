@@ -1,11 +1,10 @@
 # Conversation imports
 
-Glacier imports official ChatGPT and Claude export files into searchable Markdown notes under `vault/imports/<source>/`. Import writes use the author `glacier-import`; known secrets are redacted before a note is saved. Re-importing a conversation with the same content leaves it unchanged, while changed content updates its existing note.
+Glacier can import official ChatGPT and Claude data exports as searchable vault notes.
 
-## Import an export
-
-Send `POST /api/imports` as JSON with `{"source":"chatgpt","path":"/path/to/export.zip"}` (or a JSON export path), or as multipart form data with `source` and `file` fields. Claude uses `source: "claude"`. Uploads are streamed into the local `GLACIER_HOME/import_sources` folder so refresh can reuse them.
-
-`GET /api/imports` lists sources with their last import time and added, updated, and unchanged counts. The screen refresh action calls `POST /api/imports/refresh`. If `GLACIER_IMPORT_DIR` names a folder, refresh uses the newest `.zip` or `.json` export in that folder. Otherwise it retries each previously imported file location that still exists.
-
-ZIP files are inspected without extraction. Archives with more than 10,000 files or over 512 MiB of uncompressed content are refused.
+- `POST /api/imports` accepts JSON with `source` (`chatgpt` or `claude`) and a local `.zip` or `.json` `path`, or a multipart form with `source` and `file`.
+- ZIP imports select `conversations.json` (or another JSON file if that name is absent). ZIPs are refused above 200 MiB uncompressed or 10,000 files.
+- Uploaded request bodies are limited to the file upload limit (1 GiB plus multipart framing); uploads are saved locally so refresh can use them later.
+- Imported notes are written under `imports/<source>/`, redacted, and tagged with author `glacier-import`. A conversation ID and content hash determine whether a note is added, updated, or unchanged.
+- `POST /api/imports/refresh` imports the newest `.zip` or `.json` in `GLACIER_IMPORT_DIR`, when configured. Without a watched folder, it refreshes each source from its last imported file.
+- `GET /api/imports` reports the last import time and counts for each imported source.

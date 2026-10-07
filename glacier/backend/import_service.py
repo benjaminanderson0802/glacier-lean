@@ -18,7 +18,7 @@ if str(_IMPORTER_ROOT) not in __import__("sys").path:
     __import__("sys").path.insert(0, str(_IMPORTER_ROOT))
 from glacier.importers import chatgpt, claude
 
-MAX_UNCOMPRESSED_BYTES = 512 * 1024 * 1024
+MAX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
 MAX_ARCHIVE_FILES = 10_000
 _SOURCES = {"chatgpt": chatgpt, "claude": claude}
 
@@ -164,6 +164,12 @@ def _process(source: str, path: Path) -> dict[str, int]:
             counts["unchanged"] += 1
             continue
         path_to_write = prior[0] if prior else note.path
+        if not prior:
+            existing_path = next((item for item in vault.list_notes(".md", f"imports/{source}")
+                                  if item == path_to_write), None)
+            if existing_path:
+                suffix = hashlib.sha256(source_id.encode("utf-8")).hexdigest()[:8]
+                path_to_write = f"{Path(note.path).with_suffix('').as_posix()}-{suffix}.md"
         custom = safe_body.split("\n", 1)
         if custom[0] == "---":
             title = _field(safe_body, "title").replace('"', "'")
@@ -188,6 +194,8 @@ def import_export(source: str, path: str | os.PathLike | None = None, *, upload=
         export_path = Path(path).expanduser().resolve()
         if not export_path.is_file():
             raise ValueError("The export file could not be found")
+        if export_path.suffix.lower() not in {".zip", ".json"}:
+            raise ValueError("Choose a ChatGPT or Claude export ZIP or JSON file")
     counts = _process(source, export_path)
     state = _state()
     state[source] = {"path": str(export_path), "last_import": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(), **counts}
@@ -205,18 +213,11 @@ def _watched_newest() -> Path | None:
 
 def _source_in(path: Path) -> str | None:
     try:
-        with zipfile.ZipFile(path) as archive:
-            names = [item for item in archive.namelist() if Path(item).name.casefold() == "conversations.json"]
-            if not names:
-                return None
-            raw = archive.read(names[0])
-    except (OSError, zipfile.BadZipFile):
-        if path.suffix.lower() != ".json":
-            return None
-        try:
-            raw = path.read_bytes()
-        except OSError:
-            return None
+        raw = _json_bytes(path)
+    except ValueError:
+        raise
+    except OSError:
+        return None
     try:
         data = json.loads(raw.decode("utf-8-sig"))
         first = data[0] if isinstance(data, list) and data else {}
