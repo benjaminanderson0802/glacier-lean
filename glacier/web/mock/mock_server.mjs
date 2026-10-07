@@ -133,7 +133,7 @@ const server = http.createServer(async (req, res) => {
       const messageId = crypto.randomUUID()
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
       const emit = (type, data = {}) => res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`)
-      emit('RUN_STARTED', { runId })
+      emit('RUN_STARTED', { threadId: conversationId, runId })
       const automation = /make me|automate|every day|daily/i.test(body.message)
       let reply = `I can help with: ${body.message}`
       if (automation) {
@@ -145,17 +145,18 @@ const server = http.createServer(async (req, res) => {
         const proposal = { id, conversation_id: conversationId, flow, explanation: 'Creates a daily backup flow.', problems: [] }
         assistantProposals.set(id, proposal)
         const toolCallId = crypto.randomUUID()
-        emit('TOOL_CALL_START', { toolCallId, toolCallName: 'propose_flow', messageId })
+        emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+        emit('TOOL_CALL_START', { toolCallId, toolCallName: 'propose_flow', parentMessageId: messageId })
         emit('TOOL_CALL_ARGS', { toolCallId, delta: JSON.stringify(proposal) })
         emit('TOOL_CALL_END', { toolCallId })
         reply = proposal.explanation
       }
-      emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
-      emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply })
+      if (!automation) emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+      if (reply) emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply })
       emit('TEXT_MESSAGE_END', { messageId })
       const conversationPath = `conversations/${conversationId.replace(/[^a-zA-Z0-9_-]+/g, '-')}.md`
       vault.set(conversationPath, `${vault.get(conversationPath) ?? `# Conversation ${conversationId}\n`}\n\n**You:** ${body.message}\n\n**Assistant:** ${reply}\n`)
-      emit('RUN_FINISHED', { runId })
+      emit('RUN_FINISHED', { threadId: conversationId, runId })
       return res.end()
     }
     if ((m = p.match(/^\/api\/assistant\/proposals\/([^/]+)\/apply$/)) && req.method === 'POST') {
@@ -167,8 +168,10 @@ const server = http.createServer(async (req, res) => {
         return send(200, { discarded: true })
       }
       const flow = proposal.flow
+      if (envs.has(flow.id)) return send(409, { detail: 'A flow with this name already exists' })
       const bad = flow.nodes.map(node => node.type).filter(type => !CATALOG.some(item => item.type === type))
       if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
+      if (flow.goal && !flow.acceptance?.length) return send(400, { detail: 'This goal has no check yet. Add a way to check it is done before running it.' })
       envs.set(flow.id, flow)
       const commit = commitId()
       vault.set(`environments/${flow.id}.json`, JSON.stringify(flow, null, 2))

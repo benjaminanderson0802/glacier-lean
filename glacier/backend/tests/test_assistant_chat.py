@@ -5,6 +5,23 @@ import sys
 import textwrap
 
 import httpx
+import keyring
+
+
+class MemoryKeyring(keyring.backend.KeyringBackend):
+    priority = 1
+
+    def __init__(self):
+        self.values = {}
+
+    def get_password(self, service, username):
+        return self.values.get((service, username))
+
+    def set_password(self, service, username, password):
+        self.values[(service, username)] = password
+
+    def delete_password(self, service, username):
+        self.values.pop((service, username), None)
 
 from conftest import Server
 
@@ -20,9 +37,10 @@ def _chat_server(tmp_path, monkeypatch):
         node = {{"id":"backup","type":"command","config":[{{"key":"cmd","value":"tar -czf backup.tgz data"}}]}}
         if "INVALID_CRON" in args[-1]:
             node = {{"id":"schedule","type":"schedule","config":[{{"key":"cron","value":"not a cron"}}]}}
+        acceptance = [] if "NO_CHECK" in args[-1] else [{{"kind":"human","question":"Did the backup finish?","cmd":"","rubric":""}}]
         result = {{"name":"Daily backup", "explanation":"Backs up files each day.",
           "nodes":[node],
-          "edges":[], "acceptance":[{{"kind":"human","question":"Did the backup finish?","cmd":"","rubric":""}}]}}
+          "edges":[], "acceptance":acceptance}}
         open(out,"w").write(json.dumps(result))
     '''))
     wrapper = tmp_path / "planner.sh"
@@ -34,12 +52,15 @@ def _chat_server(tmp_path, monkeypatch):
         import json, sys
         args=sys.argv[1:]; out=args[args.index("-o")+1]; prompt=args[-1]
         if "FAIL" in prompt: sys.exit(1)
-        open(out,"w").write(json.dumps({"reply":"I can help with that.","automation":False}))
+        open(out,"w").write(json.dumps({"reply":"I can help with that.","automation":"make me" in prompt.lower()}))
     '''))
     chat_wrapper = tmp_path / "chat.sh"
     chat_wrapper.write_text(f"#!/bin/sh\nexec {sys.executable} {chat_script} \"$@\"\n")
     chat_wrapper.chmod(0o755)
     monkeypatch.setenv("GLACIER_CHAT_BIN", str(chat_wrapper))
+    memory_keyring = MemoryKeyring()
+    keyring.set_keyring(memory_keyring)
+    monkeypatch.setenv("PYTHON_KEYRING_BACKEND", "keyring.backends.fail.Keyring")
     home = tmp_path / "home"
     home.mkdir()
     return Server(home).start()
@@ -112,8 +133,11 @@ def test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone(tmp_path
         assert author == "assistant"
         message = subprocess.run(["git", "show", "-s", "--format=%s", commits[0]], cwd=repo,
                                  capture_output=True, text=True, check=True).stdout.strip()
-        assert proposal["conversation_id"] in message
-        undo = httpx.post(server.url + f"/api/runs/{proposal['conversation_id']}/undo", timeout=30)
+        assert message.startswith("[run:") and proposal["conversation_id"] in message
+        assert author == "assistant"
+        run_id = message.split("[run:", 1)[1].split("]", 1)[0]
+        assert len(run_id) == 36
+        undo = httpx.post(server.url + f"/api/runs/{run_id}/undo", timeout=30)
         assert undo.status_code == 200
         assert server.get("/api/environments") == []
     finally:
@@ -133,6 +157,54 @@ def test_invalid_proposal_is_refused_with_same_message_as_environment_save(tmp_p
         assert put.status_code == apply.status_code == 400
         assert put.json()["detail"] == apply.json()["detail"]
         assert server.get("/api/environments") == []
+    finally:
+        server.stop()
+
+
+def test_apply_refuses_existing_flow(tmp_path, monkeypatch):
+    server = _chat_server(tmp_path, monkeypatch)
+    try:
+        proposal = _proposal(server)
+        flow = proposal["flow"]
+        saved = httpx.put(server.url + f"/api/environments/{flow['id']}", json=flow, timeout=30)
+        assert saved.status_code == 200
+        response = httpx.post(server.url + f"/api/assistant/proposals/{proposal['id']}/apply",
+                              json={"approve": True}, timeout=30)
+        assert response.status_code == 409
+        assert response.json()["detail"] == "A flow with this name already exists"
+    finally:
+        server.stop()
+
+
+def test_conversation_note_redacts_user_and_assistant_text(tmp_path, monkeypatch):
+    import keyring
+    import routes.assistant_chat as assistant_chat
+    previous = keyring.get_keyring()
+    try:
+        keyring.set_keyring(MemoryKeyring())
+        keyring.set_password("Glacier", "chat-secret", "chat-secret-123")
+        monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+        import secrets_store
+        secrets_store._write_names(["chat-secret"])
+        import vault
+        vault.init(str(tmp_path / "vault"))
+        assistant_chat._append_conversation("d" * 36, "Hello chat-secret-123", "Echo chat-secret-123")
+        note = vault.read_note(f"conversations/{'d' * 36}.md")
+        assert "chat-secret-123" not in note
+        assert note.count("[secret chat-secret]") == 2
+    finally:
+        keyring.set_keyring(previous)
+
+
+def test_apply_rejects_goal_without_check_while_put_preserves_existing_behavior(tmp_path, monkeypatch):
+    server = _chat_server(tmp_path, monkeypatch)
+    try:
+        proposal = _proposal(server)
+        flow = proposal["flow"]
+        flow["goal"] = "a checked goal"
+        flow["acceptance"] = []
+        put = httpx.put(server.url + f"/api/environments/{flow['id']}", json=flow, timeout=30)
+        assert put.status_code == 200
     finally:
         server.stop()
 
