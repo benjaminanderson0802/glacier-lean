@@ -104,6 +104,17 @@ def test_destructive_command_heuristic_flags_posix_and_powershell_forms(tmp_path
         assert command in findings
 
 
+def test_recursive_rm_long_options_and_pwsh_are_reported(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["nodes"][0]["config"]["cmd"] = "rm -f --recursive x; rm --force --recursive x; pwsh.exe -Command Get-Item"
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is False
+    findings = "\n".join(result["review"]).casefold()
+    assert findings.count("recursive rm") >= 2
+    assert "pwsh" in findings
+
+
 def test_gateway_engine_is_not_paid_by_itself_and_missing_paid_flag_is_paid(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     flow = _clean_flow()
@@ -188,6 +199,19 @@ def test_gateway_routes_are_reviewed_for_paid_flags(tmp_path, monkeypatch):
     result = template_registry.review_import(_portable(flow))
     assert result["accepted"] is False
     assert any("paid" in finding.lower() for finding in result["review"])
+
+
+def test_paid_route_scan_only_treats_entries_in_routes_lists_as_routes(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["nodes"][0]["config"]["plugin"] = {"name": "calendar", "paid": True}
+    clean = template_registry.review_import(_portable(flow))
+    assert clean["accepted"] is True
+
+    flow["nodes"][0]["config"]["plugin"]["routes"] = [{"name": "hosted", "paid": True}]
+    paid = template_registry.review_import(_portable(flow))
+    assert paid["accepted"] is False
+    assert any("paid" in finding.lower() for finding in paid["review"])
 
 
 def test_approve_rejects_malformed_proposal_ids_before_path_lookup(tmp_path, monkeypatch):

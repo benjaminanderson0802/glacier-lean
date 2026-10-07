@@ -22,11 +22,7 @@ RISKY_COMMANDS = (
     (re.compile(r"\bnc\b", re.IGNORECASE), "nc"),
     (re.compile(r"\bssh\b", re.IGNORECASE), "ssh"),
     (re.compile(r"\bscp\b", re.IGNORECASE), "scp"),
-    (re.compile(r"\brm\s+-fr\b", re.IGNORECASE), "rm -fr"),
-    (re.compile(r"\brm\s+-r\s+-f\b", re.IGNORECASE), "rm -r -f"),
-    (re.compile(r"\brm\s+-rf\b", re.IGNORECASE), "rm -rf"),
-    (re.compile(r"\brm\s+(?:-\w*r\w*|--recursive)\b", re.IGNORECASE), "recursive rm"),
-    (re.compile(r"\brm\s+(?:-\w+\s+)*-\w*r\w*\b", re.IGNORECASE), "recursive rm"),
+    (re.compile(r"\brm\b[^\n;&|]*\s(?:-\w*r\w*|--recursive)\b", re.IGNORECASE), "recursive rm"),
     (re.compile(r"\bremove-item\b[^\n]*\s-recurse\b", re.IGNORECASE), "Remove-Item -Recurse"),
     (re.compile(r"\bdel\s+/s(?:\s|$)", re.IGNORECASE), "del /s"),
     (re.compile(r"\brd\s+/s(?:\s|$)", re.IGNORECASE), "rd /s"),
@@ -41,6 +37,7 @@ RISKY_COMMANDS = (
     (re.compile(r"\bbash\b", re.IGNORECASE), "bash"),
     (re.compile(r"\bsh\b", re.IGNORECASE), "sh"),
     (re.compile(r"\bpowershell(?:\.exe)?\b", re.IGNORECASE), "PowerShell"),
+    (re.compile(r"\bpwsh(?:\.exe)?\b", re.IGNORECASE), "pwsh"),
     (re.compile(r"\b(?:eval|exec)\s*\(?", re.IGNORECASE), "dynamic command execution"),
     (re.compile(r"\b(?:base64\s+-d|encodedcommand)\b", re.IGNORECASE), "encoded command"),
 )
@@ -48,19 +45,28 @@ RISKY_COMMANDS = (
 
 def _contains_paid_route(value) -> bool:
     if isinstance(value, dict):
-        route_marker = any(key in value for key in ("base_url", "model", "route", "routes"))
-        engine = str(value.get("engine", "")).casefold()
-        paid_engine = engine in {"openai", "anthropic", "claude", "hosted", "api"}
-        url = str(value.get("base_url", "")).casefold()
-        hosted_url = bool(url) and not any(host in url for host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"))
-        route_paid = "paid" in value and value["paid"] is not False
-        gateway_route_paid = "name" in value and value.get("paid", True) is not False
-        return (route_paid or gateway_route_paid
-                or (route_marker and (paid_engine or hosted_url))
-                or any(_contains_paid_route(item) for item in value.values()))
+        for key, child in value.items():
+            if key.casefold() == "routes" and isinstance(child, list):
+                if any(_route_is_paid(route) for route in child):
+                    return True
+            elif _contains_paid_route(child):
+                return True
     if isinstance(value, list):
         return any(_contains_paid_route(item) for item in value)
     return False
+
+
+def _route_is_paid(route) -> bool:
+    if not isinstance(route, dict):
+        return False
+    if route.get("paid", True) is not False:
+        return True
+    # A route that explicitly opts into the gateway but lacks a free marker is unsafe.
+    engine = str(route.get("engine", "")).casefold()
+    url = str(route.get("base_url", "")).casefold()
+    hosted = engine in {"openai", "anthropic", "claude", "hosted", "api"}
+    remote = bool(url) and not any(host in url for host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"))
+    return hosted or remote
 
 
 def update_manifest() -> dict:
@@ -217,8 +223,14 @@ def _commands_for_review(value, key: str = "") -> list[str]:
 
 def _append_command_findings(findings: list[str], source: str, command: str) -> None:
     for pattern, match in RISKY_COMMANDS:
-        if pattern.search(command):
-            findings.append(f"{source} uses a flagged command ({match}).")
+        matches = list(pattern.finditer(command))
+        for found in matches:
+            if match == "recursive rm":
+                segment = re.match(r"\brm\b[^\n;&|]*", command[found.start():], re.IGNORECASE)
+                detail = f"recursive rm: {segment.group(0).strip()}" if segment else match
+            else:
+                detail = match
+            findings.append(f"{source} uses a flagged command ({detail}).")
 
 
 if __name__ == "__main__" and sys.argv[1:] == ["--update-manifest"]:
