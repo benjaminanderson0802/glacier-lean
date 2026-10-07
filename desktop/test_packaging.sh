@@ -16,6 +16,20 @@ else
       exit 1
     fi
   done
+  if ! grep -Fq 'runtime/x86_64-unknown-linux-gnu/bin/python3.12' <<<"$contents"; then
+    echo "Deb package is missing the bundled Linux Python runtime" >&2
+    exit 1
+  fi
+  runtime_dir="$(mktemp -d)"
+  trap 'rm -rf "$runtime_dir"' EXIT
+  dpkg-deb -x "$deb" "$runtime_dir"
+  python_path="$(find "$runtime_dir" -path '*/runtime/x86_64-unknown-linux-gnu/bin/python3.12' -type f -print -quit)"
+  if [[ -z "$python_path" ]]; then
+    echo "Could not locate bundled Python in extracted .deb" >&2
+    exit 1
+  fi
+  "$python_path" -c 'import fastapi, dbos'
+  echo "Extracted bundled runtime imports fastapi and dbos"
   echo "Deb contains backend source and contract resources: $deb"
 fi
 

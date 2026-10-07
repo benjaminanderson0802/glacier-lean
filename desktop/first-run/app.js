@@ -13,9 +13,7 @@ async function showTools() {
 document.querySelector('#check-again').addEventListener('click', () => window.location.reload());
 window.showStartupError = (message) => {
   const notice = document.querySelector('#startup-error');
-  notice.textContent = message.includes('Python 3.12')
-    ? "Python 3.12 is required to run Glacier's local engine. Install Python 3.12 and restart Glacier. The backend source is included with the app; Python itself is not."
-    : message;
+  notice.textContent = message;
   notice.hidden = false;
 };
 showTools();

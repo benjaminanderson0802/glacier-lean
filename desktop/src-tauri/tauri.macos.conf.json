@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": {
+      "../runtime/aarch64-apple-darwin/": "runtime/aarch64-apple-darwin/"
+    }
+  }
+}

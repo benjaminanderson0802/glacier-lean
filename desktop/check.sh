@@ -7,6 +7,12 @@ mkdir -p dist
 cp -a ../glacier/web/dist/. dist/
 cp -a first-run dist/first-run
 test -f dist/first-run/index.html
+# The bundled Python runtime is a release resource (package_linux.sh builds it). For this debug build check,
+# create an empty placeholder when it is missing so the build does not need a download.
+case "$(uname -s)" in
+  Linux) rt=x86_64-unknown-linux-gnu ;; Darwin) rt=aarch64-apple-darwin ;; *) rt=x86_64-pc-windows-msvc ;;
+esac
+[[ -d "runtime/$rt" ]] || mkdir -p "runtime/$rt"
 TAURI_APP_PATH=src-tauri TAURI_FRONTEND_PATH=. \
   npx tauri build --debug --no-bundle
 binary="src-tauri/target/debug/glacier-desktop"

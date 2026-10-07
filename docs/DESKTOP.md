@@ -20,7 +20,7 @@ The first window shows the bundled first-run page while the backend starts. It c
 
 ## Linux packages
 
-Linux release packages contain the Glacier backend Python source, its requirements file, and the node type catalog. They do not contain Python or a private Python environment. Install Python 3.12 on the machine before running Glacier; the first-run page explains this requirement if the `python3.12` command is missing. Backend Python dependencies must also be installed for the selected Python runtime as listed in the bundled `backend/requirements.txt`.
+Linux release packages contain the Glacier backend, its requirements file, the node type catalog, and a private CPython 3.12 runtime with the pinned backend packages. Users do not need to install Python or connect to the internet to start Glacier.
 
 On Debian 12/Ubuntu 24.04 or a compatible distribution, install the Tauri Linux build prerequisites and build both packages from the repository checkout:
 
@@ -32,7 +32,7 @@ npm ci
 ./package_linux.sh
 ```
 
-The script checks the system packages, builds the screen, and runs `npx tauri build --bundles deb,appimage`. The `.deb` and `.AppImage` files are written under `src-tauri/target/release/bundle/`. `file` is needed to build the AppImage. FUSE is not required to inspect or extract an AppImage, though starting it for the packaging check uses `xvfb-run` when available.
+The script checks the system packages, downloads and verifies the pinned standalone runtime, installs the pinned requirements, builds the screen, and runs `npx tauri build --bundles deb,appimage`. The `.deb` and `.AppImage` files are written under `src-tauri/target/release/bundle/`; the script prints their byte and KiB sizes. `file` is needed to build the AppImage. FUSE is not required to inspect or extract an AppImage, though starting it for the packaging check uses `xvfb-run` when available.
 
 Check the package contents and headless AppImage launch with:
 
@@ -41,17 +41,17 @@ cd desktop
 ./test_packaging.sh
 ```
 
-The `.deb` check confirms the backend source, requirements and contract catalog are present. The AppImage check runs `--help` under `xvfb-run`; if that tool is missing, it prints a skip message.
+The `.deb` check confirms the backend source, requirements, contract catalog, and Python runtime are present, extracts the package, and checks `import fastapi, dbos`. The AppImage check runs `--help` under `xvfb-run`; if that tool is missing, it prints a skip message.
 
 ## macOS (needs a Mac to build and sign)
 
-Build macOS packages on a Mac with current Xcode command line tools, Rust 1.92, and Node.js/npm installed. The package includes backend source only, so install Python 3.12 and the packages listed in `backend/requirements.txt` on the target Mac.
+Build macOS packages on an Apple Silicon Mac with current Xcode command line tools, Rust 1.92, and Node.js/npm installed. Build the bundled runtime first with `python3 ../setup/pybundle/build_runtime.py --platform aarch64-apple-darwin` from `desktop/`; the app then includes Python and backend dependencies.
 
 ```sh
 xcode-select --install
 cd desktop
 npm ci
-npx tauri build --bundles app,dmg
+npx tauri build --config src-tauri/tauri.macos.conf.json --bundles app,dmg
 ```
 
 The `.app` and `.dmg` are written under `src-tauri/target/release/bundle/`. Signing and notarization require Apple developer credentials and are not performed by these commands.
@@ -67,14 +67,16 @@ cd desktop
 
 The executable is `desktop/src-tauri/target/debug/glacier-desktop`. The script also checks that `desktop/dist/first-run/index.html` exists after assembling the front end. The bundle uses explicit Python source globs for backend root modules, `nodes/`, `routes/`, and requirements files; it excludes backend data, virtual environments, caches, and tests.
 
-## Python packaging follow-up
+## Bundled Python runtime
 
-`backend/.venv/bin/python` in `sidecar.json` is a development placeholder. Python itself is not included in this scaffold, so a distributable app needs that runtime assembled before launch. Assemble a platform-specific runtime with **python-build-standalone** and resolve/install pinned backend dependencies with **uv** into the app's private backend environment. Do not use PyInstaller. Bundle only dependencies whose licenses allow redistribution; keep backend data and runtime configuration under user-controlled local application data. The backend's node type catalog is bundled as `contract/node_types.json`; with the backend working directory set to `backend/`, `app.py` resolves its `../contract/node_types.json` path to that bundled file.
+`setup/pybundle/build_runtime.py` downloads CPython 3.12.15 from python-build-standalone release `20261003`, checks a pinned SHA-256 for each supported target, safely extracts it, and installs `setup/requirements.txt`. It supports `x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, and `x86_64-pc-windows-msvc`. Runtime files are ignored by Git and included as Tauri resources when present. Backend data and runtime configuration remain under user-controlled local application data. The backend's node type catalog is bundled as `contract/node_types.json`; with the backend working directory set to `backend/`, `app.py` resolves its `../contract/node_types.json` path to that bundled file.
+
+The standalone runtime includes `LICENSE.txt` under the PSF License. The builder preserves it in the bundle. Third-party backend packages retain their individual license files under their `*.dist-info` metadata folders in `site-packages`; review these before redistributing an installer. Pip is used only at build time, and its bundled license notices are retained with the runtime.
 
 ## Windows build on the owner's PC
 
 1. Install Rust 1.92, Node.js/npm, and the Tauri 2 Windows prerequisites (Microsoft C++ Build Tools and WebView2 runtime).
 2. Build the screen from the repository root with `cd glacier/web && npm ci && npm run build`.
-3. Prepare the private Python runtime and backend environment as described above, placing the runtime's `python.exe` directly at the configured `venv_python` path and the backend package at `desktop/backend/`. Point `sidecar.json` directly to that runtime `python.exe`; do not launch through a `.venv` activation/launcher script. The Tauri app kills and waits for its direct backend child when the window closes.
-4. From `desktop/`, run `npm ci` and `npx tauri build --debug` to check the Windows app. The configured `beforeBuildCommand` builds the screen and assembles `desktop/dist` automatically. For a release installer, run `npx tauri build`; the configured NSIS target produces an installer under `src-tauri/target/release/bundle/nsis/`.
+3. Build the Windows runtime from the repository checkout. From the repository root run `python setup/pybundle/build_runtime.py --platform x86_64-pc-windows-msvc`, then build from `desktop/`. This cross-downloads the Windows interpreter and resolves binary wheels using `pip --platform win_amd64 --only-binary=:all:`; Windows itself is not needed for this preparation step.
+4. From `desktop/`, run `npm ci` and `npx tauri build --config src-tauri/tauri.windows.conf.json --debug` to check the Windows app. The configured `beforeBuildCommand` builds the screen and assembles `desktop/dist` automatically. For a release installer, run `npx tauri build --config src-tauri/tauri.windows.conf.json`; the configured NSIS target produces an installer under `src-tauri/target/release/bundle/nsis/`.
 5. Verify first run on a clean Windows account, including the tool list, local data location, and backend readiness before handing the app to users.
