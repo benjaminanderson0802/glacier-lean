@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react'
 import { system, type SystemCheck } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { go } from '../route.ts'
+import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
 
 const SECTIONS = [
   { id: 'general', label: 'General' },
+  { id: 'models', label: 'Models' },
+  { id: 'secrets', label: 'Secrets' },
+  { id: 'usage', label: 'Usage' },
+  { id: 'data', label: 'Data' },
   { id: 'system', label: 'System check' },
   { id: 'help', label: 'Help & keys' },
+  { id: 'about', label: 'About' },
 ] as const
 
 export function SettingsScreen({ section = 'general' }: { section?: string }) {
@@ -50,6 +56,11 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
             )}
           </Panel>
         )}
+        {cur.id === 'models' && <ModelsSection />}
+        {cur.id === 'secrets' && <SecretsSection />}
+        {cur.id === 'usage' && <UsageSection />}
+        {cur.id === 'data' && <DataSection />}
+        {cur.id === 'about' && <AboutSection version={__APP_VERSION__} />}
         {cur.id === 'help' && (
           <Panel title="Help & keys" testid="settings-help">
             <dl className="g-kv">

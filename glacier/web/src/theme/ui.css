@@ -115,7 +115,7 @@ button.g-row:hover { background: var(--g-panel-hi); }
 .g-notebody { margin: 0; white-space: pre-wrap; font-family: var(--g-font-body); font-size: var(--g-size-body); color: var(--g-text); }
 .g-links { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; font-size: var(--g-size-small); }
 .g-link { background: transparent; border: 0; color: var(--g-sub); font: inherit; cursor: pointer; padding: 0 6px 0 0; text-decoration: underline dotted; }
-.g-kv { display: grid; grid-template-columns: 180px 1fr; gap: 8px 16px; margin: 0; }
+.g-kv { display: grid; grid-template-columns: 230px 1fr; gap: 8px 16px; margin: 0; }
 .g-kv dt { color: var(--g-sub); }
 .g-kv dd { margin: 0; color: var(--g-head); }
 

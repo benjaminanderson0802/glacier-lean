@@ -287,3 +287,15 @@ export const addToMemory = {
   chatExport: (source: 'chatgpt' | 'claude', file: File) => { const f = new FormData(); f.append('source', source); f.append('file', file); return upload<Record<string, number>>('/api/imports', f) },
   projects: () => req<{ name: string }[] | string[]>('GET', '/api/projects'),
 }
+
+// ---------- Settings: secrets, usage, data ----------
+export interface CostGroup { runs: number; steps: number; tokens_in: number; tokens_out: number; cost_usd: number; route?: string; model?: string }
+export interface Costs { total_usd: number; by_route: CostGroup[]; by_model: CostGroup[]; local_share: number; paid_cap_usd: number }
+export interface VaultCompat { ok: boolean; notes_checked: number; problems: { path: string; kind: string; detail: string; fix_hint: string }[] }
+export const settingsApi = {
+  secrets: () => req<string[]>('GET', '/api/secrets'),
+  setSecret: (name: string, value: string) => req<{ saved: boolean }>('PUT', `/api/secrets/${enc(name)}`, { value }),
+  deleteSecret: (name: string) => req<{ deleted: boolean }>('DELETE', `/api/secrets/${enc(name)}`),
+  costs: (days = 30) => req<Costs>('GET', `/api/costs?days=${days}`),
+  compat: () => req<VaultCompat>('GET', '/api/memory/compat'),
+}
