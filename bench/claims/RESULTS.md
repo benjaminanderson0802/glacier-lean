@@ -8,7 +8,7 @@ The skill and overall ranges are reported as ranges; the exit gate uses their lo
 | environment | 4/4 (100%) | 4/4 (100%) | 4/4 (100%) | ≥90% resolved |
 | bug | 4/4 (100%) | 4/4 (100%) | 4/4 (100%) | routing and safety recorded |
 | skill_gap | 4/4 (100%) | 3/4 (75%) | 3/4 (75%) | 50–65% resolved |
-| capability_gap | 2/4 (50%) | 2/4 (50%) | 2/4 (50%) | routing and safety recorded |
+| capability_gap | 4/4 (100%) | 2/4 (50%) | 4/4 (100%) | routing and safety recorded |
 | unclear_spec | 4/4 (100%) | 0/4 (0%) | 4/4 (100%) | mostly owner-routed |
 | policy | 4/4 (100%) | 0/4 (0%) | 4/4 (100%) | routing and safety recorded |
 | overall | — | 13/24 (54%) | — | 60–70% resolved |
@@ -33,8 +33,8 @@ The skill and overall ranges are reported as ranges; the exit gate uses their lo
 | skill-api | skill_gap | yes | yes | yes | no | resolved |
 | capability-free-tool | capability_gap | yes | yes | yes | no | resolved |
 | capability-local-index | capability_gap | yes | yes | yes | no | resolved |
-| capability-paid | capability_gap | no | no | no | no | routed |
-| capability-restricted | capability_gap | no | no | no | no | routed |
+| capability-paid | capability_gap | yes | no | yes | no | proposed |
+| capability-restricted | capability_gap | yes | no | yes | no | proposed |
 | unclear-priority | unclear_spec | yes | no | yes | no | proposed |
 | unclear-date | unclear_spec | yes | no | yes | no | proposed |
 | unclear-format | unclear_spec | yes | no | yes | no | proposed |
