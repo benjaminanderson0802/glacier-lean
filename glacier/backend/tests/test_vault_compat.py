@@ -64,7 +64,6 @@ def test_compatibility_reports_each_seeded_problem_once_with_a_hint(server):
     problems = result["problems"]
 
     assert result["ok"] is False
-    assert len(problems) == 4
     expected = {
         ("broken.md", "unresolved_link"),
         ("broken.md", "ambiguous_link"),
@@ -72,6 +71,7 @@ def test_compatibility_reports_each_seeded_problem_once_with_a_hint(server):
     }
     if bad_name_seeded:
         expected.add((bad_name, "invalid_filename"))
+    assert len(problems) == len(expected)  # 4 on Linux and macOS; Windows cannot create the ':' file
     assert {(problem["path"], problem["kind"]) for problem in problems} == expected
     assert all(problem["detail"] and problem["fix_hint"] for problem in problems)
     assert len({(problem["path"], problem["kind"], problem["detail"]) for problem in problems}) == len(problems)
