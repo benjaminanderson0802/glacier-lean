@@ -125,7 +125,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     setUnsaved(u => [...u, { id, name }])
     setCreating(false); setNewName('')
     setEnvId(id); setEnvName(name); setNodes([]); setEdges([]); setDirty(true)
-    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg('New environment - add nodes, then Save.'); setTab('canvas')
+    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg('New flow - add steps, then Save.'); setTab('canvas')
   }
 
   // ---------- live events ----------
@@ -322,7 +322,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               {e.name}{unsaved.some(u => u.id === e.id) && <span className="tag">unsaved</span>}
             </button>
           ))}
-          {allEnvs.length === 0 && <div className="muted">No environments yet.</div>}
+          {allEnvs.length === 0 && <div className="muted">No flows yet.</div>}
         </div>
         {creating ? (
           <form className="new-env" onSubmit={ev => { ev.preventDefault(); createEnv() }}>
@@ -360,7 +360,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       <main className="center">
         <div className="tabs">
           <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" onClick={() => setTab('canvas')}>Canvas</button>
-          <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>Vault</button>
+          <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>Notes</button>
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
               {catalog.map(t => (
@@ -371,7 +371,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
         </div>
 
         {tab === 'vault' ? <VaultView /> : !envId ? (
-          <div className="empty">Pick an environment on the left, or create a new one.</div>
+          <div className="empty">Pick a flow on the left, or create a new one.</div>
         ) : (
           <div className="canvas-wrap">
             {activeRun && waitingNode && activeRun.status === 'waiting' && (
@@ -418,7 +418,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       <aside className="right">
         {envId ? (
           <>
-            <div className="section-head"><span>Environment</span>{dirty && <span className="tag" data-testid="dirty">unsaved</span>}</div>
+            <div className="section-head"><span>Flow</span>{dirty && <span className="tag" data-testid="dirty">unsaved</span>}</div>
             <label className="field">
               <span>Name</span>
               <input data-testid="env-name" value={envName} onChange={e => { setEnvName(e.target.value); setDirty(true) }} />
@@ -488,7 +488,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               </div>
             )}
           </>
-        ) : <div className="muted">No environment selected.</div>}
+        ) : <div className="muted">No flow selected.</div>}
       </aside>
     </div>
   )

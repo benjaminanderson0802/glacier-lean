@@ -20,7 +20,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     { label: 'Settings', icon: 'settings', hint: 'Alt+5', run: () => go('settings') },
     { label: 'System check', icon: 'settings', run: () => go('settings/system') },
     { label: 'Show help', icon: 'note', hint: 'F1', run: () => go('settings/help') },
-    ...flows.map(f => ({ label: `Open flow: ${f.name}`, icon: 'run' as IconName, run: () => go(`automations/build/${f.id}`) })),
+    ...flows.map(f => ({ label: `Open flow: ${f.name}`, icon: 'run' as IconName, run: () => go(`automations/flow/${f.id}`) })),
   ], [flows])
   const shown = cmds.filter(c => c.label.toLowerCase().includes(q.toLowerCase())).slice(0, 9)
   const pick = (c?: Cmd) => { if (c) { c.run(); onClose() } }

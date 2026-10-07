@@ -19,14 +19,20 @@ export function HomeScreen() {
   }, [refresh])
 
   const open = (it: HomeItem) => {
-    if (it.ref.env_id) go(`automations/build/${it.ref.env_id}${it.ref.run_id ? `/${it.ref.run_id}` : ''}`)
+    if (it.kind === 'claim' && it.ref.claim_id) { go(`home/claim/${it.ref.claim_id}`); return }
+    if (it.ref.env_id) go(`automations/flow/${it.ref.env_id}${it.ref.run_id ? `/${it.ref.run_id}` : ''}`)
   }
 
   return (
     <>
       <PageHead title="Home" sub="Today at a glance." side={
         <div className="g-statusbox" data-testid="home-status">
-          <div><span className={`g-online${data?.local_ai.online ? '' : ' off'}`}><i className="g-dot" />{data?.local_ai.online ? 'Local AI Online' : 'Local AI Offline'}</span></div>
+          <div>{(() => {
+            const on = data?.local_ai.online
+            const cls = on ? '' : on === false ? ' off' : ' wait'
+            const label = on ? 'Local AI Online' : on === false ? 'Local AI Offline' : 'Checking local AI…'
+            return <span className={`g-online${cls}`} title={data?.local_ai.model ?? undefined} data-testid="local-ai"><i className="g-dot" />{label}</span>
+          })()}</div>
           <div>
             <span data-testid="count-running">{data?.counts.running ?? 0} Running</span>
             <span data-testid="count-need-you">{data?.counts.need_you ?? 0} Need You</span>
@@ -35,7 +41,7 @@ export function HomeScreen() {
       } />
       {err && <div className="g-error">{err}</div>}
       <div className="g-grid-2" style={{ flex: 1 }}>
-        <Panel title="Needs you" testid="needs-you">
+        <Panel title="Needs you" aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">all claims</button>} testid="needs-you">
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>Nothing needs you. Nice.</Empty>}
             {data?.needs_you.map((it, i) => (
@@ -51,7 +57,7 @@ export function HomeScreen() {
                 <Row key={r.run_id} status={r.status === 'queued' ? 'warn' : 'run'} lead={r.name}
                   detail={r.status === 'queued' ? undefined : `step ${r.step}/${r.steps}`}
                   when={r.status === 'queued' ? 'queued' : <Progress value={r.step} max={r.steps} />}
-                  onClick={() => go(`automations/build/${r.env_id}/${r.run_id}`)} testid={`running-${r.run_id}`} />
+                  onClick={() => go(`automations/flow/${r.env_id}/${r.run_id}`)} testid={`running-${r.run_id}`} />
               ))}
             </div>
           </Panel>

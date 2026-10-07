@@ -23,6 +23,11 @@ export interface RunState {
   node_states: Record<string, NodeState>
   outputs: Record<string, string>
   waiting_on: string | null
+  /** Present on GET /api/runs/{id}: per-step usage, acceptance checks, overall verdict, approval question. */
+  usage?: Record<string, { model: string | null; route: string | null; tokens_in: number | null; tokens_out: number | null; cost_usd: number | null }>
+  verification?: { check: number; kind: string; passed: boolean; evidence: string }[]
+  verified?: boolean | null
+  waiting_prompt?: string
 }
 export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
 
@@ -80,6 +85,8 @@ export const api = {
   listNotes: () => req<string[]>('GET', '/api/vault/notes'),
   getNote: (path: string) => req<{ path: string; body: string }>('GET', `/api/vault/note?path=${enc(path)}`),
   home: () => req<HomeSummary>('GET', '/api/home'),
+  runChanges: (runId: string) => req<{ path: string; commit: string; author: string; repo: string }[]>('GET', `/api/runs/${enc(runId)}/changes`),
+  undoRun: (runId: string) => req<Record<string, unknown>>('POST', `/api/runs/${enc(runId)}/undo`),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
@@ -87,7 +94,8 @@ export interface HomeItem { kind: 'approval' | 'claim' | 'failed_run'; title: st
 export interface HomeRun { run_id: string; env_id: string; name: string; status: 'running' | 'queued' | 'waiting'; step: number; steps: number; started_at: string }
 export interface HomeNote { path: string; summary: string; at: string }
 export interface HomeSummary {
-  local_ai: { online: boolean; model: string | null }
+  /** online: null = still checking (first seconds after start). */
+  local_ai: { online: boolean | null; model: string | null }
   counts: { running: number; need_you: number }
   needs_you: HomeItem[]
   running: HomeRun[]
@@ -114,7 +122,7 @@ export async function loadHome(): Promise<HomeSummary> {
   const notes = await api.listNotes().catch(() => [] as string[])
   const byNew = (a: { at: string }, b: { at: string }) => (b.at ?? '').localeCompare(a.at ?? '')
   return {
-    local_ai: { online: false, model: null },
+    local_ai: { online: null, model: null },
     counts: { running: running.length, need_you: needs.length },
     needs_you: needs.sort(byNew).slice(0, 20),
     running,
@@ -170,6 +178,10 @@ export const memory = {
   note: (path: string) => req<MemNoteFull>('GET', `/api/memory/note?path=${enc(path)}`),
   search: (q: string, mode: 'keyword' | 'meaning' = 'keyword') => req<MemHit[]>('GET', `/api/memory/search?q=${enc(q)}&mode=${mode}`),
   history: (path: string) => req<MemCommit[]>('GET', `/api/memory/history?path=${enc(path)}`),
+  /** Save a note written by the owner. Returns the saved version id (commit). */
+  save: (path: string, body: string) => req<{ path: string; commit: string }>('PUT', '/api/memory/note', { path, body, author: 'owner' }),
+  /** Restore the version before `commit` (or before the latest save). */
+  undo: (path: string, commit?: string) => req<{ path: string; commit: string }>('POST', '/api/memory/undo', { path, commit }),
 }
 
 // ---------- System (/api/system/*) ----------
@@ -223,3 +235,28 @@ export async function chat(message: string, conversationId: string | null, onEve
 }
 export const applyProposal = (id: string, approve: boolean) =>
   req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, { approve })
+
+// ---------- Claims (GET/POST /api/claims*) ----------
+export interface ClaimSummary { id: string; kind: string; summary: string; status: string; assigned_to: string | null; updated: string }
+export interface ClaimFull { meta: Record<string, string | number | null> & { id: string; kind?: string; summary?: string; status?: string; updated?: string; run_id?: string }; body: string }
+export const claimsApi = {
+  list: (status?: string) => req<ClaimSummary[]>('GET', `/api/claims${status ? `?status=${enc(status)}` : ''}`),
+  get: (id: string) => req<ClaimFull>('GET', `/api/claims/${enc(id)}`),
+  decide: (id: string, action: 'approve' | 'reject' | 'research_more', option = '') => req<{ status: string }>('POST', `/api/claims/${enc(id)}/decision`, { action, option }),
+}
+/** Split a claim body into its "## Heading" sections. */
+export function sections(body: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  let cur = ''
+  for (const line of body.split('\n')) {
+    const m = line.match(/^##\s+(.+)$/)
+    if (m) { cur = m[1].trim(); out[cur] = ''; continue }
+    if (cur) out[cur] += line + '\n'
+  }
+  for (const k of Object.keys(out)) out[k] = out[k].trim()
+  return out
+}
+
+// ---------- Templates (GET /api/templates) ----------
+export interface TemplateItem { id: string; name: string; description: string; author?: string; license?: string; review_status: string; installable: boolean; template?: Environment & { description?: string; tags?: string[] } }
+export const templatesApi = { list: () => req<TemplateItem[]>('GET', '/api/templates') }

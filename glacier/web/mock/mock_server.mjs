@@ -17,6 +17,17 @@ const MAX_DEPTH = 5
 const MAX_LOOP = 1000
 
 const envs = new Map() // id -> Environment
+const mockClaims = new Map([['c0ffee01', {
+  meta: { id: 'c0ffee01', kind: 'research', summary: 'Best eBay product opportunities', status: 'proposed', updated: new Date().toISOString(), run_id: '' },
+  body: '## Problem\nBest eBay product opportunities\n\n## Evidence\n- completed successfully\n- 5 product ideas generated\n- sources included\n\n## Research\n- analyzed 12 categories\n- found 5 high-demand products\n- checked competition and pricing\n\n## Resolution\n',
+  summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
+}]])
+const mockTemplates = [
+  { id: 'tpl-daily-report', name: 'Daily report', description: 'Get a daily overview of what matters', author: 'Glacier', license: 'Apache-2.0', review_status: 'reviewed', installable: true,
+    template: { id: 'tpl-daily-report', name: 'Daily report', nodes: [{ id: 'n1', type: 'command', config: { command: 'date' }, position: { x: 0, y: 0 } }], edges: [] } },
+  { id: 'tpl-folder-backup', name: 'Folder backup', description: 'Copy a folder somewhere safe every night', author: 'Glacier', license: 'Apache-2.0', review_status: 'reviewed', installable: true,
+    template: { id: 'tpl-folder-backup', name: 'Folder backup', nodes: [{ id: 'n1', type: 'command', config: { command: 'echo backup' }, position: { x: 0, y: 0 } }], edges: [] } },
+]
 const runs = new Map() // run_id -> run record
 const vault = new Map() // path -> body
 const memoryMeta = new Map()
@@ -178,6 +189,23 @@ const server = http.createServer(async (req, res) => {
       assistantProposals.delete(proposal.id)
       return send(200, { saved: true, commit })
     }
+    // ---- claims + templates (screen development only) ----
+    if (p === '/api/claims' && req.method === 'GET') {
+      const st = url.searchParams.get('status')
+      return send(200, [...mockClaims.values()].map(c => c.summaryRow()).filter(c => !st || c.status === st))
+    }
+    if ((m = p.match(/^\/api\/claims\/([^/]+)$/)) && req.method === 'GET') {
+      const c = mockClaims.get(m[1]); return c ? send(200, { meta: c.meta, body: c.body }) : send(404, { detail: 'claim not found' })
+    }
+    if ((m = p.match(/^\/api\/claims\/([^/]+)\/decision$/)) && req.method === 'POST') {
+      const c = mockClaims.get(m[1]); if (!c) return send(404, { detail: 'claim not found' })
+      const body = await readBody()
+      const status = { approve: 'resolved', reject: 'closed', research_more: 'researching' }[body.action]
+      if (!status) return send(400, { detail: 'action must be approve, reject or research_more' })
+      c.meta.status = status; c.body += `\n- Owner decision: ${body.action}`
+      return send(200, { status })
+    }
+    if (p === '/api/templates' && req.method === 'GET') return send(200, mockTemplates)
     if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name })))
     if ((m = p.match(/^\/api\/environments\/([^/]+)$/))) {
       const id = decodeURIComponent(m[1])

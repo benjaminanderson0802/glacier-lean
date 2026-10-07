@@ -105,3 +105,7 @@
 .vault-body { padding: 14px; overflow: auto; }
 .vault-path { color: var(--g-sub); margin-bottom: 8px; }
 .vault-body pre { white-space: pre-wrap; background: var(--g-panel); border: 1px solid var(--g-line); border-radius: var(--g-radius); padding: 12px; margin: 0; font-family: var(--g-font-body); font-size: var(--g-size-body); }
+.react-flow__controls { box-shadow: var(--g-glow); border: 1px solid var(--g-line); }
+.react-flow__controls-button { background: var(--g-panel); border-bottom: 1px solid var(--g-line-dim); }
+.react-flow__controls-button svg { fill: var(--g-head); }
+.react-flow__controls-button:hover { background: var(--g-panel-hi); }
