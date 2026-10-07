@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ago, memory, type MemCommit, type MemHit, type MemNote, type MemNoteFull } from '../api.ts'
-import { Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
+import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
+import { NoteEditor } from './NoteEditor.tsx'
 import { go } from '../route.ts'
 
 export function MemoryScreen({ path }: { path?: string }) {
@@ -11,9 +12,17 @@ export function MemoryScreen({ path }: { path?: string }) {
   const [note, setNote] = useState<MemNoteFull | null>(null)
   const [hist, setHist] = useState<MemCommit[]>([])
   const [err, setErr] = useState('')
+  const [editing, setEditing] = useState<'new' | 'edit' | null>(null)
+  const [saved, setSaved] = useState<{ path: string; commit: string } | null>(null)
 
-  useEffect(() => { memory.notes().then(setNotes).catch(e => setErr(String(e))) }, [])
+  const reloadNotes = () => memory.notes().then(setNotes).catch(e => setErr(String(e)))
+  useEffect(() => { reloadNotes() }, [])
+  const loadNote = (p: string) => {
+    memory.note(p).then(setNote).catch(e => setErr(String(e)))
+    memory.history(p).then(setHist).catch(() => setHist([]))
+  }
   useEffect(() => {
+    setEditing(null)
     if (!path) { setNote(null); return }
     memory.note(path).then(setNote).catch(e => setErr(String(e)))
     memory.history(path).then(setHist).catch(() => setHist([]))
@@ -53,14 +62,24 @@ export function MemoryScreen({ path }: { path?: string }) {
             {hits && hits.length === 0 && <Empty>Nothing found.</Empty>}
           </div>
         </Panel>
-        <Panel title={note ? String(note.meta?.title ?? note.path) : 'Note'} testid="memory-note" className="g-scroll">
-          {!note ? <Empty>Pick a note to read it.</Empty> : (
+        <Panel title={editing === 'new' ? 'New note' : note ? String(note.meta?.title ?? note.path) : 'Note'}
+          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">Edit</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">New note</Btn></span>}
+          testid="memory-note" className="g-scroll">
+          {saved && !editing && (
+            <div className="g-saved" data-testid="note-saved">Saved (version {saved.commit}).
+              <Btn onClick={async () => { await memory.undo(saved.path, saved.commit); setSaved(null); loadNote(saved.path); reloadNotes() }} data-testid="note-undo">Undo</Btn></div>
+          )}
+          {editing ? (
+            <NoteEditor key={editing + (note?.path ?? '')} path={editing === 'edit' ? note?.path : undefined} initial={editing === 'edit' ? note?.body ?? '' : ''} notes={notes ?? []}
+              onCancel={() => setEditing(null)}
+              onSaved={(p, commit) => { setSaved({ path: p, commit }); setEditing(null); reloadNotes(); if (p === path) loadNote(p); else open(p) }} />
+          ) : !note ? <Empty>Pick a note to read it, or press New note.</Empty> : (
             <>
               <pre className="g-notebody" data-testid="memory-note-body">{note.body}</pre>
               {(note.links_out.length > 0 || note.links_in.length > 0) && (
                 <div className="g-links">
                   {note.links_out.length > 0 && <div><span className="g-muted">Links to </span>{note.links_out.map(l => <button key={l} className="g-link" onClick={() => open(`${l}.md`)}>{l}</button>)}</div>}
-                  {note.links_in.length > 0 && <div><span className="g-muted">Linked from </span>{note.links_in.map(l => <button key={l} className="g-link" onClick={() => open(l)}>{l.replace(/\.md$/, '')}</button>)}</div>}
+                  {note.links_in.length > 0 && <div><span className="g-muted">Linked from </span>{note.links_in.map(l => <button key={l} className="g-link" onClick={() => open(`${l}.md`)}>{l.replace(/\.md$/, '')}</button>)}</div>}
                 </div>
               )}
               {hist.length > 0 && (

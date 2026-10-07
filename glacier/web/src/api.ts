@@ -170,6 +170,10 @@ export const memory = {
   note: (path: string) => req<MemNoteFull>('GET', `/api/memory/note?path=${enc(path)}`),
   search: (q: string, mode: 'keyword' | 'meaning' = 'keyword') => req<MemHit[]>('GET', `/api/memory/search?q=${enc(q)}&mode=${mode}`),
   history: (path: string) => req<MemCommit[]>('GET', `/api/memory/history?path=${enc(path)}`),
+  /** Save a note written by the owner. Returns the saved version id (commit). */
+  save: (path: string, body: string) => req<{ path: string; commit: string }>('PUT', '/api/memory/note', { path, body, author: 'owner' }),
+  /** Restore the version before `commit` (or before the latest save). */
+  undo: (path: string, commit?: string) => req<{ path: string; commit: string }>('POST', '/api/memory/undo', { path, commit }),
 }
 
 // ---------- System (/api/system/*) ----------

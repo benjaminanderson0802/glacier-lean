@@ -143,3 +143,10 @@ button.g-row:hover { background: var(--g-panel-hi); }
 .g-splash-menu { position: absolute; left: 50%; top: 46%; transform: translateX(-50%); width: 320px; gap: 4px; padding: 10px; }
 .g-splash-menu .g-navitem { padding: 6px 14px; }
 .g-splash-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; padding: 8px 16px; background: var(--g-bar); border-top: var(--g-border) solid var(--g-line); font-size: var(--g-size-small); }
+
+/* ---------- note editor ---------- */
+.g-editor { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+.g-editor-wrap { position: relative; flex: 1; min-height: 220px; display: flex; }
+.g-textarea { height: auto; flex: 1; padding: 8px 10px; resize: none; line-height: 1.15; }
+.g-suggest { position: absolute; left: 12px; bottom: 12px; width: min(360px, 90%); padding: 6px; gap: 2px; z-index: 5; }
+.g-saved { display: flex; align-items: center; gap: 12px; font-size: var(--g-size-small); color: var(--g-ok); }
