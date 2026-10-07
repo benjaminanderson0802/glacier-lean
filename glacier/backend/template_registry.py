@@ -15,7 +15,9 @@ import verify
 
 
 BACKEND_DIR = Path(__file__).resolve().parent
-BUNDLED_DIR = BACKEND_DIR.parents[1] / "templates"
+# Source checkout: <repo>/templates beside glacier/; installed desktop app: <app>/templates beside backend/.
+BUNDLED_DIR = next((d for d in (BACKEND_DIR.parents[1] / "templates", BACKEND_DIR.parent / "templates") if d.is_dir()),
+                   BACKEND_DIR.parents[1] / "templates")
 RISKY_COMMANDS = (
     (re.compile(r"\bcurl\b", re.IGNORECASE), "curl"),
     (re.compile(r"\bwget\b", re.IGNORECASE), "wget"),

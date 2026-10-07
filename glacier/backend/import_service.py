@@ -12,8 +12,11 @@ from pathlib import Path
 import vault
 import secrets_store
 
-# Import the parser package, which lives beside backend/ rather than inside it.
-_IMPORTER_ROOT = Path(__file__).resolve().parents[2]
+# Import the parser package, which lives beside backend/ rather than inside it: <repo>/glacier/importers in a
+# source checkout, <app>/glacier/importers in the installed desktop app.
+_HERE = Path(__file__).resolve()
+_IMPORTER_ROOT = next((root for root in (_HERE.parents[2], _HERE.parents[1])
+                       if (root / "glacier" / "importers" / "__init__.py").is_file()), _HERE.parents[2])
 if str(_IMPORTER_ROOT) not in __import__("sys").path:
     __import__("sys").path.insert(0, str(_IMPORTER_ROOT))
 from glacier.importers import chatgpt, claude
