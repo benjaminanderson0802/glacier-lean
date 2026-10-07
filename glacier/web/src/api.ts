@@ -200,9 +200,10 @@ export interface SystemCheck {
   recommended: { mode: string; local_model: string; max_parallel_runs: number }
   messages: string[]
 }
+export interface EffectiveSettings { mode: string; local_model: string; max_parallel_runs: number; ask_route?: 'codex' | 'local' | 'unavailable'; ask_route_reason?: string }
 export const system = {
   check: () => req<SystemCheck>('GET', '/api/system/check'),
-  settings: () => req<{ mode: string; local_model: string; max_parallel_runs: number }>('GET', '/api/system/settings'),
+  settings: () => req<EffectiveSettings>('GET', '/api/system/settings'),
 }
 
 // ---------- Assistant chat (POST /api/assistant/chat, server-sent AG-UI events) ----------

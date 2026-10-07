@@ -231,7 +231,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/costs') return send(200, { total_usd: 0, paid_cap_usd: 0, local_share: 0.8, by_route: [], by_model: [{ model: 'qwen3:0.6b', runs: 12, steps: 40, tokens_in: 52000, tokens_out: 9000, cost_usd: 0 }] })
     if (p === '/api/memory/compat') return send(200, { ok: true, notes_checked: vault.size, problems: [] })
-    if (p === '/api/system/settings') return send(200, { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 2 })
+    if (p === '/api/system/settings') return send(200, { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 2, ask_route: 'local', ask_route_reason: 'Codex is unavailable or signed out, so Ask will use Ollama on this computer.' })
     if (p === '/api/system/check') return send(200, { cpu_cores: 8, memory_gb: 16, disk_free_gb: 100, ollama_models: ['qwen3:0.6b'], tools: { ollama: { found: true, version: '0.12' }, git: { found: true, version: '2.43' } }, recommended: { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 2 }, messages: [] })
     // ---- memory cleanup + file drop + chat import (screen development only) ----
     if (p === '/api/memory/hygiene' && req.method === 'GET') return send(200, mockHygiene.filter(h => h.status === 'pending').map(({ status, ...h }) => h))

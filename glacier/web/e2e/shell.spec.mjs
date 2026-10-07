@@ -153,6 +153,8 @@ try {
   // settings sections: models, secrets (save + remove, value never shown), usage, data, about
   await page.getByTestId('nav-settings').click()
   await page.getByTestId('settings-models').first().click()
+  await page.getByTestId('ask-route').waitFor()
+  check(/local model/.test(await page.getByTestId('ask-route').textContent()), 'Settings > Models says which assistant Ask uses and why')
   check(/qwen3/.test(await page.getByTestId('model-in-use').textContent()), 'Settings > Models shows the model in use')
   for (const sec of ['usage', 'data', 'about']) {
     await page.getByTestId(`settings-${sec}`).first().click()
