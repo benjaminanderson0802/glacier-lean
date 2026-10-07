@@ -125,3 +125,65 @@ def test_output_truncated_at_limit(tmp_path, monkeypatch):
     assert result["state"] == "done"
     assert "[Page text truncated.]" in result["output"]
     assert len(result["output"]) <= 20000
+
+
+def test_connects_to_the_checked_address_not_a_fresh_dns_answer(monkeypatch):
+    # "pinned.test" does not exist in DNS; the fetch only works if the connection uses the checked address.
+    server, thread, url, _ = serve(monkeypatch)
+    port = url.split(":")[2].split("/")[0]
+    try:
+        result = NODE["run"](context(f"http://pinned.test:{port}/page", "pinned.test"))
+    finally:
+        stop(server, thread)
+    assert result["state"] == "done", result["output"]
+    assert "Local page" in result["output"]
+
+
+def test_address_that_turns_private_at_connect_time_is_refused(monkeypatch):
+    server, thread, url, allowed = serve(monkeypatch)
+    calls = []
+
+    def rebinding(host):
+        calls.append(host)
+        if len(calls) == 1:
+            return ["93.184.216.34"]
+        raise egress.EgressError("This site points to a private or reserved network address, so Glacier stopped.")
+
+    monkeypatch.setattr(egress, "_resolve_public", rebinding)
+    try:
+        result = NODE["run"](context(url, allowed))
+    finally:
+        stop(server, thread)
+    assert result["state"] == "failed"
+    assert "private or reserved" in result["output"]
+
+
+def test_environment_proxy_is_not_used(monkeypatch):
+    server, thread, url, allowed = serve(monkeypatch)
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:9")
+    monkeypatch.setenv("http_proxy", "http://127.0.0.1:9")
+    try:
+        result = NODE["run"](context(url, allowed))
+    finally:
+        stop(server, thread)
+    assert result["state"] == "done", result["output"]
+
+
+def test_error_status_is_a_failed_step(monkeypatch):
+    class Missing(Handler):
+        def do_GET(self):
+            self.send_response(404)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<p>gone</p>")
+
+    server = socketserver.TCPServer(("127.0.0.1", 0), Missing)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.setattr(egress, "_resolve_public", lambda _host: ["127.0.0.1"])
+    try:
+        result = NODE["run"](context(f"http://127.0.0.1:{server.server_address[1]}/x", "127.0.0.1"))
+    finally:
+        stop(server, thread)
+    assert result["state"] == "failed"
+    assert "error (404)" in result["output"]

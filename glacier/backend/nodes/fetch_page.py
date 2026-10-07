@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import http.client
+import socket
 import tempfile
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPHandler, HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request, build_opener
 
+import egress
 import files_store
 from egress import EgressError, allowed_domains, validate_url
 
@@ -50,10 +53,39 @@ class _CheckedRedirectHandler(HTTPRedirectHandler):
     http_error_308 = http_error_302
 
 
+def _pinned_socket(host: str, port: int, timeout, source_address):
+    # Resolve and check the address at connect time and connect to exactly that address,
+    # so a site cannot pass the check and then switch its DNS to a private address.
+    address = egress._resolve_public(host)[0]
+    return socket.create_connection((address, port), timeout, source_address)
+
+
+class _PinnedHTTPConnection(http.client.HTTPConnection):
+    def connect(self):
+        self.sock = _pinned_socket(self.host, self.port, self.timeout, self.source_address)
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self):
+        sock = _pinned_socket(self.host, self.port, self.timeout, self.source_address)
+        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+
+
+class _PinnedHTTPHandler(HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_PinnedHTTPConnection, req)
+
+
+class _PinnedHTTPSHandler(HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_PinnedHTTPSConnection, req, context=self._context)
+
+
 def _fetch(url: str, domains: set[str]) -> tuple[bytes, str, str, int]:
     validate_url(url, domains)
     handler = _CheckedRedirectHandler(domains)
-    opener = build_opener(handler)
+    # No proxies from the environment: the address checks must apply to the real destination.
+    opener = build_opener(ProxyHandler({}), _PinnedHTTPHandler(), _PinnedHTTPSHandler(), handler)
     request = Request(url, headers={"User-Agent": _USER_AGENT})
     try:
         response = opener.open(request, timeout=10)
@@ -68,6 +100,8 @@ def _fetch(url: str, domains: set[str]) -> tuple[bytes, str, str, int]:
     with response:
         final_url = response.geturl()
         validate_url(final_url, domains)
+        if response.status >= 400:
+            raise EgressError(f"The site answered with an error ({response.status}), so there is no page to read.")
         content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
         if content_type not in _ALLOWED_TYPES:
             raise EgressError("This page type cannot be read. Use HTML, plain text, PDF, JSON, or Markdown.")
