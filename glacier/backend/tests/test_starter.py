@@ -83,3 +83,21 @@ def test_unknown_template_id_returns_plain_400(server):
     response = httpx.post(server.url + "/api/starter/apply", json={"template_ids": ["not-a-template"], "mode": "low"})
     assert response.status_code == 400
     assert response.json()["detail"] == "We could not find the selected starter automation."
+
+
+def test_local_steps_use_the_saved_or_recommended_model_when_none_is_named(monkeypatch):
+    import system_check
+    monkeypatch.delenv("GLACIER_LOCAL_MODEL", raising=False)
+    monkeypatch.setattr(system_check, "effective_settings", lambda: {"local_model": "granite3.3:2b", "mode": "standard"})
+    assert system_check.default_local_model() == "granite3.3:2b"
+    monkeypatch.setenv("GLACIER_LOCAL_MODEL", "my-model")
+    assert system_check.default_local_model() == "my-model"
+
+
+def test_failing_hardware_check_falls_back_to_the_small_model(monkeypatch):
+    import system_check
+    monkeypatch.delenv("GLACIER_LOCAL_MODEL", raising=False)
+    def broken():
+        raise RuntimeError("no hardware info")
+    monkeypatch.setattr(system_check, "effective_settings", broken)
+    assert system_check.default_local_model() == "qwen3:0.6b"

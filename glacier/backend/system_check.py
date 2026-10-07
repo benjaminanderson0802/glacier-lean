@@ -191,3 +191,14 @@ def effective_settings():
         except ValueError:
             pass
     return result
+
+
+def default_local_model() -> str:
+    """The model local steps use when a step names none: GLACIER_LOCAL_MODEL, else the saved or recommended choice."""
+    configured = os.environ.get("GLACIER_LOCAL_MODEL", "").strip()
+    if configured:
+        return configured
+    try:
+        return str(effective_settings().get("local_model") or "qwen3:0.6b")
+    except Exception:  # a failing hardware check must never stop a step
+        return "qwen3:0.6b"
