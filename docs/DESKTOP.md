@@ -86,3 +86,14 @@ The standalone runtime includes `LICENSE.txt` under the PSF License. The builder
 The `desktop` workflow runs on pull requests that change `desktop/`, `glacier/`, `setup/pybundle/`, or the workflow itself, and can also be started manually from the repository's Actions page. It builds the pinned Windows Python runtime, packages the NSIS installer, and smoke-tests installation, backend readiness, and the engine token on a temporary CI runner. The workflow is marked non-blocking while its first Windows runs are reviewed. It does not install anything on the owner's PC.
 
 To download the installer, open the completed `desktop` workflow run on GitHub and download the `glacier-windows-installer` artifact from its Artifacts section. The artifact is retained for 7 days. The Windows runner smoke test does not replace the owner's later install and first-run check on his PC.
+
+## Linux and macOS build artifacts in GitHub Actions
+
+The same `desktop` workflow also builds Linux packages on `ubuntu-latest` and an Apple Silicon macOS app on `macos-latest`. Both jobs are non-blocking while their first runs are reviewed. Linux CI builds the bundled x86_64 Python runtime, `.deb`, and AppImage; it extracts each package and checks backend readiness and token protection without FUSE. macOS CI builds the bundled Apple Silicon runtime, `.app`, and `.dmg`, then checks backend readiness and token protection from inside the app bundle. Builds are unsigned for now. The smoke tests run only on temporary CI workers and install nothing on an owner machine.
+
+To download a build, open the completed **desktop** workflow run on GitHub and choose its artifact:
+
+- `glacier-linux-packages` contains the `.deb` and `.AppImage` files.
+- `glacier-macos-dmg` contains the `.dmg` disk image.
+
+These artifacts are kept for 7 days. Download them from the Actions run's **Artifacts** section before they expire.

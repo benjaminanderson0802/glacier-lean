@@ -8,6 +8,7 @@ from pathlib import Path
 
 sidecar = json.loads(Path("sidecar.json").read_text(encoding="utf-8"))
 script = Path("scripts/smoke_windows.ps1").read_text(encoding="utf-8")
+unix_script = Path("scripts/smoke_unix.sh").read_text(encoding="utf-8")
 lib_rs = Path("src-tauri/src/lib.rs").read_text(encoding="utf-8")
 runtime = sidecar["runtime_by_platform"]["x86_64-pc-windows-msvc"]
 args = ['"-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "$port"']
@@ -26,6 +27,25 @@ for key, value in sidecar["low_resource_env"].items():
 if missing:
     raise SystemExit("Windows smoke script does not match sidecar/lib.rs startup settings: " + ", ".join(missing))
 print("Windows smoke startup arguments match sidecar.json and lib.rs")
+
+unix_args = 'backend_args=(-m uvicorn app:app --host 127.0.0.1 --port "$port")'
+unix_required = [
+    unix_args,
+    '"$python_path" "${backend_args[@]}"',
+    'cd "$backend_dir"',
+    'export GLACIER_HOME="$data_dir"',
+]
+missing_unix = [value for value in unix_required if value not in unix_script]
+if lib_args not in lib_rs:
+    missing_unix.append("lib.rs backend argument list")
+if 'runtime_relative="runtime/$platform/bin/python3.12"' not in unix_script:
+    missing_unix.append("sidecar Unix runtime path")
+for key, value in sidecar["low_resource_env"].items():
+    if f'export {key}="{value}"' not in unix_script:
+        missing_unix.append(f"sidecar low-resource setting {key}")
+if missing_unix:
+    raise SystemExit("Unix smoke script does not match sidecar.json and lib.rs startup settings: " + ", ".join(missing_unix))
+print("Unix smoke startup arguments match sidecar.json and lib.rs")
 PY
 
 bundle_dir="src-tauri/target/release/bundle"
