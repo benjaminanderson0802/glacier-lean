@@ -1,5 +1,5 @@
-# Runs on every push and pull request. A change can only be merged when the Linux jobs pass.
-# The Windows job maps what still breaks on Windows (roadmap: Windows run of the core); it does not block yet.
+# Runs on every push and pull request. Linux jobs block merges; the Windows job reports real test results
+# while Windows portability issues are being resolved.
 name: tests
 on:
   push:
@@ -53,7 +53,9 @@ jobs:
       - run: git config --global user.email "ci@glacier.local"; git config --global user.name "glacier-ci"
       - name: backend tests (Windows)
         working-directory: glacier/backend
-        run: python -m pytest -q tests -rf 2>&1 | Tee-Object -FilePath windows-results.txt; exit 0
+        run: |
+          python -m pytest -q tests -rf 2>&1 | Tee-Object -FilePath windows-results.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         shell: pwsh
       - uses: actions/upload-artifact@v4
         with: {name: windows-results, path: glacier/backend/windows-results.txt}
