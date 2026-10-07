@@ -30,6 +30,10 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="Glacier", lifespan=lifespan)
+# The desktop app (Tauri) serves the screen from its own origin; only those origins may call the API cross-origin.
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+app.add_middleware(CORSMiddleware, allow_origins=["tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"],
+                   allow_methods=["*"], allow_headers=["*"])
 plugins.load_routes(app)  # route plug-ins (routes/)
 
 

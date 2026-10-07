@@ -22,6 +22,12 @@ Audience: **non-technical people first** (project rule). Plain words, no jargon,
    - Only free, open-source libraries with permissive licenses (MIT, Apache-2.0, BSD, ISC). The project is Apache-2.0.
    - Must work in a window 1024 px wide and up.
 
+## 2a. Running inside the desktop app
+The desktop app (Tauri) shows the screen from its own bundled files and starts the engine on a free local port. It sets `window.__GLACIER_API__` (for example `http://127.0.0.1:43123`) before the screen loads.
+- Prefix every API call with `window.__GLACIER_API__ ?? ""` (empty means same origin, as in the browser).
+- Build the live-events WebSocket address from it too (`ws://` + its host), falling back to `location.host`.
+- The engine accepts cross-origin calls only from the desktop app's own origins.
+
 ## 3. Required features (what users must be able to do)
 **Flows list:** see all flows; create a new one by name; switch between them (warn before discarding unsaved changes).
 **Canvas (Build view):** add a node of any type from the palette; drag nodes; connect two nodes by dragging from one's output to another's input; select a node to edit its settings; select an edge to change its branch label; delete a node or edge; save (show that a save happened and its short commit id); run (saving first if needed). Arrows that close a loop must look different from ordinary arrows.
