@@ -54,7 +54,9 @@ def graph_of(run_id: str) -> dict:
 
 def set_run(run_id: str, status: str, waiting_on: str | None = None) -> None:
     with _conn() as c:
-        c.execute("UPDATE glacier_runs SET status=?, waiting_on=? WHERE run_id=?", (status, waiting_on, run_id))
+        # A canceled run stays canceled: a step that was still finishing must not bring it back to life.
+        c.execute("UPDATE glacier_runs SET status=?, waiting_on=? WHERE run_id=? AND status != 'canceled'",
+                  (status, waiting_on, run_id))
 
 
 def set_node(run_id: str, env_id: str, node_id: str, state: str, output: str | None = None) -> None:
