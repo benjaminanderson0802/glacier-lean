@@ -49,8 +49,11 @@ export class ApiError extends Error {
   constructor(status: number, msg: string) { super(msg); this.status = status }
 }
 
+/** Desktop app sets window.__GLACIER_API__ (e.g. http://127.0.0.1:43123); empty = same origin. */
+const BASE: string = ((globalThis as { __GLACIER_API__?: string }).__GLACIER_API__ ?? '').replace(/\/$/, '')
+
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(BASE + path, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -76,6 +79,58 @@ export const api = {
     req<{ ok: boolean }>('POST', `/api/runs/${enc(runId)}/approve`, { node_id: nodeId, approved }),
   listNotes: () => req<string[]>('GET', '/api/vault/notes'),
   getNote: (path: string) => req<{ path: string; body: string }>('GET', `/api/vault/note?path=${enc(path)}`),
+  home: () => req<HomeSummary>('GET', '/api/home'),
+}
+
+// ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
+export interface HomeItem { kind: 'approval' | 'claim' | 'failed_run'; title: string; detail: string; at: string; ref: { run_id?: string; node_id?: string; claim_id?: string; env_id?: string } }
+export interface HomeRun { run_id: string; env_id: string; name: string; status: 'running' | 'queued' | 'waiting'; step: number; steps: number; started_at: string }
+export interface HomeNote { path: string; summary: string; at: string }
+export interface HomeSummary {
+  local_ai: { online: boolean; model: string | null }
+  counts: { running: number; need_you: number }
+  needs_you: HomeItem[]
+  running: HomeRun[]
+  recent_notes: HomeNote[]
+}
+
+/** Home data. Uses GET /api/home; on an older engine without it, builds the same shape from the core endpoints. */
+export async function loadHome(): Promise<HomeSummary> {
+  try { return await api.home() } catch (e) { if (!(e instanceof ApiError) || e.status !== 404) throw e }
+  const envs = await api.listEnvs()
+  const names = Object.fromEntries(envs.map(e => [e.id, e.name]))
+  const runs = (await Promise.all(envs.map(e => api.listRuns(e.id).catch(() => [] as RunSummary[])))).flat()
+  const needs: HomeItem[] = runs.filter(r => r.status === 'waiting' || r.status === 'failed').map(r => ({
+    kind: r.status === 'waiting' ? 'approval' : 'failed_run',
+    title: r.status === 'waiting' ? 'approval waiting' : 'failed run',
+    detail: names[r.env_id] ?? r.env_id, at: r.started_at, ref: { run_id: r.run_id, env_id: r.env_id },
+  }))
+  const active = runs.filter(r => r.status === 'running')
+  const running: HomeRun[] = await Promise.all(active.map(async r => {
+    const st = await api.getRun(r.run_id).catch(() => null)
+    const states = st ? Object.values(st.node_states) : []
+    return { run_id: r.run_id, env_id: r.env_id, name: names[r.env_id] ?? r.env_id, status: 'running', step: states.filter(s => s === 'done').length, steps: states.length, started_at: r.started_at }
+  }))
+  const notes = await api.listNotes().catch(() => [] as string[])
+  const byNew = (a: { at: string }, b: { at: string }) => (b.at ?? '').localeCompare(a.at ?? '')
+  return {
+    local_ai: { online: false, model: null },
+    counts: { running: running.length, need_you: needs.length },
+    needs_you: needs.sort(byNew).slice(0, 20),
+    running,
+    recent_notes: notes.slice(0, 10).map(p => ({ path: p, summary: p.replace(/\.md$/, ''), at: '' })),
+  }
+}
+
+/** "2h ago" style label for an ISO time; empty when unknown. */
+export function ago(iso: string, now = Date.now()): string {
+  const t = Date.parse(iso)
+  if (!iso || Number.isNaN(t)) return ''
+  const s = Math.max(0, Math.round((now - t) / 1000))
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.round(s / 60)}m ago`
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`
+  return `${Math.round(s / 86400)}d ago`
 }
 
 /** Subscribe to WS /api/events with auto-reconnect. Returns an unsubscribe function. */
@@ -85,7 +140,8 @@ export function subscribeEvents(onEvent: (e: RunEvent) => void, onStatus: (conne
   let timer: ReturnType<typeof setTimeout> | undefined
   const connect = () => {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-    ws = new WebSocket(`${proto}://${location.host}/api/events`)
+    const host = BASE ? new URL(BASE).host : location.host
+    ws = new WebSocket(`${BASE.startsWith('https') ? 'wss' : BASE ? 'ws' : proto}://${host}/api/events`)
     ws.onopen = () => onStatus(true)
     ws.onmessage = m => {
       try { onEvent(JSON.parse(String(m.data)) as RunEvent) } catch { /* ignore malformed */ }
@@ -103,3 +159,67 @@ export function subscribeEvents(onEvent: (e: RunEvent) => void, onStatus: (conne
 export function slugify(name: string): string {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'env'
 }
+
+// ---------- Memory (docs/CONTRACT.md: /api/memory/*) ----------
+export interface MemNote { path: string; title: string; author: string; updated: string; tags: string[] }
+export interface MemNoteFull { path: string; body: string; meta: Record<string, unknown>; links_out: string[]; links_in: string[] }
+export interface MemHit { path: string; title: string; score: number; snippet: string; fallback?: boolean }
+export interface MemCommit { commit: string; author: string; date: string; message: string }
+export const memory = {
+  notes: () => req<MemNote[]>('GET', '/api/memory/notes'),
+  note: (path: string) => req<MemNoteFull>('GET', `/api/memory/note?path=${enc(path)}`),
+  search: (q: string, mode: 'keyword' | 'meaning' = 'keyword') => req<MemHit[]>('GET', `/api/memory/search?q=${enc(q)}&mode=${mode}`),
+  history: (path: string) => req<MemCommit[]>('GET', `/api/memory/history?path=${enc(path)}`),
+}
+
+// ---------- System (/api/system/*) ----------
+export interface SystemCheck {
+  cpu_cores: number | null; memory_gb: number | null; disk_free_gb: number | null; ollama_models: string[]
+  tools: Record<string, { found: boolean; version: string }>
+  recommended: { mode: string; local_model: string; max_parallel_runs: number }
+  messages: string[]
+}
+export const system = {
+  check: () => req<SystemCheck>('GET', '/api/system/check'),
+  settings: () => req<{ mode: string; local_model: string; max_parallel_runs: number }>('GET', '/api/system/settings'),
+}
+
+// ---------- Assistant chat (POST /api/assistant/chat, server-sent AG-UI events) ----------
+export interface ChatProposal { id: string; explanation?: string; flow?: { id?: string; name?: string; nodes?: unknown[]; edges?: unknown[] }; [k: string]: unknown }
+export type ChatEvent =
+  | { type: 'text'; delta: string }
+  | { type: 'proposal'; proposal: ChatProposal }
+  | { type: 'error'; message: string }
+  | { type: 'done' }
+
+export async function chat(message: string, conversationId: string | null, onEvent: (e: ChatEvent) => void): Promise<void> {
+  const res = await fetch(BASE + '/api/assistant/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, conversation_id: conversationId }),
+  })
+  if (!res.ok || !res.body) throw new ApiError(res.status, `POST /api/assistant/chat -> ${res.status}`)
+  const reader = res.body.getReader()
+  const dec = new TextDecoder()
+  let buf = ''
+  const args: Record<string, string> = {}
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buf += dec.decode(value, { stream: true })
+    let i
+    while ((i = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, i); buf = buf.slice(i + 2)
+      const line = chunk.split('\n').find(l => l.startsWith('data: '))
+      if (!line) continue
+      let ev: Record<string, string>
+      try { ev = JSON.parse(line.slice(6)) } catch { continue }
+      if (ev.type === 'TEXT_MESSAGE_CONTENT') onEvent({ type: 'text', delta: ev.delta })
+      else if (ev.type === 'TOOL_CALL_ARGS') args[ev.toolCallId] = (args[ev.toolCallId] ?? '') + ev.delta
+      else if (ev.type === 'TOOL_CALL_END') { try { onEvent({ type: 'proposal', proposal: JSON.parse(args[ev.toolCallId]) }) } catch { /* partial */ } }
+      else if (ev.type === 'RUN_ERROR') onEvent({ type: 'error', message: ev.message })
+      else if (ev.type === 'RUN_FINISHED') onEvent({ type: 'done' })
+    }
+  }
+}
+export const applyProposal = (id: string, approve: boolean) =>
+  req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, { approve })
