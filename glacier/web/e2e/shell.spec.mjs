@@ -120,6 +120,26 @@ try {
   await page.getByTestId('cleanup-undo-0').waitFor()
   check(true, 'cleanup applies a suggestion and offers Undo')
 
+  // settings sections: models, secrets (save + remove, value never shown), usage, data, about
+  await page.getByTestId('nav-settings').click()
+  await page.getByTestId('settings-models').first().click()
+  check(/qwen3/.test(await page.getByTestId('model-in-use').textContent()), 'Settings > Models shows the model in use')
+  for (const sec of ['usage', 'data', 'about']) {
+    await page.getByTestId(`settings-${sec}`).first().click()
+    await page.locator(`[data-testid="settings-${sec}"].g-panel`).waitFor()
+  }
+  check(true, 'Settings > Usage, Data and About open')
+  await page.getByTestId('settings-secrets').first().click()
+  await page.getByTestId('secret-name').fill('TEST_KEY')
+  await page.getByTestId('secret-value').fill('super-secret-value')
+  await page.getByTestId('secret-save').click()
+  await page.getByTestId('secret-TEST_KEY').waitFor()
+  check(!(await page.content()).includes('super-secret-value'), 'Settings > Secrets saves a secret and never shows its value')
+  await page.getByTestId('secret-del-TEST_KEY').click()
+  await page.getByTestId('secret-del-yes-TEST_KEY').click()
+  await page.getByTestId('secret-TEST_KEY').waitFor({ state: 'detached' })
+  check(true, 'Settings > Secrets removes a secret after confirming')
+
   // claims: list from Home, detail, decision
   await page.getByTestId('nav-home').click()
   await page.getByTestId('all-claims').click()

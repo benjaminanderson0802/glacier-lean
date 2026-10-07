@@ -22,6 +22,7 @@ const mockClaims = new Map([['c0ffee01', {
   body: '## Problem\nBest eBay product opportunities\n\n## Evidence\n- completed successfully\n- 5 product ideas generated\n- sources included\n\n## Research\n- analyzed 12 categories\n- found 5 high-demand products\n- checked competition and pricing\n\n## Resolution\n',
   summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
 }]])
+const mockSecrets = new Set(['SMTP_PASSWORD'])
 const mockHygiene = [
   { id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.', status: 'pending' },
   { id: 'h2', kind: 'archive', paths: ['old/chat-log.md'], reason: 'Not opened or linked for over 90 days.', status: 'pending' },
@@ -215,6 +216,16 @@ const server = http.createServer(async (req, res) => {
       assistantProposals.delete(proposal.id)
       return send(200, { saved: true, commit })
     }
+    // ---- settings (screen development only) ----
+    if (p === '/api/secrets' && req.method === 'GET') return send(200, [...mockSecrets].sort())
+    if ((m = p.match(/^\/api\/secrets\/([A-Za-z0-9_.-]+)$/))) {
+      if (req.method === 'PUT') { const b = await readBody(); if (!b?.value) return send(422, { detail: 'value required' }); mockSecrets.add(m[1]); return send(200, { saved: true }) }
+      if (req.method === 'DELETE') { mockSecrets.delete(m[1]); return send(200, { deleted: true }) }
+    }
+    if (p === '/api/costs') return send(200, { total_usd: 0, paid_cap_usd: 0, local_share: 0.8, by_route: [], by_model: [{ model: 'qwen3:0.6b', runs: 12, steps: 40, tokens_in: 52000, tokens_out: 9000, cost_usd: 0 }] })
+    if (p === '/api/memory/compat') return send(200, { ok: true, notes_checked: vault.size, problems: [] })
+    if (p === '/api/system/settings') return send(200, { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 2 })
+    if (p === '/api/system/check') return send(200, { cpu_cores: 8, memory_gb: 16, disk_free_gb: 100, ollama_models: ['qwen3:0.6b'], tools: { ollama: { found: true, version: '0.12' }, git: { found: true, version: '2.43' } }, recommended: { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 2 }, messages: [] })
     // ---- memory cleanup + file drop + chat import (screen development only) ----
     if (p === '/api/memory/hygiene' && req.method === 'GET') return send(200, mockHygiene.filter(h => h.status === 'pending').map(({ status, ...h }) => h))
     if (p === '/api/memory/hygiene/scan' && req.method === 'POST') return send(200, mockHygiene.filter(h => h.status === 'pending').map(({ status, ...h }) => h))

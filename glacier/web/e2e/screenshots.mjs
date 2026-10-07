@@ -40,6 +40,10 @@ const F = {
   '/api/memory/hygiene': [{ id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.' },
     { id: 'h2', kind: 'archive', paths: ['logs/chat-2026-03.md'], reason: 'Old chat log, not opened or linked for over 90 days.' },
     { id: 'h3', kind: 'merge', paths: ['people/sam.md', 'people/sam-k.md', 'people/samuel.md'], reason: 'Three notes about the same person.' }],
+  '/api/secrets': ['GMAIL_APP_PASSWORD', 'SMTP_PASSWORD'],
+  '/api/costs': { total_usd: 0, paid_cap_usd: 0, local_share: 0.82, by_route: [], by_model: [{ model: 'qwen3:0.6b', runs: 31, steps: 120, tokens_in: 152000, tokens_out: 29000, cost_usd: 0 }, { model: 'gpt-6-luna (free)', runs: 4, steps: 9, tokens_in: 40000, tokens_out: 6000, cost_usd: 0 }] },
+  '/api/system/settings': { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 4 },
+  '/api/memory/compat': { ok: true, notes_checked: 536, problems: [] },
   '/api/node-types': [
     { type: 'schedule', label: 'Schedule', description: 'Start on a timer', fields: [{ key: 'every', label: 'Every', placeholder: 'daily 9am', default: '' }], branches: null },
     { type: 'command', label: 'Command', description: 'Run a command', fields: [{ key: 'command', label: 'Command', placeholder: 'echo hi', default: '' }], branches: null },
