@@ -14,6 +14,8 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import urllib.error
 import urllib.request
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import engine_token  # noqa: E402  (fresh install token for the engine this benchmark starts)
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
@@ -44,6 +46,8 @@ def request(base, case):
         req.add_header("Content-Type", "application/json")
     for name, value in spec.get("headers", {}).items():
         req.add_header(name, value)
+    if spec.get("no_token"):  # case checks that a call without the install token is refused
+        req.add_header("X-Glacier-No-Token", "1")
     try:
         response = urllib.request.urlopen(req, timeout=8)
     except urllib.error.HTTPError as exc:
@@ -115,6 +119,7 @@ def start_backend(home, port):
     env = {"PATH": os.environ.get("PATH", ""), "HOME": str(home), "GLACIER_HOME": str(home),
            "GLACIER_ALERT_URLS": "", "CODEX_BIN": str(backend / "tests" / "fake_codex.py"),
            "PYTHONPATH": str(hook)}
+    env = engine_token.server_env(env)
     return subprocess.Popen([str(PYTHON), "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", str(port)],
                             cwd=backend, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
                             start_new_session=True)
@@ -283,7 +288,7 @@ def ready(proc, base):
         if proc.poll() is not None:
             raise RuntimeError(f"Glacier backend exited with status {proc.returncode}")
         try:
-            urllib.request.urlopen(base + "/api/node-types", timeout=2).close()
+            urllib.request.urlopen(base + "/api/health", timeout=2).close()
             return
         except OSError:
             time.sleep(.2)

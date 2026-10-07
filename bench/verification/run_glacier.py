@@ -15,6 +15,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import engine_token  # noqa: E402  (fresh install token for the engine this benchmark starts)
 
 
 HERE = Path(__file__).resolve().parent
@@ -61,7 +63,7 @@ def shell_quote(value: str) -> str:
 
 def start_backend(home: Path, port: int) -> subprocess.Popen:
     backend_dir = REPO / "glacier" / "backend"
-    env = {**os.environ, "GLACIER_HOME": str(home)}
+    env = engine_token.server_env({**os.environ, "GLACIER_HOME": str(home)})
     return subprocess.Popen(
         [str(PYTHON), "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=backend_dir,

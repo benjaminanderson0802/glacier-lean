@@ -15,6 +15,11 @@ const API = process.env.API_URL ?? `http://localhost:${MOCK_PORT}`
 const UI = `http://localhost:${UI_PORT}`
 const procs = []
 const log = (...a) => console.log('[e2e]', ...a)
+// Direct checks against the engine carry its install token (real engine only; the mock ignores it).
+import { readFileSync } from 'node:fs'
+import os from 'node:os'
+const ENGINE_TOKEN = process.env.GLACIER_TOKEN || (() => { try { return readFileSync(path.join(process.env.GLACIER_HOME || path.join(os.homedir(), '.glacier'), '.engine-token'), 'utf8').trim() } catch { return '' } })()
+const apiFetch = (url, init = {}) => fetch(url, ENGINE_TOKEN ? { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${ENGINE_TOKEN}` } } : init)
 
 function start(cmd, args, env = {}) {
   const p = spawn(cmd, args, { cwd: root, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
@@ -42,7 +47,7 @@ const check = (cond, label) => { log(`${cond ? 'ok  ' : 'FAIL'} ${label}`); if (
 try {
   if (!existsSync(path.join(root, 'dist/index.html'))) throw new Error('dist/ missing - run `npx vite build` first')
   if (!process.env.SKIP_MOCK) start('node', ['mock/mock_server.mjs', String(MOCK_PORT)])
-  await waitHttp(`${API}/api/environments`)
+  await waitHttp(`${API}/api/health`).catch(() => waitHttp(`${API}/api/environments`))
   start('npx', ['vite', 'preview', '--port', String(UI_PORT), '--strictPort'], { GLACIER_API: API })
   await waitHttp(UI)
 
@@ -94,7 +99,7 @@ try {
   await page.waitForFunction(() => /^[0-9a-f]{7,}$/.test(document.querySelector('[data-testid="last-commit"]')?.textContent ?? ''))
   const commit = await tid('last-commit').textContent()
   check(true, `saved, commit ${commit}`)
-  const saved = await (await fetch(`${API}/api/environments/e2e-flow`)).json()
+  const saved = await (await apiFetch(`${API}/api/environments/e2e-flow`)).json()
   check(saved.nodes.length === 2 && saved.edges.length === 1 && saved.nodes[0].config.cmd === 'echo hello-glacier' && saved.edges[0].source === 'n1' && saved.edges[0].target === 'n2',
     'backend received environment with 2 nodes, 1 edge, command config')
 
@@ -191,9 +196,9 @@ try {
   await tid('run').click() // auto-saves first
   await waitState('n2', 'done', 20000)
   await page.waitForFunction(() => document.querySelector('[data-testid="run-status"]')?.textContent === 'done', null, { timeout: 10000 })
-  const cx = (await (await fetch(`${API}/api/environments/codex-flow`)).json()).nodes.find(n => n.id === 'n2')
+  const cx = (await (await apiFetch(`${API}/api/environments/codex-flow`)).json()).nodes.find(n => n.id === 'n2')
   check(cx.type === 'codex' && cx.config.sandbox === 'read-only' && cx.config.prompt === 'Review {env}: {prev_output}', 'backend saved codex node with prompt + sandbox')
-  const cxRun = await (await fetch(`${API}/api/runs/${await tid('active-run-id').textContent()}`)).json()
+  const cxRun = await (await apiFetch(`${API}/api/runs/${await tid('active-run-id').textContent()}`)).json()
   check(/^codex exit 0\n/.test(cxRun.outputs.n2) && cxRun.outputs.n2.includes('Review codex-flow: ') && cxRun.outputs.n2.includes('build-ok'), `codex node done with prompt filled (got ${JSON.stringify(cxRun.outputs.n2)})`)
   await tid('node-n2').click()
   await page.waitForFunction(() => document.querySelector('[data-testid="terminal-panel"] .xterm-rows')?.textContent.includes('codex exit 0'), null, { timeout: 5000 })
@@ -222,7 +227,7 @@ try {
     await tid('run').click()
     await waitState('n4', 'done', 30000)
     await page.waitForFunction(() => document.querySelector('[data-testid="run-status"]')?.textContent === 'done', null, { timeout: 10000 })
-    const lr = await (await fetch(`${API}/api/runs/${await tid('active-run-id').textContent()}`)).json()
+    const lr = await (await apiFetch(`${API}/api/runs/${await tid('active-run-id').textContent()}`)).json()
     check(lr.outputs.n2.includes('2 of 2') && lr.node_states.n3 === 'done', `loop ran twice then exited (got ${JSON.stringify(lr.outputs.n2)})`)
     await tid('node-n4').click()
     await tid('open-subrun').click()

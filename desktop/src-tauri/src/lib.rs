@@ -33,8 +33,34 @@ fn navigation_is_allowed(url: &tauri::Url, port: u16) -> bool {
     url.scheme() == "http" && url.host_str() == Some("127.0.0.1") && url.port() == Some(port)
 }
 
-fn api_initialization_script(port: u16) -> String {
-    format!("window.__GLACIER_API__ = \"http://127.0.0.1:{port}\";")
+fn api_initialization_script(port: u16, token: &str) -> String {
+    let token = serde_json::to_string(token).unwrap_or_else(|_| "\"\"".into());
+    format!("window.__GLACIER_API__ = \"http://127.0.0.1:{port}\"; window.__GLACIER_TOKEN__ = {token};")
+}
+
+/// The per-install engine token (GLACIER_HOME/.engine-token), shared with the engine and command-line tools.
+/// Created here on first launch with 32 random bytes; owner-only on Unix, user-profile ACL on Windows.
+fn engine_token(data_dir: &Path) -> Result<String, String> {
+    let path = data_dir.join(".engine-token");
+    if let Ok(existing) = fs::read_to_string(&path) {
+        let existing = existing.trim().to_string();
+        if !existing.is_empty() {
+            return Ok(existing);
+        }
+    }
+    let mut bytes = [0u8; 32];
+    getrandom::fill(&mut bytes).map_err(|e| e.to_string())?;
+    let token: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(&path).map_err(|e| e.to_string())?;
+    std::io::Write::write_all(&mut file, token.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(token)
 }
 
 #[tauri::command]
@@ -113,9 +139,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![available_tools])
         .setup(|app| {
             let port = free_listener().local_addr()?.port();
+            let data_dir = app.path().app_data_dir()?;
+            fs::create_dir_all(&data_dir)?;
+            let token = engine_token(&data_dir).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             let window = WebviewWindowBuilder::new(app.handle(), "main", WebviewUrl::App("first-run/index.html".into()))
                 .title("Welcome to Glacier").inner_size(1280.0, 820.0)
-                .initialization_script(api_initialization_script(port))
+                .initialization_script(api_initialization_script(port, &token))
                 .on_navigation(move |url| navigation_is_allowed(url, port))
                 .build()?;
             match launch_backend(&app.handle(), port) {
@@ -184,7 +213,22 @@ mod tests {
 
     #[test]
     fn api_address_is_injected_into_bundled_pages() {
-        assert_eq!(api_initialization_script(43127), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\";");
+        assert_eq!(api_initialization_script(43127, "abc"), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\"; window.__GLACIER_TOKEN__ = \"abc\";");
+    }
+
+    #[test]
+    fn engine_token_is_created_once_and_reused() {
+        let dir = std::env::temp_dir().join(format!("glacier-token-test-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let first = engine_token(&dir).unwrap();
+        assert_eq!(first.len(), 64);
+        assert_eq!(engine_token(&dir).unwrap(), first);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(fs::metadata(dir.join(".engine-token")).unwrap().permissions().mode() & 0o777, 0o600);
+        }
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -1,9 +1,11 @@
 # Glacier security benchmark results
 
-Blocked: 28/28
+Blocked: 30/30
 
 | Case | Expected | Observed | Result |
 |---|---|---|---|
+| api-no-token | blocked | HTTP 401 | blocked |
+| api-stolen-origin-no-token | blocked | HTTP 401 | blocked |
 | claim-invalid-kind | blocked | HTTP 400 | blocked |
 | claim-path-injection | blocked | HTTP 400 | blocked |
 | codex-secret-prompt | blocked | HTTP 200 | blocked |

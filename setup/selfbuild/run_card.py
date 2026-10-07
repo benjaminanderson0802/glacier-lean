@@ -50,6 +50,19 @@ def prepare_checkout(home: Path, source: Path) -> Path:
     return target
 
 
+def _auth_headers() -> dict:
+    """The engine's install token: GLACIER_TOKEN, else <GLACIER_HOME or ~/.glacier>/.engine-token."""
+    token = os.environ.get("GLACIER_TOKEN", "").strip()
+    if not token:
+        home = os.environ.get("GLACIER_HOME") or os.path.join(os.path.expanduser("~"), ".glacier")
+        try:
+            with open(os.path.join(home, ".engine-token"), encoding="utf-8") as handle:
+                token = handle.read().strip()
+        except OSError:
+            token = ""
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
 def install_maintenance(client: httpx.Client, repo: Path) -> None:
     flow = json.loads(MAINTENANCE_PATH.read_text(encoding="utf-8"))
     for node in flow["nodes"]:
@@ -91,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         if node.get("type") == "command":
             config["cmd"] = config.get("cmd", "").replace("{guard}", guard).replace("{baseline}", baseline)
     try:
-        with httpx.Client(base_url=args.api.rstrip("/"), timeout=30) as client:
+        with httpx.Client(base_url=args.api.rstrip("/"), timeout=30, headers=_auth_headers()) as client:
             install_maintenance(client, repo)
             saved = client.put(f"/api/environments/{flow['id']}", json=flow)
             saved.raise_for_status()

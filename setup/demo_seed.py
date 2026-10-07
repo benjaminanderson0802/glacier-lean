@@ -1,13 +1,20 @@
 """Seeds two demo environments into a running Glacier backend (default http://localhost:8000) with slowed-down
 steps so every state change is visible on the screen.  Usage: python setup/demo_seed.py [api_url]"""
-import json, sys, urllib.request
+import json, os, sys, urllib.request
 
 API = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
+# The engine's install token (GLACIER_TOKEN, else <GLACIER_HOME or ~/.glacier>/.engine-token).
+TOKEN = os.environ.get("GLACIER_TOKEN", "").strip()
+if not TOKEN:
+    try:
+        TOKEN = open(os.path.join(os.environ.get("GLACIER_HOME") or os.path.expanduser("~/.glacier"), ".engine-token")).read().strip()
+    except OSError:
+        TOKEN = ""
 
 
 def put(env):
     req = urllib.request.Request(f"{API}/api/environments/{env['id']}", data=json.dumps(env).encode(), method="PUT",
-                                 headers={"Content-Type": "application/json"})
+                                 headers={"Content-Type": "application/json", **({"Authorization": f"Bearer {TOKEN}"} if TOKEN else {})})
     print(env["id"], urllib.request.urlopen(req).read().decode())
 
 

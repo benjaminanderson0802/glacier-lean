@@ -1,0 +1,12 @@
+{
+  "id": "api-no-token",
+  "title": "Local program calls the engine without the install token",
+  "attack": "Another program on the same computer reads saved secrets' names and memory without the Glacier app's token.",
+  "request": {
+    "method": "GET",
+    "path": "/api/secrets",
+    "expected_status": 401,
+    "no_token": true
+  },
+  "expected": "blocked"
+}
