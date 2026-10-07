@@ -1,11 +1,34 @@
 """Acceptance checks, run by the verifier outside the worker's control (docs/contracts/VERIFICATION.md, rule I-04).
 Each check runs on a fresh copy of the flow's workspace; files the check owns ("files") are restored from the saved
 flow, so a worker that edits or weakens them changes nothing."""
-import json, os, shutil, subprocess, tempfile
+import json, os, re, shutil, subprocess, tempfile, urllib.request
 import decider
 
 KINDS = ("command", "schema", "rubric", "human")
 CHECK_TIMEOUT = 600
+RUBRIC_SYSTEM = "Reply with exactly one word: pass or fail."
+
+
+def _parse_rubric_answer(value: str) -> str:
+    first = (value or "").strip().split(maxsplit=1)
+    return "pass" if first and re.fullmatch(r"pass\W*", first[0], flags=re.IGNORECASE) else "fail"
+
+
+def _local_rubric_decision(question, options, context, model):
+    """Ask Ollama for a binary rubric decision and conservatively parse its first word."""
+    url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
+    body = {
+        "model": model or os.environ.get("GLACIER_LOCAL_MODEL", "qwen3:0.6b"),
+        "messages": [{"role": "system", "content": f"{RUBRIC_SYSTEM}\n\n{question}\n\nWork to review:\n{context or '(no output)'}"}],
+        "stream": False,
+        "think": False,
+        "options": {"temperature": 0},
+    }
+    req = urllib.request.Request(
+        url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=int(os.environ.get("GLACIER_DECIDE_TIMEOUT", "120"))) as response:
+        content = json.loads(response.read())["message"]["content"]
+    return _parse_rubric_answer(content), f"local model {body['model']}"
 
 
 def validate(acceptance) -> None:
@@ -31,7 +54,12 @@ def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str
     if kind == "rubric":
         q = ("You are an independent reviewer. Judge ONLY whether the work below meets the criteria. "
              f"Criteria: {check['rubric']}\nAnswer pass or fail.")
-        d = decider.decide(q, ["pass", "fail"], last_output or "(no output)", check.get("engine") or "auto", check.get("model") or "")
+        engine = check.get("engine") or "auto"
+        if engine == "local":
+            raw, used = _local_rubric_decision(q, ["pass", "fail"], last_output or "(no output)", check.get("model") or "")
+            d = {"choice": raw, "engine": used}
+        else:
+            d = decider.decide(q, ["pass", "fail"], last_output or "(no output)", engine, check.get("model") or "")
         return {"passed": d["choice"] == "pass", "evidence": f"reviewer ({d['engine']}) said {d['choice']}"}
     with tempfile.TemporaryDirectory(prefix="glacier-check-") as tmp:
         copy = os.path.join(tmp, "work")

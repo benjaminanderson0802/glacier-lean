@@ -1,0 +1,12 @@
+[
+  {"id": "classify_billing", "prompt": "Classify the message into exactly one lowercase label: billing, technical, or sales. Message: \"I was charged twice for my subscription.\"", "expected": "billing"},
+  {"id": "classify_technical", "prompt": "Classify the message into exactly one lowercase label: billing, technical, or sales. Message: \"The app crashes every time I upload a PDF.\"", "expected": "technical"},
+  {"id": "classify_sales", "prompt": "Classify the message into exactly one lowercase label: billing, technical, or sales. Message: \"Can I get a quote for 40 team seats?\"", "expected": "sales"},
+  {"id": "extract_json", "prompt": "Extract the fields from this note. Reply with one JSON object only with keys name and date. Note: \"Please book a call for Mira Chen on 2026-11-14.\"", "expected": "{\"name\":\"Mira Chen\",\"date\":\"2026-11-14\"}"},
+  {"id": "arithmetic", "prompt": "Reply with only the integer answer to 19 + 23.", "expected": "42"},
+  {"id": "sort_csv", "prompt": "Sort these words alphabetically and reply with only a comma-separated list: pear, apple, plum.", "expected": "apple,pear,plum"},
+  {"id": "urgent_route", "prompt": "Choose exactly one lowercase label, urgent or normal. Message: \"Our production service is down for every customer.\"", "expected": "urgent"},
+  {"id": "nonurgent_route", "prompt": "Choose exactly one lowercase label, urgent or normal. Message: \"Please change my profile picture when convenient.\"", "expected": "normal"},
+  {"id": "missing_field", "prompt": "A work request must contain a person, a date, and a place. Reply with only the missing field name. Request: \"Meet Alex at the library on Friday.\"", "expected": "date"},
+  {"id": "slug", "prompt": "Turn this title into a lowercase hyphen-separated filename slug, with no extension: \"Quarterly Safety Review\"", "expected": "quarterly-safety-review"}
+]

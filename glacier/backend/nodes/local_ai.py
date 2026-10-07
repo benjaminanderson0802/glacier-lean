@@ -9,6 +9,20 @@ import urllib.request
 DEFAULT_MODEL = "qwen3:0.6b"
 DEFAULT_TIMEOUT = 600
 PREV_LIMIT = 8000
+ANSWER_ONLY_SYSTEM = "Reply with only the answer. No explanation, no labels, no markdown, no extra words."
+
+
+def _clean_answer(output: str) -> str:
+    single_line = "\n" not in output
+    output = output.strip()
+    if output.startswith("**") and output.endswith("**") and len(output) >= 4:
+        output = output[2:-2].strip()
+    elif (output.startswith("`") and output.endswith("`") and len(output) >= 2
+          and not output.startswith("``")):
+        output = output[1:-1].strip()
+    if single_line and output.endswith("."):
+        output = output[:-1]
+    return output
 
 
 def run(ctx: dict) -> dict:
@@ -32,9 +46,13 @@ def run(ctx: dict) -> dict:
         url,
         data=json.dumps({
             "model": model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": ([{"role": "system", "content": ANSWER_ONLY_SYSTEM}]
+                         if config.get("answer_style", "Answer only") == "Answer only" else []) +
+                        [{"role": "user", "content": prompt}],
             "stream": False,
             "think": False,
+            **({"options": {"temperature": 0}}
+               if config.get("answer_style", "Answer only") == "Answer only" else {}),
         }).encode(),
         headers={"Content-Type": "application/json"},
     )
@@ -63,6 +81,8 @@ def run(ctx: dict) -> dict:
     output = message.get("content", "")
     if not isinstance(output, str):
         raise ValueError("Ollama returned an invalid reply")
+    if config.get("answer_style", "Answer only") == "Answer only":
+        output = _clean_answer(output)
     return {
         "state": "done",
         "exit_code": 0,
@@ -72,6 +92,7 @@ def run(ctx: dict) -> dict:
             "route": "local/ollama",
             "tokens_in": int(reply.get("prompt_eval_count") or 0),
             "tokens_out": int(reply.get("eval_count") or 0),
+            "generation_seconds": (float(reply.get("eval_duration") or 0) / 1_000_000_000),
             "cost_usd": 0.0,
         },
     }
@@ -86,6 +107,8 @@ NODE = {
         "fields": [
             {"key": "prompt", "label": "Task ({env} {run} {prev_output})", "placeholder": "Summarize: {prev_output}", "default": "", "multiline": True},
             {"key": "model", "label": "Model", "placeholder": "default local model", "default": "", "optional": True},
+            {"key": "answer_style", "label": "Answer style", "placeholder": "Answer only", "default": "Answer only", "optional": True,
+             "options": ["Answer only", "Free text"]},
             {"key": "timeout", "label": "Time limit (seconds)", "placeholder": "600", "default": "600", "optional": True},
         ],
         "branches": None,
