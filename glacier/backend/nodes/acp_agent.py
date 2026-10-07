@@ -9,10 +9,6 @@ import shlex
 import shutil
 from pathlib import Path
 
-import acp
-from acp.schema import AllowedOutcome, DeniedOutcome, RequestPermissionResponse
-
-
 PREV_LIMIT = 8000
 
 
@@ -41,7 +37,14 @@ def _inside(path_value: str, workdir: str) -> bool:
         target = Path(path_value).expanduser()
         if not target.is_absolute():
             target = Path(workdir) / target
-        return os.path.commonpath((os.path.realpath(workdir), os.path.realpath(target))) == os.path.realpath(workdir)
+        root = os.path.realpath(workdir)
+        resolved = os.path.realpath(target)
+        if resolved == root:
+            return False
+        if os.path.commonpath((root, resolved)) != root:
+            return False
+        git_dir = os.path.join(root, ".git")
+        return os.path.commonpath((os.path.realpath(git_dir), resolved)) != os.path.realpath(git_dir)
     except (OSError, ValueError):
         return False
 
@@ -90,6 +93,8 @@ def _permission_paths(tool_call) -> list[str]:
 
 
 def _acp_client(workdir: str, messages: list[str]):
+    from acp.schema import AllowedOutcome, DeniedOutcome, RequestPermissionResponse
+
     class GlacierClient:
         async def session_update(self, session_id, update, **kwargs):
             if getattr(update, "session_update", None) == "agent_message_chunk":
@@ -100,7 +105,7 @@ def _acp_client(workdir: str, messages: list[str]):
 
         async def request_permission(self, session_id, tool_call, options, **kwargs):
             kind = _permission_kind(tool_call)
-            if kind not in {"read", "edit", "delete", "move"}:
+            if kind not in {"read", "edit"}:
                 return RequestPermissionResponse(outcome=DeniedOutcome(outcome="cancelled"))
             paths = _permission_paths(tool_call)
             if paths and all(_inside(path, workdir) for path in paths):
@@ -112,7 +117,7 @@ def _acp_client(workdir: str, messages: list[str]):
     return GlacierClient()
 
 
-async def _run_acp(command: list[str], prompt: str, workdir: str, timeout: int) -> tuple[str, int]:
+async def _run_acp(acp, command: list[str], prompt: str, workdir: str, timeout: int) -> tuple[str, int]:
     messages: list[str] = []
     client = _acp_client(workdir, messages)
     async with acp.spawn_agent_process(client, command[0], *command[1:], cwd=workdir) as (connection, process):
@@ -131,6 +136,11 @@ async def _run_acp(command: list[str], prompt: str, workdir: str, timeout: int) 
 
 
 def run(ctx):
+    try:
+        import acp
+    except ImportError:
+        return {"state": "failed", "output": "Coding agent support is not installed", "exit_code": 1}
+
     config = ctx["config"]
     harness = config.get("harness") or "opencode"
     if harness not in ("opencode", "gemini", "custom"):
@@ -170,7 +180,7 @@ def run(ctx):
         timeout = 1800
 
     try:
-        output, exit_code = asyncio.run(_run_acp(command, prompt, workdir, timeout))
+        output, exit_code = asyncio.run(_run_acp(acp, command, prompt, workdir, timeout))
     except FileNotFoundError:
         return {"state": "failed", "output": missing_message, "exit_code": 1}
     except Exception as exc:

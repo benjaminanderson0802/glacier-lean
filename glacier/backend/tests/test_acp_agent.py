@@ -92,6 +92,28 @@ def test_acp_denies_request_without_paths(server, tmp_path):
     assert run["outputs"]["agent"].endswith("permission=cancelled)")
 
 
+def test_acp_denies_delete_request(server, tmp_path):
+    workdir = tmp_path / "project"
+    workdir.mkdir()
+    run = _run(server, "acp-delete", workdir, f"delete:{workdir / 'file.txt'}")
+    assert run["outputs"]["agent"].endswith("permission=cancelled)")
+
+
+def test_acp_denies_workdir_itself(server, tmp_path):
+    workdir = tmp_path / "project"
+    workdir.mkdir()
+    run = _run(server, "acp-root", workdir, f"edit:{workdir}")
+    assert run["outputs"]["agent"].endswith("permission=cancelled)")
+
+
+def test_acp_denies_git_hooks_path(server, tmp_path):
+    workdir = tmp_path / "project"
+    hook = workdir / ".git" / "hooks" / "pre-commit"
+    hook.parent.mkdir(parents=True)
+    run = _run(server, "acp-git-hook", workdir, f"edit:{hook}")
+    assert run["outputs"]["agent"].endswith("permission=cancelled)")
+
+
 def test_acp_denies_symlink_path_resolving_outside_workdir(server, tmp_path):
     workdir = tmp_path / "project"
     workdir.mkdir()
@@ -131,3 +153,25 @@ def test_acp_missing_harness_binary_has_friendly_error(make_server, tmp_path, mo
 
     assert run["status"] == "failed", run
     assert "OpenCode is not installed" in run["outputs"]["agent"]
+
+
+def test_acp_missing_package_has_friendly_error(tmp_path, monkeypatch):
+    import builtins
+    import importlib.util
+
+    path = os.path.join(os.path.dirname(__file__), "..", "nodes", "acp_agent.py")
+    spec = importlib.util.spec_from_file_location("acp_agent_without_sdk", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    original_import = builtins.__import__
+
+    def without_acp(name, *args, **kwargs):
+        if name == "acp" or name.startswith("acp."):
+            raise ImportError("not installed")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_acp)
+    result = module.run({"config": {"harness": "custom", "command": "python fake", "prompt": "hello"},
+                         "env_id": "test", "run_id": "run", "home": str(tmp_path)})
+    assert result["state"] == "failed"
+    assert result["output"] == "Coding agent support is not installed"
