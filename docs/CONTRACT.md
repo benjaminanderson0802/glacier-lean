@@ -62,7 +62,8 @@ New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/con
                                                   for 10 seconds and does not block the response on tool probes.
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
-- WS   /api/events  -> messages {"run_id","env_id","node_id","state","output"?} on every node state change
+- WS   /api/events  -> run messages {"run_id","env_id","node_id","state","output"?} on every node state change; memory writes publish {"type":"memory","path":"<note path>","action":"write"|"delete","author":"<writer>","run_id":"<run id or empty>"} after the vault git commit succeeds. Events use action `write` for a note write, merge, archive, or undo restoration and `delete` for an actual note deletion. Publish runs outside the vault lock so a slow socket never blocks note writers.
+- GET  /api/memory/graph?limit=N -> graph of the N most recently updated notes plus their direct links; omit `limit` for the full graph.
 
 ## Durability rules
 - Every run is a DBOS workflow; each node execution is a DBOS step. Kill the backend mid-run -> on restart the run resumes, finished nodes are not re-run.

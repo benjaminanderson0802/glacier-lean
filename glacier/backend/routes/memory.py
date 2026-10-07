@@ -60,8 +60,7 @@ def _all() -> list[dict]:
     result = []
     for path in vault.list_notes(".md"):
         try:
-            text = vault.read_raw_note(path)
-            meta, _ = _meta(text, path)
+            meta, _ = vault.read_note_metadata(path)
             result.append({"path": path, **{k: meta[k] for k in ("title", "author", "updated", "tags")}})
         except (OSError, ValueError):
             continue
@@ -87,7 +86,7 @@ def note(path: str):
         if other == path:
             continue
         try:
-            _, other_body = _meta(vault.read_raw_note(other), other)
+            _, other_body = vault.read_note_metadata(other)
             if path.removesuffix(".md") in _links(other_body):
                 incoming.append(other.removesuffix(".md"))
         except (OSError, ValueError):
@@ -108,17 +107,23 @@ def put_note(item: NoteWrite):
 
 
 @router.get("/api/memory/graph")
-def graph():
+def graph(limit: int | None = None):
+    if limit is not None and limit < 1:
+        raise HTTPException(400, "Limit must be a positive number")
     nodes, edges = [], []
     known = set()
+    items = _all()
+    items.sort(key=lambda item: item["updated"], reverse=True)
+    if limit is not None:
+        items = items[:limit]
     refs = []
-    for item in _all():
+    for item in items:
         path = item["path"].removesuffix(".md")
         known.add(path)
         nodes.append({"id": path, "title": item["title"], "kind": "note", "author": item["author"]})
         edges.append({"source": path, "target": item["author"], "kind": "wrote"})
         try:
-            _, body = _meta(vault.read_raw_note(item["path"]), item["path"])
+            _, body = vault.read_note_metadata(item["path"])
             refs.extend((path, ref) for ref in _links(body))
         except (OSError, ValueError):
             pass
