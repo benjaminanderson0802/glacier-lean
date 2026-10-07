@@ -138,7 +138,7 @@ def test_acp_catalog_has_expected_fields(server):
     assert node["worker"] is True
     fields = {field["key"]: field for field in node["fields"]}
     assert fields["harness"]["default"] == "opencode"
-    assert fields["harness"]["options"] == ["opencode", "gemini", "custom"]
+    assert fields["harness"]["options"] == ["codex-acp", "opencode", "custom"]
     assert fields["timeout"]["default"] == 1800
 
 
@@ -152,7 +152,7 @@ def test_acp_missing_harness_binary_has_friendly_error(make_server, tmp_path, mo
     run = server.wait_run(server.post("/api/environments/acp-missing/run")["run_id"])
 
     assert run["status"] == "failed", run
-    assert "OpenCode is not installed" in run["outputs"]["agent"]
+    assert "This coding agent isn't installed: opencode" in run["outputs"]["agent"]
 
 
 def test_acp_missing_package_has_friendly_error(tmp_path, monkeypatch):

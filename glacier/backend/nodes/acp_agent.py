@@ -20,7 +20,7 @@ NODE = {
         "worker": True,
         "fields": [
             {"key": "harness", "label": "Coding agent", "placeholder": "", "default": "opencode",
-             "options": ["opencode", "gemini", "custom"]},
+             "options": ["codex-acp", "opencode", "custom"]},
             {"key": "command", "label": "Command", "placeholder": "python fake_acp_agent.py", "default": "", "optional": True},
             {"key": "prompt", "label": "Task ({env} {run} {prev_output})", "placeholder": "Fix the failing tests: {prev_output}", "default": "", "multiline": True},
             {"key": "workdir", "label": "Working folder", "placeholder": "default: GLACIER_HOME/workspaces/<env>", "default": "", "optional": True},
@@ -143,23 +143,22 @@ def run(ctx):
 
     config = ctx["config"]
     harness = config.get("harness") or "opencode"
-    if harness not in ("opencode", "gemini", "custom"):
-        return {"state": "failed", "output": f"Unknown coding agent harness: {harness}", "exit_code": 1}
-
     if harness == "opencode":
         command = ["opencode", "acp"]
-        missing_message = "OpenCode is not installed"
-    elif harness == "gemini":
-        command = ["gemini", "--experimental-acp"]
-        missing_message = "Gemini CLI is not installed"
+        missing_message = "This coding agent isn't installed: opencode"
+    elif harness == "codex-acp":
+        command = ["codex-acp"]
+        missing_message = "This coding agent isn't installed: codex-acp"
     else:
+        if harness != "custom":
+            return {"state": "failed", "output": f"Unknown coding agent '{harness}'. Choose codex-acp, opencode, or custom.", "exit_code": 1}
         try:
             command = shlex.split(config.get("command") or "")
         except ValueError as exc:
             return {"state": "failed", "output": f"Invalid coding agent command: {exc}", "exit_code": 1}
         if not command:
             return {"state": "failed", "output": "Enter a command for the custom coding agent", "exit_code": 1}
-        missing_message = f"Coding agent command is not installed: {command[0]}"
+        missing_message = f"This coding agent isn't installed: {command[0]}"
 
     if shutil.which(command[0]) is None:
         return {"state": "failed", "output": missing_message, "exit_code": 1}
