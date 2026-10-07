@@ -3,7 +3,7 @@ Every flow has a workspace folder GLACIER_HOME/workspaces/<flow>. Steps run ther
 A flow with "isolate": true gets a private git worktree per run (GLACIER_HOME/worktrees/<flow>/<run>, branch run/<run>).
 When the run is verified, its branch is merged into the workspace's main branch, one run at a time (a file lock is the
 queue). When it is not, nothing reaches main; the branch is kept for inspection and the worktree is removed."""
-import os, subprocess
+import os, subprocess, time
 
 if os.name == "nt":
     import msvcrt
@@ -24,17 +24,25 @@ class _MergeLock:
                 self.file.write("0")
                 self.file.flush()
             self.file.seek(0)
-            msvcrt.locking(self.file.fileno(), msvcrt.LK_LOCK, 1)
+            while True:
+                try:
+                    msvcrt.locking(self.file.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.05)
         else:
             fcntl.flock(self.file, fcntl.LOCK_EX)
         return self
 
     def __exit__(self, *_):
-        if os.name == "nt":
-            self.file.seek(0)
-            msvcrt.locking(self.file.fileno(), msvcrt.LK_UNLCK, 1)
-        else:
-            fcntl.flock(self.file, fcntl.LOCK_UN)
+        try:
+            if os.name == "nt":
+                self.file.seek(0)
+                msvcrt.locking(self.file.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(self.file, fcntl.LOCK_UN)
+        finally:
+            self.file.close()
 
 def _git(cwd, *args, check=True):
     p = subprocess.run(["git", "-c", "user.name=glacier", "-c", "user.email=glacier@localhost", *args], cwd=cwd,

@@ -1,4 +1,4 @@
-import os, json, time, subprocess
+import os, json, time, subprocess, sys
 import pytest, httpx
 from websockets.sync.client import connect
 from conftest import env
@@ -307,7 +307,7 @@ def test_command_retries_exhausted_fails(server):
 
 
 def test_command_timeout(server):
-    pause = "Start-Sleep -Seconds 20" if os.name == "nt" else "sleep 20"
+    pause = f'"{sys.executable}" -c "import time; time.sleep(20)"'
     server.put("/api/environments/slow", env("slow", [("c", "command", {"cmd": pause, "timeout": "1"})], []))
     t0 = time.time()
     run = server.wait_run(server.post("/api/environments/slow/run")["run_id"])

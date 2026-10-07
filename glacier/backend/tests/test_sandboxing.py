@@ -20,11 +20,6 @@ def test_windows_sandbox_wrap_fails_with_plain_message(monkeypatch, tmp_path):
         sandboxing.wrap("echo hi", str(tmp_path), [])
 
 
-def test_landlock_only_tests_are_skipped_on_windows(monkeypatch):
-    monkeypatch.setattr(sandboxing.sys, "platform", "win32")
-    _sandbox_or_skip()
-
-
 def _sandbox_or_skip():
     if os.name == "nt":
         pytest.skip("Landlock and seccomp sandbox enforcement are Linux-only")
