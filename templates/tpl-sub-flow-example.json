@@ -1,0 +1,54 @@
+{
+  "id": "tpl-sub-flow-example",
+  "name": "Run another flow",
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 8 * * *"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "run_daily_report",
+      "type": "flow",
+      "config": {
+        "env": "tpl-daily-report"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "saved_note",
+      "type": "note",
+      "config": {
+        "path": "sub-flows/daily-report-{run}.md",
+        "template": "The daily report sub-flow finished in run {run}.\n\n{summary}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "schedule",
+      "target": "run_daily_report",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "run_daily_report",
+      "target": "saved_note",
+      "label": ""
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "id": "tpl-daily-report",
+  "name": "Daily report",
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 8 * * *"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "time",
+      "type": "command",
+      "config": {
+        "cmd": "date -Is"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "write_report",
+      "type": "codex",
+      "config": {
+        "prompt": "Write a short daily report in plain language using the details entered below and the run context. Include what happened, decisions, and next steps. If no work details are available, say so clearly. Do not change files or take external actions.\n\nDetails for today:\n",
+        "sandbox": "read-only"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_report",
+      "type": "note",
+      "config": {
+        "path": "reports/daily-{run}.md",
+        "template": "Daily report for run {run}:\n\n{summary}"
+      },
+      "position": {
+        "x": 780,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "schedule",
+      "target": "time",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "time",
+      "target": "write_report",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "write_report",
+      "target": "save_report",
+      "label": ""
+    }
+  ]
+}

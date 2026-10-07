@@ -1,0 +1,91 @@
+{
+  "id": "tpl-folder-cleanup",
+  "name": "Folder cleanup",
+  "nodes": [
+    {
+      "id": "review_files",
+      "type": "codex",
+      "config": {
+        "prompt": "Inspect the current working folder in read-only mode. List files that are clearly temporary or clutter and explain why each item looks safe to organize. Take no action.",
+        "sandbox": "read-only"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "approve_cleanup",
+      "type": "approval",
+      "config": {
+        "prompt": "Review the proposed cleanup. Approve moving the clearly temporary items into a review folder? Nothing will be permanently deleted."
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "move_files",
+      "type": "codex",
+      "config": {
+        "prompt": "Move only the clearly temporary items identified in the preceding review into a folder named cleanup-review in the current working folder. Do not permanently delete anything. Do not touch files that were not listed for review. Report each move.",
+        "sandbox": "workspace-write"
+      },
+      "position": {
+        "x": 520,
+        "y": -140
+      }
+    },
+    {
+      "id": "cleanup_note",
+      "type": "note",
+      "config": {
+        "path": "cleanup/approved-{run}.md",
+        "template": "The approved folder cleanup ran in run {run}.\n\n{summary}"
+      },
+      "position": {
+        "x": 780,
+        "y": -140
+      }
+    },
+    {
+      "id": "declined_note",
+      "type": "note",
+      "config": {
+        "path": "cleanup/declined-{run}.md",
+        "template": "Folder cleanup was not approved in run {run}. No files were changed."
+      },
+      "position": {
+        "x": 520,
+        "y": 140
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "review_files",
+      "target": "approve_cleanup",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "approve_cleanup",
+      "target": "move_files",
+      "label": "yes"
+    },
+    {
+      "id": "e3",
+      "source": "move_files",
+      "target": "cleanup_note",
+      "label": ""
+    },
+    {
+      "id": "e4",
+      "source": "approve_cleanup",
+      "target": "declined_note",
+      "label": "no"
+    }
+  ]
+}
