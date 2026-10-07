@@ -18,3 +18,7 @@ then writes the flow atomically in one git commit authored as `assistant`. The r
 `undo_id` UUID; use it with `POST /api/runs/{undo_id}/undo` to restore the previous state. The commit message also
 includes the conversation ID for auditing. Proposals live in backend memory until they are applied or discarded, so a
 restart clears unreviewed proposals.
+
+## Live check
+
+Run `bench/live_ask/run_live.py` to exercise the Ask screen's HTTP request and AG-UI stream against a temporary real backend. It records reply timing, raw proposals, approval/rejection results, and plain-language errors in `evidence/live/ask_assistant.md`. The current chat route uses the Codex CLI for its initial answer and calls the planner with its Codex default; setting `GLACIER_LOCAL_MODEL` alone does not select Ollama for Ask chat proposals. The evidence report records this routing limitation and the measured results.
