@@ -22,7 +22,7 @@ def test_check_reports_missing_tools_and_friendly_message(monkeypatch):
     system_check.clear_cache()
     monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
     result = system_check.check_system()
-    assert set(result["tools"]) == {"codex", "ollama", "git", "python", "node"}
+    assert set(result["tools"]) == {"codex", "ollama", "git", "python", "node", "tesseract"}  # tesseract: optional image text reader
     assert all(tool == {"found": False, "version": ""} for tool in result["tools"].values())
     assert result["ollama_models"] == []
     assert any("Ollama" in message or "Codex" in message for message in result["messages"])

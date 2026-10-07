@@ -13,12 +13,15 @@ import threading
 from pathlib import Path
 
 import vault
+import ocr
 
 DEFAULT_PROJECT = "Inbox"
 _BLOCKED_EXTENSIONS = {".exe", ".bat", ".cmd", ".ps1", ".sh", ".msi", ".com", ".scr", ".vbs", ".js", ".jse", ".wsf", ".hta", ".msc", ".cpl", ".dll", ".lnk", ".reg", ".jar", ".psm1", ".appimage"}
 _MAGIC = (b"MZ", b"\x7fELF", b"#!", b"\xfe\xed\xfa\xce", b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe")
 _WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 _MAX_TEXT_BYTES = 2 * 1024 * 1024
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".tif", ".tiff", ".bmp"}
+_TESSERACT_URL = "https://github.com/tesseract-ocr/tesseract"
 _project_locks: dict[str, threading.Lock] = {}
 _project_locks_guard = threading.Lock()
 
@@ -220,6 +223,30 @@ def save_upload(filename: str, project: str | None, source) -> dict:
             if os.path.exists(tmp_name):
                 os.unlink(tmp_name)
 
+    message = None
+    note_path = f"files/{project}/{destination.name}.md"
+    if destination.suffix.lower() in _IMAGE_EXTENSIONS:
+        # Images: offline OCR (Tesseract, if installed) in a capped child process; the note is always written so
+        # the image can be found by name, with the recognised text or a plain hint on how to get it.
+        try:
+            ocr_text, ocr_error = ocr.recognize(destination)
+        except Exception:
+            ocr_text, ocr_error = "", "ocr_failed"
+        text = "" if ocr_error else ocr_text.strip()
+        hint = ""
+        if ocr_error == "decompression_bomb":
+            message = "This image is too large to read safely. The original file was saved."
+        elif not ocr.find_tesseract():
+            hint = f"Text in images can be made searchable by installing Tesseract (free and open source): {_TESSERACT_URL}"
+            message = f"File saved. {hint}"
+        elif not text:
+            message = "File saved. No text was found in the image."
+        section = f"## Text found in the image\n\n{text}" if text else hint
+        try:
+            vault.write_note(note_path, f"# {destination.name}\n\n[Download original](../../../files/{project}/{destination.name})\n\n{section}\n", author="owner")
+        except Exception:
+            message = "File saved, but its searchable note could not be saved."
+        return _entry(destination, project, hexdigest, message=message)
     message = None
     note_path = f"files/{project}/{destination.name}.md"
     try:

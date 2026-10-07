@@ -33,6 +33,7 @@ TOOL_COMMANDS = {
     "git": ("git", ["--version"]),
     "python": ("python", ["--version"]),
     "node": ("node", ["--version"]),
+    "tesseract": ("tesseract", ["--version"]),
 }
 
 
