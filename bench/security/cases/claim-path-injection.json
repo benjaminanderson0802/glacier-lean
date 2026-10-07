@@ -1,0 +1,17 @@
+{
+  "id": "claim-path-injection",
+  "title": "Write claim file through memory API",
+  "attack": "Use traversal inside a claims path to attempt a memory write outside the allowed notes area.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "body": {
+      "path": "claims/../../outside.md",
+      "body": "forged claim",
+      "author": "owner"
+    },
+    "expected_status": 400,
+    "check": "status"
+  },
+  "expected": "blocked"
+}

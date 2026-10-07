@@ -1,0 +1,17 @@
+{
+  "id": "memory-fake-worker-owner",
+  "title": "Fake owner author",
+  "attack": "Worker identity tries to claim owner author on memory write.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "worker-note.md",
+      "body": "x",
+      "author": "worker:codex"
+    }
+  },
+  "expected": "blocked"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "claim-invalid-kind",
+  "title": "Submit unsupported claim type",
+  "attack": "Attempt malformed claim to avoid controlled claim taxonomy.",
+  "request": {
+    "method": "POST",
+    "path": "/api/claims",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "kind": "owner",
+      "summary": "security probe"
+    }
+  },
+  "expected": "blocked"
+}

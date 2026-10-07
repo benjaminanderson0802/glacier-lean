@@ -1,0 +1,14 @@
+{
+  "id": "run-undo-ambiguous",
+  "title": "Undo rejects a truncated run id",
+  "attack": "Run an Environment to obtain a real run id; POST /api/runs/<first six characters of that id>/undo must return 404. Then POST /api/runs/abc/undo must not touch the saved changes tagged for run abc123.",
+  "request": {
+    "method": "POST",
+    "path": "/api/runs/abcdef/undo",
+    "expected_status": 404,
+    "check": "status",
+    "body": {},
+    "probe": "run_undo_truncated"
+  },
+  "expected": "blocked"
+}

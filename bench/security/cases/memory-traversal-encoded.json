@@ -1,0 +1,12 @@
+{
+  "id": "memory-traversal-encoded",
+  "title": "Encoded traversal",
+  "attack": "Attempt encoded traversal through memory API.",
+  "request": {
+    "method": "GET",
+    "path": "/api/memory/note?path=%2E%2E%2Foutside.md",
+    "expected_status": 400,
+    "check": "status"
+  },
+  "expected": "blocked"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "flow-restore-ambiguous",
+  "title": "Restore rejects a commit id shorter than seven characters",
+  "attack": "The route enforces a minimum commit-id length of seven characters. This probes that minimum-length rule; it does not claim to test ambiguous matching among two valid-length ids.",
+  "request": {
+    "method": "POST",
+    "path": "/api/environments/absent/restore",
+    "expected_status": 400,
+    "check": "min_length_message",
+    "body": {
+      "commit": "abcdef"
+    },
+    "probe": "flow_restore_min_length"
+  },
+  "expected": "blocked"
+}

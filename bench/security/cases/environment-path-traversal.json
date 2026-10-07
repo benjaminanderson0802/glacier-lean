@@ -1,0 +1,16 @@
+{
+  "id": "environment-path-traversal",
+  "title": "Save environment with traversal id",
+  "attack": "This URL includes ../ in an environment id. The router rejects the encoded slash with 404; this tests route/path handling, not vault filesystem traversal.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/environments/%2E%2E%2Fescape",
+    "expected_status": 404,
+    "check": "status",
+    "body": {
+      "nodes": [],
+      "edges": []
+    }
+  },
+  "expected": "blocked"
+}

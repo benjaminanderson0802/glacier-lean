@@ -1,0 +1,12 @@
+{
+  "id": "vault-traversal-read",
+  "title": "Read outside vault",
+  "attack": "Try path traversal through legacy vault note API.",
+  "request": {
+    "method": "GET",
+    "path": "/api/vault/note?path=../../etc/passwd",
+    "expected_status": 400,
+    "check": "status"
+  },
+  "expected": "blocked"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "worker-write-memory-api",
+  "title": "Worker writes memory using worker identity on screen endpoint",
+  "attack": "Attempt unauthorized worker-authored memory write.",
+  "request": {
+    "method": "PUT",
+    "path": "/api/memory/note",
+    "expected_status": 400,
+    "check": "status",
+    "body": {
+      "path": "notes/from-worker.md",
+      "body": "exfiltrate",
+      "author": "worker:fake-codex"
+    }
+  },
+  "expected": "blocked"
+}
