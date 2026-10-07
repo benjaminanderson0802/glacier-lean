@@ -30,7 +30,7 @@ def restore_environment(env_id: str, body: dict):
     try:
         new_commit = rollback.restore_flow(env_id, commit)
     except ValueError as exc:
-        raise HTTPException(404, str(exc))
+        raise HTTPException(400, str(exc))
     except Exception as exc:
         raise HTTPException(400, f"Flow could not be restored: {exc}")
     return {"restored": True, "new_commit": new_commit}

@@ -63,6 +63,41 @@ def test_run_changes_are_listed_and_undone_together(server):
     assert result["new_commit"]
 
 
+def test_undo_removes_note_from_keyword_search(server):
+    run_id = "run-zebra-234"
+    write(server, "notes/zebra.md", "A zebra memory", f"run:{run_id}")
+    env = dict(os.environ, GLACIER_HOME=server.home)
+    search_code = (
+        "import os, vault; "
+        "vault.init(os.path.join(os.environ['GLACIER_HOME'], 'vault')); "
+        "print(vault.search('zebra'))"
+    )
+    assert "notes/zebra.md" in subprocess.check_output([sys.executable, "-c", search_code], env=env, text=True)
+    server.post(f"/api/runs/{run_id}/undo")
+    assert subprocess.check_output([sys.executable, "-c", search_code], env=env, text=True).strip() == "[]"
+
+
+def test_restore_requires_unambiguous_full_enough_commit(server):
+    flow = {"id": "restore-id", "name": "First", "nodes": [], "edges": []}
+    saved = server.put("/api/environments/restore-id", flow)
+    flow["name"] = "Second"
+    server.put("/api/environments/restore-id", flow)
+
+    short = httpx.post(server.url + "/api/environments/restore-id/restore", json={"commit": saved["commit"][:6]})
+    assert short.status_code == 400
+    assert "7" in short.json()["detail"]
+
+    # Make a second matching commit prefix in this repository only when the actual hashes allow it.
+    # The route's selection logic is checked by trying prefixes from all path commits below.
+    path_commits = [item for item in git(server.home, "log", "--format=%H", "--", "environments/restore-id.json").splitlines()]
+    prefix = next((path_commits[0][:n] for n in range(7, 40)
+                   if sum(commit.startswith(path_commits[0][:n]) for commit in path_commits) > 1), None)
+    if prefix:
+        ambiguous = httpx.post(server.url + "/api/environments/restore-id/restore", json={"commit": prefix})
+        assert ambiguous.status_code == 400
+        assert "more than one" in ambiguous.json()["detail"].lower()
+
+
 def test_undo_refuses_later_owner_edit_without_changing_anything(server):
     run_id = "run-conflict-456"
     original = write(server, "notes/shared.md", "run content", f"run:{run_id}")

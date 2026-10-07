@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 
 import git
@@ -54,45 +55,68 @@ def _commit_paths(commit: git.Commit) -> set[str]:
 
 
 def undo(run_id: str) -> dict:
+    import vault
+
     r = repo()
-    commits = _run_commits(run_id)
-    if not commits:
-        raise ValueError(f"No saved changes were found for run {run_id}.")
+    with vault._lock:
+        commits = _run_commits(run_id)
+        if not commits:
+            raise ValueError(f"No saved changes were found for run {run_id}.")
 
-    targets = {commit.hexsha for commit in commits}
-    touched = set().union(*(_commit_paths(commit) for commit in commits))
-    oldest = commits[-1]
-    later_commits = []
-    for commit in r.iter_commits():  # newest first, up to the oldest run commit
-        if commit.hexsha == oldest.hexsha:
-            break
-        if commit.hexsha not in targets:
-            later_commits.append(commit)
-    conflicts = set().union(*(
-        touched & _commit_paths(commit) for commit in later_commits
-    )) if later_commits else set()
-    if conflicts:
-        raise RuntimeError(
-            "These files have later changes by someone else and were left alone: "
-            + ", ".join(sorted(conflicts))
-        )
+        targets = {commit.hexsha for commit in commits}
+        touched = set().union(*(_commit_paths(commit) for commit in commits))
+        oldest = commits[-1]
+        later_commits = []
+        for commit in r.iter_commits():  # newest first, up to the oldest run commit
+            if commit.hexsha == oldest.hexsha:
+                break
+            if commit.hexsha not in targets:
+                later_commits.append(commit)
+        conflicts = set().union(*(
+            touched & _commit_paths(commit) for commit in later_commits
+        )) if later_commits else set()
+        if conflicts:
+            raise RuntimeError(
+                "These files have later changes by someone else and were left alone: "
+                + ", ".join(sorted(conflicts))
+            )
 
-    start = r.head.commit.hexsha
-    try:
-        for commit in commits:  # newest first; stage each inverse, then commit once
-            r.git.revert(commit.hexsha, no_commit=True)
-        message = f"Undo changes from run {run_id}"
-        new_commit = r.index.commit(message)
-    except Exception as exc:
+        start = r.head.commit.hexsha
         try:
-            r.git.revert("--abort")
-        except Exception:
-            pass
-        r.git.reset("--hard", start)
-        raise RuntimeError(
-            "Undo could not be completed; the vault was restored to its starting version. "
-            "Files that could not be safely reverted: " + ", ".join(sorted(touched))
-        ) from exc
+            for commit in commits:  # newest first; stage each inverse, then commit once
+                r.git.revert(commit.hexsha, no_commit=True)
+            message = f"Undo changes from run {run_id}"
+            new_commit = r.index.commit(message)
+        except Exception as exc:
+            try:
+                r.git.revert("--abort")
+            except Exception:
+                pass
+            r.git.reset("--hard", start)
+            raise RuntimeError(
+                "Undo could not be completed; the vault was restored to its starting version. "
+                "Files that could not be safely reverted: " + ", ".join(sorted(touched))
+            ) from exc
+
+        # Keep the rebuildable keyword and link indexes in sync with git's restored tree.
+        db = vault._db()
+        try:
+            for path in touched:
+                full_path = vault.safe_path(path)
+                if os.path.isfile(full_path):
+                    with open(full_path, encoding="utf-8", errors="replace") as note:
+                        body = note.read()
+                    db.execute("DELETE FROM fts WHERE path=?", (path,))
+                    db.execute("INSERT INTO fts VALUES (?,?)", (path, body))
+                    db.execute("DELETE FROM links WHERE src=?", (path,))
+                    for target in re.findall(r"\[\[([^\]|#]+)", body):
+                        db.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
+                else:
+                    db.execute("DELETE FROM fts WHERE path=?", (path,))
+                    db.execute("DELETE FROM links WHERE src=? OR dst=?", (path, path))
+            db.commit()
+        finally:
+            db.close()
     return {"reverted": [commit.hexsha[:8] for commit in commits], "new_commit": new_commit.hexsha[:8]}
 
 
@@ -103,10 +127,15 @@ def restore_flow(env_id: str, short_commit: str) -> str:
 
     path = runner.env_path(env_id)
     vault.safe_path(path)
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", short_commit):
+        raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
     matches = list(repo().iter_commits(paths=path))
-    selected = next((commit for commit in matches if commit.hexsha.startswith(short_commit)), None)
-    if selected is None:
+    matching = [commit for commit in matches if commit.hexsha.startswith(short_commit.lower())]
+    if not matching:
         raise ValueError(f"Saved version {short_commit} was not found for this flow.")
+    if len(matching) > 1:
+        raise ValueError("More than one saved version matches. Enter more of the version ID.")
+    selected = matching[0]
     try:
         saved = selected.tree / path
     except KeyError:
