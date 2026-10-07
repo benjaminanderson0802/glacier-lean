@@ -2,7 +2,7 @@
 
 Glacier keeps uploaded originals on the machine running the backend. The default upload limit is 50 MB per file; set `GLACIER_MAX_UPLOAD_MB` before starting Glacier to change it. Executable and script files are refused by extension, and common executable signatures are refused even when the file is renamed.
 
-Uploads go to `GLACIER_HOME/files/<project>/<file name>`. An upload without a project goes into **Inbox**. If MarkItDown can read the file, Glacier also saves a Markdown note under `GLACIER_HOME/vault/files/<project>/` and indexes its text in memory search. The note links to the original file. Unreadable formats remain available as originals without a converted note.
+Uploads go to `GLACIER_HOME/files/<project>/<file name>`. An upload without a project goes into **Inbox**. If MarkItDown can read a document, Glacier saves a Markdown note under `GLACIER_HOME/vault/files/<project>/` and indexes its text in memory search. For PNG, JPEG, WebP, GIF (first frame), TIFF, and BMP images, Glacier uses locally installed Tesseract OCR and saves recognized words under “Text found in the image”. OCR runs offline in a capped child process with a 60 second limit; images are resized to at most 4,000 pixels on the long side. `GLACIER_OCR_LANGS` selects Tesseract languages (default `eng`). If Tesseract is missing, the original is still saved and the note explains how to install it from [the Tesseract project](https://github.com/tesseract-ocr/tesseract). Unsafe image dimensions are refused for OCR, and the original remains stored. The note links to the original file.
 
 ## API
 

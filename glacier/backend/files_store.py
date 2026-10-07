@@ -13,12 +13,15 @@ import threading
 from pathlib import Path
 
 import vault
+import ocr
 
 DEFAULT_PROJECT = "Inbox"
 _BLOCKED_EXTENSIONS = {".exe", ".bat", ".cmd", ".ps1", ".sh", ".msi", ".com", ".scr", ".vbs", ".js", ".jse", ".wsf", ".hta", ".msc", ".cpl", ".dll", ".lnk", ".reg", ".jar", ".psm1", ".appimage"}
 _MAGIC = (b"MZ", b"\x7fELF", b"#!", b"\xfe\xed\xfa\xce", b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe")
 _WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 _MAX_TEXT_BYTES = 2 * 1024 * 1024
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".tif", ".tiff", ".bmp"}
+_TESSERACT_URL = "https://github.com/tesseract-ocr/tesseract"
 _project_locks: dict[str, threading.Lock] = {}
 _project_locks_guard = threading.Lock()
 
@@ -222,15 +225,36 @@ def save_upload(filename: str, project: str | None, source) -> dict:
 
     message = None
     note_path = f"files/{project}/{destination.name}.md"
-    try:
-        text = _convert_in_child(destination).strip()
-    except Exception:
-        text = ""
-    if not text:
-        message = "File saved, but its text couldn't be read."
+    is_image = destination.suffix.lower() in _IMAGE_EXTENSIONS
+    hint = ""
+    ocr_text = ""
+    if is_image:
+        try:
+            ocr_text, ocr_error = ocr.recognize(destination)
+            if ocr_error == "decompression_bomb":
+                message = "This image is too large to read safely. The original file was saved."
+            elif not ocr.shutil.which("tesseract"):
+                hint = f"Text in images can be made searchable by installing Tesseract: {_TESSERACT_URL}."
+                message = f"File saved. {hint}"
+            text = "" if ocr_error else ocr_text.strip()
+        except Exception:
+            text = ""
     else:
         try:
-            vault.write_note(note_path, f"# {destination.name}\n\n[Download original](../../../files/{project}/{destination.name})\n\n{text}\n", author="owner")
+            text = _convert_in_child(destination).strip()
+        except Exception:
+            text = ""
+    if not text:
+        if not message:
+            message = "File saved, but its text couldn't be read."
+        try:
+            vault.write_note(note_path, f"# {destination.name}\n\n[Download original](../../../files/{project}/{destination.name})\n\n{hint}\n", author="owner")
+        except Exception:
+            message = "File saved, but its searchable note could not be saved."
+    else:
+        try:
+            section = f"\n\n## Text found in the image\n\n{ocr_text.strip()}" if is_image else f"\n\n{text}"
+            vault.write_note(note_path, f"# {destination.name}\n\n[Download original](../../../files/{project}/{destination.name}){section}\n", author="owner")
         except Exception:
             message = "File saved, but its text couldn't be read because its searchable note could not be saved."
     return _entry(destination, project, hexdigest, message=message)
