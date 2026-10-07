@@ -21,10 +21,11 @@ def test_capability_gap_is_researched_even_with_past_fixes(monkeypatch):
     assert "research" in started and r["assigned_to"] == "fixer" and "fixer" in started
 
 
-def test_past_resolved_fix_counts_as_free_option(monkeypatch):
+def test_similar_past_claim_does_not_override_a_no_free_option_verdict(monkeypatch):
     started = []
     _setup(monkeypatch, ["claims/old.md: reader -> fixed"], "VERDICT: NO FREE OPTION FITS", started)
-    assert cr.research_claim.__wrapped__("c2")["assigned_to"] == "fixer"
+    r = cr.research_claim.__wrapped__("c2")
+    assert r["assigned_to"] == "owner" and r["status"] == "proposed" and "fixer" not in started
 
 
 def test_no_fix_and_no_free_option_goes_to_owner(monkeypatch):

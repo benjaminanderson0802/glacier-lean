@@ -70,7 +70,7 @@ def record_and_route(cid: str, fixes: list, findings: str) -> dict:
     if findings:
         section += "Free/open-source search:\n" + findings.strip() + "\n"
     if kind == "capability_gap":
-        free = "VERDICT: FREE OPTION FOUND" in findings.upper() or bool(fixes)  # a past resolved fix is a known free option
+        free = "VERDICT: FREE OPTION FOUND" in findings.upper()  # past similar claims are hints only; the verdict decides
         assigned, status = ("fixer", "routed") if free else ("owner", "proposed")
     else:
         assigned = ROUTES.get(kind, "researcher")
