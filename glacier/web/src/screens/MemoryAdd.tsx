@@ -1,11 +1,11 @@
-// Add to memory (mockup panel 11): drop files, write text, or import ChatGPT / Claude chats.
+// Add to memory (mockup panel 11): drop files, write text, import ChatGPT / Claude chats, or save a coding session.
 import { useEffect, useRef, useState } from 'react'
-import { addToMemory, ago, memory, slugify } from '../api.ts'
-import { Btn, Panel, Row } from '../ui/kit.tsx'
+import { addToMemory, ago, memory, sessionsApi, slugify, type CodingSession, type SessionEvent } from '../api.ts'
+import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 
-type Tab = 'files' | 'text' | 'chats'
+type Tab = 'files' | 'text' | 'chats' | 'sessions'
 type Done = { name: string; ok: boolean; detail: string }
 
 export function MemoryAdd() {
@@ -22,6 +22,19 @@ export function MemoryAdd() {
   const [imports, setImports] = useState<{ source: string; last_import: string | null; added: number; updated: number }[]>([])
   const loadImports = () => addToMemory.imports().then(setImports).catch(() => setImports([]))
   useEffect(() => { if (tab === 'chats') loadImports() }, [tab])
+  const [sessions, setSessions] = useState<CodingSession[] | null>(null)
+  const [sel, setSel] = useState<(CodingSession & { events: SessionEvent[] }) | null>(null)
+  const [sessErr, setSessErr] = useState('')
+  useEffect(() => { if (tab === 'sessions') { setSessErr(''); sessionsApi.list().then(setSessions).catch(e => { setSessions([]); setSessErr(String(e).replace(/^Error: /, '')) }) } }, [tab])
+  const openSession = (id: string) => sessionsApi.get(id).then(setSel).catch(e => setSessErr(String(e).replace(/^Error: /, '')))
+  const saveSession = async () => {
+    if (!sel) return
+    setBusy(true)
+    try { const r = await sessionsApi.save(sel.id); setDone([{ name: sel.title || 'Session', ok: true, detail: r.saved ? `saved as ${r.path}` : 'already in memory' }]) }
+    catch (e) { setDone([{ name: sel.title || 'Session', ok: false, detail: String(e).replace(/^Error: /, '') }]) }
+    finally { setBusy(false) }
+  }
+  const toolName = (s: CodingSession) => s.source === 'opencode' ? 'OpenCode' : 'Codex'
   const refresh = async () => {
     setBusy(true)
     try {
@@ -59,10 +72,21 @@ export function MemoryAdd() {
     <div className="g-memadd">
       <Panel testid="memory-add">
         <div className="g-seg" style={{ alignSelf: 'flex-start', marginBottom: 12 }}>
-          {([['files', 'Files'], ['text', 'Text'], ['chats', 'Chat import']] as [Tab, string][]).map(([t, l]) =>
+          {([['files', 'Files'], ['text', 'Text'], ['chats', 'Chat import'], ['sessions', 'Coding sessions']] as [Tab, string][]).map(([t, l]) =>
             <button key={t} className={`g-seg-btn${t === tab ? ' active' : ''}`} onClick={() => { setTab(t); setDone([]) }} data-testid={`add-tab-${t}`}>{l}</button>)}
         </div>
-        {tab === 'text' ? (
+        {tab === 'sessions' ? (
+          <div className="g-rows g-scroll" data-testid="sessions-list">
+            {sessErr && <div className="g-error">{sessErr}</div>}
+            {sessions === null ? <Empty>Looking for coding sessions…</Empty> : sessions.length === 0 ? <Empty>No Codex or OpenCode sessions found on this computer.</Empty> :
+              sessions.map((x, i) => (
+                <button key={x.id} type="button" className={`g-row${sel?.id === x.id ? ' sel' : ''}`} onClick={() => openSession(x.id)} data-testid={`session-${i}`}>
+                  <span className="g-ico"><Icon name="run" /></span>
+                  <span className="g-mid"><span className="g-lead">{x.title || 'Untitled session'}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? ' · running now' : ''}</span></span>
+                  <span className="g-when">{x.updated ? ago(x.updated) : ''}</span>
+                </button>))}
+          </div>
+        ) : tab === 'text' ? (
           <div className="g-editor">
             <input className="g-input" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} data-testid="add-title" />
             <textarea className="g-input g-textarea" style={{ minHeight: 220 }} placeholder="Paste or type anything you want Glacier to remember." value={text} onChange={e => setText(e.target.value)} data-testid="add-text" />
@@ -78,9 +102,9 @@ export function MemoryAdd() {
               onChange={e => { const picked = Array.from(e.target.files ?? []); setFiles(f => [...f, ...picked]); e.target.value = '' }} />
           </div>
         )}
-        <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'chats' ? 'Use the export file from ChatGPT or Claude (Settings > Data export). Duplicates are skipped.' : tab === 'files' ? 'Supports PDF, Word, text, Markdown, spreadsheets and images. Text is extracted so it can be searched.' : 'Saved as a plain note you can edit later.'}</div>
+        <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? 'Your Codex and OpenCode sessions, read-only. Glacier never changes them. Secrets are hidden.' : tab === 'chats' ? 'Use the export file from ChatGPT or Claude (Settings > Data export). Duplicates are skipped.' : tab === 'files' ? 'Supports PDF, Word, text, Markdown, spreadsheets and images. Text is extracted so it can be searched.' : 'Saved as a plain note you can edit later.'}</div>
       </Panel>
-      <Panel title="Options" testid="add-options">
+      <Panel title={tab === 'sessions' ? 'Session' : 'Options'} testid="add-options">
         {tab === 'files' && <label className="g-field"><span className="g-detail">Add to project (optional)</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder="None" data-testid="add-project" /></label>}
         {tab === 'chats' && imports.length > 0 && (
           <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">
@@ -93,7 +117,18 @@ export function MemoryAdd() {
             {(['chatgpt', 'claude'] as const).map(s => <button key={s} className={`g-seg-btn${s === source ? ' active' : ''}`} onClick={() => setSource(s)}>{s === 'chatgpt' ? 'ChatGPT' : 'Claude'}</button>)}
           </div>
         )}
-        <Btn primary onClick={add} disabled={busy || (tab !== 'text' && files.length === 0)} data-testid="add-go" style={{ marginTop: 12 }}>Add to memory</Btn>
+        {tab === 'sessions' ? (
+          sel ? (
+            <div data-testid="session-detail">
+              <div className="g-lead">{sel.title || 'Untitled session'}</div>
+              <div className="g-detail">{toolName(sel)} · {sel.events.length} step{sel.events.length === 1 ? '' : 's'}{sel.started ? ` · started ${ago(sel.started)}` : ''}</div>
+              <div className="g-rows g-scroll" style={{ maxHeight: 360, marginTop: 8 }}>
+                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? 'You' : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? 'Command' : ev.type === 'command_output' ? 'Output' : 'Step'} detail={ev.text.slice(0, 160)} />)}
+              </div>
+              <Btn primary onClick={saveSession} disabled={busy} data-testid="session-save" style={{ marginTop: 12 }}>Save to memory</Btn>
+            </div>
+          ) : <Empty>Pick a session to see it here.</Empty>
+        ) : <Btn primary onClick={add} disabled={busy || (tab !== 'text' && files.length === 0)} data-testid="add-go" style={{ marginTop: 12 }}>Add to memory</Btn>}
         <div className="g-rows" style={{ marginTop: 10 }}>
           {done.map((d, i) => <Row key={i} status={d.ok ? 'ok' : 'bad'} lead={d.name} detail={d.detail} testid={`add-result-${i}`} />)}
         </div>

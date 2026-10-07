@@ -235,6 +235,12 @@ const server = http.createServer(async (req, res) => {
       return send(200, { id: h.id, status: h.status, ...(body.approve ? { commit: commitId() } : {}) })
     }
     if (p === '/api/imports' && req.method === 'GET') return send(200, [{ source: 'chatgpt', last_import: new Date(Date.now() - 864e5).toISOString(), added: 42, updated: 3, unchanged: 100 }])
+    if (p === '/api/sessions' && req.method === 'GET') return send(200, [
+      { id: 'opencode:ses_demo', tool: 'opencode', source: 'opencode', started: new Date(Date.now() - 72e5).toISOString(), updated: new Date(Date.now() - 6e5).toISOString(), title: 'Fix the login page', cwd: '/home/me/site', active: false },
+      { id: 'codex-demo', tool: 'codex', started: new Date(Date.now() - 864e5).toISOString(), updated: new Date(Date.now() - 36e5).toISOString(), title: 'Add tests for the parser', cwd: '/home/me/parser', active: true }])
+    if ((m = p.match(/^\/api\/sessions\/([^/]+)$/)) && req.method === 'GET') return send(200, { id: decodeURIComponent(m[1]), tool: 'opencode', source: 'opencode', started: new Date(Date.now() - 72e5).toISOString(), updated: new Date().toISOString(), title: 'Fix the login page', cwd: '/home/me/site', active: false,
+      events: [{ type: 'user_message', text: 'The login button does nothing' }, { type: 'command', text: 'Ran command: npm test' }, { type: 'assistant_message', text: 'Fixed the click handler and added a test.' }] })
+    if ((m = p.match(/^\/api\/sessions\/([^/]+)\/save-to-memory$/)) && req.method === 'POST') return send(200, { saved: true, path: 'sessions/opencode_ses_demo-abc.md' })
     if (p === '/api/imports/refresh' && req.method === 'POST') return send(200, { chatgpt: { added: 2, updated: 1, unchanged: 145 } })
     if ((p === '/api/files' || p === '/api/imports') && req.method === 'POST') {
       let size = 0; await new Promise(r => { req.on('data', c => (size += c.length)); req.on('end', r) })
