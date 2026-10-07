@@ -48,6 +48,7 @@ def test_sandboxed_command_cannot_reach_local_tcp_server(tmp_path, monkeypatch):
     assert result["state"] == "failed"
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="The OS sandbox (Landlock) is Linux-only")
 def test_flow_and_environment_can_enable_sandbox(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "set_node", lambda *args, **kwargs: None)
     monkeypatch.setattr(store, "set_run", lambda *args, **kwargs: None)
@@ -79,7 +80,10 @@ def test_unavailable_sandbox_fails_with_plain_reason(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "set_run", lambda *args, **kwargs: None)
     result = runner.run_node("flow", "run3", _node("run3", {"cmd": "echo must-not-run", "sandbox": "on"}), None, str(tmp_path))
     assert result["state"] == "failed"
-    assert result["output"] == "OS sandbox unavailable: sandbox is unavailable here"
+    if sys.platform == "win32":
+        assert "can't run sandboxed on Windows" in result["output"]
+    else:
+        assert result["output"] == "OS sandbox unavailable: sandbox is unavailable here"
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows reports its sandbox limitation on Windows only")
@@ -91,6 +95,7 @@ def test_windows_sandboxed_step_fails_with_plain_message(tmp_path, monkeypatch):
     assert "can't run sandboxed on Windows" in result["output"]
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="The OS sandbox (Landlock) is Linux-only")
 def test_global_sandbox_is_floor_and_invalid_value_fails_closed(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_SANDBOX", "on")
     monkeypatch.setattr(store, "set_node", lambda *args, **kwargs: None)
