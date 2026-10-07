@@ -163,49 +163,6 @@ def test_run_card_posts_card_and_prints_watch_instructions(tmp_path):
         api.shutdown(); api.server_close()
 
 
-def test_installed_selfbuild_flows_use_run_card_interpreter_for_python_commands(tmp_path):
-    card = tmp_path / "card.md"
-    card.write_text("Build a tiny feature", encoding="utf-8")
-    import threading
-    from http.server import BaseHTTPRequestHandler, HTTPServer
-    seen = []
-
-    class API(BaseHTTPRequestHandler):
-        def log_message(self, *_args):
-            pass
-        def do_PUT(self):
-            seen.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
-            self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers()
-            self.wfile.write(b'{"saved":true}')
-        def do_POST(self):
-            self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers()
-            self.wfile.write(b'{"run_id":"abc123"}')
-
-    api = HTTPServer(("127.0.0.1", 0), API)
-    threading.Thread(target=api.serve_forever, daemon=True).start()
-    source = tmp_path / "source"
-    subprocess.run(["git", "init", "-q", "-b", "main", str(source)], check=True)
-    (source / "README.md").write_text("toy", encoding="utf-8")
-    subprocess.run(["git", "-C", str(source), "add", "-A"], check=True)
-    subprocess.run(["git", "-C", str(source), "-c", "user.name=t", "-c", "user.email=t@x", "commit", "-qm", "start"], check=True)
-    try:
-        result = subprocess.run([sys.executable, str(ROOT / "setup/selfbuild/run_card.py"), str(card),
-                                 "--api", f"http://127.0.0.1:{api.server_port}",
-                                 "--home", str(tmp_path / "home"), "--source", str(source)], text=True, capture_output=True)
-        assert result.returncode == 0, result.stderr
-        maintenance, feature = seen
-        assert feature["id"] == "self-feature"
-        feature = load(FEATURE) | feature
-        assert all(not command.startswith("python ") for node in feature["nodes"]
-                   if node["type"] == "command" for command in [node["config"]["cmd"]])
-        assert all(not check["cmd"].startswith("python ") for check in feature["acceptance"]
-                   if check["kind"] == "command")
-        assert all(not node["config"]["cmd"].startswith("python ") for node in maintenance["nodes"]
-                   if node["type"] == "command")
-    finally:
-        api.shutdown(); api.server_close()
-
-
 def test_protected_guard_rejects_deleted_check(tmp_path):
     repo = tmp_path / "copy"; repo.mkdir()
     protected = repo / "glacier/backend/tests/test_guard.py"

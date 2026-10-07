@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 from pathlib import Path
 import sys
@@ -64,21 +65,33 @@ def _auth_headers() -> dict:
     return {"Authorization": f"Bearer {token}"} if token else {}
 
 
+def fill_command(cmd: str, guard: str = "", baseline: str = "") -> str:
+    """Fill {guard}/{baseline} and run every bare `python` word with the interpreter running this script
+    (many computers have no `python` command)."""
+    cmd = cmd.replace("{guard}", guard).replace("{baseline}", baseline)
+    return re.sub(r"(?<![\w./-])python(?=\s)", lambda _m: shlex.quote(sys.executable), cmd)
+
+
+def prepare_commands(flow: dict, guard: str = "", baseline: str = "") -> None:
+    for node in flow.get("nodes", []):
+        config = node.get("config", {})
+        if node.get("type") == "command" and config.get("cmd"):
+            config["cmd"] = fill_command(config["cmd"], guard, baseline)
+    for check in flow.get("acceptance", []):
+        if check.get("kind") == "command" and check.get("cmd"):
+            check["cmd"] = fill_command(check["cmd"], guard, baseline)
+
+
 def install_maintenance(client: httpx.Client, repo: Path) -> None:
     flow = json.loads(MAINTENANCE_PATH.read_text(encoding="utf-8"))
-    python = shlex.quote(sys.executable)
     for node in flow["nodes"]:
         config = node.get("config", {})
         if config.get("cwd") == "{repo}":
             config["cwd"] = str(repo)
-        if node.get("type") == "command" and config.get("cmd", "").startswith("python "):
-            config["cmd"] = python + config["cmd"][len("python"):]
         if node.get("id") == "maintenance":
             script = repo / "setup" / "selfbuild" / "maintenance.py"
-            config["cmd"] = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} --repo {shlex.quote(str(repo))} --run {{run}}"
-    for check in flow.get("acceptance", []):
-        if check.get("kind") == "command" and check.get("cmd", "").startswith("python "):
-            check["cmd"] = python + check["cmd"][len("python"):]
+            config["cmd"] = f"python {shlex.quote(str(script))} --repo {shlex.quote(str(repo))} --run {{run}}"
+    prepare_commands(flow)
     saved = client.put(f"/api/environments/{flow['id']}", json=flow)
     saved.raise_for_status()
 
@@ -107,20 +120,11 @@ def main(argv: list[str] | None = None) -> int:
     flow["goal"] = f"Build feature from {card_path.name}: {card_text[:300]}"
     # Shell single-quote the card text so the command node can pass it as prior output.
     flow["nodes"][0]["config"]["cmd"] = "printf '%s' '" + card_text.replace("'", "'\\''") + "'"
-    baseline = str(ROOT)
-    guard = str(GUARD_PATH)
-    python = shlex.quote(sys.executable)
     for node in flow["nodes"]:
         config = node.get("config", {})
         if node.get("type") == "codex":
             config["prompt"] += f"\n\nApproved card text:\n{card_text}"
-        if node.get("type") == "command":
-            config["cmd"] = config.get("cmd", "").replace("{guard}", guard).replace("{baseline}", baseline)
-            if config["cmd"].startswith("python "):
-                config["cmd"] = python + config["cmd"][len("python"):]
-    for check in flow.get("acceptance", []):
-        if check.get("kind") == "command" and check.get("cmd", "").startswith("python "):
-            check["cmd"] = python + check["cmd"][len("python"):]
+    prepare_commands(flow, guard=str(GUARD_PATH), baseline=str(ROOT))
     try:
         with httpx.Client(base_url=args.api.rstrip("/"), timeout=30, headers=_auth_headers()) as client:
             install_maintenance(client, repo)
