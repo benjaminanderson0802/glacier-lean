@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import shlex
 import os
 from pathlib import Path, PurePosixPath
 import shutil
@@ -333,7 +334,8 @@ def exercise(base: str, home: Path) -> list[dict]:
     target = workspace / "answer.txt"
     target.write_text("before\n", encoding="utf-8")
     before_hash = file_hash(target)
-    cmd = "python -c \"from pathlib import Path; Path('answer.txt').write_text('after\\\\n')\""
+    # Use this interpreter's exact path: a bare "python" does not exist on many Linux systems (Ubuntu has python3).
+    cmd = f"{shlex.quote(sys.executable)} -c " + shlex.quote("from pathlib import Path; Path('answer.txt').write_text('after\\n')")
     codeflow = {"id": env_id, "name": env_id, "isolate": True, "nodes": [{"id": "write", "type": "command",
         "config": {"cmd": cmd}, "position": {"x": 0, "y": 0}}], "edges": [],
         "goal": "Update a workspace file", "acceptance": [{"kind": "command", "cmd": "grep -q after answer.txt"}]}
@@ -354,10 +356,12 @@ def exercise(base: str, home: Path) -> list[dict]:
     elapsed, recovered, recovery_error = timed_recovery(undo_code,
         lambda: file_hash(target) == before_hash,
         step="undo isolated coding run")
-    undo_commits = audit_recovery_commit_count(vault_root, undo_result.get("new_commit"))
+    # The undo of a coding run is recorded as a commit in the flow's workspace repository (not the vault).
+    workspace_undo = (undo_result.get("workspace") or {}).get("new_commit") or undo_result.get("new_commit")
+    undo_commits = audit_recovery_commit_count(workspace, workspace_undo)
     rows.append({"id": "isolated_code_undo", "seconds": elapsed, "recovered": recovered,
                  "audit_expected": expected_audit_count(len(workspace_paths), 1), "audit_found": len(audit_paths) + undo_commits,
-                 "detail": f"workspace changed files={len(workspace_paths)}; git audit paths={len(audit_paths)}; undo commits={undo_commits}; undo endpoint audits vault only; workspace hash {before_hash[:12]} -> {after_hash[:12]} -> {file_hash(target)[:12]}" + (f"; recovery error: {recovery_error}" if recovery_error else "")})
+                 "detail": f"workspace changed files={len(workspace_paths)}; git audit paths={len(audit_paths)}; workspace undo commits={undo_commits}; workspace hash {before_hash[:12]} -> {after_hash[:12]} -> {file_hash(target)[:12]}" + (f"; recovery error: {recovery_error}" if recovery_error else "")})
     return rows
 
 
