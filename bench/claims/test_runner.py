@@ -1,0 +1,61 @@
+"""Runner behavior against a deterministic fake claims API."""
+
+import importlib.util
+from pathlib import Path
+
+
+def _runner():
+    path = Path(__file__).with_name("run_claims.py")
+    spec = importlib.util.spec_from_file_location("claims_bench_runner_test_unique", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class FakeAPI:
+    def __init__(self, outcomes):
+        self.outcomes = outcomes
+        self.filed = []
+
+    def file_claim(self, case):
+        claim_id = f"claim-{len(self.filed)}"
+        self.filed.append(case)
+        return claim_id
+
+    def get_claim(self, claim_id):
+        case = self.filed[int(claim_id.split("-")[-1])]
+        return self.outcomes[case["id"]]
+
+
+def test_runner_reports_successful_proof_and_owner_escalation():
+    runner = _runner()
+    cases = [
+        {"id": "env", "kind": "environment", "summary": "missing free package", "evidence": "install failed",
+         "expected_route": "fixer", "expected_outcome": "resolved", "auto_resolve_allowed": True,
+         "wrong_auto_resolution": False},
+        {"id": "unclear", "kind": "unclear_spec", "summary": "ambiguous rule", "evidence": "two meanings",
+         "expected_route": "owner", "expected_outcome": "owner", "auto_resolve_allowed": False,
+         "wrong_auto_resolution": False},
+    ]
+    api = FakeAPI({
+        "env": {"meta": {"status": "resolved", "assigned_to": "fixer", "resolution_evidence": "proof:passed"}, "body": "proof passed"},
+        "unclear": {"meta": {"status": "proposed", "assigned_to": "owner", "resolution_evidence": ""}, "body": "owner decision required"},
+    })
+
+    rows = runner.run_cases(api, cases, timeout=0)
+
+    assert rows[0]["routed_correctly"] and rows[0]["resolved_with_evidence"]
+    assert rows[1]["escalated_when_expected"] and not rows[1]["wrongly_auto_resolved"]
+
+
+def test_runner_flags_owner_claim_auto_resolved():
+    runner = _runner()
+    case = {"id": "policy", "kind": "policy", "summary": "paid tool", "evidence": "requires purchase",
+            "expected_route": "owner", "expected_outcome": "proposed", "auto_resolve_allowed": False,
+            "wrong_auto_resolution": False}
+    api = FakeAPI({"policy": {"meta": {"status": "resolved", "assigned_to": "owner",
+                                         "resolution_evidence": "proof:passed"}, "body": "adopted"}})
+
+    row = runner.run_cases(api, [case], timeout=0)[0]
+
+    assert row["wrongly_auto_resolved"]
