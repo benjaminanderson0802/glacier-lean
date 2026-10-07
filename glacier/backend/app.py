@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from dbos import DBOS, DBOSConfig
-import store, vault, plugins
+import store, vault, plugins, verify
 
 HOME = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
 os.makedirs(HOME, exist_ok=True)
@@ -65,6 +65,10 @@ def save_environment(env_id: str, env: dict):
     if bad:
         raise HTTPException(400, f"unknown node types: {bad}")
     try:
+        verify.validate(env.get("acceptance"))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    try:
         vault.safe_path(runner.env_path(env_id))
         runner.sync_schedule(env)
     except Exception as e:
@@ -75,7 +79,9 @@ def save_environment(env_id: str, env: dict):
 
 @app.post("/api/environments/{env_id}/run")
 def run_environment(env_id: str):
-    _env_or_404(env_id)
+    env = _env_or_404(env_id)
+    if env.get("goal") and not env.get("acceptance"):
+        raise HTTPException(400, "This goal has no check yet. Add a way to check it is done before running it.")
     return {"run_id": runner.start_run(env_id)}
 
 
@@ -90,6 +96,24 @@ def get_run(run_id: str):
     if not run:
         raise HTTPException(404, f"run {run_id} not found")
     run["usage"] = store.usage_of(run_id)  # model, route, tokens and cost per step
+    graph = store.graph_of(run_id)
+    acceptance = graph.get("acceptance") or []
+    checks = store.checks_of(run_id)
+    run["verification"] = checks
+    if not acceptance:
+        run["verified"] = None
+    elif run["status"] in ("done", "failed", "rejected"):
+        req = [i for i, c in enumerate(acceptance) if c.get("required", True)]
+        got = {c["check"]: c["passed"] for c in checks}
+        run["verified"] = run["status"] == "done" and all(got.get(i) for i in req)
+    else:
+        run["verified"] = None
+    w = run.get("waiting_on") or ""
+    if w.startswith("check-") and w[6:].isdigit() and int(w[6:]) < len(acceptance):
+        run["waiting_prompt"] = acceptance[int(w[6:])].get("question", "")
+    elif w:
+        node = next((n for n in graph.get("nodes", []) if n["id"] == w), None)
+        run["waiting_prompt"] = ((node or {}).get("config") or {}).get("prompt", "")
     return run
 
 

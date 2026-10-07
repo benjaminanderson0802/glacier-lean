@@ -3,12 +3,13 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
-import store, vault, decider, plugins
+import store, vault, decider, plugins, verify, claims
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
 MAX_LOOP_TIMES = 1000
 MAX_RETRIES = 10
+MAX_STEP_FAILURES = 3  # stuck signal: a step failing this often in one run stops and files a claim
 APPROVAL_TIMEOUT = 7 * 24 * 3600
 COMMAND_TIMEOUT = 3600
 OUTPUT_LIMIT = 20000
@@ -242,6 +243,37 @@ def finish_approval(env_id: str, run_id: str, node_id: str, msg: dict | None) ->
     return res
 
 
+@DBOS.step()
+def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str) -> dict:
+    """Runs one acceptance check outside the worker's control (rule I-04) and records the evidence."""
+    home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    try:
+        r = verify.run_check(home, env_id, check, last_output)
+    except Exception as e:
+        r = {"passed": False, "evidence": f"the check could not run: {e}"}
+    store.record_check(run_id, idx, check["kind"], r["passed"], r["evidence"])
+    return r
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
+def finish_human_check(env_id: str, run_id: str, idx: int, msg: dict | None) -> dict:
+    store.set_run(run_id, "running")
+    passed = bool(msg and msg.get("approved"))
+    ev = "timed out waiting for the owner" if msg is None else ("approved by the owner" if passed else "rejected by the owner")
+    store.record_check(run_id, idx, "human", passed, ev)
+    return {"passed": passed, "evidence": ev}
+
+
+@DBOS.step(retries_allowed=True, max_attempts=3)
+def file_stuck_claim(env_id: str, run_id: str, node_id: str, attempts: int, output: str) -> str:
+    """Stuck signal (same failure twice, or too many failures): stop repairing and file a claim (rules I-11, I-15)."""
+    c = claims.file_claim("bug", f"Step {node_id} in flow {env_id} keeps failing the same way",
+                          f"Run {run_id}, step {node_id}, {attempts} failed attempts. Last output:\n\n{output[-2000:]}",
+                          run_id=run_id, node_id=node_id, attempts_made=attempts, filed_by="glacier-runner")
+    store.set_node(run_id, env_id, node_id, "failed", output[-OUTPUT_LIMIT:] + f"\n[stopped: stuck after {attempts} attempts; claim {c['id']} filed]")
+    return c["id"]
+
+
 @DBOS.step(retries_allowed=True, max_attempts=5)
 def finish_run(env_id: str, run_id: str, status: str) -> None:
     store.skip_pending(run_id, env_id)
@@ -295,7 +327,7 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
     queue = deque([n for n in nodes if n not in targets] or list(nodes)[:1])
     last, status, executions = None, "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
-    loop_counts, flow_visits = defaultdict(int), defaultdict(int)
+    loop_counts, flow_visits, failures = defaultdict(int), defaultdict(int), defaultdict(list)
     while queue:
         if executions >= limit:
             status = "failed"
@@ -330,6 +362,13 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             break
         if plugins.is_worker(node["type"]):
             last = res
+            if res["exit_code"] != 0:
+                failures[nid].append(res.get("output", "")[-500:])
+                f = failures[nid]
+                if (len(f) >= 2 and f[-1] == f[-2]) or len(f) >= MAX_STEP_FAILURES:
+                    file_stuck_claim(env_id, run_id, nid, len(f), res.get("output", ""))
+                    status = "failed"
+                    break
             if res["exit_code"] != 0 and not any(nodes[e["target"]]["type"] == "check" for e in edges):
                 status = "failed"  # a failing command only continues when a check handles it
                 break
@@ -338,6 +377,17 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             if not edges and node["type"] == "approval" and res["branch"] == "no":
                 status = "rejected"
         queue.extend(e["target"] for e in edges)
+    acceptance = graph.get("acceptance") or []
+    if status == "done" and acceptance:  # done only when every required check passes (P-VERIFY)
+        last_output = (last or {}).get("output") or ""
+        for i, check in enumerate(acceptance):
+            if check.get("kind") == "human":
+                mark_waiting(env_id, run_id, f"check-{i}")
+                r = finish_human_check(env_id, run_id, i, DBOS.recv(topic=f"check-{i}", timeout_seconds=APPROVAL_TIMEOUT))
+            else:
+                r = run_acceptance_check(env_id, run_id, i, check, last_output)
+            if not r["passed"] and check.get("required", True):
+                status = "failed"
     finish_run(env_id, run_id, status)
     if status == "failed" and depth == 0:  # sub-flow failures are reported once, by the top-level run
         send_failure_alert(env_id, run_id, graph.get("alert_urls") or [])

@@ -13,6 +13,8 @@ def init(path: str) -> None:
                      started_at TEXT, graph TEXT, waiting_on TEXT)""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_nodes(run_id TEXT, node_id TEXT, state TEXT, output TEXT,
                      PRIMARY KEY(run_id, node_id))""")
+        c.execute("""CREATE TABLE IF NOT EXISTS glacier_checks(run_id TEXT, idx INTEGER, kind TEXT, passed INTEGER,
+                     evidence TEXT, PRIMARY KEY(run_id, idx))""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_usage(run_id TEXT, node_id TEXT, model TEXT, route TEXT,
                      tokens_in INTEGER, tokens_out INTEGER, cost_usd REAL, PRIMARY KEY(run_id, node_id))""")
 
@@ -88,6 +90,17 @@ def record_usage(run_id: str, node_id: str, u: dict) -> None:
         c.execute("INSERT OR REPLACE INTO glacier_usage VALUES (?,?,?,?,?,?,?)",
                   (run_id, node_id, str(u.get("model") or ""), str(u.get("route") or ""), int(u.get("tokens_in") or 0),
                    int(u.get("tokens_out") or 0), float(u.get("cost_usd") or 0.0)))
+
+
+def record_check(run_id: str, idx: int, kind: str, passed: bool, evidence: str) -> None:
+    with _conn() as c:
+        c.execute("INSERT OR REPLACE INTO glacier_checks VALUES (?,?,?,?,?)", (run_id, idx, kind, int(bool(passed)), evidence))
+
+
+def checks_of(run_id: str) -> list[dict]:
+    with _conn() as c:
+        rows = c.execute("SELECT idx, kind, passed, evidence FROM glacier_checks WHERE run_id=? ORDER BY idx", (run_id,)).fetchall()
+    return [{"check": i, "kind": k, "passed": bool(p), "evidence": e} for i, k, p, e in rows]
 
 
 def usage_of(run_id: str) -> dict:
