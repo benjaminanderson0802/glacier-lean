@@ -59,6 +59,6 @@ The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Portabi
 | 1 | Claim research expected proposal/routing but got different status | Covered by launching the Python fake researcher through the active interpreter. |
 | 1 | `KeyError: 'x'` in Codex route test | Covered by launching Python fakes through the active interpreter. |
 
-Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The earlier Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. The workflow keeps `continue-on-error` until two consecutive Windows backend runs pass.
+Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The earlier Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. Two consecutive Windows backend runs passed on GitHub on 2026-10-07 (396 passed, 0 failed), so the Windows job is now blocking.
 
 Compatibility tests account for Windows filename rules: backslashes in links resolve to nested notes, and events may include memory changes alongside node changes, so node-event checks select messages with `node_id`.
