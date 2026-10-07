@@ -74,7 +74,9 @@ const server = http.createServer(async (req, res) => {
         const path = url.searchParams.get('path')
         if (!vault.has(path)) return send(404, { detail: 'Note not found' })
         const body = vault.get(path)
-        return send(200, { path, body, meta: parse(path), links_out: links(body),
+        const outs = links(body)
+        return send(200, { path, body, meta: parse(path), links_out: outs,
+          links_out_status: outs.map(t => { const ok = vault.has(`${t}.md`); return { target: t, status: ok ? 'resolved' : 'unresolved', display: ok ? t : `${t} (not written yet)` } }),
           links_in: [...vault].filter(([other, text]) => other !== path && links(text).includes(clean(path))).map(([other]) => clean(other)) })
       }
       if (req.method === 'PUT' && p === '/api/memory/note') {

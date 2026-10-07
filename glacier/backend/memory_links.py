@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import posixpath
 import re
 from urllib.parse import unquote, urlsplit
 
@@ -87,6 +88,12 @@ class LinkResolver:
         target = _target(raw)
         if not target:
             return None, "unresolved"
+        if target.startswith(("./", "../")):
+            # Relative Markdown link: resolve against the folder of the note that contains it.
+            source_dir = source.replace("\\", "/").rsplit("/", 1)[0] if "/" in source else ""
+            target = posixpath.normpath(posixpath.join(source_dir, target))
+            if target.startswith("../") or target == "..":
+                return target, "unresolved"
         explicit = "/" in target
         if explicit:
             canonical = self.by_path.get(_key(target))

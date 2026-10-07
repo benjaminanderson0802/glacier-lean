@@ -81,3 +81,12 @@ def test_short_bare_name_uses_shortest_path_outside_current_folder(server):
         server.put("/api/memory/note", {"path": path, "body": body, "author": "owner"})
     note = server.get("/api/memory/note", params={"path": "origin/current.md"})
     assert note["links_out"] == ["near/target"]
+
+
+def test_relative_markdown_links_resolve_from_the_notes_folder():
+    from memory_links import LinkResolver
+    resolver = LinkResolver(["projects/a/plan.md", "projects/b/notes.md", "top.md"])
+    assert resolver.resolve("../b/notes.md", "projects/a/plan.md") == ("projects/b/notes", "resolved")
+    assert resolver.resolve("./plan.md", "projects/a/other.md") == ("projects/a/plan", "resolved")
+    assert resolver.resolve("../../top.md", "projects/a/plan.md") == ("top", "resolved")
+    assert resolver.resolve("../../../outside.md", "projects/a/plan.md")[1] == "unresolved"
