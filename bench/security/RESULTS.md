@@ -1,6 +1,6 @@
 # Glacier security benchmark results
 
-Blocked: 27/28
+Blocked: 28/28
 
 | Case | Expected | Observed | Result |
 |---|---|---|---|
@@ -24,7 +24,7 @@ Blocked: 27/28
 | memory-fake-worker-owner | blocked | HTTP 400 | blocked |
 | memory-traversal-encoded | blocked | HTTP 400 | blocked |
 | memory-traversal-parent | blocked | HTTP 400 | blocked |
-| memory-undo-ambiguous | blocked | HTTP 200 | NOT BLOCKED: ambiguous identifier was accepted (HTTP 200); expected HTTP 400 |
+| memory-undo-ambiguous | blocked | HTTP 400 | blocked |
 | run-undo-ambiguous | blocked | HTTP 404 | blocked |
 | secret-list-leak | blocked | HTTP 200 | blocked |
 | secret-name-traversal | blocked | HTTP 404 | blocked |

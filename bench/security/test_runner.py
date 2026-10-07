@@ -106,6 +106,20 @@ def test_schema_requires_exact_status_and_review_attack_shapes():
     assert by_id["memory-undo-ambiguous"]["request"]["probe"] == "memory_undo_ambiguous"
     assert by_id["run-undo-ambiguous"]["request"]["probe"] == "run_undo_truncated"
     assert by_id["secret-list-leak"]["request"]["probe"] == "secret_list"
+    restore = by_id["flow-restore-ambiguous"]["request"]
+    assert restore["probe"] == "flow_restore_min_length"
+    assert restore["check"] == "min_length_message"
+    assert len(restore["body"]["commit"]) == 6
+
+
+def test_restore_min_length_probe_requires_seven_character_error():
+    from run_glacier import probe_result
+
+    case = {"id": "flow-restore-ambiguous", "request": {
+        "check": "min_length_message", "expected_status": 400,
+    }}
+    assert probe_result(case, 400, '{"detail":"Commit id must be at least 7 characters"}', {})["blocked"]
+    assert not probe_result(case, 400, '{"detail":"Commit not found"}', {})["blocked"]
 
 
 def test_runner_registers_secret_list_case_and_rejects_truncated_run_id(tmp_path):

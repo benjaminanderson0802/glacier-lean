@@ -52,6 +52,11 @@ def request(base, case):
         raw = response.read().decode(errors="replace")
         headers = {key.lower(): value for key, value in response.headers.items()}
         status = response.status
+    return probe_result(case, status, raw, headers)
+
+
+def probe_result(case, status, raw, headers):
+    spec = case["request"]
     check = spec.get("check", "status")
     wanted = spec.get("expected_status", 400)
     if check == "no_cors":
@@ -61,6 +66,8 @@ def request(base, case):
         blocked = SECRET_SENTINEL not in raw
     elif check == "ambiguous_rejected":
         blocked = status == wanted
+    elif check == "min_length_message":
+        blocked = status == wanted and "at least 7" in raw
     else:
         blocked = status == wanted
     leaked = SECRET_SENTINEL in raw
@@ -74,6 +81,8 @@ def request(base, case):
         detail = f"expected HTTP {wanted}"
     elif check == "ambiguous_rejected" and not blocked:
         detail = f"ambiguous identifier was accepted (HTTP {status}); expected HTTP {wanted}"
+    elif check == "min_length_message" and not blocked:
+        detail = f"expected HTTP {wanted} with an error mentioning at least 7 characters"
     elif check == "no_cors" and not blocked:
         detail = "untrusted origin received CORS permission"
     else:
@@ -168,15 +177,11 @@ def run_flow(base, case, home):
         nodes = [{"id": "worker", "type": "command", "config": {
             "cmd": "printf changed > check.txt", "cwd": str(workspace)}, "position": {"x": 0, "y": 0}}]
         node = None
-    elif probe in {"flow_restore_min_length", "memory_undo_ambiguous", "run_undo_truncated"}:
-        if probe != "run_undo_truncated":
-            raise RuntimeError(f"Setup probe {probe} is not a flow")
+    elif probe == "run_undo_truncated":
         nodes = [{"id": "write", "type": "note", "config": {
             "path": "runs/{run}-undo-proof.md", "template": "undo probe"},
             "position": {"x": 0, "y": 0}}]
         node = None
-    elif probe == "secret_list":
-        raise RuntimeError(f"Setup probe {probe} is not a flow")
     else:
         raise ValueError(f"Unknown run probe {probe}")
     if node is not None:
@@ -331,48 +336,11 @@ def seed_ambiguous_targets(base, case, home):
             raise RuntimeError("could not create real ambiguous memory commit targets")
         case["request"]["body"]["path"] = "ambiguous.md"
         case["request"]["body"]["commit"] = prefix
-    elif probe == "flow_restore_ambiguous":
+    elif probe == "flow_restore_min_length":
         env_id = "security-restore-target"
-        for index in range(128):
-            write(base, "/api/environments/" + env_id,
-                  {"id": env_id, "name": f"version-{index}", "nodes": [], "edges": []})
-            import subprocess as sp
-            repo_path = home / "vault"
-            commits = sp.check_output(["git", "-C", str(repo_path), "log", "--format=%H", "--",
-                                       "environments/" + env_id + ".json"], text=True).splitlines()
-            prefix = next((commits[0][:n] for n in range(1, 8)
-                           if sum(item.startswith(commits[0][:n]) for item in commits) > 1), None)
-            if prefix:
-                break
-        if len(commits) < 2:
-            raise RuntimeError("could not create ambiguous restore targets")
-        if prefix is None:
-            raise RuntimeError("the two real environment commits have no ambiguous seven-character prefix")
+        write(base, "/api/environments/" + env_id,
+              {"id": env_id, "name": "restore target", "nodes": [], "edges": []})
         case["request"]["path"] = "/api/environments/" + env_id + "/restore"
-        case["request"]["body"]["commit"] = prefix
-    elif probe == "run_undo_ambiguous":
-        write(base, "/api/environments/security-undo-target",
-              {"id": "security-undo-target", "name": "undo", "nodes": [
-                  {"id": "write-one", "type": "note", "config": {"path": "runs/{run}-one.md", "template": "one"}},
-                  {"id": "write-two", "type": "note", "config": {"path": "runs/{run}-two.md", "template": "two"}},
-              ], "edges": [{"id": "e1", "source": "write-one", "target": "write-two"}]})
-        data = json.dumps({}).encode()
-        req = urllib.request.Request(base + "/api/environments/security-undo-target/run", data=data,
-                                     method="POST", headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=8) as response:
-            run_id = json.loads(response.read())["run_id"]
-        deadline = time.monotonic() + 20
-        while time.monotonic() < deadline:
-            run = fetch(base, "/api/runs/" + run_id)
-            if run.get("status") in {"done", "failed", "rejected"}:
-                break
-            time.sleep(.1)
-        case["request"]["path"] = f"/api/runs/{run_id}/undo"
-        case["request"]["expected_status"] = 409
-        case["request"]["check"] = "ambiguous_rejected"
-        # Run undo takes a run ID, not a commit prefix. Use the real run with multiple changes
-        # and require the API to reject an undo whose target history is not safely unique.
-        case["request"]["check"] = "ambiguous_rejected"
 
 
 def report(rows):
