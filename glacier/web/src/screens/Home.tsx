@@ -3,6 +3,7 @@ import { ago, loadHome, subscribeEvents, type HomeItem, type HomeSummary } from 
 import { Empty, PageHead, Panel, Progress, Row } from '../ui/kit.tsx'
 import { StatusIcon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { StarterPanel } from './Starter.tsx'
 
 const KIND_TITLE: Record<HomeItem['kind'], string> = { approval: 'approval waiting', claim: 'claim to review', failed_run: 'failed run' }
 
@@ -40,6 +41,7 @@ export function HomeScreen() {
         </div>
       } />
       {err && <div className="g-error">{err}</div>}
+      <StarterPanel />
       <div className="g-grid-2" style={{ flex: 1 }}>
         <Panel title="Needs you" aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">all claims</button>} testid="needs-you">
           <div className="g-rows">

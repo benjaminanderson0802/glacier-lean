@@ -34,7 +34,8 @@ def run(ctx: dict) -> dict:
     prompt = (prompt.replace("{env}", ctx["env_id"])
               .replace("{run}", ctx["run_id"])
               .replace("{prev_output}", previous))
-    model = config.get("model") or os.environ.get("GLACIER_LOCAL_MODEL") or DEFAULT_MODEL
+    import system_check
+    model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
     try:
         timeout = int(config.get("timeout") or DEFAULT_TIMEOUT)
     except (TypeError, ValueError):

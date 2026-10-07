@@ -39,6 +39,7 @@ const memoryMeta = new Map()
 const memoryHistory = new Map()
 const assistantProposals = new Map()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
+let starterApplied = false
 const commitId = () => crypto.randomBytes(20).toString('hex').slice(0, 7)
 
 const server = http.createServer(async (req, res) => {
@@ -237,6 +238,14 @@ const server = http.createServer(async (req, res) => {
       return send(200, { id: h.id, status: h.status, ...(body.approve ? { commit: commitId() } : {}) })
     }
     if (p === '/api/imports' && req.method === 'GET') return send(200, [{ source: 'chatgpt', last_import: new Date(Date.now() - 864e5).toISOString(), added: 42, updated: 3, unchanged: 100 }])
+    if (p === '/api/starter' && req.method === 'GET') return send(200, { applied: starterApplied, mode: 'standard', local_model: 'granite3.3:2b',
+      reason: 'Your computer has enough memory for Glacier\'s standard mode.',
+      coding_agents_found: [{ id: 'codex', name: 'Codex', found: true, version: '0.1', usable_as_step: true }, { id: 'acp-opencode', name: 'OpenCode', found: false, version: '', usable_as_step: false }],
+      suggested_automations: [{ template_id: 'tpl-daily-report', name: 'Daily report', why: 'All tools and models this automation needs are available on your computer.', requires_local_model: true },
+        { template_id: 'tpl-folder-backup', name: 'Folder backup', why: 'Needs nothing extra.', requires_local_model: false }],
+      missing_but_useful: [{ name: 'OpenCode', why: 'Another free coding agent Glacier can use as a step.', license: 'MIT', download_page: 'https://opencode.ai' }] })
+    if (p === '/api/starter/apply' && req.method === 'POST') { const b = await readBody(); starterApplied = true
+      return send(200, { created: (b.template_ids ?? []).map(t => ({ template_id: t, id: t.replace(/^tpl-/, ''), name: t.replace(/^tpl-/, '').replace(/-/g, ' ') })), mode: b.mode, local_model: 'granite3.3:2b' }) }
     if (p === '/api/sessions' && req.method === 'GET') return send(200, [
       { id: 'opencode:ses_demo', tool: 'opencode', source: 'opencode', started: new Date(Date.now() - 72e5).toISOString(), updated: new Date(Date.now() - 6e5).toISOString(), title: 'Fix the login page', cwd: '/home/me/site', active: false },
       { id: 'codex-demo', tool: 'codex', started: new Date(Date.now() - 864e5).toISOString(), updated: new Date(Date.now() - 36e5).toISOString(), title: 'Add tests for the parser', cwd: '/home/me/parser', active: true }])

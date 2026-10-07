@@ -36,7 +36,7 @@ def _schema(options):
 
 def _local(question, options, context, model):
     url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
-    body = {"model": model or os.environ.get("GLACIER_LOCAL_MODEL", "qwen3:0.6b"), "stream": False, "think": False,
+    body = {"model": model or __import__("system_check").default_local_model(), "stream": False, "think": False,
             "format": _schema(options), "options": {"temperature": 0},
             "messages": [{"role": "user", "content": _prompt(question, options, context)}]}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})

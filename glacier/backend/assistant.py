@@ -59,7 +59,7 @@ def _ask_codex(prompt: str, schema: dict) -> dict:
 
 def _ask_local(prompt: str, schema: dict) -> dict:
     url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
-    body = {"model": os.environ.get("GLACIER_LOCAL_MODEL", "qwen3:0.6b"), "stream": False, "think": False, "format": schema,
+    body = {"model": __import__("system_check").default_local_model(), "stream": False, "think": False, "format": schema,
             "options": {"temperature": 0}, "messages": [{"role": "user", "content": prompt}]}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=600) as r:
