@@ -71,3 +71,4 @@ def test_secret_and_route_guidance_matches_main():
     assert "one policy claim per day" in text
     assert "GLACIER_CODEX_SANDBOX" in text
     assert "Read-only means the AI can look at files but cannot change them" in text
+    assert "overrides the setting on every Codex step, including steps marked read-only" in text
