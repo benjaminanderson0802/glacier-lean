@@ -1,0 +1,65 @@
+// Memory cleanup (mockup panel 12): review suggested merges and archives; every change can be undone.
+import { useEffect, useState } from 'react'
+import { memory, memoryMore, type HygieneProposal } from '../api.ts'
+import { Btn, Empty, Panel } from '../ui/kit.tsx'
+import { StatusIcon } from '../ui/Pixel.tsx'
+
+const WHAT: Record<string, string> = { merge: 'Merge duplicates', archive: 'Archive' }
+
+export function MemoryCleanup() {
+  const [items, setItems] = useState<HygieneProposal[] | null>(null)
+  const [chosen, setChosen] = useState<Set<string>>(new Set())
+  const [busy, setBusy] = useState(false)
+  const [log, setLog] = useState<{ text: string; ok: boolean; undo?: { paths: string[]; commit: string } }[]>([])
+  const [err, setErr] = useState('')
+  const load = () => memoryMore.hygiene().then(p => { setItems(p); setChosen(new Set()) }).catch(e => setErr(String(e)))
+  useEffect(() => { load() }, [])
+  const scan = async () => { setBusy(true); try { setItems(await memoryMore.scan()); setChosen(new Set()) } catch (e) { setErr(String(e)) } finally { setBusy(false) } }
+  const apply = async (approve: boolean) => {
+    setBusy(true)
+    const out: typeof log = []
+    for (const p of (items ?? []).filter(p => chosen.has(p.id))) {
+      try {
+        const r = await memoryMore.decide(p.id, approve)
+        out.push({ text: `${approve ? (WHAT[p.kind] ?? p.kind) : 'Dismissed'}: ${p.paths.join(', ')}`, ok: true, undo: r.commit ? { paths: p.paths, commit: r.commit } : undefined })
+      } catch (e) { out.push({ text: String(e).replace(/^Error: /, ''), ok: false }) }
+    }
+    setLog(out); setBusy(false); load()
+  }
+  const sel = (items ?? []).filter(p => chosen.has(p.id))
+  const notes = new Set(sel.flatMap(p => p.kind === 'merge' ? p.paths.slice(1) : p.paths)).size
+  return (
+    <div className="g-memadd">
+      <Panel title="Suggestions" aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">Scan again</Btn>} testid="cleanup-list" className="g-scroll">
+        {err && <div className="g-error">{err}</div>}
+        {items && items.length === 0 && <Empty>Your memory looks tidy. Press Scan again to check.</Empty>}
+        <div className="g-rows">
+          {(items ?? []).map(p => (
+            <label key={p.id} className="g-row g-check" data-testid={`cleanup-${p.id}`}>
+              <input type="checkbox" className="g-box" checked={chosen.has(p.id)} onChange={e => setChosen(c => { const n = new Set(c); if (e.target.checked) n.add(p.id); else n.delete(p.id); return n })} />
+              <span className="g-mid"><span className="g-lead">{WHAT[p.kind] ?? p.kind}: {p.paths.map(x => x.replace(/\.md$/, '')).join(', ')}</span><span className="g-detail">{p.reason}</span></span>
+              <span className="g-when">{p.paths.length} item{p.paths.length > 1 ? 's' : ''}</span>
+            </label>
+          ))}
+        </div>
+      </Panel>
+      <Panel title="Impact" testid="cleanup-impact">
+        <dl className="g-kv g-kv-tight">
+          <dt>Selected</dt><dd>{sel.length}</dd>
+          <dt>Tidied</dt><dd>{notes}</dd>
+          <dt>Deleted</dt><dd>none (merged or archived)</dd>
+        </dl>
+        <div className="g-actions" style={{ marginTop: 12 }}>
+          <Btn primary onClick={() => apply(true)} disabled={busy || sel.length === 0} data-testid="cleanup-apply">Clean up</Btn>
+          <Btn onClick={() => apply(false)} disabled={busy || sel.length === 0}>Dismiss</Btn>
+        </div>
+        <div className="g-rows" style={{ marginTop: 10 }}>
+          {log.map((l, i) => (
+            <div key={i} className="g-row"><span className="g-ico"><StatusIcon kind={l.ok ? 'ok' : 'bad'} /></span><span className="g-mid"><span className="g-lead">{l.text}</span></span>
+              <span className="g-when">{l.undo && <Btn onClick={async () => { for (const path of l.undo!.paths) await memory.undo(path, l.undo!.commit); setLog(x => x.map((y, j) => j === i ? { ...y, text: 'Undone: ' + y.text, undo: undefined } : y)); load() }} data-testid={`cleanup-undo-${i}`}>Undo</Btn>}</span></div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  )
+}
