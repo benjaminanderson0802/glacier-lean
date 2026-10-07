@@ -34,6 +34,8 @@ app = FastAPI(title="Glacier", lifespan=lifespan)
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 app.add_middleware(CORSMiddleware, allow_origins=["tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"],
                    allow_methods=["*"], allow_headers=["*"])
+from local_guard import LocalRequestGuard  # noqa: E402
+app.add_middleware(LocalRequestGuard)
 plugins.load_routes(app)  # route plug-ins (routes/)
 
 
