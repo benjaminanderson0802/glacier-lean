@@ -35,13 +35,17 @@ _LANDLOCK_ACCESS_FS = {
 }
 _LANDLOCK_ACCESS_NET_BIND_TCP = 1 << 0
 _LANDLOCK_ACCESS_NET_CONNECT_TCP = 1 << 1
+_LANDLOCK_SCOPE_SIGNAL = 1 << 0
+_LANDLOCK_SCOPE_ABSTRACT_UNIX_SOCKET = 1 << 1
 _PR_SET_NO_NEW_PRIVS = 38
 _PR_SET_SECCOMP = 22
 _SECCOMP_MODE_FILTER = 2
 _SECCOMP_RET_ALLOW = 0x7FFF0000
 _SECCOMP_RET_ERRNO = 0x00050000
+_SECCOMP_RET_KILL_PROCESS = 0x80000000
 _BPF_LD_W_ABS = 0x20
 _BPF_JMP_JEQ_K = 0x15
+_BPF_JMP_JGE_K = 0x35
 _BPF_RET_K = 0x06
 
 
@@ -111,17 +115,63 @@ def _install_seccomp_network_deny():
     if denied is None:
         raise RuntimeError(f"socket blocking is not configured for Linux architecture {machine}")
 
-    instructions = [_SockFilter(_BPF_LD_W_ABS, 0, 0, 0)]  # seccomp_data.nr
-    for number in denied:
-        instructions.append(_SockFilter(_BPF_JMP_JEQ_K, 0, 1, number))
-        instructions.append(_SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM))
-    instructions.append(_SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ALLOW))
+    instructions = _seccomp_instructions(machine)
     filter_array = (_SockFilter * len(instructions))(*instructions)
     program = _SockFprog(len(instructions), filter_array)
     libc = ctypes.CDLL(None, use_errno=True)
     if libc.prctl(_PR_SET_SECCOMP, _SECCOMP_MODE_FILTER, ctypes.byref(program), 0, 0) != 0:
         error = ctypes.get_errno()
         raise OSError(error, os.strerror(error))
+
+
+def _seccomp_instructions(machine):
+    """Build a fail-closed architecture guard followed by socket restrictions."""
+    machine = machine.lower()
+    arch = {
+        "x86_64": 0xC000003E,
+        "amd64": 0xC000003E,
+        "aarch64": 0xC00000B7,
+        "arm64": 0xC00000B7,
+    }.get(machine)
+    if arch is None:
+        raise RuntimeError(f"socket blocking is not configured for Linux architecture {machine}")
+    syscall_numbers = {
+        "x86_64": (41, 42, 43, 44, 45, 46, 47, 49, 50, 53, 288, 299, 307, 425),
+        "amd64": (41, 42, 43, 44, 45, 46, 47, 49, 50, 53, 288, 299, 307, 425),
+        "aarch64": (198, 203, 202, 206, 207, 211, 212, 200, 201, 199, 242, 269, 243, 425),
+        "arm64": (198, 203, 202, 206, 207, 211, 212, 200, 201, 199, 242, 269, 243, 425),
+    }
+    denied = syscall_numbers[machine]
+    instructions = [
+        _SockFilter(_BPF_LD_W_ABS, 0, 0, 4),
+        _SockFilter(_BPF_JMP_JEQ_K, 1, 0, arch),
+        _SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_KILL_PROCESS),
+        _SockFilter(_BPF_LD_W_ABS, 0, 0, 0),
+    ]
+    if machine in ("x86_64", "amd64"):
+        instructions.extend([
+            _SockFilter(_BPF_JMP_JGE_K, 0, 1, 0x40000000),
+            _SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM),
+        ])
+    for number in denied:
+        instructions.append(_SockFilter(_BPF_JMP_JEQ_K, 0, 1, number))
+        instructions.append(_SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM))
+    if machine in ("x86_64", "amd64"):
+        signal_syscalls = (62, 200, 234)  # kill, tkill, tgkill
+    else:
+        signal_syscalls = (129, 130, 131)
+    # Deny positive pid targets and process-group-wide kill(0/-1). Callers
+    # should launch this argv with start_new_session=True for containment.
+    for number in signal_syscalls:
+        instructions.extend([
+            _SockFilter(_BPF_JMP_JEQ_K, 0, 3, number),
+            _SockFilter(_BPF_LD_W_ABS, 0, 0, 16),  # args[0] low word (pid/tid)
+            _SockFilter(_BPF_JMP_JEQ_K, 0, 1, 0),
+            _SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ERRNO | errno.EPERM),
+            _SockFilter(_BPF_LD_W_ABS, 0, 0, 0),
+        ])
+    instructions.append(_SockFilter(_BPF_RET_K, 0, 0, _SECCOMP_RET_ALLOW))
+    return instructions
 
 
 def _apply_policy(workdir):
@@ -132,7 +182,22 @@ def _apply_policy(workdir):
     fs_rights = _filesystem_rights(abi)
     net_rights = _LANDLOCK_ACCESS_NET_BIND_TCP | _LANDLOCK_ACCESS_NET_CONNECT_TCP
     attr = _RulesetAttr(fs_rights, net_rights)
-    ruleset_fd = _syscall(_LANDLOCK_CREATE_RULESET, ctypes.byref(attr), ctypes.sizeof(attr), 0)
+    attr_size = ctypes.sizeof(attr)
+    if abi >= 6:
+        class _RulesetAttrV6(ctypes.Structure):
+            _fields_ = [
+                ("handled_access_fs", ctypes.c_uint64),
+                ("handled_access_net", ctypes.c_uint64),
+                ("scoped", ctypes.c_uint64),
+            ]
+
+        attr = _RulesetAttrV6(
+            fs_rights,
+            net_rights,
+            _LANDLOCK_SCOPE_SIGNAL | _LANDLOCK_SCOPE_ABSTRACT_UNIX_SOCKET,
+        )
+        attr_size = ctypes.sizeof(attr)
+    ruleset_fd = _syscall(_LANDLOCK_CREATE_RULESET, ctypes.byref(attr), attr_size, 0)
     try:
         readonly = (
             _LANDLOCK_ACCESS_FS["execute"]
@@ -147,12 +212,26 @@ def _apply_policy(workdir):
         workdir = os.path.realpath(workdir)
         if not os.path.isdir(workdir):
             raise ValueError(f"work directory does not exist: {workdir}")
+        os.makedirs(os.path.join(workdir, ".tmp"), exist_ok=True)
         _add_path_rule(ruleset_fd, workdir, fs_rights)
 
         # Expose only common OS/runtime trees, and only for reads and execution.
-        for path in ("/usr", "/bin", "/sbin", "/lib", "/lib64", "/etc", "/opt", "/dev"):
+        for path in ("/usr", "/bin", "/sbin", "/lib", "/lib64", "/etc", "/opt"):
             if os.path.exists(path):
                 _add_path_rule(ruleset_fd, path, readonly)
+        # A rule on an individual device file accepts file rights only. Do not
+        # include READ_DIR here (which is valid for directories) and include
+        # TRUNCATE from ABI 3 because shells commonly open /dev/null with
+        # O_TRUNC for redirection.
+        device_rights = (
+            _LANDLOCK_ACCESS_FS["read_file"]
+            | _LANDLOCK_ACCESS_FS["write_file"]
+        )
+        if abi >= 3:
+            device_rights |= _LANDLOCK_ACCESS_FS["truncate"]
+        for path in ("/dev/null", "/dev/zero", "/dev/tty"):
+            if abi >= 3 and os.path.exists(path):
+                _add_path_rule(ruleset_fd, path, device_rights)
 
         libc = ctypes.CDLL(None, use_errno=True)
         if libc.prctl(_PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0:
@@ -165,10 +244,20 @@ def _apply_policy(workdir):
     _install_seccomp_network_deny()
 
 
-def _exec_command(command, workdir):
+def _exec_command(command, workdir, allowed_env=None):
     _apply_policy(workdir)
-    os.chdir(os.path.realpath(workdir))
-    os.execvpe("/bin/sh", ["/bin/sh", "-c", command], os.environ.copy())
+    workdir = os.path.realpath(workdir)
+    os.chdir(workdir)
+    env = {
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "HOME": workdir,
+        "TMPDIR": os.path.join(workdir, ".tmp"),
+        "LANG": os.environ.get("LANG", "C.UTF-8"),
+    }
+    for name in allowed_env or ():
+        if name in os.environ:
+            env[name] = os.environ[name]
+    os.execve("/bin/sh", ["/bin/sh", "-c", command], env)
 
 
 def _probe():
@@ -192,6 +281,7 @@ def _probe():
         text=True,
         timeout=5,
         check=False,
+        start_new_session=True,
     )
     if result.returncode != 0:
         detail = result.stderr.strip().splitlines()
@@ -204,6 +294,10 @@ def available():
     """Return whether this host can enforce the sandbox and a plain reason."""
     try:
         return _probe()
+    except subprocess.TimeoutExpired:
+        return False, "sandbox security probe timed out"
+    except subprocess.SubprocessError as exc:
+        return False, f"sandbox security probe failed: {exc}"
     except (OSError, RuntimeError, ValueError) as exc:
         return False, str(exc)
 

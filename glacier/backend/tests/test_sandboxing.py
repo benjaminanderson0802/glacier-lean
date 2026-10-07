@@ -1,6 +1,6 @@
-import os
 import socket
 import subprocess
+import os
 
 import pytest
 
@@ -75,6 +75,58 @@ def test_sandbox_preserves_command_output_and_exit_code(tmp_path):
     assert result.stdout == "hello sandbox\n"
     assert result.stderr == ""
     assert result.returncode == 7
+
+
+def test_seccomp_checks_architecture_before_syscall_number():
+    instructions = sandboxing._seccomp_instructions("x86_64")
+    assert instructions[0].code == sandboxing._BPF_LD_W_ABS
+    assert instructions[0].k == 4  # seccomp_data.arch
+    assert instructions[1].code == sandboxing._BPF_JMP_JEQ_K
+    assert instructions[1].k == 0xC000003E
+    assert instructions[2].k == sandboxing._SECCOMP_RET_KILL_PROCESS
+
+
+def test_sandbox_does_not_expose_parent_environment(tmp_path, monkeypatch):
+    _sandbox_or_skip()
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+    monkeypatch.setenv("GLACIER_TEST_SECRET", "do-not-leak")
+
+    result = _run("test -z \"${GLACIER_TEST_SECRET+x}\"", workdir)
+
+    assert result.returncode == 0
+
+
+def test_sandbox_allows_standard_null_device(tmp_path):
+    _sandbox_or_skip()
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+
+    result = _run("echo hi >/dev/null", workdir)
+
+    assert result.returncode == 0
+
+
+def test_sandbox_creates_writable_tmp_directory(tmp_path):
+    _sandbox_or_skip()
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+
+    result = _run("test -d \"$TMPDIR\" && touch \"$TMPDIR/file\"", workdir)
+
+    assert result.returncode == 0
+
+
+def test_available_reports_subprocess_failures(monkeypatch):
+    def fail(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], kwargs.get("timeout"))
+
+    monkeypatch.setattr(sandboxing.subprocess, "run", fail)
+
+    available, reason = sandboxing.available()
+
+    assert not available
+    assert "timed out" in reason.lower()
 
 
 def test_nonempty_host_allowlist_is_rejected_until_proxy_exists(tmp_path):

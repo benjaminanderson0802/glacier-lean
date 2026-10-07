@@ -41,6 +41,16 @@ Linux uses Landlock directly through the standard-library `ctypes` interface.
 The wrapper process restricts itself and then replaces itself with `/bin/sh
 -c <cmd>`. The work directory is read/write; common system executable and
 configuration trees are read-only. Other filesystem locations are denied.
+The child receives only `PATH`, `HOME`, `TMPDIR`, and `LANG` by default.
+Landlock ABI 6 scopes signal delivery and abstract Unix sockets to the sandbox.
+On older ABIs, seccomp blocks cross-process `kill`, `tkill`, and `tgkill`.
+Callers must launch the returned argv with `start_new_session=True` for the
+signal fallback; `wrap()` returns argv and cannot set process-creation flags.
+This fallback cannot isolate abstract Unix sockets from other host processes.
+From Landlock ABI 3, `/dev/null`,
+`/dev/zero`, and `/dev/tty` (when present) receive file-only read/write and
+truncate rights. The `TRUNCATE` right is needed for shell output redirection;
+directory rights cannot be granted on a single device file.
 The kernel's TCP connect/bind rights are handled without granting any ports,
 so the current implementation blocks network access for every command.
 `allow_hosts=[]` is supported. A non-empty `allow_hosts` raises a clear
