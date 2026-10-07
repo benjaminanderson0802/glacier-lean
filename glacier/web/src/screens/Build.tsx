@@ -12,6 +12,7 @@ import { TerminalPanel } from './TerminalPanel.tsx'
 import { VaultView } from './VaultView.tsx'
 import { tok } from '../ui/tok.ts'
 import { takeDraft } from '../draft.ts'
+import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -75,6 +76,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [busy, setBusy] = useState(false)
   const [catalog, setCatalog] = useState<NodeTypeInfo[]>([])
   const typeInfo = useCallback((k: string) => catalog.find(t => t.type === k), [catalog])
+  const layout = useLayout()
+  const [moreFields, setMoreFields] = useState(false)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -392,7 +395,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>Notes</button>
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
-              {catalog.map(t => (
+              {catalog.filter(t => layout !== 'simple' || SIMPLE_STEP_TYPES.has(t.type)).map(t => (
                 <button key={t.type} className={`pal pal-${t.type}`} data-testid={`palette-${t.type}`} title={t.description} onClick={() => addNode(t.type)}>+ {t.label}</button>
               ))}
             </div>
@@ -452,12 +455,12 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               <span>Name</span>
               <input data-testid="env-name" value={envName} onChange={e => { setEnvName(e.target.value); setDirty(true) }} />
             </label>
-            <div className="field"><span>Id</span><code data-testid="env-id">{envId}</code></div>
+            {layout !== 'simple' && <div className="field"><span>Id</span><code data-testid="env-id">{envId}</code></div>}
             <div className="row">
               <button className="primary" data-testid="save" disabled={busy} onClick={() => save()}>Save</button>
               <button className="run" data-testid="run" disabled={busy || nodes.length === 0} onClick={run}>Run</button>
             </div>
-            <div className="field">
+            <div className="field" style={layout === 'simple' ? { display: 'none' } : undefined}>
               <span>Last save commit</span>
               <code data-testid="last-commit">{lastCommit || '-'}</code>
             </div>
@@ -496,8 +499,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
 
             {selNode && (
               <div className="inspector" data-testid="inspector">
-                <div className="section-head"><span>Node {selNode.id} · {selNode.type}</span></div>
-                {(typeInfo(selNode.type)?.fields ?? []).map(f => (
+                <div className="section-head"><span>{layout === 'simple' ? (typeInfo(selNode.type)?.label ?? selNode.type) : `Node ${selNode.id} · ${selNode.type}`}</span>
+                  {layout === 'simple' && <button className="ghost" data-testid="more-fields" onClick={() => setMoreFields(m => !m)}>{moreFields ? 'fewer settings' : 'more settings'}</button>}</div>
+                {(typeInfo(selNode.type)?.fields ?? []).filter(f => layout !== 'simple' || moreFields || !f.optional || (selNode.data.config[f.key] ?? '') !== '').map(f => (
                   <label className="field" key={f.key}>
                     <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
                     {f.picker === 'environment'
@@ -514,6 +518,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                       : <input data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
                   </label>
                 ))}
+                {layout === 'full' && <pre className="muted small" data-testid="node-raw" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify({ id: selNode.id, type: selNode.type, config: selNode.data.config }, null, 2)}</pre>}
                 <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>Delete node</button>
               </div>
             )}
