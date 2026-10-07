@@ -25,7 +25,10 @@ class Server:
         env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
         self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
                                      cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, start_new_session=True)
-        for _ in range(150):
+        deadline = time.time() + float(os.environ.get("GLACIER_TEST_START_TIMEOUT", "60"))
+        while time.time() < deadline:  # startup grows with plug-ins; a busy machine can need well over 15 s
+            if self.proc.poll() is not None:
+                break
             try:
                 if httpx.get(self.url + "/api/environments").status_code == 200:
                     return self
