@@ -279,6 +279,8 @@ def _exec_command(command, workdir, allowed_env=None):
 def _probe():
     """Probe enforcement in a child because Landlock restrictions are permanent."""
     if not sys.platform.startswith("linux"):
+        if sys.platform == "win32":
+            return False, "the step sandbox needs Linux; this step can't run sandboxed on Windows"
         return False, "per-step sandbox is not implemented on this operating system"
     if not hasattr(os, "O_PATH"):
         return False, "this Python build does not expose Linux O_PATH"
