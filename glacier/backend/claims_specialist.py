@@ -62,6 +62,14 @@ def create_rerun(env_id: str, rerun_id: str, cid: str) -> None:
     store.create_run(rerun_id, env_id, graph)
 
 
+def proof_verified(status: str, acceptance: list, checks: list):
+    """None when the flow has no acceptance checks (then a finished re-run is the proof); otherwise True only if the
+    re-run finished AND every acceptance check was actually recorded AND passed (a missing check is never a pass)."""
+    if not acceptance:
+        return None
+    return status == "done" and len(checks) >= len(acceptance) and all(c["passed"] for c in checks)
+
+
 @DBOS.step(retries_allowed=True, max_attempts=3)
 def close_claim(cid: str, rerun_id: str, status: str, verified) -> dict:
     proven = status == "done" and verified is not False
@@ -86,7 +94,7 @@ def work_claim(cid: str) -> dict:
         status = DBOS.start_workflow(runner.run_environment, a["env_id"], rerun_id).get_result()
     acceptance = (store.graph_of(rerun_id).get("acceptance") or [])
     checks = store.checks_of(rerun_id)
-    verified = None if not acceptance else (status == "done" and all(c["passed"] for c in checks))
+    verified = proof_verified(status, acceptance, checks)
     return close_claim(cid, rerun_id, status, verified)
 
 
