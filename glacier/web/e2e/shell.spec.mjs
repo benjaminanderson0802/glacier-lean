@@ -61,7 +61,8 @@ try {
   check(true, 'saved flow appears in the Automations list')
   await page.getByTestId('flow-shell-test').click()
   await page.getByTestId('run-steps').waitFor()
-  check(await page.getByTestId('page-title').textContent() === 'Shell test', 'clicking a flow opens its Run view')
+  const titled = await page.waitForFunction(() => document.querySelector('[data-testid=page-title]')?.textContent === 'Shell test', null, { timeout: 8000 }).then(() => true, () => false)
+  check(titled, 'clicking a flow opens its Run view')
   await page.getByTestId('run-history').click()
   await page.getByTestId('past-runs').waitFor()
   check(true, 'Past runs view opens')
@@ -144,6 +145,18 @@ try {
   await page.getByTestId('secret-del-yes-TEST_KEY').click()
   await page.getByTestId('secret-TEST_KEY').waitFor({ state: 'detached' })
   check(true, 'Settings > Secrets removes a secret after confirming')
+
+  // Ask > Edit: proposed automation opens in the builder; its goal and checks survive saving
+  await page.getByTestId('nav-ask').click()
+  await page.getByTestId('chat-input').fill('make me a daily backup')
+  await page.getByTestId('chat-send').click()
+  await page.getByTestId('proposal-edit').click()
+  const drafted = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Daily backup', null, { timeout: 8000 }).then(() => true, () => false)
+  check(drafted && await page.getByTestId('node-backup').count() === 1, 'Ask > Edit opens the proposed flow in the builder')
+  await page.getByTestId('save').click()
+  await page.waitForFunction(() => document.querySelector('[data-testid=last-commit]')?.textContent !== '-')
+  const savedFlow = await (await fetch(`http://localhost:${MOCK_PORT}/api/environments/daily-backup`)).json()
+  check(savedFlow.goal && Array.isArray(savedFlow.acceptance) && savedFlow.acceptance.length === 1, 'saving keeps the goal and checks the builder does not show')
 
   // claims: list from Home, detail, decision
   await page.getByTestId('nav-home').click()

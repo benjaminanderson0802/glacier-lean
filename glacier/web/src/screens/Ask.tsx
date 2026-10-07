@@ -3,6 +3,8 @@ import { applyProposal, chat, type ChatProposal } from '../api.ts'
 import { Btn, PageHead, Panel } from '../ui/kit.tsx'
 import { Icon, Mascot } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { setDraft } from '../draft.ts'
+import type { Environment } from '../api.ts'
 
 type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean }
 
@@ -49,6 +51,16 @@ export function AskScreen() {
     }
   }
 
+  const edit = async (i: number) => {
+    const p = msgs[i].proposal!
+    const flow = (p.flow ?? {}) as Environment & Record<string, unknown>
+    const name = String(flow.name ?? flow.id ?? 'New automation')
+    setDraft({ ...flow, id: String(flow.id ?? ''), name, nodes: (flow.nodes ?? []) as Environment['nodes'], edges: (flow.edges ?? []) as Environment['edges'] })
+    applyProposal(p.id, false).catch(() => {})  // the edited copy replaces the proposal
+    setMsgs(x => x.map((m, j) => j === i ? { ...m, state: 'rejected', text: m.text } : m))
+    go(`automations/new/${encodeURIComponent(name)}`)
+  }
+
   return (
     <>
       <PageHead title="Ask" sub="Talk to your assistant." />
@@ -70,6 +82,7 @@ export function AskScreen() {
                     {m.state === 'open' && (
                       <div className="g-actions">
                         <Btn primary onClick={() => decide(i, true)} data-testid="proposal-approve">Approve</Btn>
+                        <Btn onClick={() => edit(i)} data-testid="proposal-edit">Edit</Btn>
                         <Btn onClick={() => decide(i, false)} data-testid="proposal-reject">Reject</Btn>
                       </div>
                     )}
