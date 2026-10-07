@@ -116,7 +116,10 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
               <pre className="g-notebody" data-testid="memory-note-body">{note.body}</pre>
               {(note.links_out.length > 0 || note.links_in.length > 0) && (
                 <div className="g-links">
-                  {note.links_out.length > 0 && <div><span className="g-muted">Links to </span>{note.links_out.map(l => <button key={l} className="g-link" onClick={() => open(`${l}.md`)}>{l}</button>)}</div>}
+                  {note.links_out.length > 0 && <div><span className="g-muted">Links to </span>{(note.links_out_status ?? note.links_out.map(t => ({ target: t, status: 'resolved', display: t }))).map(l =>
+                    l.status === 'resolved'
+                      ? <button key={l.target} className="g-link" onClick={() => open(`${l.target}.md`)}>{l.target}</button>
+                      : <span key={l.target} className="g-muted" data-testid="link-unwritten" title="No note has this name yet">{l.display} </span>)}</div>}
                   {note.links_in.length > 0 && <div><span className="g-muted">Linked from </span>{note.links_in.map(l => <button key={l} className="g-link" onClick={() => open(`${l}.md`)}>{l.replace(/\.md$/, '')}</button>)}</div>}
                 </div>
               )}

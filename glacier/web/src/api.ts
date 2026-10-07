@@ -178,7 +178,7 @@ export function slugify(name: string): string {
 
 // ---------- Memory (docs/CONTRACT.md: /api/memory/*) ----------
 export interface MemNote { path: string; title: string; author: string; updated: string; tags: string[] }
-export interface MemNoteFull { path: string; body: string; meta: Record<string, unknown>; links_out: string[]; links_in: string[] }
+export interface MemNoteFull { path: string; body: string; meta: Record<string, unknown>; links_out: string[]; links_in: string[]; links_out_status?: { target: string; status: string; display: string }[] }
 export interface MemHit { path: string; title: string; score: number; snippet: string; fallback?: boolean }
 export interface MemCommit { commit: string; author: string; date: string; message: string }
 export const memory = {
