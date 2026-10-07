@@ -1,6 +1,10 @@
 # Glacier screen: handoff for a UI designer or design agent
 
-You have full creative control over how Glacier looks and feels. This page lists the few fixed parts that make your screen plug into the working system with no rework. Your screen is accepted when `npm run check:ui` passes (see the end of this page).
+**The look is fixed (owner's rule).** Glacier's theme is the retro pixel style in `docs/ui/mockup.png`: pixel fonts, dark navy, 1-2px glowing light-blue borders, a light-blue active tab, a pixel mascot by each page title, and the F1/Ctrl+K footer. Do not restyle it, "modernise" it, or swap in a generic dark theme. All colours, fonts, sizes and corner radii live only in `glacier/web/src/theme/tokens.css`; build screens from `src/ui/kit.tsx` and `src/ui/Pixel.tsx`. `npm run check:ui` runs `e2e/theme_lint.mjs`, which fails on any colour, font or radius defined elsewhere.
+
+**Exactly five top-level options:** Home, Ask, Automations, Memory, Settings (`src/App.tsx`). Everything else nests inside one of them. `e2e/shell.spec.mjs` fails if a sixth appears.
+
+Within that, you design the content of each screen. This page lists the few fixed parts that make your screen plug into the working system with no rework. Your screen is accepted when `npm run check:ui` passes (see the end of this page).
 
 ## 1. What Glacier is (for design context)
 Glacier lets anyone hand goals and recurring work to AI workers and ordinary automations, on their own computer, and accepts results only when an independent check proves them. Users draw **flows** made of **nodes** (steps) joined by **edges** (arrows), run them, watch each step live, approve risky steps, and browse what Glacier remembers.
@@ -49,7 +53,8 @@ Coming soon. Leave room in the layout, no need to build yet:
 | `ws-status` (+ `data-connected="true|false"`) | live-connection indicator |
 | `env-list`, `env-<flow id>` | flows list, one entry per flow |
 | `new-env`, `new-env-name`, `new-env-create`, `new-env-cancel` | create-flow button, name input, confirm, cancel |
-| `tab-canvas`, `tab-vault` | switch between canvas and memory |
+| `tab-canvas`, `tab-vault` | switch between canvas and memory (inside Automations > Build) |
+| `nav-home` … `nav-settings`, `screen-<option>`, `page-title` | the five top-level options, the open screen, its title |
 | `palette`, `palette-<type>` | palette, one button per node type |
 | `canvas` | the canvas area |
 | `node-<node id>` (+ `data-state`, `data-type`) | each node; `data-state` is the live step state |
@@ -77,4 +82,5 @@ npx vite --port 4173  # your screen, talking to the fake backend (set GLACIER_AP
 npm run check:ui      # type check + build + full browser test against the fake backend
 ```
 Accepted when `npm run check:ui` prints `PASS` with no page errors. The project owner then runs the same test against the real backend.
-Original Glacier visual reference, optional: `legacy-keep/` (retro design and assets).
+Visual reference (required): `docs/ui/mockup.png` (the owner's design) and `docs/ui/built-home.png` (the Home screen as built).
+Fonts: Pixelify Sans and VT323, SIL Open Font License, bundled in `src/theme/fonts/` with their licence files.

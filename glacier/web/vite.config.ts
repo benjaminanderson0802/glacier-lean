@@ -7,6 +7,7 @@ const proxy = { '/api': { target, changeOrigin: true, ws: true } }
 
 export default defineConfig({
   plugins: [react()],
+  define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.1.0') },
   server: { proxy },
   preview: { proxy },
   build: { chunkSizeWarningLimit: 1500 },

@@ -256,24 +256,29 @@ def _commit_changes(changes, removals, agent="glacier-hygiene"):
             index.reset()
             raise ValueError("the memory changes could not be saved. Your notes were restored; please try again.") from exc
 
+        # The Git commit is authoritative. Update the rebuildable SQLite views
+        # afterward, so an index failure cannot roll files back behind HEAD.
         connection = vault._db()
-        for path in removed_paths:
-            connection.execute("DELETE FROM fts WHERE path=?", (path,))
-            connection.execute("DELETE FROM links WHERE src=?", (path,))
-            connection.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
-                               (agent, "delete_note", json.dumps({"path": path, "commit": commit.hexsha[:8]})))
-        for path in changed_paths:
-            content = changes[path]
-            connection.execute("DELETE FROM fts WHERE path=?", (path,))
-            connection.execute("INSERT INTO fts VALUES (?,?)", (path, content))
-            connection.execute("DELETE FROM links WHERE src=?", (path,))
-            for target in re.findall(r"\[\[([^\]|#]+)", content):
-                connection.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
-            connection.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
-                               (agent, "write_note", json.dumps({"path": path, "commit": commit.hexsha[:8]})))
-        connection.commit()
-        connection.close()
-        return commit.hexsha[:8]
+        try:
+            for path in removed_paths:
+                connection.execute("DELETE FROM fts WHERE path=?", (path,))
+                connection.execute("DELETE FROM links WHERE src=?", (path,))
+                connection.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
+                                   (agent, "delete_note", json.dumps({"path": path, "commit": commit.hexsha[:8]})))
+            for path in changed_paths:
+                content = changes[path]
+                connection.execute("DELETE FROM fts WHERE path=?", (path,))
+                connection.execute("INSERT INTO fts VALUES (?,?)", (path, content))
+                connection.execute("DELETE FROM links WHERE src=?", (path,))
+                for target in re.findall(r"\[\[([^\]|#]+)", content):
+                    connection.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
+                connection.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
+                                   (agent, "write_note", json.dumps({"path": path, "commit": commit.hexsha[:8]})))
+            connection.commit()
+        finally:
+            connection.close()
+
+    return commit.hexsha[:8]
 
 
 def decide(proposal_id, approve):

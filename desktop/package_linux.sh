@@ -17,12 +17,10 @@ if ((${#missing[@]})); then
   exit 1
 fi
 
-if ! command -v python3.12 >/dev/null 2>&1; then
-  echo "Warning: Python 3.12 is not installed. The packages include backend source but require Python 3.12 at runtime." >&2
-fi
+python3 ../setup/pybundle/build_runtime.py --platform x86_64-unknown-linux-gnu
 
-npx tauri build --bundles deb,appimage
+npx tauri build --config src-tauri/tauri.linux.conf.json --bundles deb,appimage
 
 echo "Linux packages created:"
 find src-tauri/target/release/bundle/deb src-tauri/target/release/bundle/appimage \
-  -maxdepth 1 -type f \( -name '*.deb' -o -name '*.AppImage' \) -printf '%p (%s bytes)\n' | sort
+  -maxdepth 1 -type f \( -name '*.deb' -o -name '*.AppImage' \) -printf '%p (%s bytes; %k KiB)\n' | sort

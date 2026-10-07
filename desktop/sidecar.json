@@ -1,5 +1,9 @@
 {
-  "venv_python": "python3.12",
+  "runtime_by_platform": {
+    "x86_64-unknown-linux-gnu": "runtime/x86_64-unknown-linux-gnu/bin/python3.12",
+    "aarch64-apple-darwin": "runtime/aarch64-apple-darwin/bin/python3.12",
+    "x86_64-pc-windows-msvc": "runtime/x86_64-pc-windows-msvc/python.exe"
+  },
   "python_version": "3.12",
   "low_resource": true,
   "low_resource_env": {
