@@ -11,12 +11,13 @@ import workspaces
 
 
 def repo():
+    """Return the shared vault Repo; callers must hold vault._lock for Git access."""
     import vault
     return vault._repo
 
 
 def _run_commits(run_id: str) -> list[git.Commit]:
-    """Find only commits attributable to this exact run."""
+    """Find commits for this run; caller must hold vault._lock."""
     r = repo()
     tag = re.compile(r"\[run:" + re.escape(run_id) + r"\]", re.IGNORECASE)
     path_id = re.compile(r"(?<![A-Za-z0-9])" + re.escape(run_id) + r"(?![A-Za-z0-9])", re.IGNORECASE)
@@ -95,6 +96,7 @@ def workspaces_lock(path: str):
 
 
 def _undo_conflicts(r: git.Repo, commits: list[git.Commit]) -> tuple[set[str], set[str]]:
+    """Inspect vault history; caller must hold vault._lock."""
     targets = {commit.hexsha for commit in commits}
     touched = set().union(*(_commit_paths(commit) for commit in commits))
     oldest = commits[-1]
@@ -149,50 +151,54 @@ def _apply_undo(r: git.Repo, commits: list[git.Commit], touched: set[str], repo_
 
 
 def undo(run_id: str) -> dict:
+    """Undo changes while holding vault lock before sorted workspace merge locks."""
     import vault
 
     r = repo()
-    # Workspace merge locks cover workspace Git only. Release them before taking
-    # vault._lock; workspace merge never takes the vault lock in reverse order.
-    with ExitStack() as locks:
-        workspace_commits = _workspace_run_commits(run_id)
-        for path in sorted({path for path, _ in workspace_commits}):
-            env_id = os.path.basename(path)
-            lock_path = os.path.join(os.path.dirname(path), "..", "worktrees", f"{env_id}.merge.lock")
-            os.makedirs(os.path.dirname(lock_path), exist_ok=True)
-            locks.enter_context(workspaces_lock(lock_path))
-        workspace_groups = {}
-        for workspace, commit in workspace_commits:
-            workspace_groups.setdefault(workspace, []).append(commit)
-        workspace_plans = []
-        for path, repo_commits in sorted(workspace_groups.items()):
-            workspace_repo = git.Repo(path)
-            if _repo_status(workspace_repo):
-                workspace_repo.close()
-                raise RuntimeError("main has uncommitted changes; undo skipped so nothing is overwritten")
-            touched, conflicts = _undo_conflicts(workspace_repo, repo_commits)
-            workspace_plans.append((path, workspace_repo, repo_commits, touched, conflicts))
-        if any(plan[4] for plan in workspace_plans):
-            conflicts = set().union(*(plan[4] for plan in workspace_plans))
-            for _, workspace_repo, _, _, _ in workspace_plans:
-                workspace_repo.close()
-            raise RuntimeError("These files have later changes by other runs and were left alone: " + ", ".join(sorted(conflicts)))
+    workspace_commits = _workspace_run_commits(run_id)
+    workspace_groups = {}
+    for workspace, commit in workspace_commits:
+        workspace_groups.setdefault(workspace, []).append(commit)
+    workspace_plans = []
+    workspace_results = []
+    vault_result = {"reverted": [], "new_commit": "", "changes": []}
 
-        with vault._lock:
+    # Global lock order: vault._lock first, then workspace merge locks in sorted
+    # path order. Workspace merge code never acquires vault._lock while holding
+    # a merge lock, so rollback cannot form a lock cycle.
+    with vault._lock, ExitStack() as locks:
+        try:
+            for path in sorted(workspace_groups):
+                env_id = os.path.basename(path)
+                lock_path = os.path.join(os.path.dirname(path), "..", "worktrees", f"{env_id}.merge.lock")
+                os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+                locks.enter_context(workspaces_lock(lock_path))
+
+            for path, repo_commits in sorted(workspace_groups.items()):
+                workspace_repo = git.Repo(path)
+                try:
+                    if _repo_status(workspace_repo):
+                        raise RuntimeError("main has uncommitted changes; undo skipped so nothing is overwritten")
+                    touched, conflicts = _undo_conflicts(workspace_repo, repo_commits)
+                    workspace_plans.append((path, workspace_repo, repo_commits, touched, conflicts))
+                except Exception:
+                    workspace_repo.close()
+                    raise
+            if any(plan[4] for plan in workspace_plans):
+                conflicts = set().union(*(plan[4] for plan in workspace_plans))
+                raise RuntimeError("These files have later changes by other runs and were left alone: "
+                                   + ", ".join(sorted(conflicts)))
+
             commits = _run_commits(run_id)
             if not commits and not workspace_commits:
                 raise ValueError(f"No saved changes were found for run {run_id}.")
             if commits and (_dirty_paths(r) & set().union(*(_commit_paths(c) for c in commits))):
                 raise RuntimeError("vault has uncommitted changes; undo skipped so nothing is overwritten")
             vault_touched, vault_conflicts = _undo_conflicts(r, commits) if commits else (set(), set())
-            conflicts = vault_conflicts | set().union(*(plan[4] for plan in workspace_plans)) if workspace_plans else vault_conflicts
-            if conflicts:
-                raise RuntimeError(
-                    "These files have later changes by other runs and were left alone: "
-                    + ", ".join(sorted(conflicts))
-                )
-            # Capture every repository head before applying anything. If an undo or the
-            # rebuildable vault index update fails, restore all repositories and indexes.
+            if vault_conflicts:
+                raise RuntimeError("These files have later changes by other runs and were left alone: "
+                                   + ", ".join(sorted(vault_conflicts)))
+
             starts = [(workspace_repo, workspace_repo.head.commit.hexsha)
                       for _, workspace_repo, _, _, _ in workspace_plans]
             if commits:
@@ -209,9 +215,7 @@ def undo(run_id: str) -> dict:
                     }
                 finally:
                     db.close()
-            workspace_result_items = []
-            vault_result = {"reverted": [], "new_commit": "", "changes": []}
-            workspace_results = []
+
             try:
                 for path, workspace_repo, repo_commits, touched, _ in workspace_plans:
                     workspace_result = _apply_undo(workspace_repo, repo_commits, touched, "workspace", run_id)
@@ -219,8 +223,8 @@ def undo(run_id: str) -> dict:
                     workspace_results.append(workspace_result)
                 if commits:
                     vault_result = _apply_undo(r, commits, vault_touched, "vault", run_id)
-                # Keep the rebuildable keyword and link indexes in sync with git's restored tree.
-                if commits:
+                    # Rebuildable indexes are projections. A bookkeeping failure
+                    # must not roll back Git files behind an already-created HEAD.
                     db = vault._db()
                     try:
                         for path in vault_touched:
@@ -242,7 +246,6 @@ def undo(run_id: str) -> dict:
             except Exception:
                 for selected_repo, start in reversed(starts):
                     _rollback_repo(selected_repo, start)
-                # Restore the exact affected index rows along with the Git repositories.
                 if commits:
                     try:
                         db = vault._db()
@@ -260,9 +263,10 @@ def undo(run_id: str) -> dict:
                     except Exception:
                         pass
                 raise
-            finally:
-                for _, workspace_repo, _, _, _ in workspace_plans:
-                    workspace_repo.close()
+        finally:
+            for _, workspace_repo, _, _, _ in workspace_plans:
+                workspace_repo.close()
+
     workspace_result = {
         "reverted": [short for item in workspace_results for short in item["reverted"]],
         "new_commit": workspace_results[-1]["new_commit"] if workspace_results else "",
@@ -278,6 +282,7 @@ def undo(run_id: str) -> dict:
 
 
 def restore_flow(env_id: str, short_commit: str) -> str:
+    """Read saved flow history under vault._lock, then save the selected version."""
     import app
     import runner
     import vault
@@ -288,7 +293,7 @@ def restore_flow(env_id: str, short_commit: str) -> str:
         raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
     try:
         with vault._lock:
-            matches = list(repo().iter_commits(paths=path))
+            matches = list(vault._repo.iter_commits(paths=path))
             matching = [commit for commit in matches if commit.hexsha.startswith(short_commit.lower())]
             if not matching:
                 raise ValueError(f"Saved version {short_commit} was not found for this flow.")
