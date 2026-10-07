@@ -3,7 +3,7 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
-import store, vault, decider, plugins, verify, claims, workspaces, memory_context
+import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
@@ -56,6 +56,8 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     every ~2s; the final output is "codex exit <code>" plus Codex's last message."""
     fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev_output[-PREV_LIMIT:])
     prompt = fill(cfg.get("prompt") or "")
+    if secrets_store.PLACEHOLDER.search(prompt):
+        raise ValueError("Secrets can't be sent to an AI model. Use the secret in a command step instead.")
     if not prompt.strip():
         raise ValueError("codex node has no prompt")
     prompt += memory_context.block(prompt, cfg)
@@ -131,7 +133,8 @@ def snapshot_scheduled_run(env_id: str, run_id: str) -> None:
 def run_command(cfg: dict, timeout: int, ws: str = "") -> dict:
     """Run a shell command in its own process group so a time limit stops it and everything it started."""
     import signal
-    env = dict(os.environ, GLACIER_WORKSPACE=ws) if ws else None
+    env = dict(os.environ, GLACIER_WORKSPACE=ws,
+               GLACIER_HOME=os.path.abspath(os.environ.get("GLACIER_HOME", "data"))) if ws else None
     if ws:
         os.makedirs(ws, exist_ok=True)
     p = subprocess.Popen(cfg["cmd"], shell=True, cwd=cfg.get("cwd") or ws or None, env=env, stdout=subprocess.PIPE,
@@ -177,14 +180,27 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
     res = {"state": "done", "output": ""}
     try:
         if kind in ("command", "codex"):
+            execution_cfg = dict(cfg)
+            try:
+                field = "cmd" if kind == "command" else "prompt"
+                if kind == "codex" and secrets_store.PLACEHOLDER.search(str(cfg.get(field) or "")):
+                    raise ValueError("Secrets can't be sent to an AI model. Use the secret in a command step instead.")
+                if kind == "command":
+                    execution_cfg[field] = secrets_store.resolve(str(cfg.get(field) or ""))
+            except ValueError as exc:
+                match = re.search(r"Unknown secret: (.+)$", str(exc))
+                if not match:
+                    raise
+                raise ValueError(f"This step uses a secret named {match.group(1)} that isn't saved yet. Add it in Settings > Secrets.") from None
             retries = max(0, min(int(cfg.get("retries") or 0), MAX_RETRIES))
             default_timeout = COMMAND_TIMEOUT if kind == "command" else CODEX_TIMEOUT
             timeout = max(1, min(int(cfg.get("timeout") or default_timeout), 24 * 3600))
             for attempt in range(1, retries + 2):
                 if kind == "command":
-                    res = run_command(cfg, timeout, ws)
+                    res = run_command(execution_cfg, timeout, ws)
                 else:
-                    res = run_codex(env_id, run_id, nid, cfg, (last or {}).get("output") or "", timeout, ws)
+                    res = run_codex(env_id, run_id, nid, execution_cfg, (last or {}).get("output") or "", timeout, ws)
+                res["output"] = secrets_store.redact(str(res.get("output") or ""))
                 if retries:
                     res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
                 if res["exit_code"] == 0 or attempt > retries:
@@ -207,24 +223,24 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
             summary = ", ".join(f"{k}: {v}" for k, v in run["node_states"].items() if v != "pending")
             fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{summary}", summary)
             path = fill(cfg.get("path") or "runs/{env}-{run}.md")
-            sha = vault.write_note(path, fill(cfg.get("template") or "Run {run} of {env}: {summary}"),
+            sha = vault.write_note(path, secrets_store.redact(fill(cfg.get("template") or "Run {run} of {env}: {summary}")),
                                    agent="glacier-runner", run_id=run_id)
             res["output"] = f"{path} (commit {sha})"
         elif kind in plugins.NODES:
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
             ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home, "workspace": ws,
                    "memory": lambda task: memory_context.block(task, cfg),
-                   "log": lambda text: store.set_node(run_id, env_id, nid, "running", str(text)[-OUTPUT_LIMIT:])}
+                   "log": lambda text: store.set_node(run_id, env_id, nid, "running", secrets_store.redact(str(text)[-OUTPUT_LIMIT:]))}
             res = plugins.NODES[kind]["run"](ctx)
             if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
                 raise ValueError(f"step plug-in {kind!r} returned an invalid result")
             if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
                 res["exit_code"] = 0 if res["state"] == "done" else 1
-            res["output"] = res.get("output", "")[-OUTPUT_LIMIT:]
+            res["output"] = secrets_store.redact(res.get("output", "")[-OUTPUT_LIMIT:])
         elif kind != "schedule":
             raise ValueError(f"unknown node type {kind!r}")
     except Exception as e:  # a broken node fails itself, not the whole server
-        res = {"state": "failed", "output": f"error: {e}", "error": True}
+        res = {"state": "failed", "output": secrets_store.redact(f"error: {e}"), "error": True}
     if isinstance(res.get("usage"), dict):
         store.record_usage(run_id, nid, res["usage"])
     store.set_node(run_id, env_id, nid, res["state"], res["output"])

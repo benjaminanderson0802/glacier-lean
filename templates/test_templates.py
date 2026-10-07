@@ -145,7 +145,7 @@ def test_required_flow_patterns_are_present():
     assert any(node["type"] == "codex" for node in repair_nodes)
     assert any(node["type"] == "approval" for node in repair_nodes)
     repair_commands = [node["config"]["cmd"] for node in repair_nodes if node["type"] == "command"]
-    assert all('cd "${GLACIER_HOME:-data}/workspaces/tpl-test-and-fix" &&' in command for command in repair_commands)
+    assert all(not command.startswith("cd ") for command in repair_commands)
 
     triage = templates["tpl-inbox-triage"]
     decide = next(node for node in triage["nodes"] if node["type"] == "decide")
@@ -171,8 +171,8 @@ def test_required_flow_patterns_are_present():
 
     backup = templates["tpl-folder-backup"]
     backup_commands = [node["config"]["cmd"] for node in backup["nodes"] if node["type"] == "command"]
-    assert any('cd "${GLACIER_HOME:-data}/workspaces/tpl-folder-backup" &&' in command for command in backup_commands)
-    assert any('d="${GLACIER_HOME:-data}/backups/tpl-folder-backup/$(date +%F)"' in command and "cp -a . \"$d\"" in command for command in backup_commands)
+    assert all(not command.startswith("cd ") for command in backup_commands)
+    assert any('d="$GLACIER_HOME/backups/tpl-folder-backup/$(date +%F)"' in command and "cp -a . \"$d\"" in command for command in backup_commands)
     assert any("diff -qr . \"$d\"" in command for command in backup_commands)
     assert any(node["type"] == "check" for node in backup["nodes"])
 
