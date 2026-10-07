@@ -151,3 +151,11 @@ button.g-row:hover { background: var(--g-panel-hi); }
 .g-textarea { height: auto; flex: 1; padding: 8px 10px; resize: none; line-height: 1.15; }
 .g-suggest { position: absolute; left: 12px; bottom: 12px; width: min(360px, 90%); padding: 6px; gap: 2px; z-index: 5; }
 .g-saved { display: flex; align-items: center; gap: 12px; font-size: var(--g-size-small); color: var(--g-ok); }
+
+/* ---------- run view ---------- */
+.g-runview { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.3fr); grid-template-rows: minmax(220px, 1fr) auto; gap: 12px; flex: 1; min-height: 0; }
+.g-term { margin: 0; flex: 1; min-height: 160px; overflow: auto; white-space: pre-wrap; background: var(--g-void); border: 1px solid var(--g-line-dim); border-radius: var(--g-radius-btn); padding: 8px 10px; font-family: var(--g-font-body); font-size: var(--g-size-small); color: var(--g-text); }
+.g-ask { border-color: var(--g-warn); }
+.g-ask-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.g-ask-row .g-lead { flex: 1; }
+.g-row.sel, .g-table tbody tr.sel { background: var(--g-panel-hi); box-shadow: inset 3px 0 0 var(--g-accent); }

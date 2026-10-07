@@ -69,7 +69,7 @@ export function AutomationsScreen() {
             {shown.map(f => {
               const st = f.last ? STATUS[f.last.status] : undefined
               return (
-                <tr key={f.id} onClick={() => go(`automations/build/${f.id}`)} data-testid={`flow-${f.id}`} tabIndex={0} onKeyDown={e => e.key === 'Enter' && go(`automations/build/${f.id}`)}>
+                <tr key={f.id} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`} tabIndex={0} onKeyDown={e => e.key === 'Enter' && go(`automations/flow/${f.id}`)}>
                   <td className="g-lead">{f.name}</td>
                   <td>{f.last ? ago(f.last.started_at) : 'never'}</td>
                   <td>{st ? <span className="g-status-cell"><StatusIcon kind={st.kind} />{st.label}</span> : <span className="g-muted">Not run yet</span>}</td>

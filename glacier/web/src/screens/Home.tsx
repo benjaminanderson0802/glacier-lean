@@ -19,7 +19,7 @@ export function HomeScreen() {
   }, [refresh])
 
   const open = (it: HomeItem) => {
-    if (it.ref.env_id) go(`automations/build/${it.ref.env_id}${it.ref.run_id ? `/${it.ref.run_id}` : ''}`)
+    if (it.ref.env_id) go(`automations/flow/${it.ref.env_id}${it.ref.run_id ? `/${it.ref.run_id}` : ''}`)
   }
 
   return (
@@ -56,7 +56,7 @@ export function HomeScreen() {
                 <Row key={r.run_id} status={r.status === 'queued' ? 'warn' : 'run'} lead={r.name}
                   detail={r.status === 'queued' ? undefined : `step ${r.step}/${r.steps}`}
                   when={r.status === 'queued' ? 'queued' : <Progress value={r.step} max={r.steps} />}
-                  onClick={() => go(`automations/build/${r.env_id}/${r.run_id}`)} testid={`running-${r.run_id}`} />
+                  onClick={() => go(`automations/flow/${r.env_id}/${r.run_id}`)} testid={`running-${r.run_id}`} />
               ))}
             </div>
           </Panel>

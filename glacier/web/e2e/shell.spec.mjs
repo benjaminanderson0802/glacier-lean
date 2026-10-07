@@ -60,8 +60,15 @@ try {
   await page.getByTestId('flow-shell-test').waitFor()
   check(true, 'saved flow appears in the Automations list')
   await page.getByTestId('flow-shell-test').click()
-  await page.getByTestId('env-name').waitFor()
-  check(await page.getByTestId('env-name').inputValue() === 'Shell test', 'clicking a flow opens it in the builder')
+  await page.getByTestId('run-steps').waitFor()
+  check(await page.getByTestId('page-title').textContent() === 'Shell test', 'clicking a flow opens its Run view')
+  await page.getByTestId('run-history').click()
+  await page.getByTestId('past-runs').waitFor()
+  check(true, 'Past runs view opens')
+  await page.goBack()
+  await page.getByTestId('open-builder').click()
+  const named = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Shell test', null, { timeout: 8000 }).then(() => true, () => false)
+  check(named, 'Edit flow opens the builder')
 
   // friendly editor: new note, then a second note that links to it via [[ suggestions, then undo
   await page.getByTestId('nav-memory').click()

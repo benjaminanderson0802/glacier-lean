@@ -23,6 +23,11 @@ export interface RunState {
   node_states: Record<string, NodeState>
   outputs: Record<string, string>
   waiting_on: string | null
+  /** Present on GET /api/runs/{id}: per-step usage, acceptance checks, overall verdict, approval question. */
+  usage?: Record<string, { model: string | null; route: string | null; tokens_in: number | null; tokens_out: number | null; cost_usd: number | null }>
+  verification?: { check: number; kind: string; passed: boolean; evidence: string }[]
+  verified?: boolean | null
+  waiting_prompt?: string
 }
 export interface RunEvent { run_id: string; env_id: string; node_id: string; state: NodeState; output?: string }
 
@@ -80,6 +85,8 @@ export const api = {
   listNotes: () => req<string[]>('GET', '/api/vault/notes'),
   getNote: (path: string) => req<{ path: string; body: string }>('GET', `/api/vault/note?path=${enc(path)}`),
   home: () => req<HomeSummary>('GET', '/api/home'),
+  runChanges: (runId: string) => req<{ path: string; commit: string; author: string; repo: string }[]>('GET', `/api/runs/${enc(runId)}/changes`),
+  undoRun: (runId: string) => req<Record<string, unknown>>('POST', `/api/runs/${enc(runId)}/undo`),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------

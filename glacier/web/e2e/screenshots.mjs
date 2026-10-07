@@ -16,7 +16,14 @@ const F = {
               { run_id: 'r4', env_id: 'daily-summary', name: 'daily summary', status: 'queued', step: 0, steps: 3, started_at: h(0) }],
     recent_notes: [{ path: 'ideas/products.md', summary: 'added product ideas to memory', at: h(3) }, { path: 'flows/social.md', summary: 'updated flow: social media', at: h(5) }] },
   '/api/environments': [{ id: 'daily-summary', name: 'daily summary' }, { id: 'website-monitor', name: 'website monitor' }, { id: 'backup', name: 'backup documents' }, { id: 'social', name: 'social media posts' }, { id: 'research', name: 'research assistant' }],
-  '/api/runs': [{ run_id: 'x', env_id: 'e', status: 'done', started_at: h(2) }],
+  '/api/runs/r3': { run_id: 'r3', env_id: 'website-monitor', status: 'running', waiting_on: null,
+    node_states: { n1: 'done', n2: 'done', n3: 'running', n4: 'pending' },
+    outputs: { n3: '[1:24:01] Fetching website...\n[1:24:03] Checking for changes...\n[1:24:05] Changes detected: 2\n[1:24:06] Analyzing content...' },
+    usage: { n3: { model: 'qwen3:0.6b', route: 'local/ollama', tokens_in: 900, tokens_out: 340, cost_usd: 0 } },
+    verification: [{ check: 0, kind: 'website accessible', passed: true, evidence: 'HTTP 200' }, { check: 1, kind: 'changes detected', passed: true, evidence: '2 changes' }], verified: null },
+  '/api/runs/r3/changes': [{ path: 'monitor/changes.md', commit: 'a1b2c3d4', author: 'run', repo: 'vault' }, { path: 'monitor/log.md', commit: 'a1b2c3d4', author: 'run', repo: 'vault' }],
+  '/api/runs': [{ run_id: 'r3', env_id: 'website-monitor', status: 'running', started_at: h(0.1) }, { run_id: 'r5', env_id: 'website-monitor', status: 'done', started_at: h(6) },
+    { run_id: 'r6', env_id: 'website-monitor', status: 'failed', started_at: h(18) }, { run_id: 'r7', env_id: 'website-monitor', status: 'done', started_at: h(30) }],
   '/api/memory/notes': [{ path: 'ideas/products.md', title: 'Product ideas', author: 'assistant', updated: h(3), tags: ['projects'] }, { path: 'people/sam.md', title: 'Sam', author: 'you', updated: h(30), tags: ['people'] }, { path: 'prefs.md', title: 'Preferences', author: 'you', updated: h(80), tags: ['preferences'] }],
   '/api/memory/note': { path: 'ideas/products.md', body: '# Product ideas\n\n- pixel desk lamp\n- glacier mug\n\nSee [[people/sam]].', meta: { title: 'Product ideas' }, links_out: ['people/sam'], links_in: [] },
   '/api/memory/history': [{ commit: 'a1b2c3d4', author: 'assistant', date: h(3), message: 'added product ideas' }],
@@ -47,7 +54,7 @@ const pg = await b.newPage({ viewport: { width: Number(process.env.W || 1280), h
 pg.on('pageerror', e => console.log('PAGEERROR', String(e)))
 await pg.route('**/api/**', route => {
   const u = new URL(route.request().url())
-  const key = Object.keys(F).find(k => u.pathname === k) ?? (u.pathname.startsWith('/api/runs') ? '/api/runs' : null)
+  const key = Object.keys(F).find(k => u.pathname === k) ?? (u.pathname.startsWith('/api/runs/') && u.pathname.endsWith('/changes') ? '/api/runs/r3/changes' : u.pathname.startsWith('/api/runs/') ? '/api/runs/r3' : u.pathname.startsWith('/api/runs') ? '/api/runs' : null)
   route.fulfill({ status: key ? 200 : 404, contentType: 'application/json', body: JSON.stringify(key ? F[key] : { detail: 'not found' }) })
 })
 for (const hs of hashes) {
