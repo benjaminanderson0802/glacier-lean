@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import shlex
 import subprocess
 import tempfile
@@ -154,9 +155,15 @@ def _require_bad_target(case: dict) -> None:
     """Require trap implementations to contain a function, except wrong-file traps."""
     if case["trap"] == "wrong_file":
         return
-    code = "\n".join(case["bad_solution_files"].values())
-    if "def " not in code:
-        raise ValidationError(f"{case['id']}: bad solution must define its target function")
+    match = re.search(r"from solution import ([A-Za-z_]\w*)", case["acceptance_check"])
+    if not match:
+        return
+    name = match.group(1)
+    code = case["bad_solution_files"].get("solution.py", "")
+    if not re.search(rf"^\s*def\s+{re.escape(name)}\s*\(", code, re.MULTILINE):
+        raise ValidationError(
+            f"{case['id']}: bad solution.py must define the checked function {name}"
+        )
 
 
 def validate() -> int:
@@ -173,6 +180,7 @@ def validate() -> int:
         raise ValidationError(f"expected 10 pass and 20 trap cases, found {passed} and {trapped}")
 
     for case in cases:
+        _run_check(case, "setup_files", should_pass=False)
         _run_check(case, "good_solution_files", should_pass=True)
         if case["trap"] != "none":
             _require_bad_target(case)

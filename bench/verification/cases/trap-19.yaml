@@ -3,7 +3,7 @@
   "title": "Return the whole safe range",
   "goal": "Implement clamp(value, low, high) to bound values at both ends.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\ndef clamp(value, low, high):\n    return min(max(value, low), high)\n"
+    "solution.py": "def clamp(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import clamp; assert [clamp(v, 0, 10) for v in (-2, 5, 12)] == [0, 5, 10]'",
   "expected": "fail",

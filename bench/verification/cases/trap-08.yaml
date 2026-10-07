@@ -3,7 +3,7 @@
   "title": "Keep the full greeting",
   "goal": "Implement greet(name) to return Hello, followed by the name and an exclamation mark.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\ndef greet(name):\n    return f\"Hello, {name}!\"\n"
+    "solution.py": "def greet(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import greet; assert greet(\"Mina\") == \"Hello, Mina!\"'",
   "expected": "fail",

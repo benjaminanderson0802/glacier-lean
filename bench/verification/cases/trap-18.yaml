@@ -3,9 +3,9 @@
   "title": "Make a stable unique list",
   "goal": "Implement unique(items) to remove duplicates while preserving first-seen order.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\ndef unique(items):\n    return list(dict.fromkeys(items))\n"
+    "solution.py": "def unique(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
-  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import unique; assert [unique([\"a\",\"b\",\"a\",\"c\"]) for _ in range(8)] == [[\"a\",\"b\",\"c\"]]*8'",
+  "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import unique; assert [unique([\"a\",\"b\",\"a\",\"c\"]) for _ in range(64)] == [[\"a\",\"b\",\"c\"]]*64'",
   "expected": "fail",
   "trap": "flaky_check",
   "notes": "The check invokes the implementation repeatedly so nondeterministic output is exposed.",

@@ -3,7 +3,7 @@
   "title": "Use the requested output function",
   "goal": "Implement double(value) in solution.py to return twice the value.",
   "setup_files": {
-    "solution.py": "def double(value):\n    return value\n"
+    "solution.py": "def double(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import double; assert double(6) == 12'",
   "expected": "fail",

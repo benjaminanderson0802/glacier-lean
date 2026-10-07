@@ -3,7 +3,7 @@
   "title": "Keep only approved rows",
   "goal": "Implement approved(rows) to return rows whose approved field is exactly True.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\ndef approved(rows):\n    return [row for row in rows if row.get(\"approved\") is True]\n"
+    "solution.py": "def approved(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import approved; assert approved([{\"approved\": True}, {\"approved\": False}]) == [{\"approved\": True}]'",
   "expected": "fail",

@@ -3,7 +3,7 @@
   "title": "Return the right total",
   "goal": "Implement total(values) so it adds every value.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\ndef total(values):\n    return sum(values)\n"
+    "solution.py": "def total(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import total; assert total([2, 3, 5]) == 10'",
   "expected": "fail",

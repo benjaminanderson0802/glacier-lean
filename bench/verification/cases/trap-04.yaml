@@ -3,7 +3,7 @@
   "title": "Round a price",
   "goal": "Implement price_with_tax(price, rate) as price plus the rate fraction.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\ndef price_with_tax(price, rate):\n    return round(price * (1 + rate), 2)\n"
+    "solution.py": "def price_with_tax(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import price_with_tax; assert price_with_tax(10, 0.1) == 11 and price_with_tax(19.99, 0.075) == 21.49'",
   "expected": "fail",

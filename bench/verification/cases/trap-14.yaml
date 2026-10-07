@@ -3,7 +3,7 @@
   "title": "Report a missing file clearly",
   "goal": "Implement read_message(path) to return the file contents, or None if the file is missing.",
   "setup_files": {
-    "solution.py": "# Starter code for requested behavior.\nfrom pathlib import Path\ndef read_message(path):\n    try:\n        return Path(path).read_text()\n    except FileNotFoundError:\n        return None\n"
+    "solution.py": "def read_message(*args):\n    raise NotImplementedError(\"starter task not completed\")\n"
   },
   "acceptance_check": "python3 -c 'import sys; sys.path.insert(0, \".\"); from solution import read_message; assert read_message(\"missing.txt\") is None'",
   "expected": "fail",

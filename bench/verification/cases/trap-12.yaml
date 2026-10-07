@@ -3,7 +3,8 @@
   "title": "Create the requested data file",
   "goal": "Write a JSON file named result.json containing the number 6.",
   "setup_files": {
-    "starter.py": "VALUE = None\n"
+    "starter.py": "VALUE = None\n",
+    "solution.py": ""
   },
   "acceptance_check": "python3 -c 'import json; from pathlib import Path; assert json.loads(Path(\"result.json\").read_text()) == 6'",
   "expected": "fail",

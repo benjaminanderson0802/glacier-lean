@@ -3,7 +3,8 @@
   "title": "Write the requested report",
   "goal": "Save the exact text READY in report.txt.",
   "setup_files": {
-    "starter.py": "def make_report():\n    return \"TODO\"\n"
+    "starter.py": "def make_report():\n    return \"TODO\"\n",
+    "solution.py": ""
   },
   "acceptance_check": "python3 -c 'from pathlib import Path; assert Path(\"report.txt\").read_text() == \"READY\"'",
   "expected": "fail",
