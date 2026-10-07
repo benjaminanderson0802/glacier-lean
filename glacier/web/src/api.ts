@@ -289,6 +289,8 @@ export const addToMemory = {
   file: (file: File, project?: string) => { const f = new FormData(); f.append('file', file); if (project) f.append('project', project); return upload<Record<string, unknown>>('/api/files', f) },
   chatExport: (source: 'chatgpt' | 'claude', file: File) => { const f = new FormData(); f.append('source', source); f.append('file', file); return upload<Record<string, number>>('/api/imports', f) },
   projects: () => req<{ name: string }[] | string[]>('GET', '/api/projects'),
+  imports: () => req<{ source: string; last_import: string | null; added: number; updated: number; unchanged: number }[]>('GET', '/api/imports'),
+  refreshImports: () => req<Record<string, Record<string, number>>>('POST', '/api/imports/refresh'),
 }
 
 // ---------- Settings: secrets, usage, data ----------

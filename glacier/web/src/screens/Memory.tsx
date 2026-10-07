@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ago, memory, type MemCommit, type MemHit, type MemNote, type MemNoteFull } from '../api.ts'
+import { ago, api, memory, type MemCommit, type MemHit, type MemNote, type MemNoteFull } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { NoteEditor } from './NoteEditor.tsx'
 import { MemoryAdd } from './MemoryAdd.tsx'
@@ -7,6 +7,15 @@ import { MemoryCleanup } from './MemoryCleanup.tsx'
 import { lazy, Suspense } from 'react'
 const MemoryMap = lazy(() => import('./MemoryMap.tsx').then(m => ({ default: m.MemoryMap })))
 import { go } from '../route.ts'
+
+/** Plain-language writer: owner -> you; run:<id> -> an automation; worker:<model> -> AI (<model>). */
+function whoWrote(author: string): string {
+  if (!author || author === 'owner') return 'you'
+  if (author.startsWith('run:')) return 'an automation'
+  if (author.startsWith('worker:')) return `AI (${author.slice(7)})`
+  if (author === 'assistant') return 'your assistant'
+  return author
+}
 
 const VIEWS = [['', 'Notes'], ['~map', 'Map'], ['~add', 'Add'], ['~cleanup', 'Cleanup']] as const
 
@@ -98,6 +107,12 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
               onSaved={(p, commit) => { setSaved({ path: p, commit }); setEditing(null); reloadNotes(); if (p === path) loadNote(p); else open(p) }} />
           ) : !note ? <Empty>Pick a note to read it, or press New note.</Empty> : (
             <>
+              <div className="g-trust" data-testid="note-trust">
+                <span>Written by <b>{whoWrote(String(note.meta?.author ?? 'owner'))}</b></span>
+                {note.meta?.updated ? <span>{ago(String(note.meta.updated))}</span> : null}
+                {note.meta?.run_id ? <button className="g-link" data-testid="note-run" onClick={() => api.getRun(String(note.meta.run_id)).then(r => go(`automations/flow/${r.env_id}/${r.run_id}`)).catch(() => setErr('That run is no longer in the history.'))}>from a run</button> : null}
+                {hist.length > 1 && <button className="g-link" data-testid="note-undo-last" onClick={async () => { await memory.undo(note.path); loadNote(note.path); reloadNotes() }}>undo last change</button>}
+              </div>
               <pre className="g-notebody" data-testid="memory-note-body">{note.body}</pre>
               {(note.links_out.length > 0 || note.links_in.length > 0) && (
                 <div className="g-links">

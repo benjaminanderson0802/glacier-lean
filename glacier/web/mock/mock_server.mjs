@@ -234,6 +234,8 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(); h.status = body.approve ? 'approved' : 'rejected'
       return send(200, { id: h.id, status: h.status, ...(body.approve ? { commit: commitId() } : {}) })
     }
+    if (p === '/api/imports' && req.method === 'GET') return send(200, [{ source: 'chatgpt', last_import: new Date(Date.now() - 864e5).toISOString(), added: 42, updated: 3, unchanged: 100 }])
+    if (p === '/api/imports/refresh' && req.method === 'POST') return send(200, { chatgpt: { added: 2, updated: 1, unchanged: 145 } })
     if ((p === '/api/files' || p === '/api/imports') && req.method === 'POST') {
       let size = 0; await new Promise(r => { req.on('data', c => (size += c.length)); req.on('end', r) })
       return send(200, p === '/api/files' ? { name: 'upload', size, duplicate: false } : { conversations: 3, notes: 3 })

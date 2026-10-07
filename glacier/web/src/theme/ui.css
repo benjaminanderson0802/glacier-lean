@@ -191,3 +191,7 @@ button.g-row:hover { background: var(--g-panel-hi); }
 .g-box { appearance: none; width: 18px; height: 18px; border: var(--g-border) solid var(--g-line); border-radius: 0; background: var(--g-bar); display: grid; place-items: center; cursor: pointer; margin: 0; }
 .g-box:checked { background: var(--g-accent); border-color: var(--g-accent); box-shadow: inset 0 0 0 3px var(--g-bar); }
 .g-btn { white-space: nowrap; }
+
+/* ---------- note trust line ---------- */
+.g-trust { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; padding: 4px 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--g-line-dim); color: var(--g-muted); font-size: var(--g-size-small); }
+.g-trust b { color: var(--g-head); font-weight: 400; }

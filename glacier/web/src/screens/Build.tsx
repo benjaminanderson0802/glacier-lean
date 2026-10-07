@@ -11,6 +11,7 @@ import { GlacierNode, nodeTypes as baseNodeTypes, type GNode } from './GlacierNo
 import { TerminalPanel } from './TerminalPanel.tsx'
 import { VaultView } from './VaultView.tsx'
 import { tok } from '../ui/tok.ts'
+import { takeDraft } from '../draft.ts'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -83,6 +84,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
 
+  /** Fields of the flow the builder does not edit (goal, acceptance checks, isolate, ...): kept on save. */
+  const extras = useRef<Record<string, unknown>>({})
   const envIdRef = useRef(envId)
   envIdRef.current = envId
   const activeRunIdRef = useRef<string | null>(null)
@@ -101,6 +104,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     setEnvId(id); setSelected(null); setActiveRun(null); setLastCommit(''); setMsg(''); setRuns([]); setTab('canvas')
     try {
       const env = await api.getEnv(id)
+      const { id: _i, name: _n, nodes: _no, edges: _e, ...rest } = env as Environment & Record<string, unknown>
+      void _i; void _n; void _no; void _e
+      extras.current = rest
       const f = toFlow(env)
       setEnvName(env.name); setNodes(f.nodes); setEdges(f.edges); setDirty(false)
     } catch (e) {
@@ -124,8 +130,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     for (let i = 2; all.includes(id); i++) id = `${slugify(name)}-${i}`
     setUnsaved(u => [...u, { id, name }])
     setCreating(false); setNewName('')
-    setEnvId(id); setEnvName(name); setNodes([]); setEdges([]); setDirty(true)
-    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg('New flow - add steps, then Save.'); setTab('canvas')
+    const d = takeDraft()
+    const { id: _i, name: _n, nodes: _no, edges: _e, ...rest } = (d ?? {}) as Record<string, unknown>
+    void _i; void _n; void _no; void _e
+    extras.current = d ? rest : {}
+    const f = d ? toFlow({ ...d, id, name }) : { nodes: [], edges: [] }
+    setEnvId(id); setEnvName(name); setNodes(f.nodes); setEdges(f.edges); setDirty(true)
+    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg(d ? 'Proposed flow loaded - change anything, then Save.' : 'New flow - add steps, then Save.'); setTab('canvas')
   }
 
   // ---------- live events ----------
@@ -217,7 +228,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     if (!envId) return false
     setBusy(true)
     try {
-      const r = await api.saveEnv(fromFlow(envId, envName || envId, nodes, edges))
+      const r = await api.saveEnv({ ...extras.current, ...fromFlow(envId, envName || envId, nodes, edges) })
       setLastCommit(r.commit); setDirty(false); setMsg('Saved.')
       setUnsaved(u => u.filter(e => e.id !== envId))
       refreshEnvs()

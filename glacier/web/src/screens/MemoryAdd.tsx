@@ -1,6 +1,6 @@
 // Add to memory (mockup panel 11): drop files, write text, or import ChatGPT / Claude chats.
-import { useRef, useState } from 'react'
-import { addToMemory, memory, slugify } from '../api.ts'
+import { useEffect, useRef, useState } from 'react'
+import { addToMemory, ago, memory, slugify } from '../api.ts'
 import { Btn, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -19,6 +19,18 @@ export function MemoryAdd() {
   const [done, setDone] = useState<Done[]>([])
   const [over, setOver] = useState(false)
   const pick = useRef<HTMLInputElement>(null)
+  const [imports, setImports] = useState<{ source: string; last_import: string | null; added: number; updated: number }[]>([])
+  const loadImports = () => addToMemory.imports().then(setImports).catch(() => setImports([]))
+  useEffect(() => { if (tab === 'chats') loadImports() }, [tab])
+  const refresh = async () => {
+    setBusy(true)
+    try {
+      const r = await addToMemory.refreshImports()
+      const rows = Object.entries(r).map(([src, counts]) => ({ name: src === 'chatgpt' ? 'ChatGPT' : 'Claude', ok: true, detail: Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ') }))
+      setDone(rows.length ? rows : [{ name: 'Chats', ok: true, detail: 'nothing new to import' }])
+      loadImports()
+    } catch (e) { setDone([{ name: 'Chats', ok: false, detail: String(e).replace(/^Error: /, '') }]) } finally { setBusy(false) }
+  }
 
   const add = async () => {
     setBusy(true); const out: Done[] = []
@@ -70,6 +82,12 @@ export function MemoryAdd() {
       </Panel>
       <Panel title="Options" testid="add-options">
         {tab === 'files' && <label className="g-field"><span className="g-detail">Add to project (optional)</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder="None" data-testid="add-project" /></label>}
+        {tab === 'chats' && imports.length > 0 && (
+          <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">
+            {imports.map(i => <div key={i.source} className="g-row"><span className="g-ico" /><span className="g-mid"><span className="g-lead">{i.source === 'chatgpt' ? 'ChatGPT' : 'Claude'}</span><span className="g-detail">{i.added} added, {i.updated} updated</span></span><span className="g-when">{i.last_import ? ago(i.last_import) : ''}</span></div>)}
+            <Btn onClick={refresh} disabled={busy} data-testid="import-refresh" style={{ marginTop: 8 }}>Check for new chats</Btn>
+          </div>
+        )}
         {tab === 'chats' && (
           <div className="g-seg" style={{ alignSelf: 'flex-start' }}>
             {(['chatgpt', 'claude'] as const).map(s => <button key={s} className={`g-seg-btn${s === source ? ' active' : ''}`} onClick={() => setSource(s)}>{s === 'chatgpt' ? 'ChatGPT' : 'Claude'}</button>)}
