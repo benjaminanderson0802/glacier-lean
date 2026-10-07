@@ -115,3 +115,32 @@ def test_summary_has_at_most_three_sentences(explain_client, status):
         {"approve": "check failed"}, waiting_on=waiting_on)
     summary = explain_client.get(f"/api/runs/summary-{status}/explain").json()["summary"]
     assert summary.count(".") <= 3
+
+
+def test_done_run_with_failed_check_is_not_called_verified(explain_client):
+    add_run("halfway", "done", [{"id": "a", "type": "command", "config": {"cmd": "x"}}], {"a": "done"}, {"a": "made a file"},
+            acceptance=[{"kind": "command", "cmd": "test -f out", "required": True}])
+    store.record_check("halfway", 0, "command", False, "out is missing")
+    with store._conn() as db:
+        db.execute("UPDATE glacier_runs SET status='done' WHERE run_id='halfway'")
+    body = explain_client.get("/api/runs/halfway/explain").json()
+    assert body["verified"] is False
+    assert "Every check passed" not in body["summary"]
+    assert "not verified" in body["summary"]
+
+
+def test_no_checks_says_result_is_not_verified(explain_client):
+    add_run("nochecks", "done", [{"id": "a", "type": "command", "config": {"cmd": "x"}}], {"a": "done"}, {"a": "ok"})
+    with store._conn() as db:
+        db.execute("UPDATE glacier_runs SET status='done' WHERE run_id='nochecks'")
+    body = explain_client.get("/api/runs/nochecks/explain").json()
+    assert "no checks" in body["summary"]
+
+
+def test_file_not_found_is_not_called_a_missing_program(explain_client):
+    add_run("nofile", "failed", [{"id": "a", "type": "command", "config": {"cmd": "cat x"}}], {"a": "failed"},
+            {"a": "cat: x: file not found"})
+    with store._conn() as db:
+        db.execute("UPDATE glacier_runs SET status='failed' WHERE run_id='nofile'")
+    body = explain_client.get("/api/runs/nofile/explain").json()
+    assert "Install the missing program" not in body["summary"]

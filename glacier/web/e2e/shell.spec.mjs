@@ -63,6 +63,7 @@ try {
   await page.getByTestId('run-steps').waitFor()
   const titled = await page.waitForFunction(() => document.querySelector('[data-testid=page-title]')?.textContent === 'Shell test', null, { timeout: 8000 }).then(() => true, () => false)
   check(titled, 'clicking a flow opens its Run view')
+  check(true, 'Run view opens')
   await page.getByTestId('run-history').click()
   await page.getByTestId('past-runs').waitFor()
   check(true, 'Past runs view opens')
@@ -160,6 +161,16 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-testid=last-commit]')?.textContent !== '-')
   const savedFlow = await (await fetch(`http://localhost:${MOCK_PORT}/api/environments/daily-backup`)).json()
   check(savedFlow.goal && Array.isArray(savedFlow.acceptance) && savedFlow.acceptance.length === 1, 'saving keeps the goal and checks the builder does not show')
+
+  // Run view: plain-language "What happened" explanation of a finished run
+  const M = `http://localhost:${MOCK_PORT}`
+  await fetch(`${M}/api/environments/explain-me`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'explain-me', name: 'Explain me', nodes: [{ id: 'n1', type: 'command', config: { cmd: 'echo hi' }, position: { x: 0, y: 0 } }], edges: [] }) })
+  const { run_id: exRun } = await (await fetch(`${M}/api/environments/explain-me/run`, { method: 'POST' })).json()
+  for (let i = 0; i < 50 && (await (await fetch(`${M}/api/runs/${exRun}`)).json()).status === 'running'; i++) await new Promise(r => setTimeout(r, 100))
+  await page.goto(UI + `/#/automations/flow/explain-me/${exRun}`)
+  const why = await page.getByTestId('run-why').waitFor({ timeout: 8000 }).then(() => true, () => false)
+  check(why && /What happened/.test(await page.getByTestId('run-why').textContent()), 'Run view explains a run in plain words')
 
   // claims: list from Home, detail, decision
   await page.getByTestId('nav-home').click()

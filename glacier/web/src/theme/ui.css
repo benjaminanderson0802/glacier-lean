@@ -195,3 +195,9 @@ button.g-row:hover { background: var(--g-panel-hi); }
 /* ---------- note trust line ---------- */
 .g-trust { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; padding: 4px 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--g-line-dim); color: var(--g-muted); font-size: var(--g-size-small); }
 .g-trust b { color: var(--g-head); font-weight: 400; }
+
+/* ---------- run explanation ---------- */
+.g-why { display: flex; align-items: flex-start; gap: 12px; padding: 8px 14px; border: 1px solid var(--g-line); border-radius: var(--g-radius); background: var(--g-panel); color: var(--g-text); }
+.g-why b { color: var(--g-head); font-weight: 400; }
+.g-why.ok { border-color: var(--g-ok); }
+.g-why.bad { border-color: var(--g-bad); }

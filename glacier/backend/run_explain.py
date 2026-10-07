@@ -15,7 +15,7 @@ def _failure_advice(output: str) -> str:
     lowered = output.lower()
     if re.search(r"missing (?:secret|password)|(?:secret|password) (?:is )?missing|not set", lowered):
         return "Add the missing password in Settings > Secrets, then run again."
-    if "command not found" in lowered or "not found" in lowered:
+    if "command not found" in lowered or "is not recognized as an internal or external command" in lowered:
         return "Install the missing program, then run again."
     if "timed out" in lowered or "timeout" in lowered:
         return "The step took too long. Check its time limit or try again."
@@ -46,7 +46,6 @@ def explain_run(run_id: str) -> dict | None:
             sentence = f"Step {index} ({label}) failed: {_failure_advice(output)}"
             first_failure = first_failure or (index, label, output)
         elif state == "waiting":
-            prompt = (node.get("config") or {}).get("prompt") or ""
             sentence = f"Step {index} ({label}) is waiting for your approval."
         elif state == "done":
             sentence = f"Step {index} ({label}) finished." + (f" {output}" if output else "")
@@ -87,10 +86,10 @@ def explain_run(run_id: str) -> dict | None:
             summary = f"{name} finished: {highlights}."
         if verified is True:
             summary += " Every check passed."
-        elif acceptance and verified is not False:
-            summary += " The run finished, but not every check passed."
-        elif acceptance:
-            summary += " Every check passed."
+        elif verified is False:
+            summary += " Some checks did not pass, so the result is not verified."
+        else:
+            summary += " This flow has no checks, so the result is not verified."
     elif run["status"] == "waiting":
         summary = f"{name} is waiting for your decision."
     elif run["status"] == "rejected":
@@ -102,7 +101,4 @@ def explain_run(run_id: str) -> dict | None:
         else:
             summary = f"{name} stopped before it finished. Open the step's output for details."
 
-    # Usage is intentionally read as part of the deterministic run record, even when no
-    # model was used; explanations never invoke a model or expose cost jargon here.
-    store.usage_of(run_id)
     return {"summary": summary, "steps": steps, "verified": verified, "needs_you": needs_you}

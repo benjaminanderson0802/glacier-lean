@@ -1,6 +1,6 @@
 // Simple Run view of one flow (mockup panels 7 and 8): live steps, output, verification, usage; past runs with undo.
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
-import { ago, api, subscribeEvents, type Environment, type NodeState, type NodeTypeInfo, type RunState, type RunSummary } from '../api.ts'
+import { ago, api, subscribeEvents, type Environment, type NodeState, type NodeTypeInfo, type RunExplanation, type RunState, type RunSummary } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -38,7 +38,12 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
   const [tab, setTab] = useState<'output' | 'details'>('output')
   const [busy, setBusy] = useState(false)
 
-  const load = useCallback(() => { if (current) api.getRun(current).then(setRun).catch(e => setErr(String(e))) }, [current, setErr])
+  const [why, setWhy] = useState<RunExplanation | null>(null)
+  const load = useCallback(() => {
+    if (!current) return
+    api.getRun(current).then(setRun).catch(e => setErr(String(e)))
+    api.explain(current).then(setWhy).catch(() => setWhy(null))  // older engines have no explanation
+  }, [current, setErr])
   useEffect(() => { setRun(null); load() }, [load])
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | undefined
@@ -81,6 +86,12 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
           <Btn primary icon="run" onClick={start} disabled={busy || nodes.length === 0} data-testid="run-start">Run</Btn>
         </>} />
       {err && <div className="g-error">{err}</div>}
+      {why && (
+        <div className={`g-why${why.verified === false ? ' bad' : why.verified ? ' ok' : ''}`} data-testid="run-why">
+          <StatusIcon kind={why.verified ? 'ok' : why.verified === false ? 'bad' : run?.status === 'waiting' ? 'warn' : run?.status === 'running' ? 'run' : 'idle'} />
+          <span><b>What happened:</b> {why.summary}{why.needs_you ? ` ${why.needs_you}` : ''}</span>
+        </div>
+      )}
       {run?.status === 'waiting' && (
         <Panel className="g-ask" testid="run-approval">
           <div className="g-ask-row"><StatusIcon kind="warn" /><span className="g-lead">{run.waiting_prompt || 'This step is waiting for your approval.'}</span>
