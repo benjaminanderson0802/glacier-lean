@@ -49,12 +49,19 @@ fn resource_path(app: &tauri::AppHandle, relative: &str) -> PathBuf {
     app.path().resource_dir().unwrap_or_else(|_| PathBuf::from(".")).join(relative)
 }
 
+fn runtime_platform() -> &'static str {
+    if cfg!(target_os = "windows") { "x86_64-pc-windows-msvc" }
+    else if cfg!(target_os = "macos") { "aarch64-apple-darwin" }
+    else { "x86_64-unknown-linux-gnu" }
+}
+
 fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf), String> {
     let config_path = resource_path(app, "sidecar.json");
     let config: serde_json::Value = fs::read_to_string(config_path).ok()
         .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-    let sidecar = config.get("venv_python").and_then(|x| x.as_str()).unwrap_or("backend/.venv/bin/python");
-    let python = resource_path(app, sidecar);
+    let relative_python = config.get("runtime_by_platform").and_then(|x| x.get(runtime_platform()))
+        .and_then(|x| x.as_str()).ok_or_else(|| "The bundled Python runtime is not configured".to_string())?;
+    let python = resource_path(app, relative_python);
     let backend_dir = resource_path(app, "backend");
     let low_resource = config.get("low_resource").and_then(|x| x.as_bool()).unwrap_or(false);
     let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -63,6 +70,9 @@ fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf),
     let log_file = File::create(&log_path).map_err(|e| e.to_string())?;
     let log_stderr = log_file.try_clone().map_err(|e| e.to_string())?;
     let port_text = port.to_string();
+    if !python.is_file() {
+        return Err(format!("The bundled Python runtime is missing at {}", python.display()));
+    }
     let mut command = Command::new(python);
     command.current_dir(backend_dir).args(["-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", &port_text])
         .env("GLACIER_HOME", data_dir).stdin(Stdio::null()).stdout(Stdio::from(log_file)).stderr(Stdio::from(log_stderr));
@@ -74,14 +84,8 @@ fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf),
             }
         }
     }
-    command.spawn().map(|child| (child, log_path.clone())).map_err(|e| {
-        let detail = if sidecar == "python3.12" {
-            "Python 3.12 was not found. Install Python 3.12 to run Glacier's local engine".to_string()
-        } else {
-            e.to_string()
-        };
-        format!("{detail}; log: {}", log_path.display())
-    })
+    command.spawn().map(|child| (child, log_path.clone()))
+        .map_err(|e| format!("Could not start the bundled Python runtime: {e}; log: {}", log_path.display()))
 }
 
 fn backend_ready(port: u16) -> bool {
@@ -181,6 +185,11 @@ mod tests {
     #[test]
     fn api_address_is_injected_into_bundled_pages() {
         assert_eq!(api_initialization_script(43127), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\";");
+    }
+
+    #[test]
+    fn runtime_platform_uses_a_supported_distribution_folder() {
+        assert!(matches!(runtime_platform(), "x86_64-unknown-linux-gnu" | "aarch64-apple-darwin" | "x86_64-pc-windows-msvc"));
     }
 
     #[test]
