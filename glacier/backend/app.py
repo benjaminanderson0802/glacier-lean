@@ -63,6 +63,13 @@ def get_environment(env_id: str):
 
 @app.put("/api/environments/{env_id}")
 def save_environment(env_id: str, env: dict):
+    validate_environment(env_id, env)
+    commit = vault.write_note(runner.env_path(env_id), json.dumps(env, indent=2), agent="glacier-api")
+    return {"saved": True, "commit": commit}
+
+
+def validate_environment(env_id: str, env: dict) -> dict:
+    """Apply the shared flow validation and scheduling rules before any save."""
     env["id"] = env_id
     env.setdefault("name", env_id); env.setdefault("nodes", []); env.setdefault("edges", [])
     bad = [n.get("type") for n in env["nodes"] if n.get("type") not in NODE_TYPES]
@@ -77,8 +84,7 @@ def save_environment(env_id: str, env: dict):
         runner.sync_schedule(env)
     except Exception as e:
         raise HTTPException(400, str(e))
-    commit = vault.write_note(runner.env_path(env_id), json.dumps(env, indent=2), agent="glacier-api")
-    return {"saved": True, "commit": commit}
+    return env
 
 
 @app.post("/api/environments/{env_id}/run")
