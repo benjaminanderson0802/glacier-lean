@@ -247,8 +247,12 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
         elif kind == "note":
             run = store.get_run(run_id)
             summary = ", ".join(f"{k}: {v}" for k, v in run["node_states"].items() if v != "pending")
-            fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{summary}", summary)
-            path = fill(cfg.get("path") or "runs/{env}-{run}.md")
+            prev = (last or {}).get("output") or ""
+            today = time.strftime("%Y-%m-%d", time.gmtime())
+            # {prev_output} is the previous step's output (same limit as other steps); {date} is today's UTC date.
+            fill_path = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{date}", today)
+            fill = lambda s: fill_path(s).replace("{summary}", summary).replace("{prev_output}", prev[-PREV_LIMIT:])
+            path = fill_path(cfg.get("path") or "runs/{env}-{run}.md")
             sha = vault.write_note(path, secrets_store.redact(fill(cfg.get("template") or "Run {run} of {env}: {summary}")),
                                    agent="glacier-runner", run_id=run_id)
             res["output"] = f"{path} (commit {sha})"

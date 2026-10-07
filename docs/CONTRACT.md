@@ -22,6 +22,7 @@ Node configs:
 - check:    {"expr": "exit_code == 0"} evaluated against the most recent command/codex result; outgoing edges labelled "yes" / "no"
 - approval: {"prompt": "Tests failed. Continue?"}  pauses durably until approved/rejected; outgoing edges "yes" / "no"
 - note:     {"path": "runs/{env}-{run}.md", "template": "Run {run} of {env}: {summary}"}  writes to the vault via the memory service (git commit)
+            template placeholders: {env} {run} {date} (UTC, YYYY-MM-DD) {summary} (step states) {prev_output} (previous step output, last 8,000 characters); path accepts {env} {run} {date}
 - command and codex also accept "retries" (0-10; retried with a short pause, output prefixed "[attempt k of n]") and "timeout" (seconds;
   on timeout the command and everything it started is stopped; output ends "[timed out after Ns]")
 - alerts:   a run that ends "failed" sends one plain-language alert via Apprise to every URL in GLACIER_ALERT_URLS (comma separated)

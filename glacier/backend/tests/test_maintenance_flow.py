@@ -92,3 +92,19 @@ def test_fake_run_renders_exactly_one_proposal_note(tmp_path):
     assert "2 passed" in result["body"] and "alpha: 1.0 → 2.0" in result["body"]
     assert sum(node["type"] == "note" for node in flow["nodes"]) == 1
     assert len(calls) == 4
+
+
+def test_proposal_note_directly_follows_the_maintenance_step_and_saves_its_output():
+    flow = json.loads((ROOT / "flows/self/maintenance.json").read_text(encoding="utf-8"))
+    note = next(node for node in flow["nodes"] if node["id"] == "status_note")
+    assert {"source": "maintenance", "target": "status_note"}.items() <= next(
+        e for e in flow["edges"] if e["target"] == "status_note").items()
+    assert "{prev_output}" in note["config"]["template"]
+
+
+def test_proposal_note_directly_follows_the_maintenance_step_and_saves_its_output():
+    flow = json.loads((ROOT / "flows/self/maintenance.json").read_text(encoding="utf-8"))
+    note = next(node for node in flow["nodes"] if node["id"] == "status_note")
+    incoming = [e["source"] for e in flow["edges"] if e["target"] == "status_note"]
+    assert incoming == ["maintenance"]
+    assert "{prev_output}" in note["config"]["template"]
