@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { applyProposal, chat, type ChatProposal } from '../api.ts'
+import { applyProposal, chat, type ChatProposal, type ProposalCheck } from '../api.ts'
 import { Btn, PageHead, Panel } from '../ui/kit.tsx'
 import { Icon, Mascot } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -12,6 +12,14 @@ type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProp
 let saved: { conv: string | null; msgs: Msg[] } = { conv: null, msgs: [] }
 
 const time = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+// How a proposed automation will be checked, in plain words (shown before anything runs).
+const checkText = (c: ProposalCheck) =>
+  c.kind === 'command' ? `Glacier runs a check: ${c.cmd ?? ''}`
+    : c.kind === 'rubric' ? `An independent reviewer checks: ${c.rubric ?? ''}`
+    : c.kind === 'human' ? `You confirm: ${c.question ?? 'Is it done?'}`
+    : c.kind === 'schema' ? 'The result must match the expected format'
+    : 'A check confirms it is done'
 
 export function AskScreen() {
   const [msgs, setMsgs] = useState<Msg[]>(saved.msgs)
@@ -78,7 +86,14 @@ export function AskScreen() {
                     <div className="g-proposal-head"><Icon name="automations" /><span className="g-lead">{m.proposal.flow?.name ?? m.proposal.flow?.id ?? 'New automation'}</span>
                       <span className={`g-chip ${m.state === 'approved' ? 'ok' : m.state === 'rejected' ? 'bad' : ''}`}>{m.state === 'approved' ? 'Approved' : m.state === 'rejected' ? 'Rejected' : 'Proposed'}</span></div>
                     {m.proposal.explanation && <div className="g-detail">{m.proposal.explanation}</div>}
+                    {m.proposal.flow?.goal && <div className="g-detail" data-testid="proposal-goal">Goal: {m.proposal.flow.goal}</div>}
                     <div className="g-muted">Steps: {m.proposal.flow?.nodes?.length ?? 0}</div>
+                    {(m.proposal.flow?.acceptance?.length ?? 0) > 0 && (
+                      <div data-testid="proposal-checks">
+                        <div className="g-muted">How Glacier will know it is done:</div>
+                        <ul className="g-bullets">{m.proposal.flow!.acceptance!.map((c, j) => <li key={j}>{checkText(c)}</li>)}</ul>
+                      </div>
+                    )}
                     {m.state === 'open' && (
                       <div className="g-actions">
                         <Btn primary onClick={() => decide(i, true)} data-testid="proposal-approve">Approve</Btn>

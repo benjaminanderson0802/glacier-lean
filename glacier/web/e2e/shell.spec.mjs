@@ -166,6 +166,8 @@ try {
   await page.getByTestId('nav-ask').click()
   await page.getByTestId('chat-input').fill('make me a daily backup')
   await page.getByTestId('chat-send').click()
+  await page.getByTestId('proposal-checks').waitFor()
+  check(/You confirm: Did the backup finish\?/.test(await page.getByTestId('proposal-checks').textContent()), 'Ask shows how a proposed automation will be checked before it runs')
   await page.getByTestId('proposal-edit').click()
   const drafted = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Daily backup', null, { timeout: 8000 }).then(() => true, () => false)
   check(drafted && await page.getByTestId('node-backup').count() === 1, 'Ask > Edit opens the proposed flow in the builder')
