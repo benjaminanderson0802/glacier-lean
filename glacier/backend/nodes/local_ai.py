@@ -1,6 +1,7 @@
 """Worker step that sends a prompt to an Ollama model running on the user's machine."""
 import json
 import os
+import socket
 import urllib.error
 import urllib.request
 
@@ -20,7 +21,11 @@ def run(ctx: dict) -> dict:
               .replace("{run}", ctx["run_id"])
               .replace("{prev_output}", previous))
     model = config.get("model") or os.environ.get("GLACIER_LOCAL_MODEL") or DEFAULT_MODEL
-    timeout = max(1, min(int(config.get("timeout") or DEFAULT_TIMEOUT), 24 * 3600))
+    try:
+        timeout = int(config.get("timeout") or DEFAULT_TIMEOUT)
+    except (TypeError, ValueError):
+        timeout = DEFAULT_TIMEOUT
+    timeout = max(1, min(timeout, 24 * 3600))
     base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/")
     url = base_url + "/api/chat"
     request = urllib.request.Request(
@@ -36,10 +41,19 @@ def run(ctx: dict) -> dict:
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             reply = json.loads(response.read())
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        # HTTP errors are not a connection failure (for example, an unknown model).
-        if isinstance(exc, urllib.error.HTTPError):
-            raise RuntimeError(f"Ollama returned HTTP {exc.code}") from exc
+    except (socket.timeout, TimeoutError):
+        return {
+            "state": "failed",
+            "exit_code": 1,
+            "output": f"Local AI took longer than {timeout} seconds.",
+        }
+    except urllib.error.HTTPError:
+        return {
+            "state": "failed",
+            "exit_code": 1,
+            "output": f'Local AI could not use model "{model}". Download it with: ollama pull {model}.',
+        }
+    except (urllib.error.URLError, OSError):
         return {
             "state": "failed",
             "exit_code": 1,

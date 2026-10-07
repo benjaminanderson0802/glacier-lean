@@ -1,4 +1,5 @@
 import json
+import socket
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -6,14 +7,18 @@ from conftest import env
 
 
 class FakeOllama:
-    def __init__(self):
+    def __init__(self, status=200):
         self.requests = []
+        self.status = status
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 owner.requests.append((self.path, body))
+                if owner.status != 200:
+                    self.send_error(owner.status, "model unavailable")
+                    return
                 payload = json.dumps({
                     "message": {"role": "assistant", "content": "A local reply"},
                     "prompt_eval_count": 17,
@@ -119,6 +124,66 @@ def test_local_ai_failure_routes_check_no_with_friendly_message(make_server, mon
         "Local AI is not running at http://127.0.0.1:1. Start Ollama, or pick another worker."
     )
     assert run["outputs"]["check"] == "no"
+
+
+def test_local_ai_http_error_routes_check_no_with_model_hint(make_server, monkeypatch):
+    with FakeOllama(status=404) as ollama:
+        monkeypatch.setenv("GLACIER_OLLAMA_URL", ollama.url)
+        server = make_server().start()
+        flow = env("local-model-missing", [
+            ("ai", "local_ai", {"prompt": "hello", "model": "missing-model"}),
+            ("check", "check", {"expr": "exit_code == 0"}),
+            ("yes", "note", {"path": "runs/yes.md", "template": "yes"}),
+            ("no", "note", {"path": "runs/no.md", "template": "no"}),
+        ], [("ai", "check", ""), ("check", "yes", "yes"), ("check", "no", "no")])
+        server.put("/api/environments/local-model-missing", flow)
+        run = server.wait_run(server.post("/api/environments/local-model-missing/run")["run_id"])
+
+    assert run["node_states"] == {"ai": "failed", "check": "done", "yes": "skipped", "no": "done"}
+    assert run["outputs"]["ai"] == (
+        'Local AI could not use model "missing-model". Download it with: ollama pull missing-model.'
+    )
+    assert run["outputs"]["check"] == "no"
+
+
+def test_local_ai_timeout_has_specific_message(monkeypatch):
+    from nodes.local_ai import run
+
+    def timed_out(request, timeout):
+        raise socket.timeout()
+
+    monkeypatch.setattr("nodes.local_ai.urllib.request.urlopen", timed_out)
+    monkeypatch.setenv("GLACIER_OLLAMA_URL", "http://localhost:11434")
+    result = run({"config": {"prompt": "hello", "timeout": 7}, "env_id": "e", "run_id": "r"})
+
+    assert result["state"] == "failed" and result["exit_code"] == 1
+    assert result["output"] == "Local AI took longer than 7 seconds."
+
+
+def test_local_ai_nonnumeric_timeout_uses_default(monkeypatch):
+    from nodes.local_ai import DEFAULT_TIMEOUT, run
+
+    captured = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def read(self):
+            return json.dumps({"message": {"content": "ok"}}).encode()
+
+    def fake_urlopen(request, timeout):
+        captured.append(timeout)
+        return Response()
+
+    monkeypatch.setattr("nodes.local_ai.urllib.request.urlopen", fake_urlopen)
+    result = run({"config": {"prompt": "hello", "timeout": "slow"}, "env_id": "e", "run_id": "r"})
+
+    assert result["state"] == "done"
+    assert captured == [DEFAULT_TIMEOUT]
 
 
 def test_local_ai_appears_in_node_types(server):
