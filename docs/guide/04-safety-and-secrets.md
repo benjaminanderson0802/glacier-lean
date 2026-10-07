@@ -12,6 +12,6 @@ Glacier uses free AI routes. When no free route is available and a paid route is
 
 AI steps can be read-only or allowed to write in their work folder. Read-only means the AI can look at files but cannot change them. A sandbox limits where a step can work.
 
-The person who installs Glacier can set `GLACIER_CODEX_SANDBOX`. When set, it overrides the setting on every Codex step, including steps marked read-only. This setting controls what those steps can change, so ask the installer if you are unsure.
+The person who installs Glacier can set `GLACIER_CODEX_SANDBOX` as the default for Codex steps that do not choose a mode. A step's own setting, including read-only, takes precedence.
 
 An approval step pauses and asks before its connected action continues. Read the request carefully. Approve only actions you understand, such as moving selected files into a review folder. Reject anything unclear. A check can verify a result, but it does not replace your judgment about whether an action is safe.
