@@ -118,7 +118,10 @@ pub fn run() {
                             if backend_ready(port) {
                                 if let Some(window) = handle.get_webview_window("main") {
                                     let _ = window.set_title("Glacier");
-                                    let _ = window.navigate("tauri://localhost/index.html".parse().unwrap());
+                                    if let Ok(mut url) = window.url() {
+                                        url.set_path("/index.html");
+                                        let _ = window.navigate(url);
+                                    }
                                 }
                                 return;
                             }

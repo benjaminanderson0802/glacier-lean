@@ -1,8 +1,16 @@
-# Glacier desktop app
+# Glacier desktop app scaffold
+
+This is a desktop scaffold until the existing screen adopts the desktop API-origin requirement below. Do not treat the desktop app as ready for users until that screen change is complete.
 
 The desktop shell uses Tauri 2. The `desktop/src-tauri/` directory is the Tauri application. Its `frontendDist` points at `desktop/dist`. Tauri's `beforeBuildCommand` builds the existing screen from `glacier/web` and assembles it with the bundled first-run page; `desktop/dist/` is generated and ignored by git. The screen source is maintained separately and is not copied into or edited by the desktop project.
 
 The shell reserves an available loopback port, starts the Python backend as a child process, waits for `GET /api/node-types`, and then opens the bundled screen. The backend does not serve the screen at `/`. The desktop shell injects `window.__GLACIER_API__` into bundled pages with the local backend URL (for example, `http://127.0.0.1:43127`); the screen must use this value for API requests and its events WebSocket. Tauri's content security policy allows that loopback port and the Tauri app origin. All API traffic stays on this computer.
+
+## Screen requirements
+
+The screen must prefix every API request and the events WebSocket URL with `window.__GLACIER_API__`, falling back to the current page's origin when that value is undefined. The desktop shell injects the local backend address into bundled pages. Until the screen implements and verifies this behavior, this remains a scaffold.
+
+The backend will allow only `tauri://localhost`, `http://tauri.localhost`, and `https://tauri.localhost` as cross-origin callers; the integrator will add this backend policy. Do not edit the screen or backend as part of this desktop card.
 
 The first window shows the bundled first-run page while the backend starts. It checks for Codex, Ollama, OpenCode, Gemini, and Git through a Tauri command. Missing tools do not prevent continuing, and the list is never sent to the backend or elsewhere. The page explains the check in plain language. If the engine cannot start or does not become ready within 45 seconds, the page explains that in plain language and points to `backend.log` in the app's local data folder. Backend output is written to that log. Closing the desktop app stops the sidecar.
 
