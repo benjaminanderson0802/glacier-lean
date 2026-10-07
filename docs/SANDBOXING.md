@@ -37,6 +37,22 @@ Sources: [bubblewrap project and design](https://github.com/containers/bubblewra
 
 ## Implementation choice and boundaries
 
+## Using the sandbox
+
+Sandboxing is off by default for now. Set `sandbox: "on"` on a command step,
+set `sandbox: "on"` on the flow to apply it to command steps without their own
+setting, or set `GLACIER_SANDBOX=on` to enable it for all command steps. The
+step workspace is the only writable folder. Network access stays blocked by
+default. The current adapter does not yet implement host allowlisting, so a
+step that asks for `network: "allow"` fails clearly until a filtered proxy is
+available; it never gets unrestricted network access. (The runner's current
+sandbox adapter blocks this option with a clear error because host filtering is
+not implemented yet.)
+
+Codex keeps its own sandbox mode. `GLACIER_CODEX_SANDBOX` supplies the default
+for Codex steps that do not choose a mode; an explicit `sandbox` setting on a
+Codex step takes precedence.
+
 Linux uses Landlock directly through the standard-library `ctypes` interface.
 The wrapper process restricts itself and then replaces itself with `/bin/sh
 -c <cmd>`. The work directory is read/write; common system executable and
