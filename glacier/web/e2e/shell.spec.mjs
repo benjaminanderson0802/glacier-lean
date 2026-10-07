@@ -97,6 +97,24 @@ try {
   await page.waitForFunction(() => /\[\[shopping-list\]\]/.test(document.querySelector('[data-testid=memory-note-body]')?.textContent ?? ''))
   check(true, 'Undo restores the previous version')
 
+  // claims: list from Home, detail, decision
+  await page.getByTestId('nav-home').click()
+  await page.getByTestId('all-claims').click()
+  await page.getByTestId('claim-c0ffee01').click()
+  await page.getByTestId('claim-banner').waitFor()
+  check(/eBay/.test(await page.getByTestId('claim-banner').textContent()) && /analyzed 12 categories/.test(await page.getByTestId('claim-research').textContent()), 'claim detail shows problem and research')
+  await page.getByTestId('claim-more').click()
+  await page.getByTestId('claim-done').waitFor()
+  check(/researching/.test(await page.getByTestId('claim-banner').textContent()), 'Ask for more research updates the claim')
+
+  // templates: gallery -> use -> builder with the new flow
+  await page.getByTestId('nav-automations').click()
+  await page.getByTestId('flow-templates').click()
+  await page.getByTestId('tpl-tpl-folder-backup').click()
+  await page.getByTestId('tpl-use').click()
+  const tplOk = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Folder backup', null, { timeout: 8000 }).then(() => true, () => false)
+  check(tplOk, 'Use this template creates the flow and opens it')
+
   await page.keyboard.press('Control+k')
   await page.getByTestId('command-palette').waitFor()
   await page.getByTestId('command-input').fill('memory')

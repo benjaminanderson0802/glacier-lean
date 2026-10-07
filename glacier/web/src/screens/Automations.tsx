@@ -53,7 +53,7 @@ export function AutomationsScreen() {
               <Btn primary type="submit" data-testid="flow-new-create">Create</Btn>
               <Btn onClick={() => setNaming(false)}>Cancel</Btn>
             </form>
-          : <Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">New</Btn>
+          : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">Templates</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">New</Btn></span>
       } />
       <Panel>
         <div className="g-toolbar">

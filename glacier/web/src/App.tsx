@@ -8,6 +8,8 @@ import { AutomationsScreen } from './screens/Automations.tsx'
 import { MemoryScreen } from './screens/Memory.tsx'
 import { SettingsScreen } from './screens/Settings.tsx'
 import { RunView } from './screens/RunView.tsx'
+import { ClaimDetail, ClaimsList } from './screens/Claims.tsx'
+import { Templates } from './screens/Templates.tsx'
 import { CommandPalette } from './screens/CommandPalette.tsx'
 import { Splash } from './screens/Splash.tsx'
 
@@ -52,10 +54,10 @@ export default function App() {
         ? <Suspense fallback={<div className="g-empty">Loading the builder…</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
         : rest[0] === 'flow' && rest[1]
           ? <RunView key={rest.join('/')} envId={rest[1]} runId={rest[2] !== 'history' ? rest[2] : undefined} history={rest[2] === 'history'} />
-          : <AutomationsScreen />
+          : rest[0] === 'templates' ? <Templates /> : <AutomationsScreen />
       case 'memory': return <MemoryScreen path={rest[0]} />
       case 'settings': return <SettingsScreen section={rest[0]} />
-      default: return <HomeScreen />
+      default: return rest[0] === 'claim' && rest[1] ? <ClaimDetail id={rest[1]} /> : rest[0] === 'claims' ? <ClaimsList /> : <HomeScreen />
     }
   }, [tab, rest, building])
 

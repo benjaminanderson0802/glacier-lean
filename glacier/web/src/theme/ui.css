@@ -159,3 +159,19 @@ button.g-row:hover { background: var(--g-panel-hi); }
 .g-ask-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .g-ask-row .g-lead { flex: 1; }
 .g-row.sel, .g-table tbody tr.sel { background: var(--g-panel-hi); box-shadow: inset 3px 0 0 var(--g-accent); }
+
+/* ---------- banner, bullets, cards ---------- */
+.g-banner { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--g-accent); color: var(--g-accent-ink); border-radius: var(--g-radius); box-shadow: var(--g-glow); }
+.g-banner .g-lead { color: var(--g-accent-ink); flex: 1; }
+.g-banner .g-chip { color: var(--g-accent-ink); border-color: var(--g-accent-ink); }
+.g-bullets { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.g-bullets li::marker { color: var(--g-sub); }
+.g-actions-wide { justify-content: stretch; }
+.g-actions-wide .g-btn { flex: 1; }
+.g-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.g-card { display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 12px 14px; background: var(--g-panel); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); color: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-body); cursor: pointer; }
+.g-card:hover { background: var(--g-panel-hi); }
+.g-card.sel { border-color: var(--g-accent); }
+.g-card:disabled { opacity: .5; cursor: default; }
+.g-card-ico { color: var(--g-sub); padding-top: 4px; }
+.g-card-text { display: flex; flex-direction: column; gap: 2px; }

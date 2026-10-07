@@ -19,6 +19,7 @@ export function HomeScreen() {
   }, [refresh])
 
   const open = (it: HomeItem) => {
+    if (it.kind === 'claim' && it.ref.claim_id) { go(`home/claim/${it.ref.claim_id}`); return }
     if (it.ref.env_id) go(`automations/flow/${it.ref.env_id}${it.ref.run_id ? `/${it.ref.run_id}` : ''}`)
   }
 
@@ -40,7 +41,7 @@ export function HomeScreen() {
       } />
       {err && <div className="g-error">{err}</div>}
       <div className="g-grid-2" style={{ flex: 1 }}>
-        <Panel title="Needs you" testid="needs-you">
+        <Panel title="Needs you" aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">all claims</button>} testid="needs-you">
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>Nothing needs you. Nice.</Empty>}
             {data?.needs_you.map((it, i) => (

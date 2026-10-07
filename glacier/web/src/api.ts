@@ -235,3 +235,28 @@ export async function chat(message: string, conversationId: string | null, onEve
 }
 export const applyProposal = (id: string, approve: boolean) =>
   req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, { approve })
+
+// ---------- Claims (GET/POST /api/claims*) ----------
+export interface ClaimSummary { id: string; kind: string; summary: string; status: string; assigned_to: string | null; updated: string }
+export interface ClaimFull { meta: Record<string, string | number | null> & { id: string; kind?: string; summary?: string; status?: string; updated?: string; run_id?: string }; body: string }
+export const claimsApi = {
+  list: (status?: string) => req<ClaimSummary[]>('GET', `/api/claims${status ? `?status=${enc(status)}` : ''}`),
+  get: (id: string) => req<ClaimFull>('GET', `/api/claims/${enc(id)}`),
+  decide: (id: string, action: 'approve' | 'reject' | 'research_more', option = '') => req<{ status: string }>('POST', `/api/claims/${enc(id)}/decision`, { action, option }),
+}
+/** Split a claim body into its "## Heading" sections. */
+export function sections(body: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  let cur = ''
+  for (const line of body.split('\n')) {
+    const m = line.match(/^##\s+(.+)$/)
+    if (m) { cur = m[1].trim(); out[cur] = ''; continue }
+    if (cur) out[cur] += line + '\n'
+  }
+  for (const k of Object.keys(out)) out[k] = out[k].trim()
+  return out
+}
+
+// ---------- Templates (GET /api/templates) ----------
+export interface TemplateItem { id: string; name: string; description: string; author?: string; license?: string; review_status: string; installable: boolean; template?: Environment & { description?: string; tags?: string[] } }
+export const templatesApi = { list: () => req<TemplateItem[]>('GET', '/api/templates') }
