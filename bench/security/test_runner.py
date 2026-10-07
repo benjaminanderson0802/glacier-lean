@@ -1,5 +1,6 @@
 """HTTP-level acceptance tests using a tiny fake Glacier API."""
 import json
+import importlib.util
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import subprocess
@@ -7,6 +8,11 @@ import sys
 import threading
 
 HERE = Path(__file__).resolve().parent
+RUNNER_SPEC = importlib.util.spec_from_file_location(
+    "security_run_glacier", HERE / "run_glacier.py"
+)
+security_run_glacier = importlib.util.module_from_spec(RUNNER_SPEC)
+RUNNER_SPEC.loader.exec_module(security_run_glacier)
 
 
 class FakeAPI(BaseHTTPRequestHandler):
@@ -113,13 +119,15 @@ def test_schema_requires_exact_status_and_review_attack_shapes():
 
 
 def test_restore_min_length_probe_requires_seven_character_error():
-    from run_glacier import probe_result
-
     case = {"id": "flow-restore-ambiguous", "request": {
         "check": "min_length_message", "expected_status": 400,
     }}
-    assert probe_result(case, 400, '{"detail":"Commit id must be at least 7 characters"}', {})["blocked"]
-    assert not probe_result(case, 400, '{"detail":"Commit not found"}', {})["blocked"]
+    assert security_run_glacier.probe_result(
+        case, 400, '{"detail":"Commit id must be at least 7 characters"}', {}
+    )["blocked"]
+    assert not security_run_glacier.probe_result(
+        case, 400, '{"detail":"Commit not found"}', {}
+    )["blocked"]
 
 
 def test_runner_registers_secret_list_case_and_rejects_truncated_run_id(tmp_path):
