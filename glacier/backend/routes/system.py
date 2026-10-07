@@ -13,4 +13,4 @@ def check_system():
 
 @router.get("/api/system/settings")
 def system_settings():
-    return system_check.effective_settings()
+    return system_check.effective_settings(include_ask_route=True)

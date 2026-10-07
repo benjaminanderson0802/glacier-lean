@@ -6,6 +6,9 @@ import subprocess
 import tempfile
 import threading
 import uuid
+import shutil
+import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
@@ -43,7 +46,50 @@ def _chat_schema() -> dict:
             "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"}}}
 
 
-def _ask(message: str) -> dict:
+def _codex_signed_in() -> bool:
+    """Check Codex login state without reading or logging its output."""
+    override = os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN")
+    binary = override or "codex"
+    # An explicitly configured chat executable is an operator-selected harness. Some wrappers
+    # do not implement Codex's login-status command, so let the selected executable report auth
+    # problems when it is actually used.
+    if override:
+        return True
+    try:
+        args = shell_commands.executable_invocation(binary, "login", "status")
+        result = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5)
+        return result.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _ollama_answers() -> bool:
+    """Probe the local Ollama chat endpoint with a tiny non-generative tags request."""
+    url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/tags"
+    try:
+        with urllib.request.urlopen(url, timeout=1) as response:
+            payload = json.loads(response.read())
+        return bool(payload.get("models"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return False
+
+
+def ask_route() -> tuple[str | None, str]:
+    """Return the route Ask would use now and a plain reason for Settings."""
+    configured = os.environ.get("GLACIER_ASK_ROUTE", "auto").strip().lower()
+    codex = (os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN") or "codex")
+    if configured not in {"", "auto"}:
+        if configured in {"local", "codex"}:
+            return configured, f"Ask is set to use {configured.title()} directly."
+        configured = "auto"
+    if shutil.which(codex) and _codex_signed_in():
+        return "codex", "Codex is installed and signed in."
+    if _ollama_answers():
+        return "local", "Codex is unavailable or signed out, so Ask will use Ollama on this computer."
+    return None, "Neither Codex sign-in nor a local Ollama model is available. Install Ollama with a model or sign in to Codex."
+
+
+def _ask_codex(message: str) -> dict:
     with tempfile.TemporaryDirectory() as directory:
         schema_path, output_path = os.path.join(directory, "schema.json"), os.path.join(directory, "answer.json")
         with open(schema_path, "w", encoding="utf-8") as schema_file:
@@ -59,6 +105,24 @@ def _ask(message: str) -> dict:
     if not isinstance(answer.get("reply"), str) or not isinstance(answer.get("automation"), bool):
         raise ValueError("The assistant returned an invalid answer.")
     return answer
+
+
+def _ask_local(message: str) -> dict:
+    import urllib.request
+    url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
+    body = {"model": __import__("system_check").default_local_model(), "stream": False, "think": False,
+            "format": _chat_schema(), "options": {"temperature": 0},
+            "messages": [{"role": "user", "content": message}]}
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=600) as response:
+        answer = json.loads(json.loads(response.read())["message"]["content"])
+    if not isinstance(answer, dict) or not isinstance(answer.get("reply"), str) or not isinstance(answer.get("automation"), bool):
+        raise ValueError("The assistant returned an invalid answer.")
+    return answer
+
+
+def _ask(message: str, route: str) -> dict:
+    return _ask_local(message) if route == "local" else _ask_codex(message)
 
 
 def _is_automation(message: str, model_answer: dict) -> bool:
@@ -94,16 +158,26 @@ def chat(request: ChatRequest):
     def stream():
         run_id, message_id = str(uuid.uuid4()), str(uuid.uuid4())
         yield _event("RUN_STARTED", threadId=conversation_id, runId=run_id)
+        route, automation = None, False
         try:
-            answer = _ask(request.message)
+            route, reason = ask_route()
+            if route is None:
+                yield _event("TEXT_MESSAGE_START", messageId=message_id, role="assistant")
+                yield _event("TEXT_MESSAGE_CONTENT", messageId=message_id, delta=reason)
+                yield _event("TEXT_MESSAGE_END", messageId=message_id)
+                yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
+                return
+            answer = _ask(request.message, route)
             automation = _is_automation(request.message, answer)
             if automation:
                 import app
                 proposal_id = str(uuid.uuid4())
                 flow_id = re.sub(r"[^a-z0-9]+", "-", request.message.lower()).strip("-")[:40] or "new-flow"
-                plan = assistant.plan(request.message, app.NODE_CATALOG, flow_id)
+                plan = assistant.plan(request.message, app.NODE_CATALOG, flow_id, engine=route)
                 if plan.get("problems") or not plan.get("flow"):
-                    raise RuntimeError("I could not make a valid plan yet. Please try changing the request.")
+                    raise ValueError("The assistant could not make a valid plan.")
+                if not isinstance(plan["flow"].get("acceptance"), list) or not plan["flow"]["acceptance"]:
+                    raise ValueError("The assistant returned a plan without an acceptance check.")
                 proposal = {"id": proposal_id, "conversation_id": conversation_id, **plan}
                 with _proposals_lock:
                     _proposals[proposal_id] = proposal
@@ -128,7 +202,10 @@ def chat(request: ChatRequest):
             yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
         except Exception as error:
             logging.getLogger(__name__).exception("Assistant chat failed")
-            message = ("The assistant isn't installed" if isinstance(error, FileNotFoundError) else
+            local_automation = route == "local" and (automation or any(phrase in request.message.lower() for phrase in
+                ("make me", "create an automation", "automate", "every day", "daily ", "each day", "every week", "weekly ")))
+            message = ("I could not turn that into an automation. Try rephrasing your request." if local_automation else
+                       "Neither Codex nor a local model is available. Install Ollama with a model or sign in to Codex." if isinstance(error, (FileNotFoundError, ConnectionError, urllib.error.URLError)) else
                        "The assistant took too long" if isinstance(error, subprocess.TimeoutExpired) else
                        "The assistant could not answer. Please try again.")
             yield _event("RUN_ERROR", threadId=conversation_id, runId=run_id, message=message)

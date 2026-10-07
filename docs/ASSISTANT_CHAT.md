@@ -21,4 +21,11 @@ restart clears unreviewed proposals.
 
 ## Live check
 
-Run `bench/live_ask/run_live.py` to exercise the Ask screen's HTTP request and AG-UI stream against a temporary real backend. It records reply timing, raw proposals, approval/rejection results, and plain-language errors in `evidence/live/ask_assistant.md`. The current chat route uses the Codex CLI for its initial answer and calls the planner with its Codex default; setting `GLACIER_LOCAL_MODEL` alone does not select Ollama for Ask chat proposals. The evidence report records this routing limitation and the measured results.
+Run `bench/live_ask/run_live.py` to exercise the Ask screen's HTTP request and AG-UI stream against a temporary real backend. It records reply timing, raw proposals, approval/rejection results, and plain-language errors in `evidence/live/ask_assistant.md`. That report predates the route setting below and records a Codex-only run.
+
+Ask uses `GLACIER_ASK_ROUTE=auto|local|codex` (`auto` by default). In `auto`, Glacier uses the signed-in Codex CLI
+when available; otherwise it uses the local Ollama model selected by `system_check.default_local_model()` when Ollama
+is answering. If neither is ready, Ask explains how to start Ollama and install a model or sign in to Codex. `local`
+and `codex` force that route. `GET /api/system/settings` includes `ask_route` and `ask_route_reason` to show the
+current choice. The conversation is sent only to the selected provider; local automation plans use that same Ollama
+model, and must pass the planner's normal validation with at least one acceptance check before a proposal is shown.
