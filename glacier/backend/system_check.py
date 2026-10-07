@@ -1,13 +1,13 @@
 """Cross-platform hardware and local tool checks for first-run setup."""
 import os
 import platform
-import re
 import shutil
 import subprocess
 import time
 
 
-DEFAULT_MODEL = "qwen3:0.6b"
+DEFAULT_MODEL = "llama3.2:3b"
+RECOMMENDED_MODELS = {"low": "llama3.2:3b", "standard": "llama3.2:3b"}
 CACHE_SECONDS = 60
 _check_cache = None
 _check_cache_at = 0.0
@@ -88,17 +88,10 @@ def recommend(machine):
     cores = int(machine.get("cpu_cores") or 1)
     raw_memory = machine.get("memory_gb")
     memory = float(raw_memory) if raw_memory is not None else None
-    models = [model for model in (machine.get("ollama_models") or [])
-              if "embed" not in model.lower() and "minilm" not in model.lower()]
     low = (memory is not None and memory <= 8) or cores <= 4
-    def model_size(model):
-        match = re.search(r"(?:^|[-:])(\d+(?:\.\d+)?)\s*([bm])(?:\b|$)", model.lower())
-        if not match:
-            return float("inf")
-        return float(match.group(1)) * (1_000 if match.group(2) == "b" else 1)
-
-    model = min(enumerate(models), key=lambda item: (model_size(item[1]), item[0]))[1] if models else DEFAULT_MODEL
-    return {"mode": "low" if low else "standard", "local_model": model,
+    mode = "low" if low else "standard"
+    model = RECOMMENDED_MODELS[mode]
+    return {"mode": mode, "local_model": model,
             "max_parallel_runs": 1 if low else min(4, max(1, cores // 2))}
 
 

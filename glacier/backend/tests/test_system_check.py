@@ -8,10 +8,10 @@ import system_check
 @pytest.mark.parametrize(
     "machine, expected",
     [
-        ({"memory_gb": 8, "cpu_cores": 8, "ollama_models": ["qwen3:8b", "qwen3:0.6b"]}, {"mode": "low", "local_model": "qwen3:0.6b", "max_parallel_runs": 1}),
-        ({"memory_gb": 16, "cpu_cores": 4, "ollama_models": ["qwen3:0.6b", "qwen3:8b"]}, {"mode": "low", "local_model": "qwen3:0.6b", "max_parallel_runs": 1}),
-        ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": ["qwen3:0.6b", "qwen3:8b"]}, {"mode": "standard", "local_model": "qwen3:0.6b", "max_parallel_runs": 4}),
-        ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": []}, {"mode": "standard", "local_model": "qwen3:0.6b", "max_parallel_runs": 4}),
+        ({"memory_gb": 8, "cpu_cores": 8, "ollama_models": ["qwen3:8b", "qwen3:1.7b", "qwen3:0.6b", "llama3.2:3b"]}, {"mode": "low", "local_model": "llama3.2:3b", "max_parallel_runs": 1}),
+        ({"memory_gb": 16, "cpu_cores": 4, "ollama_models": ["qwen3:0.6b", "qwen3:1.7b", "llama3.2:3b"]}, {"mode": "low", "local_model": "llama3.2:3b", "max_parallel_runs": 1}),
+        ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": ["qwen3:1.7b", "llama3.2:3b"]}, {"mode": "standard", "local_model": "llama3.2:3b", "max_parallel_runs": 4}),
+        ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": []}, {"mode": "standard", "local_model": "llama3.2:3b", "max_parallel_runs": 4}),
     ],
 )
 def test_recommendation_table(machine, expected):
@@ -39,13 +39,13 @@ def test_check_reads_models_from_fake_ollama_on_path(tmp_path, monkeypatch):
     result = system_check.check_system()
     assert result["tools"]["ollama"]["found"] is True
     assert result["ollama_models"] == ["qwen3:0.6b", "llama3.2:1b"]
-    assert result["recommended"]["local_model"] == "qwen3:0.6b"
+    assert result["recommended"]["local_model"] == "llama3.2:3b"
 
 
 def test_settings_environment_overrides_recommendation(monkeypatch):
     system_check.clear_cache()
     monkeypatch.setattr(system_check, "_machine_stats", lambda: (8, 16.0, 10.0))
-    monkeypatch.setattr(system_check, "_ollama_models", lambda: ["qwen3:0.6b"])
+    monkeypatch.setattr(system_check, "_ollama_models", lambda: ["qwen3:1.7b"])
     monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
     monkeypatch.setenv("GLACIER_LOCAL_MODEL", "custom:1b")
     monkeypatch.setenv("GLACIER_MAX_PARALLEL_RUNS", "3")
@@ -53,7 +53,7 @@ def test_settings_environment_overrides_recommendation(monkeypatch):
         "mode": "standard", "local_model": "custom:1b", "max_parallel_runs": 3
     }
     assert system_check.check_system()["recommended"] == {
-        "mode": "standard", "local_model": "qwen3:0.6b", "max_parallel_runs": 4
+        "mode": "standard", "local_model": "llama3.2:3b", "max_parallel_runs": 4
     }
 
 
@@ -63,13 +63,13 @@ def test_system_endpoints(server):
     assert server.get("/api/system/settings")["max_parallel_runs"] >= 1
 
 
-def test_recommend_skips_embedding_models():
+def test_recommend_uses_evaluated_model_table():
     settings = system_check.recommend({
         "memory_gb": 16,
         "cpu_cores": 8,
         "ollama_models": ["nomic-embed-text:latest", "all-minilm:33m", "qwen3:8b"],
     })
-    assert settings["local_model"] == "qwen3:8b"
+    assert settings["local_model"] == "llama3.2:3b"
 
 
 def test_unknown_memory_is_not_treated_as_low(monkeypatch):
