@@ -253,6 +253,7 @@ export const claimsApi = {
   list: (status?: string) => req<ClaimSummary[]>('GET', `/api/claims${status ? `?status=${enc(status)}` : ''}`),
   get: (id: string) => req<ClaimFull>('GET', `/api/claims/${enc(id)}`),
   decide: (id: string, action: 'approve' | 'reject' | 'research_more', option = '') => req<{ status: string }>('POST', `/api/claims/${enc(id)}/decision`, { action, option }),
+  rerun: (id: string) => req<{ run_id: string; env_id: string }>('POST', `/api/claims/${enc(id)}/rerun`),
 }
 /** Split a claim body into its "## Heading" sections. */
 export function sections(body: string): Record<string, string> {

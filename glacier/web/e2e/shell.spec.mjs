@@ -219,6 +219,14 @@ try {
   await page.getByTestId('claim-more').click()
   await page.getByTestId('claim-done').waitFor()
   check(/researching/.test(await page.getByTestId('claim-banner').textContent()), 'Ask for more research updates the claim')
+  await page.getByTestId('nav-home').click()
+  await page.getByTestId('all-claims').click()
+  await page.getByTestId('claim-c0ffee02').click()
+  await page.getByTestId('claim-approve').click()
+  await page.getByTestId('claim-rerun').waitFor()
+  await page.getByTestId('claim-rerun').click()
+  const reran = await page.waitForFunction(() => location.hash.startsWith('#/automations/flow/nightly-sync/'), null, { timeout: 8000 }).then(() => true, () => false)
+  check(reran, 'after approving, "Run it again to check" re-runs the flow and opens the run')
 
   // templates: gallery -> use -> builder with the new flow
   await page.getByTestId('nav-automations').click()

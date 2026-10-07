@@ -21,6 +21,10 @@ const mockClaims = new Map([['c0ffee01', {
   meta: { id: 'c0ffee01', kind: 'research', summary: 'Best eBay product opportunities', status: 'proposed', updated: new Date().toISOString(), run_id: '' },
   body: '## Problem\nBest eBay product opportunities\n\n## Evidence\n- completed successfully\n- 5 product ideas generated\n- sources included\n\n## Research\n- analyzed 12 categories\n- found 5 high-demand products\n- checked competition and pricing\n\n## Resolution\n',
   summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
+}], ['c0ffee02', {
+  meta: { id: 'c0ffee02', kind: 'bug', summary: 'Step fetch in flow nightly-sync keeps failing the same way', status: 'proposed', updated: new Date().toISOString(), run_id: 'run-nightly' },
+  body: '## Problem\nStep fetch keeps failing\n\n## Evidence\n- failed 3 times with the same error\n\n## Research\n- the site changed its address\n\n## Resolution\n',
+  summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
 }]])
 const mockSecrets = new Set(['SMTP_PASSWORD'])
 const mockHygiene = [
@@ -272,6 +276,13 @@ const server = http.createServer(async (req, res) => {
       if (!status) return send(400, { detail: 'action must be approve, reject or research_more' })
       c.meta.status = status; c.body += `\n- Owner decision: ${body.action}`
       return send(200, { status })
+    }
+    if ((m = p.match(/^\/api\/claims\/([^/]+)\/rerun$/)) && req.method === 'POST') {
+      const c = mockClaims.get(m[1]); if (!c) return send(404, { detail: 'claim not found' })
+      if (!c.meta.run_id) return send(400, { detail: 'This claim did not come from a run, so there is nothing to run again.' })
+      if (!envs.has('nightly-sync')) envs.set('nightly-sync', { id: 'nightly-sync', name: 'Nightly sync', nodes: [{ id: 'fetch', type: 'command', config: { cmd: 'echo ok' }, position: { x: 0, y: 0 } }], edges: [] })
+      const run_id = startRun(envs.get('nightly-sync')); c.body += `\n- Owner ran the flow again to check: run ${run_id}.`
+      return send(200, { run_id, env_id: 'nightly-sync' })
     }
     if (p === '/api/templates' && req.method === 'GET') return send(200, mockTemplates)
     if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name })))
