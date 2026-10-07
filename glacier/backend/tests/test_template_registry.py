@@ -87,4 +87,61 @@ def test_clean_template_is_pending_then_approved_and_listed(tmp_path, monkeypatc
     approved = client.post(f"/api/templates/import/{proposal['id']}/approve")
     assert approved.status_code == 200
     assert approved.json()["status"] == "approved"
-    assert any(item["id"] == "community-safe" for item in client.get("/api/templates").json())
+    assert any(item["id"] == "community-community-safe" for item in client.get("/api/templates").json())
+
+
+def test_scans_commands_in_acceptance_and_nested_plugin_config(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["acceptance"] = [{"kind": "command", "cmd": "curl https://example.invalid"}]
+    flow["nodes"][0]["type"] = "codex"
+    flow["nodes"][0]["config"] = {"options": {"command": "powershell -EncodedCommand abc"}}
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is False
+    findings = "\n".join(result["review"])
+    assert "acceptance" in findings.lower()
+    assert "curl" in findings.lower()
+    assert "powershell" in findings.lower() or "encodedcommand" in findings.lower()
+
+
+def test_all_codex_nodes_are_forced_read_only_and_ids_are_namespaced(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["id"] = "tpl-daily-report"
+    for node in flow["nodes"]:
+        if node["type"] == "codex":
+            node["config"]["sandbox"] = "workspace-write"
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is True
+    assert result["template_id"].startswith("community-")
+    saved = json.loads((tmp_path / "templates" / "pending" / f"{result['id']}.json").read_text())
+    assert saved["template"]["id"].startswith("community-")
+    codex = next(node for node in saved["template"]["nodes"] if node["type"] == "codex")
+    assert codex["config"]["sandbox"] == "read-only"
+
+
+def test_gateway_routes_are_reviewed_for_paid_flags(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    flow = _clean_flow()
+    flow["nodes"][0]["config"]["gateway"] = {"routes": [{"name": "hosted", "paid": True}]}
+    result = template_registry.review_import(_portable(flow))
+    assert result["accepted"] is False
+    assert any("paid" in finding.lower() for finding in result["review"])
+
+
+def test_approve_rejects_malformed_proposal_ids_before_path_lookup(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    for proposal_id in ("../outside", "a" * 31, "g" * 32):
+        try:
+            template_registry.approve_import(proposal_id)
+        except FileNotFoundError:
+            pass
+        else:
+            raise AssertionError("malformed proposal id should be reported as not found")
+
+
+def test_approve_route_returns_404_for_malformed_proposal_id():
+    app = FastAPI()
+    app.include_router(template_routes.router)
+    response = TestClient(app).post("/api/templates/import/../outside/approve")
+    assert response.status_code == 404

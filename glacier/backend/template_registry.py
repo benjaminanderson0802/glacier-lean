@@ -24,12 +24,24 @@ RISKY_COMMANDS = (
     (re.compile(r"\bscp\b", re.IGNORECASE), "scp"),
     (re.compile(r"\brm\s+-rf\b", re.IGNORECASE), "rm -rf"),
     (re.compile(r"\bsudo\b", re.IGNORECASE), "sudo"),
+    (re.compile(r"\bbash\b", re.IGNORECASE), "bash"),
+    (re.compile(r"\bsh\b", re.IGNORECASE), "sh"),
+    (re.compile(r"\bpowershell(?:\.exe)?\b", re.IGNORECASE), "PowerShell"),
+    (re.compile(r"\b(?:eval|exec)\s*\(?", re.IGNORECASE), "dynamic command execution"),
+    (re.compile(r"\b(?:base64\s+-d|encodedcommand)\b", re.IGNORECASE), "encoded command"),
 )
 
 
 def _contains_paid_route(value) -> bool:
     if isinstance(value, dict):
-        return ("paid" in value and value["paid"] is not False) or any(_contains_paid_route(item) for item in value.values())
+        route_marker = any(key in value for key in ("base_url", "model", "route", "routes"))
+        engine = str(value.get("engine", "")).casefold()
+        paid_engine = engine in {"gateway", "openai", "anthropic", "claude", "hosted", "api"}
+        url = str(value.get("base_url", "")).casefold()
+        hosted_url = bool(url) and not any(host in url for host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"))
+        return (("paid" in value and value["paid"] is not False)
+                or (route_marker and (paid_engine or hosted_url))
+                or any(_contains_paid_route(item) for item in value.values()))
     if isinstance(value, list):
         return any(_contains_paid_route(item) for item in value)
     return False
@@ -95,11 +107,12 @@ def review_import(text: str) -> dict:
     except (TypeError, ValueError) as exc:
         return {"accepted": False, "review": [str(exc)]}
 
+    acceptance = flow.get("acceptance")
     try:
-        verify.validate(flow.get("acceptance"))
+        verify.validate(acceptance)
     except (TypeError, ValueError) as exc:
         findings.append(f"Acceptance checks are invalid: {exc}")
-    if flow.get("goal") and not flow.get("acceptance"):
+    if flow.get("goal") and (not isinstance(acceptance, list) or not acceptance):
         findings.append("Every goal needs at least one acceptance check.")
 
     nodes = flow.get("nodes", [])
@@ -109,31 +122,46 @@ def review_import(text: str) -> dict:
         if not isinstance(config, dict):
             findings.append(f"Node {node_id} settings must be an object.")
             continue
-        if node.get("type") == "command":
-            command = str(config.get("cmd", ""))
-            for pattern, match in RISKY_COMMANDS:
-                if pattern.search(command):
-                    findings.append(f"Node {node_id} uses a flagged command ({match}).")
-        if re.search(r"\{secret:[^}]*\}", json.dumps(config, ensure_ascii=False)):
+        for command in _commands_for_review(config):
+            _append_command_findings(findings, f"Node {node_id}", command)
+        if re.search(r"\{secret:[^}]*\}", json.dumps(config, ensure_ascii=False), re.IGNORECASE):
             findings.append(f"Node {node_id} contains a secret placeholder ({'{secret:}'}).")
         if node.get("type") == "codex":
             config["sandbox"] = "read-only"
 
-        if config.get("engine") == "gateway" or _contains_paid_route(config.get("routes", [])):
+        if _contains_paid_route(config):
             findings.append(f"Node {node_id} selects a paid model route.")
+
+    if isinstance(acceptance, list):
+        for index, check in enumerate(acceptance, start=1):
+            if isinstance(check, dict):
+                for command in _commands_for_review(check):
+                    _append_command_findings(findings, f"Acceptance check {index}", command)
+                if re.search(r"\{secret:[^}]*\}", json.dumps(check, ensure_ascii=False), re.IGNORECASE):
+                    findings.append(f"Acceptance check {index} contains a secret placeholder ({'{secret:}'}).")
+                if _contains_paid_route(check):
+                    findings.append(f"Acceptance check {index} selects a paid model route.")
+
+    for command in _commands_for_review(flow.get("gateway", {})):
+        _append_command_findings(findings, "Gateway configuration", command)
 
     if findings:
         return {"accepted": False, "review": findings}
 
     proposal_id = uuid.uuid4().hex
+    original_id = flow["id"]
+    flow["source_id"] = original_id
+    flow["id"] = f"community-{original_id}"
     proposal = {"id": proposal_id, "status": "pending", "author": flow.get("author", "Community contributor"), "template": flow}
     pending = _home() / "templates" / "pending"
     pending.mkdir(parents=True, exist_ok=True)
     (pending / f"{proposal_id}.json").write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return {"accepted": True, "review": [], "id": proposal_id, "status": "pending"}
+    return {"accepted": True, "review": [], "id": proposal_id, "template_id": flow["id"], "source_id": original_id, "status": "pending"}
 
 
 def approve_import(proposal_id: str) -> dict:
+    if not re.fullmatch(r"[0-9a-f]{32}", proposal_id or ""):
+        raise FileNotFoundError(proposal_id)
     pending_path = _home() / "templates" / "pending" / f"{proposal_id}.json"
     if not pending_path.is_file():
         raise FileNotFoundError(proposal_id)
@@ -145,6 +173,27 @@ def approve_import(proposal_id: str) -> dict:
     destination.write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     pending_path.unlink()
     return {"id": proposal_id, "status": "approved"}
+
+
+def _commands_for_review(value, key: str = "") -> list[str]:
+    """Find command strings in built-in and plug-in configuration shapes."""
+    commands = []
+    if isinstance(value, dict):
+        for child_key, child in value.items():
+            if child_key.casefold() in {"cmd", "command", "shell", "script", "run", "exec"} and isinstance(child, str):
+                commands.append(child)
+            else:
+                commands.extend(_commands_for_review(child, child_key))
+    elif isinstance(value, list):
+        for child in value:
+            commands.extend(_commands_for_review(child, key))
+    return commands
+
+
+def _append_command_findings(findings: list[str], source: str, command: str) -> None:
+    for pattern, match in RISKY_COMMANDS:
+        if pattern.search(command):
+            findings.append(f"{source} uses a flagged command ({match}).")
 
 
 if __name__ == "__main__" and sys.argv[1:] == ["--update-manifest"]:
