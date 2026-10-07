@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { system, type SystemCheck } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { go } from '../route.ts'
+import { setLayout, useLayout, type Layout } from '../layout.ts'
 import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
 
 const SECTIONS = [
@@ -16,6 +17,7 @@ const SECTIONS = [
 ] as const
 
 export function SettingsScreen({ section = 'general' }: { section?: string }) {
+  const layout = useLayout()
   const [check, setCheck] = useState<SystemCheck | null>(null)
   const [err, setErr] = useState('')
   const load = () => { setCheck(null); system.check().then(setCheck).catch(e => setErr(String(e))) }
@@ -38,6 +40,13 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>Local model</dt><dd>{check.recommended.local_model}</dd>
                 <dt>Runs at once</dt><dd>{check.recommended.max_parallel_runs}</dd>
                 <dt>Theme</dt><dd>Glacier (retro)</dd>
+                <dt>Detail level</dt><dd>
+                  <div className="g-seg" data-testid="layout-switch">
+                    {([['simple', 'Simple'], ['standard', 'Standard'], ['full', 'Full']] as [Layout, string][]).map(([v, l]) =>
+                      <button key={v} className={`g-seg-btn${v === layout ? ' active' : ''}`} onClick={() => setLayout(v)} data-testid={`layout-${v}`}>{l}</button>)}
+                  </div>
+                  <div className="g-muted">{layout === 'simple' ? 'Fewer step types and settings; nothing technical.' : layout === 'full' ? 'Everything, plus each step\'s raw settings in the editor.' : 'The usual view.'}</div>
+                </dd>
               </dl>
             )}
           </Panel>

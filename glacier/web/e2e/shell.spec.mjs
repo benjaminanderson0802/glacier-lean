@@ -183,6 +183,15 @@ try {
   const restored = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Daily backup', null, { timeout: 8000 }).then(() => true, () => false)
   check(restored && /Restored the version/.test(await page.getByTestId('message').textContent()), 'Saved versions: Restore brings back an earlier version of a flow')
 
+  // Detail level: Simple hides advanced step types and technical fields; Full shows raw step settings
+  await page.getByTestId('nav-settings').click()
+  await page.getByTestId('layout-simple').click()
+  await page.getByTestId('nav-automations').click()
+  await page.goto(UI + '/#/automations/build/daily-backup')
+  await page.getByTestId('palette').waitFor()
+  check(await page.getByTestId('palette-loop').count() === 0 && await page.getByTestId('palette-command').count() === 1 && await page.getByTestId('env-id').count() === 0, 'Simple detail level hides advanced steps and technical fields')
+  await page.goto(UI + '/#/settings/general')
+  await page.getByTestId('layout-standard').click()
   // Run view: plain-language "What happened" explanation of a finished run
   const M = `http://localhost:${MOCK_PORT}`
   await fetch(`${M}/api/environments/explain-me`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
