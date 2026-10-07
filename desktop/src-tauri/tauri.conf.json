@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Glacier",
+  "version": "0.1.0",
+  "identifier": "org.glacier.desktop",
+  "build": { "frontendDist": "../../glacier/web/dist" },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": { "csp": "default-src 'self' http://127.0.0.1:*; connect-src ipc: http://127.0.0.1:* ws://127.0.0.1:*; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'" }
+  },
+  "bundle": {
+    "icon": [],
+    "active": true,
+    "targets": ["deb", "appimage", "nsis"],
+    "resources": {
+      "../sidecar.json": "sidecar.json",
+      "../first-run/": "first-run/",
+      "../../glacier/backend/": "backend/"
+    }
+  }
+}
