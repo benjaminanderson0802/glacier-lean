@@ -175,7 +175,8 @@ def rename(source: str, target: str) -> dict:
         except Exception:
             # Drop anything staged for this rename; the working tree is restored below.
             try:
-                vault._repo.index.reset()
+                with vault._lock:
+                    vault._repo.index.reset()
             except Exception:
                 pass
             # Restore the working tree if the one Git transaction could not be saved.
