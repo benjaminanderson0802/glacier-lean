@@ -366,7 +366,7 @@ After the first rejection, the backend acceptance command in `flows/self/feature
 
 The three-attempt limit is reached. No other cards were run because none reached a verified merge. All three runs have `verified: false`, `merged: false`; practice `main` remains at source commit `e527f5a4169170e4e2423ee8c29a2294f88444b1`. That is the flow update used as the practice base, not a feature merge commit. PH9.2 remains unverified.
 
-# W95 follow-up: practice suite diagnosis and first verified feature
+# W95 follow-up: practice suite diagnosis and three consecutive verified features
 
 ## Drift check and acceptance
 
@@ -394,3 +394,17 @@ The API ran locally at `127.0.0.1:8765` with `GLACIER_HOME=/tmp/w95-live-practic
 The verified worker commit is `85807ac`. The local practice merge commit is `9cdd84d` (`[run:3de97e6b0756] Glacier: merge verified run 3de97e6b0756`); practice `main` is clean and no push occurred. One real feature is verified; PH9.2 still needs two more consecutive verified runs for the phase exit. The first run's timeout was caused by lock queue wait exceeding the verifier's fixed 600-second command timeout, not by the three W66 test assertions.
 
 The requested final `bash ~/tools/suite.sh` completed successfully. Parallel backend suite exact final line: `601 passed, 1 skipped, 4 warnings in 114.25s (0:01:54)`. Serial backend suite exact final line: `4 passed, 602 deselected, 1 warning in 44.86s`.
+
+## Follow-up pair: second and third consecutive verified features
+
+The earlier verified feature remains run `3de97e6b0756`, merged locally as `9cdd84d`. These two additional live runs used the same unchanged self-build flow and verifier checks, with no test or acceptance changes. Each passed the protected-path guard, locked backend suite, other project suite, verification benchmark, security benchmark, and final owner gate. Both were locally merged by the flow; nothing was pushed.
+
+| Consecutive run | Feature | Run ID | Verifier verdict | Practice merge |
+| --- | --- | --- | --- | --- |
+| 1 of 3 | Earlier verified feature (see above) | `3de97e6b0756` | Verified; all checks passed | `9cdd84d` |
+| 2 of 3 | Copy selected run output | `252f2155af49` | Verified; all checks passed | `b6e8095` |
+| 3 of 3 | Remove the pixel character from Ask messages | `12e0a9089744` | Verified; all checks passed | `deea119` |
+
+The Copy run's worker could not initially launch the web build because its isolated checkout lacked `tsc`. After the flow merged it, `npm ci && npm run build` succeeded at merge `b6e8095`. The Ask run had the same missing-dependency issue in its worker report; `npm ci && npm run build` then succeeded at merge `deea119`. These dependency installs were in temporary practice worktrees and did not alter project tests, checks, or acceptance rules.
+
+Both follow-up locked backend gates passed: run `252f2155af49` ended `614 passed, 1 skipped, 1 warning in 503.83s (0:08:23)`; run `12e0a9089744` ended `614 passed, 1 skipped, 1 warning in 448.85s (0:07:28)`. Other project suites passed (`78 passed in 4.90s` and `78 passed in 4.65s`, respectively). For each follow-up verifier benchmark, false-done was `0.00% (0/20 bad runs verified)` and verified was `100.00% (30/30 good runs verified)`. Combined with the initial run's same `0/20` false-done result, the consecutive set is **3 verified features** with **0 false-done cases across 60 bad-run trials (0.00%)**. PH9.2's requested consecutive count is now 3; the checkpoint status is not changed here.
