@@ -26,6 +26,10 @@ html[lang="es"] .g-winctl { flex: none; }
 .g-main.flush { padding: 0; }
 .g-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 20px; padding: 8px 12px; border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); background: var(--g-panel); color: var(--g-head); box-shadow: var(--g-glow); }
 .g-notice .g-detail { white-space: pre-wrap; }
+.g-release-notes { color: var(--g-text); }
+.g-release-notes p { margin: 6px 0; }
+.g-release-notes ul { margin: 6px 0; padding-left: 24px; }
+.g-release-notes .g-panel-title { margin: 10px 0 4px; }
 
 .g-footer { display: flex; align-items: center; gap: 44px; height: 40px; padding: 0 16px; background: var(--g-bar); border-top: var(--g-border) solid var(--g-line); color: var(--g-text); font-size: var(--g-size-small); }
 .g-footer .g-ready { margin-left: auto; }
