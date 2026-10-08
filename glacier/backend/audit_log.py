@@ -22,8 +22,11 @@ def record(event_type: str, *, who: str = "owner", what: dict | None = None) -> 
         # the configured home only when an audit write actually needs the store.
         os.makedirs(os.path.dirname(path), exist_ok=True)
         payload = json.dumps(what or {}, sort_keys=True, ensure_ascii=False)
-        with sqlite3.connect(path, timeout=0.1) as connection:
-            connection.execute("PRAGMA busy_timeout=100")
+        # Many API requests can record effects at once (for example, a burst of
+        # memory writes). Give SQLite enough time to serialize those short
+        # transactions instead of dropping audit events under ordinary load.
+        with sqlite3.connect(path, timeout=30) as connection:
+            connection.execute("PRAGMA busy_timeout=30000")
             connection.execute("""CREATE TABLE IF NOT EXISTS glacier_audit (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_type TEXT NOT NULL,
@@ -40,7 +43,7 @@ def record(event_type: str, *, who: str = "owner", what: dict | None = None) -> 
 
 
 def events(event_type: str | None = None, *, home: str | None = None) -> list[dict]:
-    with sqlite3.connect(_path(home), timeout=0.1) as connection:
+    with sqlite3.connect(_path(home), timeout=30) as connection:
         connection.row_factory = sqlite3.Row
         try:
             rows = connection.execute("SELECT event_type,who,what,happened_at FROM glacier_audit ORDER BY id").fetchall()

@@ -207,11 +207,10 @@ def _plain(path: str) -> str:
     realpath keeps "\\\\?\\" when it cannot confirm the short form, which happens while
     another save is replacing a file in the same folder; the path is the same place.
     """
-    if os.name == "nt":
-        if path.startswith("\\\\?\\UNC\\"):
-            return "\\\\" + path[8:]
-        if path.startswith("\\\\?\\"):
-            return path[4:]
+    if path.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + path[8:]
+    if path.startswith("\\\\?\\"):
+        return path[4:]
     return path
 
 
@@ -232,6 +231,22 @@ def _vault_roots() -> tuple[str, ...]:
     return _roots_cache[1]
 
 
+def _is_within_vault(full: str, root: str, path_module=None) -> bool:
+    """Compare resolved Windows paths by relative containment, including 8.3 aliases."""
+    if path_module is None:
+        if os.name == "nt":
+            import ntpath as path_module
+        else:
+            path_module = os.path
+    try:
+        normalized_root = path_module.normcase(root)
+        normalized_full = path_module.normcase(full)
+        return (normalized_full == normalized_root
+                or normalized_full.startswith(normalized_root.rstrip("\\/") + path_module.sep))
+    except ValueError:
+        return False
+
+
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
     if os.name == "nt":
@@ -241,8 +256,9 @@ def safe_path(path: str) -> str:
     # resolved location too (realpath can report different casing than abspath).
     norm = os.path.normcase(full)
     for root in _vault_roots():
-        if root and norm.startswith(root + os.sep):
-            if _is_git_metadata_path(norm[len(root):]):
+        if root and _is_within_vault(norm, root):
+            relative = os.path.relpath(norm, root)
+            if _is_git_metadata_path(relative):
                 break
             return full
     raise ValueError(f"bad vault path: {path}")

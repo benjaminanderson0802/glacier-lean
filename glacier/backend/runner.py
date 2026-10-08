@@ -184,13 +184,26 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         code = p.returncode
     except subprocess.TimeoutExpired:
         if os.name == "nt":
-            subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
+            # Stop the shell immediately. taskkill /T can spend many seconds
+            # walking its descendants; killing the process handle is prompt.
+            # Closing our read end also prevents orphaned children that inherited
+            # stdout from keeping communicate() blocked after the shell exits.
+            try:
+                p.kill()
+                if p.stdout:
+                    p.stdout.close()
+                p.wait(timeout=2)
+            except (OSError, subprocess.TimeoutExpired):
+                subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
+                p.wait()
+            out = ""
         else:
             try:
                 os.killpg(p.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-        out, _ = p.communicate()
+        if os.name != "nt":
+            out, _ = p.communicate()
         code, out = -1, f"{out or ''}\n[timed out after {timeout}s]"
     return {"state": "done" if code == 0 else "failed", "output": (warning + (out or ""))[-OUTPUT_LIMIT:], "exit_code": code}
 

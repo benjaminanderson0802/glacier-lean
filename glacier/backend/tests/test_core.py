@@ -120,7 +120,7 @@ def test_rejected_gate_finishes_run_and_publishes_final_node_state(server, human
 def test_crash_mid_run_resumes_without_rerunning_finished_nodes(make_server, tmp_path):
     marks = tmp_path / "marks"; marks.mkdir()
     e = env("crashy", [("c1", "command", {"cmd": f"echo x >> {marks}/c1"}),
-                       ("slow", "command", {"cmd": f"echo x >> {marks}/slow; sleep 5"}),
+                       ("slow", "command", {"cmd": f'echo x >> {marks}/slow; "{sys.executable}" -c "import time; time.sleep(5)"'}),
                        ("c2", "command", {"cmd": f"echo x >> {marks}/c2"})],
             [("c1", "slow", ""), ("slow", "c2", "")])
     s = make_server().start()
