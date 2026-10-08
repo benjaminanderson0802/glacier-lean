@@ -46,3 +46,11 @@ def test_replace_does_not_retry_on_other_systems(tmp_path, monkeypatch):
     with pytest.raises(PermissionError):
         vault.replace_file("a", "b", delay=0)
     assert len(calls) == 1
+
+
+def test_safe_path_refuses_git_internals_and_escapes(tmp_path):
+    vault.init(str(tmp_path / "vault"))
+    for bad in (".git/config", "notes/../.git/HEAD", "../outside.md", "a/.git/x"):
+        with pytest.raises(ValueError):
+            vault.safe_path(bad)
+    assert vault.safe_path("notes/fine.md").endswith(os.path.join("notes", "fine.md"))

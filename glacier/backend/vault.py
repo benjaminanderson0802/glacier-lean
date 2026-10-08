@@ -75,9 +75,16 @@ def safe_path(path: str) -> str:
     if os.name == "nt":
         path = path.replace("\\", "/")
     full = os.path.realpath(os.path.join(VAULT, path))
-    if not full.startswith(VAULT + os.sep) or "/.git/" in full + "/":
-        raise ValueError(f"bad vault path: {path}")
-    return full
+    # Compare without case on Windows/macOS-style paths, and accept the vault's own
+    # resolved location too (realpath can report different casing than abspath).
+    norm = os.path.normcase(full)
+    for root in {os.path.normcase(VAULT), os.path.normcase(os.path.realpath(VAULT))}:
+        if root and norm.startswith(root + os.sep):
+            parts = norm[len(root) + 1:].split(os.sep)
+            if ".git" in parts:  # works with either slash: parts come from the OS separator
+                break
+            return full
+    raise ValueError(f"bad vault path: {path}")
 
 
 def write_note(path: str, body: str, agent: str = "unknown", *, author: str | None = None, run_id: str = "") -> str:

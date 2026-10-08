@@ -118,9 +118,16 @@ def put_note(item: NoteWrite):
     if item.author != "owner":
         raise HTTPException(400, "Notes saved from the screen must be authored by owner")
     try:
-        commit = vault.write_note(path, item.body, author=item.author)
+        vault.safe_path(path)
     except ValueError as exc:
         raise HTTPException(400, "That note path is not allowed") from exc
+    try:
+        commit = vault.write_note(path, item.body, author=item.author)
+    except ValueError as exc:
+        # Not a path problem (checked above): report it as a save failure, with the reason in the log.
+        import logging
+        logging.getLogger(__name__).exception("Saving note %s failed", path)
+        raise HTTPException(500, f"The note could not be saved: {exc}") from exc
     return {"path": path, "commit": commit}
 
 
