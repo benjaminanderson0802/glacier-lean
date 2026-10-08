@@ -24,22 +24,22 @@ def init(path: str) -> None:
                      tokens_in INTEGER, tokens_out INTEGER, cost_usd REAL, PRIMARY KEY(run_id, node_id))""")
 
 
-_lock = threading.Lock()
+SQLITE_BUSY_TIMEOUT_SECONDS = 5
 
 
 @contextlib.contextmanager
 def _conn():
     """One short-lived connection per call, always closed (sqlite3's own 'with' only commits, it never closes),
-    serialized in-process so DBOS worker threads and the API never write over each other."""
-    with _lock:
-        c = sqlite3.connect(DB, timeout=30)
-        try:
-            c.execute("PRAGMA busy_timeout=30000")
-            c.execute("PRAGMA synchronous=FULL")
-            yield c
-            c.commit()
-        finally:
-            c.close()
+    SQLite arbitrates concurrent connections. Do not hold a process-wide lock while SQLite waits for
+    DBOS or another process to release its file lock: readers and unrelated run updates must proceed."""
+    c = sqlite3.connect(DB, timeout=SQLITE_BUSY_TIMEOUT_SECONDS)
+    try:
+        c.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
+        c.execute("PRAGMA synchronous=FULL")
+        yield c
+        c.commit()
+    finally:
+        c.close()
 
 
 def create_run(run_id: str, env_id: str, graph: dict) -> None:
