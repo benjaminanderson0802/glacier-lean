@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import template_registry
+import vault
 import re
 import audit_log
 
@@ -13,6 +14,11 @@ router = APIRouter()
 
 class TemplateImport(BaseModel):
     file: str
+
+
+class UndoTemplateDelete(BaseModel):
+    undo_id: str
+    model_config = {"extra": "forbid"}
 
 
 @router.get("/api/templates")
@@ -37,3 +43,27 @@ def approve_template(proposal_id: str):
         return result
     except FileNotFoundError:
         raise HTTPException(404, "Template proposal not found")
+
+
+@router.delete("/api/templates/{template_id}")
+def delete_imported_template(template_id: str):
+    try:
+        undo_id = template_registry.delete_imported(template_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Imported template not found") from exc
+    vault.record_event("owner", "delete", {"kind": "imported_template", "id": template_id, "undo_id": undo_id})
+    return {"deleted": True, "id": template_id, "undo_id": undo_id}
+
+
+@router.post("/api/templates/undo-delete")
+def undo_delete_template(body: UndoTemplateDelete):
+    try:
+        template_id = template_registry.undo_delete_imported(body.undo_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Removed template not found") from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    vault.record_event("owner", "restore", {"kind": "imported_template", "id": template_id})
+    return {"restored": True, "id": template_id}

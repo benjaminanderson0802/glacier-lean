@@ -6,12 +6,12 @@ import { go } from '../route.ts'
 import { setDraft } from '../draft.ts'
 import type { Environment } from '../api.ts'
 import { t } from '../i18n/index.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean; run?: { id: string; env: string; status: string } }
 
 // Conversation lives for the app session (module scope), so switching tabs does not lose it.
 let saved: { conv: string | null; msgs: Msg[]; title: string } = { conv: null, msgs: [], title: '' }
-if (typeof window !== 'undefined') window.addEventListener('glacier:forget-ask-chats', () => { saved = { conv: null, msgs: [], title: '' } })
 
 const time = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
@@ -34,6 +34,7 @@ export function AskScreen() {
   const [q, setQ] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
   const [err, setErr] = useState('')
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const [engineSettings, setEngineSettings] = useState<AskSettings | null>(null)
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => { saved = { conv, msgs, title }; end.current?.scrollIntoView({ block: 'end' }) }, [msgs, conv, title])
@@ -140,10 +141,14 @@ export function AskScreen() {
         </div>
         </div>} />
       {err && <div className="g-error">{err}</div>}
+      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       {view === 'past' ? (
         <Panel title={t('ask.pastChats')} aside={<input className="g-input" style={{ width: 220 }} placeholder={t('ask.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
           <div className="g-rows">
-            {(past ?? []).map(c => <Row key={c.id} icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} />)}
+            {(past ?? []).map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1 }}><Row icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} /></div><DeleteAction label={t('ask.deleteConversation')} impact={t('delete.conversationImpact')} testid={`conversation-delete-${c.id}`}
+              onDelete={async () => { const result = await conversationsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await conversationsApi.undoDelete(c.id, result.commit); setPast(await conversationsApi.list(q)) } } }}
+              onDeleted={action => { setDeleteUndo(action ?? null); setPast(current => current?.filter(item => item.id !== c.id) ?? null); if (conv === c.id) { saved = { conv: null, msgs: [], title: '' }; setConv(null); setMsgs([]); setTitle('') } }}
+              onError={e => setErr(String(e))} /></div>)}
             {past && past.length === 0 && <Empty>{q ? t('ask.noMatches') : t('ask.noPast')}</Empty>}
           </div>
         </Panel>

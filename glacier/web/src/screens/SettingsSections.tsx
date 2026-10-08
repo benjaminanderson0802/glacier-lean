@@ -97,7 +97,7 @@ export function SecretsSection() {
           <div key={n} className="g-row" data-testid={`secret-${n}`}>
             <span className="g-ico"><Icon name="lock" /></span><span className="g-mid"><span className="g-lead">{n}</span><span className="g-detail">••••••••</span></span>
             <span className="g-when">{confirm === n
-              ? <span style={{ display: 'flex', gap: 8 }}><Btn danger onClick={async () => { await settingsApi.deleteSecret(n); setConfirm(null); load() }} data-testid={`secret-del-yes-${n}`}>{t('settingsSections.remove')}</Btn><Btn onClick={() => setConfirm(null)}>{t('settingsSections.keep')}</Btn></span>
+              ? <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}><span className="g-detail">{t('delete.secretImpact')}</span><Btn danger onClick={async () => { try { await settingsApi.deleteSecret(n); setConfirm(null); setMsg(t('delete.removed')); load() } catch (e) { setMsg(String(e).replace(/^Error: /, '')) } }} data-testid={`secret-del-yes-${n}`}>{t('delete.confirm')}</Btn><Btn onClick={() => setConfirm(null)}>{t('delete.cancel')}</Btn></span>
               : <Btn onClick={() => setConfirm(n)} data-testid={`secret-del-${n}`}>{t('settingsSections.remove')}</Btn>}</span>
           </div>
         ))}

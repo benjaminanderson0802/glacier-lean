@@ -766,6 +766,37 @@ def get_conversation(conversation_id: str):
     return {"id": conversation_id, "title": _conversation_title(conversation_id, meta, messages), "messages": messages}
 
 
+class UndoConversationDelete(BaseModel):
+    commit: str
+    model_config = {"extra": "forbid"}
+
+
+@router.delete("/api/assistant/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str):
+    conversation_id = _conversation_id(conversation_id)
+    path, _, _ = _conversation_note(conversation_id)
+    try:
+        commit = vault.delete_note(path, agent="owner", kind="conversation")
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Conversation not found") from exc
+    return {"deleted": True, "id": conversation_id, "commit": commit}
+
+
+@router.post("/api/assistant/conversations/{conversation_id}/undo-delete")
+def undo_delete_conversation(conversation_id: str, body: UndoConversationDelete):
+    conversation_id = _conversation_id(conversation_id)
+    path = _conversation_path(conversation_id)
+    try:
+        commit = vault.restore_deleted_note(path, body.commit)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Conversation not found") from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, "That conversation already exists") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"restored": True, "commit": commit}
+
+
 @router.get("/api/assistant/conversations/{conversation_id}/runs")
 def conversation_runs(conversation_id: str):
     conversation_id = _conversation_id(conversation_id)
