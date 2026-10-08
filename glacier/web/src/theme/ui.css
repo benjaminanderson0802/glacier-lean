@@ -216,3 +216,9 @@ button { cursor: pointer; }
 }
 .g-main[data-testid="screen-home"] .g-home-left > .g-panel:last-child { flex:1; }
 .g-main[data-testid="screen-home"] .g-home-left > .g-panel:last-child > :not(.g-panel-title) { min-height:0;overflow-y:auto; }
+
+.g-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 20px; padding: 8px 12px; border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); background: var(--g-panel); color: var(--g-head); box-shadow: var(--g-glow); }
+.g-release-notes { color: var(--g-text); }
+.g-release-notes p { margin: 6px 0; }
+.g-release-notes ul { margin: 6px 0; padding-left: 24px; }
+.g-release-notes .g-panel-title { margin: 10px 0 4px; }

@@ -450,15 +450,24 @@ def _allowed_api_host(base_url: str) -> bool:
 
 def ask_route() -> tuple[str | None, str]:
     """Return the saved route or the next available free route with a plain reason."""
-    configured = _saved_settings().get("ask_engine") or os.environ.get("GLACIER_ASK_ROUTE", "codex")
+    configured = os.environ.get("GLACIER_ASK_ROUTE", "").strip().lower()
+    if configured in {"local", "codex"}:
+        available = {item["id"]: item for item in available_engines()}
+        if available.get(configured, {}).get("available"):
+            label = available[configured]["label"]
+            return configured, f"Ask is set to use {label} directly."
+        unavailable_reason = f"The selected {configured.title()} route is unavailable; "
+    else:
+        unavailable_reason = ""
+        configured = _saved_settings().get("ask_engine") or os.environ.get("GLACIER_ASK_ROUTE", "codex")
     available = {item["id"]: item for item in available_engines()}
     if available.get(configured, {}).get("available"):
         return configured, f"Ask is using {available[configured]['label']}."
     fallback_order = ("codex", "claude", "gemini", "local", "openai", "anthropic")
     fallback = next((available[name] for name in fallback_order if available.get(name, {}).get("available")), None)
     if fallback:
-        return fallback["id"], f"{available.get(configured, {}).get('label', configured)} is unavailable: {available.get(configured, {}).get('reason', 'not installed')}. Ask can use {fallback['label']} instead."
-    return None, "No Ask engine is ready. Sign in to a CLI, start Ollama with a model, or finish API settings."
+        return fallback["id"], unavailable_reason + f"{available.get(configured, {}).get('label', configured)} is unavailable: {available.get(configured, {}).get('reason', 'not installed')}. Ask can use {fallback['label']} instead."
+    return None, unavailable_reason + "No Ask engine is ready. Sign in to a CLI, start Ollama with a model, or finish API settings."
 
 
 def _ask_codex(message: str) -> dict:

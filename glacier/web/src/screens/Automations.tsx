@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ago, api, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
+import { ago, api, teamsApi, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
-import { teamsApi } from '../api.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Flow = EnvSummary & { last?: RunSummary }
