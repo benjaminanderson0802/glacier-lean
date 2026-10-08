@@ -27,7 +27,7 @@ export function HomeScreen() {
 
   return (
     <>
-      <PageHead title={t('home.title')} sub={t('home.subtitle')} side={
+      <PageHead title={t('home.title')} side={
         <div className="g-statusbox" data-testid="home-status">
           <div>{(() => {
             const on = data?.local_ai.online
