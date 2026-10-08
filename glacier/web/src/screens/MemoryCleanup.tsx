@@ -31,7 +31,7 @@ export function MemoryCleanup() {
   const notes = new Set(sel.flatMap(p => p.kind === 'merge' ? p.paths.slice(1) : p.paths)).size
   return (
     <div className="g-memadd">
-      <Panel title="Suggestions" aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">{t('memoryCleanup.scanAgain')}</Btn>} testid="cleanup-list" className="g-scroll">
+      <Panel title={t('memoryCleanup.suggestions')} aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">{t('memoryCleanup.scanAgain')}</Btn>} testid="cleanup-list" className="g-scroll">
         {err && <div className="g-error">{err}</div>}
         {items && items.length === 0 && <Empty>{t('memoryCleanup.tidy')}</Empty>}
         <div className="g-rows">
@@ -39,7 +39,7 @@ export function MemoryCleanup() {
             <label key={p.id} className="g-row g-check" data-testid={`cleanup-${p.id}`}>
               <input type="checkbox" className="g-box" checked={chosen.has(p.id)} onChange={e => setChosen(c => { const n = new Set(c); if (e.target.checked) n.add(p.id); else n.delete(p.id); return n })} />
               <span className="g-mid"><span className="g-lead">{WHAT[p.kind] ?? p.kind}: {p.paths.map(x => x.replace(/\.md$/, '')).join(', ')}</span><span className="g-detail">{p.reason}</span></span>
-              <span className="g-when">{p.paths.length} item{p.paths.length > 1 ? 's' : ''}</span>
+              <span className="g-when">{t('memoryCleanup.item', { count: p.paths.length, plural: p.paths.length > 1 ? 's' : '' })}</span>
             </label>
           ))}
         </div>
