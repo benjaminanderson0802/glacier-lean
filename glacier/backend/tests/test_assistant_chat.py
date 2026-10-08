@@ -5,7 +5,6 @@ import subprocess
 import sys
 import textwrap
 import asyncio
-import shutil
 import shlex
 
 import shell_commands
@@ -104,7 +103,7 @@ def test_chat_stream_has_ordered_ag_ui_events(tmp_path, monkeypatch):
 
 
 def test_codex_followup_prompt_contains_redacted_previous_exchange(tmp_path, monkeypatch):
-    """Both Codex subprocesses use the stand-in when no codex is on PATH."""
+    """Both Codex subprocesses use the stand-in without hiding other tools."""
     import uuid
     import vault
     from routes import assistant_chat
@@ -150,16 +149,12 @@ def test_codex_followup_prompt_contains_redacted_previous_exchange(tmp_path, mon
     keyring.set_password("Glacier", "chat-secret", "chat-secret-123")
     secrets_store._write_names(["chat-secret"])
 
-    # Keep Python and Git available for subprocesses, but guarantee this test cannot
-    # accidentally find a host Codex binary (some CI machines install it in /usr/bin).
-    isolated_path = tmp_path / "path-without-codex"
-    isolated_path.mkdir()
-    (isolated_path / ("python.exe" if os.name == "nt" else "python")).symlink_to(sys.executable)
-    git_binary = shutil.which("git")
-    if git_binary:
-        (isolated_path / ("git.exe" if os.name == "nt" else "git")).symlink_to(git_binary)
-    monkeypatch.setenv("PATH", str(isolated_path))
-    assert shutil.which("codex") is None
+    # Keep the real PATH intact: on Windows, Git may need sibling DLLs found
+    # relative to its real installation. Disable only Codex discovery.
+    original_which = shell_commands.which
+    monkeypatch.setattr(shell_commands, "which",
+                        lambda name: None if name == "codex" else original_which(name))
+    assert shell_commands.which("codex") is None
 
     first = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it daily with chat-secret-123"))
     first_events = "".join(asyncio.run(_collect(first.body_iterator)))

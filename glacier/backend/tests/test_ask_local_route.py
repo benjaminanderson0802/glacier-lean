@@ -19,7 +19,9 @@ def _start(tmp_path, monkeypatch, *, route="auto", codex=True, signed_in=True, o
     import system_check
 
     calls = []
-    monkeypatch.setattr(shutil, "which", lambda name: "/fake/codex" if name == "codex" and codex else None)
+    original_which = assistant_chat.shell_commands.which
+    monkeypatch.setattr(assistant_chat.shell_commands, "which",
+                        lambda name: ("/fake/codex" if codex else None) if name == "codex" else original_which(name))
     monkeypatch.setattr(chat, "_codex_signed_in", lambda: signed_in, raising=False)
     monkeypatch.setattr(chat, "_ollama_answers", lambda: ollama, raising=False)
 
