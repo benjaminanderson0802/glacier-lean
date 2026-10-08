@@ -309,3 +309,25 @@ A focused starter run also ended `1 failed, 8 passed, 1 warning in 6.25s`. A sec
 - Final gate: rejected because the backend suite timed out. Flow state `rejected`, `verified: false`, `merged: false`.
 
 No second or third practice attempt was started: the required backend acceptance command is known to time out and the suite isolation issue remains unresolved. No practice merge commit exists. This follow-up does not verify PH9.2.
+
+# W66 follow-up round 4: practice run on main with the Ollama shim
+
+## Drift check and acceptance
+
+This continues PH9.2, the real feature flow. PH9 remains owner-authorized for verified-merge-only trials while PH5 is in progress. The flow is the existing open-source feature Environment; no replacement tool was added. It serves P-VERIFY and M-VERIFIED/M-FALSE-DONE. Acceptance is the isolated worker implementing the card, all saved checks passing, and the final owner gate being approved before a local-only merge. No acceptance check or test timeout was changed.
+
+## Attempt 1 of up to 3
+
+- Card: the same small real card, `setup/selfbuild/cards/scan-list-sources.md`.
+- Run ID: `229fab86376e`.
+- Practice home: `/tmp/w66-selfbuild-round4-home`; API on `127.0.0.1:8765`. No push occurred.
+- Start gate: approved. The feature worker exited 0 but parked the work before implementing the requested option. It reported that the required `/workspaces/glacier-lean/.venv/bin/python` was absent and wrote an environment claim in the isolated run branch. It added `tools/scan/test_scan.py::test_list_sources_prints_configured_sources_without_scanning`; `tools/scan/scan.py` was unchanged.
+- Check 0, protected guard: passed, `Protected checks modified or deleted: none`.
+- Check 1, backend suite: passed. Exact final line: `602 passed, 1 skipped, 1 warning in 562.66s (0:09:22)`.
+- Check 2, project suites: failed because the new test confirmed the CLI did not recognize `--list-sources`. Exact final line: `1 failed, 76 passed in 5.00s`.
+- Check 3, verification benchmark: passed; false-done `0.00%` (0/20), verified `100.00%` (30/30).
+- Check 4, security benchmark: passed; exact final line: `P 400 | blocked |`.
+- Final owner gate: rejected because the worker had not implemented the card and check 2 failed. Run state: `verified: false`, `merged: false`.
+- Practice checkout `main` remained at `bf3bffcf8a2b78ad5b2febf01cc5bc659a14781a` (the source HEAD); no practice merge commit exists. The unmerged run branch ended at `97f33e2b22bbb8c4ccc3a16187dbd24d0ed2bcac` and remains only in the temporary practice checkout.
+
+The flow's backend gate is already 720 seconds on this source revision, so no timeout adjustment was needed. It completed in 562.66 seconds. I attempted to make the required interpreter path resolve to the installed `/home/glacier/w/glacier-lean/.venv`, but the machine denied creating `/workspaces` (`Permission denied`). That is an environment issue outside this card's lane; no second or third attempt was started with the same missing interpreter, and no changes were made to the tests, feature check, or sandbox rules. This round does not verify PH9.2.
