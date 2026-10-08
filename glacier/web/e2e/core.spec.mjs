@@ -69,6 +69,11 @@ try {
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 })
     await page.mouse.up()
   }
+  const deselectCanvas = async () => {
+    const pane = page.locator('.react-flow__pane')
+    const box = await pane.boundingBox()
+    await pane.click({ position: { x: box.width - 8, y: box.height - 8 } })
+  }
   const newEnv = async name => {
     await tid('new-env').click()
     await tid('new-env-name').fill(name)
@@ -207,13 +212,17 @@ try {
   // ---------- flow 5: loop + sub-flow ----------
   {
     await newEnv('Sub child')
+    await deselectCanvas()
     await tid('palette-command').click()
     await tid('node-n1').click()
     await tid('field-cmd').fill('echo child-ok')
     await tid('save').click()
     await page.waitForFunction(() => document.querySelector('[data-testid="message"]')?.textContent === 'Saved.')
     await newEnv('Loop flow')
-    for (const k of ['command', 'loop', 'command', 'flow']) await tid(`palette-${k}`).click()
+    for (const k of ['command', 'loop', 'command', 'flow']) {
+      await deselectCanvas()
+      await tid(`palette-${k}`).click()
+    }
     await tid('node-n1').click(); await tid('field-cmd').fill('echo start')
     await tid('node-n2').click(); await tid('field-times').fill('2')
     await tid('node-n3').click(); await tid('field-cmd').fill('echo tick')
@@ -235,6 +244,28 @@ try {
     await waitState('n1', 'done')
     check(true, 'sub-flow node opens the child run with its node states')
   }
+
+  // ---------- auto-wire selected-node additions ----------
+  await newEnv('Auto-wire flow')
+  await deselectCanvas()
+  await tid('palette-command').click()
+  await tid('node-n1').click()
+  await deselectCanvas()
+  await tid('palette-note').click()
+  await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 1)
+  const autoWire = await page.locator('.react-flow__edge').count()
+  check(autoWire === 1 && await page.locator('[data-testid="rf__edge-e1"]').getAttribute('data-testid') === 'rf__edge-e1',
+    'adding a step with n1 selected creates exactly one auto-wire edge')
+
+  await newEnv('Auto-wire loop flow')
+  await deselectCanvas()
+  await tid('palette-loop').click()
+  await tid('node-n1').click()
+  await deselectCanvas()
+  await tid('palette-command').click()
+  await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 1)
+  const loopAutoLabel = (await page.locator('.react-flow__edge-text').allTextContents()).join(',')
+  check(loopAutoLabel === 'again', `adding a step after a loop creates its branch edge (got ${loopAutoLabel})`)
 
   // ---------- flow 6: Decide step labels its arrows with its own options ----------
   await newEnv('Decide flow')
