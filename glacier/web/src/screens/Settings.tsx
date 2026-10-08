@@ -45,8 +45,8 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme')}</dd>
                 <dt>{t('settings.language')}</dt><dd>
                   <select className="g-input" value={language} onChange={e => chooseDictionary(e.target.value as Language)} aria-label={t('settings.language')}>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
+                    <option value="en">{t('settings.languageEnglish')}</option>
+                    <option value="es">{t('settings.languageSpanish')}</option>
                   </select>
                 </dd>
                 <dt>{t('settings.detailLevel')}</dt><dd>

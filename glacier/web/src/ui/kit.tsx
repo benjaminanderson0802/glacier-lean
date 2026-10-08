@@ -1,11 +1,10 @@
 // Shared building blocks. Screens are made ONLY from these + Pixel.tsx, so the theme cannot drift.
 import type { ReactNode } from 'react'
-import { Icon, Mascot, StatusIcon, type IconName, type StatusKind } from './Pixel.tsx'
+import { Icon, StatusIcon, type IconName, type StatusKind } from './Pixel.tsx'
 
 export function PageHead({ title, sub, crumb, side }: { title: string; sub?: string; crumb?: string; side?: ReactNode }) {
   return (
     <header className="g-pagehead">
-      <Mascot px={6} />
       <div className="g-titles">
         {crumb && <span className="g-crumb">{crumb}</span>}
         <h1 className="g-title" data-testid="page-title">{title}</h1>

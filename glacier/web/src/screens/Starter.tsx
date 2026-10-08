@@ -39,7 +39,7 @@ export function StarterPanel() {
     <Panel title={t('starter.title')} testid="starter" aside={<button className="g-link" onClick={hide} data-testid="starter-hide">{t('starter.notNow')}</button>}>
       {done ? (
         <div data-testid="starter-done">
-          <div className="g-saved">{t('starter.allSet')} {done.length ? t('starter.added', { count: done.length, plural: done.length > 1 ? 's' : '' }) : t('starter.nothingNew')}</div>
+          <div className="g-saved">{done.length ? t('starter.added', { count: done.length, plural: done.length > 1 ? 's' : '' }) : t('starter.nothingNew')}</div>
           <div className="g-rows">{done.map(d => <Row key={d.id} icon="automations" lead={d.name} onClick={() => go(`automations/flow/${d.id}`)} />)}</div>
           <Btn onClick={hide} style={{ marginTop: 10 }}>{t('starter.close')}</Btn>
         </div>

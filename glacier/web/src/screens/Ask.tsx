@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ago, api, applyProposal, askSettingsApi, chat, conversationsApi, type AskSettings, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
-import { Icon, Mascot } from '../ui/Pixel.tsx'
+import { Icon, Logo } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { setDraft } from '../draft.ts'
 import type { Environment } from '../api.ts'
@@ -127,7 +127,7 @@ export function AskScreen() {
 
   return (
     <>
-      <PageHead title={t('ask.title')} sub={t('ask.subtitle')} side={
+      <PageHead title={t('ask.title')} side={
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <label className="g-muted" htmlFor="ask-engine">{t('ask.engine')}</label>
         <select id="ask-engine" className="g-input" value={engineSettings?.active_engine ?? engineSettings?.engine ?? 'codex'} onChange={e => switchEngine(e.target.value)} data-testid="ask-engine">
@@ -168,9 +168,9 @@ export function AskScreen() {
           {msgs.length === 0 && <div className="g-empty">{t('ask.empty')}</div>}
           {msgs.map((m, i) => (
             <div key={i} className={`g-msg ${m.who}`} data-testid={`msg-${i}`}>
-              <div className="g-msg-av">{m.who === 'glacier' ? <Mascot px={2} /> : <span className="g-you">{t('ask.you')}</span>}</div>
+              <div className="g-msg-av">{m.who === 'glacier' ? <Logo px={1} /> : <span className="g-you">{t('ask.you')}</span>}</div>
               <div className="g-msg-body">
-                <div className="g-msg-head"><span className="g-lead">{m.who === 'you' ? t('ask.you') : 'Glacier'}</span><span className="g-muted">{time(m.at)}</span></div>
+                <div className="g-msg-head"><span className="g-lead">{m.who === 'you' ? t('ask.you') : t('pixel.glacier')}</span><span className="g-muted">{time(m.at)}</span></div>
                 <div className={m.error ? 'g-error' : ''}>{m.text || (busy && i === msgs.length - 1 ? '…' : '')}</div>
                 {m.proposal && (
                   <div className="g-proposal" data-testid="proposal">
