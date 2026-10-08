@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import ipaddress
 import io
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
+from urllib.request import Request
+
+import egress
 
 
 
@@ -18,23 +19,14 @@ _MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024
 def _validate_url(source: str) -> str:
     parsed = urlsplit(source)
     host = (parsed.hostname or "").lower().rstrip(".")
-    try:
-        local_host = ipaddress.ip_address(host).is_loopback
-    except ValueError:
-        local_host = host == "localhost"
-    if not host:
-        raise ValueError("Use an HTTPS web address")
     if host not in _allowed_hosts():
         raise PermissionError(f"Glacier is not allowed to reach {host}. Add it to the allowed sites first.")
-    if parsed.scheme not in (("https", "http") if local_host else ("https",)):
-        raise ValueError("Use an HTTPS web address")
-    return host
-
-
-class _AllowlistedRedirectHandler(HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, new_url):
-        _validate_url(new_url)
-        return super().redirect_request(req, fp, code, msg, headers, new_url)
+    try:
+        return egress.validate_url(source, _allowed_hosts(), allow_loopback=True)
+    except egress.EgressError as exc:
+        if "allowed sites" in str(exc):
+            raise PermissionError(f"Glacier is not allowed to reach {host}. Add it to the allowed sites first.") from exc
+        raise PermissionError(str(exc)) from exc
 
 
 def _failed(message: str) -> dict:
@@ -63,15 +55,23 @@ def _allowed_hosts() -> set[str]:
 def _read_url(source: str) -> tuple[bytes, str]:
     _validate_url(source)
     request = Request(source, headers={"User-Agent": "Glacier document reader"})
-    # The allowlist must apply to the actual destination, not a proxy selected implicitly
-    # from the process environment.
-    opener = build_opener(ProxyHandler({}), _AllowlistedRedirectHandler())
-    with opener.open(request, timeout=10) as response:
+    try:
+        response = egress.open_pinned(request, _allowed_hosts(), timeout=10, allow_loopback=True)
+    except Exception as exc:
+        if isinstance(exc, egress.EgressError):
+            message = str(exc)
+            raise PermissionError(_friendly_egress_error(message)) from exc
+        raise ValueError("Glacier could not reach this page. Check the address and try again.") from exc
+    with response:
         data = response.read(_MAX_DOWNLOAD_BYTES + 1)
         if len(data) > _MAX_DOWNLOAD_BYTES:
             raise ValueError("This document is too large to read")
         content_type = response.headers.get("Content-Type", "")
     return data, content_type
+
+
+def _friendly_egress_error(message: str) -> str:
+    return message
 
 
 def run(ctx: dict) -> dict:
