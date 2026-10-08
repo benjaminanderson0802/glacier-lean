@@ -1,4 +1,4 @@
-# Your first automation from a template
+# To start an automation from a template
 
 ## What you will do
 
@@ -24,4 +24,4 @@ Glacier shows its error text on screen. If a step fails, open the run view and r
 
 ## What to try next
 
-Try a different template, or describe a recurring task in [Ask Glacier to set something up for you](02-ask-for-automation.md).
+Try a different template, or plan a larger project in [Build a project with a team](02-build-a-team.md).
