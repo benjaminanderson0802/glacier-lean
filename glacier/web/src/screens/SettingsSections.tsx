@@ -143,7 +143,7 @@ export function AboutSection({ version }: { version: string }) {
     if (desktop) void checkForUpdates()
   }, [desktop])
   return (
-    <Panel title={t('settingsSections.about')} testid="settings-about-content">
+    <Panel title={t('settingsSections.about')} testid="settings-about">
       <dl className="g-kv">
         <dt>{t('settingsSections.glacier')}</dt><dd data-testid="settings-version">{t('settingsSections.version', { version })}</dd>
         <dt>{t('settingsSections.licence')}</dt><dd>{t('settingsSections.licenceValue')}</dd>

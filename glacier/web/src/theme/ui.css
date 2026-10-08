@@ -11,7 +11,8 @@ svg.g-icon, svg.g-status, svg.g-logo, svg.g-mascot { display: block; flex: none;
 html[lang="es"] .g-brand { flex: none; }
 .g-tabs { display: flex; align-items: stretch; flex: 1; min-width: 0; }
 .g-tab { display: flex; align-items: center; gap: 8px; padding: 0 20px; background: transparent; border: 0; border-right: 1px solid var(--g-line-dim); color: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-tab); cursor: pointer; white-space: nowrap; }
-html[lang="es"] .g-tab { flex: 1 1 auto; min-width: 0; }
+html[lang="es"] .g-tab { flex: 0 1 auto; min-width: 0; }
+@media (max-width: 1180px) { html[lang="es"] .g-tab { padding: 0 12px; } }
 html[lang="es"] .g-tab > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .g-tab:hover { background: var(--g-panel-hi); color: var(--g-head); }
 .g-tab.active { background: var(--g-accent); color: var(--g-accent-ink); }
