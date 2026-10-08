@@ -73,4 +73,6 @@ try {
   if (browser) await browser.close()
 }
 console.log(`[memory-map] ${failures ? `${failures} checks failed` : 'all checks passed'}`)
-process.exitCode = failures ? 1 : 0
+// Child servers keep node alive, so stop them and exit explicitly.
+cleanup()
+process.exit(failures ? 1 : 0)
