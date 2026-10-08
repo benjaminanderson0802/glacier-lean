@@ -22,7 +22,7 @@ import uuid
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 BACKEND = REPO / "glacier" / "backend"
-PYTHON = Path(os.environ.get("GLACIER_PYTHON") or "/workspaces/glacier-lean/.venv/bin/python")
+PYTHON = Path(os.environ.get("GLACIER_PYTHON") or sys.executable)
 
 
 def load_cases(path: Path | None = None) -> list[dict]:

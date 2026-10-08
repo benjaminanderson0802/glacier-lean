@@ -2,6 +2,7 @@
 
 import importlib.util
 from pathlib import Path
+import sys
 
 
 def _runner():
@@ -10,6 +11,12 @@ def _runner():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_runner_defaults_to_the_current_interpreter(monkeypatch):
+    monkeypatch.delenv("GLACIER_PYTHON", raising=False)
+
+    assert _runner().PYTHON == Path(sys.executable)
 
 
 class FakeAPI:
