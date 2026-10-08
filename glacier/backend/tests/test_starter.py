@@ -121,3 +121,51 @@ def test_proposal_says_whether_the_starter_was_already_applied(tmp_path, monkeyp
     assert starter.proposal()["applied"] is False
     (tmp_path / "starter_templates.json").write_text("[]", encoding="utf-8")
     assert starter.proposal()["applied"] is True
+
+
+def test_starter_never_saves_model_missing_from_ollama(monkeypatch, tmp_path):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.delenv("GLACIER_LOCAL_MODEL", raising=False)
+    machine = _machine(models=["granite3.3:2b", "qwen3:4b"])
+    monkeypatch.setattr(system_check, "check_system", lambda: machine)
+    monkeypatch.setattr(system_check, "recommend", lambda _machine: machine["recommended"])
+    monkeypatch.setattr(system_check, "effective_settings", lambda: {"local_model": "qwen3:0.6b", "mode": "standard"})
+    suggestion = starter.proposal()
+    assert suggestion["local_model"] == "granite3.3:2b"
+    starter.apply([], "low")
+    saved = json.loads((tmp_path / "settings.json").read_text())
+    assert saved["local_model"] == "granite3.3:2b"
+
+
+def test_starter_download_message_when_no_models_are_installed(monkeypatch, tmp_path):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    machine = _machine()
+    machine["recommended"] = {"mode": "low", "local_model": None, "max_parallel_runs": 1}
+    monkeypatch.setattr(system_check, "check_system", lambda: machine)
+    proposal = starter.proposal()
+    assert proposal["local_model"] is None
+    assert "download" in proposal["reason"].lower()
+
+
+def test_starter_without_installed_model_says_download_needed(monkeypatch, tmp_path):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    machine = _machine()
+    machine["recommended"] = {"mode": "low", "local_model": None, "max_parallel_runs": 1}
+    monkeypatch.setattr(system_check, "check_system", lambda: machine)
+    proposal = starter.proposal()
+    assert proposal["local_model"] is None
+    assert "download" in proposal["reason"].lower()
+
+
+def test_starter_keeps_default_and_marks_it_for_download_when_none_installed(monkeypatch, tmp_path):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    machine = _machine()
+    monkeypatch.setattr(system_check, "check_system", lambda: machine)
+    proposal = starter.proposal()
+    assert proposal["local_model"] == "granite3.3:2b"
+    assert proposal["needs_download"] is True
+    assert "download granite3.3:2b" in proposal["reason"].lower()
+    result = starter.apply([], "low")
+    saved = json.loads((tmp_path / "settings.json").read_text())
+    assert result["local_model"] == "granite3.3:2b"
+    assert saved["local_model"] == "granite3.3:2b"

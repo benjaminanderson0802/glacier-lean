@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "distribution": "agent-framework-core",
+      "version": "1.19.0",
+      "spdx": "MIT",
+      "source": "https://github.com/microsoft/agent-framework/blob/main/python/packages/core/pyproject.toml"
+    },
+    {
+      "distribution": "agent-client-protocol",
+      "version": "0.12.1",
+      "spdx": "Apache-2.0",
+      "source": "https://github.com/agentclientprotocol/python-sdk/blob/main/LICENSE"
+    }
+  ]
+}

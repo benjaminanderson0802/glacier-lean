@@ -101,6 +101,28 @@ def test_vault_worker_write_uses_service_metadata(tmp_path):
     assert "run_id: 123456abcdef" in runner_text
 
 
+def test_memory_front_matter_omits_empty_fields_and_reads_legacy_empty_run_id(tmp_path):
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    import memory_meta
+    import vault
+
+    vault.init(str(tmp_path / "vault"))
+    vault.write_note("plain.md", "# Plain note", author="owner")
+    plain = vault.read_raw_note("plain.md")
+    assert "run_id:" not in plain
+    assert "tags:" not in plain
+    assert memory_meta.parse(plain, "plain.md")[0]["run_id"] == ""
+
+    run_text = memory_meta.render("run.md", "# Run note", "owner", "run-123")[1]
+    assert "run_id: run-123" in run_text
+    assert memory_meta.parse(run_text, "run.md")[0]["run_id"] == "run-123"
+
+    legacy = "---\ntitle: Old note\nauthor: owner\nrun_id: \ncreated: 2026-01-01T00:00:00+00:00\n---\nOld body\n"
+    assert memory_meta.parse(legacy, "old.md")[0]["run_id"] == ""
+
+
 def test_memory_write_from_different_drive_than_vault(monkeypatch, tmp_path):
     """Git staging must not resolve a vault path against the process cwd."""
     import os

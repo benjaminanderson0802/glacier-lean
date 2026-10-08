@@ -7,6 +7,7 @@ queue). When it is not, nothing reaches main; the branch is kept for inspection 
 # lock. This merge operates only on the separate workspace repository, so it
 # takes only the merge lock and never acquires vault._lock while holding it.
 import os, subprocess, time
+import audit_log
 
 if os.name == "nt":
     import msvcrt
@@ -105,4 +106,7 @@ def finish(home: str, env_id: str, run_id: str, verified: bool) -> dict:
         result["note"] = "not verified; nothing reached main, the branch is kept for inspection"
     if os.path.isdir(wt):
         _git(ws, "worktree", "remove", "--force", wt, check=False)
+    if verified and result.get("merged"):
+        audit_log.record("git.verified_merge", who="worker", what={"env_id": env_id, "run_id": run_id,
+                                                                    "branch": branch, "commit": result.get("commit")})
     return result

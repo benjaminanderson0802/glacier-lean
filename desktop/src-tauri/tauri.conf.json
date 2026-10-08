@@ -5,7 +5,7 @@
   "identifier": "org.glacier.desktop",
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERCREFEMzNFQzk1QzA4Q0EKUldUS0NGekpQdFBhMjJuakpiQ0F3R0ttaHBDMUIxTDBWZ25vbUVmaE9aK1ZoZm5KWXNhbTZ1c0wK",
       "endpoints": [
         "https://github.com/benjaminanderson0802/glacier-lean/releases/latest/download/latest.json"
       ]

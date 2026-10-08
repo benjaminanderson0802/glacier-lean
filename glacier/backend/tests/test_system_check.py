@@ -10,7 +10,7 @@ import system_check
     [
         ({"memory_gb": 8, "cpu_cores": 8, "ollama_models": ["qwen3:8b", "qwen3:1.7b", "qwen3:0.6b", "llama3.2:3b"]}, {"mode": "low", "local_model": "qwen3:0.6b", "max_parallel_runs": 1}),
         ({"memory_gb": 16, "cpu_cores": 4, "ollama_models": ["qwen3:0.6b", "qwen3:1.7b", "llama3.2:3b"]}, {"mode": "low", "local_model": "qwen3:0.6b", "max_parallel_runs": 1}),
-        ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": ["qwen3:1.7b", "granite3.3:2b", "qwen3:0.6b"]}, {"mode": "standard", "local_model": "qwen3:0.6b", "max_parallel_runs": 4}),
+        ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": ["qwen3:1.7b", "granite3.3:2b", "qwen3:0.6b"]}, {"mode": "standard", "local_model": "granite3.3:2b", "max_parallel_runs": 4}),
         ({"memory_gb": 16, "cpu_cores": 8, "ollama_models": []}, {"mode": "standard", "local_model": "granite3.3:2b", "max_parallel_runs": 4}),
     ],
 )

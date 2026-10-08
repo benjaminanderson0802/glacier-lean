@@ -6,6 +6,7 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 
 import runner
+import audit_log
 
 router = APIRouter()
 MAX_BODY = 1024 * 1024
@@ -45,4 +46,5 @@ async def call_local_hook(env_id: str, request: Request):
         raise HTTPException(400, "The body must be valid JSON") from None
     body = _scrub(body)
     run_id = runner.start_run(env_id, {"_trigger": {"type": "webhook", "node_id": node["id"], "body": body}})
+    audit_log.record("run.started", what={"env_id": env_id, "run_id": run_id, "source": "webhook", "node_id": node["id"]})
     return {"run_id": run_id}
