@@ -1,5 +1,17 @@
 /* W98 flow room: pixel grid, sprite frames and token-only surfaces. */
 .app { display:grid;grid-template-columns:calc(120 * var(--px)) minmax(0,1fr) calc(150 * var(--px));flex:1;height:100%;min-height:0;font-family:var(--g-font-body);font-size:calc(5 * var(--px));color:var(--g-text);background:var(--g-void) url('../theme/sprites/dither-8.png') repeat; }
+.app.flow-open { grid-template-columns:calc(28 * var(--px)) minmax(0,1fr) calc(96 * var(--px)); }
+.app:not(.flow-open) .left { grid-column:1; }
+.app.flow-open .left { grid-column:1; }
+.left.flows-collapsed { width:calc(26 * var(--px));padding:calc(2 * var(--px));overflow:hidden; }
+.left.flows-collapsed > :not(.build-head):not(.section-head) { display:none; }
+.left.flows-collapsed .build-head { flex:none;flex-wrap:wrap;justify-content:center; }
+.left.flows-collapsed .build-head .ghost-link { font-size:0; }
+.left.flows-collapsed .build-head .ghost-link::after { content:'←';font-size:calc(5 * var(--px)); }
+.left.flows-collapsed .live-label { display:none; }
+.left.flows-collapsed .section-head { justify-content:center; }
+.left.flows-collapsed .section-head > span { display:none; }
+.left.flows-open { width:auto; }
 .app button,.app input,.app select,.app textarea { font-family:var(--g-font-body);font-size:calc(5 * var(--px));color:inherit; }
 .app code { font-family:var(--g-font-body);color:var(--g-ink2);font-size:calc(4 * var(--px));word-break:break-all; }
 .left,.right { padding:calc(3 * var(--px));overflow-y:auto;display:flex;flex-direction:column;gap:calc(2 * var(--px));min-height:0;background:var(--g-ice1); }

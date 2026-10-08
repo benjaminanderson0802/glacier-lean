@@ -144,6 +144,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [moreFields, setMoreFields] = useState(false)
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const [flowRemoved, setFlowRemoved] = useState(false)
+  const [flowsOpen, setFlowsOpen] = useState(false)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -320,10 +321,18 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     const incomingParent = selectedIncoming && nodes.find(n => n.id === selectedIncoming.source)
     const parent = selectedNode && incomingParent && branchLabels(incomingParent)?.length
       ? incomingParent : selectedNode
-    const x = parent ? parent.position.x + 260 : (nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60)
-    const y = parent && parent.id !== selectedNode?.id ? parent.position.y + (edges.filter(e => e.source === parent.id).length * 140)
-      : parent ? parent.position.y : 60
-    const node: GNode = { id, type: kind, position: { x: Math.round(x / 20) * 20, y: Math.round(y / 20) * 20 }, data: { config }, selected: true }
+    // Keep palette-created nodes in a visible, non-overlapping row, nudging down
+    // on the 20px grid whenever an occupied node box would intersect.
+    let x = nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60
+    let y = nodes.length ? nodes.at(-1)!.position.y : 60
+    x = Math.round(x / 20) * 20
+    y = Math.round(y / 20) * 20
+    const overlaps = (left: number, top: number) => nodes.some(n => left < n.position.x + 220 && left + 220 > n.position.x && top < n.position.y + 110 && top + 110 > n.position.y)
+    while (overlaps(x, y)) {
+      y += 120
+      if (y > Math.max(60, ...nodes.map(n => n.position.y)) + 600) { x += 260; y = 60 }
+    }
+    const node: GNode = { id, type: kind, position: { x, y }, data: { config }, selected: true }
     setNodes(ns => [...ns.map(n => ({ ...n, selected: false })), node])
     setEdges(es => {
       if (!parent) return es.map(e => ({ ...e, selected: false }))
@@ -333,6 +342,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     })
     setSelected({ kind: 'node', id })
     setDirty(true)
+    requestAnimationFrame(() => requestAnimationFrame(fitCanvas))
   }
 
   const setConfig = (id: string, key: string, value: string) => {
@@ -496,11 +506,11 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const allEnvs = [...envs, ...unsaved.filter(u => !envs.some(e => e.id === u.id))]
 
   return (
-    <div className="app">
+    <div className={`app${envId ? ' flow-open' : ''}`}>
       {/* ---------- left ---------- */}
-      <aside className="left">
+      <aside className={`left${envId && !flowsOpen ? ' flows-collapsed' : ' flows-open'}`}>
         <div className="build-head"><a className="ghost-link" href="#/automations">{t('build.allFlows')}</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
-        <div className="section-head"><span>{t('build.flows')}</span></div>
+        <div className="section-head"><span>{t('build.flows')}</span>{envId && <button className="ghost" type="button" data-testid="flows-toggle" aria-expanded={flowsOpen} title={flowsOpen ? 'Hide flows list' : 'Show flows list'} onClick={() => setFlowsOpen(open => !open)}>{flowsOpen ? '›' : '‹'}</button>}</div>
         <div className="list" data-testid="env-list">
           {allEnvs.map(e => (
             <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>

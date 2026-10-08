@@ -61,6 +61,12 @@ try {
     await tid('new-env-create').click({ force: true })
     await page.waitForSelector('[data-testid="canvas"]')
     await page.waitForTimeout(150)
+    const dimensions = await page.evaluate(() => {
+      const r = document.querySelector('[data-testid="canvas"]').getBoundingClientRect()
+      return { width: r.width, height: r.height }
+    })
+    const min = viewport.width === 1280 ? { width: 600, height: 420 } : { width: 480, height: 360 }
+    check(dimensions.width >= min.width && dimensions.height >= min.height, `${viewport.width}x${viewport.height}: canvas meets ${min.width}x${min.height} minimum (${JSON.stringify(dimensions)})`)
     check(await tid('minimap-toggle').getAttribute('aria-expanded') === 'false', `${viewport.width}px: minimap starts collapsed on a short canvas`)
     const paletteCommand = tid('palette-command')
     await paletteCommand.evaluate(el => el.scrollIntoView({ block: 'nearest', inline: 'center' }))
@@ -72,8 +78,36 @@ try {
       return { target: el.getAttribute('data-testid'), hit: point?.closest('[data-testid]')?.getAttribute('data-testid') ?? point?.tagName, button: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, tabs: describe('.tabs'), palette: describe('.palette'), center: describe('.center'), canvas: describe('.canvas') }
     })
     if (paletteHit.hit !== 'palette-command') throw new Error(`${viewport.width}px palette pointer geometry: ${JSON.stringify(paletteHit)}`)
-    await clickAtCenter('palette-command')
+    for (const type of ['command', 'loop', 'command', 'flow']) {
+      const button = tid(`palette-${type}`)
+      await button.evaluate(el => el.scrollIntoView({ block: 'nearest', inline: 'center' }))
+      await button.click({ force: true })
+      await page.waitForTimeout(100)
+    }
     await tid('field-cmd').fill('echo layout-ok')
+    const geometry = await page.locator('[data-testid^="node-n"]').evaluateAll(nodes => nodes.map(node => {
+      const r = node.getBoundingClientRect()
+      return { id: node.getAttribute('data-testid'), x: r.x, y: r.y, right: r.right, bottom: r.bottom }
+    }))
+    const intersections = []
+    for (let i = 0; i < geometry.length; i++) for (let j = i + 1; j < geometry.length; j++) {
+      const a = geometry[i], b = geometry[j]
+      if (a.x < b.right && a.right > b.x && a.y < b.bottom && a.bottom > b.y) intersections.push([a.id, b.id])
+    }
+    check(geometry.length === 4 && intersections.length === 0, `${viewport.width}px: four palette nodes have no intersecting boxes (${JSON.stringify({ geometry, intersections })})`)
+    const connect = async (from, to) => {
+      const source = tid(`node-${from}`).locator('.react-flow__handle-right')
+      const target = tid(`node-${to}`).locator('.react-flow__handle-left')
+      const a = await source.boundingBox(), b = await target.boundingBox()
+      if (!a || !b) throw new Error(`${viewport.width}px missing connection handles ${from}->${to}`)
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 })
+      await page.mouse.up()
+      await page.waitForTimeout(120)
+    }
+    await connect('n1', 'n2'); await connect('n2', 'n3'); await connect('n3', 'n2'); await connect('n2', 'n4')
+    check(await page.locator('.react-flow__edge').count() === 4, `${viewport.width}px: all four loop/sub-flow connections are created`)
     const fit = page.locator('.react-flow__controls-fitview')
     if (await fit.count()) { await fit.click(); await page.waitForTimeout(250) }
     await assertNoOverlayAtNodeCenters('after fit-view with 1 node')
