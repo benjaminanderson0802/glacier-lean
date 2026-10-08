@@ -12,14 +12,14 @@ import { ClaimDetail, ClaimsList } from './screens/Claims.tsx'
 import { Templates } from './screens/Templates.tsx'
 import { CommandPalette } from './screens/CommandPalette.tsx'
 import { Splash } from './screens/Splash.tsx'
-import { t } from './i18n/index.ts'
+import { t as translate } from './i18n/index.ts'
 
 // Show the start screen once per launch, only when the app opens without a specific address.
 let splashSeen = location.hash.replace(/^#\/?/, '') !== ''
 
 const BuildScreen = lazy(() => import('./screens/Build.tsx'))
 
-const LABEL: Record<Tab, string> = { home: 'Home', ask: 'Ask', automations: 'Automations', memory: 'Memory', settings: 'Settings' }
+const LABEL: Record<Tab, string> = { home: 'nav.home', ask: 'nav.ask', automations: 'nav.automations', memory: 'nav.memory', settings: 'nav.settings' }
 
 async function winAction(a: 'minimize' | 'close') {
   if (!('__TAURI_INTERNALS__' in window)) return
@@ -30,7 +30,7 @@ async function winAction(a: 'minimize' | 'close') {
 export default function App() {
   const { tab, rest } = useRoute()
   const [palette, setPalette] = useState(false)
-  const [status, setStatus] = useState('Ready.')
+  const [status, setStatus] = useState(translate('build.ready'))
   const [splash, setSplash] = useState(!splashSeen)
   const [updateNotice, setUpdateNotice] = useState<{ version: string; notes: string } | null>(null)
   const [updateDismissed, setUpdateDismissed] = useState(false)
@@ -81,21 +81,21 @@ export default function App() {
         <div className="g-tabs" role="tablist">
           {TABS.map(t => (
             <button key={t} role="tab" aria-selected={t === tab} className={`g-tab${t === tab ? ' active' : ''}`} data-testid={`nav-${t}`} onClick={() => go(t)}>
-              <Icon name={t as IconName} />{LABEL[t]}
+              <Icon name={t as IconName} />{translate(LABEL[t])}
             </button>
           ))}
         </div>
         <div className="g-winctl">
-          <button className="g-winbtn" aria-label="Minimise" onClick={() => winAction('minimize')}><Icon name="min" /></button>
-          <button className="g-winbtn" aria-label="Close" onClick={() => winAction('close')}><Icon name="close" /></button>
+          <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
+          <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>
         </div>
       </nav>
       <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
-      {tab === 'home' && updateNotice && !updateDismissed && <aside className="g-notice" data-testid="home-update-notice"><div><strong>{t('home.updateAvailable', { version: updateNotice.version })}</strong>{updateNotice.notes && <div className="g-detail">{updateNotice.notes}</div>}</div><button className="g-link" data-testid="home-update-dismiss" onClick={() => setUpdateDismissed(true)}>{t('home.dismissUpdate')}</button></aside>}
+      {tab === 'home' && updateNotice && !updateDismissed && <aside className="g-notice" data-testid="home-update-notice"><div><strong>{translate('home.updateAvailable', { version: updateNotice.version })}</strong>{updateNotice.notes && <div className="g-detail">{updateNotice.notes}</div>}</div><button className="g-link" data-testid="home-update-dismiss" onClick={() => setUpdateDismissed(true)}>{translate('home.dismissUpdate')}</button></aside>}
       <footer className="g-footer">
-        <span><span className="g-key">F1</span> Help</span>
-        <span><span className="g-key">Ctrl+K</span> Command</span>
-        <span><span className="g-key">Ctrl+Tab</span> Switch</span>
+        <span><span className="g-key">F1</span> {translate('shell.help')}</span>
+        <span><span className="g-key">Ctrl+K</span> {translate('shell.command')}</span>
+        <span><span className="g-key">Ctrl+Tab</span> {translate('shell.switch')}</span>
         <span className="g-ready" data-testid="status-line">{status}</span>
       </footer>
       {palette && <CommandPalette onClose={() => setPalette(false)} />}

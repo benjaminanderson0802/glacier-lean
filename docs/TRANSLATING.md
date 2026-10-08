@@ -11,3 +11,7 @@ To add a language:
 5. Run `npm run check:ui` and review the screens for natural wording and labels that fit.
 
 Use plain, familiar words. Keep product names, keyboard shortcuts, code, and values supplied by the backend unchanged unless a screen specifically owns that text. Do not change theme styles or layout to accommodate a translation; shorten the wording instead.
+
+## Engine supplied text
+
+Some text comes from the engine rather than from the screen, including starter reasons, template names, and run explanations. These values remain in English for now; screen-owned labels and controls use the selected language.

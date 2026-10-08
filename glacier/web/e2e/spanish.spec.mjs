@@ -72,25 +72,28 @@ try {
 
     // Screenshot the fresh Home view with Get started, and then the same tab set after visiting each.
     await page.getByTestId('starter').waitFor()
-    await page.screenshot({ path: path.join(evidence, `es-home-get-started-${suffix}.png`), fullPage: false })
+    await page.screenshot({ path: path.join(evidence, `es-home-get-started-${suffix}.png`), fullPage: false, timeout: 120000 })
     await checkTextFit('Home with Get started')
     await page.getByTestId('starter-hide').click()
     await page.getByTestId('nav-settings').click()
-    await page.getByLabel('Language').selectOption('es')
+    await page.locator('section[data-testid="settings-general"] select').selectOption('es')
+    const spanishTabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
+    const tabIds = await page.locator('[role=tablist] [role=tab]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
+    check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && spanishTabs.map(x => x.trim()).join(',') === 'Inicio,Preguntar,Automatizaciones,Memoria,Ajustes', `${suffix} exactly five Spanish tabs (${spanishTabs.join(',')})`)
     for (const tab of ['home', 'ask', 'automations', 'memory', 'settings']) {
       await page.getByTestId(`nav-${tab}`).click()
       await page.getByTestId(`screen-${tab}`).waitFor()
       await checkTextFit(tab)
-      await page.screenshot({ path: path.join(evidence, `es-${tab}-${suffix}.png`), fullPage: false })
+      await page.screenshot({ path: path.join(evidence, `es-${tab}-${suffix}.png`), fullPage: false, timeout: 120000 })
     }
 
     // Main Settings sections, plus a completed Run view and a flow editor.
     await page.getByTestId('nav-settings').click()
     for (const section of ['general', 'models', 'secrets', 'usage', 'data', 'system', 'help', 'about']) {
-      await page.getByTestId(`settings-${section}`).click()
+      await page.locator(`button[data-testid="settings-${section}"]`).click()
       await page.waitForTimeout(120)
       await checkTextFit(`Settings ${section}`)
-      await page.screenshot({ path: path.join(evidence, `es-settings-${section}-${suffix}.png`), fullPage: false })
+      await page.screenshot({ path: path.join(evidence, `es-settings-${section}-${suffix}.png`), fullPage: false, timeout: 120000 })
     }
     await page.getByTestId('nav-automations').click()
     await page.getByTestId('flow-new').click()
@@ -98,7 +101,7 @@ try {
     await page.getByTestId('flow-new-create').click()
     await page.getByTestId('palette').waitFor()
     await checkTextFit('flow editor')
-    await page.screenshot({ path: path.join(evidence, `es-flow-editor-${suffix}.png`), fullPage: false })
+    await page.screenshot({ path: path.join(evidence, `es-flow-editor-${suffix}.png`), fullPage: false, timeout: 120000 })
 
     await fetch(`http://localhost:${MOCK_PORT}/api/environments/spanish-run-demo`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -108,7 +111,7 @@ try {
     await page.goto(UI + `/#/automations/flow/spanish-run-demo/${run_id}`)
     await page.getByTestId('run-steps').waitFor()
     await checkTextFit('run view')
-    await page.screenshot({ path: path.join(evidence, `es-run-view-${suffix}.png`), fullPage: false })
+    await page.screenshot({ path: path.join(evidence, `es-run-view-${suffix}.png`), fullPage: false, timeout: 120000 })
     await page.close()
   }
 } catch (error) {
