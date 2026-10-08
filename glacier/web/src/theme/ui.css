@@ -161,3 +161,4 @@ button { cursor: pointer; }
 .g-delete-confirm { position:relative;display:inline-flex;align-items:center;flex-wrap:wrap;gap:calc(2 * var(--px));padding:calc(2 * var(--px)) calc(2 * var(--px)) calc(7 * var(--px));border:var(--px) solid var(--g-navy);background:var(--g-ice2); }
 .g-delete-confirm .g-more-arrow { display:block; }
 .g-delete-confirm .g-hintbar { flex:1 0 100%; }
+.g-btn { max-width: 100%; white-space: normal; overflow-wrap: anywhere; height: auto; }
