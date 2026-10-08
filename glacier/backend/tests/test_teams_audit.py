@@ -26,7 +26,6 @@ def _plan():
 def test_build_http_effects_are_audited_once_without_prompt_text(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     import audit_log
-    import assistant
     import teams
     import vault
     from routes import teams as route
@@ -36,8 +35,12 @@ def test_build_http_effects_are_audited_once_without_prompt_text(tmp_path, monke
     app = FastAPI()
     app.include_router(route.router)
     client = TestClient(app)
-    monkeypatch.setattr(assistant, "_ask_codex", lambda *_: {
-        "reply": "What should the proof step check?", "automation": False})
+    def fake_engine(prompt, engine, schema=None):
+        if schema and "reply" in schema.get("properties", {}):
+            return {"reply": "What should the proof step check?", "automation": False}
+        return {key: value for key, value in _plan().items() if key != "vision"}
+
+    monkeypatch.setattr(teams, "ask_engine", fake_engine)
     interview = client.post("/api/build/interview", json={
         "conversation_id": "1" * 36, "message": "Test-specific private interview prompt", "engine": "codex"})
     assert interview.status_code == 200
