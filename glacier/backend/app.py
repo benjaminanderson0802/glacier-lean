@@ -120,7 +120,9 @@ def run_environment(env_id: str):
     env = _env_or_404(env_id)
     if env.get("goal") and not env.get("acceptance"):
         raise HTTPException(400, "This goal has no check yet. Add a way to check it is done before running it.")
-    return {"run_id": runner.start_run(env_id)}
+    run_id = runner.start_run(env_id)
+    audit_log.record("run.started", what={"env_id": env_id, "run_id": run_id, "source": "runtime"})
+    return {"run_id": run_id}
 
 
 @app.get("/api/runs")

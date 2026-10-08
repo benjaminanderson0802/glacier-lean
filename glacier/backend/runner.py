@@ -61,9 +61,6 @@ def start_run(env_id: str, run_settings: dict | None = None, run_id: str | None 
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)
     trigger = (run_settings or {}).get("_trigger") or {}
-    audit_log.record("run.started", who=(run_settings or {}).get("_author", "owner"),
-                     what={"env_id": env_id, "run_id": run_id,
-                           "source": trigger.get("type", "runtime"), "node_id": trigger.get("node_id", "")})
     return run_id
 
 
@@ -335,19 +332,6 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                 elif kind == "web_search":
                     safe["destination"] = str(cfg.get("search_server", ""))
                 audit_log.record(event, who=run_record.get("author", "owner"), what=safe)
-            event = {"http_request": "outbound.http_request", "fetch_page": "outbound.web_fetch",
-                     "web_search": "outbound.web_search", "read_document": "outbound.document_fetch",
-                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call"}.get(kind)
-            if event:
-                safe = {"env_id": env_id, "run_id": run_id, "node_id": nid, "step_type": kind}
-                if kind == "http_request":
-                    safe["destination"] = re.sub(r"(://[^:/@]+):[^/@]+@", r"\1@", str(cfg.get("url", "")))
-                    safe["method"] = str(cfg.get("method", "GET"))
-                elif kind in {"fetch_page", "read_document"}:
-                    safe["destination"] = str(cfg.get("url") or cfg.get("source") or "")
-                elif kind == "web_search":
-                    safe["destination"] = str(cfg.get("search_server", ""))
-                audit_log.record(event, who=store.get_run(run_id).get("author", "owner"), what=safe)
         elif kind != "schedule":
             raise ValueError(f"unknown node type {kind!r}")
     except Exception as e:  # a broken node fails itself, not the whole server
