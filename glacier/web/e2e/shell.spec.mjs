@@ -42,8 +42,9 @@ try {
   await page.getByTestId('starter-hide').click()
   check(await page.getByTestId('starter').count() === 0, 'Get started can be closed')
 
-  const tabs = await page.locator('[role=tablist] [role=tab]').allTextContents()
-  check(tabs.length === 5 && tabs.join(',') === 'Home,Ask,Automations,Memory,Settings', `exactly five options (got ${tabs.join(',')})`)
+  const tabIds = await page.locator('[role=tablist] [role=tab]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
+  const tabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
+  check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && tabs.map(x => x.trim()).join(',') === 'Home,Ask,Automations,Memory,Settings', `exactly five English tabs (got ${tabs.join(',')})`)
   for (const t of ['home', 'ask', 'automations', 'memory', 'settings']) {
     await page.getByTestId(`nav-${t}`).click()
     await page.getByTestId(`screen-${t}`).waitFor()

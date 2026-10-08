@@ -14,6 +14,7 @@
 .ws-dot.up { background: var(--g-ok); box-shadow: 0 0 6px var(--g-ok); }
 
 .section-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--g-font-head); font-size: var(--g-size-body); color: var(--g-head); margin-top: 8px; gap: 6px; }
+.app button.es-run-refresh { transform: translateX(-10px); }
 .list { display: flex; flex-direction: column; }
 .list-item { text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--g-line-dim); padding: 6px 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 .list-item:hover { background: var(--g-panel-hi); }
