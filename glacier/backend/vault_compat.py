@@ -1,11 +1,12 @@
 """Checks whether the plain-file vault follows common Markdown editor conventions."""
 
 import os
-import re
 
 import yaml
 
 import vault
+from memory_links import front_matter, parse_links
+from memory_meta import split_front_matter
 
 
 _BAD_NAME_CHARACTERS = set(':*?"<>|\\')
@@ -13,27 +14,15 @@ _OBSIDIAN_LINK_CHARACTERS = set('#^[]')
 _RESERVED_WINDOWS_NAMES = {"CON", "PRN", "AUX", "NUL"} | {
     f"{prefix}{number}" for prefix in ("COM", "LPT") for number in range(1, 10)
 }
-_WIKILINK = re.compile(r"(!?)\[\[([^\]]+)\]\]")
-_FENCE = re.compile(r"(?m)^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?^ {0,3}\1[^\n]*(?:\n|$)", re.S)
-
-
-def _without_code(text: str) -> str:
-    """Mask fenced and inline code while preserving offsets and line endings."""
-    text = _FENCE.sub(lambda match: re.sub(r"[^\n]", " ", match.group(0)), text)
-    return re.sub(r"(`+)(.+?)\1", lambda match: re.sub(r"[^\n]", " ", match.group(0)), text, flags=re.S)
-
-
 def _front_matter(text: str):
     """Return the front matter block, or its parse problem, if one is present."""
-    if not text.startswith("---"):
-        return None, None
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None, None
-    for end in range(1, len(lines)):
-        if lines[end].strip() == "---":
-            return "\n".join(lines[1:end]), None
-    return None, "The opening front matter marker has no closing --- line."
+    metadata, _, error = split_front_matter(text)
+    if error and "closing ---" not in error:
+        return "", error
+    if metadata is None:
+        return None, error
+    raw, _ = front_matter(text)
+    return raw, None
 
 
 def _valid_name(name: str) -> bool:
@@ -140,8 +129,7 @@ def check_vault() -> dict:
             closing = body.find("\n---")
             body = body[closing + 4:] if closing >= 0 else body
 
-        for embedded, raw_target in _WIKILINK.findall(_without_code(body)):
-            target = raw_target.split("|", 1)[0].split("#", 1)[0].strip()
+        for target, embedded in parse_links(body):
             state, matches = _resolve(target, files)
             if embedded:
                 if state == "missing":

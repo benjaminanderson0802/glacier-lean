@@ -11,6 +11,7 @@ from pathlib import Path
 
 import vault
 import secrets_store
+from app_paths import app_data_home, state_file
 
 # Import the parser package, which lives beside backend/ rather than inside it: <repo>/glacier/importers in a
 # source checkout, <app>/glacier/importers in the installed desktop app.
@@ -27,11 +28,11 @@ _SOURCES = {"chatgpt": chatgpt, "claude": claude}
 
 
 def _home() -> Path:
-    return Path(os.environ.get("GLACIER_HOME", "data")).resolve()
+    return app_data_home()
 
 
 def _state_path() -> Path:
-    return _home() / "import_sources.json"
+    return state_file("import_sources.json")
 
 
 def _state() -> dict:

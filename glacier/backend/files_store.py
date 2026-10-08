@@ -14,6 +14,7 @@ from pathlib import Path
 
 import vault
 import ocr
+from app_paths import app_data_home
 
 DEFAULT_PROJECT = "Inbox"
 _BLOCKED_EXTENSIONS = {".exe", ".bat", ".cmd", ".ps1", ".sh", ".msi", ".com", ".scr", ".vbs", ".js", ".jse", ".wsf", ".hta", ".msc", ".cpl", ".dll", ".lnk", ".reg", ".jar", ".psm1", ".appimage"}
@@ -33,7 +34,7 @@ def _project_lock(folder: Path) -> threading.Lock:
 
 
 def _home() -> Path:
-    return Path(os.environ.get("GLACIER_HOME", "data")).resolve()
+    return app_data_home()
 
 
 def _valid_name(name: str) -> bool:

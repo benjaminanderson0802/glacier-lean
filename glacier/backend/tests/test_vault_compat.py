@@ -156,3 +156,12 @@ def test_partial_path_does_not_fall_back_to_ambiguous_basename(server):
     result = server.get("/api/memory/compat")
 
     assert [(p["path"], p["kind"]) for p in result["problems"]] == [("source.md", "unresolved_link")]
+
+
+def test_front_matter_helper_handles_crlf_empty_and_malformed_delimiters():
+    from memory_meta import split_front_matter
+
+    assert split_front_matter("---\r\n\r\n---\r\nBody") == ({}, "Body", None)
+    metadata, body, error = split_front_matter("---\r\nname: [broken\r\nBody")
+    assert metadata is None and body == "---\r\nname: [broken\r\nBody"
+    assert error

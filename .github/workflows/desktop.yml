@@ -65,6 +65,14 @@ jobs:
       - name: Smoke test installed backend
         shell: pwsh
         run: ./desktop/scripts/smoke_windows.ps1 -Installer (Get-ChildItem desktop/src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1 -ExpandProperty FullName)
+      - name: Upload first automation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glacier-windows-first-automation-evidence
+          path: ${{ runner.temp }}/glacier-first-automation-evidence.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
   release-windows:
     if: github.event_name != 'pull_request'

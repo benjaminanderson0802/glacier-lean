@@ -6,6 +6,7 @@ import re
 import tempfile
 
 import keyring
+from app_paths import app_data_home
 
 
 SERVICE = "Glacier"
@@ -13,7 +14,7 @@ PLACEHOLDER = re.compile(r"\{secret:([^{}]+)\}")
 
 
 def _home() -> str:
-    return os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    return str(app_data_home())
 
 
 def _names_path() -> str:

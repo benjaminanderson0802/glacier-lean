@@ -13,6 +13,7 @@ import uuid
 import portable
 import verify
 import plugins
+from app_paths import app_data_home
 
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -174,7 +175,7 @@ def list_templates() -> list[dict]:
 
 
 def _home() -> Path:
-    return Path(os.environ.get("GLACIER_HOME", "data")).resolve()
+    return app_data_home()
 
 
 def review_import(text: str) -> dict:

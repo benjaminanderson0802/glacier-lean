@@ -9,6 +9,10 @@ def init(path: str) -> None:
     global DB
     DB = path
     with _conn() as c:
+        # DBOS and Glacier's run-state tables share this file. WAL avoids the
+        # rollback journal's extra sync for each durable state transition; FULL
+        # sync keeps the completed commits durable across power loss.
+        c.execute("PRAGMA journal_mode=WAL")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_runs(run_id TEXT PRIMARY KEY, env_id TEXT, status TEXT,
                      started_at TEXT, graph TEXT, waiting_on TEXT)""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_nodes(run_id TEXT, node_id TEXT, state TEXT, output TEXT,
@@ -31,6 +35,7 @@ def _conn():
         c = sqlite3.connect(DB, timeout=30)
         try:
             c.execute("PRAGMA busy_timeout=30000")
+            c.execute("PRAGMA synchronous=FULL")
             yield c
             c.commit()
         finally:
