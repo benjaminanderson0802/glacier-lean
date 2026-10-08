@@ -69,6 +69,54 @@ def test_failing_command_goes_to_approval_then_note(server):
     assert server.get("/api/vault/note", params={"path": f"runs/{run_id}.md"})["body"] == f"approved {run_id}"
 
 
+@pytest.mark.parametrize("human_check", [False, True], ids=["approval-step", "final-owner-check"])
+def test_rejected_gate_finishes_run_and_publishes_final_node_state(server, human_check):
+    """Reject through the screen API and make sure no run remains waiting without a receiver."""
+    from websockets.sync.client import connect
+
+    if human_check:
+        graph = env("reject-human", [("work", "command", {"cmd": "echo ready"})], [])
+        graph.update(goal="Review the result", acceptance=[{"kind": "human", "question": "Accept this result?"}])
+        env_id, node_id = "reject-human", "check-0"
+    else:
+        graph = env("reject-approval", [("approve", "approval", {"prompt": "Continue?"}),
+                                          ("work", "command", {"cmd": "echo should-not-run"})],
+                    [("approve", "work", "yes")])
+        env_id, node_id = "reject-approval", "approve"
+    server.put(f"/api/environments/{env_id}", graph)
+
+    with connect(server.url.replace("http", "ws") + "/api/events") as ws:
+        time.sleep(0.2)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        waiting = server.wait_run(run_id, ("waiting",))
+        assert waiting["waiting_on"] == node_id
+        server.post(f"/api/runs/{run_id}/approve", {"node_id": node_id, "approved": False})
+        run = server.wait_run(run_id, timeout=5)
+        assert run["status"] == "rejected"
+        assert run["waiting_on"] is None
+        assert run["node_states"]["approve" if not human_check else "work"] == "done"
+        if not human_check:
+            assert run["outputs"]["approve"] == "rejected"
+            assert run["node_states"].get("work") in (None, "pending", "skipped")
+        else:
+            assert run["verification"][0]["passed"] is False
+        events = []
+        deadline = time.time() + 2
+        while time.time() < deadline:
+            try:
+                event = json.loads(ws.recv(timeout=max(0.1, deadline - time.time())))
+            except TimeoutError:
+                break
+            if event.get("run_id") == run_id:
+                events.append(event)
+        if not human_check:
+            assert any(event.get("node_id") == "approve" and event.get("output") == "rejected" for event in events), events
+        else:
+            # Acceptance checks aren't graph nodes; the run event stream carries
+            # the associated work-node completion, and the API exposes rejection.
+            assert any(event.get("node_id") == "work" and event.get("state") == "done" for event in events), events
+
+
 def test_crash_mid_run_resumes_without_rerunning_finished_nodes(make_server, tmp_path):
     marks = tmp_path / "marks"; marks.mkdir()
     e = env("crashy", [("c1", "command", {"cmd": f"echo x >> {marks}/c1"}),
