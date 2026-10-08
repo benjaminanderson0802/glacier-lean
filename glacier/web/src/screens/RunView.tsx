@@ -4,11 +4,12 @@ import { ago, api, subscribeEvents, type Environment, type NodeState, type NodeT
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { t } from '../i18n/index.ts'
 
 const NODE_ICON: Record<NodeState, StatusKind> = { pending: 'idle', running: 'run', done: 'ok', failed: 'bad', waiting: 'warn', skipped: 'idle' }
 const RUN_LABEL: Record<string, { kind: StatusKind; label: string }> = {
-  done: { kind: 'ok', label: 'Success' }, failed: { kind: 'bad', label: 'Failed' }, rejected: { kind: 'bad', label: 'Rejected' },
-  running: { kind: 'run', label: 'Running' }, waiting: { kind: 'warn', label: 'Needs you' },
+  done: { kind: 'ok', label: t('run.success') }, failed: { kind: 'bad', label: t('run.failed') }, rejected: { kind: 'bad', label: t('run.rejected') },
+  running: { kind: 'run', label: t('run.running') }, waiting: { kind: 'warn', label: t('run.needsYou') },
 }
 const when = (iso: string) => { const d = new Date(iso); return Number.isNaN(+d) ? '' : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` }
 
@@ -58,8 +59,8 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
   const usage = useMemo(() => {
     const u = Object.values(run?.usage ?? {})
     return {
-      model: [...new Set(u.map(x => x.model).filter(Boolean))].join(', ') || '—',
-      route: [...new Set(u.map(x => x.route).filter(Boolean))].join(', ') || '—',
+      model: [...new Set(u.map(x => x.model).filter(Boolean))].join(', ') || t('run.dash'),
+      route: [...new Set(u.map(x => x.route).filter(Boolean))].join(', ') || t('run.dash'),
       tokens: u.reduce((a, x) => a + (x.tokens_in ?? 0) + (x.tokens_out ?? 0), 0),
       cost: u.reduce((a, x) => a + (x.cost_usd ?? 0), 0),
     }
@@ -78,58 +79,58 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
 
   return (
     <>
-      <PageHead title={`${run?.status === 'running' ? 'Running: ' : ''}${env?.name ?? envId}`} crumb="Automations"
-        sub={run ? `${st?.label ?? run.status} · step ${done}/${nodes.length}` : 'Not run yet.'}
+      <PageHead title={`${run?.status === 'running' ? t('run.titlePrefix') : ''}${env?.name ?? envId}`} crumb={t('run.automations')}
+        sub={run ? t('run.progress', { status: st?.label ?? run.status, done, total: nodes.length }) : t('run.notRun')}
         side={<>
-          <Btn onClick={() => go(`automations/flow/${envId}/history`)} data-testid="run-history">Past runs</Btn>
-          <Btn onClick={() => go(`automations/build/${envId}`)} data-testid="open-builder">Edit flow</Btn>
-          <Btn primary icon="run" onClick={start} disabled={busy || nodes.length === 0} data-testid="run-start">Run</Btn>
+          <Btn onClick={() => go(`automations/flow/${envId}/history`)} data-testid="run-history">{t('run.pastRuns')}</Btn>
+          <Btn onClick={() => go(`automations/build/${envId}`)} data-testid="open-builder">{t('run.editFlow')}</Btn>
+          <Btn primary icon="run" onClick={start} disabled={busy || nodes.length === 0} data-testid="run-start">{t('run.run')}</Btn>
         </>} />
       {err && <div className="g-error">{err}</div>}
       {why && (
         <div className={`g-why${why.verified === false ? ' bad' : why.verified ? ' ok' : ''}`} data-testid="run-why">
           <StatusIcon kind={why.verified ? 'ok' : why.verified === false ? 'bad' : run?.status === 'waiting' ? 'warn' : run?.status === 'running' ? 'run' : 'idle'} />
-          <span><b>What happened:</b> {why.summary}{why.needs_you ? ` ${why.needs_you}` : ''}</span>
+          <span><b>{t('run.whatHappened')}</b> {why.summary}{why.needs_you ? ` ${why.needs_you}` : ''}</span>
         </div>
       )}
       {run?.status === 'waiting' && (
         <Panel className="g-ask" testid="run-approval">
-          <div className="g-ask-row"><StatusIcon kind="warn" /><span className="g-lead">{run.waiting_prompt || 'This step is waiting for your approval.'}</span>
-            <Btn primary onClick={() => decide(true)} data-testid="run-approve">Approve</Btn><Btn danger onClick={() => decide(false)} data-testid="run-reject">Reject</Btn></div>
+          <div className="g-ask-row"><StatusIcon kind="warn" /><span className="g-lead">{run.waiting_prompt || t('run.waitingApproval')}</span>
+            <Btn primary onClick={() => decide(true)} data-testid="run-approve">{t('run.approve')}</Btn><Btn danger onClick={() => decide(false)} data-testid="run-reject">{t('run.reject')}</Btn></div>
         </Panel>
       )}
       <div className="g-runview">
-        <Panel title="Steps" testid="run-steps" className="g-scroll">
+        <Panel title={t('run.steps')} testid="run-steps" className="g-scroll">
           <div className="g-rows">
             {nodes.map((n, i) => {
               const s = (run?.node_states[n.id] ?? 'pending') as NodeState
               return <Row key={n.id} status={NODE_ICON[s]} lead={`${i + 1}. ${label(n.type)}`} detail={Object.values(n.config).find(Boolean)?.slice(0, 60)}
                 when={s} onClick={() => setSel(n.id)} className={n.id === active ? 'sel' : ''} testid={`run-step-${n.id}`} />
             })}
-            {nodes.length === 0 && <Empty>This flow has no steps yet.</Empty>}
+            {nodes.length === 0 && <Empty>{t('run.thisFlowEmpty')}</Empty>}
           </div>
         </Panel>
         <Panel testid="run-output" title={
           <span className="g-seg">
-            <button className={`g-seg-btn${tab === 'output' ? ' active' : ''}`} onClick={() => setTab('output')}>Output</button>
-            <button className={`g-seg-btn${tab === 'details' ? ' active' : ''}`} onClick={() => setTab('details')}>Details</button>
+            <button className={`g-seg-btn${tab === 'output' ? ' active' : ''}`} onClick={() => setTab('output')}>{t('run.output')}</button>
+            <button className={`g-seg-btn${tab === 'details' ? ' active' : ''}`} onClick={() => setTab('details')}>{t('run.details')}</button>
           </span>} aside={activeNode ? `${label(activeNode.type)} · ${activeNode.id}` : undefined}>
           {tab === 'output'
-            ? <pre className="g-term" data-testid="run-output-text">{(active && run?.outputs[active]) || (run ? 'No output yet.' : 'Press Run to start this flow.')}</pre>
-            : <dl className="g-kv">{Object.entries(activeNode?.config ?? {}).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v || '—'}</dd></Fragment>)}</dl>}
+            ? <pre className="g-term" data-testid="run-output-text">{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre>
+            : <dl className="g-kv">{Object.entries(activeNode?.config ?? {}).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v || t('run.dash')}</dd></Fragment>)}</dl>}
         </Panel>
-        <Panel className="g-scroll" title="Verification" aside={run?.verified === true ? 'All checks passed' : run?.verified === false ? 'Not verified' : undefined} testid="run-verification">
+        <Panel className="g-scroll" title={t('run.verification')} aside={run?.verified === true ? t('run.allChecksPassed') : run?.verified === false ? t('run.notVerified') : undefined} testid="run-verification">
           <div className="g-rows">
             {(run?.verification ?? []).map(c => <Row key={c.check} status={c.passed ? 'ok' : 'bad'} lead={c.kind} detail={c.evidence?.slice(0, 120)} />)}
-            {run && !(run.verification ?? []).length && <Empty>{run.verified === null ? 'This flow has no checks, so results are not verified.' : 'Checks run when the flow finishes.'}</Empty>}
+            {run && !(run.verification ?? []).length && <Empty>{run.verified === null ? t('run.noChecks') : t('run.checksWhenFinished')}</Empty>}
           </div>
         </Panel>
-        <Panel title="Usage (this run)" testid="run-usage">
+        <Panel title={t('run.usage')} testid="run-usage">
           <dl className="g-kv">
-            <dt>Model</dt><dd>{usage.model}</dd>
-            <dt>Route</dt><dd>{usage.route}</dd>
-            <dt>Tokens</dt><dd>{usage.tokens.toLocaleString()}</dd>
-            <dt>Cost</dt><dd data-testid="run-cost">${usage.cost.toFixed(2)}</dd>
+            <dt>{t('run.model')}</dt><dd>{usage.model}</dd>
+            <dt>{t('run.route')}</dt><dd>{usage.route}</dd>
+            <dt>{t('run.tokens')}</dt><dd>{usage.tokens.toLocaleString()}</dd>
+            <dt>{t('run.cost')}</dt><dd data-testid="run-cost">${usage.cost.toFixed(2)}</dd>
           </dl>
         </Panel>
       </div>
@@ -149,16 +150,16 @@ function PastRuns({ envId }: { envId: string }) {
   const chosen = runs.find(r => r.run_id === (sel ?? runs[0]?.run_id))
   const undo = async () => {
     if (!chosen) return
-    try { await api.undoRun(chosen.run_id); setNote('Undone. The files this run changed are back to how they were.'); setConfirm(false); refreshRuns() } catch (e) { setErr(String(e)); setConfirm(false) }
+    try { await api.undoRun(chosen.run_id); setNote(t('run.undone')); setConfirm(false); refreshRuns() } catch (e) { setErr(String(e)); setConfirm(false) }
   }
   return (
     <>
-      <PageHead title={`Past runs: ${env?.name ?? envId}`} crumb="Automations" sub={`${runs.length} total runs.`}
-        side={<><Btn onClick={() => go(`automations/flow/${envId}`)}>Back</Btn><Btn primary icon="run" onClick={() => api.runEnv(envId).then(r => go(`automations/flow/${envId}/${r.run_id}`)).catch(e => setErr(String(e)))} data-testid="rerun">Re-run</Btn></>} />
+      <PageHead title={t('run.pastRunsTitle', { name: env?.name ?? envId })} crumb="Automations" sub={t('run.totalRuns', { count: runs.length })}
+        side={<><Btn onClick={() => go(`automations/flow/${envId}`)}>{t('run.back')}</Btn><Btn primary icon="run" onClick={() => api.runEnv(envId).then(r => go(`automations/flow/${envId}/${r.run_id}`)).catch(e => setErr(String(e)))} data-testid="rerun">{t('run.rerun')}</Btn></>} />
       {err && <div className="g-error">{err}</div>}
       <Panel testid="past-runs">
         <table className="g-table">
-          <thead><tr><th>Date</th><th>Result</th><th>Changes</th></tr></thead>
+          <thead><tr><th>{t('run.date')}</th><th>{t('run.result')}</th><th>{t('run.changes')}</th></tr></thead>
           <tbody>
             {runs.map(r => {
               const s = RUN_LABEL[r.status]
@@ -166,25 +167,25 @@ function PastRuns({ envId }: { envId: string }) {
                 <tr key={r.run_id} className={chosen?.run_id === r.run_id ? 'sel' : ''} onClick={() => { setSel(r.run_id); setConfirm(false); setNote('') }} data-testid={`past-${r.run_id}`}>
                   <td>{when(r.started_at)}</td>
                   <td><span className="g-status-cell"><StatusIcon kind={s?.kind ?? 'idle'} />{s?.label ?? r.status}</span></td>
-                  <td>{changes[r.run_id] === undefined ? '…' : changes[r.run_id] === 0 ? '0 changes' : `${changes[r.run_id]} change${changes[r.run_id] > 1 ? 's' : ''}`}</td>
+                  <td>{changes[r.run_id] === undefined ? '…' : changes[r.run_id] === 0 ? t('run.zeroChanges') : t('run.changesCount', { count: changes[r.run_id], plural: changes[r.run_id] > 1 ? 's' : '' })}</td>
                 </tr>
               )
             })}
           </tbody>
         </table>
-        {runs.length === 0 && <Empty>No runs yet.</Empty>}
+        {runs.length === 0 && <Empty>{t('run.noRuns')}</Empty>}
       </Panel>
       {chosen && (
-        <Panel title="Run details" testid="run-details">
+        <Panel title={t('run.runDetails')} testid="run-details">
           <div className="g-ask-row">
             <StatusIcon kind={RUN_LABEL[chosen.status]?.kind ?? 'idle'} />
             <span className="g-lead">{when(chosen.started_at)} · {RUN_LABEL[chosen.status]?.label ?? chosen.status}</span>
             <span className="g-detail">{ago(chosen.started_at)}</span>
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-              <Btn primary onClick={() => go(`automations/flow/${envId}/${chosen.run_id}`)} data-testid="run-view">View</Btn>
+              <Btn primary onClick={() => go(`automations/flow/${envId}/${chosen.run_id}`)} data-testid="run-view">{t('run.view')}</Btn>
               {confirm
-                ? <><span className="g-detail">Put back everything this run changed?</span><Btn danger onClick={undo} data-testid="run-undo-yes">Yes, undo</Btn><Btn onClick={() => setConfirm(false)}>No</Btn></>
-                : <Btn onClick={() => setConfirm(true)} disabled={!changes[chosen.run_id]} data-testid="run-undo">Undo</Btn>}
+                ? <><span className="g-detail">{t('run.undoQuestion')}</span><Btn danger onClick={undo} data-testid="run-undo-yes">{t('run.yesUndo')}</Btn><Btn onClick={() => setConfirm(false)}>{t('run.no')}</Btn></>
+                : <Btn onClick={() => setConfirm(true)} disabled={!changes[chosen.run_id]} data-testid="run-undo">{t('run.undo')}</Btn>}
             </span>
           </div>
           {note && <div className="g-saved">{note}</div>}
