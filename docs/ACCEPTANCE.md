@@ -6,6 +6,21 @@ Run `bench/portable/run_portable.py` from the repository root with `.venv/bin/py
 
 The independent check runs from the project interpreter and does not consume the worker's completion message. A backend counts as verified only if Glacier reports its acceptance command passing and the independent check passes. The PH2 target is 3/3 verified, with the same normalized flow apart from the worker backend field.
 
+## PH0 exit: core tools and legacy cleanup
+
+Run `.venv/bin/python bench/ph0/run_ph0.py` from the repository root. It checks the pinned
+Python and JavaScript core tools, their installed import/version/licence metadata, the repository
+setup markers, every explicit legacy module row, and whether current evidence exists for disabled
+prior systems. Tool metadata is read from the active Python environment and `glacier/web/node_modules`;
+the PH0.4 check stays FAIL until current, inspectable evidence replaces its historical session log.
+It does not change dependencies or run the full health board. `setup/health_check.py` remains the
+integration health runner; run it separately when a full sandbox health check is needed.
+
+Result on 2026-10-08 in this worktree: **FAIL**. DBOS, GitPython, repository setup and 51 legacy
+entries passed. MAF and ACP had no recorded licence metadata; Bifrost had no pinned/importable Python
+package; the four JavaScript packages were absent from `node_modules`; and current disabled-state
+evidence for Forge tasks/containers was unavailable. The runner reports each item with its evidence.
+
 ## PH8 exit: clean machine to a working first automation
 
 The Windows desktop CI job builds and silently installs the NSIS installer on a clean GitHub
@@ -32,6 +47,32 @@ check; it does not measure the moderated first-use metric M-TTFA.
 - Low-resource mode is configured in `sidecar.json` and sets `GLACIER_LOCAL_MODEL=granite3.3:2b` and `GLACIER_MAX_PARALLEL_RUNS=1` for the backend.
 - The app starts the backend on loopback at an OS-assigned port, waits for `/api/node-types`, then opens the built Glacier screen with that port.
 - First-run information is a bundled plain-language page; tool results are local and no setup-report endpoint is called.
+
+## PH4 exit: memory survives a full reinstall from git
+
+The serial backend acceptance test `test_memory_survives_full_reinstall_from_git` in
+`glacier/backend/tests/test_memory_reinstall_proof.py` runs
+`bench/memory_reinstall/prove.py` against temporary `GLACIER_HOME` folders and a temporary local
+bare Git remote. It saves Markdown with caller front matter and wiki links, files a claim through
+the claims API, edits a note, and removes the original home. It clones the vault into a fresh home
+and verifies the Memory API list, note bodies, resolved links and graph, the restored claim,
+git-backed undo, and the Markdown compatibility checker.
+
+Run the proof directly from the repository root:
+
+```sh
+PYTHON=/path/to/project/.venv/bin/python /path/to/project/.venv/bin/python bench/memory_reinstall/prove.py
+```
+
+The backend initializes the vault repository on startup but does not automatically rebuild the
+disposable SQLite search/link index from an existing clone. The proof rebuilds only those derived
+tables from restored Markdown before comparing Memory, without adding commits to the cloned vault.
+
+Run its pytest wrapper from `glacier/backend`:
+
+```sh
+../../.venv/bin/python -m pytest -q tests/test_memory_reinstall_proof.py
+```
 
 ## PH10 acceptance runner
 

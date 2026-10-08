@@ -101,6 +101,30 @@ def test_vault_worker_write_uses_service_metadata(tmp_path):
     assert "run_id: 123456abcdef" in runner_text
 
 
+def test_memory_write_from_different_drive_than_vault(monkeypatch, tmp_path):
+    """Git staging must not resolve a vault path against the process cwd."""
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+    import vault
+
+    vault.init(str(tmp_path / "vault"))
+    original_relpath = os.path.relpath
+
+    def reject_implicit_cwd(path, start=None):
+        # On Windows, relpath(path_on_C, cwd_on_D) raises ValueError. GitPython
+        # reaches this behavior if given a relative index.add path.
+        if start is None:
+            raise ValueError("path is on a different drive from the current directory")
+        return original_relpath(path, start)
+
+    monkeypatch.setattr(os.path, "relpath", reject_implicit_cwd)
+    commit = vault.write_note("cross-drive.md", "# Saved from another drive", author="owner")
+
+    assert commit
+    assert "Saved from another drive" in vault.read_raw_note("cross-drive.md")
+
+
 def test_claim_front_matter_round_trips_and_api_sorting(server):
     import sys, os
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
