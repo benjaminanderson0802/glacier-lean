@@ -1,5 +1,6 @@
 """Glacier core v0 backend: `uvicorn app:app --port 8000`. Data lives in GLACIER_HOME (default ./data)."""
 import os, json, asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -30,6 +31,7 @@ NODE_TYPES = {t["type"] for t in NODE_CATALOG}
 
 @asynccontextmanager
 async def lifespan(_app):
+    install_access_log_redaction()
     store.broadcaster.loop = asyncio.get_running_loop()
     DBOS.launch()  # recovers runs that were in flight when the backend died
     triggers.start(HOME)
@@ -45,8 +47,24 @@ app.add_middleware(CORSMiddleware, allow_origins=["tauri://localhost", "http://t
                    allow_methods=["*"], allow_headers=["*"])
 from local_guard import LocalRequestGuard  # noqa: E402
 import local_token  # noqa: E402
+from log_redaction import RedactWebSocketToken  # noqa: E402
 app.add_middleware(LocalRequestGuard)
 local_token.get_token()  # create the per-install token file at startup so the desktop app can read it
+
+
+def install_access_log_redaction() -> None:
+    access = logging.getLogger("uvicorn.access")
+    redactor = next((item for item in access.filters if isinstance(item, RedactWebSocketToken)), None)
+    if redactor is None:
+        redactor = RedactWebSocketToken()
+        access.addFilter(redactor)
+    # Uvicorn can route this logger through handlers with their own filters.
+    for handler in access.handlers:
+        if not any(isinstance(item, RedactWebSocketToken) for item in handler.filters):
+            handler.addFilter(redactor)
+
+
+install_access_log_redaction()
 
 
 @app.get("/api/health")
@@ -191,7 +209,8 @@ def vault_note(path: str):
 async def events(ws: WebSocket):
     """Pushes run events to the screen. Listens for the client (or the server shutting down) closing the
     socket at the same time, so a waiting connection never blocks a restart."""
-    await ws.accept()
+    protocols = [value.strip() for value in ws.headers.get("sec-websocket-protocol", "").split(",")]
+    await ws.accept(subprotocol="glacier-events" if "glacier-events" in protocols else None)
     q = store.broadcaster.subscribe()
 
     async def pump():

@@ -6,6 +6,8 @@ The desktop shell uses Tauri 2. The `desktop/src-tauri/` directory is the Tauri 
 
 The shell reserves an available loopback port, starts the Python backend as a child process, waits for `GET /api/node-types`, and then opens the bundled screen. The backend does not serve the screen at `/`. The desktop shell injects `window.__GLACIER_API__` into bundled pages with the local backend URL (for example, `http://127.0.0.1:43127`); the screen must use this value for API requests and its events WebSocket. Tauri's content security policy allows that loopback port and the Tauri app origin. All API traffic stays on this computer.
 
+The Tauri shell uses the pinned `tauri-plugin-single-instance` plugin. Launching Glacier again restores, shows and focuses the existing main window; the second process exits without starting another backend. The live events WebSocket sends the install token as a `Sec-WebSocket-Protocol` value (`glacier-events`, followed by the token). Older installed screens may still use `?token=` during the desktop update transition; the backend scrubs that query before Uvicorn logs it, and its access-log filter redacts token values as a second safeguard.
+
 ## Screen requirements
 
 The screen must prefix every API request and the events WebSocket URL with `window.__GLACIER_API__`, falling back to the current page's origin when that value is undefined. The desktop shell injects the local backend address into bundled pages. Until the screen implements and verifies this behavior, this remains a scaffold.

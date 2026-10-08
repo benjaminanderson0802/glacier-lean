@@ -52,14 +52,12 @@ def matches(candidate: str | None) -> bool:
     return bool(candidate) and hmac.compare_digest(candidate.encode(), get_token().encode())
 
 
-def from_headers_or_query(headers: dict[str, str], query: str) -> str | None:
-    """Bearer header (any request) or ?token= (WebSocket only; browsers cannot set its headers)."""
+def from_headers_or_protocol(headers: dict[str, str]) -> str | None:
+    """Bearer header or the Glacier events WebSocket subprotocol credential."""
     auth = headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
         return auth[7:].strip()
-    if query:
-        from urllib.parse import parse_qs
-        values = parse_qs(query).get("token")
-        if values:
-            return values[0]
+    protocols = [value.strip() for value in headers.get("sec-websocket-protocol", "").split(",")]
+    if "glacier-events" in protocols:
+        return next((value for value in protocols if value and value != "glacier-events"), None)
     return None
