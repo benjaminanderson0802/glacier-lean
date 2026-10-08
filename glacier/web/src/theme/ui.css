@@ -181,6 +181,9 @@ html[lang="es"] .g-statusbox > div { min-width: 0; }
 .g-actions-wide { justify-content: stretch; }
 .g-actions-wide .g-btn { flex: 1; }
 .g-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.template-thumb { width: 72px; height: 56px; object-fit: cover; border: 1px solid var(--g-line-dim); }
+.template-full-preview { display: block; width: 100%; max-height: 420px; object-fit: contain; background: var(--g-bg); border: 1px solid var(--g-line-dim); margin-bottom: 12px; }
+.template-needs { display: block; color: var(--g-muted); font-size: var(--g-size-small); white-space: normal; }
 .g-card { display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 12px 14px; background: var(--g-panel); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); color: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-body); cursor: pointer; }
 .g-card:hover { background: var(--g-panel-hi); }
 .g-card.sel { border-color: var(--g-accent); }

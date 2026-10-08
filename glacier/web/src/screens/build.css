@@ -66,12 +66,14 @@
 .app button.tab { background: transparent; border-color: var(--g-line-dim); }
 .app button.tab.active { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
 .palette { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+.canvas-tools { display: flex; gap: 2px; flex: 0 0 auto; }
 .app button.pal { font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
 
 .empty { margin: auto; color: var(--g-muted); }
 .canvas-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
 .canvas { flex: 1; min-height: 0; }
 .react-flow { --xy-background-color: var(--g-bg); --xy-controls-button-background-color: var(--g-panel); --xy-controls-button-color: var(--g-head); --xy-controls-button-border-color: var(--g-line); --xy-edge-stroke: var(--g-line); }
+.react-flow__background pattern circle { opacity: .35; }
 .react-flow__edge-text { fill: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-small); }
 .react-flow__edge-textbg { fill: var(--g-panel); }
 .react-flow__edge.edge-yes .react-flow__edge-text { fill: var(--g-ok); }

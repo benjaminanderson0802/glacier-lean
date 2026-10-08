@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges,
-  type Connection, type Edge, type EdgeChange, type NodeChange,
+  Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges,
+  type Connection, type Edge, type EdgeChange, type NodeChange, useReactFlow,
 } from '@xyflow/react'
 import {
   ApiError, ago, api, memory, settingsApi, slugify, splitOptions, subscribeEvents, type MemCommit,
@@ -14,6 +14,7 @@ import { tok } from '../ui/tok.ts'
 import { takeDraft } from '../draft.ts'
 import { getLanguage, t } from '../i18n/index.ts'
 import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
+import dagre from '@dagrejs/dagre'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -97,6 +98,7 @@ export default function BuildScreen(props: BuildProps) {
 }
 
 function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: BuildProps) {
+  const reactFlow = useReactFlow<GNode, Edge>()
   const [envs, setEnvs] = useState<EnvSummary[]>([])
   const [unsaved, setUnsaved] = useState<EnvSummary[]>([])
   const [envId, setEnvId] = useState<string | null>(null)
@@ -109,6 +111,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [runs, setRuns] = useState<RunSummary[]>([])
   const [activeRun, setActiveRun] = useState<RunState | null>(null)
   const [selected, setSelected] = useState<Selection>(null)
+  const [undoStack, setUndoStack] = useState<Array<{ nodes: GNode[]; edges: Edge[] }>>([])
   const [tab, setTab] = useState<'canvas' | 'vault'>('canvas')
   const [wsUp, setWsUp] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -268,11 +271,23 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
 
   const addNode = (kind: NodeKind) => {
     const id = nextId('n', nodes.map(n => n.id))
-    const i = nodes.length
     const config = Object.fromEntries((typeInfo(kind)?.fields ?? []).map(f => [f.key, f.default]))
-    const node: GNode = { id, type: kind, position: { x: 60 + (i % 3) * 240, y: 60 + Math.floor(i / 3) * 160 }, data: { config }, selected: true }
+    const selectedNode = nodes.find(n => n.id === selected?.id)
+    const selectedIncoming = selectedNode && edges.find(e => e.target === selectedNode.id)
+    const incomingParent = selectedIncoming && nodes.find(n => n.id === selectedIncoming.source)
+    const parent = selectedNode && incomingParent && branchLabels(incomingParent)?.length
+      ? incomingParent : selectedNode
+    const x = parent ? parent.position.x + 260 : (nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60)
+    const y = parent && parent.id !== selectedNode?.id ? parent.position.y + (edges.filter(e => e.source === parent.id).length * 140)
+      : parent ? parent.position.y : 60
+    const node: GNode = { id, type: kind, position: { x: Math.round(x / 20) * 20, y: Math.round(y / 20) * 20 }, data: { config }, selected: true }
     setNodes(ns => [...ns.map(n => ({ ...n, selected: false })), node])
-    setEdges(es => es.map(e => ({ ...e, selected: false })))
+    setEdges(es => {
+      if (!parent) return es.map(e => ({ ...e, selected: false }))
+      const labels = branchLabels(parent)
+      const label = labels?.find(value => !es.some(e => e.source === parent.id && e.label === value)) ?? ''
+      return [...es.map(e => ({ ...e, selected: false })), { id: nextId('e', es.map(e => e.id)), source: parent.id, target: id, ...edgeStyle(label) }]
+    })
     setSelected({ kind: 'node', id })
     setDirty(true)
   }
@@ -289,12 +304,55 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
 
   const deleteSelected = () => {
     if (!selected) return
+    setUndoStack(stack => [...stack.slice(-19), { nodes, edges }])
     if (selected.kind === 'node') {
       setNodes(ns => ns.filter(n => n.id !== selected.id))
       setEdges(es => es.filter(e => e.source !== selected.id && e.target !== selected.id))
     } else setEdges(es => es.filter(e => e.id !== selected.id))
     setSelected(null); setDirty(true)
   }
+
+  const undo = useCallback(() => {
+    const previous = undoStack.at(-1)
+    if (!previous) return
+    setNodes(previous.nodes); setEdges(previous.edges); setSelected(null); setDirty(true)
+    setUndoStack(stack => stack.slice(0, -1))
+  }, [undoStack])
+
+  const autoLayout = useCallback(() => {
+    const graph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}))
+    graph.setGraph({ rankdir: 'LR', nodesep: 48, ranksep: 88, marginx: 40, marginy: 40 })
+    nodes.forEach(node => graph.setNode(node.id, { width: 210, height: 90 }))
+    edges.forEach(edge => graph.setEdge(edge.source, edge.target))
+    dagre.layout(graph)
+    setNodes(current => current.map(node => {
+      const p = graph.node(node.id)
+      return { ...node, position: { x: Math.round((p.x - 105) / 20) * 20, y: Math.round((p.y - 45) / 20) * 20 } }
+    }))
+    setDirty(true)
+    requestAnimationFrame(() => { void reactFlow.fitView({ padding: 0.18 }) })
+  }, [nodes, edges, reactFlow])
+
+  const nudgeOverlaps = useCallback((draggedId: string, position: { x: number; y: number }) => {
+    setNodes(current => current.map(node => {
+      if (node.id === draggedId) return node
+      const dx = node.position.x - position.x, dy = node.position.y - position.y
+      if (Math.abs(dx) >= 220 || Math.abs(dy) >= 110) return node
+      const direction = dx === 0 ? 1 : Math.sign(dx)
+      return { ...node, position: { x: Math.round((position.x + direction * 240) / 20) * 20, y: Math.round(node.position.y / 20) * 20 } }
+    }))
+  }, [])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.matches('input,textarea,select,[contenteditable="true"]')) return
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); undo(); return }
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selected) { event.preventDefault(); deleteSelected() }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selected, undo, nodes, edges])
 
   // ---------- save / run / approve ----------
   const save = async (): Promise<boolean> => {
@@ -446,6 +504,12 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" onClick={() => setTab('canvas')}>{t('build.canvas')}</button>
           <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>{t('build.notes')}</button>
           {tab === 'canvas' && envId && (
+            <div className="canvas-tools">
+              <button className="ghost" onClick={autoLayout} data-testid="auto-layout">{t('build.autoLayout')}</button>
+              <button className="ghost" onClick={undo} disabled={!undoStack.length} data-testid="undo">{t('build.undo')}</button>
+            </div>
+          )}
+          {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
               {catalog.filter(item => layout !== 'simple' || SIMPLE_STEP_TYPES.has(item.type)).map(item => (
                 <button key={item.type} className={`pal pal-${item.type}`} data-testid={`palette-${item.type}`} title={item.type === 'http_request' ? t('http.description') : item.description} onClick={() => addNode(item.type)}>+ {item.type === 'http_request' ? t('http.title') : item.label}</button>
@@ -468,6 +532,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
             )}
             <div className="canvas" data-testid="canvas">
               <ReactFlow<GNode, Edge>
+                key={envId}
                 nodes={displayNodes}
                 edges={displayEdges}
                 nodeTypes={flowNodeTypes}
@@ -478,11 +543,17 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 onEdgeClick={(_, e) => setSelected({ kind: 'edge', id: e.id })}
                 onPaneClick={() => setSelected(null)}
                 deleteKeyCode={['Backspace', 'Delete']}
+                snapToGrid
+                snapGrid={[20, 20]}
+                onNodeDragStop={(_, node) => { nudgeOverlaps(node.id, node.position); setDirty(true) }}
+                fitView
+                fitViewOptions={{ padding: 0.18 }}
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={20} color={tok('--g-line-dim')} />
                 <Controls showInteractive={false} />
+                <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />
               </ReactFlow>
             </div>
             {activeRun && selNode && (

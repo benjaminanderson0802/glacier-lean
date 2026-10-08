@@ -1,0 +1,2 @@
+# Build-time rasterizer for graph previews generated from template JSON.
+CairoSVG==2.8.2
