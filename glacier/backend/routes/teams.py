@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 import teams
 import vault
+import audit_log
 
 router = APIRouter()
 _delete_undo: dict[str, tuple[float, str, dict]] = {}
@@ -71,6 +72,7 @@ def interview(turn: InterviewTurn):
             "type": "object", "additionalProperties": False, "required": ["reply", "automation"],
             "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"}}})
         assistant_chat._append_conversation(conversation_id, turn.message, answer["reply"])
+        audit_log.record("build.interview_turn", what={"conversation_id": conversation_id, "engine": turn.engine})
         return {"conversation_id": conversation_id, "reply": answer["reply"],
                 "conversation_path": assistant_chat._conversation_path(conversation_id)}
     except Exception as exc:
@@ -80,7 +82,9 @@ def interview(turn: InterviewTurn):
 @router.post("/api/build/vision")
 def confirm_vision(body: VisionBody):
     try:
-        return {"confirmed": True, **teams.create_vision(body.vision)}
+        result = teams.create_vision(body.vision)
+        audit_log.record("build.vision_confirmed", what={"path": result["path"]})
+        return {"confirmed": True, **result}
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
 
@@ -90,6 +94,8 @@ def confirm_spec(body: SpecBody):
     spec = body.spec
     if not isinstance(spec.get("requirements"), list) or not isinstance(spec.get("out_of_scope"), list) or not isinstance(spec.get("acceptance"), list) or not spec["acceptance"]:
         raise HTTPException(400, "Spec needs requirements, out_of_scope and end-to-end acceptance checks")
+    audit_log.record("build.spec_approved", what={"requirements": len(spec["requirements"]),
+                                                  "acceptance_checks": len(spec["acceptance"])})
     return {"approved": True, "spec": spec}
 
 
@@ -101,6 +107,9 @@ def propose_plan(body: PlanBody):
         raise HTTPException(400, "Vision note was not found or is not a structured Vision")
     try:
         plan = teams.plan_team(vision, body.engine)
+        audit_log.record("build.plan_requested", what={"vision_path": body.vision_path, "engine": body.engine,
+                                                        "roles": len(plan.get("team", {}).get("roles", [])),
+                                                        "features": len(plan.get("features", []))})
         return {"plan": plan, "approved": False}
     except (ValueError, KeyError) as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -113,6 +122,9 @@ def approve_plan(body: ApprovePlan):
     try:
         result = teams.save_plan(body.plan, body.vision_path, body.workspace)
         result["approved"] = True
+        audit_log.record("team.plan_approved", what={"team_id": result["team_id"], "vision_path": body.vision_path,
+                                                      "roles": len(body.plan.get("team", {}).get("roles", [])),
+                                                      "tasks": len(body.plan.get("tasks", []))})
         return result
     except (ValueError, OSError) as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -184,7 +196,29 @@ def undo_delete(body: DeleteUndo):
 @router.post("/api/teams/{team_id}/run")
 def run_team(team_id: str):
     try:
-        return {"team_id": teams.start(team_id), "status": "running"}
+        started = teams.start(team_id)
+        audit_log.record("team.run_started", what={"team_id": started})
+        return {"team_id": started, "status": "running"}
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/api/teams/{team_id}/pause")
+def pause_team(team_id: str):
+    try:
+        result = teams.pause(team_id)
+        audit_log.record("team.pause_requested", what={"team_id": team_id, "status": result["status"]})
+        return result
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/api/teams/{team_id}/stop")
+def stop_team(team_id: str):
+    try:
+        result = teams.stop(team_id)
+        audit_log.record("team.stop_requested", what={"team_id": team_id, "status": result["status"]})
+        return result
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -192,7 +226,10 @@ def run_team(team_id: str):
 @router.post("/api/teams/{team_id}/tasks/{task_id}/approve")
 def approve_task(team_id: str, task_id: str, body: TaskApproval):
     try:
-        return teams.approval(team_id, task_id, body.approved)
+        result = teams.approval(team_id, task_id, body.approved)
+        audit_log.record("team.task_approval", what={"team_id": team_id, "task_id": task_id,
+                                                      "approved": body.approved})
+        return result
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -200,6 +237,9 @@ def approve_task(team_id: str, task_id: str, body: TaskApproval):
 @router.post("/api/teams/{team_id}/features/{feature_id}/grade")
 def grade_feature(team_id: str, feature_id: str, body: FeatureGrade):
     try:
-        return teams.update_feature(team_id, feature_id, body.status, body.evidence, body.actor)
+        result = teams.update_feature(team_id, feature_id, body.status, body.evidence, body.actor)
+        audit_log.record("team.feature_graded", who=body.actor,
+                         what={"team_id": team_id, "feature_id": feature_id, "status": body.status})
+        return result
     except ValueError as exc:
         raise HTTPException(403, str(exc)) from exc

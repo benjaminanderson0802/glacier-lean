@@ -252,7 +252,6 @@ export const en: Record<string, string> = {
   'home.needsYou': 'Needs you',
   'home.noItemsNeedAttention': 'No items need your attention.',
   'home.noNotes': 'No notes yet.',
-  'home.nothingNeedsYou': 'Nothing needs you. Nice.',
   'home.nothingRunning': 'Nothing running.',
   'home.recentNotes': 'Recent notes',
   'home.runningCount': 'Running',
@@ -651,10 +650,7 @@ export const en: Record<string, string> = {
   'splash.name': 'GLACIER',
   'splash.newAutomation': 'New automation',
   'splash.settings': 'Settings',
-  'splash.subtitle': 'Your AI workforce. Your world.',
-  'splash.tag': 'Build. Run. Trust.',
   'splash.versionPrefix': 'v',
-  'splash.yours': 'Yours.',
   'starter.added': 'Added {count} automation{plural}.',
   'starter.agentsFound': 'Coding agents found: {value}.',
   'starter.allSet': 'All set.',
@@ -694,4 +690,8 @@ export const en: Record<string, string> = {
 
   'team.engineSetup': 'API engines need a saved key, an allowed site, and a monthly cap in Settings > Models.',
   'team.pausing': 'Finishing current work…',
+  'home.updatedTo': 'Updated to {version} —',
+  'home.seeWhatsNew': 'see what’s new',
+  'settingsSections.whatsNew': 'What’s new',
+  'settingsSections.releaseNotesUnavailable': 'Release notes are not available for this version.',
 }

@@ -252,7 +252,6 @@ export const es: Record<string, string> = {
   'home.needsYou': 'Te necesitan',
   'home.noItemsNeedAttention': 'No hay elementos que requieran tu atención.',
   'home.noNotes': 'Todavía no hay notas.',
-  'home.nothingNeedsYou': 'No hay nada pendiente. Muy bien.',
   'home.nothingRunning': 'No hay nada en curso.',
   'home.recentNotes': 'Notas recientes',
   'home.runningCount': 'En curso',
@@ -651,10 +650,7 @@ export const es: Record<string, string> = {
   'splash.name': 'GLACIER',
   'splash.newAutomation': 'Nueva automatización',
   'splash.settings': 'Ajustes',
-  'splash.subtitle': 'Tu equipo de IA. Tu mundo.',
-  'splash.tag': 'Crear. Ejecutar. Confiar.',
   'splash.versionPrefix': 'v',
-  'splash.yours': 'Tuyo.',
   'starter.added': 'Se añadieron {count} automatización{plural}.',
   'starter.agentsFound': 'Agentes de programación encontrados: {value}.',
   'starter.allSet': 'Todo listo.',
@@ -694,4 +690,8 @@ export const es: Record<string, string> = {
 
   'team.engineSetup': 'Los motores API necesitan una clave guardada, un sitio permitido y un límite mensual en Ajustes > Modelos.',
   'team.pausing': 'Terminando el trabajo actual…',
+  'settingsSections.whatsNew': 'Novedades',
+  'settingsSections.releaseNotesUnavailable': 'Las notas de esta versión no están disponibles.',
+  'home.updatedTo': 'Actualizado a {version} —',
+  'home.seeWhatsNew': 'ver novedades',
 }

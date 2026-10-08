@@ -37,6 +37,16 @@ AUDITED_ROUTES = {
     "POST /api/environments/{env_id}/undo-delete": "flow.delete_undone",
     "DELETE /api/runs/{run_id}": "run.deleted",
     "POST /api/runs/{run_id}/undo-delete": "run.delete_undone",
+    "POST /api/build/interview": "build.interview_turn",
+    "POST /api/build/vision": "build.vision_confirmed",
+    "POST /api/build/spec": "build.spec_approved",
+    "POST /api/build/plan": "build.plan_requested",
+    "POST /api/teams": "team.plan_approved",
+    "POST /api/teams/{team_id}/run": "team.run_started",
+    "POST /api/teams/{team_id}/pause": "team.pause_requested",
+    "POST /api/teams/{team_id}/stop": "team.stop_requested",
+    "POST /api/teams/{team_id}/tasks/{task_id}/approve": "team.task_approval",
+    "POST /api/teams/{team_id}/features/{feature_id}/grade": "team.feature_graded",
 }
 
 # Runtime nodes that can perform an external or local side effect when executed.

@@ -305,10 +305,96 @@ def plan_team(vision: dict, engine: str = "codex") -> dict:
     """Ask the selected existing Ask engine for a structured work plan."""
     if engine not in ASK_ENGINES:
         raise ValueError("Choose one of the available Ask engines.")
-    schema = {"type": "object", "additionalProperties": True,
-              "required": ["spec", "features", "harness", "team", "tasks", "guards"], "properties": {
-                  "spec": {"type": "object"}, "features": {"type": "array"}, "harness": {"type": "object"},
-                  "team": {"type": "object"}, "tasks": {"type": "array"}, "guards": {"type": "object"}}}
+    nullable_string = {"type": ["string", "null"]}
+    check = {
+        "type": "object", "additionalProperties": False,
+        "required": ["kind", "cmd", "question", "rubric", "schema", "file", "engine", "model", "cwd", "required"],
+        "properties": {
+            "kind": {"type": "string", "enum": ["command", "schema", "rubric", "human"]},
+            "cmd": nullable_string, "question": nullable_string, "rubric": nullable_string,
+            "schema": {"anyOf": [
+                {"type": "null"},
+                {"type": "object", "additionalProperties": False, "properties": {}, "required": []},
+            ]},
+            "file": nullable_string, "engine": nullable_string, "model": nullable_string, "cwd": nullable_string,
+            "required": {"type": "boolean"},
+        },
+    }
+    schema = {
+        "type": "object", "additionalProperties": False,
+        "required": ["spec", "features", "harness", "team", "tasks", "guards"],
+        "properties": {
+            "spec": {
+                "type": "object", "additionalProperties": False,
+                "required": ["requirements", "out_of_scope", "acceptance"],
+                "properties": {
+                    "requirements": {"type": "array", "items": {"type": "string"}},
+                    "out_of_scope": {"type": "array", "items": {"type": "string"}},
+                    "acceptance": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+            "features": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False,
+                "required": ["id", "title", "description", "acceptance"],
+                "properties": {
+                    "id": {"type": "string"}, "title": {"type": "string"},
+                    "description": {"type": "string"},
+                    "acceptance": {"type": "array", "items": {"type": "string"}},
+                },
+            }},
+            "harness": {
+                "type": "object", "additionalProperties": False,
+                "required": ["startup_script", "smoke_test", "checks", "progress_log", "decision_log"],
+                "properties": {
+                    "startup_script": {"type": "string"}, "smoke_test": {"type": "string"},
+                    "checks": {"type": "array", "items": {"type": "string"}},
+                    "progress_log": {"type": "string"}, "decision_log": {"type": "string"},
+                },
+            },
+            "team": {
+                "type": "object", "additionalProperties": False,
+                "required": ["worker_mode", "parallel_limit", "roles", "supervisor", "governor"],
+                "properties": {
+                    "worker_mode": {"type": "string", "enum": ["sequential", "parallel"]},
+                    "parallel_limit": {"type": "integer"},
+                    "roles": {"type": "array", "items": {
+                        "type": "object", "additionalProperties": False,
+                        "required": ["id", "charter", "supervisor", "model"],
+                        "properties": {
+                            "id": {"type": "string"}, "charter": {"type": "string"},
+                            "supervisor": nullable_string, "model": {"type": "string"},
+                        },
+                    }},
+                    "supervisor": nullable_string, "governor": nullable_string,
+                },
+            },
+            "tasks": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False,
+                "required": ["id", "title", "role", "description", "depends_on", "acceptance",
+                             "requires_approval", "feature_id", "contract"],
+                "properties": {
+                    "id": {"type": "string"}, "title": {"type": "string"}, "role": {"type": "string"},
+                    "description": {"type": "string"},
+                    "depends_on": {"type": "array", "items": {"type": "string"}},
+                    "acceptance": {"type": "array", "items": check},
+                    "requires_approval": {"type": "boolean"},
+                    "feature_id": nullable_string,
+                    "contract": {"anyOf": [
+                        {"type": "null"},
+                        {"type": "object", "additionalProperties": False,
+                         "required": ["pass_criteria"],
+                         "properties": {"pass_criteria": {"type": "array", "items": {"type": "string"}}}},
+                    ]},
+                },
+            }},
+            "guards": {
+                "type": "object", "additionalProperties": False,
+                "required": ["max_retries", "task_timeout_seconds"],
+                "properties": {"max_retries": {"type": "integer"},
+                               "task_timeout_seconds": {"type": "integer"}},
+            },
+        },
+    }
     prompt = ("Design an evidence-driven build team for this confirmed project. Produce an EARS-style Spec "
               "(requirements, out_of_scope, end-to-end acceptance), a structured feature list, and a harness "
               "(startup_script, smoke_test, checks, progress_log, decision_log). Size the team to project: default "
@@ -758,6 +844,40 @@ def run_team(team_id: str) -> str:
     while True:
         row = _read(team_id)
         plan, state = row["plan"], row["state"]
+        requested = state.get("control_request")
+        if requested == "stop":
+            state["control_request"] = None
+            state["status"] = "stopped"
+            _save(team_id, status="stopped", state=state)
+            store.broadcaster.publish({"type": "team_stopped", "team_id": team_id})
+            return "stopped"
+        if requested == "pause":
+            state["control_request"] = None
+            state["status"] = "paused"
+            _save(team_id, status="paused", state=state)
+            store.broadcaster.publish({"type": "team_paused", "team_id": team_id})
+            while True:
+                control = DBOS.recv(topic="team_control", timeout_seconds=7 * 24 * 3600)
+                if not control:
+                    continue
+                if control.get("action") == "stop":
+                    row = _read(team_id)
+                    state = row["state"]
+                    state["control_request"] = None
+                    state["status"] = "stopped"
+                    _save(team_id, status="stopped", state=state)
+                    store.broadcaster.publish({"type": "team_stopped", "team_id": team_id})
+                    return "stopped"
+                if control.get("action") == "resume":
+                    row = _read(team_id)
+                    state = row["state"]
+                    state["status"] = "running"
+                    _save(team_id, status="running", state=state)
+                    store.broadcaster.publish({"type": "team_resumed", "team_id": team_id})
+                    break
+                # A queued pause signal can arrive after the coordinator has already
+                # observed control_request. Ignore it while remaining paused.
+            continue
         batch = ready_batch(plan, state["tasks"])
         if not batch:
             waiting = [task_id for task_id, item in state["tasks"].items() if item.get("status") == "awaiting_approval"]
@@ -766,9 +886,20 @@ def run_team(team_id: str) -> str:
             state["status"] = "waiting"
             _save(team_id, status="waiting", state=state)
             store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "tasks": waiting})
-            message = DBOS.recv(topic="owner_approval", timeout_seconds=7 * 24 * 3600)
+            message = DBOS.recv(topic="team_control", timeout_seconds=7 * 24 * 3600)
             if not message:
-                return "waiting"
+                continue
+            action = message.get("action")
+            if action == "pause":
+                state["control_request"] = "pause"
+                _save(team_id, status="pausing", state=state)
+                continue
+            if action == "stop":
+                state["control_request"] = "stop"
+                _save(team_id, status="stopping", state=state)
+                continue
+            if action != "approve_task":
+                continue
             item = state["tasks"].get(message.get("task_id"))
             if item and item.get("status") == "awaiting_approval":
                 item["status"] = "pending" if message.get("approved") else "rejected"
@@ -822,13 +953,54 @@ def run_team(team_id: str) -> str:
 
 def start(team_id: str) -> str:
     row = _read(team_id)
-    if row["status"] not in ("approved", "waiting", "running"):
+    if row["status"] == "paused" and row["state"].get("workflow_started"):
+        DBOS.send(team_id, {"action": "resume"}, topic="team_control")
+        return team_id
+    if row["status"] not in ("approved", "waiting", "running", "paused"):
         raise ValueError("team plan must be approved before it can run")
+    state = row["state"]
+    state["workflow_started"] = True
+    state["control_request"] = None
     with _conn() as c:
-        c.execute("UPDATE glacier_teams SET status='running' WHERE team_id=?", (team_id,))
+        c.execute("UPDATE glacier_teams SET status='running',state=? WHERE team_id=?",
+                  (json.dumps(state), team_id))
     with SetWorkflowID(team_id):
         DBOS.start_workflow(run_team, team_id)
     return team_id
+
+
+def pause(team_id: str) -> dict:
+    row = _read(team_id)
+    if row["status"] in {"done", "stopped", "needs_owner"}:
+        raise ValueError("this team can no longer be paused")
+    state = row["state"]
+    if state.get("status") == "paused":
+        return {"team_id": team_id, "status": "paused"}
+    if state.get("workflow_started"):
+        state["control_request"] = "pause"
+        _save(team_id, status="pausing", state=state)
+        DBOS.send(team_id, {"action": "pause"}, topic="team_control")
+        return {"team_id": team_id, "status": "pausing"}
+    state["status"] = "paused"
+    state["control_request"] = None
+    _save(team_id, status="paused", state=state)
+    return {"team_id": team_id, "status": "paused"}
+
+
+def stop(team_id: str) -> dict:
+    row = _read(team_id)
+    if row["status"] in {"done", "stopped", "needs_owner"}:
+        raise ValueError("this team can no longer be stopped")
+    state = row["state"]
+    if state.get("workflow_started"):
+        state["control_request"] = "stop"
+        _save(team_id, status="stopping", state=state)
+        DBOS.send(team_id, {"action": "stop"}, topic="team_control")
+        return {"team_id": team_id, "status": "stopping"}
+    state["control_request"] = None
+    state["status"] = "stopped"
+    _save(team_id, status="stopped", state=state)
+    return {"team_id": team_id, "status": "stopped"}
 
 
 def approval(team_id: str, task_id: str, approved: bool) -> dict:
@@ -836,7 +1008,10 @@ def approval(team_id: str, task_id: str, approved: bool) -> dict:
     task = row["state"]["tasks"].get(task_id)
     if not task or task.get("status") != "awaiting_approval":
         raise ValueError("task is not waiting for approval")
-    DBOS.send(team_id, {"task_id": task_id, "approved": bool(approved)}, topic="owner_approval")
+    if row["status"] == "paused":
+        raise ValueError("resume the team before approving this task")
+    DBOS.send(team_id, {"action": "approve_task", "task_id": task_id,
+                        "approved": bool(approved)}, topic="team_control")
     return {"team_id": team_id, "task_id": task_id, "approved": approved}
 
 
