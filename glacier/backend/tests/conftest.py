@@ -10,14 +10,12 @@ FAKE_CODEX = os.path.join(BACKEND, "tests", "fake_codex.py")  # tests never call
 # (see test_local_token.py), using raw_httpx below.
 TEST_TOKEN = "glacier-test-token"
 # Tests never read the developer's real OpenCode sessions; a test that needs some points this at its own folder.
-_TEST_ENV = {
-    "GLACIER_OPENCODE_DATA": os.path.join(os.path.dirname(BACKEND), ".no-opencode-in-tests"),
-    "GLACIER_CLAUDE_CODE_DATA": os.path.join(os.path.dirname(BACKEND), ".no-claude-code-in-tests"),
-    "GLACIER_GEMINI_DATA": os.path.join(os.path.dirname(BACKEND), ".no-gemini-in-tests"),
-    "GLACIER_TOKEN": TEST_TOKEN,
-    "GLACIER_OLLAMA_URL": "http://127.0.0.1:9",
-}
+os.environ["GLACIER_OPENCODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-opencode-in-tests")
+os.environ["GLACIER_CLAUDE_CODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-claude-code-in-tests")
+os.environ["GLACIER_GEMINI_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-gemini-in-tests")
+os.environ["GLACIER_TOKEN"] = TEST_TOKEN
 # Tests never talk to a real Ollama on this machine; a test that needs one starts a fake and sets this itself.
+os.environ["GLACIER_OLLAMA_URL"] = "http://127.0.0.1:9"
 raw_httpx = {name: getattr(httpx, name) for name in ("get", "post", "put", "patch", "delete", "options", "head", "stream", "request")}
 _LOCAL = ("http://127.0.0.1", "http://localhost")
 
@@ -73,7 +71,7 @@ class Server:
         return f"http://127.0.0.1:{self.port}"
 
     def start(self):
-        env = dict(os.environ, **_TEST_ENV, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
+        env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
         options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
         self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
                                      cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, **options)
