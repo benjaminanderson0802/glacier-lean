@@ -1,4 +1,5 @@
 """Live memory events and large-vault graph acceptance tests."""
+import pytest
 import json
 import os
 import sys
@@ -48,6 +49,7 @@ def test_memory_undo_publishes_one_write_event(server):
     assert event == {"type": "memory", "path": "undo-live.md", "change": "updated", "author": "owner", "run_id": ""}
 
 
+@pytest.mark.serial  # timing/stress: runs alone, after the parallel batch
 def test_graph_with_2000_notes_is_fast_and_complete(server, tmp_path):
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     import vault

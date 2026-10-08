@@ -1,4 +1,5 @@
 """Stress the real API's vault Git access while notes are being written."""
+import pytest
 import concurrent.futures
 import os
 from pathlib import Path
@@ -86,6 +87,7 @@ def _round(server, round_number):
     assert len([p for p in os.listdir(os.path.join(server.home, "vault", base)) if p.endswith(".md")]) == 200
 
 
+@pytest.mark.serial  # timing/stress: runs alone, after the parallel batch
 def test_concurrent_vault_api_reads_and_writes(server, tmp_path):
     # Repeat within one acceptance test to expose process-local GitPython pipe races.
     for round_number in range(3):

@@ -1,5 +1,6 @@
 // Pixel art drawn on a grid. Every colour is a theme token (var(--g-*)); no raw colours here.
 // Each art is a list of equal-length rows; each character maps to a colour in its palette ('.' = empty).
+import { t } from "../i18n/index.ts"
 
 type Pal = Record<string, string>
 
@@ -154,11 +155,11 @@ const SPIN = overlay(DISC.map(r => r.replace(/x/g, 'x')), ['...........', '.....
 
 export type StatusKind = 'bad' | 'warn' | 'ok' | 'run' | 'idle'
 export function StatusIcon({ kind, px = 3 }: { kind: StatusKind; px?: number }) {
-  if (kind === 'ok') return <PixelArt rows={TICK} pal={{ o: 'var(--g-ok)' }} px={px} className="g-status" title="done" />
-  if (kind === 'warn') return <PixelArt rows={QUEUE} pal={{ x: 'var(--g-warn)', o: 'var(--g-bg)' }} px={px} className="g-status" title="queued" />
-  if (kind === 'run') return <PixelArt rows={SPIN} pal={{ x: 'var(--g-accent)', o: 'var(--g-panel)' }} px={px} className="g-status g-status-run" title="running" />
-  if (kind === 'idle') return <PixelArt rows={DISC} pal={{ x: 'var(--g-line-dim)' }} px={px} className="g-status" title="waiting" />
-  return <PixelArt rows={overlay(DISC, BANG)} pal={{ x: 'var(--g-bad)', o: 'var(--g-bad-ink)' }} px={px} className="g-status" title="needs you" />
+  if (kind === 'ok') return <PixelArt rows={TICK} pal={{ o: 'var(--g-ok)' }} px={px} className="g-status" title={t('pixel.done')} />
+  if (kind === 'warn') return <PixelArt rows={QUEUE} pal={{ x: 'var(--g-warn)', o: 'var(--g-bg)' }} px={px} className="g-status" title={t('pixel.queued')} />
+  if (kind === 'run') return <PixelArt rows={SPIN} pal={{ x: 'var(--g-accent)', o: 'var(--g-panel)' }} px={px} className="g-status g-status-run" title={t('pixel.running')} />
+  if (kind === 'idle') return <PixelArt rows={DISC} pal={{ x: 'var(--g-line-dim)' }} px={px} className="g-status" title={t('pixel.waiting')} />
+  return <PixelArt rows={overlay(DISC, BANG)} pal={{ x: 'var(--g-bad)', o: 'var(--g-bad-ink)' }} px={px} className="g-status" title={t('pixel.needsYou')} />
 }
 
 // ---------- logo: two snowy peaks ----------
@@ -182,7 +183,7 @@ function mountains(): string[] {
 }
 const LOGO = mountains()
 export function Logo({ px = 2 }: { px?: number }) {
-  return <PixelArt rows={LOGO} pal={{ w: 'var(--g-head)', a: 'var(--g-accent)', l: 'var(--g-line)' }} px={px} className="g-logo" title="Glacier" />
+  return <PixelArt rows={LOGO} pal={{ w: 'var(--g-head)', a: 'var(--g-accent)', l: 'var(--g-line)' }} px={px} className="g-logo" title={t('pixel.glacier')} />
 }
 
 // ---------- mascot: an original little operator with dark hair and a backpack ----------

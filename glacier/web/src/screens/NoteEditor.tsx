@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react'
 import { memory, slugify, type MemNote } from '../api.ts'
 import { Btn } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
+import { t } from '../i18n/index.ts'
 
 export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
   path?: string; initial: string; notes: MemNote[]; onSaved: (path: string, commit: string) => void; onCancel: () => void
@@ -37,7 +38,7 @@ export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
   }
   const save = async () => {
     const target = path ?? `${slugify(title || body.split('\n')[0] || 'note')}.md`
-    if (!path && !title.trim()) { setErr('Give the note a title.'); return }
+    if (!path && !title.trim()) { setErr(t('noteEditor.giveTitle')); return }
     setBusy(true); setErr('')
     try {
       const text = !path && !body.startsWith('# ') ? `# ${title.trim()}\n\n${body}` : body
@@ -48,10 +49,10 @@ export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
 
   return (
     <div className="g-editor" data-testid="note-editor">
-      {!path && <input className="g-input" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} data-testid="note-title" autoFocus />}
+      {!path && <input className="g-input" placeholder={t('noteEditor.title')} value={title} onChange={e => setTitle(e.target.value)} data-testid="note-title" autoFocus />}
       <div className="g-editor-wrap">
         <textarea ref={ta} className="g-input g-textarea" value={body} data-testid="note-body" autoFocus={!!path}
-          placeholder="Write anything. Type [[ to link another note."
+          placeholder={t('noteEditor.placeholder')}
           onChange={e => onChange(e.target.value)}
           onKeyDown={e => {
             if (query === null || matches.length === 0) return
@@ -62,7 +63,7 @@ export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
           }} />
         {query !== null && matches.length > 0 && (
           <div className="g-suggest g-panel" data-testid="link-suggest">
-            <span className="g-detail">Link to…</span>
+            <span className="g-detail">{t('noteEditor.linkTo')}</span>
             {matches.map((n, i) => (
               <button key={n.path} type="button" className={`g-navitem${i === sel ? ' active' : ''}`} onMouseDown={e => { e.preventDefault(); insert(n) }}>
                 <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Icon name="note" />{n.title || n.path}</span>
@@ -73,9 +74,9 @@ export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
       </div>
       {err && <div className="g-error">{err}</div>}
       <div className="g-actions">
-        <Btn primary onClick={save} disabled={busy} data-testid="note-save">Save</Btn>
-        <Btn onClick={onCancel}>Cancel</Btn>
-        <span className="g-detail" style={{ marginLeft: 'auto' }}>Saved as a plain text note; every save can be undone.</span>
+        <Btn primary onClick={save} disabled={busy} data-testid="note-save">{t('noteEditor.save')}</Btn>
+        <Btn onClick={onCancel}>{t('noteEditor.cancel')}</Btn>
+        <span className="g-detail" style={{ marginLeft: 'auto' }}>{t('noteEditor.savedInfo')}</span>
       </div>
     </div>
   )

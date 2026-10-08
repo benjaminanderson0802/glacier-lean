@@ -10,6 +10,7 @@ import shutil
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
+from egress import open_model_request
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -184,7 +185,7 @@ def _ollama_answers() -> bool:
     """Probe the local Ollama chat endpoint with a tiny non-generative tags request."""
     url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/tags"
     try:
-        with urllib.request.urlopen(url, timeout=1) as response:
+        with open_model_request(url, timeout=1) as response:
             payload = json.loads(response.read())
         return bool(payload.get("models"))
     except (OSError, ValueError, urllib.error.URLError):
@@ -234,7 +235,7 @@ def _ask_local(message: str) -> dict:
             "format": _chat_schema(), "options": {"temperature": 0},
             "messages": [{"role": "user", "content": message}]}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=600) as response:
+    with open_model_request(req, timeout=600) as response:
         answer = json.loads(json.loads(response.read())["message"]["content"])
     if not isinstance(answer, dict) or not isinstance(answer.get("reply"), str) or not isinstance(answer.get("automation"), bool):
         raise ValueError("The assistant returned an invalid answer.")
