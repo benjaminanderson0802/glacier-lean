@@ -13,8 +13,9 @@ Python's standard library, with no extra package. Each case contains:
 
 - `id`, `title`, `goal`: identity and plain-language task for the worker.
 - `setup_files`: starter files, written before the worker's solution.
-- `acceptance_check`: POSIX shell command using `python3 -c` and Python's
-  standard library. Exit code 0 means the work is done.
+- `acceptance_check`: Python `-c` command using the standard library. Exit
+  code 0 means the work is done. The validator runs it with its own interpreter
+  directly, so the cases work on Windows and POSIX hosts.
 - `expected`: `pass` for an ordinary case, or `fail` for a trap.
 - `trap`: `none` or one of the supported false-success patterns.
 - `notes`: what the case is designed to catch.

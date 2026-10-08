@@ -50,9 +50,10 @@ class FakeOllama:
         self.thread.join(timeout=2)
 
 
-def test_local_ai_fills_placeholders_and_records_usage(make_server, monkeypatch):
+def test_local_ai_fills_placeholders_and_records_usage(make_server, monkeypatch, tmp_path):
     with FakeOllama() as ollama:
         monkeypatch.setenv("GLACIER_OLLAMA_URL", ollama.url)
+        monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "isolated-home"))
         server = make_server().start()
         flow = env("local-prompt", [
             ("prior", "command", {"cmd": "echo previous result"}),
@@ -75,6 +76,13 @@ def test_local_ai_fills_placeholders_and_records_usage(make_server, monkeypatch)
 
 def test_local_ai_uses_environment_model_or_default(monkeypatch):
     from nodes.local_ai import DEFAULT_MODEL, run
+    import system_check
+    import tempfile
+
+    monkeypatch.setenv("GLACIER_HOME", tempfile.mkdtemp(prefix="glacier-model-test-"))
+    monkeypatch.setenv("GLACIER_OLLAMA_URL", "http://127.0.0.1:1")
+    monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
+    system_check.clear_cache()
 
     captured = []
 

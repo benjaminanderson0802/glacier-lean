@@ -9,6 +9,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+import sys
 
 
 HERE = Path(__file__).resolve().parent
@@ -107,7 +108,7 @@ def _check_command(command: str, case_id: str) -> None:
         words = shlex.split(command, posix=True)
     except ValueError as exc:
         raise ValidationError(f"{case_id}: invalid shell quoting: {exc}") from exc
-    if len(words) != 3 or words[:2] != ["python3", "-c"]:
+    if len(words) != 3 or words[0] not in {"python3", "python"} or words[1] != "-c":
         raise ValidationError(f"{case_id}: check must be a python3 -c command")
     code = words[2]
     banned = ("subprocess", "os.system", "socket", "urllib", "requests", "pip ")
@@ -128,11 +129,11 @@ def _run_check(case: dict, solution_key: str, should_pass: bool) -> None:
         _write_files(folder, case["setup_files"])
         _write_files(folder, case[solution_key])
         try:
+            words = shlex.split(case["acceptance_check"], posix=True)
+            words[0] = sys.executable
             result = subprocess.run(
-                case["acceptance_check"],
+                words,
                 cwd=folder,
-                shell=True,
-                executable="/bin/sh",
                 text=True,
                 capture_output=True,
                 timeout=5,
