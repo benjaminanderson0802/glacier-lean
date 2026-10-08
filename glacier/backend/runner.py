@@ -5,6 +5,7 @@ from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 import shell_commands
+from agents_md import project_instructions_detail
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
 MAX_FLOW_DEPTH = 5
@@ -75,6 +76,7 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
     workdir = cfg.get("workdir") or ws or os.path.join(home, "workspaces", env_id)
     os.makedirs(workdir, exist_ok=True)
+    instructions_detail = project_instructions_detail(workdir)
     fd, last_file = tempfile.mkstemp(prefix="codex-last-", suffix=".txt"); os.close(fd)
     executable = os.environ.get("CODEX_BIN", "codex")
     args = shell_commands.executable_invocation(executable, "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
@@ -125,6 +127,8 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     if code != 0 and time.time() - started >= timeout:
         body += f"\n[timed out after {timeout}s]"
     out = f"codex exit {code}\n{body}"
+    if instructions_detail:
+        out += f"\n{instructions_detail}"
     usage = {"model": cfg.get("model") or "default (sandbox Codex setting)", "route": "codex/chatgpt-plan", "cost_usd": 0.0,
              "tokens_in": tok.get("input_tokens", 0), "tokens_out": tok.get("output_tokens", 0)}
     return {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code, "usage": usage}
