@@ -1,6 +1,6 @@
 """Graph runner: each run is the DBOS workflow run_environment(env_id, run_id) (workflow id == run_id); each node
 execution is a DBOS step, so after a crash finished nodes are replayed from DBOS's record instead of re-run."""
-import json, os, re, uuid, operator, subprocess, tempfile, threading, time
+import json, os, re, uuid, operator, sqlite3, subprocess, tempfile, threading, time
 import shlex
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
@@ -218,7 +218,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
     try:
         trigger = store.graph_of(run_id).get("_trigger") or {}
-    except (TypeError, KeyError):  # direct runner unit calls may not have a persisted run snapshot
+    except (TypeError, KeyError, sqlite3.OperationalError):
+        # Direct runner unit calls may have no persisted run snapshot (no row, or no run table yet).
         trigger = {}
     if kind not in ("file_trigger", "webhook_trigger"):
         cfg = _expand_trigger_values(cfg, trigger)
