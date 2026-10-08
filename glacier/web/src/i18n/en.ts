@@ -694,4 +694,6 @@ export const en: Record<string, string> = {
   'home.seeWhatsNew': 'see what’s new',
   'settingsSections.whatsNew': 'What’s new',
   'settingsSections.releaseNotesUnavailable': 'Release notes are not available for this version.',
+  'build.hideFlows': 'Hide flows list',
+  'build.showFlows': 'Show flows list',
 }

@@ -694,4 +694,6 @@ export const es: Record<string, string> = {
   'settingsSections.releaseNotesUnavailable': 'Las notas de esta versión no están disponibles.',
   'home.updatedTo': 'Actualizado a {version} —',
   'home.seeWhatsNew': 'ver novedades',
+  'build.hideFlows': 'Ocultar lista de flujos',
+  'build.showFlows': 'Mostrar lista de flujos',
 }
