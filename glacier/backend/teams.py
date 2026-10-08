@@ -617,6 +617,9 @@ def stuck_claim(run_id: str, task_id: str, attempts: int, evidence: str) -> str:
 def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None = None) -> dict:
     """Synchronous testable engine. Production workflow uses durable per-task workflow steps below."""
     state = state or {"status": "running", "tasks": {t["id"]: {"status": "pending", "attempts": 0} for t in plan["tasks"]}}
+    def persist_task(task_id: str, item: dict) -> None:
+        if _persisted_status(team_id) is not None:
+            _save_task(team_id, task_id, item)
     _mark_legacy_completions(plan, state)
     state.setdefault("features", {feature["id"]: {"status": "pending", "evaluator_evidence": None}
                                    for feature in plan.get("features", [])})
@@ -641,7 +644,7 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
             item = state["tasks"].setdefault(task_id, {"status": "pending", "attempts": 0})
             item["status"] = "running"
             item["attempts"] += 1
-            _save_task(team_id, task_id, item)
+            persist_task(task_id, item)
             store.broadcaster.publish({"type": "team_task_taken", "team_id": team_id, "task_id": task_id, "role": task["role"]})
             task_workspace = workspace
             if plan["team"]["worker_mode"] == "parallel":
@@ -658,22 +661,22 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
             task_id = task["id"]
             if result["status"] == "awaiting_approval":
                 item.update(result)
-                _save_task(team_id, task_id, item)
+                persist_task(task_id, item)
                 continue
             if result["status"] == "done":
                 item.update(result)
                 item["status"] = "done"
-                _save_task(team_id, task_id, item)
+                persist_task(task_id, item)
                 continue
             if item["attempts"] >= limit:
                 cid = stuck_claim(team_id, task_id, item["attempts"], json.dumps(result))
                 item.update(status="needs_owner", claim_id=cid, **result)
-                _save_task(team_id, task_id, item)
+                persist_task(task_id, item)
                 state["status"] = "needs_owner"
                 store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "task_id": task_id, "claim_id": cid})
                 return state
             item.update(status="pending", **result)
-            _save_task(team_id, task_id, item)
+            persist_task(task_id, item)
         persisted_status = _persisted_status(team_id)
         if persisted_status in {"pausing", "paused", "stopped"}:
             current = _read(team_id)
