@@ -136,3 +136,25 @@ def test_run_card_installs_requirements_before_posting_flow(tmp_path, monkeypatc
 
     assert events[0] == ("install", tmp_path / "home/workspaces/self-feature/setup/requirements.txt")
     assert [event[0] for event in events] == ["install", "put", "put", "post"]
+
+
+def test_prepare_checkout_refreshes_stale_main_from_source_head(tmp_path):
+    source = tmp_path / "source"
+    subprocess.run(["git", "init", "-q", "-b", "main", str(source)], check=True)
+    (source / "README.md").write_text("source v1\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(source), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(source), "-c", "user.name=t", "-c", "user.email=t@x",
+                    "commit", "-qm", "source v1"], check=True)
+
+    practice = run_card.prepare_checkout(tmp_path / "home", source)
+    subprocess.run(["git", "-C", str(source), "checkout", "-qb", "feature"], check=True)
+    (source / "README.md").write_text("source v2\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(source), "commit", "-qam", "source v2"], check=True)
+
+    refreshed = run_card.prepare_checkout(tmp_path / "home", source)
+
+    assert refreshed == practice
+    assert (practice / "README.md").read_text(encoding="utf-8") == "source v2\n"
+    head = subprocess.check_output(["git", "-C", str(practice), "rev-parse", "HEAD"], text=True).strip()
+    source_head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+    assert head == source_head

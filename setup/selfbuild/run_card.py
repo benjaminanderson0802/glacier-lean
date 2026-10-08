@@ -29,12 +29,6 @@ def prepare_checkout(home: Path, source: Path) -> Path:
         actual = Path(subprocess.check_output(["git", "-C", str(target), "rev-parse", "--show-toplevel"], text=True).strip())
         if actual.resolve() != target.resolve():
             raise RuntimeError(f"Self-build checkout path is not a Git repository: {target}")
-        try:
-            origin = subprocess.check_output(["git", "-C", str(target), "remote", "get-url", "origin"], text=True).strip()
-        except subprocess.CalledProcessError:
-            origin = ""
-        if origin and Path(origin).exists() and Path(origin).resolve() != source.resolve():
-            raise RuntimeError(f"Self-build checkout has unexpected origin: {origin}")
     dirty = subprocess.check_output(["git", "-C", str(target), "status", "--porcelain"], text=True).strip()
     if dirty:
         raise RuntimeError(f"Self-build checkout has uncommitted changes: {target}")
@@ -49,6 +43,23 @@ def prepare_checkout(home: Path, source: Path) -> Path:
         else:
             raise RuntimeError("Self-build checkout needs a local or origin main branch for verified merges")
         subprocess.run(command, check=True, capture_output=True, text=True)
+    # Practice runs must start at the exact source revision being verified.
+    # Otherwise a stale main makes the protected guard compare unrelated trees.
+    source_head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+    practice_head = subprocess.check_output(["git", "-C", str(target), "rev-parse", "HEAD"], text=True).strip()
+    if practice_head != source_head:
+        remote = subprocess.run(["git", "-C", str(target), "remote", "get-url", "origin"],
+                                capture_output=True, text=True)
+        if remote.returncode == 0:
+            subprocess.run(["git", "-C", str(target), "remote", "set-url", "origin", str(source)],
+                           check=True, capture_output=True, text=True)
+        else:
+            subprocess.run(["git", "-C", str(target), "remote", "add", "origin", str(source)],
+                           check=True, capture_output=True, text=True)
+        subprocess.run(["git", "-C", str(target), "fetch", str(source), source_head],
+                       check=True, capture_output=True, text=True)
+        subprocess.run(["git", "-C", str(target), "reset", "--hard", "FETCH_HEAD"],
+                       check=True, capture_output=True, text=True)
     return target
 
 
@@ -133,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
         config = node.get("config", {})
         if node.get("type") == "codex":
             config["prompt"] += f"\n\nApproved card text:\n{card_text}"
-    prepare_commands(flow, guard=str(GUARD_PATH), baseline=str(ROOT))
+    prepare_commands(flow, guard=str(GUARD_PATH), baseline=str(repo))
     try:
         with httpx.Client(base_url=args.api.rstrip("/"), timeout=30, headers=_auth_headers()) as client:
             install_maintenance(client, repo)
