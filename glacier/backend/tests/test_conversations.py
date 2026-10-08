@@ -58,7 +58,9 @@ def test_conversations_list_detail_order_default_title_and_search(tmp_path, monk
         assert detail["messages"][0]["who"] == "you"
         assert detail["messages"][0]["text"] == question
         assert detail["messages"][1]["who"] == "glacier"
-        assert detail["messages"][1]["text"] == "Reply to " + question
+        # The engine now receives the shared context pack ahead of the question.
+        assert detail["messages"][1]["text"].startswith("Reply to Shared context pack")
+        assert question in detail["messages"][1]["text"]
         assert detail["messages"][0]["at"]
 
         matches = server.get("/api/assistant/conversations?q=orchid")

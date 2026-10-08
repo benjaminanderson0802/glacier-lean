@@ -244,6 +244,10 @@ def effective_settings(include_ask_route: bool = False):
         route, reason = assistant_chat.ask_route()
         result["ask_route"] = route or "unavailable"
         result["ask_route_reason"] = reason
+        saved = assistant_chat._saved_settings()
+        result["ask_engine"] = saved.get("ask_engine", "codex")
+        result["ask_engines"] = assistant_chat.available_engines()
+        result["ask_remember_previous_chats"] = assistant_chat.ask_context.remember_chats()
     return result
 
 
