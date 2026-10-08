@@ -11,6 +11,7 @@ import shutil
 import sys
 from pathlib import Path
 from agents_md import project_instructions_detail
+import shell_commands
 
 PREV_LIMIT = 8000
 
@@ -197,7 +198,7 @@ def run(ctx):
             return {"state": "failed", "output": "Enter a command for the custom coding agent", "exit_code": 1}
         missing_message = f"This coding agent isn't installed: {command[0]}"
 
-    if shutil.which(command[0]) is None:
+    if shell_commands.which(command[0]) is None:
         if os.name == "nt" and command[0].lower().endswith(".py") and os.path.isfile(command[0]):
             command.insert(0, sys.executable)
         else:

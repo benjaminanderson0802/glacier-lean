@@ -100,8 +100,10 @@ fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf),
         return Err(format!("The bundled Python runtime is missing at {}", python.display()));
     }
     let mut command = Command::new(python);
-    command.current_dir(backend_dir).args(["-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", &port_text])
-        .env("GLACIER_HOME", data_dir).stdin(Stdio::null()).stdout(Stdio::from(log_file)).stderr(Stdio::from(log_stderr));
+    // -s and PYTHONNOUSERSITE: the bundled Python must ignore packages in the user's own profile
+    // (seen on a real PC: an unrelated user-site add-on patched subprocess inside Glacier).
+    command.current_dir(backend_dir).args(["-s", "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", &port_text])
+        .env("GLACIER_HOME", data_dir).env("PYTHONNOUSERSITE", "1").stdin(Stdio::null()).stdout(Stdio::from(log_file)).stderr(Stdio::from(log_stderr));
     if low_resource {
         if let Some(values) = config.get("low_resource_env").and_then(|x| x.as_object()) {
             for (key, value) in values {

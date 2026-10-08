@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import shell_commands
+
 _TIMEOUT_SECONDS = 60
 _MAX_TEXT_BYTES = 2 * 1024 * 1024
 
@@ -65,7 +67,7 @@ def find_tesseract() -> str | None:
     override = os.environ.get("GLACIER_TESSERACT_BIN")
     if override is not None:
         return override if os.path.isfile(override) else None
-    return shutil.which("tesseract")
+    return shell_commands.which("tesseract")
 
 
 def recognize(path: Path) -> tuple[str, str | None]:

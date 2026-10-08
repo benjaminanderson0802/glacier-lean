@@ -43,3 +43,34 @@ def executable_invocation(executable: str, *args: str) -> list[str]:
     if os.name == "nt" and executable.lower().endswith(".py"):
         return [sys.executable, executable, *args]
     return [executable, *args]
+
+
+_RUNNABLE_WINDOWS = (".exe", ".cmd", ".bat", ".com")
+
+
+def which(name: str) -> str | None:
+    """Find a program the way Windows can actually start it.
+
+    npm puts an extensionless shell script (for example ``codex``) next to ``codex.cmd``.
+    Starting that script on Windows shows an "Unsupported 16-bit application" box and
+    blocks until someone closes it, so on Windows only .exe/.cmd/.bat/.com files count.
+    """
+    if not name:
+        return None
+    found = shutil.which(name)
+    if os.name != "nt":
+        return found
+    if found and (os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS or not os.path.isfile(found)):
+        return found
+    exts = [e.lower() for e in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") if e]
+    exts = [e for e in exts if e in _RUNNABLE_WINDOWS] or list(_RUNNABLE_WINDOWS)
+    base, ext = os.path.splitext(name)
+    candidates = [name] if ext.lower() in _RUNNABLE_WINDOWS else [name + e for e in exts]
+    if os.path.dirname(name):
+        return next((c for c in candidates if os.path.isfile(c)), None)
+    for folder in [d for d in os.environ.get("PATH", "").split(os.pathsep) if d]:
+        for candidate in candidates:
+            full = os.path.join(folder, candidate)
+            if os.path.isfile(full):
+                return full
+    return None

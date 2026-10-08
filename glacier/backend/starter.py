@@ -13,6 +13,7 @@ from pathlib import Path
 import system_check
 import template_registry
 import vault
+import shell_commands
 
 
 AGENTS = {
@@ -33,7 +34,7 @@ INSTALLS = {
 
 
 def _version(command: str, args: list[str]) -> str:
-    binary = shutil.which(command)
+    binary = shell_commands.which(command)
     if not binary:
         return ""
     try:
@@ -53,8 +54,8 @@ def _agent_discovery() -> list[dict]:
                       "usable_as_step": key == "codex" and bool(version)})
     # ACP presets are currently only available for OpenCode and the Codex adapter.
     for name, command in (("OpenCode", "opencode"), ("Codex ACP", "codex-acp")):
-        found.append({"id": "acp-" + command, "name": name, "found": bool(shutil.which(command)),
-                      "version": _version(command, ["--version"]), "usable_as_step": bool(shutil.which(command))})
+        found.append({"id": "acp-" + command, "name": name, "found": bool(shell_commands.which(command)),
+                      "version": _version(command, ["--version"]), "usable_as_step": bool(shell_commands.which(command))})
     return found
 
 

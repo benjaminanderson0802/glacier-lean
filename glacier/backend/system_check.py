@@ -89,7 +89,7 @@ def _run(command, timeout=2, first_line=True):
 
 
 def _ollama_models():
-    path = shutil.which("ollama")
+    path = shell_commands.which("ollama")
     if not path:
         return []
     output = _run([path, "list"], first_line=False)
@@ -133,7 +133,7 @@ def check_system():
     cores, memory_gb, disk_free_gb = _machine_stats()
     tools = {}
     for name, (binary, args) in TOOL_COMMANDS.items():
-        path = shutil.which(binary)
+        path = shell_commands.which(binary)
         version = _run([path, *args]) if path else ""
         tools[name] = {"found": bool(path and version), "version": version}
     models = _ollama_models()
@@ -169,8 +169,20 @@ def clear_cache():
     _check_cache_key = None
 
 
+def _recommended_light():
+    """Recommendation from hardware and installed models only (no tool probes).
+
+    Used at start-up so a slow or broken tool on PATH can never stop the engine starting.
+    """
+    if _check_cache is not None:
+        return dict(_check_cache["recommended"])
+    cores, memory_gb, disk_free_gb = _machine_stats()
+    return recommend({"cpu_cores": cores, "memory_gb": memory_gb, "disk_free_gb": disk_free_gb,
+                      "ollama_models": _ollama_models()})
+
+
 def effective_settings(include_ask_route: bool = False):
-    result = dict(check_system()["recommended"])
+    result = _recommended_light()
     settings_path = Path(os.environ.get("GLACIER_HOME", "data")) / "settings.json"
     try:
         saved = json.loads(settings_path.read_text(encoding="utf-8"))
