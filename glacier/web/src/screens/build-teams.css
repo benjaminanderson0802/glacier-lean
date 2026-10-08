@@ -1,5 +1,7 @@
 .bt-workspace { display:grid; grid-template-columns:calc(48 * var(--px)) minmax(0,1.6fr) minmax(0,1fr); gap:calc(2 * var(--px)); min-height:0; flex:1; }
 .bt-step-panel .g-menu-item { font-size:calc(8 * var(--px)); white-space:normal; overflow-wrap:anywhere; }
+.bt-step-list { min-height: 0; overflow-y: auto; }
+.bt-step-list > .g-menu-item { flex: 0 0 auto; }
 .bt-chat,.bt-stage,.bt-understood { min-height:0; }
 .bt-chat-log { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:calc(2 * var(--px)); }
 .bt-line { padding:calc(2 * var(--px)); border:var(--px) solid var(--g-ice3); background:var(--g-white); font-size:calc(8 * var(--px)); overflow-wrap:anywhere; }

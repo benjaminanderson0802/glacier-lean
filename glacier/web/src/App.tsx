@@ -120,7 +120,7 @@ export default function App() {
         <span><span className="g-key">F1</span> {translate('shell.help')}</span>
         <span><span className="g-key">Ctrl+K</span> {translate('shell.command')}</span>
         <span><span className="g-key">Ctrl+Tab</span> {translate('shell.switch')}</span>
-        <span className="g-ready" data-testid="status-line">{status}</span>
+        <span className="g-ready" data-testid="status-line" title={status}>{status}</span>
       </footer>
       {palette && <CommandPalette onClose={() => setPalette(false)} />}
       {splash && <Splash version={__APP_VERSION__} onDone={to => { splashSeen = true; setSplash(false); if (to === 'exit') winAction('close'); else go(to) }} />}
