@@ -4,11 +4,18 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 from contextlib import ExitStack
 
 import git
 import time
 import workspaces
+
+
+_vault_change_cache: dict[tuple[str, str], list[dict]] = {}
+_vault_change_cache_lock = threading.Lock()
+_flow_restore_cache: dict[tuple[str, str, str], dict] = {}
+_flow_restore_cache_lock = threading.Lock()
 
 
 def repo():
@@ -70,20 +77,48 @@ def _vault_change_log() -> list[tuple[str, str, str, set[str]]]:
     return entries
 
 
+def invalidate_vault_change_cache(run_id: str, author: str, path: str) -> None:
+    """Invalidate only run queries a new vault commit can change."""
+    if not run_id and author != "glacier-runner":
+        return
+    import vault
+    with _vault_change_cache_lock:
+        if run_id:
+            _vault_change_cache.pop((vault.VAULT, run_id), None)
+        if author == "glacier-runner":
+            for key in list(_vault_change_cache):
+                root, cached_run_id = key
+                if root == vault.VAULT and re.search(
+                    r"(?<![A-Za-z0-9])" + re.escape(cached_run_id) + r"(?![A-Za-z0-9])",
+                    path,
+                    re.IGNORECASE,
+                ):
+                    _vault_change_cache.pop(key, None)
+
+
 def changes(run_id: str) -> list[dict]:
-    result = []
+    import vault
+    key = (vault.VAULT, run_id)
     # Same matching rules as _run_commits, read from one git log instead of per-commit diffs.
     tag = re.compile(r"\[run:" + re.escape(run_id) + r"\]", re.IGNORECASE)
     path_id = re.compile(r"(?<![A-Za-z0-9])" + re.escape(run_id) + r"(?![A-Za-z0-9])", re.IGNORECASE)
     author_name = f"run:{run_id}".casefold()
-    for sha, author, subject, paths in _vault_change_log():
-        if subject.casefold().startswith("revert"):
-            continue
-        matched = tag.match(subject) or tag.search(author) or author.casefold() == author_name or (
-            author.casefold() == "glacier-runner" and any(path_id.search(path) for path in paths))
-        if matched:
-            for path in sorted(paths):
-                result.append({"path": path, "commit": sha[:8], "author": author, "repo": "vault"})
+    with _vault_change_cache_lock:
+        vault_changes = _vault_change_cache.get(key)
+        if vault_changes is None:
+            vault_changes = []
+            for sha, author, subject, paths in _vault_change_log():
+                if subject.casefold().startswith("revert"):
+                    continue
+                matched = tag.match(subject) or tag.search(author) or author.casefold() == author_name or (
+                    author.casefold() == "glacier-runner" and any(path_id.search(path) for path in paths))
+                if matched:
+                    for path in sorted(paths):
+                        vault_changes.append({"path": path, "commit": sha[:8], "author": author, "repo": "vault"})
+            _vault_change_cache[key] = vault_changes
+            if len(_vault_change_cache) > 256:
+                _vault_change_cache.pop(next(iter(_vault_change_cache)))
+        result = [dict(item) for item in vault_changes]
     # Workspace repositories are independent and opened/closed per operation.
     for workspace, commit in _workspace_run_commits(run_id):
         for path in sorted(_commit_paths(commit)):
@@ -180,6 +215,9 @@ def _apply_undo(r: git.Repo, commits: list[git.Commit], touched: set[str], repo_
             f"Undo could not be completed; the {repo_name} was restored to its starting version. "
             "Files that could not be safely reverted: " + ", ".join(sorted(touched))
         ) from exc
+    if repo_name == "vault":
+        import vault
+        vault.invalidate_note_history(touched)
     return {"reverted": [commit.hexsha[:8] for commit in commits],
             "new_commit": new_commit.hexsha[:8], "changes": sorted(touched)}
 
@@ -315,16 +353,16 @@ def undo(run_id: str) -> dict:
             "vault": vault_result, "workspace": workspace_result}
 
 
-def restore_flow(env_id: str, short_commit: str) -> str:
-    """Read saved flow history under vault._lock, then save the selected version."""
-    import app
-    import runner
+def _resolve_flow_version(env_id: str, path: str, short_commit: str) -> dict:
+    """Resolve a saved flow version, reusing lookups for exact immutable commit IDs."""
     import vault
 
-    path = runner.env_path(env_id)
-    vault.safe_path(path)
-    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", short_commit):
-        raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
+    cache_key = (vault.VAULT, env_id, short_commit.lower())
+    if len(short_commit) == 40:
+        with _flow_restore_cache_lock:
+            cached = _flow_restore_cache.get(cache_key)
+        if cached is not None:
+            return json.loads(json.dumps(cached))
     try:
         with vault._lock:
             matches = list(vault._repo.iter_commits(paths=path))
@@ -336,11 +374,28 @@ def restore_flow(env_id: str, short_commit: str) -> str:
             selected = matching[0]
             saved = selected.tree / path
             env = json.loads(saved.data_stream.read().decode("utf-8"))
-    except ValueError:
-        raise
     except KeyError:
-        raise ValueError("That saved version does not contain this flow.")
+        raise ValueError("That saved flow version does not contain this flow.")
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("That saved flow version is not valid JSON.") from exc
+    if len(short_commit) == 40:
+        with _flow_restore_cache_lock:
+            _flow_restore_cache[cache_key] = env
+            if len(_flow_restore_cache) > 128:
+                _flow_restore_cache.pop(next(iter(_flow_restore_cache)))
+    return env
+
+
+def restore_flow(env_id: str, short_commit: str) -> str:
+    """Read saved flow history under vault._lock, then save the selected version."""
+    import app
+    import runner
+    import vault
+
+    path = runner.env_path(env_id)
+    vault.safe_path(path)
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", short_commit):
+        raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
+    env = _resolve_flow_version(env_id, path, short_commit)
     result = app.save_environment(env_id, env)
     return result["commit"]
