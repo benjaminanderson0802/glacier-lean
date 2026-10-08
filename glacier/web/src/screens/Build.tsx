@@ -614,7 +614,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={16} size={1} color={tok('--g-ice4')} />
-                <Controls showInteractive={false} position="top-left" />
+                <Controls showInteractive={false} position="bottom-left" />
                 {showMinimap && <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />}
               </ReactFlow>
             </div>

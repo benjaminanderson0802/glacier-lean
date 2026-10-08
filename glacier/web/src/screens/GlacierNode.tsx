@@ -1,10 +1,11 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import type { NodeKind, NodeState } from '../api.ts'
+import { Icon } from '../ui/Pixel.tsx'
 
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>
 
-const ICON: Record<string, string> = { schedule: '⏱', command: '›_', codex: '◆', check: '?', approval: '✓', note: '✎', loop: '↻', flow: '⧉', decide: '⋔' }
+const ICON: Record<string, 'run' | 'automations' | 'ask' | 'settings' | 'note' | 'memory'> = { schedule: 'run', command: 'automations', codex: 'ask', check: 'settings', approval: 'settings', note: 'note', loop: 'run', flow: 'memory', decide: 'ask' }
 
 function summary(kind: NodeKind, c: Record<string, string>): string {
   switch (kind) {
@@ -32,7 +33,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
     >
       <Handle type="target" position={Position.Left} data-testid={`handle-in-${id}`} />
       <div className="gnode-head">
-        <span className="gnode-icon">{ICON[type] ?? '•'}</span>
+        <span className="gnode-icon"><Icon name={ICON[type] ?? 'automations'} px={1} /></span>
         <span className="gnode-type">{type === 'codex' ? 'codex worker' : type === 'flow' ? 'sub-flow' : type}</span>
         <span className="gnode-id">{id}</span>
       </div>

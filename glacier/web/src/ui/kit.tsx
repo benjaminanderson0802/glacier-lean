@@ -63,5 +63,5 @@ export function Btn({ children, primary, danger, icon, ...rest }: { children: Re
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="g-empty">{children}</div>
+  return <div className="g-empty"><Icon name="memory" /><span>{children}</span></div>
 }

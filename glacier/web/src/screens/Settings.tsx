@@ -31,8 +31,9 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
     <>
       <PageHead title={t('settings.title')} sub={cur.id === 'system' ? t('settings.systemSubtitle') : t('settings.subtitle')} />
       <div className="g-settings">
-        <Panel className="g-sidenav">
-          {SECTIONS.map(s => <button key={s.id} className={`g-navitem${s.id === cur.id ? ' active' : ''}`} onClick={() => go(`settings/${s.id}`)} data-testid={`settings-${s.id}`}><span>{s.label}</span></button>)}
+        <Panel className="g-settings-menu" testid="settings-menu">
+          <h2 className="g-panel-title">{t('settings.title')}</h2>
+          {SECTIONS.map(s => <button key={s.id} type="button" className={`g-navitem g-panel${s.id === cur.id ? ' active' : ''}`} onClick={() => go(`settings/${s.id}`)} data-testid={`settings-${s.id}`}><span>{s.label}</span></button>)}
         </Panel>
         {cur.id === 'general' && (
           <Panel title={t('settings.general')} testid="settings-general">
