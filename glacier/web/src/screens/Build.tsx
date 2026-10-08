@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges,
+  Background, Controls, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges, useReactFlow,
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
@@ -98,6 +98,7 @@ export default function BuildScreen(props: BuildProps) {
 }
 
 function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: BuildProps) {
+  const { fitView } = useReactFlow<GNode>()
   const [envs, setEnvs] = useState<EnvSummary[]>([])
   const [unsaved, setUnsaved] = useState<EnvSummary[]>([])
   const [envId, setEnvId] = useState<string | null>(null)
@@ -139,6 +140,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   envIdRef.current = envId
   const activeRunIdRef = useRef<string | null>(null)
   activeRunIdRef.current = activeRun?.run_id ?? null
+
+  // Refit after the terminal row opens so the reduced canvas still shows every node.
+  useEffect(() => {
+    if (!activeRun || !selected || tab !== 'canvas') return
+    const frame = requestAnimationFrame(() => { void fitView({ padding: 0.2, duration: 0 }) })
+    return () => cancelAnimationFrame(frame)
+  }, [activeRun?.run_id, selected?.id, tab, fitView])
 
   // ---------- loading ----------
   const refreshEnvs = useCallback(() => api.listEnvs().then(setEnvs).catch(e => setMsg(String(e))), [])
@@ -474,6 +482,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               <ReactFlow<GNode, Edge>
                 nodes={displayNodes}
                 edges={displayEdges}
+                fitView
+                fitViewOptions={{ padding: 0.2 }}
                 nodeTypes={flowNodeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}

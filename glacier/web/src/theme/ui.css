@@ -13,8 +13,9 @@ button { cursor: pointer; }
 .g-winctl { display: flex; gap: var(--px); }
 .g-winbtn { width: calc(9 * var(--px)); height: calc(9 * var(--px)); padding: 0; display: grid; place-items: center; background: var(--g-ice0); color: var(--g-navy); border: 0; border-bottom: var(--px) solid var(--g-ice4); border-right: var(--px) solid var(--g-ice4); }
 .g-winbtn svg { width: calc(5 * var(--px)); height: calc(5 * var(--px)); }
-.g-main { grid-column: 2; grid-row: 2; min-width: 0; min-height: 0; height: 100%; overflow: auto; display: flex; flex: 1; flex-direction: column; gap: calc(3 * var(--px)); padding: 0; }
+.g-main { grid-column: 2; grid-row: 2; min-width: 0; min-height: 0; overflow: auto; display: flex; flex: 1; flex-direction: column; gap: calc(3 * var(--px)); padding: 0; }
 .g-main.flush { padding: 0; }
+.g-main.flush[data-testid="screen-automations"] { overflow: hidden; }
 .g-footer { grid-column: 1 / -1; grid-row: 3; min-height: 0; display: flex; align-items: center; gap: calc(3 * var(--px)); min-width: 0; padding: 0 calc(3 * var(--px)); border-top: var(--px) solid var(--g-navy); background: var(--g-ice2); color: var(--g-ink); overflow: hidden; white-space: nowrap; font-size: calc(5 * var(--px)); }
 .g-footer > span { display: inline-flex; align-items: center; gap: var(--px); }
 .g-footer .g-ready { margin-left: auto; overflow: hidden; text-overflow: ellipsis; }

@@ -1,10 +1,11 @@
 /* Flow builder (Automations > Build). Tokens only - see theme/tokens.css. */
-.app { display: grid; grid-template-columns: 250px 1fr 310px; height: 100%; min-height: 0; font-family: var(--g-font-body); font-size: var(--g-size-body); color: var(--g-text); }
+.app { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr) minmax(0, 310px); flex: 1; height: 100%; min-height: 0; font-family: var(--g-font-body); font-size: var(--g-size-body); color: var(--g-text); }
+@media (max-width: 1100px) { .app { grid-template-columns: minmax(0, 190px) minmax(0, 1fr) minmax(0, 250px); } }
 .app button, .app input, .app select, .app textarea { font-family: var(--g-font-body); font-size: var(--g-size-body); color: inherit; }
 .app code { font-family: var(--g-font-body); color: var(--g-sub); font-size: var(--g-size-small); word-break: break-all; }
 .left, .right { background: var(--g-panel); border-right: 1px solid var(--g-line); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 .right { border-right: 0; border-left: 1px solid var(--g-line); }
-.center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.center { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 
 .build-head { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--g-line-dim); }
 .ghost-link { color: var(--g-sub); text-decoration: none; }
@@ -61,15 +62,15 @@
 .status-failed, .status-rejected { color: var(--g-bad); border-color: var(--g-bad); }
 .list-item.active .badge { color: var(--g-accent-ink); border-color: var(--g-accent-ink); }
 
-.tabs { display: flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
+.tabs { display: flex; flex: 0 0 auto; min-width: 0; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
 .app button.tab { background: transparent; border-color: var(--g-line-dim); }
 .app button.tab.active { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
-.palette { display: flex; gap: calc(2 * var(--px)); flex: 0 1 auto; min-width: 0; max-width: 100%; margin-left: auto; flex-wrap: wrap; overflow: visible; }
-.app button.pal { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
+.palette { display: flex; gap: calc(2 * var(--px)); flex: 1 1 0; min-width: 0; max-width: 100%; margin-left: auto; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+.app button.pal { flex: 0 0 auto; min-width: 0; white-space: nowrap; overflow-wrap: normal; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
 
 .empty { margin: auto; color: var(--g-muted); }
-.canvas-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-.canvas { flex: 1; min-height: 0; }
+.canvas-wrap { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; min-height: 220px; position: relative; overflow: hidden; }
+.canvas { flex: 1 1 0; min-width: 0; min-height: 0; }
 .react-flow { --xy-background-color: var(--g-bg); --xy-controls-button-background-color: var(--g-panel); --xy-controls-button-color: var(--g-head); --xy-controls-button-border-color: var(--g-line); --xy-edge-stroke: var(--g-line); }
 .react-flow__edge-text { fill: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-small); }
 .react-flow__edge-textbg { fill: var(--g-panel); }
@@ -83,7 +84,7 @@
 .approval-banner { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--g-bar); border-bottom: 1px solid var(--g-warn); color: var(--g-warn); }
 .approval-prompt { color: var(--g-head); flex: 1; }
 
-.term-panel { border-top: 1px solid var(--g-line); background: var(--g-void); }
+.term-panel { flex: 0 1 180px; min-height: 88px; max-height: 45%; resize: vertical; overflow: auto; border-top: 1px solid var(--g-line); background: var(--g-void); }
 .term-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; color: var(--g-muted); font-size: var(--g-size-small); }
 .terminal-host { padding: 4px 8px 8px; }
 
