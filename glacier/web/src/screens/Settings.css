@@ -17,12 +17,15 @@
   font-size: calc(8 * var(--px));
 }
 
+.g-memory-text,.g-run-text,.g-usage-table { font-family:var(--g-font-body);font-size:calc(8 * var(--px));line-height:1.6; }
+.g-memory-text { line-height:1.7; }
+
 /* Settings uses the kit's two readable text sizes throughout. */
 .g-settings :is(.g-panel-title, .g-menu-item, .g-row, .g-row .g-detail, .g-row .g-when,
   .g-empty, .g-error, .g-sub, .g-crumb, .g-hintbar, .g-btn, .g-input, .g-detail,
   .g-muted, .g-kv, .g-table th, .g-table td, label, input, select, button) {
   font-family: var(--g-font-body);
-  font-size: calc(8 * var(--px)) !important;
+  font-size: calc(8 * var(--px));
 }
 
 .g-settings .g-title {
@@ -64,6 +67,6 @@
   }
 
   .g-settings .g-menu-item {
-    font-size: calc(8 * var(--px)) !important;
+    font-size: calc(8 * var(--px));
   }
 }

@@ -9,6 +9,7 @@ const MemoryMap = lazy(() => import('./MemoryMap.tsx').then(m => ({ default: m.M
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import './Settings.css'
 
 /** Plain-language writer: owner -> you; run:<id> -> an automation; worker:<model> -> AI (<model>). */
 function whoWrote(author: string): string {
@@ -151,7 +152,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
                 {note.meta?.run_id ? <button className="g-link" data-testid="note-run" onClick={() => api.getRun(String(note.meta.run_id)).then(r => go(`automations/flow/${r.env_id}/${r.run_id}`)).catch(() => setErr(t('memory.noRun')))}>{t('memory.fromRun')}</button> : null}
                 {hist.length > 1 && <button className="g-link" data-testid="note-undo-last" onClick={async () => { await memory.undo(note.path); loadNote(note.path); reloadNotes() }}>{t('memory.undoLast')}</button>}
               </div>
-              <NamedTextBox className="g-notebody" testid="memory-note-body"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.7 var(--g-font-body)' }}>{note.body}</pre></NamedTextBox>
+              <NamedTextBox className="g-notebody" testid="memory-note-body"><pre className="g-memory-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{note.body}</pre></NamedTextBox>
               {(note.links_out.length > 0 || note.links_in.length > 0) && (
                 <div className="g-links">
                   {note.links_out.length > 0 && <div><span className="g-muted">{t('memory.linksTo')}</span>{(note.links_out_status ?? note.links_out.map(t => ({ target: t, status: 'resolved', display: t }))).map(l =>

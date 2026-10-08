@@ -6,6 +6,7 @@ import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import './Settings.css'
 
 const RUN_LABEL: Record<string, { kind: StatusKind; label: string }> = {
   done: { kind: 'ok', label: t('run.success') }, failed: { kind: 'bad', label: t('run.failed') }, rejected: { kind: 'bad', label: t('run.rejected') },
@@ -141,7 +142,7 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
           {tab === 'output'
             ? active && activeNode?.type === 'http_request' && run?.outputs[active]
               ? <HttpRunResult text={run.outputs[active]} elapsed={httpElapsed[`${run.run_id}:${active}`] ?? savedHttpTime(`${run.run_id}:${active}`)} />
-              : <NamedTextBox className="g-term" testid="run-output-text"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.6 var(--g-font-body)' }}>{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre></NamedTextBox>
+              : <NamedTextBox className="g-term" testid="run-output-text"><pre className="g-run-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre></NamedTextBox>
             : <dl className="g-kv">{Object.entries(activeNode?.config ?? {}).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v || t('run.dash')}</dd></Fragment>)}</dl>}
         </Panel>
         <Panel className="g-scroll" title={t('run.verification')} aside={run?.verified === true ? t('run.allChecksPassed') : run?.verified === false ? t('run.notVerified') : undefined} testid="run-verification">
@@ -166,12 +167,12 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
 
 function HttpRunResult({ text, elapsed }: { text: string; elapsed?: number }) {
   const result = text.match(/^Status: (\d{3})\s*\n\n([\s\S]*)$/)
-  if (!result) return <NamedTextBox className="g-term" testid="run-output-text"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.6 var(--g-font-body)' }}>{text}</pre></NamedTextBox>
+  if (!result) return <NamedTextBox className="g-term" testid="run-output-text"><pre className="g-run-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{text}</pre></NamedTextBox>
   const body = result[2].slice(0, 2000)
   return <div className="http-result" data-testid="run-http-result-summary">
     <span>{t('http.responseStatus', { status: result[1] })}</span>
     <span>{t('http.responseTime', { time: elapsed === undefined ? t('http.timeUnavailable') : `${elapsed} ms` })}</span>
-    <NamedTextBox testid="run-http-result-body"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.6 var(--g-font-body)' }}>{body}{result[2].length > 2000 ? t('http.responseTrimmed') : ''}</pre></NamedTextBox>
+    <NamedTextBox testid="run-http-result-body"><pre className="g-run-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{body}{result[2].length > 2000 ? t('http.responseTrimmed') : ''}</pre></NamedTextBox>
   </div>
 }
 
