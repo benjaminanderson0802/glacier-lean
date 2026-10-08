@@ -201,9 +201,10 @@ export interface SystemCheck {
   recommended: { mode: string; local_model: string; max_parallel_runs: number }
   messages: string[]
 }
+export interface EffectiveSettings { mode: string; local_model: string; max_parallel_runs: number; ask_route?: 'codex' | 'local' | 'unavailable'; ask_route_reason?: string }
 export const system = {
   check: () => req<SystemCheck>('GET', '/api/system/check'),
-  settings: () => req<{ mode: string; local_model: string; max_parallel_runs: number }>('GET', '/api/system/settings'),
+  settings: () => req<EffectiveSettings>('GET', '/api/system/settings'),
 }
 
 // ---------- Assistant chat (POST /api/assistant/chat, server-sent AG-UI events) ----------
@@ -243,6 +244,14 @@ export async function chat(message: string, conversationId: string | null, onEve
       else if (ev.type === 'RUN_FINISHED') onEvent({ type: 'done' })
     }
   }
+}
+// ---------- Past Ask conversations (GET/POST /api/assistant/conversations*) ----------
+export interface ConversationItem { id: string; title: string; updated: string; messages: number }
+export interface ConversationFull { id: string; title: string; messages: { who: 'you' | 'glacier'; text: string; at: string }[] }
+export const conversationsApi = {
+  list: (q = '') => req<ConversationItem[]>('GET', `/api/assistant/conversations${q.trim() ? `?q=${enc(q.trim())}` : ''}`),
+  get: (id: string) => req<ConversationFull>('GET', `/api/assistant/conversations/${enc(id)}`),
+  rename: (id: string, title: string) => req<{ id: string; title: string; commit: string }>('POST', `/api/assistant/conversations/${enc(id)}/rename`, { title }),
 }
 export const applyProposal = (id: string, approve: boolean) =>
   req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, { approve })

@@ -34,6 +34,23 @@ def _db():
     return c
 
 
+def replace_file(source: str, destination: str, attempts: int = 100, delay: float = 0.02) -> None:
+    """os.replace, retried briefly on Windows while another thread or app has the file open.
+
+    Windows refuses to replace a file that is open for reading ("Access is denied"); readers
+    hold notes only for a moment, so wait for them instead of failing the save.
+    """
+    import time
+    for attempt in range(attempts):
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError:
+            if os.name != "nt" or attempt == attempts - 1:
+                raise
+            time.sleep(delay)
+
+
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
     if os.name == "nt":
@@ -78,7 +95,7 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         stored_body = memory_meta.render(path, body, writer, metadata_run_id, previous)[1] if path.endswith(".md") else body
         os.makedirs(os.path.dirname(full), exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=os.path.dirname(full))
-        os.write(fd, stored_body.encode()); os.close(fd); os.replace(tmp, full)
+        os.write(fd, stored_body.encode()); os.close(fd); replace_file(tmp, full)
         git_writer = "glacier-runner" if agent == "glacier-runner" else writer
         message_writer = f"run:{metadata_run_id}" if agent == "glacier-runner" and metadata_run_id else writer
         message = f"[{message_writer}] write {path}"

@@ -6,9 +6,12 @@ import subprocess
 import tempfile
 import threading
 import uuid
+import shutil
+import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import shell_commands
 from pydantic import BaseModel
@@ -34,6 +37,123 @@ class ApplyRequest(BaseModel):
     approve: bool
 
 
+def _conversation_id(value: str) -> str:
+    if not re.fullmatch(r"[0-9a-fA-F-]{36}", value):
+        raise HTTPException(400, "conversation_id must be a UUID")
+    return value
+
+
+def _conversation_messages(note: str) -> list[dict]:
+    """Read only known timestamp sections and speaker labels from an editable note."""
+    frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n?", note, re.S)
+    body = note[frontmatter.end():] if frontmatter else note
+    sections: list[tuple[str, list[str]]] = []
+    current_at: str | None = None
+    current_lines: list[str] = []
+
+    def finish() -> None:
+        if current_at is not None:
+            sections.append((current_at, current_lines.copy()))
+
+    for line in body.splitlines():
+        heading = re.match(r"^##\s+(.+?)\s*#*\s*$", line)
+        if heading:
+            finish()
+            current_lines = []
+            candidate = heading.group(1).strip()
+            try:
+                datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+                current_at = candidate
+            except ValueError:
+                current_at = None
+            continue
+        if current_at is not None:
+            current_lines.append(line)
+    finish()
+
+    messages: list[dict] = []
+    for at, lines in sections:
+        who: str | None = None
+        content: list[str] = []
+
+        def emit() -> None:
+            if who is not None:
+                text = "\n".join(content).strip()
+                if text:
+                    messages.append({"who": who, "text": text, "at": at})
+
+        for line in lines:
+            speaker = re.match(r"^\*\*(You|Assistant):\*\*\s*(.*)$", line, re.I)
+            if speaker:
+                emit()
+                who = "you" if speaker.group(1).casefold() == "you" else "glacier"
+                content = [speaker.group(2)]
+            elif who is not None:
+                content.append(line)
+        emit()
+    return messages
+
+
+def _conversation_title(conversation_id: str, meta: dict, messages: list[dict]) -> str:
+    saved = str(meta.get("title", "")).strip()
+    if saved and saved != f"Conversation {conversation_id}":
+        return saved
+    first_question = next((message["text"] for message in messages if message["who"] == "you"), "")
+    one_line = " ".join(first_question.split())
+    return one_line[:60].rstrip() or "Untitled conversation"
+
+
+def _conversation_note(conversation_id: str) -> tuple[str, dict, list[dict]]:
+    path = _conversation_path(conversation_id)
+    try:
+        note = vault.read_raw_note(path)
+        meta, _ = vault.read_note_metadata(path)
+    except (FileNotFoundError, OSError, UnicodeError, ValueError):
+        raise HTTPException(404, "Conversation not found")
+    messages = _conversation_messages(note)
+    return path, meta, messages
+
+
+def _conversation_items(q: str = "") -> list[dict]:
+    items = []
+    words = [word.casefold() for word in re.findall(r"\w+", q) if word]
+    for path in vault.list_notes(".md", "conversations"):
+        conversation_id = os.path.basename(path)[:-3]
+        if not re.fullmatch(r"[0-9a-fA-F-]{36}", conversation_id):
+            continue
+        try:
+            _, meta, messages = _conversation_note(conversation_id)
+        except HTTPException:
+            continue
+        title = _conversation_title(conversation_id, meta, messages)
+        searchable = " ".join([title, *(item["text"] for item in messages)]).casefold()
+        if words and not all(word in searchable for word in words):
+            continue
+        updated_values = [str(meta.get("updated", "")), *(item["at"] for item in messages)]
+        dated = []
+        for value in updated_values:
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                dated.append((parsed, value))
+            except (ValueError, TypeError):
+                continue
+        updated = max(dated, key=lambda entry: entry[0])[1] if dated else ""
+        if not updated:
+            try:
+                updated = datetime.fromtimestamp(os.path.getmtime(vault.safe_path(path)), timezone.utc).isoformat()
+            except OSError:
+                updated = ""
+        items.append({"id": conversation_id, "title": title, "updated": updated, "messages": len(messages)})
+    return sorted(items, key=lambda item: item["updated"], reverse=True)
+
+
+class RenameRequest(BaseModel):
+    title: object = None
+    model_config = {"extra": "forbid"}
+
+
 def _event(name: str, **data) -> str:
     return "data: " + json.dumps({"type": name, **data}, ensure_ascii=False) + "\n\n"
 
@@ -43,7 +163,53 @@ def _chat_schema() -> dict:
             "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"}}}
 
 
-def _ask(message: str) -> dict:
+def _codex_signed_in() -> bool:
+    """Check Codex login state without reading or logging its output."""
+    override = os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN")
+    binary = override or "codex"
+    # An explicitly configured chat executable is an operator-selected harness. Some wrappers
+    # do not implement Codex's login-status command, so let the selected executable report auth
+    # problems when it is actually used.
+    if override:
+        return True
+    try:
+        args = shell_commands.executable_invocation(binary, "login", "status")
+        result = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5)
+        return result.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _ollama_answers() -> bool:
+    """Probe the local Ollama chat endpoint with a tiny non-generative tags request."""
+    url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/tags"
+    try:
+        with urllib.request.urlopen(url, timeout=1) as response:
+            payload = json.loads(response.read())
+        return bool(payload.get("models"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return False
+
+
+def ask_route() -> tuple[str | None, str]:
+    """Return the route Ask would use now and a plain reason for Settings."""
+    configured = os.environ.get("GLACIER_ASK_ROUTE", "auto").strip().lower()
+    codex = (os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN") or "codex")
+    if configured not in {"", "auto"}:
+        if configured in {"local", "codex"}:
+            return configured, f"Ask is set to use {configured.title()} directly."
+        configured = "auto"
+    # A configured chat program given as a full path counts as found even when Windows would not
+    # treat its file type as runnable on its own (shell_commands handles running it).
+    found = shutil.which(codex) or (os.path.isabs(codex) and os.path.isfile(codex))
+    if found and _codex_signed_in():
+        return "codex", "Codex is installed and signed in."
+    if _ollama_answers():
+        return "local", "Codex is unavailable or signed out, so Ask will use Ollama on this computer."
+    return None, "Neither Codex sign-in nor a local Ollama model is available. Install Ollama with a model or sign in to Codex."
+
+
+def _ask_codex(message: str) -> dict:
     with tempfile.TemporaryDirectory() as directory:
         schema_path, output_path = os.path.join(directory, "schema.json"), os.path.join(directory, "answer.json")
         with open(schema_path, "w", encoding="utf-8") as schema_file:
@@ -59,6 +225,24 @@ def _ask(message: str) -> dict:
     if not isinstance(answer.get("reply"), str) or not isinstance(answer.get("automation"), bool):
         raise ValueError("The assistant returned an invalid answer.")
     return answer
+
+
+def _ask_local(message: str) -> dict:
+    import urllib.request
+    url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/chat"
+    body = {"model": __import__("system_check").default_local_model(), "stream": False, "think": False,
+            "format": _chat_schema(), "options": {"temperature": 0},
+            "messages": [{"role": "user", "content": message}]}
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=600) as response:
+        answer = json.loads(json.loads(response.read())["message"]["content"])
+    if not isinstance(answer, dict) or not isinstance(answer.get("reply"), str) or not isinstance(answer.get("automation"), bool):
+        raise ValueError("The assistant returned an invalid answer.")
+    return answer
+
+
+def _ask(message: str, route: str) -> dict:
+    return _ask_local(message) if route == "local" else _ask_codex(message)
 
 
 def _is_automation(message: str, model_answer: dict) -> bool:
@@ -84,6 +268,40 @@ def _append_conversation(conversation_id: str, user_message: str, answer: str) -
     vault.write_note(path, body, agent="assistant")
 
 
+@router.get("/api/assistant/conversations")
+def list_conversations(q: str = ""):
+    return _conversation_items(q)
+
+
+@router.get("/api/assistant/conversations/{conversation_id}")
+def get_conversation(conversation_id: str):
+    conversation_id = _conversation_id(conversation_id)
+    _, meta, messages = _conversation_note(conversation_id)
+    return {"id": conversation_id, "title": _conversation_title(conversation_id, meta, messages), "messages": messages}
+
+
+@router.post("/api/assistant/conversations/{conversation_id}/rename")
+def rename_conversation(conversation_id: str, request: RenameRequest):
+    conversation_id = _conversation_id(conversation_id)
+    if not isinstance(request.title, str):
+        raise HTTPException(400, "Title must be 1 to 80 characters with no line breaks")
+    title = request.title.strip()
+    if not 1 <= len(title) <= 80 or "\n" in title or "\r" in title:
+        raise HTTPException(400, "Title must be 1 to 80 characters with no line breaks")
+    path, _, _ = _conversation_note(conversation_id)
+    raw = vault.read_raw_note(path)
+    frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n?", raw, re.S)
+    prefix = raw[:frontmatter.end()] if frontmatter else ""
+    body = raw[frontmatter.end():] if frontmatter else raw
+    heading = re.search(r"(?m)^#\s+.+$", body)
+    if heading:
+        body = body[:heading.start()] + "# " + title + body[heading.end():]
+    else:
+        body = "# " + title + "\n\n" + body
+    commit = vault.write_note(path, prefix + body, author="owner")
+    return {"id": conversation_id, "title": title, "commit": commit}
+
+
 @router.post("/api/assistant/chat")
 def chat(request: ChatRequest):
     conversation_id = request.conversation_id or str(uuid.uuid4())
@@ -94,16 +312,26 @@ def chat(request: ChatRequest):
     def stream():
         run_id, message_id = str(uuid.uuid4()), str(uuid.uuid4())
         yield _event("RUN_STARTED", threadId=conversation_id, runId=run_id)
+        route, automation = None, False
         try:
-            answer = _ask(request.message)
+            route, reason = ask_route()
+            if route is None:
+                yield _event("TEXT_MESSAGE_START", messageId=message_id, role="assistant")
+                yield _event("TEXT_MESSAGE_CONTENT", messageId=message_id, delta=reason)
+                yield _event("TEXT_MESSAGE_END", messageId=message_id)
+                yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
+                return
+            answer = _ask(request.message, route)
             automation = _is_automation(request.message, answer)
             if automation:
                 import app
                 proposal_id = str(uuid.uuid4())
                 flow_id = re.sub(r"[^a-z0-9]+", "-", request.message.lower()).strip("-")[:40] or "new-flow"
-                plan = assistant.plan(request.message, app.NODE_CATALOG, flow_id)
+                plan = assistant.plan(request.message, app.NODE_CATALOG, flow_id, engine=route)
                 if plan.get("problems") or not plan.get("flow"):
-                    raise RuntimeError("I could not make a valid plan yet. Please try changing the request.")
+                    raise ValueError("The assistant could not make a valid plan.")
+                if not isinstance(plan["flow"].get("acceptance"), list) or not plan["flow"]["acceptance"]:
+                    raise ValueError("The assistant returned a plan without an acceptance check.")
                 proposal = {"id": proposal_id, "conversation_id": conversation_id, **plan}
                 with _proposals_lock:
                     _proposals[proposal_id] = proposal
@@ -128,7 +356,10 @@ def chat(request: ChatRequest):
             yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
         except Exception as error:
             logging.getLogger(__name__).exception("Assistant chat failed")
-            message = ("The assistant isn't installed" if isinstance(error, FileNotFoundError) else
+            local_automation = route == "local" and (automation or any(phrase in request.message.lower() for phrase in
+                ("make me", "create an automation", "automate", "every day", "daily ", "each day", "every week", "weekly ")))
+            message = ("I could not turn that into an automation. Try rephrasing your request." if local_automation else
+                       "Neither Codex nor a local model is available. Install Ollama with a model or sign in to Codex." if isinstance(error, (FileNotFoundError, ConnectionError, urllib.error.URLError)) else
                        "The assistant took too long" if isinstance(error, subprocess.TimeoutExpired) else
                        "The assistant could not answer. Please try again.")
             yield _event("RUN_ERROR", threadId=conversation_id, runId=run_id, message=message)

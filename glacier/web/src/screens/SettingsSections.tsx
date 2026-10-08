@@ -1,12 +1,12 @@
 // Settings sections beyond General / System check / Help: Models, Secrets, Usage, Data, About.
 import { useEffect, useState } from 'react'
-import { settingsApi, system, type Costs, type SystemCheck, type VaultCompat } from '../api.ts'
+import { settingsApi, system, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
 import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 
 export function ModelsSection() {
   const [c, setC] = useState<SystemCheck | null>(null)
-  const [eff, setEff] = useState<{ mode: string; local_model: string; max_parallel_runs: number } | null>(null)
+  const [eff, setEff] = useState<EffectiveSettings | null>(null)
   const [err, setErr] = useState('')
   useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}) }, [])
   return (
@@ -18,6 +18,7 @@ export function ModelsSection() {
             <dt>Using now</dt><dd data-testid="model-in-use">{eff?.local_model ?? c.recommended.local_model}</dd>
             <dt>Mode</dt><dd>{(eff?.mode ?? c.recommended.mode) === 'low' ? 'Light: one run at a time, small model' : 'Standard'}</dd>
             <dt>Runs at once</dt><dd>{eff?.max_parallel_runs ?? c.recommended.max_parallel_runs}</dd>
+            <dt>Ask uses</dt><dd data-testid="ask-route">{eff?.ask_route === 'codex' ? 'Codex (your ChatGPT plan)' : eff?.ask_route === 'local' ? `The local model (${eff.local_model})` : eff?.ask_route === 'unavailable' ? 'Nothing yet' : 'Checking…'}{eff?.ask_route_reason ? <div className="g-muted">{eff.ask_route_reason}</div> : null}</dd>
             <dt>Paid models</dt><dd>Off. Free routes only; a paid option always comes to you as a proposal first.</dd>
           </dl>
           <h3 className="g-panel-title" style={{ marginTop: 14 }}>Installed on this computer</h3>

@@ -122,6 +122,8 @@ button.g-row:hover { background: var(--g-panel-hi); }
 /* ---------- chat ---------- */
 .g-chat { flex: 1; min-height: 0; padding: 0; }
 .g-chat-log { flex: 1; overflow: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 16px; }
+.g-chat-title { display: flex; gap: 14px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--g-line-dim); font-size: var(--g-size-small); }
+.g-chat-title .g-lead { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .g-msg { display: grid; grid-template-columns: 44px 1fr; gap: 12px; }
 .g-msg-av { display: flex; justify-content: center; }
 .g-you { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--g-line); border-radius: var(--g-radius); color: var(--g-sub); font-size: var(--g-size-small); }
