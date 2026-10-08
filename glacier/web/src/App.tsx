@@ -12,6 +12,7 @@ import { ClaimDetail, ClaimsList } from './screens/Claims.tsx'
 import { Templates } from './screens/Templates.tsx'
 import { CommandPalette } from './screens/CommandPalette.tsx'
 import { Splash } from './screens/Splash.tsx'
+import { t } from './i18n/index.ts'
 
 // Show the start screen once per launch, only when the app opens without a specific address.
 let splashSeen = location.hash.replace(/^#\/?/, '') !== ''
@@ -31,6 +32,18 @@ export default function App() {
   const [palette, setPalette] = useState(false)
   const [status, setStatus] = useState('Ready.')
   const [splash, setSplash] = useState(!splashSeen)
+  const [updateNotice, setUpdateNotice] = useState<{ version: string; notes: string } | null>(null)
+  const [updateDismissed, setUpdateDismissed] = useState(false)
+
+  useEffect(() => {
+    const receive = (event: Event) => {
+      const detail = (event as CustomEvent<{ version: string; notes: string }>).detail
+      if (detail?.version) { setUpdateNotice(detail); setUpdateDismissed(false) }
+    }
+    window.addEventListener('glacier-update-available', receive)
+    if (window.__GLACIER_UPDATE_NOTICE__) receive(new CustomEvent('glacier-update-available', { detail: window.__GLACIER_UPDATE_NOTICE__ }))
+    return () => window.removeEventListener('glacier-update-available', receive)
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -78,6 +91,7 @@ export default function App() {
         </div>
       </nav>
       <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
+      {tab === 'home' && updateNotice && !updateDismissed && <aside className="g-notice" data-testid="home-update-notice"><div><strong>{t('home.updateAvailable', { version: updateNotice.version })}</strong>{updateNotice.notes && <div className="g-detail">{updateNotice.notes}</div>}</div><button className="g-link" data-testid="home-update-dismiss" onClick={() => setUpdateDismissed(true)}>{t('home.dismissUpdate')}</button></aside>}
       <footer className="g-footer">
         <span><span className="g-key">F1</span> Help</span>
         <span><span className="g-key">Ctrl+K</span> Command</span>

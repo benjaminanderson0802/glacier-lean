@@ -19,6 +19,8 @@ svg.g-icon, svg.g-status, svg.g-logo, svg.g-mascot { display: block; flex: none;
 
 .g-main { min-height: 0; overflow: auto; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 16px; }
 .g-main.flush { padding: 0; }
+.g-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 20px; padding: 8px 12px; border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); background: var(--g-panel); color: var(--g-head); box-shadow: var(--g-glow); }
+.g-notice .g-detail { white-space: pre-wrap; }
 
 .g-footer { display: flex; align-items: center; gap: 44px; height: 40px; padding: 0 16px; background: var(--g-bar); border-top: var(--g-border) solid var(--g-line); color: var(--g-text); font-size: var(--g-size-small); }
 .g-footer .g-ready { margin-left: auto; }
