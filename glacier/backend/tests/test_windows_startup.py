@@ -47,3 +47,10 @@ def test_windows_which_trusts_a_not_found_answer(tmp_path, monkeypatch):
     monkeypatch.setattr(shell_commands.shutil, "which", lambda name: None)
     monkeypatch.setenv("PATH", str(tmp_path))
     assert shell_commands.which("codex") is None
+
+
+def test_windows_which_keeps_python_helpers(tmp_path, monkeypatch):
+    helper = _make(tmp_path, "ollama.py")
+    monkeypatch.setattr(shell_commands.os, "name", "nt")
+    monkeypatch.setattr(shell_commands.shutil, "which", lambda name: helper)
+    assert shell_commands.which("ollama") == helper

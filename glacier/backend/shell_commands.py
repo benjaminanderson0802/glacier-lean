@@ -62,7 +62,8 @@ def which(name: str) -> str | None:
         return found
     if not found:
         return None  # shutil.which already tried PATHEXT; nothing runnable here
-    if os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS or not os.path.isfile(found):
+    # .py helpers are fine too: executable_invocation runs them with the current Python.
+    if os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS + (".py",) or not os.path.isfile(found):
         return found
     exts = [e.lower() for e in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") if e]
     exts = [e for e in exts if e in _RUNNABLE_WINDOWS] or list(_RUNNABLE_WINDOWS)
