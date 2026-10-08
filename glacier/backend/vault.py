@@ -85,7 +85,12 @@ _note_metadata_cache_lock = threading.Lock()
 
 def init(path: str) -> None:
     global VAULT, _repo
-    VAULT = os.path.abspath(path)
+    # Use the vault's resolved spelling everywhere: on Windows a folder can be named
+    # both C:\Users\RUNNER~1\... (8.3 short name) and C:\Users\runneradmin\...;
+    # note paths are resolved, so a short-name root made relpath climb out of the
+    # vault and Git refuse the note ("is not in repository").
+    os.makedirs(os.path.abspath(path), exist_ok=True)
+    VAULT = _plain(os.path.realpath(os.path.abspath(path)))
     with _note_metadata_cache_lock:
         _note_metadata_cache.clear()
     with _note_history_cache_lock:
