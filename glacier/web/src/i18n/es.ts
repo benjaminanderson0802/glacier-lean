@@ -701,7 +701,7 @@ export const es: Record<string, string> = {
   'team.steps': 'CREAR',
   'team.interview': 'Entrevista',
   'team.specApproval': 'Aprobar especificación',
-  'team.planTeam': 'Plan y equipo',
+  'team.planTeam': 'Plan y equipo', 'team.chat': 'Chat con tu asistente',
   'team.startPrompt': '¿Qué quieres crear y para quién?',
   'team.you': 'TÚ',
   'team.interviewer': 'DISEÑADOR',
