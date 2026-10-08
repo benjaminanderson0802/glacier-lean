@@ -62,18 +62,18 @@ def _wrap(name):
 for _name in raw_httpx:
     setattr(httpx, _name, _wrap(_name))
 
-try:  # live-events WebSocket in tests: add ?token= (browsers cannot set WebSocket headers either)
+try:  # Existing live-event tests use a local helper; give it the new credential form by default.
     import websockets.sync.client as _ws_client
-    _ws_connect = _ws_client.connect
+    raw_ws_connect = _ws_client.connect
 
-    def _ws_with_token(uri, *args, **kw):
-        if uri.startswith(("ws://127.0.0.1", "ws://localhost")) and "token=" not in uri:
-            uri += ("&" if "?" in uri else "?") + "token=" + TEST_TOKEN
-        return _ws_connect(uri, *args, **kw)
-    _ws_client.connect = _ws_with_token
+    def _ws_with_test_protocol(uri, *args, **kw):
+        if (uri.startswith(("ws://127.0.0.1", "ws://localhost")) and "token=" not in uri
+                and "subprotocols" not in kw):
+            kw["subprotocols"] = ["glacier-events", TEST_TOKEN]
+        return raw_ws_connect(uri, *args, **kw)
+    _ws_client.connect = _ws_with_test_protocol
 except ImportError:  # pragma: no cover
-    pass
-
+    raw_ws_connect = None
 
 def free_port() -> int:
     with socket.socket() as s:

@@ -85,7 +85,12 @@ _note_metadata_cache_lock = threading.Lock()
 
 def init(path: str) -> None:
     global VAULT, _repo
-    VAULT = os.path.abspath(path)
+    # Use the vault's resolved spelling everywhere: on Windows a folder can be named
+    # both C:\Users\RUNNER~1\... (8.3 short name) and C:\Users\runneradmin\...;
+    # note paths are resolved, so a short-name root made relpath climb out of the
+    # vault and Git refuse the note ("is not in repository").
+    os.makedirs(os.path.abspath(path), exist_ok=True)
+    VAULT = _plain(os.path.realpath(os.path.abspath(path)))
     with _note_metadata_cache_lock:
         _note_metadata_cache.clear()
     with _note_history_cache_lock:
@@ -282,7 +287,10 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         if agent == "glacier-runner" and metadata_run_id:
             message += f" [run:{metadata_run_id}]"
         actor = git.Actor(git_writer, "glacier@localhost")
-        _repo.index.add([os.path.relpath(full, VAULT)])
+        # GitPython resolves relative index paths from the process cwd. The cwd
+        # may be on another Windows drive than GLACIER_HOME, so stage the
+        # absolute vault path; Git resolves it against this repository's worktree.
+        _repo.index.add([full])
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
         history_path = os.path.relpath(full, VAULT).replace(os.sep, "/")
         invalidate_note_history([history_path])

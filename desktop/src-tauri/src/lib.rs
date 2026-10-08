@@ -141,6 +141,7 @@ fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf),
             }
         }
     }
+    hide_console_window(&mut command);
     command.spawn().map(|child| (child, log_path.clone()))
         .map_err(|e| format!("Could not start the bundled Python runtime: {e}; log: {}", log_path.display()))
 }
@@ -168,6 +169,13 @@ fn show_start_error(app: &tauri::AppHandle, log_path: &Path) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(BackendProcess::default())
         .invoke_handler(tauri::generate_handler![available_tools, check_update, install_update])
@@ -247,6 +255,23 @@ pub fn run() {
     });
 }
 
+/// Windows' CREATE_NO_WINDOW: the engine gets a console with no visible window, so launching
+/// Glacier opens no terminal, and the engine's own helpers (git, codex, node) share that hidden
+/// console instead of flashing windows of their own.
+#[cfg_attr(not(windows), allow(dead_code))]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+fn hide_console_window(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    #[cfg(not(windows))]
+    let _ = command;
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -263,8 +288,26 @@ mod tests {
     }
 
     #[test]
+    fn single_instance_plugin_is_pinned_and_configured() {
+        let manifest = include_str!("../Cargo.toml");
+        assert!(manifest.contains("tauri-plugin-single-instance = \"=2.4.0\""));
+        let source = include_str!("lib.rs");
+        assert!(source.contains("tauri_plugin_single_instance::init"));
+        assert!(source.contains("window.unminimize()"));
+        assert!(source.contains("window.set_focus()"));
+    }
+
+    #[test]
     fn api_address_is_injected_into_bundled_pages() {
         assert_eq!(api_initialization_script(43127, "abc"), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\"; window.__GLACIER_TOKEN__ = \"abc\";");
+    }
+
+    #[test]
+    fn engine_starts_without_a_visible_console_window() {
+        // Seen on the owner's PC: launching Glacier opened a terminal window for the engine.
+        assert_eq!(CREATE_NO_WINDOW, 0x0800_0000);
+        let mut command = Command::new("python");
+        hide_console_window(&mut command);
     }
 
     #[test]

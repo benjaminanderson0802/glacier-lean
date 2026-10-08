@@ -160,7 +160,7 @@ export function subscribeEvents(onEvent: (e: RunEvent) => void, onStatus: (conne
   const connect = () => {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     const host = BASE ? new URL(BASE).host : location.host
-    ws = new WebSocket(`${BASE.startsWith('https') ? 'wss' : BASE ? 'ws' : proto}://${host}/api/events${TOKEN ? `?token=${encodeURIComponent(TOKEN)}` : ''}`)
+    ws = new WebSocket(`${BASE.startsWith('https') ? 'wss' : BASE ? 'ws' : proto}://${host}/api/events`, TOKEN ? ['glacier-events', TOKEN] : ['glacier-events'])
     ws.onopen = () => onStatus(true)
     ws.onmessage = m => {
       try { onEvent(JSON.parse(String(m.data)) as RunEvent) } catch { /* ignore malformed */ }
