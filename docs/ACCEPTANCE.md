@@ -1,5 +1,11 @@
 # Acceptance checks
 
+## PH2 exit: portable backend swap bench
+
+Run `bench/portable/run_portable.py` from the repository root with `.venv/bin/python`. The runner builds one single-worker flow for Codex CLI, OpenCode ACP and local Ollama, runs the same goal in separate temporary workspaces, and records the actual flow diff after normalizing only the worker backend configuration and workspace path. It independently checks the requested project with pytest. If any backend misses the coding goal, it tries a simpler exact-file goal across all three and reports both results. Live measurements are committed in `evidence/live/portable_three_backends.md`.
+
+The independent check runs from the project interpreter and does not consume the worker's completion message. A backend counts as verified only if Glacier reports its acceptance command passing and the independent check passes. The PH2 target is 3/3 verified, with the same normalized flow apart from the worker backend field.
+
 ## PH8 exit: clean machine to a working first automation
 
 The Windows desktop CI job builds and silently installs the NSIS installer on a clean GitHub
