@@ -190,6 +190,7 @@ def _save_task(team_id: str, task_id: str, item: dict, status: str | None = None
             raise ValueError("team not found")
         state = json.loads(row["state"])
         state["tasks"][task_id] = item
+        _append_progress(state, task_id, item)
         c.execute("UPDATE glacier_teams SET state=?,status=? WHERE team_id=?",
                   (json.dumps(state), status or row["status"], team_id))
 
@@ -640,6 +641,7 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
             item = state["tasks"].setdefault(task_id, {"status": "pending", "attempts": 0})
             item["status"] = "running"
             item["attempts"] += 1
+            _save_task(team_id, task_id, item)
             store.broadcaster.publish({"type": "team_task_taken", "team_id": team_id, "task_id": task_id, "role": task["role"]})
             task_workspace = workspace
             if plan["team"]["worker_mode"] == "parallel":
@@ -656,18 +658,22 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
             task_id = task["id"]
             if result["status"] == "awaiting_approval":
                 item.update(result)
+                _save_task(team_id, task_id, item)
                 continue
             if result["status"] == "done":
                 item.update(result)
                 item["status"] = "done"
+                _save_task(team_id, task_id, item)
                 continue
             if item["attempts"] >= limit:
                 cid = stuck_claim(team_id, task_id, item["attempts"], json.dumps(result))
                 item.update(status="needs_owner", claim_id=cid, **result)
+                _save_task(team_id, task_id, item)
                 state["status"] = "needs_owner"
                 store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "task_id": task_id, "claim_id": cid})
                 return state
             item.update(status="pending", **result)
+            _save_task(team_id, task_id, item)
         if plan.get("features") and not _uses_feature_evaluators(plan):
             for feature in plan["features"]:
                 related = [task for task in plan.get("tasks", []) if task.get("feature_id") in (None, feature["id"])]
