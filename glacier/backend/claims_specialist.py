@@ -40,6 +40,15 @@ def _append(cid: str, text: str, **updates) -> None:
     store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
 
 
+def _append_resolution(cid: str, text: str, **updates) -> None:
+    c = claims.get_claim(cid)
+    meta, body = c["meta"], c["body"]
+    meta.update(updated=claims._now(), **updates)
+    body = claims.append_resolution(body, text)
+    vault.write_note(claims._path(cid), claims._render(meta, body), agent="glacier-specialist")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
+
+
 @DBOS.step()
 def specialist_attempt(cid: str) -> dict:
     c = claims.get_claim(cid)
@@ -75,7 +84,7 @@ def proof_verified(status: str, acceptance: list, checks: list):
 def close_claim(cid: str, rerun_id: str, status: str, verified) -> dict:
     proven = status == "done" and verified is not False
     if proven:
-        _append(cid, f"\n## Resolution\nFixed and proven: re-run {rerun_id} finished" + (" and passed its checks." if verified else "."),
+        _append_resolution(cid, f"Fixed and proven: re-run {rerun_id} finished" + (" and passed its checks." if verified else "."),
                 status="resolved", resolution=f"fixed; proven by run {rerun_id}", resolution_evidence=f"run:{rerun_id}")
         return {"status": "resolved"}
     _append(cid, f"\n## Escalated\nThe re-run {rerun_id} still ended {status}. This needs your decision.",

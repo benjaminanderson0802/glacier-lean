@@ -75,7 +75,7 @@ def rerun_claim(cid: str):
         except FileNotFoundError:
             raise HTTPException(400, "The flow behind this claim no longer exists.")
         meta.update(updated=claims._now())
-        body = body.rstrip() + f"\n- {claims._now()} Owner ran the flow again to check: run {run_id}.\n"
+        body = claims.append_resolution(body, f"- {claims._now()} Owner ran the flow again to check: run {run_id}.")
         vault.write_note(claims._path(cid), claims._render(meta, body), agent="owner")
     store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
     return {"run_id": run_id, "env_id": env_id}
