@@ -88,10 +88,7 @@ export function Splash({ onDone, version }: { onDone: (to: string) => void; vers
       <canvas ref={cv} width={W} height={H} className="g-splash-art" />
       <div className="g-splash-title">
         <div className="g-splash-word">{t('splash.name')}</div>
-        <div className="g-splash-tag">{t('splash.tag')}</div>
-        <div className="g-sub">{t('splash.subtitle')}</div>
       </div>
-      <div className="g-splash-note g-panel">{t('splash.local')}<br />{t('splash.model')}<br />{t('splash.yours')}</div>
       <nav className="g-splash-menu g-panel">
         {MENU.map((m, i) => (
           <button key={m.label} className={`g-navitem${i === sel ? ' active' : ''}`} onMouseEnter={() => setSel(i)} onClick={() => onDone(m.go)} data-testid={`splash-${m.go}`}>
