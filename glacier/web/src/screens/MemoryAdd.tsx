@@ -31,8 +31,8 @@ export function MemoryAdd() {
   const saveSession = async () => {
     if (!sel) return
     setBusy(true)
-    try { const r = await sessionsApi.save(sel.id); setDone([{ name: sel.title || 'Session', ok: true, detail: r.saved ? `saved as ${r.path}` : t('memoryAdd.alreadyInMemory') }]) }
-    catch (e) { setDone([{ name: sel.title || 'Session', ok: false, detail: String(e).replace(/^Error: /, '') }]) }
+    try { const r = await sessionsApi.save(sel.id); setDone([{ name: sel.title || t('memoryAdd.session'), ok: true, detail: r.saved ? t('memoryAdd.savedAs', { path: r.path }) : t('memoryAdd.alreadyInMemory') }]) }
+    catch (e) { setDone([{ name: sel.title || t('memoryAdd.session'), ok: false, detail: String(e).replace(/^Error: /, '') }]) }
     finally { setBusy(false) }
   }
   const toolName = (s: CodingSession) => ({ opencode: 'OpenCode', claude: 'Claude Code', 'claude-code': 'Claude Code', gemini: 'Gemini CLI' } as Record<string, string>)[s.source ?? ''] ?? 'Codex'
@@ -41,16 +41,16 @@ export function MemoryAdd() {
     try {
       const r = await addToMemory.refreshImports()
       const rows = Object.entries(r).map(([src, counts]) => ({ name: src === 'chatgpt' ? 'ChatGPT' : 'Claude', ok: true, detail: Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ') }))
-      setDone(rows.length ? rows : [{ name: 'Chats', ok: true, detail: t('memoryAdd.nothingNew') }])
+      setDone(rows.length ? rows : [{ name: t('memoryAdd.chatImport'), ok: true, detail: t('memoryAdd.nothingNew') }])
       loadImports()
-    } catch (e) { setDone([{ name: 'Chats', ok: false, detail: String(e).replace(/^Error: /, '') }]) } finally { setBusy(false) }
+    } catch (e) { setDone([{ name: t('memoryAdd.chatImport'), ok: false, detail: String(e).replace(/^Error: /, '') }]) } finally { setBusy(false) }
   }
 
   const add = async () => {
     setBusy(true); const out: Done[] = []
     try {
       if (tab === 'text') {
-        if (!title.trim() || !text.trim()) { out.push({ name: 'Note', ok: false, detail: t('memoryAdd.giveTitle') }) }
+        if (!title.trim() || !text.trim()) { out.push({ name: t('memoryAdd.noteLabel'), ok: false, detail: t('memoryAdd.giveTitle') }) }
         else { const r = await memory.save(`${slugify(title)}.md`, `# ${title.trim()}\n\n${text}`); out.push({ name: title, ok: true, detail: t('memoryAdd.savedVersion', { commit: r.commit }) }); setTitle(''); setText('') }
       } else {
         for (const f of files) {
@@ -73,8 +73,8 @@ export function MemoryAdd() {
     <div className="g-memadd">
       <Panel testid="memory-add">
         <div className="g-seg" style={{ alignSelf: 'flex-start', marginBottom: 12 }}>
-          {([['files', 'Files'], ['text', 'Text'], ['chats', 'Chat import'], ['sessions', 'Coding sessions']] as [Tab, string][]).map(([t, l]) =>
-            <button key={t} className={`g-seg-btn${t === tab ? ' active' : ''}`} onClick={() => { setTab(t); setDone([]) }} data-testid={`add-tab-${t}`}>{l}</button>)}
+          {([['files', 'memoryAdd.files'], ['text', 'memoryAdd.text'], ['chats', 'memoryAdd.chatImport'], ['sessions', 'memoryAdd.sessions']] as [Tab, string][]).map(([id, label]) =>
+            <button key={id} className={`g-seg-btn${id === tab ? ' active' : ''}`} onClick={() => { setTab(id); setDone([]) }} data-testid={`add-tab-${id}`}>{t(label)}</button>)}
         </div>
         {tab === 'sessions' ? (
           <div className="g-rows g-scroll" data-testid="sessions-list">
@@ -83,7 +83,7 @@ export function MemoryAdd() {
               sessions.map((x, i) => (
                 <button key={x.id} type="button" className={`g-row${sel?.id === x.id ? ' sel' : ''}`} onClick={() => openSession(x.id)} data-testid={`session-${i}`}>
                   <span className="g-ico"><Icon name="run" /></span>
-                  <span className="g-mid"><span className="g-lead">{x.title || 'Untitled session'}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? ' · running now' : ''}</span></span>
+                  <span className="g-mid"><span className="g-lead">{x.title || t('memoryAdd.untitled')}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? t('memoryAdd.runningNow') : ''}</span></span>
                   <span className="g-when">{x.updated ? ago(x.updated) : ''}</span>
                 </button>))}
           </div>
@@ -97,15 +97,15 @@ export function MemoryAdd() {
             onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
             onDrop={e => { e.preventDefault(); setOver(false); const dropped = Array.from(e.dataTransfer.files); setFiles(f => [...f, ...dropped]) }}>
             <Icon name="note" px={5} />
-            <span className="g-lead">{files.length ? t('memoryAdd.filesReady', { count: files.length, plural: files.length > 1 ? 's' : '' }) : 'Drop files here'}</span>
-            <span className="g-detail">{files.length ? files.map(f => f.name).join(', ') : 'or click to browse'}</span>
+            <span className="g-lead">{files.length ? t('memoryAdd.filesReady', { count: files.length, plural: files.length > 1 ? 's' : '' }) : t('memoryAdd.dropFiles')}</span>
+            <span className="g-detail">{files.length ? files.map(f => f.name).join(', ') : t('memoryAdd.browse')}</span>
             <input ref={pick} type="file" multiple hidden accept={tab === 'chats' ? '.zip,.json' : undefined} data-testid="add-input"
               onChange={e => { const picked = Array.from(e.target.files ?? []); setFiles(f => [...f, ...picked]); e.target.value = '' }} />
           </div>
         )}
         <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? t('memoryAdd.sessionInfo') : tab === 'chats' ? t('memoryAdd.chatInfo') : tab === 'files' ? t('memoryAdd.filesInfo') : t('memoryAdd.noteInfo')}</div>
       </Panel>
-      <Panel title={tab === 'sessions' ? 'Session' : 'Options'} testid="add-options">
+      <Panel title={tab === 'sessions' ? t('memoryAdd.session') : t('memoryAdd.options')} testid="add-options">
         {tab === 'files' && <label className="g-field"><span className="g-detail">{t('memoryAdd.project')}</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder={t('memoryAdd.none')} data-testid="add-project" /></label>}
         {tab === 'chats' && imports.length > 0 && (
           <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">
@@ -121,10 +121,10 @@ export function MemoryAdd() {
         {tab === 'sessions' ? (
           sel ? (
             <div data-testid="session-detail">
-              <div className="g-lead">{sel.title || 'Untitled session'}</div>
-              <div className="g-detail">{toolName(sel)} · {t('memoryAdd.steps', { count: sel.events.length, plural: sel.events.length === 1 ? '' : 's' })}{sel.started ? ` · started ${ago(sel.started)}` : ''}</div>
+              <div className="g-lead">{sel.title || t('memoryAdd.untitled')}</div>
+              <div className="g-detail">{toolName(sel)} · {t('memoryAdd.steps', { count: sel.events.length, plural: sel.events.length === 1 ? '' : 's' })}{sel.started ? ` · ${t('memoryAdd.started')} ${ago(sel.started)}` : ''}</div>
               <div className="g-rows g-scroll" style={{ maxHeight: 360, marginTop: 8 }}>
-                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? 'You' : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? 'Command' : ev.type === 'command_output' ? 'Output' : 'Step'} detail={ev.text.slice(0, 160)} />)}
+                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? t('ask.you') : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? t('shell.command') : ev.type === 'command_output' ? t('run.output') : t('memoryAdd.stepLabel')} detail={ev.text.slice(0, 160)} />)}
               </div>
               <Btn primary onClick={saveSession} disabled={busy} data-testid="session-save" style={{ marginTop: 12 }}>{t('memoryAdd.saveMemory')}</Btn>
             </div>
