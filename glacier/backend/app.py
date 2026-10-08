@@ -16,6 +16,7 @@ DBOS_INSTANCE = DBOS(config=DBOSConfig(
     name="glacier",
     system_database_url=f"sqlite:///{DB_PATH}",
     notification_listener_polling_interval_sec=DBOS_NOTIFICATION_POLL_INTERVAL_SECONDS,
+    scheduler_polling_interval_sec=1.0,
 ))
 import runner  # noqa: E402  (registers workflows after DBOS is configured)
 import triggers  # noqa: E402  (reuses the configured run path)
