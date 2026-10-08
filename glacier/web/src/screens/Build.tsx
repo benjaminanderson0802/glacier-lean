@@ -347,7 +347,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     <div className="app">
       {/* ---------- left ---------- */}
       <aside className="left">
-        <div className="build-head"><a className="ghost-link" href="#/automations">‹ All flows</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
+        <div className="build-head"><a className="ghost-link" href="#/automations">{t('build.allFlows')}</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
         <div className="section-head"><span>{t('build.flows')}</span></div>
         <div className="list" data-testid="env-list">
           {allEnvs.map(e => (
@@ -409,7 +409,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           <div className="canvas-wrap">
             {activeRun && waitingNode && activeRun.status === 'waiting' && (
               <div className="approval-banner" data-testid="approval-banner">
-                <span className="approval-label">Waiting for approval on {t('build.waitingApproval', { id: waitingNode.id })}</span>
+                <span className="approval-label">{t('build.waitingApproval', { id: waitingNode.id })}</span>
                 <span className="approval-prompt" data-testid="approval-prompt">{waitingNode.data.config.prompt}</span>
                 <button className="ok" data-testid="approve" onClick={() => decide(true)}>{t('build.approve')}</button>
                 <button className="danger" data-testid="reject" onClick={() => decide(false)}>{t('build.reject')}</button>
@@ -526,7 +526,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
 
             {selEdge && (
               <div className="inspector" data-testid="edge-inspector">
-                <div className="section-head"><span>Edge {selEdge.id}: {selEdge.source} → {selEdge.target}</span></div>
+                <div className="section-head"><span>{t('build.edge', { id: selEdge.id, source: selEdge.source, target: selEdge.target })} {selEdge.source} → {selEdge.target}</span></div>
                 {branchLabels(selEdgeSrc)?.length ? (
                   <label className="field">
                     <span>{t('build.branch')}</span>
