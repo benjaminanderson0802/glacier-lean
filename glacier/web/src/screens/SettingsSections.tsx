@@ -11,7 +11,7 @@ export function ModelsSection() {
   const [err, setErr] = useState('')
   useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}) }, [])
   return (
-    <Panel title={t('settingsSections.models')} testid="settings-models">
+    <Panel title={t('settingsSections.models')} testid="settings-models" className="g-scroll">
       {err && <div className="g-error">{err}</div>}
       {!c ? <Empty>{t('settingsSections.checking')}</Empty> : (
         <>
@@ -46,7 +46,7 @@ export function SecretsSection() {
     catch (e) { setMsg(String(e).replace(/^Error: /, '')) }
   }
   return (
-    <Panel title={t('settingsSections.secrets')} testid="settings-secrets">
+    <Panel title={t('settingsSections.secrets')} testid="settings-secrets" className="g-scroll">
       <div className="g-detail" style={{ marginBottom: 8 }}>{t('settingsSections.secretDescription')}</div>
       <div className="g-rows">
         {(names ?? []).map(n => (
@@ -76,7 +76,7 @@ export function UsageSection() {
   useEffect(() => { settingsApi.costs(days).then(setC).catch(e => setErr(String(e))) }, [days])
   const tokens = (g: { tokens_in: number; tokens_out: number }) => (g.tokens_in + g.tokens_out).toLocaleString()
   return (
-    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage">
+    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} style={{ minHeight: 'calc(8 * var(--px))', padding: '0 calc(1 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: d === days ? 'var(--g-navy2)' : 'var(--g-ice0)', color: d === days ? 'var(--g-white)' : 'var(--g-ink)', fontSize: 'calc(4 * var(--px))' }} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="g-scroll">
       {err && <div className="g-error">{err}</div>}
       {c && (
         <>
@@ -85,9 +85,9 @@ export function UsageSection() {
             <dt>{t('settingsSections.paidLimit')}</dt><dd>${c.paid_cap_usd.toFixed(2)} {c.paid_cap_usd === 0 ? t('settingsSections.freeOnly') : ''}</dd>
             <dt>{t('settingsSections.doneHere')}</dt><dd>{t('settingsSections.localShare', { count: Math.round(c.local_share * 100) })}</dd>
           </dl>
-          <table className="g-table" style={{ marginTop: 12 }}>
-            <thead><tr><th>{t('settingsSections.model')}</th><th>{t('settingsSections.runs')}</th><th>{t('settingsSections.stepsLabel')}</th><th>{t('settingsSections.tokens')}</th><th>{t('settingsSections.cost')}</th></tr></thead>
-            <tbody>{c.by_model.map(g => <tr key={g.model}><td className="g-lead">{g.model}</td><td>{g.runs}</td><td>{g.steps}</td><td>{tokens(g)}</td><td>${g.cost_usd.toFixed(2)}</td></tr>)}</tbody>
+          <table className="g-table" style={{ marginTop: 12, width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', font: 'calc(4 * var(--px))/1.5 var(--g-font-body)' }}>
+            <thead><tr>{[t('settingsSections.model'), t('settingsSections.runs'), t('settingsSections.stepsLabel'), t('settingsSections.tokens'), t('settingsSections.cost')].map(label => <th key={label} style={{ background: 'var(--g-ice2)', color: 'var(--g-navy)', borderBottom: 'var(--px) solid var(--g-navy)', padding: 'calc(1 * var(--px))', textAlign: 'left', overflowWrap: 'anywhere' }}>{label}</th>)}</tr></thead>
+            <tbody>{c.by_model.map(g => <tr key={g.model}>{[g.model, String(g.runs), String(g.steps), tokens(g), `$${g.cost_usd.toFixed(2)}`].map((value, i) => <td key={i} className={i === 0 ? 'g-lead' : undefined} style={{ borderBottom: 'var(--px) solid var(--g-ice2)', padding: 'calc(1 * var(--px))', overflowWrap: 'anywhere' }}>{value}</td>)}</tr>)}</tbody>
           </table>
           {c.by_model.length === 0 && <Empty>{t('settingsSections.noAiSteps')}</Empty>}
         </>
@@ -102,7 +102,7 @@ export function DataSection() {
   const load = () => { setC(null); settingsApi.compat().then(setC).catch(e => setErr(String(e))) }
   useEffect(load, [])
   return (
-    <Panel title={t('settingsSections.data')} aside={<Btn onClick={load}>{t('settingsSections.checkAllKeys')}</Btn>} testid="settings-data">
+    <Panel title={t('settingsSections.data')} aside={<Btn onClick={load}>{t('settingsSections.checkAllKeys')}</Btn>} testid="settings-data" className="g-scroll">
       <dl className="g-kv">
         <dt>{t('settingsSections.yourMemory')}</dt><dd>{t('settingsSections.memoryDescription')}</dd>
         <dt>{t('settingsSections.openElsewhere')}</dt><dd>{t('settingsSections.openDescription')}</dd>
@@ -143,7 +143,7 @@ export function AboutSection({ version }: { version: string }) {
     if (desktop) void checkForUpdates()
   }, [desktop])
   return (
-    <Panel title={t('settingsSections.about')} testid="settings-about">
+    <Panel title={t('settingsSections.about')} testid="settings-about" className="g-scroll">
       <dl className="g-kv">
         <dt>{t('settingsSections.glacier')}</dt><dd data-testid="settings-version">{t('settingsSections.version', { version })}</dd>
         <dt>{t('settingsSections.licence')}</dt><dd>{t('settingsSections.licenceValue')}</dd>

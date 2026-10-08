@@ -29,14 +29,36 @@ export function MemoryCleanup() {
   }
   const sel = (items ?? []).filter(p => chosen.has(p.id))
   const notes = new Set(sel.flatMap(p => p.kind === 'merge' ? p.paths.slice(1) : p.paths)).size
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'checkbox') {
+        const boxes = [...(document.querySelector('[data-testid="cleanup-list"]')?.querySelectorAll<HTMLInputElement>('.g-box') ?? [])]
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault()
+          const current = boxes.indexOf(event.target)
+          boxes[(current + (event.key === 'ArrowDown' ? 1 : boxes.length - 1)) % boxes.length]?.focus()
+        } else if (event.key === 'Enter') { event.preventDefault(); event.target.click() }
+        return
+      }
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLButtonElement) return
+      if (event.key === 'Enter' && sel.length > 0) { event.preventDefault(); void apply(true) }
+      else if (event.key.toLowerCase() === 'u') {
+        const undo = document.querySelector<HTMLButtonElement>('[data-testid^="cleanup-undo-"]')
+        if (undo) { event.preventDefault(); undo.click() }
+      }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [sel, items, busy])
   return (
-    <div className="g-memadd">
+    <div className="g-memadd" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
       <Panel title={t('memoryCleanup.suggestions')} aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">{t('memoryCleanup.scanAgain')}</Btn>} testid="cleanup-list" className="g-scroll">
         {err && <div className="g-error">{err}</div>}
         {items && items.length === 0 && <Empty>{t('memoryCleanup.tidy')}</Empty>}
         <div className="g-rows">
           {(items ?? []).map(p => (
-            <label key={p.id} className="g-row g-check" data-testid={`cleanup-${p.id}`}>
+            <label key={p.id} className="g-row g-check" data-testid={`cleanup-${p.id}`} style={{ gridTemplateColumns: 'calc(6 * var(--px)) calc(6 * var(--px)) minmax(0, 1fr) auto', background: chosen.has(p.id) ? 'var(--g-gold)' : undefined, color: 'var(--g-ink)' }}>
+              <span className="g-menu-cursor" style={{ visibility: chosen.has(p.id) ? 'visible' : 'hidden' }} />
               <input type="checkbox" className="g-box" checked={chosen.has(p.id)} onChange={e => setChosen(c => { const n = new Set(c); if (e.target.checked) n.add(p.id); else n.delete(p.id); return n })} />
               <span className="g-mid"><span className="g-lead">{WHAT[p.kind] ?? p.kind}: {p.paths.map(x => x.replace(/\.md$/, '')).join(', ')}</span><span className="g-detail">{p.reason}</span></span>
               <span className="g-when">{t('memoryCleanup.item', { count: p.paths.length, plural: p.paths.length > 1 ? 's' : '' })}</span>

@@ -1,7 +1,7 @@
 // Add to memory (mockup panel 11): drop files, write text, import ChatGPT / Claude chats, or save a coding-agent session.
 import { useEffect, useRef, useState } from 'react'
 import { addToMemory, ago, memory, sessionsApi, slugify, type CodingSession, type SessionEvent } from '../api.ts'
-import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
+import { Btn, Empty, KeyboardMenu, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
@@ -26,6 +26,17 @@ export function MemoryAdd() {
   const [sessions, setSessions] = useState<CodingSession[] | null>(null)
   const [sel, setSel] = useState<(CodingSession & { events: SessionEvent[] }) | null>(null)
   const [sessErr, setSessErr] = useState('')
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLButtonElement) return
+      if (event.key === 'Enter') {
+        const action = document.querySelector<HTMLButtonElement>('[data-testid="add-go"], [data-testid="session-save"]')
+        if (action && !action.disabled) { event.preventDefault(); action.click() }
+      }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [tab, files.length, busy, sel])
   useEffect(() => { if (tab === 'sessions') { setSessErr(''); sessionsApi.list().then(setSessions).catch(e => { setSessions([]); setSessErr(String(e).replace(/^Error: /, '')) }) } }, [tab])
   const openSession = (id: string) => sessionsApi.get(id).then(setSel).catch(e => setSessErr(String(e).replace(/^Error: /, '')))
   const saveSession = async () => {
@@ -70,22 +81,14 @@ export function MemoryAdd() {
   }
 
   return (
-    <div className="g-memadd">
-      <Panel testid="memory-add">
-        <div className="g-seg" style={{ alignSelf: 'flex-start', marginBottom: 12 }}>
-          {([['files', 'Files'], ['text', 'Text'], ['chats', 'Chat import'], ['sessions', 'Coding sessions']] as [Tab, string][]).map(([t, l]) =>
-            <button key={t} className={`g-seg-btn${t === tab ? ' active' : ''}`} onClick={() => { setTab(t); setDone([]) }} data-testid={`add-tab-${t}`}>{l}</button>)}
-        </div>
+    <div className="g-memadd" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
+      <Panel title={tab === 'files' ? t('memoryAdd.files') : tab === 'text' ? t('memoryAdd.text') : tab === 'chats' ? t('memoryAdd.chatImport') : t('memoryAdd.sessions')} testid="memory-add" className="g-scroll">
+        <KeyboardMenu orientation="horizontal" label={t('memory.title')} items={([['files', t('memoryAdd.files')], ['text', t('memoryAdd.text')], ['chats', t('memoryAdd.chatImport')], ['sessions', t('memoryAdd.sessions')]] as [Tab, string][]).map(([id, label]) => ({ id, label, testid: `add-tab-${id}` }))} selected={tab} onSelect={id => { setTab(id as Tab); setDone([]) }} />
         {tab === 'sessions' ? (
           <div className="g-rows g-scroll" data-testid="sessions-list">
             {sessErr && <div className="g-error">{sessErr}</div>}
             {sessions === null ? <Empty>{t('memoryAdd.findingSessions')}</Empty> : sessions.length === 0 ? <Empty>{t('memoryAdd.noSessions')}</Empty> :
-              sessions.map((x, i) => (
-                <button key={x.id} type="button" className={`g-row${sel?.id === x.id ? ' sel' : ''}`} onClick={() => openSession(x.id)} data-testid={`session-${i}`}>
-                  <span className="g-ico"><Icon name="run" /></span>
-                  <span className="g-mid"><span className="g-lead">{x.title || 'Untitled session'}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? ' · running now' : ''}</span></span>
-                  <span className="g-when">{x.updated ? ago(x.updated) : ''}</span>
-                </button>))}
+              <KeyboardMenu label={t('memoryAdd.sessions')} items={sessions.map((x, i) => ({ id: x.id, testid: `session-${i}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{x.title || t('memoryAdd.untitled')}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? t('memoryAdd.runningNow') : ''}{x.updated ? ` · ${ago(x.updated)}` : ''}</span></span> }))} selected={sel?.id ?? ''} onSelect={openSession} />}
           </div>
         ) : tab === 'text' ? (
           <div className="g-editor">
@@ -93,19 +96,20 @@ export function MemoryAdd() {
             <textarea className="g-input g-textarea" style={{ minHeight: 220 }} placeholder={t('memoryAdd.textPlaceholder')} value={text} onChange={e => setText(e.target.value)} data-testid="add-text" />
           </div>
         ) : (
-          <div className={`g-drop${over ? ' over' : ''}`} data-testid="add-drop" onClick={() => pick.current?.click()}
+          <div className={`g-drop${over ? ' over' : ''}`} data-testid="add-drop" role="button" tabIndex={0} style={{ minHeight: 'calc(58 * var(--px))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'calc(2 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: 'var(--g-ice1)', color: 'var(--g-ink)', cursor: 'pointer' }} onClick={() => pick.current?.click()}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.current?.click() } }}
             onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
             onDrop={e => { e.preventDefault(); setOver(false); const dropped = Array.from(e.dataTransfer.files); setFiles(f => [...f, ...dropped]) }}>
             <Icon name="note" px={5} />
-            <span className="g-lead">{files.length ? t('memoryAdd.filesReady', { count: files.length, plural: files.length > 1 ? 's' : '' }) : 'Drop files here'}</span>
-            <span className="g-detail">{files.length ? files.map(f => f.name).join(', ') : 'or click to browse'}</span>
+            <span className="g-lead">{files.length ? t('memoryAdd.filesReady', { count: files.length, plural: files.length > 1 ? 's' : '' }) : t('memoryAdd.dropFiles')}</span>
+            <span className="g-detail">{files.length ? files.map(f => f.name).join(', ') : t('memoryAdd.browse')}</span>
             <input ref={pick} type="file" multiple hidden accept={tab === 'chats' ? '.zip,.json' : undefined} data-testid="add-input"
               onChange={e => { const picked = Array.from(e.target.files ?? []); setFiles(f => [...f, ...picked]); e.target.value = '' }} />
           </div>
         )}
         <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? t('memoryAdd.sessionInfo') : tab === 'chats' ? t('memoryAdd.chatInfo') : tab === 'files' ? t('memoryAdd.filesInfo') : t('memoryAdd.noteInfo')}</div>
       </Panel>
-      <Panel title={tab === 'sessions' ? 'Session' : 'Options'} testid="add-options">
+      <Panel title={tab === 'sessions' ? t('memoryAdd.session') : t('memoryAdd.options')} testid="add-options" className="g-scroll">
         {tab === 'files' && <label className="g-field"><span className="g-detail">{t('memoryAdd.project')}</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder={t('memoryAdd.none')} data-testid="add-project" /></label>}
         {tab === 'chats' && imports.length > 0 && (
           <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">
@@ -121,7 +125,7 @@ export function MemoryAdd() {
         {tab === 'sessions' ? (
           sel ? (
             <div data-testid="session-detail">
-              <div className="g-lead">{sel.title || 'Untitled session'}</div>
+              <div className="g-lead">{sel.title || t('memoryAdd.untitled')}</div>
               <div className="g-detail">{toolName(sel)} · {t('memoryAdd.steps', { count: sel.events.length, plural: sel.events.length === 1 ? '' : 's' })}{sel.started ? ` · started ${ago(sel.started)}` : ''}</div>
               <div className="g-rows g-scroll" style={{ maxHeight: 360, marginTop: 8 }}>
                 {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? 'You' : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? 'Command' : ev.type === 'command_output' ? 'Output' : 'Step'} detail={ev.text.slice(0, 160)} />)}

@@ -77,7 +77,7 @@ for (const hs of hashes) {
   await pg.goto(`http://localhost:${port}/#/${hs}`)
   await pg.waitForTimeout(900)
   const f = `${out}-${hs.replace(/\W+/g, '_') || 'home'}.png`
-  await pg.screenshot({ path: f })
+  await pg.screenshot({ path: f, timeout: 120000 })
   console.log('shot', f)
 }
 await b.close(); srv.close()
