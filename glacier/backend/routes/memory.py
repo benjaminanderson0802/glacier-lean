@@ -1,7 +1,7 @@
 """Memory v2 API over the plain-file, git-backed vault."""
 import os
 import re
-from datetime import timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -118,9 +118,16 @@ def put_note(item: NoteWrite):
     if item.author != "owner":
         raise HTTPException(400, "Notes saved from the screen must be authored by owner")
     try:
-        commit = vault.write_note(path, item.body, author=item.author)
+        vault.safe_path(path)
     except ValueError as exc:
         raise HTTPException(400, "That note path is not allowed") from exc
+    try:
+        commit = vault.write_note(path, item.body, author=item.author)
+    except ValueError as exc:
+        # Not a path problem (checked above): report it as a save failure, with the reason in the log.
+        import logging
+        logging.getLogger(__name__).exception("Saving note %s failed", path)
+        raise HTTPException(500, f"The note could not be saved: {exc}") from exc
     return {"path": path, "commit": commit}
 
 
@@ -162,12 +169,11 @@ def graph(limit: int | None = None):
 @router.get("/api/memory/history")
 def history(path: str):
     _path(path)
-    # Commit details load lazily through the shared Git pipe, so read them while holding the lock.
+    # Read by a separate git process (vault.note_history), so saves never wait on a long history.
     try:
-        with vault._lock:
-            return [{"commit": c.hexsha[:8], "author": c.author.name,
-                     "date": c.committed_datetime.astimezone(timezone.utc).isoformat(),
-                     "message": c.message.strip()} for c in vault._repo.iter_commits(paths=path)]
+        return [{"commit": e["sha"][:8], "author": e["author"],
+                 "date": datetime.fromisoformat(e["date"]).astimezone(timezone.utc).isoformat(),
+                 "message": e["message"]} for e in vault.note_history(path)]
     except Exception:
         return []
 
@@ -179,6 +185,22 @@ def undo(item: Undo):
         raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
     with vault._lock:
         commits = list(vault._repo.iter_commits(paths=path))
+        if item.commit:
+            import memory_rename
+            requested = item.commit.lower()
+            renames = [(commit, memory_rename.renamed_paths(commit)) for commit in vault._repo.iter_commits(paths=".")
+                       if commit.hexsha.startswith(requested) and getattr(commit, "message", "").startswith("[owner] rename ")]
+            if len(renames) == 1 and renames[0][1]:
+                old_path, new_path = renames[0][1]
+                # Undo a rename by renaming the note back: links that point at it follow it again,
+                # nothing else in the vault is touched, and the undo is its own saved version.
+                try:
+                    result = memory_rename.rename(new_path, old_path)
+                except FileNotFoundError as exc:
+                    raise HTTPException(409, "That rename can't be undone because the note has moved or been removed since") from exc
+                except FileExistsError as exc:
+                    raise HTTPException(409, "That rename can't be undone because a note now uses the old name") from exc
+                return {"path": item.path, "commit": result["commit"]}
         if not commits:
             raise HTTPException(404, "No saved version exists for this note")
         matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
@@ -198,6 +220,21 @@ def undo(item: Undo):
         raise HTTPException(404, "The earlier version did not contain this note")
     commit = vault.write_note(path, body, author="owner")
     return {"path": path, "commit": commit}
+
+
+@router.post("/api/memory/rename")
+def rename_note(item: dict):
+    from memory_rename import rename
+    if set(item) != {"from", "to"} or not all(isinstance(item[key], str) for key in ("from", "to")):
+        raise HTTPException(400, "Provide the old and new note paths")
+    try:
+        return rename(item["from"], item["to"])
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/api/memory/search")

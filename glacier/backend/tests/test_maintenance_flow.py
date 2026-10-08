@@ -63,6 +63,19 @@ def test_flow_is_weekly_proposal_only_without_worker_or_push():
     assert flow["nodes"][-1]["config"]["path"] == "proposals/maintenance-{date}.md"
 
 
+def test_maintenance_scan_writes_to_glacier_home_not_the_repo():
+    flow = json.loads((ROOT / "flows/self/maintenance.json").read_text(encoding="utf-8"))
+    command = next(node["config"]["cmd"] for node in flow["nodes"] if node["id"] == "scan")
+    assert "--output-dir" in command and "GLACIER_HOME" in command
+    assert "tools/scan" not in command.split("--output-dir", 1)[1]
+
+
+def test_maintenance_acceptance_uses_the_note_steps_utc_date():
+    flow = json.loads((ROOT / "flows/self/maintenance.json").read_text(encoding="utf-8"))
+    command = flow["acceptance"][0]["cmd"]
+    assert "datetime.timezone.utc" in command
+
+
 def test_fake_run_renders_exactly_one_proposal_note(tmp_path, monkeypatch):
     monkeypatch.setattr(maintenance.tool_scan, "discover_records", lambda **kwargs: ([], []))
     calls = []

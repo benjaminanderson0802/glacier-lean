@@ -1,0 +1,612 @@
+{
+  "machine": {
+    "cpu_cores_reported": 4,
+    "cpu_cores_detected": 16,
+    "memory_gb": 7.6,
+    "available_memory_gb": 2.6,
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "python": "3.12.3"
+  },
+  "modes": [
+    {
+      "mode": "light",
+      "model": "qwen3:0.6b",
+      "max_parallel_runs": 1,
+      "startup_seconds": 1.21,
+      "idle_backend_rss_kib": 133516,
+      "memory": {
+        "graph_2000": {
+          "seconds": 0.19,
+          "items": 2000
+        },
+        "search_2000": {
+          "seconds": 0.02,
+          "items": 10,
+          "error": ""
+        },
+        "upload_20_page_pdf": {
+          "seconds": 0.34,
+          "bytes": 7433,
+          "result": {
+            "name": "twenty-pages.pdf",
+            "project": "Inbox",
+            "size": 7433,
+            "sha256": "13979ef49599da598ae045e0bfbe7c676e601290805df2d1afe5061aff77e335",
+            "path": "files/Inbox/twenty-pages.pdf",
+            "note": null,
+            "duplicate": false,
+            "message": "File saved, but its text couldn't be read."
+          }
+        }
+      },
+      "runs": [
+        {
+          "id": "summarize",
+          "name": "Summarise a text file into a note",
+          "runs": [
+            {
+              "run_id": "c06cc9754f0e",
+              "seconds": 1.06,
+              "status": "done",
+              "output": "The library will close early on Friday for staff training, and borrowed books remain due on Monday, with the front desk reopening at 9 AM on Saturday.",
+              "passed": true,
+              "acceptance": "contains",
+              "expected": "Friday",
+              "error": "",
+              "peak_combined_rss_kib": 1647236,
+              "cpu_percent_average": 22.4,
+              "cpu_percent_peak": 33.5,
+              "samples": [
+                {
+                  "at": 1791412633.2826378,
+                  "backend_rss_kib": 141364,
+                  "ollama_runner_rss_kib": 1505488,
+                  "combined_rss_kib": 1646852,
+                  "cpu_percent": 33.5
+                },
+                {
+                  "at": 1791412633.7883399,
+                  "backend_rss_kib": 141748,
+                  "ollama_runner_rss_kib": 1505488,
+                  "combined_rss_kib": 1647236,
+                  "cpu_percent": 11.4
+                }
+              ],
+              "repeat": 1
+            },
+            {
+              "run_id": "c1cfeeb43c58",
+              "seconds": 0.54,
+              "status": "done",
+              "output": "The library will close early on Friday for staff training, with borrowed books due on Monday, and the front desk will reopen at 9 AM on Saturday.",
+              "passed": true,
+              "acceptance": "contains",
+              "expected": "Friday",
+              "error": "",
+              "peak_combined_rss_kib": 1647720,
+              "cpu_percent_average": 51.2,
+              "cpu_percent_peak": 51.2,
+              "samples": [
+                {
+                  "at": 1791412634.3417194,
+                  "backend_rss_kib": 142196,
+                  "ollama_runner_rss_kib": 1505524,
+                  "combined_rss_kib": 1647720,
+                  "cpu_percent": 51.2
+                }
+              ],
+              "repeat": 2
+            },
+            {
+              "run_id": "9f83a4edc927",
+              "seconds": 0.53,
+              "status": "done",
+              "output": "The library closes early on Friday for staff training, borrowed books remain due on Monday, and the front desk will reopen at 9 AM on Saturday.",
+              "passed": true,
+              "acceptance": "contains",
+              "expected": "Friday",
+              "error": "",
+              "peak_combined_rss_kib": 1647840,
+              "cpu_percent_average": 43.9,
+              "cpu_percent_peak": 43.9,
+              "samples": [
+                {
+                  "at": 1791412634.873489,
+                  "backend_rss_kib": 142308,
+                  "ollama_runner_rss_kib": 1505532,
+                  "combined_rss_kib": 1647840,
+                  "cpu_percent": 43.9
+                }
+              ],
+              "repeat": 3
+            }
+          ]
+        },
+        {
+          "id": "classify_messages",
+          "name": "Classify 10 short messages",
+          "runs": [
+            {
+              "run_id": "8ce411403c64",
+              "seconds": 0.55,
+              "status": "done",
+              "output": "1. billing  \n2. technical  \n3. sales  \n4. billing  \n5. technical  \n6. sales  \n7. billing  \n8. technical  \n9. sales  \n10. technical",
+              "passed": false,
+              "acceptance": "list_items",
+              "expected": "billing|technical|sales|billing|technical|sales|billing|technical|billing|technical",
+              "error": "",
+              "peak_combined_rss_kib": 1648000,
+              "cpu_percent_average": 36.0,
+              "cpu_percent_peak": 36.0,
+              "samples": [
+                {
+                  "at": 1791412635.4357333,
+                  "backend_rss_kib": 142448,
+                  "ollama_runner_rss_kib": 1505552,
+                  "combined_rss_kib": 1648000,
+                  "cpu_percent": 36.0
+                }
+              ],
+              "repeat": 1
+            },
+            {
+              "run_id": "6c7dba962397",
+              "seconds": 0.53,
+              "status": "done",
+              "output": "1. billing  \n2. technical  \n3. sales  \n4. billing  \n5. technical  \n6. sales  \n7. billing  \n8. technical  \n9. sales  \n10. technical",
+              "passed": false,
+              "acceptance": "list_items",
+              "expected": "billing|technical|sales|billing|technical|sales|billing|technical|billing|technical",
+              "error": "",
+              "peak_combined_rss_kib": 1648084,
+              "cpu_percent_average": 43.5,
+              "cpu_percent_peak": 43.5,
+              "samples": [
+                {
+                  "at": 1791412635.9820554,
+                  "backend_rss_kib": 142496,
+                  "ollama_runner_rss_kib": 1505588,
+                  "combined_rss_kib": 1648084,
+                  "cpu_percent": 43.5
+                }
+              ],
+              "repeat": 2
+            },
+            {
+              "run_id": "576b03d23341",
+              "seconds": 0.53,
+              "status": "done",
+              "output": "- billing  \n- technical  \n- sales  \n- billing  \n- technical  \n- sales  \n- billing  \n- technical  \n- sales",
+              "passed": false,
+              "acceptance": "list_items",
+              "expected": "billing|technical|sales|billing|technical|sales|billing|technical|billing|technical",
+              "error": "",
+              "peak_combined_rss_kib": 1648108,
+              "cpu_percent_average": 50.5,
+              "cpu_percent_peak": 50.5,
+              "samples": [
+                {
+                  "at": 1791412636.513477,
+                  "backend_rss_kib": 142496,
+                  "ollama_runner_rss_kib": 1505612,
+                  "combined_rss_kib": 1648108,
+                  "cpu_percent": 50.5
+                }
+              ],
+              "repeat": 3
+            }
+          ]
+        },
+        {
+          "id": "meeting_tasks",
+          "name": "Turn meeting notes into a task list",
+          "runs": [
+            {
+              "run_id": "4b4a55bbf344",
+              "seconds": 0.55,
+              "status": "done",
+              "output": "- Mira will send the revised budget by **Tuesday**  \n- Devon will book the room for **14 May**  \n- Lee will share the draft agenda tomorrow.",
+              "passed": true,
+              "acceptance": "contains_all",
+              "expected": "Mira|Tuesday|Devon|14 May|Lee|tomorrow",
+              "error": "",
+              "peak_combined_rss_kib": 1648220,
+              "cpu_percent_average": 33.1,
+              "cpu_percent_peak": 33.1,
+              "samples": [
+                {
+                  "at": 1791412637.1290545,
+                  "backend_rss_kib": 142592,
+                  "ollama_runner_rss_kib": 1505628,
+                  "combined_rss_kib": 1648220,
+                  "cpu_percent": 33.1
+                }
+              ],
+              "repeat": 1
+            },
+            {
+              "run_id": "b469ad8d22f8",
+              "seconds": 0.55,
+              "status": "done",
+              "output": "- Mira will send the revised budget by **Tuesday**  \n- Devon will book the room for **14 May**  \n- Lee will share the draft agenda **tomorrow**",
+              "passed": true,
+              "acceptance": "contains_all",
+              "expected": "Mira|Tuesday|Devon|14 May|Lee|tomorrow",
+              "error": "",
+              "peak_combined_rss_kib": 1648392,
+              "cpu_percent_average": 23.1,
+              "cpu_percent_peak": 23.1,
+              "samples": [
+                {
+                  "at": 1791412637.6682136,
+                  "backend_rss_kib": 142760,
+                  "ollama_runner_rss_kib": 1505632,
+                  "combined_rss_kib": 1648392,
+                  "cpu_percent": 23.1
+                }
+              ],
+              "repeat": 2
+            },
+            {
+              "run_id": "4ed0dc32e569",
+              "seconds": 0.53,
+              "status": "done",
+              "output": "- Mira will send the revised budget by **Tuesday**  \n- Devon will book the room for **14 May**  \n- Lee will share the draft agenda **tomorrow**",
+              "passed": true,
+              "acceptance": "contains_all",
+              "expected": "Mira|Tuesday|Devon|14 May|Lee|tomorrow",
+              "error": "",
+              "peak_combined_rss_kib": 1648412,
+              "cpu_percent_average": 23.7,
+              "cpu_percent_peak": 23.7,
+              "samples": [
+                {
+                  "at": 1791412638.2043326,
+                  "backend_rss_kib": 142776,
+                  "ollama_runner_rss_kib": 1505636,
+                  "combined_rss_kib": 1648412,
+                  "cpu_percent": 23.7
+                }
+              ],
+              "repeat": 3
+            }
+          ]
+        }
+      ],
+      "usability": {
+        "cpu_average_percent_during_sampled_runs": 36.4,
+        "cpu_peak_percent_during_sampled_runs": 51.2
+      },
+      "home": "/tmp/glacier-modest-light-9lfsybjt",
+      "backend_log": "/tmp/glacier-modest-light-9lfsybjt/backend.log"
+    },
+    {
+      "mode": "standard",
+      "model": "granite3.3:2b",
+      "max_parallel_runs": 4,
+      "startup_seconds": 1.21,
+      "idle_backend_rss_kib": 133508,
+      "memory": {
+        "graph_2000": {
+          "seconds": 0.14,
+          "items": 2000
+        },
+        "search_2000": {
+          "seconds": 0.02,
+          "items": 10,
+          "error": ""
+        },
+        "upload_20_page_pdf": {
+          "seconds": 0.34,
+          "bytes": 7433,
+          "result": {
+            "name": "twenty-pages.pdf",
+            "project": "Inbox",
+            "size": 7433,
+            "sha256": "13979ef49599da598ae045e0bfbe7c676e601290805df2d1afe5061aff77e335",
+            "path": "files/Inbox/twenty-pages.pdf",
+            "note": null,
+            "duplicate": false,
+            "message": "File saved, but its text couldn't be read."
+          }
+        }
+      },
+      "runs": [
+        {
+          "id": "summarize",
+          "name": "Summarise a text file into a note",
+          "runs": [
+            {
+              "run_id": "13cb783f9609",
+              "seconds": 1.05,
+              "status": "done",
+              "output": "The library will close at 4 PM on Friday for staff training, with borrowed books still due on Monday, and the front desk will reopen at 9 AM Saturday.",
+              "passed": true,
+              "acceptance": "contains",
+              "expected": "Friday",
+              "error": "",
+              "peak_combined_rss_kib": 1649044,
+              "cpu_percent_average": 45.1,
+              "cpu_percent_peak": 46.1,
+              "samples": [
+                {
+                  "at": 1791412641.3947227,
+                  "backend_rss_kib": 141188,
+                  "ollama_runner_rss_kib": 1507316,
+                  "combined_rss_kib": 1648504,
+                  "cpu_percent": 46.1
+                },
+                {
+                  "at": 1791412642.9066052,
+                  "backend_rss_kib": 141716,
+                  "ollama_runner_rss_kib": 1507328,
+                  "combined_rss_kib": 1649044,
+                  "cpu_percent": 44.1
+                }
+              ],
+              "repeat": 1
+            },
+            {
+              "run_id": "2553d0fc6279",
+              "seconds": 1.05,
+              "status": "done",
+              "output": "The library will close at 4 PM on Friday for staff training, with all borrowed books still due on Monday, and the front desk will reopen at 9 AM on Saturday.",
+              "passed": true,
+              "acceptance": "contains",
+              "expected": "Friday",
+              "error": "",
+              "peak_combined_rss_kib": 1649432,
+              "cpu_percent_average": 45.2,
+              "cpu_percent_peak": 51.7,
+              "samples": [
+                {
+                  "at": 1791412643.4327512,
+                  "backend_rss_kib": 141940,
+                  "ollama_runner_rss_kib": 1507408,
+                  "combined_rss_kib": 1649348,
+                  "cpu_percent": 38.7
+                },
+                {
+                  "at": 1791412643.9389944,
+                  "backend_rss_kib": 142012,
+                  "ollama_runner_rss_kib": 1507420,
+                  "combined_rss_kib": 1649432,
+                  "cpu_percent": 51.7
+                }
+              ],
+              "repeat": 2
+            },
+            {
+              "run_id": "1741f3a814dc",
+              "seconds": 1.06,
+              "status": "done",
+              "output": "The library will be closed early on Friday for staff training, with borrowed books still due on Monday, but the front desk will reopen at 9 AM on Saturday.",
+              "passed": true,
+              "acceptance": "contains",
+              "expected": "Friday",
+              "error": "",
+              "peak_combined_rss_kib": 1649680,
+              "cpu_percent_average": 29.8,
+              "cpu_percent_peak": 43.1,
+              "samples": [
+                {
+                  "at": 1791412644.497774,
+                  "backend_rss_kib": 142140,
+                  "ollama_runner_rss_kib": 1507492,
+                  "combined_rss_kib": 1649632,
+                  "cpu_percent": 43.1
+                },
+                {
+                  "at": 1791412645.003608,
+                  "backend_rss_kib": 142176,
+                  "ollama_runner_rss_kib": 1507504,
+                  "combined_rss_kib": 1649680,
+                  "cpu_percent": 16.4
+                }
+              ],
+              "repeat": 3
+            }
+          ]
+        },
+        {
+          "id": "classify_messages",
+          "name": "Classify 10 short messages",
+          "runs": [
+            {
+              "run_id": "7f006886a14f",
+              "seconds": 1.04,
+              "status": "done",
+              "output": "1. billing\n2. technical\n3. sales\n4. billing\n5. technical\n6. sales\n7. billing\n8. technical\n9. technical\n10. technical",
+              "passed": false,
+              "acceptance": "list_items",
+              "expected": "billing|technical|sales|billing|technical|sales|billing|technical|billing|technical",
+              "error": "",
+              "peak_combined_rss_kib": 1646096,
+              "cpu_percent_average": 44.6,
+              "cpu_percent_peak": 49.4,
+              "samples": [
+                {
+                  "at": 1791412645.54927,
+                  "backend_rss_kib": 142288,
+                  "ollama_runner_rss_kib": 1503756,
+                  "combined_rss_kib": 1646044,
+                  "cpu_percent": 39.8
+                },
+                {
+                  "at": 1791412646.057195,
+                  "backend_rss_kib": 142332,
+                  "ollama_runner_rss_kib": 1503764,
+                  "combined_rss_kib": 1646096,
+                  "cpu_percent": 49.4
+                }
+              ],
+              "repeat": 1
+            },
+            {
+              "run_id": "dc75b604b87e",
+              "seconds": 1.04,
+              "status": "done",
+              "output": "1. billing\n2. technical\n3. sales\n4. billing\n5. technical\n6. sales\n7. billing\n8. technical\n9. technical\n10. technical",
+              "passed": false,
+              "acceptance": "list_items",
+              "expected": "billing|technical|sales|billing|technical|sales|billing|technical|billing|technical",
+              "error": "",
+              "peak_combined_rss_kib": 1646248,
+              "cpu_percent_average": 62.0,
+              "cpu_percent_peak": 67.5,
+              "samples": [
+                {
+                  "at": 1791412646.5918362,
+                  "backend_rss_kib": 142340,
+                  "ollama_runner_rss_kib": 1503824,
+                  "combined_rss_kib": 1646164,
+                  "cpu_percent": 56.4
+                },
+                {
+                  "at": 1791412647.0989573,
+                  "backend_rss_kib": 142420,
+                  "ollama_runner_rss_kib": 1503828,
+                  "combined_rss_kib": 1646248,
+                  "cpu_percent": 67.5
+                }
+              ],
+              "repeat": 2
+            },
+            {
+              "run_id": "64c0e4b079bc",
+              "seconds": 1.06,
+              "status": "done",
+              "output": "1. billing\n2. technical\n3. sales\n4. billing\n5. technical\n6. sales\n7. billing\n8. technical\n9. technical\n10. technical",
+              "passed": false,
+              "acceptance": "list_items",
+              "expected": "billing|technical|sales|billing|technical|sales|billing|technical|billing|technical",
+              "error": "",
+              "peak_combined_rss_kib": 1646272,
+              "cpu_percent_average": 51.5,
+              "cpu_percent_peak": 53.2,
+              "samples": [
+                {
+                  "at": 1791412647.6427462,
+                  "backend_rss_kib": 142424,
+                  "ollama_runner_rss_kib": 1503844,
+                  "combined_rss_kib": 1646268,
+                  "cpu_percent": 53.2
+                },
+                {
+                  "at": 1791412648.1503875,
+                  "backend_rss_kib": 142424,
+                  "ollama_runner_rss_kib": 1503848,
+                  "combined_rss_kib": 1646272,
+                  "cpu_percent": 49.8
+                }
+              ],
+              "repeat": 3
+            }
+          ]
+        },
+        {
+          "id": "meeting_tasks",
+          "name": "Turn meeting notes into a task list",
+          "runs": [
+            {
+              "run_id": "44ac0bd425bb",
+              "seconds": 1.05,
+              "status": "done",
+              "output": "- **Mira**: Send revised budget by Tuesday\n- **Devon**: Book room for 14 May\n- **Lee**: Share draft agenda tomorrow",
+              "passed": true,
+              "acceptance": "contains_all",
+              "expected": "Mira|Tuesday|Devon|14 May|Lee|tomorrow",
+              "error": "",
+              "peak_combined_rss_kib": 1642376,
+              "cpu_percent_average": 55.3,
+              "cpu_percent_peak": 61.0,
+              "samples": [
+                {
+                  "at": 1791412648.7192233,
+                  "backend_rss_kib": 142448,
+                  "ollama_runner_rss_kib": 1499916,
+                  "combined_rss_kib": 1642364,
+                  "cpu_percent": 49.6
+                },
+                {
+                  "at": 1791412649.2299492,
+                  "backend_rss_kib": 142448,
+                  "ollama_runner_rss_kib": 1499928,
+                  "combined_rss_kib": 1642376,
+                  "cpu_percent": 61.0
+                }
+              ],
+              "repeat": 1
+            },
+            {
+              "run_id": "30536a636b54",
+              "seconds": 1.05,
+              "status": "done",
+              "output": "- Mira is responsible for sending the revised budget by Tuesday.\n- Devon will arrange the meeting room for 14 May.\n- Lee will provide the draft agenda for review the day after tomorrow.",
+              "passed": true,
+              "acceptance": "contains_all",
+              "expected": "Mira|Tuesday|Devon|14 May|Lee|tomorrow",
+              "error": "",
+              "peak_combined_rss_kib": 1643648,
+              "cpu_percent_average": 49.6,
+              "cpu_percent_peak": 52.3,
+              "samples": [
+                {
+                  "at": 1791412649.7746747,
+                  "backend_rss_kib": 142448,
+                  "ollama_runner_rss_kib": 1499944,
+                  "combined_rss_kib": 1642392,
+                  "cpu_percent": 46.9
+                },
+                {
+                  "at": 1791412650.287314,
+                  "backend_rss_kib": 143708,
+                  "ollama_runner_rss_kib": 1499940,
+                  "combined_rss_kib": 1643648,
+                  "cpu_percent": 52.3
+                }
+              ],
+              "repeat": 2
+            },
+            {
+              "run_id": "4386dc5dd9db",
+              "seconds": 1.05,
+              "status": "done",
+              "output": "- **Mira**: Will send the revised budget by Tuesday.\n- **Devon**: Has scheduled the room for 14 May.\n- **Lee**: Will share the draft agenda tomorrow.",
+              "passed": true,
+              "acceptance": "contains_all",
+              "expected": "Mira|Tuesday|Devon|14 May|Lee|tomorrow",
+              "error": "",
+              "peak_combined_rss_kib": 1644116,
+              "cpu_percent_average": 37.8,
+              "cpu_percent_peak": 46.3,
+              "samples": [
+                {
+                  "at": 1791412650.8243837,
+                  "backend_rss_kib": 144152,
+                  "ollama_runner_rss_kib": 1499956,
+                  "combined_rss_kib": 1644108,
+                  "cpu_percent": 46.3
+                },
+                {
+                  "at": 1791412651.334698,
+                  "backend_rss_kib": 144152,
+                  "ollama_runner_rss_kib": 1499964,
+                  "combined_rss_kib": 1644116,
+                  "cpu_percent": 29.3
+                }
+              ],
+              "repeat": 3
+            }
+          ]
+        }
+      ],
+      "usability": {
+        "cpu_average_percent_during_sampled_runs": 46.8,
+        "cpu_peak_percent_during_sampled_runs": 67.5
+      },
+      "home": "/tmp/glacier-modest-standard-b6p_ncd5",
+      "backend_log": "/tmp/glacier-modest-standard-b6p_ncd5/backend.log"
+    }
+  ]
+}

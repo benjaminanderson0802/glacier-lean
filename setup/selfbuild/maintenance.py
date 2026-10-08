@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from datetime import date as date_type
+from datetime import date as date_type, datetime, timezone
 import importlib.metadata
 import json
 import os
@@ -343,7 +343,8 @@ def main(argv: list[str] | None = None) -> int:
     python = str(args.repo / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python"))
     if not Path(python).is_file():
         python = sys.executable
-    config = RunConfig(args.repo, args.run, date_type.today().isoformat(), [python], ["npm"],
+    run_date = datetime.now(timezone.utc).date().isoformat()
+    config = RunConfig(args.repo, args.run, run_date, [python], ["npm"],
                        [python, "-m", "pytest", "-q", "--durations=5", "tests"],
                        ["npm", "run", "check:ui"], args.timeout)
     try:

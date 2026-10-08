@@ -68,3 +68,30 @@ def test_undo_reads_commit_parents_under_the_vault_lock(tracked):
     result = memory.undo(memory.Undo(path="note.md"))
     assert result["path"] == "note.md"
     assert tracked == []
+
+
+def test_history_does_not_wait_for_the_vault_lock(tmp_path):
+    """Reading a note's versions must not block (or be blocked by) note saves."""
+    vault.init(str(tmp_path / "vault"))
+    vault.write_note("busy.md", "# One", author="owner")
+    vault.write_note("busy.md", "# Two", author="owner")
+    held, release = threading.Event(), threading.Event()
+
+    def hold_lock():
+        with vault._lock:
+            held.set()
+            release.wait(10)
+
+    holder = threading.Thread(target=hold_lock)
+    holder.start()
+    held.wait(5)
+    try:
+        done = []
+        reader = threading.Thread(target=lambda: done.append(memory.history("busy.md")))
+        reader.start()
+        reader.join(5)
+        assert done and [e["author"] for e in done[0]] == ["owner", "owner"]
+        assert done[0][0]["message"].startswith("[owner] write busy.md")
+    finally:
+        release.set()
+        holder.join()

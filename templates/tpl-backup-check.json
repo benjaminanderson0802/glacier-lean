@@ -1,0 +1,64 @@
+{
+  "id": "tpl-backup-check",
+  "name": "Check my backups ran",
+  "description": "Checks the newest recent backup file and writes a note saying whether the folder needs attention.",
+  "when_to_use": "Use it after scheduled backups to spot a folder that has not received a recent file.",
+  "goal": "Check whether the backups folder has a file newer than two days and save the result.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "find \"$GLACIER_HOME/vault/backups\" -type f -name 'status-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * *"
+      },
+      "position": {
+        "x": -260,
+        "y": 0
+      }
+    },
+    {
+      "id": "check_recent_file",
+      "type": "command",
+      "config": {
+        "cmd": "newest=$(find \"$HOME/Backups\" -type f -mtime -2 -print -quit); if test -n \"$newest\"; then printf \"A recent backup was found: %s\\n\" \"$newest\"; else printf \"Alert: backups are stale; check the backup schedule and folder.\\n\"; fi",
+        "timeout": "60"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_status",
+      "type": "note",
+      "config": {
+        "path": "backups/status-{run}.md",
+        "template": "Backup status:\n\n{prev_output}"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "schedule",
+      "target": "check_recent_file",
+      "label": ""
+    },
+    {
+      "id": "e1",
+      "source": "check_recent_file",
+      "target": "save_status",
+      "label": ""
+    }
+  ]
+}
