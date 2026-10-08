@@ -38,6 +38,10 @@ fn api_initialization_script(port: u16, token: &str) -> String {
     format!("window.__GLACIER_API__ = \"http://127.0.0.1:{port}\"; window.__GLACIER_TOKEN__ = {token};")
 }
 
+fn updater_initialization_script() -> &'static str {
+    "window.glacierUpdater = { check: async () => window.__TAURI__.core.invoke('check_update'), install: (version) => window.__TAURI__.core.invoke('install_update', { expectedVersion: version }) };"
+}
+
 /// The per-install engine token (GLACIER_HOME/.engine-token), shared with the engine and command-line tools.
 /// Created here on first launch with 32 random bytes; owner-only on Unix, user-profile ACL on Windows.
 fn engine_token(data_dir: &Path) -> Result<String, String> {
@@ -65,6 +69,31 @@ fn engine_token(data_dir: &Path) -> Result<String, String> {
 
 #[tauri::command]
 fn available_tools() -> Vec<ToolStatus> { detect_tools_in(&env::var_os("PATH").unwrap_or_default()) }
+
+#[derive(Debug, Clone, Serialize)]
+struct UpdateInfo { version: String, notes: String }
+
+#[tauri::command]
+async fn check_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    updater.check().await.map_err(|e| e.to_string()).map(|update| update.map(|u| UpdateInfo {
+        version: u.version,
+        notes: u.body.unwrap_or_default(),
+    }))
+}
+
+#[tauri::command]
+async fn install_update(app: tauri::AppHandle, expected_version: String) -> Result<(), String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let update = updater.check().await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "No update is available now. Check again.".to_string())?;
+    if update.version != expected_version {
+        return Err("The available version changed. Check for updates again.".into());
+    }
+    update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())
+}
 
 #[derive(Default)]
 struct BackendProcess(Mutex<Option<Child>>);
@@ -135,8 +164,9 @@ fn show_start_error(app: &tauri::AppHandle, log_path: &Path) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(BackendProcess::default())
-        .invoke_handler(tauri::generate_handler![available_tools])
+        .invoke_handler(tauri::generate_handler![available_tools, check_update, install_update])
         .setup(|app| {
             let port = free_listener().local_addr()?.port();
             let data_dir = app.path().app_data_dir()?;
@@ -144,9 +174,26 @@ pub fn run() {
             let token = engine_token(&data_dir).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             let window = WebviewWindowBuilder::new(app.handle(), "main", WebviewUrl::App("first-run/index.html".into()))
                 .title("Welcome to Glacier").inner_size(1280.0, 820.0)
-                .initialization_script(api_initialization_script(port, &token))
+                .initialization_script(format!("{}{}", api_initialization_script(port, &token), updater_initialization_script()))
                 .on_navigation(move |url| navigation_is_allowed(url, port))
                 .build()?;
+            {
+                use tauri_plugin_updater::UpdaterExt;
+                let handle = app.handle().clone();
+                let update_window_handle = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Ok(updater) = handle.updater() {
+                        if let Ok(Some(update)) = updater.check().await {
+                            let version = serde_json::to_string(&update.version).unwrap_or_else(|_| "\"unknown\"".into());
+                            let notes = serde_json::to_string(update.body.as_deref().unwrap_or("")).unwrap_or_else(|_| "\"\"".into());
+                            if let Some(window) = update_window_handle.get_webview_window("main") {
+                                let script = format!("window.__GLACIER_UPDATE_NOTICE__ = {{ version: {version}, notes: {notes} }}; window.dispatchEvent(new CustomEvent('glacier-update-available', {{ detail: window.__GLACIER_UPDATE_NOTICE__ }}));");
+                                let _ = window.eval(&script);
+                            }
+                        }
+                    }
+                });
+            }
             match launch_backend(&app.handle(), port) {
                 Ok((child, log_path)) => {
                     let state = app.state::<BackendProcess>();

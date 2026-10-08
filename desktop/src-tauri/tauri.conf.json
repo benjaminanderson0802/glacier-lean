@@ -3,6 +3,14 @@
   "productName": "Glacier",
   "version": "0.1.0",
   "identifier": "org.glacier.desktop",
+  "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/benjaminanderson0802/glacier-lean/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "build": {
     "beforeBuildCommand": "npm run build:frontend",
     "frontendDist": "../dist"
