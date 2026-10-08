@@ -6,16 +6,17 @@ import json
 import os
 
 import vault
+from app_paths import app_data_home, state_file
 from memory_links import front_matter, parse_links, rewrite_wikilinks
 from memory_meta import parse as parse_metadata
 
 
 def _home():
-    return os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    return str(app_data_home())
 
 
 def _state_path():
-    return os.path.join(_home(), "hygiene.json")
+    return str(state_file("hygiene.json"))
 
 
 def _load():

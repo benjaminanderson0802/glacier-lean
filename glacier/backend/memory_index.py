@@ -9,6 +9,7 @@ import urllib.request
 
 import sqlite_vec
 from egress import open_model_request
+from app_paths import app_data_home
 
 
 _DB_NAME = "memory_index.sqlite"
@@ -18,7 +19,7 @@ _EMBED_BATCH = 64
 
 
 def _home():
-    return os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    return str(app_data_home())
 
 
 def _connect():
