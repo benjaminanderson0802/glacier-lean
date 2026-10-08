@@ -85,7 +85,7 @@ export function UsageSection() {
             <dt>{t('settingsSections.paidLimit')}</dt><dd>${c.paid_cap_usd.toFixed(2)} {c.paid_cap_usd === 0 ? t('settingsSections.freeOnly') : ''}</dd>
             <dt>{t('settingsSections.doneHere')}</dt><dd>{t('settingsSections.localShare', { count: Math.round(c.local_share * 100) })}</dd>
           </dl>
-          <table className="g-table" style={{ marginTop: 12, width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', font: 'calc(4 * var(--px))/1.5 var(--g-font-body)' }}>
+          <table className="g-table" style={{ marginTop: 12, width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', font: 'var(--g-size-body)/1.5 var(--g-font-body)' }}>
             <thead><tr>{[t('settingsSections.model'), t('settingsSections.runs'), t('settingsSections.stepsLabel'), t('settingsSections.tokens'), t('settingsSections.cost')].map(label => <th key={label} style={{ background: 'var(--g-ice2)', color: 'var(--g-navy)', borderBottom: 'var(--px) solid var(--g-navy)', padding: 'calc(1 * var(--px))', textAlign: 'left', overflowWrap: 'anywhere' }}>{label}</th>)}</tr></thead>
             <tbody>{c.by_model.map(g => <tr key={g.model}>{[g.model, String(g.runs), String(g.steps), tokens(g), `$${g.cost_usd.toFixed(2)}`].map((value, i) => <td key={i} className={i === 0 ? 'g-lead' : undefined} style={{ borderBottom: 'var(--px) solid var(--g-ice2)', padding: 'calc(1 * var(--px))', overflowWrap: 'anywhere' }}>{value}</td>)}</tr>)}</tbody>
           </table>

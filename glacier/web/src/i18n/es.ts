@@ -1,4 +1,6 @@
 export const es: Record<string, string> = {
+
+
   'ask.approve': 'Aprobar',
   'ask.approveAndRun': 'Aprobar y ejecutar',
   'ask.approved': 'Aprobado',
