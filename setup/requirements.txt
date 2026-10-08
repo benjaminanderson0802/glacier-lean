@@ -15,7 +15,7 @@ pytest-xdist==3.8.0
 httpx==0.28.1
 apprise==2.0.1
 # step plug-ins and memory (wave 1-2), pinned 2026-10-07
-markitdown==0.1.8
+markitdown[pdf,docx]==0.1.8
 sqlite-vec==0.1.9
 agent-client-protocol==0.12.1
 jsonschema==4.25.1
