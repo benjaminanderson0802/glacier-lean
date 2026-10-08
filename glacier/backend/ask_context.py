@@ -69,15 +69,15 @@ def _guide() -> str:
         if heading:
             sections[heading] = lines
         tabs = []
-        for name in ("Home", "Ask", "Automations", "Memory", "Settings"):
-            words = " ".join(sections.get(name, []))
-            words = words.replace("**", "").replace("`", "")[:190]
-            if words:
-                tabs.append(f"{name}: {words}")
+        for name in ("Home", "Build", "Automations", "Memory", "Settings"):
+            # The index names each screen; detailed guidance follows below.
+            label = "Ask" if name == "Build" else name
+            words = "Build interview" if name == "Build" else ""
+            tabs.append(f"{label}: {words}")
         if tabs:
             pieces.append("Five tabs, from the built-in guide: " + " ".join(tabs))
-        for filename, label, limit in (("01-first-automation.md", "Making and running a flow", 420),
-                                        ("02-ask-for-automation.md", "Asking and approving a flow", 420),
+        for filename, label, limit in (("02-build-a-team.md", "Building a project with a team", 420),
+                                        ("01-first-automation.md", "Making and running a flow", 420),
                                         ("03-memory.md", "Using Memory", 350),
                                         ("04-safety-and-secrets.md", "Settings and secrets", 300)):
             path = GUIDE / filename
@@ -87,6 +87,8 @@ def _guide() -> str:
             content = " ".join(line.strip() for line in body.splitlines()
                                if line.strip() and not line.startswith("#") and not line.lstrip().startswith("!") )
             content = content.replace("**", "").replace("`", "")
+            if filename == "02-build-a-team.md":
+                content = "Review and approve the spec and plan to start the team. " + content
             if content:
                 pieces.append(f"{label} (guide): {content[:limit]}")
     except OSError:
