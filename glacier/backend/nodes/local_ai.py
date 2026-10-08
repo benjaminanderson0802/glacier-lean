@@ -4,6 +4,7 @@ import os
 import socket
 import urllib.error
 import urllib.request
+from agents_md import find_agents_md, project_instructions_detail
 
 
 DEFAULT_MODEL = "qwen3:0.6b"
@@ -34,6 +35,13 @@ def run(ctx: dict) -> dict:
     prompt = (prompt.replace("{env}", ctx["env_id"])
               .replace("{run}", ctx["run_id"])
               .replace("{prev_output}", previous))
+    instructions = find_agents_md(config.get("project_folder")) if config.get("project_folder") else None
+    if instructions:
+        prompt += (
+            "\n\n----- BEGIN PROJECT INSTRUCTIONS (AGENTS.md: " + instructions["path"] + ") -----\n"
+            + instructions["text"]
+            + "\n----- END PROJECT INSTRUCTIONS -----"
+        )
     import system_check
     model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
     try:
@@ -84,6 +92,9 @@ def run(ctx: dict) -> dict:
         raise ValueError("Ollama returned an invalid reply")
     if config.get("answer_style", "Answer only") == "Answer only":
         output = _clean_answer(output)
+    instructions_detail = project_instructions_detail(config.get("project_folder")) if config.get("project_folder") else ""
+    if instructions_detail:
+        output += f"\n{instructions_detail}"
     return {
         "state": "done",
         "exit_code": 0,
@@ -107,6 +118,7 @@ NODE = {
         "worker": True,
         "fields": [
             {"key": "prompt", "label": "Task ({env} {run} {prev_output})", "placeholder": "Summarize: {prev_output}", "default": "", "multiline": True},
+            {"key": "project_folder", "label": "Project folder", "placeholder": "Folder with project instructions", "default": "", "optional": True},
             {"key": "model", "label": "Model", "placeholder": "default local model", "default": "", "optional": True},
             {"key": "answer_style", "label": "Answer style", "placeholder": "Answer only", "default": "Answer only", "optional": True,
              "options": ["Answer only", "Free text"]},

@@ -9,6 +9,7 @@ import shlex
 import shutil
 import sys
 from pathlib import Path
+from agents_md import project_instructions_detail
 
 PREV_LIMIT = 8000
 
@@ -181,6 +182,7 @@ def run(ctx):
     home = os.path.abspath(ctx.get("home") or os.environ.get("GLACIER_HOME", "data"))
     workdir = os.path.abspath(config.get("workdir") or os.path.join(home, "workspaces", str(ctx["env_id"])))
     os.makedirs(workdir, exist_ok=True)
+    instructions_detail = project_instructions_detail(workdir)
     try:
         timeout = max(1, int(config.get("timeout") or 1800))
     except (TypeError, ValueError):
@@ -195,6 +197,8 @@ def run(ctx):
 
     if not output:
         output = "The coding agent finished without a message"
+    if instructions_detail:
+        output += f"\n{instructions_detail}"
     return {
         "state": "done" if exit_code == 0 else "failed",
         "output": output,
