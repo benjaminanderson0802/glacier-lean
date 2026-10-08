@@ -23,7 +23,7 @@ jobs:
       - run: git config --global user.email "ci@glacier.local" && git config --global user.name "glacier-ci"
       - name: backend tests
         working-directory: glacier/backend
-        run: python -m pytest -q tests -n 4
+        run: python -m pytest -q tests -n 4 -m "not serial" && python -m pytest -q tests -m serial
       - name: other test suites (importers, templates, verification benchmark)
         run: python -m pytest -q $(ls -d glacier/importers templates bench tools/scan tools/catalog 2>/dev/null)
 
@@ -55,7 +55,7 @@ jobs:
         run: |
           $bash = @("$env:ProgramFiles\Git\bin\bash.exe", "${env:ProgramFiles(x86)}\Git\bin\bash.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $bash) { throw "Git Bash was not found. Install Git for Windows to run the backend tests." }
-          & $bash -lc 'python -m pytest -q tests -n 4 -rf -o faulthandler_timeout=240 --durations=15' 2>&1 | Tee-Object -FilePath windows-results.txt
+          & $bash -lc 'python -m pytest -q tests -n 4 -m "not serial" -rf -o faulthandler_timeout=240 --durations=15 && python -m pytest -q tests -m serial -rf -o faulthandler_timeout=240' 2>&1 | Tee-Object -FilePath windows-results.txt
           $testExit = $LASTEXITCODE
           if ($testExit -ne 0) { exit $testExit }
         shell: pwsh
