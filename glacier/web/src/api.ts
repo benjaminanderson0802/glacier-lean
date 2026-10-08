@@ -104,6 +104,33 @@ export const api = {
   undoRun: (runId: string) => req<Record<string, unknown>>('POST', `/api/runs/${enc(runId)}/undo`),
 }
 
+// ---------- Build teams (docs/BUILD_TEAMS.md; W93 API) ----------
+export interface TeamRole { id: string; charter: string; supervisor?: string | null; model?: string }
+export interface TeamPlan {
+  vision: Record<string, unknown>
+  spec: { requirements: (string | Record<string, unknown>)[]; out_of_scope: string[]; acceptance: (string | Record<string, unknown>)[] }
+  features: { id: string; title: string; description?: string; acceptance?: unknown[] }[]
+  harness: Record<string, unknown>
+  team: { roles: TeamRole[]; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
+  tasks: { id: string; title: string; role: string; feature_id?: string; acceptance: unknown[]; depends_on?: string[]; requires_approval?: boolean }[]
+  guards?: Record<string, unknown>
+}
+export interface BuildTeam { team_id: string; status: string; plan: TeamPlan; tasks: Record<string, Record<string, unknown>>; features?: Record<string, { status: string; evaluator_evidence?: string | null }>; progress_log?: string; [key: string]: unknown }
+export const teamsApi = {
+  interview: (message: string, conversation_id: string, engine: string) => req<{ conversation_id: string; reply: string; conversation_path: string }>('POST', '/api/build/interview', { message, conversation_id, engine }),
+  vision: (vision: Record<string, unknown>) => req<{ path: string; vision: Record<string, unknown> }>('POST', '/api/build/vision', { vision }),
+  spec: (spec: TeamPlan['spec']) => req<{ approved: boolean; spec: TeamPlan['spec'] }>('POST', '/api/build/spec', { spec }),
+  plan: (vision_path: string, engine: string) => req<{ plan: TeamPlan; approved: false }>('POST', '/api/build/plan', { vision_path, engine }),
+  create: (plan: TeamPlan, vision_path: string) => req<{ team_id: string; status: string; plan: TeamPlan }>('POST', '/api/teams', { plan, vision_path }),
+  list: () => req<{ team_id: string; name: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>('GET', '/api/teams'),
+  get: (teamId: string) => req<BuildTeam>('GET', `/api/teams/${enc(teamId)}`),
+  start: (teamId: string) => req<{ team_id: string; status: string }>('POST', `/api/teams/${enc(teamId)}/run`),
+  approveTask: (teamId: string, taskId: string, approved: boolean) => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/tasks/${enc(taskId)}/approve`, { approved }),
+  control: (teamId: string, action: 'pause' | 'resume' | 'stop') => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/${action}`, {}),
+  delete: (kind: 'interview' | 'team', id: string) => req<{ deleted: boolean; undo_id: string }>('DELETE', kind === 'interview' ? `/api/build/interviews/${enc(id)}` : `/api/teams/${enc(id)}`),
+  undoDelete: (undo_id: string) => req<Record<string, unknown>>('POST', '/api/build/undo-delete', { undo_id }),
+}
+
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
 export interface HomeItem { kind: 'approval' | 'claim' | 'failed_run'; title: string; detail: string; at: string; ref: { run_id?: string; node_id?: string; claim_id?: string; env_id?: string } }
 export interface HomeRun { run_id: string; env_id: string; name: string; status: 'running' | 'queued' | 'waiting'; step: number; steps: number; started_at: string }
