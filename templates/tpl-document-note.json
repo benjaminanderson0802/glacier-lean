@@ -7,7 +7,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "grep -q \"Friday\" \"$GLACIER_HOME/vault/notes/document-summary.md\""
+      "cmd": "find \"$GLACIER_HOME/vault/notes\" -type f -name 'document-summary-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
     }
   ],
   "nodes": [
@@ -15,7 +15,7 @@
       "id": "read_document",
       "type": "read_document",
       "config": {
-        "source": "documents/input.txt"
+        "source": "Set this to the document you want to summarise, for example $HOME/Documents/report.txt"
       },
       "position": {
         "x": 0,
@@ -38,8 +38,8 @@
       "id": "save_note",
       "type": "note",
       "config": {
-        "path": "notes/document-summary.md",
-        "template": "# Document summary\n\n{prev_output}"
+        "path": "notes/document-summary-{run}.md",
+        "template": "# Document summary\n\nRun {run}\n{prev_output}"
       },
       "position": {
         "x": 520,

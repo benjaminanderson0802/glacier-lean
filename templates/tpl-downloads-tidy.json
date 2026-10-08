@@ -7,7 +7,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "test -f Downloads-review/older.txt && grep -R -q \"older.txt\" \"$GLACIER_HOME/vault/downloads\""
+      "cmd": "find \"$GLACIER_HOME/vault/downloads\" -type f -name '*.md' -mmin -10 -print0 | xargs -0 grep -q ."
     }
   ],
   "nodes": [
@@ -26,7 +26,7 @@
       "id": "list_old",
       "type": "command",
       "config": {
-        "cmd": "find Downloads -type f -mtime +7 -print",
+        "cmd": "find \"$HOME/Downloads\" -type f -mtime +7 -print",
         "timeout": "60"
       },
       "position": {
@@ -61,7 +61,7 @@
       "id": "move_approved",
       "type": "command",
       "config": {
-        "cmd": "mkdir -p Downloads-review && find Downloads -type f -mtime +7 -print0 | xargs -0 -I{} mv -- {} Downloads-review/",
+        "cmd": "mkdir -p \"$HOME/Downloads-review\" && find \"$HOME/Downloads\" -type f -mtime +7 -print0 | xargs -0 -I{} mv -- \"{}\" \"$HOME/Downloads-review/\"",
         "timeout": "120"
       },
       "position": {

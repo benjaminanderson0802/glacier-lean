@@ -7,7 +7,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "grep -R -q \"newer than two days\" \"$GLACIER_HOME/vault/backups\""
+      "cmd": "find \"$GLACIER_HOME/vault/backups\" -type f -name 'status-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
     }
   ],
   "nodes": [
@@ -26,7 +26,7 @@
       "id": "check_recent_file",
       "type": "command",
       "config": {
-        "cmd": "find backups -type f -mtime -2 -print -quit",
+        "cmd": "newest=$(find \"$HOME/Backups\" -type f -mtime -2 -print -quit); if test -n \"$newest\"; then printf \"A recent backup was found: %s\\n\" \"$newest\"; else printf \"Alert: backups are stale; check the backup schedule and folder.\\n\"; fi",
         "timeout": "60"
       },
       "position": {
@@ -35,38 +35,15 @@
       }
     },
     {
-      "id": "backup_is_recent",
-      "type": "check",
+      "id": "save_status",
+      "type": "note",
       "config": {
-        "expr": "exit_code == 0"
+        "path": "backups/status-{run}.md",
+        "template": "Backup status:\n\n{prev_output}"
       },
       "position": {
         "x": 260,
         "y": 0
-      }
-    },
-    {
-      "id": "backup_ok",
-      "type": "note",
-      "config": {
-        "path": "backups/check-{run}.md",
-        "template": "A backup file newer than two days was found in the backups folder.\n\n{prev_output}"
-      },
-      "position": {
-        "x": 520,
-        "y": -140
-      }
-    },
-    {
-      "id": "backup_missing",
-      "type": "note",
-      "config": {
-        "path": "backups/needs-attention-{run}.md",
-        "template": "No backup file newer than two days was found. Please check the backup schedule and folder."
-      },
-      "position": {
-        "x": 520,
-        "y": 140
       }
     }
   ],
@@ -80,20 +57,8 @@
     {
       "id": "e1",
       "source": "check_recent_file",
-      "target": "backup_is_recent",
+      "target": "save_status",
       "label": ""
-    },
-    {
-      "id": "e2",
-      "source": "backup_is_recent",
-      "target": "backup_ok",
-      "label": "yes"
-    },
-    {
-      "id": "e3",
-      "source": "backup_is_recent",
-      "target": "backup_missing",
-      "label": "no"
     }
   ]
 }

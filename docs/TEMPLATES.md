@@ -6,14 +6,14 @@ The Templates gallery includes six ready-made flows for common personal tasks. S
 
 | Template | What it does | Use it when |
 | --- | --- | --- |
-| Summarise a document into a note | Reads a local document, asks a local model for a short summary, and saves a note. | You want the main points of a report, article, or other file in your notes. |
-| Weekly tidy of my Downloads folder | Lists files older than seven days in a note. It never deletes files; moving them requires approval first. | You want to review an untidy Downloads folder and choose what to move. |
-| Turn meeting notes into a task list | Turns a meeting-notes file into checkbox tasks and saves them in a note. | You want next steps separated from the rest of a meeting. |
-| Watch a web page for changes | Reads one approved page, compares its text with the last saved copy, and records whether it changed. | You want to keep an eye on a public announcement or status page. |
-| Morning brief from my notes | Finds Markdown notes changed yesterday, asks a local model for a short brief, and saves it. | You want a quick catch-up on the notes you changed the day before. |
-| Check my backups ran | Checks for a file newer than two days in the `backups` folder and saves a status note. | You want to spot a backup folder that has stopped receiving new files. |
+| Summarise a document into a note | Reads a local document, asks a local model for a short summary, and saves a run-specific note. | Set **Document to read** to your file, then use this when you want its main points in your notes. |
+| Weekly tidy of my Downloads folder | Lists files older than seven days in a note. It never deletes files; moving them requires approval first. | Set **Downloads folder** to the folder you want reviewed (defaults to `$HOME/Downloads`), then use this for a weekly review. |
+| Turn meeting notes into a task list | Turns a local meeting-notes file into checkbox tasks and saves a run-specific note. | Set **Meeting notes file** to your file, then use this when you want next steps separated from the discussion. |
+| Watch a web page for changes | Reads one allowed page, compares it with the last saved copy, and records a status note whether it changed or stayed the same. | Set the page address and its allowed site, then use this for a public announcement or status page. |
+| Morning brief from my notes | Finds Markdown notes changed yesterday, asks a local model for a short brief, and saves it. | Use this in the morning to catch up on the notes you changed the day before; an empty day still gets a brief. |
+| Check my backups ran | Checks whether the newest recent file in your backup folder is less than two days old and saves a status or alert note. | Set **Backup folder** to your backup location (defaults to `$HOME/Backups`), then use this to spot backups that have gone stale. |
 
-The local-model templates use Ollama on this computer. The page watcher uses the built-in **Read a web page** step and its allowed-sites list. The folder tidy flow only moves listed files after approval, and it never deletes files. The backup check treats a file modified within two days as recent; edit the age in its command step if your backup schedule differs. Every flow has an independent acceptance check, and its run reports **done** only when that check passes.
+The local-model templates use Ollama on this computer. Their document settings show plain example paths; replace them with your own files. The page watcher uses the built-in **Read a web page** step and its allowed-sites list. The Downloads tidy setting starts at `$HOME/Downloads`. It only moves listed files after approval, and it never deletes files. The backup check starts at `$HOME/Backups`; it reports a stale folder in the saved status note while still completing successfully. Its age limit is two days; change the command if your backup schedule differs. Every flow checks that its result note was recently written and is not empty, and the meeting task check also looks for checkboxes or a clear no-tasks result.
 
 Bundled templates are listed in `templates/manifest/MANIFEST.json`. Each entry records its author, Apache-2.0 license, SHA-256 digest, and review date. The API reports a bundled item as **changed since review** and marks it unavailable for installation if the file digest differs from the manifest.
 

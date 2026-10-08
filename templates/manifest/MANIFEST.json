@@ -7,7 +7,7 @@
       "description": "Checks the newest recent backup file and writes a note saying whether the folder needs attention.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "ea6f23504f1e0c1edcef143d836aa1cbf0e2b74f39d1cb1e0f5adb5799c77413",
+      "sha256": "0a279f236784d04404355fe6315ed9cc910daa0781f0db3b41c075845ba55f80",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -29,7 +29,7 @@
       "description": "Reads a document, makes a short local summary, and saves it as a note.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "f0acb13f28e75c3faa55055ccee8fc6c3ee3d7b5e36221531ebaf3be5a37a36d",
+      "sha256": "c7ae942bc087db19c2205ae3068f45d0cdbd38011ae98cbe0488419af3ae788d",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -40,7 +40,7 @@
       "description": "Lists older Downloads files in a note. It never deletes files, and asks before moving them to a review folder.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "c42b0ab062b45f2633c4f4b64a86057cb2122f314152c4a49249eb9fa3540f22",
+      "sha256": "6447fa4d88df3db1cc5f838595b725c4524addb8acdcae97bc8cfedbe8edc4bd",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -95,7 +95,7 @@
       "description": "Pulls out decisions and next steps, then saves them as checkboxes in a note.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "5263f6f42ec36d7f81e0b2d438ef2198ec4630e5578e4877e1b16b538b7ebe45",
+      "sha256": "79099c8fb13e2230e44f7ed8ceed2b79449382b08aa85f1bb3c3d3b0f3e99f72",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -106,7 +106,7 @@
       "description": "Finds yesterday’s changed notes on this computer, summarises them with a local model, and saves a brief.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "e1913a20f06fbb9cbcf8201357153cb1b8b297b2b2ed8fc3d92d6ccf00a3af1c",
+      "sha256": "731c1a6a5126af0e20fb97cae075e28bbff3bb065bddc08673cca75580d7ae86",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -150,7 +150,7 @@
       "description": "Reads one approved page, compares it with the previous saved copy, and records whether it changed.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "552fdd8532dc1fc9bcbe8294325daa6c1d6f94b067f50c0e7b7059217ef2fd25",
+      "sha256": "7d761c1c6af017e34478124869ddd29092be26c4aa6112fdb43b1eda4ef531ec",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },

@@ -15,6 +15,6 @@
 - Turn meeting notes into a task list: turns a local meeting-notes file into checkbox tasks with a local model.
 - Watch a web page for changes: reads one approved page, compares it with the last saved copy, and records a change note.
 - Morning brief from my notes: finds notes changed yesterday, summarises them with a local model, and saves a brief.
-- Check my backups ran: checks for a file newer than two days in the backups folder and saves a status note.
+- Check my backups ran: checks whether a recent file is present in the backup folder and saves a clear status or stale-backup alert note.
 
-These six templates are designed for local models or ordinary steps; none needs a paid service. Open **Templates** and choose **Use this template** to add one to your flows. Each template includes an acceptance check so a run is only done when its result has been checked.
+These six templates are designed for local models or ordinary steps; none needs a paid service. Replace the example document paths with your own files. The Downloads and backup folder settings start at `$HOME/Downloads` and `$HOME/Backups`. Open **Templates** and choose **Use this template** to add one to your flows. Each template checks for a fresh, non-empty result note; meeting tasks also checks for a checkbox or a clear no-tasks result. A stale backup is reported in its note and does not make the run fail.

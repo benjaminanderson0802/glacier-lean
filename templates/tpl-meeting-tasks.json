@@ -7,7 +7,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "grep -q \"\\[ \\]\" \"$GLACIER_HOME/vault/tasks/meeting-list.md\""
+      "cmd": "find \"$GLACIER_HOME/vault/tasks\" -type f -name 'meeting-list-*.md' -mmin -10 -print0 | xargs -0 grep -q . && (find \"$GLACIER_HOME/vault/tasks\" -type f -name 'meeting-list-*.md' -mmin -10 -print0 | xargs -0 grep -q '\\[ \\]' || find \"$GLACIER_HOME/vault/tasks\" -type f -name 'meeting-list-*.md' -mmin -10 -print0 | xargs -0 grep -qi 'no tasks')"
     }
   ],
   "nodes": [
@@ -15,7 +15,7 @@
       "id": "read_notes",
       "type": "read_document",
       "config": {
-        "source": "documents/meeting-notes.txt"
+        "source": "Set this to your meeting-notes file, for example $HOME/Documents/meeting-notes.txt"
       },
       "position": {
         "x": 0,
@@ -38,8 +38,8 @@
       "id": "save_tasks",
       "type": "note",
       "config": {
-        "path": "tasks/meeting-list.md",
-        "template": "# Meeting tasks\n\n{prev_output}"
+        "path": "tasks/meeting-list-{run}.md",
+        "template": "# Meeting tasks\n\nRun {run}\n{prev_output}"
       },
       "position": {
         "x": 520,

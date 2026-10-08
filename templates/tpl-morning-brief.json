@@ -7,7 +7,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "grep -q \"invoice\" \"$GLACIER_HOME/vault/briefs/morning-brief.md\""
+      "cmd": "find \"$GLACIER_HOME/vault/briefs\" -type f -name 'morning-brief-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
     }
   ],
   "nodes": [
@@ -50,8 +50,8 @@
       "id": "save_brief",
       "type": "note",
       "config": {
-        "path": "briefs/morning-brief.md",
-        "template": "# Morning brief\n\n{prev_output}"
+        "path": "briefs/morning-brief-{run}.md",
+        "template": "# Morning brief\n\nRun {run}\n{prev_output}"
       },
       "position": {
         "x": 520,

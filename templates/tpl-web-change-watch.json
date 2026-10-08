@@ -7,7 +7,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "grep -R -q \"changed\" \"$GLACIER_HOME/vault/web-watch\""
+      "cmd": "find \"$GLACIER_HOME/vault/web-watch\" -type f -name 'run-status-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
     }
   ],
   "nodes": [
@@ -50,7 +50,7 @@
       "id": "compare_page",
       "type": "command",
       "config": {
-        "cmd": "changed=1; if test -f \"$GLACIER_HOME/vault/web-watch/last-page.md\" && cmp -s \"$GLACIER_HOME/vault/web-watch/last-page.md\" \"$GLACIER_HOME/vault/web-watch/current-page.md\"; then changed=0; printf \"No change\\n\" > web-status.txt; else printf \"Page changed\\n\" > web-status.txt; fi; cp \"$GLACIER_HOME/vault/web-watch/current-page.md\" \"$GLACIER_HOME/vault/web-watch/last-page.md\"; test \"$changed\" -eq 1",
+        "cmd": "if test -f \"$GLACIER_HOME/vault/web-watch/last-page.md\" && cmp -s \"$GLACIER_HOME/vault/web-watch/last-page.md\" \"$GLACIER_HOME/vault/web-watch/current-page.md\"; then printf \"No change\\n\" > \"$GLACIER_HOME/vault/web-watch/status-{run}.md\"; else printf \"Page changed\\n\" > \"$GLACIER_HOME/vault/web-watch/status-{run}.md\"; fi; cp \"$GLACIER_HOME/vault/web-watch/current-page.md\" \"$GLACIER_HOME/vault/web-watch/last-page.md\"; cat \"$GLACIER_HOME/vault/web-watch/status-{run}.md\"",
         "timeout": "60"
       },
       "position": {
@@ -59,38 +59,15 @@
       }
     },
     {
-      "id": "change_result",
-      "type": "check",
+      "id": "status_note",
+      "type": "note",
       "config": {
-        "expr": "exit_code == 0"
+        "path": "web-watch/run-status-{run}.md",
+        "template": "The approved page comparison ran.\n\n{prev_output}"
       },
       "position": {
         "x": 780,
         "y": 0
-      }
-    },
-    {
-      "id": "changed_note",
-      "type": "note",
-      "config": {
-        "path": "web-watch/changed-{run}.md",
-        "template": "The approved page is new or has changed since the last saved copy.\n\n{prev_output}"
-      },
-      "position": {
-        "x": 1040,
-        "y": -140
-      }
-    },
-    {
-      "id": "same_note",
-      "type": "note",
-      "config": {
-        "path": "web-watch/unchanged-{run}.md",
-        "template": "The approved page matches the last saved copy."
-      },
-      "position": {
-        "x": 1040,
-        "y": 140
       }
     }
   ],
@@ -116,20 +93,8 @@
     {
       "id": "e3",
       "source": "compare_page",
-      "target": "change_result",
+      "target": "status_note",
       "label": ""
-    },
-    {
-      "id": "e4",
-      "source": "change_result",
-      "target": "changed_note",
-      "label": "yes"
-    },
-    {
-      "id": "e5",
-      "source": "change_result",
-      "target": "same_note",
-      "label": "no"
     }
   ]
 }
