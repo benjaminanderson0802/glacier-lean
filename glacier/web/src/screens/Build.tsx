@@ -173,7 +173,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const showMinimap = minimapOpen && !canvasShort
   const fitCanvas = useCallback(() => {
     if (connectingRef.current) return
-    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, duration: 0, minZoom: 0.6 })
+    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.34, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.3, bottom: 0.16, left: 0.16 }, duration: 0, minZoom: 0.6 })
   }, [fitView, showMinimap])
 
   useEffect(() => {
@@ -633,7 +633,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 snapGrid={[20, 20]}
                 onNodeDragStop={(_, node) => { nudgeOverlaps(node.id, node.position); setDirty(true) }}
                 fitView
-                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, minZoom: 0.6 }}
+                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.34, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.3, bottom: 0.16, left: 0.16 }, minZoom: 0.6 }}
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
