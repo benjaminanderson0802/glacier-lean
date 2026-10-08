@@ -67,12 +67,12 @@ export function Panel({ title, aside, children, testid, className, style }: { ti
   )
 }
 
-type RowProps = { status?: StatusKind; icon?: IconName; lead: ReactNode; detail?: ReactNode; when?: ReactNode; onClick?: () => void; testid?: string; className?: string }
-export function Row({ status, icon, lead, detail, when, onClick, testid, className }: RowProps) {
+type RowProps = { status?: StatusKind; icon?: IconName; lead: ReactNode; detail?: ReactNode; when?: ReactNode; onClick?: () => void; testid?: string; className?: string; leadTitle?: string }
+export function Row({ status, icon, lead, detail, when, onClick, testid, className, leadTitle }: RowProps) {
   const inner = (
     <>
       <span className="g-ico">{status ? <StatusIcon kind={status} /> : icon ? <Icon name={icon} /> : null}</span>
-      <span className="g-mid"><span className="g-lead">{lead}</span>{detail != null && <span className="g-detail">{detail}</span>}</span>
+      <span className="g-mid"><span className="g-lead" title={leadTitle}>{lead}</span>{detail != null && <span className="g-detail">{detail}</span>}</span>
       <span className="g-when">{when}</span>
     </>
   )

@@ -29,7 +29,7 @@ button { cursor: pointer; }
 .g-side-rail .g-menu-list { align-items: center; }
 .g-side-rail .g-menu-item { width: 100%; height: calc(16 * var(--px)); min-height: calc(16 * var(--px)); justify-content: center; gap: 0; padding: 0; font-size: var(--g-size-small); color: transparent; overflow: visible; }
 .g-side-rail .g-menu-item .g-menu-cursor { position: absolute; left: 0; width: calc(2 * var(--px)); height: calc(5 * var(--px)); }
-.g-side-rail .g-menu-icon { width: calc(8 * var(--px)); height: calc(8 * var(--px)); margin: 0; }
+.g-side-rail .g-menu-icon { width: calc(8 * var(--px)); height: calc(8 * var(--px)); margin: 0; position: absolute; left: 50%; transform: translateX(-50%); }
 .g-side-rail .g-menu-item:hover::after,.g-side-rail .g-menu-item:focus-visible::after { content: attr(aria-label); position: absolute; left: calc(18 * var(--px)); z-index: 30; padding: calc(1 * var(--px)) calc(2 * var(--px)); background: var(--g-navy2); color: var(--g-white); font-size: var(--g-size-small); }
 .g-main[data-testid="screen-home"]:has(> .g-home-grid) { display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:calc(24 * var(--px)) minmax(0,1fr) minmax(0,1fr);gap:calc(2 * var(--px)); }
 .g-main[data-testid="screen-home"] > .g-pagehead { grid-column:1 / -1;grid-row:1; }

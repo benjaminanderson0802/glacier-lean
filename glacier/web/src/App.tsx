@@ -92,9 +92,10 @@ export default function App() {
         : rest[0] === 'flow' && rest[1]
           ? <RunView key={rest.join('/')} envId={rest[1]} runId={rest[2] !== 'history' ? rest[2] : undefined} history={rest[2] === 'history'} />
           : rest[0] === 'templates' ? <Templates /> : <AutomationsScreen />
+      case 'home': return rest[0] === 'claim' && rest[1] ? <ClaimDetail id={rest[1]} /> : rest[0] === 'claims' ? <ClaimsList /> : <HomeScreen />
       case 'memory': return <MemoryScreen path={rest[0]} />
       case 'settings': return <SettingsScreen section={rest[0]} />
-      default: return rest[0] === 'claim' && rest[1] ? <ClaimDetail id={rest[1]} /> : rest[0] === 'claims' ? <ClaimsList /> : <HomeScreen />
+      default: return <HomeScreen />
     }
   }, [tab, rest, building])
 
