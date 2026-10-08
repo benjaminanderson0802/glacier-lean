@@ -20,3 +20,50 @@ def test_rerun_needs_a_run(server):
     cid = server.post("/api/claims", {"kind": "bug", "summary": "No run here", "evidence": "x"})["id"]
     r = httpx.post(server.url + f"/api/claims/{cid}/rerun", timeout=10)
     assert r.status_code == 400 and "nothing to run again" in r.json()["detail"]
+
+
+def test_claim_research_and_rerun_updates_share_the_vault_lock(monkeypatch):
+    import claims_research
+    import routes.claims as claim_routes
+    import vault
+
+    original_lock = vault._lock
+    active = False
+    seen = []
+    writes = []
+
+    class CheckedLock:
+        def __enter__(self):
+            nonlocal active
+            seen.append("enter")
+            original_lock.__enter__()
+            active = True
+            return self
+
+        def __exit__(self, *args):
+            nonlocal active
+            active = False
+            seen.append("exit")
+            return original_lock.__exit__(*args)
+
+    monkeypatch.setattr(vault, "_lock", CheckedLock())
+    monkeypatch.setattr(claims_research, "_record_and_route_locked", lambda *args: {"status": "routed"})
+    claims_research.record_and_route("claim-1234", [], "")
+    claim = {"meta": {"run_id": "old-run"}, "body": "## Problem\ncheck\n\n## Resolution\n"}
+    monkeypatch.setattr(claim_routes.claims, "get_claim", lambda _cid: claim)
+    monkeypatch.setattr(claim_routes.store, "get_run", lambda _rid: {"env_id": "flow"})
+
+    def start_run(_env_id, _settings):
+        assert active
+        return "new-run"
+
+    def write_note(_path, rendered, **_kwargs):
+        assert active
+        writes.append(rendered)
+
+    monkeypatch.setattr(claim_routes.runner, "start_run", start_run)
+    monkeypatch.setattr(claim_routes.vault, "write_note", write_note)
+    monkeypatch.setattr(claim_routes.store.broadcaster, "publish", lambda _event: None)
+    assert claim_routes.rerun_claim("claim-1234") == {"run_id": "new-run", "env_id": "flow"}
+    assert "new-run" in writes[-1]
+    assert seen.count("enter") == 2 and seen.count("exit") == 2

@@ -73,6 +73,7 @@ def test_graph_with_2000_notes_is_fast_and_complete(server, tmp_path):
     import httpx
     response = httpx.get(server.url + "/api/memory/graph", timeout=10)
     elapsed = time.perf_counter() - started
+    print(f"WINDOWS_GRAPH_TIMING notes=2000 request={elapsed:.3f}s", flush=True)
     response.raise_for_status()
     graph = response.json()
     notes = [node for node in graph["nodes"] if node["kind"] == "note" and node["id"].startswith("bench/")]

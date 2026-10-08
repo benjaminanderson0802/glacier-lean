@@ -63,6 +63,12 @@ def research(cid: str) -> str:
 
 @DBOS.step(retries_allowed=True, max_attempts=3)
 def record_and_route(cid: str, fixes: list, findings: str) -> dict:
+    # Keep read/modify/write atomic with owner actions such as claim reruns.
+    with vault._lock:
+        return _record_and_route_locked(cid, fixes, findings)
+
+
+def _record_and_route_locked(cid: str, fixes: list, findings: str) -> dict:
     c = claims.get_claim(cid)
     meta, body = c["meta"], c["body"]
     kind = meta.get("kind")

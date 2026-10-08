@@ -103,6 +103,15 @@ class Server:
             except subprocess.TimeoutExpired:
                 self.kill()
 
+    def diagnostics(self) -> str:
+        """Return the backend's own log, including output flushed just before failure."""
+        self.log.flush()
+        try:
+            with open(os.path.join(self.home, "server.log"), encoding="utf-8", errors="replace") as stream:
+                return stream.read()
+        except OSError as exc:
+            return f"Could not read backend log: {exc}"
+
     # helpers
     def get(self, path, **kw):
         r = httpx.get(self.url + path, timeout=30, **kw); r.raise_for_status(); return r.json()
@@ -151,3 +160,14 @@ def pytest_configure(config):
     # Timing and stress tests are run on their own (CI: -m serial without -n) so the
     # parallel batch cannot slow them down; they are checked exactly as before.
     config.addinivalue_line("markers", "serial: run outside the parallel batch")
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    if not report.failed:
+        return
+    server = item.funcargs.get("server")
+    if server is not None:
+        report.sections.append(("backend server log (stdout/stderr)", server.diagnostics()))
