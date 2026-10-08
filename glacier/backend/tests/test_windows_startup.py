@@ -38,3 +38,12 @@ def test_startup_settings_do_not_probe_tools(monkeypatch):
     settings = system_check.effective_settings()
     assert settings["max_parallel_runs"] >= 1
     assert probed == []
+
+
+def test_windows_which_trusts_a_not_found_answer(tmp_path, monkeypatch):
+    """When the normal lookup finds nothing, do not go looking for other copies on PATH."""
+    _make(tmp_path, "codex.cmd")
+    monkeypatch.setattr(shell_commands.os, "name", "nt")
+    monkeypatch.setattr(shell_commands.shutil, "which", lambda name: None)
+    monkeypatch.setenv("PATH", str(tmp_path))
+    assert shell_commands.which("codex") is None

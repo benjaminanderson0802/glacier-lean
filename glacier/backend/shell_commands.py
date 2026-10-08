@@ -60,7 +60,9 @@ def which(name: str) -> str | None:
     found = shutil.which(name)
     if os.name != "nt":
         return found
-    if found and (os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS or not os.path.isfile(found)):
+    if not found:
+        return None  # shutil.which already tried PATHEXT; nothing runnable here
+    if os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS or not os.path.isfile(found):
         return found
     exts = [e.lower() for e in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") if e]
     exts = [e for e in exts if e in _RUNNABLE_WINDOWS] or list(_RUNNABLE_WINDOWS)
