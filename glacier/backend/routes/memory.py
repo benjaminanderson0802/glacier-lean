@@ -1,7 +1,7 @@
 """Memory v2 API over the plain-file, git-backed vault."""
 import os
 import re
-from datetime import timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -118,9 +118,16 @@ def put_note(item: NoteWrite):
     if item.author != "owner":
         raise HTTPException(400, "Notes saved from the screen must be authored by owner")
     try:
-        commit = vault.write_note(path, item.body, author=item.author)
+        vault.safe_path(path)
     except ValueError as exc:
         raise HTTPException(400, "That note path is not allowed") from exc
+    try:
+        commit = vault.write_note(path, item.body, author=item.author)
+    except ValueError as exc:
+        # Not a path problem (checked above): report it as a save failure, with the reason in the log.
+        import logging
+        logging.getLogger(__name__).exception("Saving note %s failed", path)
+        raise HTTPException(500, f"The note could not be saved: {exc}") from exc
     return {"path": path, "commit": commit}
 
 
@@ -162,12 +169,11 @@ def graph(limit: int | None = None):
 @router.get("/api/memory/history")
 def history(path: str):
     _path(path)
-    # Commit details load lazily through the shared Git pipe, so read them while holding the lock.
+    # Read by a separate git process (vault.note_history), so saves never wait on a long history.
     try:
-        with vault._lock:
-            return [{"commit": c.hexsha[:8], "author": c.author.name,
-                     "date": c.committed_datetime.astimezone(timezone.utc).isoformat(),
-                     "message": c.message.strip()} for c in vault._repo.iter_commits(paths=path)]
+        return [{"commit": e["sha"][:8], "author": e["author"],
+                 "date": datetime.fromisoformat(e["date"]).astimezone(timezone.utc).isoformat(),
+                 "message": e["message"]} for e in vault.note_history(path)]
     except Exception:
         return []
 
