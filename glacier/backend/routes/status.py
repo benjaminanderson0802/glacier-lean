@@ -3,13 +3,16 @@ from fastapi import APIRouter, HTTPException
 
 import status_notes
 import vault
+import audit_log
 
 router = APIRouter()
 
 
 @router.post("/api/status/rebuild")
 def rebuild_status():
-    return {"written": status_notes.write_all()}
+    result = status_notes.write_all()
+    audit_log.record("status.rebuilt", what={"written": result})
+    return {"written": result}
 
 
 @router.get("/api/status/{env_id}")

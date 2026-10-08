@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 import rollback
+import audit_log
 
 router = APIRouter()
 
@@ -13,7 +14,9 @@ def get_run_changes(run_id: str):
 @router.post("/api/runs/{run_id}/undo")
 def undo_run(run_id: str):
     try:
-        return rollback.undo(run_id)
+        result = rollback.undo(run_id)
+        audit_log.record("run.undone", what={"run_id": run_id, "changes": result.get("changes", [])})
+        return result
     except RuntimeError as exc:
         raise HTTPException(409, str(exc))
     except ValueError as exc:
@@ -33,4 +36,5 @@ def restore_environment(env_id: str, body: dict):
         raise HTTPException(400, str(exc))
     except Exception as exc:
         raise HTTPException(400, f"Flow could not be restored: {exc}")
+    audit_log.record("flow.restored", what={"env_id": env_id, "commit": new_commit})
     return {"restored": True, "new_commit": new_commit}

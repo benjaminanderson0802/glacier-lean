@@ -3,6 +3,7 @@ import re
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import assistant
+import audit_log
 
 router = APIRouter()
 
@@ -20,7 +21,9 @@ def propose(g: Goal):
     if g.engine not in ("codex", "local"):
         raise HTTPException(400, "engine must be codex or local")
     try:
-        return assistant.plan(g.goal, app.NODE_CATALOG, fid, g.engine)
+        result = assistant.plan(g.goal, app.NODE_CATALOG, fid, g.engine)
+        audit_log.record("assistant.plan_requested", what={"flow_id": fid, "engine": g.engine})
+        return result
     except ValueError as e:
         raise HTTPException(400, str(e))
     except Exception as e:
