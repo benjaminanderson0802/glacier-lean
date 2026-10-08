@@ -25,8 +25,8 @@ def propose(g: Goal):
         import secrets_store
         context = ask_context.build(g.goal, engine=g.engine,
                                     model=ask_context._settings().get("local_model") if g.engine == "local" else None)
-        prompt = f"Shared context pack:\n{context}\n\nCurrent goal:\n{secrets_store.redact(g.goal)}"
-        result = assistant.plan(prompt, app.NODE_CATALOG, fid, g.engine)
+        result = assistant.plan(secrets_store.redact(g.goal), app.NODE_CATALOG, fid, g.engine,
+                                context=f"Shared context pack:\n{context}\n\nCurrent goal:\n")
         audit_log.record("assistant.plan_requested", what={"flow_id": fid, "engine": g.engine})
         return result
     except ValueError as e:

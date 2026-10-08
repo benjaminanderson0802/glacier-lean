@@ -125,7 +125,7 @@ def test_local_request_includes_glacier_system_message(monkeypatch):
     chat._ask_local("A short question")
     system_message = sent[0]["messages"][0]["content"]
     assert "assistant inside Glacier" in system_message
-    assert "builds and runs automations" in system_message
+    assert "shared context is trusted app information" in system_message
 
 
 def test_missing_local_model_404_returns_friendly_message(monkeypatch):
@@ -166,7 +166,7 @@ def test_auto_with_neither_provider_emits_plain_message(tmp_path, monkeypatch):
     events = _chat_events("Hello")
     assert events[-1]["type"] == "RUN_FINISHED"
     message = next(e["delta"] for e in events if e["type"] == "TEXT_MESSAGE_CONTENT")
-    assert "Ollama" in message and "Codex" in message
+    assert "Ollama" in message and "CLI" in message
 
 
 def test_local_route_streams_and_proposes_valid_checked_flow(tmp_path, monkeypatch):
@@ -196,7 +196,7 @@ def test_forced_routes_are_respected_and_settings_explain_choice(tmp_path, monke
     import system_check
     calls = _start(tmp_path, monkeypatch, route="local", codex=True)
     settings = system_check.effective_settings(include_ask_route=True)
-    assert settings["ask_route"] == "local" and "directly" in settings["ask_route_reason"]
+    assert settings["ask_route"] == "local" and "Ollama" in settings["ask_route_reason"]
     _chat_events("Hello")
     assert calls[0][0] == "local"
 

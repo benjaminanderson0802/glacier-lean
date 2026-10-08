@@ -125,14 +125,14 @@ def to_flow(plan: dict, flow_id: str, goal: str) -> dict:
             "created_by": "assistant"}
 
 
-def plan(goal: str, catalog: list[dict], flow_id: str, engine: str = "codex") -> dict:
+def plan(goal: str, catalog: list[dict], flow_id: str, engine: str = "codex", context: str = "") -> dict:
     """Returns {"flow", "explanation", "problems"}; problems is empty when the plan is ready to review and save."""
     if not goal.strip():
         raise ValueError("describe the goal first")
     schema = _schema([t["type"] for t in catalog if t["type"] != "schedule"] + ["schedule"])
     errors, p = "", {}
     for _ in range(2):  # one repair attempt (self-fix budget)
-        prompt = _prompt(goal, catalog, errors)
+        prompt = _prompt(f"{context}{goal}" if context else goal, catalog, errors)
         if engine == "local":
             p = _ask_local(prompt, schema)
         elif engine == "codex":
