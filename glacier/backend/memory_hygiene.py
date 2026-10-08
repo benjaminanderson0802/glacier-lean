@@ -247,6 +247,7 @@ def _commit_changes(changes, removals, agent="glacier-hygiene"):
             index.reset()
             raise ValueError("the memory changes could not be saved. Your notes were restored; please try again.") from exc
 
+        vault.invalidate_note_history(touched)
         # The Git commit is authoritative. Update the rebuildable SQLite views
         # afterward, so an index failure cannot roll files back behind HEAD.
         connection = vault._db()
