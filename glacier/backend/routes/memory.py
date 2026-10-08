@@ -139,6 +139,8 @@ def put_note(item: NoteWrite):
 
 @router.delete("/api/memory/note")
 def delete_note(path: str):
+    if ".." in path.replace("\\", "/").split("/"):
+        raise HTTPException(400, "That note path is not allowed")
     relative = _normalised_path(path)
     try:
         commit = vault.delete_note(relative, agent="owner", kind="note")

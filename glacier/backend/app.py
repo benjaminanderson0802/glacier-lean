@@ -112,7 +112,7 @@ def save_environment(env_id: str, env: dict):
 def delete_environment(env_id: str):
     try:
         path = runner.env_path(env_id)
-        commit = vault.delete_note(path, agent="owner", kind="flow")
+        commit = vault.delete_note(path, agent="owner", kind="flow", extra={"id": env_id})
         runner.sync_schedule({"id": env_id, "nodes": [], "edges": []})
     except FileNotFoundError:
         raise HTTPException(404, "Flow not found")

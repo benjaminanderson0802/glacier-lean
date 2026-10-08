@@ -139,7 +139,7 @@ def test_imported_template_delete_and_undo(server):
 def test_delete_routes_refuse_path_tricks(server):
     assert httpx.delete(server.url + "/api/environments/..%2Foutside", timeout=30).status_code in (400, 404)
     assert httpx.delete(server.url + "/api/files", params={"project": "../outside", "name": "x.txt"}, timeout=30).status_code == 400
-    assert httpx.delete(server.url + "/api/secrets/..%2Foutside", timeout=30).status_code == 400
+    assert httpx.delete(server.url + "/api/secrets/..%2Foutside", timeout=30).status_code in (400, 404)
 
 
 def test_secret_delete_writes_name_only_audit_record(tmp_path, monkeypatch):

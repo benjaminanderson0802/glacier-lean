@@ -357,7 +357,7 @@ def record_event(agent: str, kind: str, data: dict) -> None:
         c.close()
 
 
-def delete_note(path: str, *, agent: str = "owner", kind: str = "note") -> str:
+def delete_note(path: str, *, agent: str = "owner", kind: str = "note", extra: dict | None = None) -> str:
     """Delete one tracked vault file with a Git commit, index cleanup, and audit event."""
     if os.name == "nt":
         path = path.replace("\\", "/")
@@ -381,7 +381,7 @@ def delete_note(path: str, *, agent: str = "owner", kind: str = "note") -> str:
             c.close()
         with _note_metadata_cache_lock:
             _note_metadata_cache.pop(relative, None)
-    record_event(agent, "delete", {"kind": kind, "path": relative, "commit": commit})
+    record_event(agent, "delete", {**(extra or {}), "kind": kind, "path": relative, "commit": commit})
     try:
         import store
         store.broadcaster.publish({"type": "memory", "path": relative, "change": "deleted", "author": agent, "run_id": ""})
