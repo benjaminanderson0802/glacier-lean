@@ -370,7 +370,10 @@ def _finish_api_budget(engine: str, estimate: float, usage: dict | None) -> None
 
 def available_engines() -> list[dict]:
     settings = _saved_settings()
-    codex_found = bool(shell_commands.which(os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN") or "codex"))
+    override = os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN")
+    # A configured chat executable may be a Python helper, which Windows' which() never lists
+    # but executable_invocation() can still start.
+    codex_found = bool(override and os.path.isfile(override)) or bool(shell_commands.which(override or "codex"))
     codex_ready = codex_found and _codex_signed_in()
     rows = [{"id": "codex", "label": "Codex", "available": codex_ready,
              "reason_code": "ready" if codex_ready else "sign_in", "reason": "Codex is installed and signed in." if codex_ready else "Codex is missing or signed out."}]
