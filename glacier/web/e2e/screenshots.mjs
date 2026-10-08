@@ -32,7 +32,7 @@ const F = {
   '/api/claims/c1042': { meta: { id: 'c1042', kind: 'research needed', summary: 'Best eBay product opportunities', status: 'proposed', updated: h(4) },
     body: '## Problem\nBest eBay product opportunities\n\n## Evidence\n- completed successfully\n- 5 product ideas generated\n- sources included\n\n## Research\n- analyzed 12 categories\n- found 5 high-demand products\n- checked competition and pricing\n\n## Proposal\n- used web research agent\n- checked recent sales data\n- compared supplier costs\n\n## Resolution\n' },
   '/api/templates': [['Email monitor', 'Check and summarize important emails'], ['Daily summary', 'Get a daily overview of what matters'], ['Website monitor', 'Track changes on any website'], ['Social media', 'Create and schedule posts'], ['Research assistant', 'Deep research with verified sources'], ['File organizer', 'Sort and organize files automatically']]
-    .map(([n, d], i) => ({ id: `tpl-${i}`, name: n, description: d, author: 'Glacier', license: 'Apache-2.0', review_status: 'reviewed', installable: true, template: { id: `tpl-${i}`, name: n, nodes: [{ id: 'a', type: 'schedule', config: {}, position: { x: 0, y: 0 } }, { id: 'b', type: 'command', config: {}, position: { x: 0, y: 0 } }], edges: [] } })),
+    .map(([n, d], i) => { const id = ['tpl-inbox-triage','tpl-daily-report','tpl-website-monitor','tpl-test-and-fix','tpl-weekly-research','tpl-downloads-tidy'][i]; return { id, name: n, description: d, author: 'Glacier', license: 'Apache-2.0', review_status: 'reviewed', installable: true, template: { id, name: n, nodes: [{ id: 'a', type: 'schedule', config: {}, position: { x: 0, y: 0 } }, { id: 'b', type: 'command', config: {}, position: { x: 0, y: 0 } }], edges: [] } } }),
   '/api/memory/graph': (() => { const n = [], e = []; const t = ['Projects', 'Notes', 'Preferences', 'Conversations', 'People', 'Docs'];
     t.forEach((x, i) => { n.push({ id: `hub/${i}`, title: x, kind: 'note', author: 'you' }); e.push({ source: `hub/${i}`, target: 'you', kind: 'wrote' }) })
     for (let i = 0; i < 60; i++) { const k = i % 9 === 0 ? 'run' : i % 13 === 0 ? 'flow' : 'note'; n.push({ id: `n/${i}`, title: `note ${i}`, kind: k, author: i % 2 ? 'assistant' : 'you' }); e.push({ source: `n/${i}`, target: `hub/${i % 6}`, kind: 'link' }); e.push({ source: `n/${i}`, target: i % 2 ? 'assistant' : 'you', kind: 'wrote' }) }
@@ -78,6 +78,11 @@ const port = srv.address().port
 const b = await chromium.launch(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {})
 const pg = await b.newPage({ viewport: { width: Number(process.env.W || 1280), height: Number(process.env.H || 800) } })
 pg.on('pageerror', e => console.log('PAGEERROR', String(e)))
+await pg.route('**/templates/previews/*.png', route => {
+  const name = path.basename(new URL(route.request().url()).pathname)
+  const file = path.resolve('../../templates/previews', name)
+  route.fulfill({ status: fs.existsSync(file) ? 200 : 404, contentType: 'image/png', body: fs.existsSync(file) ? fs.readFileSync(file) : Buffer.alloc(0) })
+})
 await pg.route('**/api/**', route => {
   const u = new URL(route.request().url())
   const key = Object.keys(F).find(k => u.pathname === k) ?? (u.pathname.startsWith('/api/runs/') && u.pathname.endsWith('/changes') ? '/api/runs/r3/changes' : u.pathname.startsWith('/api/runs/') ? '/api/runs/r3' : u.pathname.startsWith('/api/runs') ? '/api/runs' : null)
