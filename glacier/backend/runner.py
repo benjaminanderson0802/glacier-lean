@@ -40,6 +40,8 @@ def check(expr: str, exit_code: int) -> bool:
 
 
 def env_path(env_id: str) -> str:
+    if not isinstance(env_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", env_id):
+        raise ValueError("environment id must use letters, numbers, dots, underscores, or hyphens")
     return f"environments/{env_id}.json"
 
 

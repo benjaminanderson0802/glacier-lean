@@ -84,6 +84,12 @@ def _plain(path: str) -> str:
     return path
 
 
+def _is_git_metadata_path(path: str) -> bool:
+    """Match Git metadata directories across Windows separators and case-insensitive filesystems."""
+    portable = path.replace("\\", "/").casefold()
+    return "/.git/" in f"/{portable.strip('/')}/"
+
+
 _roots_cache: tuple[str, tuple[str, ...]] = ("", ())
 
 
@@ -105,8 +111,7 @@ def safe_path(path: str) -> str:
     norm = os.path.normcase(full)
     for root in _vault_roots():
         if root and norm.startswith(root + os.sep):
-            parts = norm[len(root) + 1:].split(os.sep)
-            if ".git" in parts:  # works with either slash: parts come from the OS separator
+            if _is_git_metadata_path(norm[len(root):]):
                 break
             return full
     raise ValueError(f"bad vault path: {path}")
