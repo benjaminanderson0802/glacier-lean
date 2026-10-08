@@ -254,7 +254,6 @@ try {
   await deselectCanvas()
   await tid('palette-command').click()
   await tid('node-n1').click()
-  await deselectCanvas()
   await tid('palette-note').click()
   await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 1)
   const autoWire = await page.locator('.react-flow__edge').count()
@@ -265,7 +264,6 @@ try {
   await deselectCanvas()
   await tid('palette-loop').click()
   await tid('node-n1').click()
-  await deselectCanvas()
   await tid('palette-command').click()
   await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 1)
   const loopAutoLabel = (await page.locator('.react-flow__edge-text').allTextContents()).join(',')
@@ -273,11 +271,13 @@ try {
 
   // ---------- flow 6: Decide step labels its arrows with its own options ----------
   await newEnv('Decide flow')
-  for (const k of ['decide', 'note', 'note']) await tid(`palette-${k}`).click()
+  for (const k of ['decide', 'note', 'note']) { await deselectCanvas(); await tid(`palette-${k}`).click() }
   await tid('node-n1').click()
   await tid('field-question').fill('Which team handles this?')
   await tid('field-options').fill('Billing, Tech support, Other')
   check(await tid('field-engine').inputValue() === 'auto', 'decide engine defaults to auto (free engines first)')
+  await page.locator('.react-flow__controls-fitview').click()
+  await page.waitForTimeout(300)
   await connect('n1', 'n2'); await connect('n1', 'n3')
   await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 2)
   const dl = (await page.locator('.react-flow__edge-text').allTextContents()).sort().join(',')
