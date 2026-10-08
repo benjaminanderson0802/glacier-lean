@@ -6,11 +6,12 @@ export type Tab = typeof TABS[number]
 
 export function parse(hash = location.hash): { tab: Tab; rest: string[] } {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent)
+  if (parts[0] === 'build') parts[0] = 'ask'
   const tab = (TABS as readonly string[]).includes(parts[0]) ? parts[0] as Tab : 'home'
   return { tab, rest: parts.slice(1) }
 }
 
-export function go(path: string) { location.hash = `#/${path}` }
+export function go(path: string) { location.hash = `#/${path === 'ask' ? 'build' : path.startsWith('ask/') ? path.replace(/^ask\//, 'build/') : path}` }
 
 export function useRoute() {
   const [r, setR] = useState(parse)
