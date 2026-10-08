@@ -68,7 +68,8 @@ def specialist_attempt(cid: str) -> dict:
     ws = workspaces.base(home, run["env_id"])
     os.makedirs(ws, exist_ok=True)
     code, msg = run_specialist(ws, _prompt(meta, c["body"]))
-    _append_resolution(cid, _resolution_summary(msg), status="researching")
+    _append_resolution(cid, f"Specialist attempt ({meta.get('assigned_to')}), exit {code}: {_resolution_summary(msg)}",
+                       status="researching")
     return {"ok": code == 0, "env_id": run["env_id"], "note": msg[-300:]}
 
 
