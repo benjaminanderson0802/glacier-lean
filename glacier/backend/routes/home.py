@@ -1,5 +1,6 @@
 """Read-only summary data for the Home screen."""
 import json
+import logging
 import os
 import re
 import threading
@@ -176,6 +177,7 @@ def home():
     return {"local_ai": _local_ai_status(),
             "counts": {"running": len(running), "need_you": len(needs_you)},
             "needs_you": needs_you[:20], "running": running,
+            "teams_running": _teams_running(),
             "recent_notes": _recent_notes()}
 
 
@@ -183,3 +185,13 @@ try:
     from git.objects.tree import NULL_TREE
 except ImportError:  # pragma: no cover - GitPython currently exports NULL_TREE here
     NULL_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+
+def _teams_running() -> list[dict]:
+    """Build teams that are running, waiting or need the owner; Home stays usable if the team store fails."""
+    try:
+        import teams
+        return teams.summary()
+    except Exception:
+        logging.getLogger(__name__).warning("Could not read Build team status for Home", exc_info=True)
+        return []

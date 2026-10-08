@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import secrets_store
+import vault
 import audit_log
 
 
@@ -35,9 +36,13 @@ def save_secret(name: str, body: SecretValue):
 
 @router.delete("/api/secrets/{name}")
 def remove_secret(name: str):
+    if not _VALID_NAME.fullmatch(name):
+        raise HTTPException(400, "That secret name is not allowed")
     try:
         secrets_store.delete(name)
     except Exception:
         raise HTTPException(500, "Could not remove this secret from the operating-system keychain")
+    if vault.VAULT:
+        vault.record_event("owner", "delete", {"kind": "secret", "name": name})
     audit_log.record("secret.deleted", what={"name": name})
     return {"deleted": True}

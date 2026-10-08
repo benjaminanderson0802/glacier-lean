@@ -5,6 +5,8 @@ Every write is: atomic file write -> git commit -> index update. No AI models.""
 # The lock serializes GitPython's index and persistent cat-file helpers. Operations
 # that also take a workspace merge lock must acquire `_lock` first, then merge locks.
 import os, re, json, sqlite3, tempfile, threading, time
+import uuid
+from datetime import datetime, timezone
 import git
 import memory_meta
 
@@ -337,6 +339,98 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
     except (ImportError, AttributeError):
         pass
     return sha
+
+
+def record_event(agent: str, kind: str, data: dict) -> None:
+    """Append an event to the index; keep delete/restore evidence in Git as well."""
+    payload = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "actor": str(agent), "action": str(kind), **data}
+    if kind in {"delete", "restore"} and VAULT and _repo is not None:
+        audit_path = f"audit/events/{uuid.uuid4().hex}.json"
+        write_note(audit_path, json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n", agent="glacier-audit")
+    c = _db()
+    try:
+        c.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
+                  (str(agent), str(kind), json.dumps(data, ensure_ascii=False, sort_keys=True)))
+        c.commit()
+    finally:
+        c.close()
+
+
+def delete_note(path: str, *, agent: str = "owner", kind: str = "note", extra: dict | None = None) -> str:
+    """Delete one tracked vault file with a Git commit, index cleanup, and audit event."""
+    if os.name == "nt":
+        path = path.replace("\\", "/")
+    full = safe_path(path)
+    relative = os.path.relpath(full, VAULT).replace(os.sep, "/")
+    with _lock:
+        if not os.path.isfile(full):
+            raise FileNotFoundError(relative)
+        os.unlink(full)
+        _repo.index.remove([relative], working_tree=False)
+        writer = f"{agent} delete {relative}"
+        actor = git.Actor(agent, "glacier@localhost")
+        commit = _repo.index.commit(writer, author=actor, committer=actor).hexsha[:8]
+        invalidate_note_history([relative])
+        c = _db()
+        try:
+            c.execute("DELETE FROM fts WHERE path=?", (relative,))
+            c.execute("DELETE FROM links WHERE src=?", (relative,))
+            c.commit()
+        finally:
+            c.close()
+        with _note_metadata_cache_lock:
+            _note_metadata_cache.pop(relative, None)
+    record_event(agent, "delete", {**(extra or {}), "kind": kind, "path": relative, "commit": commit})
+    try:
+        import store
+        store.broadcaster.publish({"type": "memory", "path": relative, "change": "deleted", "author": agent, "run_id": ""})
+    except (ImportError, AttributeError):
+        pass
+    return commit
+
+
+def restore_deleted_note(path: str, commit: str, *, agent: str = "owner") -> str:
+    """Restore a deleted tracked file from the parent of its deletion commit."""
+    if not re.fullmatch(r"[0-9a-fA-F]{7,40}", str(commit or "")):
+        raise ValueError("Enter at least 7 letters or numbers from the saved version ID.")
+    full = safe_path(path)
+    relative = os.path.relpath(full, VAULT).replace(os.sep, "/")
+    with _lock:
+        if os.path.exists(full):
+            raise FileExistsError("A file with that name already exists")
+        matches = [item for item in _repo.iter_commits(paths=relative) if item.hexsha.startswith(commit.lower())]
+        if not matches:
+            raise FileNotFoundError("That saved version was not found")
+        if len(matches) > 1:
+            raise ValueError("More than one saved version matches. Enter more of the version ID.")
+        selected = matches[0]
+        if not selected.parents:
+            raise FileNotFoundError("The earlier version did not contain this file")
+        try:
+            content = (selected.parents[0].tree / relative).data_stream.read()
+        except KeyError as exc:
+            raise FileNotFoundError("The saved version did not contain this file") from exc
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "wb") as stream:
+            stream.write(content)
+        _repo.index.add([relative])
+        actor = git.Actor(agent, "glacier@localhost")
+        restored_commit = _repo.index.commit(f"[{agent}] restore {relative}", author=actor, committer=actor).hexsha[:8]
+        invalidate_note_history([relative])
+        c = _db()
+        try:
+            text = content.decode("utf-8", errors="replace")
+            indexed = memory_meta.parse(text, relative)[1] if relative.endswith(".md") else text
+            c.execute("INSERT OR REPLACE INTO fts VALUES (?,?)", (relative, indexed))
+            c.execute("DELETE FROM links WHERE src=?", (relative,))
+            for dst in re.findall(r"\[\[([^\]]+)\]\]", text):
+                c.execute("INSERT INTO links VALUES (?,?)", (relative, dst.split("|", 1)[0].strip().removesuffix(".md")))
+            c.commit()
+        finally:
+            c.close()
+    record_event(agent, "restore", {"path": relative, "commit": restored_commit})
+    return restored_commit
 
 
 def read_note_metadata_with_stat(path: str) -> tuple[dict, str, os.stat_result]:

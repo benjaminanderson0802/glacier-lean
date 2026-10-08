@@ -8,6 +8,7 @@ import { lazy, Suspense } from 'react'
 const MemoryMap = lazy(() => import('./MemoryMap.tsx').then(m => ({ default: m.MemoryMap })))
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 /** Plain-language writer: owner -> you; run:<id> -> an automation; worker:<model> -> AI (<model>). */
 function whoWrote(author: string): string {
@@ -22,11 +23,7 @@ const VIEWS = [['', t('memory.viewsNotes')], ['~map', t('memory.map')], ['~add',
 
 export function MemoryScreen({ path }: { path?: string }) {
   const view = path?.startsWith('~') ? path : ''
-  const switcher = (
-    <div className="g-seg" data-testid="memory-views">
-      {VIEWS.map(([v, l]) => <button key={v} className={`g-seg-btn${v === view ? ' active' : ''}`} onClick={() => go(v ? `memory/${v}` : 'memory')} data-testid={`memview-${l.toLowerCase()}`}>{l}</button>)}
-    </div>
-  )
+  const switcher = <KeyboardMenu orientation="horizontal" label={t('memory.title')} items={VIEWS.map(([v, l]) => ({ id: v, label: l, testid: `memview-${l.toLowerCase()}` }))} selected={view} onSelect={v => go(v ? `memory/${v}` : 'memory')} />
   const body = view ? (
     <>
       <PageHead title={view === '~map' ? t('memory.title') : view === '~add' ? t('memory.addTitle') : t('memory.cleanupTitle')} crumb={t('memory.title')}
@@ -55,6 +52,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   const [saved, setSaved] = useState<{ path: string; commit: string } | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renamed, setRenamed] = useState<{ from: string; path: string; commit: string } | null>(null)
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -91,11 +89,14 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   }, [notes])
   const list = (notes ?? []).filter(n => tag === t('memory.all') || n.tags?.includes(tag)).sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''))
   const open = (p: string) => go(`memory/${encodeURIComponent(p)}`)
+  const deleteNote = async (p: string) => { const result = await memory.delete(p); return { title: t('delete.removed'), run: async () => { await memory.undoDelete(p, result.commit); reloadNotes() } } }
+  const noteDeleted = (p: string, action?: UndoAction) => { setDeleteUndo(action ?? null); reloadNotes(); if (note?.path === p) { setNote(null); go('memory') } }
 
   return (
     <>
       <PageHead title={t('memory.title')} sub={t('memory.subtitle')} side={<>{switcher}<input ref={searchRef} className="g-input" style={{ width: 240 }} placeholder={t('memory.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
       {err && <div className="g-error">{err}</div>}
+      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       <div className="g-memory" style={{ display: 'grid', gridTemplateColumns: 'calc(84 * var(--px)) minmax(0, 0.9fr) minmax(0, 1.5fr)', gap: 'calc(2 * var(--px))', flex: 1 }}>
         <Panel className="g-sidenav" testid="memory-tags" title={t('memory.filters')}>
           <KeyboardMenu label={t('memory.filters')} items={[t('memory.all'), ...tags.map(x => x[0])].map(value => ({ id: value, label: <><span>{value}</span><span style={{ marginLeft: 'auto', color: 'var(--g-gold)' }}>{value === t('memory.all') ? notes?.length ?? '' : tags.find(x => x[0] === value)?.[1]}</span></> }))} selected={tag} onSelect={value => { setTag(value); setQ('') }} />
@@ -103,8 +104,8 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
           <div className="g-rows">
             {hits
-              ? <KeyboardMenu label={t('memory.results', { query: q })} items={hits.map(h => ({ id: h.path, testid: `mem-hit-${h.path}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{h.title || h.path}</span><span className="g-detail">{h.snippet}</span></span> }))} selected={path ?? ''} onSelect={open} />
-              : <KeyboardMenu label={t('memory.viewsNotes')} items={list.map(n => ({ id: n.path, testid: `mem-note-${n.path}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{n.title || n.path}</span><span className="g-detail">{n.author ? t('memory.byAuthor', { name: n.author }) : ''}<span style={{ float: 'right' }}>{ago(n.updated)}</span></span></span> }))} selected={path ?? ''} onSelect={open} />}
+              ? hits.map(h => <div key={h.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={h.title||h.path} detail={h.snippet} onClick={()=>open(h.path)} testid={`mem-hit-${h.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(h.path)}`} onDelete={()=>deleteNote(h.path)} onDeleted={action=>noteDeleted(h.path,action)} onError={e=>setErr(String(e))} /></div>)
+              : list.map(n => <div key={n.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={n.title||n.path} detail={n.author?t('memory.byAuthor',{name:n.author}):undefined} when={ago(n.updated)} onClick={()=>open(n.path)} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={()=>deleteNote(n.path)} onDeleted={action=>noteDeleted(n.path,action)} onError={e=>setErr(String(e))} /></div>)}
             {notes && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
             {hits && hits.length === 0 && <Empty>{t('memory.nothingFound')}</Empty>}
           </div>
