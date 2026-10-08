@@ -1,0 +1,20 @@
+[
+  {
+    "file": "screens/build.css",
+    "property": "font-size",
+    "value": "0",
+    "reason": "The collapsed Build navigation hides its text label so the icon-only rail remains narrow; the accessible label stays on the button."
+  },
+  {
+    "file": "screens/build.css",
+    "property": "font-size",
+    "value": "calc(5 * var(--px))",
+    "reason": "Existing Build surface typography is outside this card's authorized file paths; its compact sizing needs a separate visual pass."
+  },
+  {
+    "file": "screens/build.css",
+    "property": "font-size",
+    "value": "calc(4 * var(--px))",
+    "reason": "Existing Build surface typography is outside this card's authorized file paths; its compact sizing needs a separate visual pass."
+  }
+]

@@ -7,7 +7,7 @@ export function Window({ title, children, className = '', testid }: { title?: Re
 }
 
 export function MenuList({ items, selected, onSelect }: { items: { id: string; label: ReactNode; icon?: IconName }[]; selected: string; onSelect: (id: string) => void }) {
-  return <div className="g-menu-list">{items.map(item => <button type="button" key={item.id} className={`g-menu-item${selected === item.id ? ' active' : ''}`} onClick={() => onSelect(item.id)}><span className="g-menu-cursor"/>{item.icon && <Icon name={item.icon}/ >}{item.label}</button>)}</div>
+  return <div className="g-menu-list">{items.map(item => <button type="button" key={item.id} className={`g-menu-item${selected === item.id ? ' active' : ''}`} onClick={() => onSelect(item.id)}><span className="g-menu-cursor"/>{item.icon && <Icon name={item.icon}/ >}<span className="g-menu-label">{item.label}</span></button>)}</div>
 }
 
 export function HintBar({ children }: { children: ReactNode }) { return <div className="g-hintbar">{children}</div> }
