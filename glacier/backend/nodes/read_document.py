@@ -7,7 +7,7 @@ import io
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 
 
@@ -63,7 +63,9 @@ def _allowed_hosts() -> set[str]:
 def _read_url(source: str) -> tuple[bytes, str]:
     _validate_url(source)
     request = Request(source, headers={"User-Agent": "Glacier document reader"})
-    opener = build_opener(_AllowlistedRedirectHandler())
+    # The allowlist must apply to the actual destination, not a proxy selected implicitly
+    # from the process environment.
+    opener = build_opener(ProxyHandler({}), _AllowlistedRedirectHandler())
     with opener.open(request, timeout=10) as response:
         data = response.read(_MAX_DOWNLOAD_BYTES + 1)
         if len(data) > _MAX_DOWNLOAD_BYTES:

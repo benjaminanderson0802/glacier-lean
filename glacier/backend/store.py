@@ -109,6 +109,11 @@ def record_usage(run_id: str, node_id: str, u: dict) -> None:
 
 
 def record_check(run_id: str, idx: int, kind: str, passed: bool, evidence: str) -> None:
+    import secrets_store
+    try:
+        evidence = secrets_store.redact(str(evidence))
+    except Exception:
+        evidence = "[evidence hidden: secrets could not be checked]"
     with _conn() as c:
         c.execute("INSERT OR REPLACE INTO glacier_checks VALUES (?,?,?,?,?)", (run_id, idx, kind, int(bool(passed)), evidence))
 
