@@ -79,6 +79,15 @@ def set_run(run_id: str, status: str, waiting_on: str | None = None) -> None:
                   (status, waiting_on, run_id))
 
 
+def set_waiting(run_id: str, env_id: str, node_id: str) -> None:
+    """Atomically publish a run-level wait and the node that owns the decision."""
+    with _conn() as c:
+        c.execute("UPDATE glacier_runs SET status='waiting', waiting_on=? WHERE run_id=? AND status != 'canceled'",
+                  (node_id, run_id))
+        c.execute("UPDATE glacier_nodes SET state='waiting' WHERE run_id=? AND node_id=?", (run_id, node_id))
+    broadcaster.publish({"run_id": run_id, "env_id": env_id, "node_id": node_id, "state": "waiting"})
+
+
 def set_node(run_id: str, env_id: str, node_id: str, state: str, output: str | None = None) -> None:
     if output is not None:
         import secrets_store

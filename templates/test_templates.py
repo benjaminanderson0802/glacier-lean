@@ -222,3 +222,24 @@ def test_daily_report_prompt_uses_the_previous_step_output():
     report = next(t for t in load_templates() if t["id"] == "tpl-daily-report")
     codex = next(node for node in report["nodes"] if node["type"] == "codex")
     assert "{prev_output}" in codex["config"]["prompt"]
+
+
+def test_every_template_has_a_current_graph_preview():
+    """Previews are generated from source graphs; this acceptance check must stay independent."""
+    import hashlib
+
+    previews = ROOT / "previews"
+    for template in load_templates():
+        preview = previews / f"{template['id']}.png"
+        digest_file = previews / f"{template['id']}.sha256"
+        assert preview.is_file() and preview.stat().st_size > 1000, template["id"]
+        def sort_keys(value):
+            if isinstance(value, list):
+                return [sort_keys(item) for item in value]
+            if isinstance(value, dict):
+                return {key: sort_keys(value[key]) for key in sorted(value)}
+            return value
+
+        canonical = json.dumps(sort_keys(template), ensure_ascii=False, separators=(",", ":"))
+        expected = hashlib.sha256(canonical.encode()).hexdigest()
+        assert digest_file.read_text(encoding="ascii").strip() == expected, template["id"]

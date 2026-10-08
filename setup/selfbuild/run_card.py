@@ -29,12 +29,6 @@ def prepare_checkout(home: Path, source: Path) -> Path:
         actual = Path(subprocess.check_output(["git", "-C", str(target), "rev-parse", "--show-toplevel"], text=True).strip())
         if actual.resolve() != target.resolve():
             raise RuntimeError(f"Self-build checkout path is not a Git repository: {target}")
-        try:
-            origin = subprocess.check_output(["git", "-C", str(target), "remote", "get-url", "origin"], text=True).strip()
-        except subprocess.CalledProcessError:
-            origin = ""
-        if origin and Path(origin).exists() and Path(origin).resolve() != source.resolve():
-            raise RuntimeError(f"Self-build checkout has unexpected origin: {origin}")
     dirty = subprocess.check_output(["git", "-C", str(target), "status", "--porcelain"], text=True).strip()
     if dirty:
         raise RuntimeError(f"Self-build checkout has uncommitted changes: {target}")
@@ -49,7 +43,32 @@ def prepare_checkout(home: Path, source: Path) -> Path:
         else:
             raise RuntimeError("Self-build checkout needs a local or origin main branch for verified merges")
         subprocess.run(command, check=True, capture_output=True, text=True)
+    # Practice runs must start at the exact source revision being verified.
+    # Otherwise a stale main makes the protected guard compare unrelated trees.
+    source_head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+    practice_head = subprocess.check_output(["git", "-C", str(target), "rev-parse", "HEAD"], text=True).strip()
+    if practice_head != source_head:
+        remote = subprocess.run(["git", "-C", str(target), "remote", "get-url", "origin"],
+                                capture_output=True, text=True)
+        if remote.returncode == 0:
+            subprocess.run(["git", "-C", str(target), "remote", "set-url", "origin", str(source)],
+                           check=True, capture_output=True, text=True)
+        else:
+            subprocess.run(["git", "-C", str(target), "remote", "add", "origin", str(source)],
+                           check=True, capture_output=True, text=True)
+        subprocess.run(["git", "-C", str(target), "fetch", str(source), source_head],
+                       check=True, capture_output=True, text=True)
+        subprocess.run(["git", "-C", str(target), "reset", "--hard", "FETCH_HEAD"],
+                       check=True, capture_output=True, text=True)
     return target
+
+
+def install_practice_requirements(repo: Path) -> None:
+    """Install the exact pinned project environment before any practice verification."""
+    python = Path(sys.executable)
+    requirements = repo / "setup" / "requirements.txt"
+    subprocess.run([str(python), "-m", "pip", "install", "-r", str(requirements)],
+                   cwd=repo, check=True)
 
 
 def _auth_headers() -> dict:
@@ -69,7 +88,11 @@ def fill_command(cmd: str, guard: str = "", baseline: str = "") -> str:
     """Fill {guard}/{baseline} and run every bare `python` word with the interpreter running this script
     (many computers have no `python` command)."""
     cmd = cmd.replace("{guard}", guard).replace("{baseline}", baseline)
-    return re.sub(r"(?<![\w./-])python(?=\s)", lambda _m: shlex.quote(sys.executable), cmd)
+    python = os.environ.get("GLACIER_PYTHON") or sys.executable
+    cmd = re.sub(r"(?<![\w./-])python(?=\s)", lambda _m: shlex.quote(python), cmd)
+    # Acceptance commands may already contain a stale absolute Codespaces interpreter.
+    cmd = cmd.replace("/workspaces/glacier-lean/.venv/bin/python", shlex.quote(python))
+    return cmd
 
 
 def prepare_commands(flow: dict, guard: str = "", baseline: str = "") -> None:
@@ -113,8 +136,9 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"Could not read card file {card_path}: {error}")
     try:
         repo = prepare_checkout(args.home.expanduser().resolve(), args.source.expanduser().resolve())
+        install_practice_requirements(repo)
     except (OSError, subprocess.CalledProcessError, RuntimeError) as error:
-        print(f"Could not prepare the self-build checkout: {error}", file=sys.stderr)
+        print(f"Could not prepare the self-build checkout and pinned Python requirements: {error}", file=sys.stderr)
         return 1
     flow = json.loads(FLOW_PATH.read_text(encoding="utf-8"))
     flow["goal"] = f"Build feature from {card_path.name}: {card_text[:300]}"
@@ -123,8 +147,17 @@ def main(argv: list[str] | None = None) -> int:
     for node in flow["nodes"]:
         config = node.get("config", {})
         if node.get("type") == "codex":
-            config["prompt"] += f"\n\nApproved card text:\n{card_text}"
-    prepare_commands(flow, guard=str(GUARD_PATH), baseline=str(ROOT))
+            config["prompt"] += (
+                f"\n\nFULL APPROVED CARD (including its acceptance requirements):\n{card_text}"
+                "\n\nImplement every requested behavior and test in this card in the isolated practice"
+                " worktree. You are authorized to edit the practice worktree files needed to implement"
+                " the card. Do not park merely because an interpreter path is unavailable: use the"
+                " active interpreter selected by this flow (GLACIER_PYTHON when set, otherwise the"
+                " current Python interpreter). Run the card's acceptance commands and report exact"
+                " results. If you need a decision or cannot proceed, file a claim in vault/claims/"
+                " with the reason and evidence before stopping; never leave a question as a silent park."
+            )
+    prepare_commands(flow, guard=str(GUARD_PATH), baseline=str(repo))
     try:
         with httpx.Client(base_url=args.api.rstrip("/"), timeout=30, headers=_auth_headers()) as client:
             install_maintenance(client, repo)
