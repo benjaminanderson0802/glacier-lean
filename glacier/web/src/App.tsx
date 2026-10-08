@@ -4,6 +4,7 @@ import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
 import { HomeScreen } from './screens/Home.tsx'
 import { BuildTeamsScreen } from './screens/BuildTeams.tsx'
+import { AskScreen } from './screens/Ask.tsx'
 import { AutomationsScreen } from './screens/Automations.tsx'
 import { MemoryScreen } from './screens/Memory.tsx'
 import { SettingsScreen } from './screens/Settings.tsx'
@@ -81,12 +82,12 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [tab])
 
-  const building = tab === 'ask' || tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
+  const building = tab === 'ask' && rest[0] !== 'chat' || tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
   const screen = useMemo(() => {
     switch (tab) {
-      case 'ask': return <BuildTeamsScreen />
+      case 'ask': return rest[0] === 'chat' ? <AskScreen /> : <BuildTeamsScreen />
       case 'automations': return building
-        ? <Suspense fallback={<div className="g-empty">Loading the builder…</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
+        ? <Suspense fallback={<div className="g-empty">{translate('build.loading')}</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
         : rest[0] === 'team' && rest[1] ? <BuildTeamsScreen teamId={rest[1]} />
         : rest[0] === 'flow' && rest[1]
           ? <RunView key={rest.join('/')} envId={rest[1]} runId={rest[2] !== 'history' ? rest[2] : undefined} history={rest[2] === 'history'} />

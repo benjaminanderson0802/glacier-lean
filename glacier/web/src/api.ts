@@ -122,13 +122,10 @@ export const teamsApi = {
   spec: (spec: TeamPlan['spec']) => req<{ approved: boolean; spec: TeamPlan['spec'] }>('POST', '/api/build/spec', { spec }),
   plan: (vision_path: string, engine: string) => req<{ plan: TeamPlan; approved: false }>('POST', '/api/build/plan', { vision_path, engine }),
   create: (plan: TeamPlan, vision_path: string) => req<{ team_id: string; status: string; plan: TeamPlan }>('POST', '/api/teams', { plan, vision_path }),
-  list: () => req<{ team_id: string; name: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>('GET', '/api/teams'),
+  list: () => req<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>('GET', '/api/teams'),
   get: (teamId: string) => req<BuildTeam>('GET', `/api/teams/${enc(teamId)}`),
   start: (teamId: string) => req<{ team_id: string; status: string }>('POST', `/api/teams/${enc(teamId)}/run`),
   approveTask: (teamId: string, taskId: string, approved: boolean) => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/tasks/${enc(taskId)}/approve`, { approved }),
-  control: (teamId: string, action: 'pause' | 'resume' | 'stop') => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/${action}`, {}),
-  delete: (kind: 'interview' | 'team', id: string) => req<{ deleted: boolean; undo_id: string }>('DELETE', kind === 'interview' ? `/api/build/interviews/${enc(id)}` : `/api/teams/${enc(id)}`),
-  undoDelete: (undo_id: string) => req<Record<string, unknown>>('POST', '/api/build/undo-delete', { undo_id }),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
