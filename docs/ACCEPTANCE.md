@@ -26,3 +26,29 @@ check; it does not measure the moderated first-use metric M-TTFA.
 - Low-resource mode is configured in `sidecar.json` and sets `GLACIER_LOCAL_MODEL=granite3.3:2b` and `GLACIER_MAX_PARALLEL_RUNS=1` for the backend.
 - The app starts the backend on loopback at an OS-assigned port, waits for `/api/node-types`, then opens the built Glacier screen with that port.
 - First-run information is a bundled plain-language page; tool results are local and no setup-report endpoint is called.
+
+## PH4 exit: memory survives a full reinstall from git
+
+The serial backend acceptance test `test_memory_survives_full_reinstall_from_git` in
+`glacier/backend/tests/test_memory_reinstall_proof.py` runs
+`bench/memory_reinstall/prove.py` against temporary `GLACIER_HOME` folders and a temporary local
+bare Git remote. It saves Markdown with caller front matter and wiki links, files a claim through
+the claims API, edits a note, and removes the original home. It clones the vault into a fresh home
+and verifies the Memory API list, note bodies, resolved links and graph, the restored claim,
+git-backed undo, and the Markdown compatibility checker.
+
+Run the proof directly from the repository root:
+
+```sh
+PYTHON=/path/to/project/.venv/bin/python /path/to/project/.venv/bin/python bench/memory_reinstall/prove.py
+```
+
+The backend initializes the vault repository on startup but does not automatically rebuild the
+disposable SQLite search/link index from an existing clone. The proof rebuilds only those derived
+tables from restored Markdown before comparing Memory, without adding commits to the cloned vault.
+
+Run its pytest wrapper from `glacier/backend`:
+
+```sh
+../../.venv/bin/python -m pytest -q tests/test_memory_reinstall_proof.py
+```
