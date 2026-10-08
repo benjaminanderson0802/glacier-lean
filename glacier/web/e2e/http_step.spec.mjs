@@ -5,9 +5,10 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { e2ePorts } from './ports.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const mockPort = 8789, uiPort = 4319, api = `http://localhost:${mockPort}`, ui = `http://localhost:${uiPort}`
+const { mockPort, uiPort, api, ui } = await e2ePorts()
 const procs = []
 const start = (cmd, args, env = {}) => { const p = spawn(cmd, args, { cwd: root, env: { ...process.env, ...env }, stdio: 'ignore', detached: true }); procs.push(p); return p }
 const cleanup = () => { for (const p of procs.reverse()) { try { process.kill(-p.pid, 'SIGTERM') } catch { /* already stopped */ } } }

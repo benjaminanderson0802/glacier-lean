@@ -6,6 +6,30 @@ import path from 'node:path';
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const e2eDir = path.join(webDir, 'e2e');
 const packageJson = JSON.parse(await readFile(path.join(webDir, 'package.json'), 'utf8'));
+let shard = null;
+for (let index = 2; index < process.argv.length; index += 1) {
+  if (process.argv[index] !== '--shard' || shard !== null || !process.argv[index + 1]) {
+    console.error('[check-ui] usage: node scripts/check-ui.mjs [--shard i/n]');
+    process.exit(2);
+  }
+  const match = /^(\d+)\/(\d+)$/.exec(process.argv[index + 1]);
+  if (!match) {
+    console.error('[check-ui] --shard must be in i/n form, with i from 1 to n');
+    process.exit(2);
+  }
+  const [, rawIndex, rawCount] = match;
+  const indexInShard = Number(rawIndex), shardCount = Number(rawCount);
+  if (shardCount < 1 || indexInShard < 1 || indexInShard > shardCount) {
+    console.error('[check-ui] --shard must be in i/n form, with i from 1 to n');
+    process.exit(2);
+  }
+  shard = { index: indexInShard, count: shardCount };
+  index += 1;
+  if (index + 1 < process.argv.length) {
+    console.error('[check-ui] usage: node scripts/check-ui.mjs [--shard i/n]');
+    process.exit(2);
+  }
+}
 const steps = [
   { name: 'theme_lint.mjs', command: 'node', args: ['e2e/theme_lint.mjs'] },
 ];
@@ -37,7 +61,12 @@ const specs = (await readdir(e2eDir, { withFileTypes: true }))
     return a.localeCompare(b);
   });
 
-for (const spec of specs) {
+const selectedSpecs = shard
+  ? specs.filter((_, index) => index % shard.count === shard.index - 1)
+  : specs;
+if (shard) console.log(`[check-ui] shard ${shard.index}/${shard.count}: ${selectedSpecs.length}/${specs.length} specs`);
+
+for (const spec of selectedSpecs) {
   steps.push({ name: spec, command: 'node', args: [`e2e/${spec}`] });
 }
 
