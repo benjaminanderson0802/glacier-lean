@@ -91,8 +91,12 @@ def test_system_check_reports_tesseract(binary, version, found, monkeypatch, tmp
 
     system_check.clear_cache()
     script = tmp_path / "tesseract"
-    script.write_text(f"#!/bin/sh\nprintf '{version}\\n'\n", encoding="utf-8")
-    script.chmod(0o755)
+    if os.name == "nt":
+        script = tmp_path / "tesseract.cmd"
+        script.write_text(f"@echo {version}\r\n", encoding="utf-8")
+    else:
+        script.write_text(f"#!/bin/sh\nprintf '{version}\\n'\n", encoding="utf-8")
+        script.chmod(0o755)
     monkeypatch.setattr(system_check.shell_commands, "which", lambda name: str(script) if binary and name == "tesseract" else None)
     monkeypatch.setattr(system_check, "_run", lambda command, **kwargs: version if command[0] == str(script) else "")
     result = system_check.check_system()

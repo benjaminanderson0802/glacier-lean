@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pytest
 
@@ -30,9 +31,10 @@ def test_check_reports_missing_tools_and_friendly_message(monkeypatch):
 
 def test_check_reads_models_from_fake_ollama_on_path(tmp_path, monkeypatch):
     system_check.clear_cache()
+    monkeypatch.setenv("PATH", str(tmp_path))
     if os.name == "nt":
-        script = tmp_path / "ollama.py"
-        script.write_text("print('NAME\\tID\\nqwen3:0.6b\\t1\\nllama3.2:1b\\t2')\n", encoding="utf-8")
+        script = tmp_path / "ollama.cmd"
+        script.write_text('@echo NAME ID\r\n@echo qwen3:0.6b 1\r\n@echo llama3.2:1b 2\r\n', encoding="utf-8")
     else:
         script = tmp_path / "ollama"
         script.write_text("#!/bin/sh\nprintf 'NAME\\tID\\nqwen3:0.6b\\t1\\nllama3.2:1b\\t2'\n", encoding="utf-8")

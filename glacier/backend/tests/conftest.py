@@ -2,6 +2,12 @@
 import os, sys, time, socket, signal, subprocess
 import httpx, pytest
 
+# Make subprocess-created Git commits independent of the host's global config.
+os.environ.setdefault("GIT_AUTHOR_NAME", "Glacier Tests")
+os.environ.setdefault("GIT_AUTHOR_EMAIL", "glacier-tests@localhost")
+os.environ.setdefault("GIT_COMMITTER_NAME", "Glacier Tests")
+os.environ.setdefault("GIT_COMMITTER_EMAIL", "glacier-tests@localhost")
+
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAKE_CODEX = os.path.join(BACKEND, "tests", "fake_codex.py")  # tests never call the real Codex CLI
 
