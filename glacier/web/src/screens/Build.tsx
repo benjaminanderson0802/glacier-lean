@@ -144,7 +144,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [moreFields, setMoreFields] = useState(false)
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const [flowRemoved, setFlowRemoved] = useState(false)
-  const [flowsOpen, setFlowsOpen] = useState(false)
+  const [flowsOpen, setFlowsOpen] = useState(true)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -321,15 +321,22 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     const incomingParent = selectedIncoming && nodes.find(n => n.id === selectedIncoming.source)
     const parent = selectedNode && incomingParent && branchLabels(incomingParent)?.length
       ? incomingParent : selectedNode
-    // Keep palette-created nodes in a visible, non-overlapping row, nudging down
-    // on the 20px grid whenever an occupied node box would intersect.
-    let x = nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60
-    let y = nodes.length ? nodes.at(-1)!.position.y : 60
+    // Place the new step next to its parent (branch rows below), or in a zig-zag row when
+    // nothing is selected, so long links never run under another step; then nudge down on
+    // the 20px grid until the box is free.
+    let x: number, y: number
+    if (parent) {
+      x = parent.position.x + 260
+      y = parent.id !== selectedNode?.id ? parent.position.y + edges.filter(e => e.source === parent.id).length * 140 : parent.position.y
+    } else {
+      x = nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60
+      y = 60 + (nodes.length % 2) * 140
+    }
     x = Math.round(x / 20) * 20
     y = Math.round(y / 20) * 20
     const overlaps = (left: number, top: number) => nodes.some(n => left < n.position.x + 220 && left + 220 > n.position.x && top < n.position.y + 110 && top + 110 > n.position.y)
     while (overlaps(x, y)) {
-      y += 120
+      y += 140
       if (y > Math.max(60, ...nodes.map(n => n.position.y)) + 600) { x += 260; y = 60 }
     }
     const node: GNode = { id, type: kind, position: { x, y }, data: { config }, selected: true }
@@ -506,11 +513,11 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const allEnvs = [...envs, ...unsaved.filter(u => !envs.some(e => e.id === u.id))]
 
   return (
-    <div className={`app${envId ? ' flow-open' : ''}`}>
+    <div className={`app${envId ? ' flow-open' : ''}${envId && !flowsOpen ? ' flows-hidden' : ''}`}>
       {/* ---------- left ---------- */}
       <aside className={`left${envId && !flowsOpen ? ' flows-collapsed' : ' flows-open'}`}>
         <div className="build-head"><a className="ghost-link" href="#/automations">{t('build.allFlows')}</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
-        <div className="section-head"><span>{t('build.flows')}</span>{envId && <button className="ghost" type="button" data-testid="flows-toggle" aria-expanded={flowsOpen} title={flowsOpen ? 'Hide flows list' : 'Show flows list'} onClick={() => setFlowsOpen(open => !open)}>{flowsOpen ? '›' : '‹'}</button>}</div>
+        <div className="section-head"><span>{t('build.flows')}</span>{envId && <button className="ghost" type="button" data-testid="flows-toggle" aria-expanded={flowsOpen} title={flowsOpen ? t('build.hideFlows') : t('build.showFlows')} aria-label={flowsOpen ? t('build.hideFlows') : t('build.showFlows')} onClick={() => setFlowsOpen(open => !open)}>{flowsOpen ? '›' : '‹'}</button>}</div>
         <div className="list" data-testid="env-list">
           {allEnvs.map(e => (
             <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>

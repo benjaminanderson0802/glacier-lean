@@ -89,6 +89,8 @@ export const es: Record<string, string> = {
   'build.liveConnected': 'eventos en vivo conectados',
   'build.liveDisconnected': 'eventos en vivo desconectados',
   'build.flows': 'Flujos',
+  'build.hideFlows': 'Ocultar lista de flujos',
+  'build.showFlows': 'Mostrar lista de flujos',
   'build.noFlows': 'Todavía no hay flujos.',
   'build.flowName': 'Nombre del flujo',
   'build.create': 'Crear',

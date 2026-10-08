@@ -108,6 +108,8 @@ export const en: Record<string, string> = {
   'build.liveConnected': 'live events connected',
   'build.liveDisconnected': 'live events disconnected',
   'build.flows': 'Flows',
+  'build.hideFlows': 'Hide flows list',
+  'build.showFlows': 'Show flows list',
   'build.noFlows': 'No flows yet.',
   'build.flowName': 'Flow name',
   'build.create': 'Create',
