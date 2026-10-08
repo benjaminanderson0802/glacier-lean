@@ -37,9 +37,11 @@ def test_backend_starts_from_the_installed_layout(tmp_path):
     probe = (
         "import sys; sys.path.insert(0, '.')\n"
         "import app, import_service, template_registry\n"
+        "from routes.releases import release_notes\n"
         "assert template_registry.BUNDLED_DIR.is_dir(), template_registry.BUNDLED_DIR\n"
         "assert str(template_registry.BUNDLED_DIR).startswith(sys.argv[1]), template_registry.BUNDLED_DIR\n"
         "assert any(template_registry.BUNDLED_DIR.glob('*.json'))\n"
+        "assert release_notes()['version'] == '0.2.0'\n"
         "assert set(import_service._SOURCES) == {'chatgpt', 'claude'}\n"
         "print('ok')\n"
     )
