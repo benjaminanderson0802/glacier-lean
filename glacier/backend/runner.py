@@ -1,6 +1,7 @@
 """Graph runner: each run is the DBOS workflow run_environment(env_id, run_id) (workflow id == run_id); each node
 execution is a DBOS step, so after a crash finished nodes are replayed from DBOS's record instead of re-run."""
 import json, os, re, uuid, operator, subprocess, tempfile, threading, time
+import shlex
 from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
@@ -49,10 +50,10 @@ def load_env(env_id: str) -> dict:
     return json.loads(vault.read_note(env_path(env_id)))
 
 
-def start_run(env_id: str, run_settings: dict | None = None) -> str:
+def start_run(env_id: str, run_settings: dict | None = None, run_id: str | None = None) -> str:
     """Snapshot the saved graph into a new run and start its workflow. run_settings are underscore keys
     for this run only (e.g. who started it), never saved into the flow."""
-    run_id = uuid.uuid4().hex[:12]
+    run_id = run_id or uuid.uuid4().hex[:12]
     graph = load_env(env_id)
     graph.update({k: v for k, v in (run_settings or {}).items() if k.startswith("_")})
     store.create_run(run_id, env_id, graph)
@@ -215,6 +216,12 @@ def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
 def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
     """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
     nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
+    try:
+        trigger = store.graph_of(run_id).get("_trigger") or {}
+    except (TypeError, KeyError):  # direct runner unit calls may not have a persisted run snapshot
+        trigger = {}
+    if kind not in ("file_trigger", "webhook_trigger"):
+        cfg = _expand_trigger_values(cfg, trigger)
     store.set_node(run_id, env_id, nid, "running")
     res = {"state": "done", "output": ""}
     try:
@@ -284,7 +291,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
             ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home, "workspace": ws,
                    "memory": lambda task: memory_context.block(task, cfg),
-                   "log": lambda text: store.set_node(run_id, env_id, nid, "running", secrets_store.redact(str(text)[-OUTPUT_LIMIT:]))}
+                   "log": lambda text: store.set_node(run_id, env_id, nid, "running", secrets_store.redact(str(text)[-OUTPUT_LIMIT:])),
+                   "trigger": trigger if kind in ("file_trigger", "webhook_trigger") else {}}
             res = plugins.NODES[kind]["run"](ctx)
             if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
                 raise ValueError(f"step plug-in {kind!r} returned an invalid result")
@@ -299,6 +307,27 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
         store.record_usage(run_id, nid, res["usage"])
     store.set_node(run_id, env_id, nid, res["state"], res["output"])
     return res
+
+
+def _expand_trigger_values(value, trigger):
+    """Replace trigger placeholders in step settings without changing the saved environment."""
+    file_path = str(trigger.get("file") or "")
+    if os.name == "nt":  # command steps use Git Bash, which expects /c/Users/... paths
+        match = re.match(r"^([A-Za-z]):[\\/](.*)$", file_path)
+        if match:
+            file_path = "/" + match.group(1).lower() + "/" + match.group(2).replace("\\", "/")
+    body = trigger.get("body")
+    body_text = json.dumps(body, ensure_ascii=False, separators=(",", ":")) if body is not None else ""
+    def expand(item, command_field=False):
+        if isinstance(item, str):
+            file_value, body_value = (shlex.quote(file_path), shlex.quote(body_text)) if command_field else (file_path, body_text)
+            return item.replace("{trigger_file}", file_value).replace("{trigger_body}", body_value)
+        if isinstance(item, list):
+            return [expand(child, command_field) for child in item]
+        if isinstance(item, dict):
+            return {key: expand(child, command_field or key == "cmd") for key, child in item.items()}
+        return item
+    return expand(value)
 
 
 @DBOS.step()
@@ -450,7 +479,9 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
         if e["source"] in nodes and e["target"] in nodes:
             out[e["source"]].append(e)
     targets = {e["target"] for es in out.values() for e in es}
-    queue = deque([n for n in nodes if n not in targets] or list(nodes)[:1])
+    trigger_node = (graph.get("_trigger") or {}).get("node_id")
+    queue = deque([trigger_node] if trigger_node in nodes else
+                  ([n for n in nodes if n not in targets] or list(nodes)[:1]))
     last, status, executions = ({"output": graph.get("_a2a_input", ""), "exit_code": 0}
                                 if graph.get("_author") == "a2a" else None), "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
