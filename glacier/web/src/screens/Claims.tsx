@@ -57,7 +57,7 @@ export function ClaimDetail({ id }: { id: string }) {
   const evidence = lines(s['Evidence'])
   return (
     <>
-      <PageHead title={t('claims.detail')} crumb={t('claims.detailCrumb')} side={<span className="g-detail">Claim #{id.slice(0, 8)} · {m?.updated ? ago(String(m.updated)) : ''}</span>} />
+      <PageHead title={t('claims.detail')} crumb={t('claims.detailCrumb')} side={<span className="g-detail">{t('claims.id', { id: id.slice(0, 8) })} · {m?.updated ? ago(String(m.updated)) : ''}</span>} />
       {err && <div className="g-error">{err}</div>}
       {m && (
         <div className="g-banner" data-testid="claim-banner"><StatusIcon kind={open ? 'bad' : 'ok'} /><span className="g-lead">{m.kind ? `${String(m.kind)[0].toUpperCase()}${String(m.kind).slice(1)}: ` : ''}{m.summary ?? s['Problem']}</span><span className="g-chip">{String(m.status)}</span></div>
