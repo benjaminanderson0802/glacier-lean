@@ -168,3 +168,6 @@ button { cursor: pointer; }
 .g-release-notes p { margin: calc(2 * var(--px)) 0; }
 .g-release-notes ul { margin: calc(2 * var(--px)) 0; padding-left: calc(8 * var(--px)); }
 .g-release-notes .g-panel-title { margin: calc(3 * var(--px)) 0 var(--px); }
+
+/* Buttons wrap inside narrow columns instead of overflowing (long Spanish labels). */
+.g-btn { max-width: 100%; white-space: normal; overflow-wrap: anywhere; height: auto; }
