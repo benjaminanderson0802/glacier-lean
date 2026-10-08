@@ -13,7 +13,8 @@ const server = createServer((req, res) => {
   res.end(readFileSync(file))
 }).listen(0)
 const port = server.address().port
-const browser = await chromium.launch((p => p ? { executablePath: p } : {})(process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '')))
+const executable = process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined)
+const browser = await chromium.launch(executable ? { executablePath: executable } : {})
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 const notes = [
   { path: 'a.md', title: 'Alpha', author: 'owner', updated: new Date().toISOString(), tags: [] },

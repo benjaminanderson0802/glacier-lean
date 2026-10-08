@@ -54,6 +54,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renamed, setRenamed] = useState<{ from: string; path: string; commit: string } | null>(null)
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
+  const [focusedNotePath, setFocusedNotePath] = useState('')
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -89,6 +90,23 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
     return [...c.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)
   }, [notes])
   const list = (notes ?? []).filter(n => tag === t('memory.all') || n.tags?.includes(tag)).sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''))
+  useEffect(() => {
+    if (list.some(n => n.path === focusedNotePath)) return
+    const nextPath = list[0]?.path ?? ''
+    setFocusedNotePath(nextPath)
+    if (focusedNotePath) requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid^="mem-note-"]')?.focus())
+  }, [list, focusedNotePath])
+  const moveNoteFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    const currentPath = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-testid^="mem-note-"]')?.dataset.testid?.slice('mem-note-'.length)
+    if (!currentPath || !list.length) return
+    event.preventDefault()
+    event.stopPropagation()
+    const index = list.findIndex(n => n.path === currentPath)
+    const next = list[(index + (event.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length]
+    setFocusedNotePath(next.path)
+    document.querySelector<HTMLButtonElement>(`[data-testid="mem-note-${CSS.escape(next.path)}"]`)?.focus()
+  }
   const open = (p: string) => go(`memory/${encodeURIComponent(p)}`)
   const deleteNote = async (p: string) => { const result = await memory.delete(p); return { title: t('delete.removed'), run: async () => { await memory.undoDelete(p, result.commit); reloadNotes() } } }
   const noteDeleted = (p: string, action?: UndoAction) => { setDeleteUndo(action ?? null); reloadNotes(); if (note?.path === p) { setNote(null); go('memory') } }
@@ -103,10 +121,10 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
           <KeyboardMenu label={t('memory.filters')} items={[t('memory.all'), ...tags.map(x => x[0])].map(value => ({ id: value, label: <><span>{value}</span><span style={{ marginLeft: 'auto', color: 'var(--g-gold)' }}>{value === t('memory.all') ? notes?.length ?? '' : tags.find(x => x[0] === value)?.[1]}</span></> }))} selected={tag} onSelect={value => { setTag(value); setQ('') }} />
         </Panel>
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
-          <div className="g-rows">
+          <div className="g-rows" onKeyDown={moveNoteFocus}>
             {hits
               ? hits.map(h => <div key={h.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={h.title||h.path} detail={h.snippet} onClick={()=>open(h.path)} testid={`mem-hit-${h.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(h.path)}`} onDelete={()=>deleteNote(h.path)} onDeleted={action=>noteDeleted(h.path,action)} onError={e=>setErr(String(e))} /></div>)
-              : list.map(n => <div key={n.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={n.title||n.path} detail={n.author?t('memory.byAuthor',{name:n.author}):undefined} when={ago(n.updated)} onClick={()=>open(n.path)} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={()=>deleteNote(n.path)} onDeleted={action=>noteDeleted(n.path,action)} onError={e=>setErr(String(e))} /></div>)}
+              : list.map(n => <div key={n.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={n.title||n.path} detail={n.author?t('memory.byAuthor',{name:n.author}):undefined} when={ago(n.updated)} onClick={()=>open(n.path)} onFocus={() => setFocusedNotePath(n.path)} className={focusedNotePath === n.path ? 'sel' : ''} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={()=>deleteNote(n.path)} onDeleted={action=>noteDeleted(n.path,action)} onError={e=>setErr(String(e))} /></div>)}
             {notes && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
             {hits && hits.length === 0 && <Empty>{t('memory.nothingFound')}</Empty>}
           </div>

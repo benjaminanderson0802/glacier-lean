@@ -16,7 +16,11 @@ export function KeyboardMenu({ items, selected, onSelect, label, orientation = '
   const list = useRef<HTMLDivElement>(null)
   const [focused, setFocused] = useState(selected)
   const firstId = items[0]?.id ?? ''
-  useEffect(() => setFocused(items.some(item => item.id === selected) ? selected : firstId), [selected, firstId])
+  useEffect(() => {
+    // A refreshed item array can change labels or ordering without changing IDs.
+    // Keep the user's place in that case; reconcile only when it no longer exists.
+    if (!items.some(item => item.id === focused)) setFocused(items.some(item => item.id === selected) ? selected : firstId)
+  }, [items, selected, firstId, focused])
   const move = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const up = orientation === 'vertical' ? event.key === 'ArrowUp' : event.key === 'ArrowLeft'
     const down = orientation === 'vertical' ? event.key === 'ArrowDown' : event.key === 'ArrowRight'
@@ -67,8 +71,8 @@ export function Panel({ title, aside, children, testid, className, style }: { ti
   )
 }
 
-type RowProps = { status?: StatusKind; icon?: IconName; lead: ReactNode; detail?: ReactNode; when?: ReactNode; onClick?: () => void; testid?: string; className?: string; leadTitle?: string }
-export function Row({ status, icon, lead, detail, when, onClick, testid, className, leadTitle }: RowProps) {
+type RowProps = { status?: StatusKind; icon?: IconName; lead: ReactNode; detail?: ReactNode; when?: ReactNode; onClick?: () => void; onFocus?: () => void; testid?: string; className?: string; leadTitle?: string }
+export function Row({ status, icon, lead, detail, when, onClick, onFocus, testid, className, leadTitle }: RowProps) {
   const inner = (
     <>
       <span className="g-ico">{status ? <StatusIcon kind={status} /> : icon ? <Icon name={icon} /> : null}</span>
@@ -77,7 +81,7 @@ export function Row({ status, icon, lead, detail, when, onClick, testid, classNa
     </>
   )
   return onClick
-    ? <button type="button" className={`g-row ${className ?? ''}`} data-testid={testid} onClick={onClick}>{inner}</button>
+    ? <button type="button" className={`g-row ${className ?? ''}`} data-testid={testid} onFocus={onFocus} onClick={onClick}>{inner}</button>
     : <div className={`g-row ${className ?? ''}`} data-testid={testid}>{inner}</div>
 }
 
