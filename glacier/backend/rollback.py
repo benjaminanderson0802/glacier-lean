@@ -43,13 +43,38 @@ def run_commits(run_id: str) -> list[git.Commit]:
         return _run_commits(run_id)
 
 
-def changes(run_id: str) -> list[dict]:
+def _vault_change_log() -> list[tuple[str, str, str, set[str]]]:
+    """(sha, author, subject, changed paths) for every vault commit, newest first.
+
+    One separate `git log` process: no shared repository object, so no vault lock,
+    and note saves never wait while a long history is scanned.
+    """
     import vault
+    output = git.Git(vault.VAULT).log("--format=%x1e%H%x1f%an%x1f%s", "--name-only", "-M", "--root")
+    entries = []
+    for record in output.split("\x1e"):
+        if not record.strip():
+            continue
+        header, _, names = record.partition("\n")
+        sha, author, subject = (header.split("\x1f", 2) + ["", ""])[:3]
+        entries.append((sha, author, subject, {line.strip() for line in names.splitlines() if line.strip()}))
+    return entries
+
+
+def changes(run_id: str) -> list[dict]:
     result = []
-    with vault._lock:
-        for commit in _run_commits(run_id):
-            for path in sorted(_commit_paths(commit)):
-                result.append({"path": path, "commit": commit.hexsha[:8], "author": commit.author.name, "repo": "vault"})
+    # Same matching rules as _run_commits, read from one git log instead of per-commit diffs.
+    tag = re.compile(r"\[run:" + re.escape(run_id) + r"\]", re.IGNORECASE)
+    path_id = re.compile(r"(?<![A-Za-z0-9])" + re.escape(run_id) + r"(?![A-Za-z0-9])", re.IGNORECASE)
+    author_name = f"run:{run_id}".casefold()
+    for sha, author, subject, paths in _vault_change_log():
+        if subject.casefold().startswith("revert"):
+            continue
+        matched = tag.match(subject) or tag.search(author) or author.casefold() == author_name or (
+            author.casefold() == "glacier-runner" and any(path_id.search(path) for path in paths))
+        if matched:
+            for path in sorted(paths):
+                result.append({"path": path, "commit": sha[:8], "author": author, "repo": "vault"})
     # Workspace repositories are independent and opened/closed per operation.
     for workspace, commit in _workspace_run_commits(run_id):
         for path in sorted(_commit_paths(commit)):
