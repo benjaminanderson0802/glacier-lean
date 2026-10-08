@@ -27,3 +27,8 @@ Installed on the owner's PC today: the build from the Windows start-up fixes (20
 - Opening Glacier twice focuses the open window instead of starting a second one.
 - The engine token no longer appears in backend.log.
 - Notes written by hand no longer get an empty run_id line.
+
+## Release plan (owner decision 2026-10-08)
+- Auto-update ships with the next big update: that release (v0.2.0) is the first with the updater, so it is installed once by hand.
+- The release after it is the auto-update proof: the installed Glacier should offer it in Settings > About and install it on click. NORTHSTAR PH8.1 is recorded done after that.
+- Fixes are collected here between releases, not shipped one by one.
