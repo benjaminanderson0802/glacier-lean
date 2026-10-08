@@ -496,6 +496,10 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             else:
                 r = run_acceptance_check(env_id, run_id, i, check, last_output, ws)
             if not r["passed"] and check.get("required", True):
+                # The owner saying no is a decision, not a broken run: report it as rejected and stop checking.
+                if check.get("kind") == "human" and r.get("evidence") == "rejected by the owner":
+                    status = "rejected"
+                    break
                 status = "failed"
     if isolate:
         finish_workspace(env_id, run_id, status == "done")
