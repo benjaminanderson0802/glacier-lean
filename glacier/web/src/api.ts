@@ -359,6 +359,12 @@ export const settingsApi = {
   compat: () => req<VaultCompat>('GET', '/api/memory/compat'),
 }
 
+export const releasesApi = {
+  notes: () => req<{ version: string; markdown: string }>('GET', '/api/releases/current'),
+  lastSeen: () => req<{ version: string }>('GET', '/api/releases/installed/seen'),
+  markSeen: (version: string) => req<{ version: string }>('PUT', '/api/releases/installed/seen', { version }),
+}
+
 // ---------- First-run starter setup ----------
 export interface StarterProposal {
   applied: boolean

@@ -1,6 +1,6 @@
 // Settings sections beyond General / System check / Help: Models, Secrets, Usage, Data, About.
 import { useEffect, useState } from 'react'
-import { askSettingsApi, settingsApi, system, type AskSettings, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
+import { askSettingsApi, releasesApi, settingsApi, system, type AskSettings, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
 import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { t } from '../i18n/index.ts'
@@ -162,6 +162,8 @@ export function DataSection() {
 }
 
 export function AboutSection({ version }: { version: string }) {
+  const [releaseMarkdown, setReleaseMarkdown] = useState('')
+  const [releaseError, setReleaseError] = useState('')
   const [update, setUpdate] = useState<{ version: string; notes: string } | null>(null)
   const [state, setState] = useState<'idle' | 'checking' | 'current' | 'available' | 'installing' | 'restart' | 'error'>('idle')
   const [error, setError] = useState('')
@@ -186,6 +188,9 @@ export function AboutSection({ version }: { version: string }) {
   useEffect(() => {
     if (desktop) void checkForUpdates()
   }, [desktop])
+  useEffect(() => {
+    releasesApi.notes().then(result => setReleaseMarkdown(result.markdown)).catch(() => setReleaseError(t('settingsSections.releaseNotesUnavailable')))
+  }, [version])
   return (
     <Panel title={t('settingsSections.about')} testid="settings-about">
       <dl className="g-kv">
@@ -194,6 +199,8 @@ export function AboutSection({ version }: { version: string }) {
         <dt>{t('settingsSections.fonts')}</dt><dd>{t('settingsSections.fontsValue')}</dd>
         <dt>{t('settingsSections.source')}</dt><dd>{t('settingsSections.repo')}</dd>
       </dl>
+      <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.whatsNew')}</h3>
+      {releaseError ? <div className="g-detail" data-testid="release-notes-error">{releaseError}</div> : <ReleaseMarkdown markdown={releaseMarkdown} />}
       <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.updates')}</h3>
       {!desktop ? <div className="g-detail" data-testid="update-browser">{t('settingsSections.updateDesktopOnly')}</div> : (
         <div className="g-stack" style={{ gap: 8 }}>
@@ -205,4 +212,26 @@ export function AboutSection({ version }: { version: string }) {
       )}
     </Panel>
   )
+}
+
+function ReleaseMarkdown({ markdown }: { markdown: string }) {
+  const blocks: { kind: 'heading' | 'paragraph' | 'list'; level?: number; lines: string[] }[] = []
+  let list: string[] = []
+  const flushList = () => { if (list.length) { blocks.push({ kind: 'list', lines: list }); list = [] } }
+  for (const raw of markdown.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line) { flushList(); continue }
+    const heading = /^(#{1,6})\s+(.+)$/.exec(line)
+    const item = /^[-*+]\s+(.+)$/.exec(line)
+    if (item) { list.push(item[1]); continue }
+    flushList()
+    if (heading) blocks.push({ kind: 'heading', level: heading[1].length, lines: [heading[2]] })
+    else blocks.push({ kind: 'paragraph', lines: [line] })
+  }
+  flushList()
+  return <div className="g-release-notes" data-testid="release-notes">{blocks.map((block, i) => {
+    if (block.kind === 'list') return <ul key={i}>{block.lines.map((line, j) => <li key={j}>{line}</li>)}</ul>
+    if (block.kind === 'heading') return <h4 key={i} className="g-panel-title">{block.lines[0]}</h4>
+    return <p key={i}>{block.lines[0]}</p>
+  })}</div>
 }
