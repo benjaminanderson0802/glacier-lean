@@ -56,7 +56,7 @@ jobs:
         run: |
           $bash = @("$env:ProgramFiles\Git\bin\bash.exe", "${env:ProgramFiles(x86)}\Git\bin\bash.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $bash) { throw "Git Bash was not found. Install Git for Windows to run the backend tests." }
-          & $bash -lc 'python -m pytest -q tests -n 4 -m "not serial" -rf -o faulthandler_timeout=240 --durations=15 --capture=tee-sys && python -m pytest -q tests -m serial -rf -o faulthandler_timeout=240 --capture=tee-sys' 2>&1 | Tee-Object -FilePath windows-results.txt
+          & $bash -lc 'python -m pytest -q tests -n 4 -m "not serial" -rf -o faulthandler_timeout=240 --durations=15 && python -m pytest -q tests -m serial -rf -o faulthandler_timeout=240' 2>&1 | Tee-Object -FilePath windows-results.txt
           $testExit = $LASTEXITCODE
           if ($testExit -ne 0) { exit $testExit }
         shell: pwsh
