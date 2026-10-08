@@ -1,7 +1,9 @@
 """Conversational assistant API. Planning is review-only; saving requires explicit approval."""
 import json
+import math
 import os
 import re
+import contextlib
 import subprocess
 import tempfile
 import threading
@@ -31,6 +33,40 @@ _proposals_lock = threading.Lock()
 MAX_PROPOSALS = 100
 MAX_CONTEXT_EXCHANGES = 10
 MAX_CONTEXT_CHARS = 6000
+_api_budget_lock = threading.Lock()
+
+
+@contextlib.contextmanager
+def _api_budget_guard():
+    """Serialize monthly reservations across threads and parallel worker processes."""
+    with _api_budget_lock:
+        path = _api_budget_path() + ".lock"
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        handle = open(path, "a+b")
+        try:
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0, os.SEEK_END)
+                if handle.tell() == 0:
+                    handle.write(b"0")
+                    handle.flush()
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            yield
+        finally:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                handle.close()
 
 
 def _open_ollama_request(request, timeout=600):
@@ -199,6 +235,188 @@ def _ollama_answers() -> bool:
             payload = json.loads(response.read())
         return bool(payload.get("models"))
     except (OSError, ValueError, urllib.error.URLError):
+        return False
+
+
+def _saved_settings() -> dict:
+    try:
+        with open(os.path.join(os.environ.get("GLACIER_HOME", "data"), "settings.json"), encoding="utf-8") as handle:
+            value = json.load(handle)
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_ask_settings(value: dict) -> dict:
+    """Persist only non-secret engine preferences; credentials stay in the OS keychain."""
+    engines = {"codex", "claude", "gemini", "openai", "anthropic", "local"}
+    engine = str(value.get("engine", "codex"))
+    if engine not in engines:
+        raise ValueError("Choose one of the listed engines.")
+    settings = _saved_settings()
+    settings["ask_engine"] = engine
+    if "remember_previous_chats" in value:
+        settings["ask_remember_previous_chats"] = bool(value["remember_previous_chats"])
+    else:
+        settings.setdefault("ask_remember_previous_chats", True)
+    for key in ("openai_base_url", "openai_model", "openai_secret_name", "openai_monthly_cap_usd",
+                "openai_input_usd_per_million", "openai_output_usd_per_million", "anthropic_model",
+                "anthropic_secret_name", "anthropic_monthly_cap_usd", "anthropic_input_usd_per_million",
+                "anthropic_output_usd_per_million", "local_model"):
+        if key in value:
+            raw = value[key]
+            if key.endswith(("_monthly_cap_usd", "_input_usd_per_million", "_output_usd_per_million")):
+                if raw in (None, ""):
+                    settings[key] = ""
+                    continue
+                try:
+                    amount = float(raw)
+                except (TypeError, ValueError):
+                    raise ValueError("Enter a valid price or monthly cap.") from None
+                if not math.isfinite(amount) or amount < 0 or (key.endswith("_monthly_cap_usd") and amount == 0):
+                    raise ValueError("The monthly cap must be above zero. Prices cannot be negative.")
+                settings[key] = amount
+            else:
+                settings[key] = str(raw).strip()
+    if value.get("engine") == "local" and "local_model" in value and value["local_model"]:
+        import system_check
+        installed = system_check.check_system().get("ollama_models") or []
+        if value["local_model"] not in installed:
+            raise ValueError("Choose a local model already installed in Ollama.")
+    os.makedirs(os.path.dirname(os.path.abspath(os.path.join(os.environ.get("GLACIER_HOME", "data"), "settings.json"))), exist_ok=True)
+    with open(os.path.join(os.environ.get("GLACIER_HOME", "data"), "settings.json"), "w", encoding="utf-8") as handle:
+        json.dump(settings, handle, indent=2)
+        handle.write("\n")
+    selected = next((item for item in available_engines() if item["id"] == engine), None)
+    if selected is None:
+        selected = {"available": False, "reason": "Codex is missing or signed out." if engine == "codex" else f"{engine.title()} is not ready."}
+    return {"engine": engine, "available": bool(selected and selected["available"]),
+            "reason": selected["reason"] if selected else "This engine is not available."}
+
+
+def _api_budget_configured(settings: dict, engine: str) -> bool:
+    try:
+        return all(math.isfinite(float(settings.get(f"{engine}_{field}", 0)))
+                   for field in ("monthly_cap_usd", "input_usd_per_million", "output_usd_per_million")) \
+            and float(settings.get(f"{engine}_monthly_cap_usd", 0)) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _api_budget_path() -> str:
+    return os.path.join(os.environ.get("GLACIER_HOME", "data"), "ask_api_usage.json")
+
+
+def _read_api_budget() -> dict:
+    try:
+        with open(_api_budget_path(), encoding="utf-8") as handle:
+            value = json.load(handle)
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_api_budget(value: dict) -> None:
+    path = _api_budget_path()
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    temporary = path + ".tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(value, handle, indent=2)
+        handle.write("\n")
+    os.replace(temporary, path)
+
+
+def _monthly_api_spend(engine: str) -> float:
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    return round(float(_read_api_budget().get(month, {}).get(engine, 0)), 6)
+
+
+def _reserve_api_budget(engine: str, prompt: str, max_output_tokens: int = 1200) -> float:
+    settings = _saved_settings()
+    if not _api_budget_configured(settings, engine):
+        raise RuntimeError("Set a monthly cap and token prices in Settings > Models before using this API engine.")
+    cap = float(settings[f"{engine}_monthly_cap_usd"])
+    input_rate = float(settings[f"{engine}_input_usd_per_million"])
+    output_rate = float(settings[f"{engine}_output_usd_per_million"])
+    # Reserve a deliberately generous prompt estimate plus the full output limit before sending.
+    # The reservation prevents parallel requests from spending beyond the configured cap.
+    input_tokens = len(prompt.encode("utf-8"))
+    estimate = math.ceil((input_tokens * input_rate + max_output_tokens * output_rate) / 1_000_000 * 1_000_000) / 1_000_000
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    with _api_budget_guard():
+        ledger = _read_api_budget()
+        month_data = ledger.setdefault(month, {})
+        current = float(month_data.get(engine, 0))
+        if current >= cap or current + estimate > cap:
+            raise RuntimeError(f"This API engine has reached its monthly cap. Spend so far: ${current:.4f} of ${cap:.2f}.")
+        month_data[engine] = round(current + estimate, 6)
+        _write_api_budget(ledger)
+    return estimate
+
+
+def _finish_api_budget(engine: str, estimate: float, usage: dict | None) -> None:
+    if not isinstance(usage, dict):
+        return
+    input_tokens = usage.get("prompt_tokens", usage.get("input_tokens"))
+    output_tokens = usage.get("completion_tokens", usage.get("output_tokens"))
+    try:
+        input_tokens, output_tokens = int(input_tokens), int(output_tokens)
+        settings = _saved_settings()
+        actual = math.ceil((input_tokens * float(settings[f"{engine}_input_usd_per_million"])
+                            + output_tokens * float(settings[f"{engine}_output_usd_per_million"])) / 1_000_000 * 1_000_000) / 1_000_000
+    except (KeyError, TypeError, ValueError):
+        return
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    with _api_budget_guard():
+        ledger = _read_api_budget()
+        month_data = ledger.setdefault(month, {})
+        month_data[engine] = round(max(0.0, float(month_data.get(engine, 0)) - estimate + actual), 6)
+        _write_api_budget(ledger)
+
+
+def available_engines() -> list[dict]:
+    settings = _saved_settings()
+    override = os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN")
+    # A configured chat executable may be a Python helper, which Windows' which() never lists
+    # but executable_invocation() can still start.
+    codex_found = bool(override and os.path.isfile(override)) or bool(shell_commands.which(override or "codex"))
+    codex_ready = codex_found and _codex_signed_in()
+    rows = [{"id": "codex", "label": "Codex", "available": codex_ready,
+             "reason_code": "ready" if codex_ready else "sign_in", "reason": "Codex is installed and signed in." if codex_ready else "Codex is missing or signed out."}]
+    for name in ("claude", "gemini"):
+        ok, reason = _cli_available(name)
+        rows.append({"id": name, "label": name.title(), "available": ok,
+                     "reason_code": "ready" if ok else "sign_in" if "not signed in" in reason else "missing", "reason": reason})
+    ollama_ready = _ollama_answers()
+    rows.append({"id": "local", "label": "Ollama", "available": ollama_ready, "reason_code": "ready" if ollama_ready else "local_not_ready",
+                 "reason": "Ollama has installed models." if ollama_ready else "Ollama is not running with an installed model."})
+    openai_configured = bool(settings.get("openai_base_url") and settings.get("openai_model") and settings.get("openai_secret_name") in secrets_store.names()
+                            and _api_budget_configured(settings, "openai"))
+    openai_allowed = _allowed_api_host(str(settings.get("openai_base_url", "")))
+    openai_ok = openai_configured and openai_allowed
+    rows.append({"id": "openai", "label": "OpenAI-compatible API", "available": openai_ok,
+                 "reason_code": "ready" if openai_ok else "host_not_allowed" if openai_configured and not openai_allowed else "needs_settings",
+                 "reason": "API settings are ready." if openai_ok else "Add this API host to Glacier's allowed sites." if openai_configured and not openai_allowed else "Add a base address, model, saved secret name, monthly cap, and token prices."})
+    anthropic_configured = bool(settings.get("anthropic_model") and settings.get("anthropic_secret_name") in secrets_store.names()
+                                and _api_budget_configured(settings, "anthropic"))
+    anthropic_allowed = _allowed_api_host("https://api.anthropic.com")
+    anthropic_ok = anthropic_configured and anthropic_allowed
+    rows.append({"id": "anthropic", "label": "Anthropic API", "available": anthropic_ok,
+                 "reason_code": "ready" if anthropic_ok else "host_not_allowed" if anthropic_configured and not anthropic_allowed else "needs_settings",
+                 "reason": "API settings are ready." if anthropic_ok else "Add api.anthropic.com to Glacier's allowed sites." if anthropic_configured and not anthropic_allowed else "Add a model, saved secret name, monthly cap, and token prices."})
+    return rows
+
+
+def _allowed_api_host(base_url: str) -> bool:
+    try:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(base_url)
+        _ = parsed.port
+        host = (parsed.hostname or "").lower().rstrip(".")
+        domains = allowed_domains(os.environ.get("GLACIER_ALLOWED_HOSTS", ""))
+        return bool(parsed.scheme in {"http", "https"} and parsed.username is None and parsed.password is None
+                    and host and any(host == domain or host.endswith("." + domain) for domain in domains))
+    except ValueError:
         return False
 
 

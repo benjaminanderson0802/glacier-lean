@@ -178,11 +178,7 @@ def home():
     return {"local_ai": _local_ai_status(),
             "counts": {"running": len(running), "need_you": len(needs_you)},
             "needs_you": needs_you[:20], "running": running,
-<<<<<<< HEAD
             "teams_running": _teams_running(),
-=======
-            "teams_running": teams.summary(),
->>>>>>> aca183c (Build project team screens)
             "recent_notes": _recent_notes()}
 
 

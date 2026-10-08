@@ -4,11 +4,8 @@ import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
-<<<<<<< HEAD
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
-=======
 import { teamsApi } from '../api.ts'
->>>>>>> aca183c (Build project team screens)
 
 type Flow = EnvSummary & { last?: RunSummary }
 const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
@@ -27,11 +24,8 @@ export function AutomationsScreen() {
   const [details, setDetails] = useState<Record<string, Environment>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
-<<<<<<< HEAD
   const [undo, setUndo] = useState<UndoAction | null>(null)
-=======
   const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
->>>>>>> aca183c (Build project team screens)
 
   useEffect(() => {
     teamsApi.list().then(setTeams).catch(() => {})

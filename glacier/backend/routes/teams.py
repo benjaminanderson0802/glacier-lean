@@ -54,9 +54,8 @@ class DeleteUndo(BaseModel):
 
 @router.post("/api/build/interview")
 def interview(turn: InterviewTurn):
-    if turn.engine not in ("codex", "local"):
-        raise HTTPException(400, "engine must be codex or local")
-    import assistant
+    if turn.engine not in teams.ASK_ENGINES:
+        raise HTTPException(400, "Choose one of the available Ask engines.")
     from routes import assistant_chat
     conversation_id = turn.conversation_id or str(uuid.uuid4())
     try:
@@ -68,7 +67,7 @@ def interview(turn: InterviewTurn):
               "Do not plan a team yet.\n" + assistant_chat._with_conversation_context(
                   turn.message, assistant_chat._conversation_context(conversation_id)))
     try:
-        answer = (assistant._ask_local if turn.engine == "local" else assistant._ask_codex)(prompt, {
+        answer = teams.ask_engine(prompt, turn.engine, {
             "type": "object", "additionalProperties": False, "required": ["reply", "automation"],
             "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"}}})
         assistant_chat._append_conversation(conversation_id, turn.message, answer["reply"])

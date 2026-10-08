@@ -111,7 +111,7 @@ export interface TeamPlan {
   spec: { requirements: (string | Record<string, unknown>)[]; out_of_scope: string[]; acceptance: (string | Record<string, unknown>)[] }
   features: { id: string; title: string; description?: string; acceptance?: unknown[] }[]
   harness: Record<string, unknown>
-  team: { roles: TeamRole[]; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
+  team: { roles: TeamRole[]; engine?: string; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
   tasks: { id: string; title: string; role: string; feature_id?: string; acceptance: unknown[]; depends_on?: string[]; requires_approval?: boolean }[]
   guards?: Record<string, unknown>
 }
