@@ -12,6 +12,7 @@ def test_document_reader_disables_environment_proxies(monkeypatch):
 
     class Response:
         headers = {"Content-Type": "text/plain"}
+        status = 200
 
         def __enter__(self):
             return self
@@ -30,7 +31,9 @@ def test_document_reader_disables_environment_proxies(monkeypatch):
         seen.extend(handlers)
         return Opener()
 
-    monkeypatch.setattr(read_document, "build_opener", build_opener)
+    # The reader now opens pages through egress.open_pinned, which builds the opener.
+    import egress
+    monkeypatch.setattr(egress, "build_opener", build_opener)
     read_document._read_url("http://127.0.0.1/document")
 
     assert any(isinstance(handler, ProxyHandler) and handler.proxies == {} for handler in seen)
