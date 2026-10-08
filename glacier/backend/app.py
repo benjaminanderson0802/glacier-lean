@@ -13,6 +13,7 @@ vault.init(os.path.join(HOME, "vault"))
 store.init(DB_PATH)
 DBOS(config=DBOSConfig(name="glacier", system_database_url=f"sqlite:///{DB_PATH}"))
 import runner  # noqa: E402  (registers workflows after DBOS is configured)
+import triggers  # noqa: E402  (reuses the configured run path)
 
 CATALOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "contract", "node_types.json")
 with open(CATALOG_PATH) as _f:
@@ -25,7 +26,9 @@ NODE_TYPES = {t["type"] for t in NODE_CATALOG}
 async def lifespan(_app):
     store.broadcaster.loop = asyncio.get_running_loop()
     DBOS.launch()  # recovers runs that were in flight when the backend died
+    triggers.start(HOME)
     yield
+    triggers.stop()
     DBOS.destroy()
 
 
@@ -93,6 +96,10 @@ def validate_environment(env_id: str, env: dict) -> dict:
     except ValueError as e:
         raise HTTPException(400, str(e))
     try:
+        from nodes.file_trigger import validate_folder
+        for node in env["nodes"]:
+            if node.get("type") == "file_trigger":
+                validate_folder((node.get("config") or {}).get("folder"), HOME)
         vault.safe_path(runner.env_path(env_id))
         runner.sync_schedule(env)
     except Exception as e:
@@ -121,6 +128,9 @@ def get_run(run_id: str):
     run["usage"] = store.usage_of(run_id)  # model, route, tokens and cost per step
     run["author"] = store.get_run(run_id).get("author", "owner")
     graph = store.graph_of(run_id)
+    trigger = graph.get("_trigger") or {}
+    if trigger:
+        run["trigger"] = {key: trigger[key] for key in ("type", "node_id", "file") if key in trigger}
     acceptance = graph.get("acceptance") or []
     checks = store.checks_of(run_id)
     run["verification"] = checks
