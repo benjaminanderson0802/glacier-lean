@@ -99,7 +99,7 @@ export function Splash({ onDone, version }: { onDone: (to: string) => void; vers
           </button>
         ))}
       </nav>
-      <div className="g-splash-foot"><span>v{version}</span><span>{t('splash.continue')}</span><span>{now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>
+      <div className="g-splash-foot"><span>{t('splash.versionPrefix')}{version}</span><span>{t('splash.continue')}</span><span>{now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>
     </div>
   )
 }
