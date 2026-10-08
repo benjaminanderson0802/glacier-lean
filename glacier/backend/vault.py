@@ -10,6 +10,10 @@ import memory_meta
 
 VAULT: str = ""
 _repo = None
+_note_history_cache: dict[str, tuple[tuple[int | None, int | None], list[dict]]] = {}
+_note_history_cache_lock = threading.Lock()
+_note_history_generation: dict[str, int] = {}
+_note_history_inflight: dict[str, int] = {}
 class FairRLock:
     """A re-entrant lock that serves waiting threads in arrival order.
 
@@ -84,18 +88,46 @@ def init(path: str) -> None:
     VAULT = os.path.abspath(path)
     with _note_metadata_cache_lock:
         _note_metadata_cache.clear()
+    with _note_history_cache_lock:
+        _note_history_cache.clear()
+        _note_history_generation.clear()
+        _note_history_inflight.clear()
     os.makedirs(VAULT, exist_ok=True)
     _repo = git.Repo.init(VAULT)
     with open(os.path.join(VAULT, ".gitignore"), "w") as f:
         f.write(".index.sqlite*\n")
+    # WAL keeps readers from holding up index commits. FULL sync remains enabled:
+    # this SQLite file is rebuildable, but writes should still be durable.
+    index_path = os.path.join(VAULT, ".index.sqlite")
+    with sqlite3.connect(index_path, timeout=30) as c:
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute("CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(path UNINDEXED, body)")
+        c.execute("CREATE TABLE IF NOT EXISTS links(src TEXT, dst TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS events(ts DEFAULT CURRENT_TIMESTAMP, agent TEXT, kind TEXT, data TEXT)")
 
 
 def _db():
     c = sqlite3.connect(os.path.join(VAULT, ".index.sqlite"), timeout=30)
-    c.execute("CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(path UNINDEXED, body)")
-    c.execute("CREATE TABLE IF NOT EXISTS links(src TEXT, dst TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS events(ts DEFAULT CURRENT_TIMESTAMP, agent TEXT, kind TEXT, data TEXT)")
+    c.execute("PRAGMA synchronous=FULL")
     return c
+
+
+def invalidate_note_history(paths) -> None:
+    """Clear cached git history for paths changed by a multi-note transaction."""
+    with _note_history_cache_lock:
+        for path in paths:
+            relative = str(path).replace("\\", "/")
+            if relative in _note_history_inflight:
+                _note_history_generation[relative] = _note_history_generation.get(relative, 0) + 1
+            _note_history_cache.pop(relative, None)
+
+
+def _history_lookup_done(path: str) -> None:
+    if _note_history_inflight[path] == 1:
+        _note_history_inflight.pop(path, None)
+        _note_history_generation.pop(path, None)
+    else:
+        _note_history_inflight[path] -= 1
 
 
 def replace_file(source: str, destination: str, attempts: int = 100, delay: float = 0.02) -> None:
@@ -116,14 +148,31 @@ def replace_file(source: str, destination: str, attempts: int = 100, delay: floa
 
 
 def note_history(path: str) -> list[dict]:
-    """Saved versions of one note, newest first, read by a separate git process.
+    """Saved versions of one note, newest first, cached until that note is written.
 
-    This does not use the shared repository object, so it needs no vault lock and
-    never makes note saves wait while a long history is read.
+    Git log uses a separate process so it does not share GitPython's persistent
+    cat-file pipe. Repeated history reads reuse the result; a write to this note
+    invalidates it after the new commit is created.
     """
     full = safe_path(path)
     relative = os.path.relpath(full, VAULT).replace(os.sep, "/")
-    output = git.Git(VAULT).log("--format=%H%x1f%an%x1f%cI%x1f%B%x1e", "--", relative)
+    try:
+        stat = os.stat(full)
+        version = (stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        version = (None, None)
+    with _note_history_cache_lock:
+        cached = _note_history_cache.get(relative)
+        if cached is not None and cached[0] == version:
+            return [dict(entry) for entry in cached[1]]
+        generation = _note_history_generation.get(relative, 0)
+        _note_history_inflight[relative] = _note_history_inflight.get(relative, 0) + 1
+    try:
+        output = git.Git(VAULT).log("--format=%H%x1f%an%x1f%cI%x1f%B%x1e", "--", relative)
+    except Exception:
+        with _note_history_cache_lock:
+            _history_lookup_done(relative)
+        raise
     entries = []
     for record in output.split("\x1e"):
         record = record.strip("\n")
@@ -131,7 +180,18 @@ def note_history(path: str) -> list[dict]:
             continue
         sha, author, date, message = (record.split("\x1f", 3) + ["", "", ""])[:4]
         entries.append({"sha": sha, "author": author, "date": date, "message": message.strip()})
-    return entries
+    try:
+        stat = os.stat(full)
+        current_version = (stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        current_version = (None, None)
+    with _note_history_cache_lock:
+        if (_note_history_generation.get(relative, 0) == generation and current_version == version):
+            _note_history_cache[relative] = (version, entries)
+            if len(_note_history_cache) > 512:
+                _note_history_cache.pop(next(iter(_note_history_cache)))
+        _history_lookup_done(relative)
+    return [dict(entry) for entry in entries]
 
 
 def _plain(path: str) -> str:
@@ -224,6 +284,16 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         actor = git.Actor(git_writer, "glacier@localhost")
         _repo.index.add([os.path.relpath(full, VAULT)])
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
+        history_path = os.path.relpath(full, VAULT).replace(os.sep, "/")
+        invalidate_note_history([history_path])
+        # Run change reads are cached per run id. Owner and API writes unrelated
+        # to a run do not invalidate that run's result.
+        try:
+            import rollback
+            cached_run_id = metadata_run_id or (writer[4:] if writer.startswith("run:") else "")
+            rollback.invalidate_vault_change_cache(cached_run_id, git_writer, history_path)
+        except ImportError:
+            pass
         try:
             stat = os.stat(full)
             parsed_meta, parsed_body = memory_meta.parse(stored_body, path)
