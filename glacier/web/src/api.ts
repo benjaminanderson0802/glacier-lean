@@ -86,9 +86,13 @@ export const api = {
   listEnvs: () => req<EnvSummary[]>('GET', '/api/environments'),
   getEnv: (id: string) => req<Environment>('GET', `/api/environments/${enc(id)}`),
   saveEnv: (env: Environment) => req<{ saved: boolean; commit: string }>('PUT', `/api/environments/${enc(env.id)}`, env),
+  deleteEnv: (id: string) => req<{ deleted: boolean; id: string; commit: string }>('DELETE', `/api/environments/${enc(id)}`),
+  undoDeleteEnv: (id: string, commit: string) => req<{ restored: boolean; commit: string }>('POST', `/api/environments/${enc(id)}/undo-delete`, { commit }),
   runEnv: (id: string) => req<{ run_id: string }>('POST', `/api/environments/${enc(id)}/run`),
   restoreEnv: (id: string, commit: string) => req<{ restored: boolean; new_commit: string }>('POST', `/api/environments/${enc(id)}/restore`, { commit }),
   listRuns: (envId: string) => req<RunSummary[]>('GET', `/api/runs?env_id=${enc(envId)}`),
+  deleteRun: (runId: string) => req<{ deleted: boolean; run_id: string }>('DELETE', `/api/runs/${enc(runId)}`),
+  undoDeleteRun: (runId: string) => req<{ restored: boolean; run_id: string }>('POST', `/api/runs/${enc(runId)}/undo-delete`),
   getRun: (runId: string) => req<RunState>('GET', `/api/runs/${enc(runId)}`),
   approve: (runId: string, nodeId: string, approved: boolean) =>
     req<{ ok: boolean }>('POST', `/api/runs/${enc(runId)}/approve`, { node_id: nodeId, approved }),
@@ -118,13 +122,10 @@ export const teamsApi = {
   spec: (spec: TeamPlan['spec']) => req<{ approved: boolean; spec: TeamPlan['spec'] }>('POST', '/api/build/spec', { spec }),
   plan: (vision_path: string, engine: string) => req<{ plan: TeamPlan; approved: false }>('POST', '/api/build/plan', { vision_path, engine }),
   create: (plan: TeamPlan, vision_path: string) => req<{ team_id: string; status: string; plan: TeamPlan }>('POST', '/api/teams', { plan, vision_path }),
-  list: () => req<{ team_id: string; name: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>('GET', '/api/teams'),
+  list: () => req<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>('GET', '/api/teams'),
   get: (teamId: string) => req<BuildTeam>('GET', `/api/teams/${enc(teamId)}`),
   start: (teamId: string) => req<{ team_id: string; status: string }>('POST', `/api/teams/${enc(teamId)}/run`),
   approveTask: (teamId: string, taskId: string, approved: boolean) => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/tasks/${enc(taskId)}/approve`, { approved }),
-  control: (teamId: string, action: 'pause' | 'resume' | 'stop') => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/${action}`, {}),
-  delete: (kind: 'interview' | 'team', id: string) => req<{ deleted: boolean; undo_id: string }>('DELETE', kind === 'interview' ? `/api/build/interviews/${enc(id)}` : `/api/teams/${enc(id)}`),
-  undoDelete: (undo_id: string) => req<Record<string, unknown>>('POST', '/api/build/undo-delete', { undo_id }),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
@@ -220,6 +221,8 @@ export const memory = {
   save: (path: string, body: string) => req<{ path: string; commit: string }>('PUT', '/api/memory/note', { path, body, author: 'owner' }),
   /** Restore the version before `commit` (or before the latest save). */
   undo: (path: string, commit?: string) => req<{ path: string; commit: string }>('POST', '/api/memory/undo', { path, commit }),
+  delete: (path: string) => req<{ deleted: boolean; path: string; commit: string }>('DELETE', `/api/memory/note?path=${enc(path)}`),
+  undoDelete: (path: string, commit: string) => req<{ restored: boolean; path: string; commit: string }>('POST', '/api/memory/undo-delete', { path, commit }),
   rename: (from: string, to: string) => req<{ path: string; commit: string }>('POST', '/api/memory/rename', { from, to }),
 }
 
@@ -281,6 +284,8 @@ export const conversationsApi = {
   list: (q = '') => req<ConversationItem[]>('GET', `/api/assistant/conversations${q.trim() ? `?q=${enc(q.trim())}` : ''}`),
   get: (id: string) => req<ConversationFull>('GET', `/api/assistant/conversations/${enc(id)}`),
   rename: (id: string, title: string) => req<{ id: string; title: string; commit: string }>('POST', `/api/assistant/conversations/${enc(id)}/rename`, { title }),
+  delete: (id: string) => req<{ deleted: boolean; id: string; commit: string }>('DELETE', `/api/assistant/conversations/${enc(id)}`),
+  undoDelete: (id: string, commit: string) => req<{ restored: boolean; commit: string }>('POST', `/api/assistant/conversations/${enc(id)}/undo-delete`, { commit }),
 }
 export const applyProposal = (id: string, approve: boolean, runNow = false) =>
   req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string; status?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, runNow ? { approve, run_now: true } : { approve })
@@ -293,6 +298,8 @@ export const claimsApi = {
   get: (id: string) => req<ClaimFull>('GET', `/api/claims/${enc(id)}`),
   decide: (id: string, action: 'approve' | 'reject' | 'research_more', option = '') => req<{ status: string }>('POST', `/api/claims/${enc(id)}/decision`, { action, option }),
   rerun: (id: string) => req<{ run_id: string; env_id: string }>('POST', `/api/claims/${enc(id)}/rerun`),
+  delete: (id: string) => req<{ deleted: boolean; id: string; commit: string }>('DELETE', `/api/claims/${enc(id)}`),
+  undoDelete: (id: string, commit: string) => req<{ restored: boolean; commit: string }>('POST', `/api/claims/${enc(id)}/undo-delete`, { commit }),
 }
 /** Split a claim body into its "## Heading" sections. */
 export function sections(body: string): Record<string, string> {
@@ -309,7 +316,11 @@ export function sections(body: string): Record<string, string> {
 
 // ---------- Templates (GET /api/templates) ----------
 export interface TemplateItem { id: string; name: string; description: string; author?: string; license?: string; review_status: string; installable: boolean; template?: Environment & { description?: string; tags?: string[] } }
-export const templatesApi = { list: () => req<TemplateItem[]>('GET', '/api/templates') }
+export const templatesApi = {
+  list: () => req<TemplateItem[]>('GET', '/api/templates'),
+  delete: (id: string) => req<{ deleted: boolean; id: string; undo_id: string }>('DELETE', `/api/templates/${enc(id)}`),
+  undoDelete: (undo_id: string) => req<{ restored: boolean; id: string }>('POST', '/api/templates/undo-delete', { undo_id }),
+}
 
 // ---------- Memory map, add, cleanup ----------
 export interface GraphNode { id: string; title: string; kind: 'note' | 'run' | 'flow' | 'claim' | string; author: string }
@@ -338,6 +349,9 @@ export const addToMemory = {
   projects: () => req<{ name: string }[] | string[]>('GET', '/api/projects'),
   imports: () => req<{ source: string; last_import: string | null; added: number; updated: number; unchanged: number }[]>('GET', '/api/imports'),
   refreshImports: () => req<Record<string, Record<string, number>>>('POST', '/api/imports/refresh'),
+  files: (project?: string) => req<{ name: string; project: string; size: number; path: string; note: string | null }[]>('GET', `/api/files${project ? `?project=${enc(project)}` : ''}`),
+  deleteFile: (project: string, name: string) => req<{ deleted: boolean; undo_id: string; name: string; project: string }>('DELETE', `/api/files?project=${enc(project)}&name=${enc(name)}`),
+  undoDeleteFile: (undo_id: string) => req<{ restored: boolean; name: string; project: string }>('POST', '/api/files/undo-delete', { undo_id }),
 }
 
 // ---------- Coding sessions (read-only mirror of Codex / OpenCode) ----------

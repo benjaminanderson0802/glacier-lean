@@ -19,6 +19,6 @@ Probe scope notes:
 Run the suite with:
 
 ```sh
-/workspaces/glacier-lean/.venv/bin/python -m pytest -q bench/security
-/workspaces/glacier-lean/.venv/bin/python bench/security/run_glacier.py
+${GLACIER_PYTHON:-python} -m pytest -q bench/security
+${GLACIER_PYTHON:-python} bench/security/run_glacier.py
 ```

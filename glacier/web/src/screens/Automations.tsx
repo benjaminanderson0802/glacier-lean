@@ -5,6 +5,7 @@ import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { teamsApi } from '../api.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Flow = EnvSummary & { last?: RunSummary }
 const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
@@ -23,7 +24,8 @@ export function AutomationsScreen() {
   const [details, setDetails] = useState<Record<string, Environment>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
-  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
+  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>([])
+  const [undo, setUndo] = useState<UndoAction | null>(null)
 
   useEffect(() => {
     teamsApi.list().then(setTeams).catch(() => {})
@@ -85,7 +87,7 @@ export function AutomationsScreen() {
 
   return (
     <>
-      <PageHead title={t('automations.title')} sub={t('automations.subtitle')} side={
+      <PageHead title={t('automations.title')} side={
         naming
           ? <form style={{ display: 'flex', gap: 8 }} onSubmit={e => { e.preventDefault(); create() }}>
               <input className="g-input" autoFocus placeholder={t('automations.newName')} value={name} onChange={e => setName(e.target.value)} data-testid="flow-new-name" style={{ width: 240 }} />
@@ -94,6 +96,7 @@ export function AutomationsScreen() {
             </form>
           : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
+      <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
       <Panel>
         <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
@@ -104,7 +107,7 @@ export function AutomationsScreen() {
         </div>
         {err && <div className="g-error">{err}</div>}
         <table className="g-table" data-testid="flow-table">
-          <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th></tr></thead>
+          <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th><th>{t('delete.action')}</th></tr></thead>
           <tbody>
             {shown.map(f => {
               const st = f.last ? STATUS[f.last.status] : undefined
@@ -134,6 +137,15 @@ export function AutomationsScreen() {
                     <div>{t('automations.lastStart')} {f.last ? <><span>{ago(f.last.started_at)}</span> · <button className="g-link" onClick={() => go(`automations/flow/${f.id}/${f.last!.run_id}`)} data-testid={`last-trigger-run-${f.id}`}>{t('automations.viewRun')}</button></> : t('automations.never')}</div>
                     {detail && <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={active} onChange={e => void save({ ...detail, enabled: e.target.checked })} data-testid={`trigger-enabled-${f.id}`} />{t('automations.enabled')}</label>}
                   </div></td>
+                  <td><DeleteAction label={t('automations.deleteFlow')} impact={t('delete.flowImpact')} testid={`flow-delete-${f.id}`}
+                    onDelete={async () => { const result = await api.deleteEnv(f.id); return { title: t('delete.removed'), run: async () => {
+                      await api.undoDeleteEnv(f.id, result.commit)
+                      const restored = await api.getEnv(f.id)
+                      setDetails(current => ({ ...current, [f.id]: restored }))
+                      setFlows(current => [...(current ?? []).filter(item => item.id !== f.id), { ...f, enabled: restored.enabled }])
+                    } } }}
+                    onDeleted={action => { setUndo(action ?? null); setFlows(current => current?.filter(item => item.id !== f.id) ?? null) }}
+                    onError={e => setErr(String(e))} /></td>
                 </tr>
               )
             })}

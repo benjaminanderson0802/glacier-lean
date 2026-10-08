@@ -22,7 +22,6 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
   const [team, setTeam] = useState<BuildTeam | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [undoId, setUndoId] = useState('')
 
   const refreshTeam = useCallback(() => { if (teamId) teamsApi.get(teamId).then(setTeam).catch(e => setError(String(e))) }, [teamId])
   useEffect(() => { refreshTeam() }, [refreshTeam])
@@ -56,13 +55,9 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
     try { const saved = await teamsApi.create(plan, visionPath); await teamsApi.start(saved.team_id); go(`automations/team/${saved.team_id}`) }
     catch (e) { setError(String(e)) } finally { setBusy(false) }
   }
-  const deleteThing = async (kind: 'interview' | 'team', id: string) => {
-    try { const result = await teamsApi.delete(kind, id); setUndoId(result.undo_id); window.setTimeout(() => setUndoId(''), 30000); if (kind === 'interview') { setLines([]); setStage('interview') } else go('automations') }
-    catch (e) { setError(String(e)) }
-  }
-  const undo = async () => { try { await teamsApi.undoDelete(undoId); setUndoId(''); refreshTeam() } catch (e) { setError(String(e)) } }
 
-  if (teamId) return <TeamDetail team={team} error={error} onRefresh={refreshTeam} onDelete={() => void deleteThing('team', teamId)} undoId={undoId} onUndo={undo} />
+
+  if (teamId) return <TeamDetail team={team} error={error} onRefresh={refreshTeam} />
 
   return <>
     <PageHead title={t('team.buildTitle')} sub={t('team.buildSub')} side={<label className="bt-engine">{t('team.engine')} <select data-testid="build-engine" value={engine} onChange={e => setEngine(e.target.value)}><option value="codex">{t('team.subscription')}</option><option value="api">{t('team.api')}</option><option value="local">{t('team.local')}</option></select></label>} />
@@ -83,13 +78,13 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
           <h3>{t('team.lockedFeatures')}</h3><ul>{plan.features.map(f => <li key={f.id}>{f.title}</li>)}</ul><h3>{t('team.harness')}</h3><pre>{JSON.stringify(plan.harness, null, 2)}</pre><h3>{t('team.tasks')}</h3><ul>{plan.tasks.map(task => <li key={task.id}>{task.title} · {task.role}</li>)}</ul></>}
         <div className="bt-actions"><Btn onClick={() => { setMessage(t('team.feedbackPrefix')); setStage('interview') }}>{t('team.editFeedback')}</Btn><Btn primary disabled={busy || !plan} onClick={() => void approvePlan()}>{t('team.startTeam')}</Btn></div>
       </Panel>}
-      <Panel title={t('team.understood')} className="bt-understood" testid="build-understood"><p>{t('team.readiness')}</p><Bar value={(message ? 0 : 10) + (lines.some(x => /who|for|audience/i.test(x.text)) ? 20 : 0) + (spec.requirements.length ? 25 : 0) + (spec.acceptance.length || Array.isArray(vision.done) && (vision.done as string[]).length ? 25 : 0) + (spec.out_of_scope.length ? 20 : 0)} max={100} /><h3>{t('team.requirements')}</h3><ol>{spec.requirements.map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={String(line)} onChange={e => setSpec(s => ({ ...s, requirements: s.requirements.map((x, j) => i === j ? e.target.value : x) }))} /></li>)}</ol><h3>{t('team.doneList')}</h3><ol>{(Array.isArray(vision.done) ? vision.done as string[] : []).map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={line} onChange={e => setVision(v => ({ ...v, done: (v.done as string[]).map((x, j) => i === j ? e.target.value : x) }))} /></li>)}</ol><button className="g-link" onClick={() => void approveSpec()}>{t('team.reviewSpec')}</button><button className="g-link" onClick={() => void deleteThing('interview', conv)}>{t('team.deleteInterview')}</button></Panel>
+      <Panel title={t('team.understood')} className="bt-understood" testid="build-understood"><p>{t('team.readiness')}</p><Bar value={(message ? 0 : 10) + (lines.some(x => /who|for|audience/i.test(x.text)) ? 20 : 0) + (spec.requirements.length ? 25 : 0) + (spec.acceptance.length || Array.isArray(vision.done) && (vision.done as string[]).length ? 25 : 0) + (spec.out_of_scope.length ? 20 : 0)} max={100} /><h3>{t('team.requirements')}</h3><ol>{spec.requirements.map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={String(line)} onChange={e => setSpec(s => ({ ...s, requirements: s.requirements.map((x, j) => i === j ? e.target.value : x) }))} /></li>)}</ol><h3>{t('team.doneList')}</h3><ol>{(Array.isArray(vision.done) ? vision.done as string[] : []).map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={line} onChange={e => setVision(v => ({ ...v, done: (v.done as string[]).map((x, j) => i === j ? e.target.value : x) }))} /></li>)}</ol><button className="g-link" onClick={() => void approveSpec()}>{t('team.reviewSpec')}</button></Panel>
     </div>
-    {error && <div className="g-error" data-testid="team-error">{error}</div>}{undoId && <div className="g-notice">{t('team.deleted')} <button className="g-link" onClick={() => void undo()}>{t('team.undo')}</button></div>}
+    {error && <div className="g-error" data-testid="team-error">{error}</div>}
   </>
 }
 
-function TeamDetail({ team, error, onRefresh, onDelete, undoId, onUndo }: { team: BuildTeam | null; error: string; onRefresh: () => void; onDelete: () => void; undoId: string; onUndo: () => void }) {
+function TeamDetail({ team, error, onRefresh }: { team: BuildTeam | null; error: string; onRefresh: () => void }) {
   if (!team) return <><PageHead title={t('team.title')} /><Panel>{error || t('team.loading')}</Panel></>
   const plan = team.plan
   const roles = plan.team.roles
@@ -97,12 +92,11 @@ function TeamDetail({ team, error, onRefresh, onDelete, undoId, onUndo }: { team
   const waiting = tasks.find(([, value]) => value.status === 'awaiting_approval')
   const passing = Object.values(team.features ?? {}).filter(f => f.status === 'passing').length
   const total = plan.features.length
-  const control = async (action: 'pause' | 'resume' | 'stop') => { await teamsApi.control(team.team_id, action).catch(e => window.alert(String(e))); onRefresh() }
-  return <><PageHead title={String(plan.vision.goal ?? t('team.title'))} sub={`${t('team.status')}: ${team.status}`} side={<div className="bt-actions"><Btn onClick={() => void control(team.status === 'paused' ? 'resume' : 'pause')}>{team.status === 'paused' ? t('team.resume') : t('team.pause')}</Btn><Btn danger onClick={() => void control('stop')}>{t('team.stop')}</Btn><Btn danger onClick={onDelete}>{t('team.deleteFinished')}</Btn></div>} />
+  return <><PageHead title={String(plan.vision.goal ?? t('team.title'))} sub={`${t('team.status')}: ${team.status}`} side={<div className="bt-actions"><Btn onClick={onRefresh}>{t('build.refresh')}</Btn></div>} />
     <div className="bt-team-grid"><Panel title={t('team.roles')}><div className="bt-roles">{roles.map(role => { const owned = tasks.filter(([id]) => plan.tasks.find(x => x.id === id)?.role === role.id); return <article key={role.id}><b><i className={`bt-light ${owned.some(([, v]) => v.status === 'running') ? 'run' : owned.every(([, v]) => v.status === 'done') ? 'ok' : ''}`} />{role.id}</b><p>{role.charter}</p><small>{owned.map(([id, v]) => `${id}: ${String(v.status)}`).join(' · ')}</small></article> })}</div></Panel>
       <Panel title={t('team.features')} testid="team-features"><p>{t('team.passing', { passing, total })}</p><Bar value={passing} max={total} />{plan.features.map(feature => <div className="bt-feature" key={feature.id}><b>{feature.title}</b><span>{team.features?.[feature.id]?.status === 'passing' ? t('team.pass') : t('team.pending')}</span>{team.features?.[feature.id]?.evaluator_evidence && <small>{team.features[feature.id].evaluator_evidence}</small>}</div>)}</Panel>
       <Panel title={t('team.currentContract')} className="bt-contract" testid="team-current-contract"><p>{waiting ? plan.tasks.find(x => x.id === waiting[0])?.title : t('team.noApproval')}</p><pre>{JSON.stringify(waiting ? plan.tasks.find(x => x.id === waiting[0])?.acceptance : plan.harness.checks ?? [], null, 2)}</pre>{waiting && <div className="bt-actions"><Btn primary onClick={() => void teamsApi.approveTask(team.team_id, waiting[0], true).then(onRefresh)}>{t('team.approve')}</Btn><Btn danger onClick={() => void teamsApi.approveTask(team.team_id, waiting[0], false).then(onRefresh)}>{t('team.reject')}</Btn></div>}</Panel>
       <Panel title={t('team.progress')}><TextBox className="bt-log"><pre>{String(team.progress_log ?? t('team.noProgress')).slice(-1800)}</pre></TextBox><p>{t('team.stalls')}: {tasks.reduce((n, [, v]) => n + Number(v.attempts ?? 0), 0)} {t('team.attempts')} · {tasks.reduce((n, [, v]) => n + Number(v.replans ?? 0), 0)} {t('team.replans')}</p></Panel></div>
-    {error && <div className="g-error">{error}</div>}{undoId && <div className="g-notice">{t('team.deleted')} <button className="g-link" onClick={onUndo}>{t('team.undo')}</button></div>}
+    {error && <div className="g-error">{error}</div>}
   </>
 }

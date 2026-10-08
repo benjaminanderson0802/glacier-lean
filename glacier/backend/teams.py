@@ -651,46 +651,14 @@ def summary() -> list[dict]:
     result = []
     for row in rows:
         state = json.loads(row["state"])
-        plan = json.loads(row["plan"])
-        feature_states = state.get("features", {})
-        result.append({"team_id": row["team_id"], "name": str(plan.get("vision", {}).get("goal", row["team_id"])), "status": row["status"], "done": sum(x.get("status") == "done" for x in state["tasks"].values()),
-                       "tasks": len(state["tasks"]), "passing": sum(feature_states.get(f["id"], {}).get("status") == "passing" for f in plan.get("features", [])),
-                       "feature_count": len(plan.get("features", [])), "needs_owner": sum(x.get("status") in {"needs_owner", "awaiting_approval"} for x in state["tasks"].values())})
+        result.append({"team_id": row["team_id"], "status": row["status"], "done": sum(x.get("status") == "done" for x in state["tasks"].values()),
+                       "tasks": len(state["tasks"]), "needs_owner": sum(x.get("status") in {"needs_owner", "awaiting_approval"} for x in state["tasks"].values())})
     return result
 
 
 def get(team_id: str) -> dict:
     row = _read(team_id)
     return {"team_id": team_id, "status": row["status"], "vision_path": row["vision_path"], "plan": row["plan"], **row["state"]}
-
-
-def control(team_id: str, action: str) -> dict:
-    if action not in {"pause", "resume", "stop"}:
-        raise ValueError("unknown team action")
-    row = _read(team_id)
-    status = row["status"]
-    allowed = {"pause": {"running"}, "resume": {"paused"}, "stop": {"running", "paused", "waiting", "approved"}}
-    if status not in allowed[action]: raise ValueError(f"team cannot {action} while {status}")
-    next_status = {"pause": "paused", "resume": "running", "stop": "stopped"}[action]
-    row["state"]["status"] = next_status
-    _save(team_id, status=next_status, state=row["state"])
-    return {"team_id": team_id, "status": next_status}
-
-
-def remove(team_id: str) -> dict:
-    with _conn() as c:
-        row = c.execute("SELECT * FROM glacier_teams WHERE team_id=?", (team_id,)).fetchone()
-        if not row: raise ValueError("team not found")
-        saved = dict(row)
-        if saved["status"] in {"running", "paused"}: raise ValueError("stop the team before deleting it")
-        c.execute("DELETE FROM glacier_teams WHERE team_id=?", (team_id,))
-    return saved
-
-
-def restore(saved: dict) -> None:
-    with _conn() as c:
-        c.execute("INSERT OR REPLACE INTO glacier_teams(team_id,status,vision_path,plan,state,workspace,created_at) VALUES(?,?,?,?,?,?,?)",
-                  tuple(saved.get(key) for key in ("team_id", "status", "vision_path", "plan", "state", "workspace", "created_at")))
 
 
 init()

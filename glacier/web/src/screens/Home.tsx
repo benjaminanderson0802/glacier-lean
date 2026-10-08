@@ -12,7 +12,7 @@ const KIND_TITLE: Record<HomeItem['kind'], string> = { approval: t('home.kindApp
 export function HomeScreen() {
   const [data, setData] = useState<HomeSummary | null>(null)
   const [err, setErr] = useState('')
-  const [teams, setTeams] = useState<{ team_id: string; name: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
+  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>([])
   const refresh = useCallback(() => { loadHome().then(d => { setData(d); setErr('') }).catch(e => setErr(String(e))) }, [])
   useEffect(() => {
     refresh()
@@ -50,7 +50,7 @@ export function HomeScreen() {
         <StarterPanel />
         <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you" style={{ flex: 1 }}>
           <div className="g-rows">
-            {data?.needs_you.length === 0 && <Empty>{t('home.nothingNeedsYou')}</Empty>}
+            {data?.needs_you.length === 0 && <Empty>{t('home.noItemsNeedAttention')}</Empty>}
             {data?.needs_you.map((it, i) => (
               <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
             ))}
@@ -70,7 +70,7 @@ export function HomeScreen() {
             </div>
           </Panel>
           <Panel title={t('team.homeTeams')} testid="home-teams" style={{ flex: '0 0 30%' }}>
-            <div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={team.name || team.team_id} detail={team.needs_owner ? t('team.ownerWaiting', { count: team.needs_owner }) : t('team.homeTeam', { passing: team.passing, total: team.feature_count })} when={<Progress value={team.passing} max={team.feature_count} />} onClick={() => go(`automations/team/${team.team_id}`)} testid={`home-team-${team.team_id}`} />)}</div>
+            <div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={team.team_id} detail={team.needs_owner ? t('team.ownerWaiting', { count: team.needs_owner }) : t('team.homeTeam', { passing: team.done, total: team.tasks })} when={<Progress value={team.done} max={team.tasks} />} onClick={() => go(`automations/team/${team.team_id}`)} testid={`home-team-${team.team_id}`} />)}</div>
           </Panel>
           <Panel title={t('home.recentNotes')} testid="recent-notes" style={{ flex: 1 }}>
             <div className="g-rows">

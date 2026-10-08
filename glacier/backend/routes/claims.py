@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 import audit_log
 from pydantic import BaseModel
-import claims, claims_research, runner, store
+import claims, claims_research, runner, store, vault
 
 router = APIRouter()
 
@@ -43,6 +43,36 @@ def get_claim(cid: str):
         return claims.get_claim(cid)
     except (ValueError, FileNotFoundError):
         raise HTTPException(404, "claim not found")
+
+
+@router.delete("/api/claims/{cid}")
+def delete_claim(cid: str):
+    try:
+        path = claims._path(cid)
+        commit = vault.delete_note(path, agent="owner", kind="claim")
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(404, "claim not found") from exc
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": "deleted"})
+    return {"deleted": True, "id": cid, "commit": commit}
+
+
+class UndoDelete(BaseModel):
+    commit: str
+
+
+@router.post("/api/claims/{cid}/undo-delete")
+def undo_delete_claim(cid: str, body: UndoDelete):
+    try:
+        path = claims._path(cid)
+        commit = vault.restore_deleted_note(path, body.commit)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "claim not found") from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, "That claim already exists") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": "restored"})
+    return {"restored": True, "commit": commit}
 
 
 @router.post("/api/claims/{cid}/decision")

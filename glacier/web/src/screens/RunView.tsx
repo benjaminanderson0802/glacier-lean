@@ -5,6 +5,7 @@ import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 const NODE_ICON: Record<NodeState, StatusKind> = { pending: 'idle', running: 'run', done: 'ok', failed: 'bad', waiting: 'warn', skipped: 'idle' }
 const RUN_LABEL: Record<string, { kind: StatusKind; label: string }> = {
@@ -173,6 +174,7 @@ function PastRuns({ envId }: { envId: string }) {
   const [sel, setSel] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [note, setNote] = useState('')
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   useEffect(() => {
     runs.slice(0, 15).forEach(r => api.runChanges(r.run_id).then(c => setChanges(x => ({ ...x, [r.run_id]: c.length }))).catch(() => {}))
   }, [runs])
@@ -183,12 +185,13 @@ function PastRuns({ envId }: { envId: string }) {
   }
   return (
     <>
-      <PageHead title={t('run.pastRunsTitle', { name: env?.name ?? envId })} crumb="Automations" sub={t('run.totalRuns', { count: runs.length })}
+      <PageHead title={t('run.pastRunsTitle', { name: env?.name ?? envId })} crumb={t('run.automations')} sub={t('run.totalRuns', { count: runs.length })}
         side={<><Btn onClick={() => go(`automations/flow/${envId}`)}>{t('run.back')}</Btn><Btn primary icon="run" onClick={() => api.runEnv(envId).then(r => go(`automations/flow/${envId}/${r.run_id}`)).catch(e => setErr(String(e)))} data-testid="rerun">{t('run.rerun')}</Btn></>} />
       {err && <div className="g-error">{err}</div>}
+      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       <Panel testid="past-runs">
         <table className="g-table">
-          <thead><tr><th>{t('run.date')}</th><th>{t('run.result')}</th><th>{t('run.changes')}</th></tr></thead>
+          <thead><tr><th>{t('run.date')}</th><th>{t('run.result')}</th><th>{t('run.changes')}</th><th>{t('delete.action')}</th></tr></thead>
           <tbody>
             {runs.map(r => {
               const s = RUN_LABEL[r.status]
@@ -197,6 +200,9 @@ function PastRuns({ envId }: { envId: string }) {
                   <td>{when(r.started_at)}</td>
                   <td><span className="g-status-cell"><StatusIcon kind={s?.kind ?? 'idle'} />{s?.label ?? r.status}</span></td>
                   <td>{changes[r.run_id] === undefined ? '…' : changes[r.run_id] === 0 ? t('run.zeroChanges') : t('run.changesCount', { count: changes[r.run_id], plural: changes[r.run_id] > 1 ? 's' : '' })}</td>
+                  <td onClick={e => e.stopPropagation()}><DeleteAction label={t('run.deleteRun')} impact={t('delete.runImpact')} testid={`run-delete-${r.run_id}`}
+                    onDelete={async () => { await api.deleteRun(r.run_id); return { title: t('delete.removed'), run: async () => { await api.undoDeleteRun(r.run_id); refreshRuns() } } }}
+                    onDeleted={action => { setDeleteUndo(action ?? null); refreshRuns() }} onError={e => setErr(String(e))} /></td>
                 </tr>
               )
             })}
