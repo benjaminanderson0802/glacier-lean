@@ -383,7 +383,7 @@ export const es: Record<string, string> = {
   'settingsSections.freeOnly': '(solo gratuito)',
   'settingsSections.doneHere': 'Hecho en este equipo',
   'settingsSections.steps': '% de pasos',
-  'settingsSections.runs': 'EjecucionessettingsSections.tokens|Tokens',
+  'settingsSections.runs': 'Ejecuciones',
   'settingsSections.tokens': 'Tokens',
   'settingsSections.noAiSteps': 'No hubo pasos de IA en este periodo.',
   'settingsSections.yourMemory': 'Tu memoria',
