@@ -51,14 +51,15 @@ def test_build_http_effects_are_audited_once_without_prompt_text(tmp_path, monke
     assert proposed.status_code == 200
     saved = client.post("/api/teams", json={"plan": proposed.json()["plan"], "vision_path": vision.json()["path"]})
     assert saved.status_code == 200
-    monkeypatch.setattr(teams, "start", lambda team_id: team_id)
+    monkeypatch.setattr(teams.DBOS, "start_workflow", lambda *args: None)
+    monkeypatch.setattr(teams.DBOS, "send", lambda *args, **kwargs: None)
     started = client.post(f"/api/teams/{saved.json()['team_id']}/run")
     assert started.status_code == 200
     team_id = saved.json()["team_id"]
     paused = client.post(f"/api/teams/{team_id}/pause")
-    assert paused.status_code == 200 and paused.json()["status"] == "paused"
+    assert paused.status_code == 200 and paused.json()["status"] == "pausing"
     stopped = client.post(f"/api/teams/{team_id}/stop")
-    assert stopped.status_code == 200 and stopped.json()["status"] == "stopped"
+    assert stopped.status_code == 200 and stopped.json()["status"] == "stopping"
 
     rows = audit_log.events(home=str(tmp_path))
     kinds = [row["event_type"] for row in rows]
