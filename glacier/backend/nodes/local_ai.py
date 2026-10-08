@@ -42,7 +42,7 @@ def run(ctx: dict) -> dict:
             + instructions["text"]
             + "\n----- END PROJECT INSTRUCTIONS -----"
         )
-    choice_text = config.get("choose_one", "").strip()
+    choice_text = str(config.get("choose_one") or "").strip()
     choices = [choice.strip() for choice in choice_text.split(",") if choice.strip()]
     if choice_text and (len(choices) < 2 or len(set(choices)) != len(choices) or len(choices) > 12):
         raise ValueError("Choose one needs at least two distinct options separated by commas")
