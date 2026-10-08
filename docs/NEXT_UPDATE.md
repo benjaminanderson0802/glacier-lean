@@ -35,6 +35,17 @@ Installed on the owner's PC today: the build from the Windows start-up fixes (20
 - Ask's local model knows it is Glacier's assistant.
 - Glacier starts even if its settings file was saved by Windows PowerShell (BOM).
 
+## Owner's list for the next update (2026-10-08)
+- Delete buttons on every page that lists something the owner made (flows, runs, notes, claims, conversations, secrets, files).
+- Remove quotes and motivational text nobody asked for.
+- Remove the pixel character from every page (owner decision).
+- New look: three mockups of Home first; the owner picks one, then it is applied everywhere (fonts for "Glacier", page titles and body included).
+- Memory map with real physics: linked notes pull together, others push apart, drag and pin, zoom and pan.
+- Automations canvas: snap to grid, auto-layout, cleaner edges, no overlapping steps, minimap; templates show a real picture of the flow before you use them.
+- Ask knows Glacier on every engine: what Glacier is, how to use its screens, your previous chats (when enabled), the current system state and your memory, personalised to you, whichever model or API answers.
+- Window buttons (minimise and close) work, or Glacier uses the normal Windows title bar.
+- Ask runs on your subscription command-line tool by default (Codex), with an easy switch to an API (OpenAI-compatible and Anthropic, owner decision) or a local model.
+
 ## Release plan (owner decision 2026-10-08)
 - Auto-update ships with the next big update: that release (v0.2.0) is the first with the updater, so it is installed once by hand.
 - The release after it is the auto-update proof: the installed Glacier should offer it in Settings > About and install it on click. NORTHSTAR PH8.1 is recorded done after that.
