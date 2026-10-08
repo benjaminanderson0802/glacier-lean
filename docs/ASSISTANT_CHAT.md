@@ -11,7 +11,8 @@ Its arguments include a proposal `id`, proposed `flow`, explanation, and accepta
 the flow. Chat history is kept as a plain Markdown note under `conversations/` in the vault.
 
 `POST /api/assistant/proposals/{id}/apply` accepts `{"approve": true}` to save or `{"approve": false}` to discard.
-Approval is required before the proposed flow is saved. Apply refuses a goal without acceptance checks with a plain
+An approved proposal can also include `"run_now": true` to start its first run immediately; the response includes
+`run_id` and `status`. Approval is required before the proposed flow is saved or run. Apply refuses a goal without acceptance checks with a plain
 message explaining that a check is needed, before validating or registering a schedule. For an approved flow with checks,
 apply performs the same node-type, acceptance-check, vault-path, and schedule validation as `PUT /api/environments/{id}`,
 then writes the flow atomically in one git commit authored as `assistant`. The response includes a server-generated
@@ -32,6 +33,13 @@ Saved Ask conversations are stored as Markdown notes at `conversations/<uuid>.md
   with `{"path":"conversations/<uuid>.md"}` to restore its previous version. The conversation file name stays the same.
 
 New replies append to the same note and retain its renamed title.
+
+- `GET /api/assistant/conversations/{id}/runs` lists runs started from that conversation with `run_id`, `env_id`,
+  `status`, `started_at`, and automation `name`. It returns 404 when the conversation does not exist.
+- In Ask, “run my <automation name> now” matches an existing automation and presents a “Run it now?” approval card.
+  A close match that could refer to more than one automation asks which one; it never starts a run on its own.
+- When a chat-started run finishes, Glacier adds the plain-language explanation from the run result to the conversation
+  once. Secret values are redacted before saving the note.
 
 ## Live check
 

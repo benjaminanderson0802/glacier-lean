@@ -52,6 +52,20 @@ def graph_of(run_id: str) -> dict:
         return json.loads(c.execute("SELECT graph FROM glacier_runs WHERE run_id=?", (run_id,)).fetchone()[0])
 
 
+def mark_chat_reported(run_id: str) -> bool:
+    """Atomically claim the one-time conversation report for a completed chat run."""
+    with _conn() as c:
+        row = c.execute("SELECT graph FROM glacier_runs WHERE run_id=?", (run_id,)).fetchone()
+        if not row:
+            return False
+        graph = json.loads(row[0])
+        if not graph.get("_assistant_conversation_id") or graph.get("_assistant_reported"):
+            return False
+        graph["_assistant_reported"] = True
+        c.execute("UPDATE glacier_runs SET graph=? WHERE run_id=?", (json.dumps(graph), run_id))
+        return True
+
+
 def set_run(run_id: str, status: str, waiting_on: str | None = None) -> None:
     with _conn() as c:
         # A canceled run stays canceled: a step that was still finishing must not bring it back to life.
