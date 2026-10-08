@@ -1,5 +1,20 @@
 # Desktop acceptance checks
 
+## PH0 exit: core tools and legacy cleanup
+
+Run `.venv/bin/python bench/ph0/run_ph0.py` from the repository root. It checks the pinned
+Python and JavaScript core tools, their installed import/version/licence metadata, the repository
+setup markers, every explicit legacy module row, and whether current evidence exists for disabled
+prior systems. Tool metadata is read from the active Python environment and `glacier/web/node_modules`;
+the PH0.4 check stays FAIL until current, inspectable evidence replaces its historical session log.
+It does not change dependencies or run the full health board. `setup/health_check.py` remains the
+integration health runner; run it separately when a full sandbox health check is needed.
+
+Result on 2026-10-08 in this worktree: **FAIL**. DBOS, GitPython, repository setup and 51 legacy
+entries passed. MAF and ACP had no recorded licence metadata; Bifrost had no pinned/importable Python
+package; the four JavaScript packages were absent from `node_modules`; and current disabled-state
+evidence for Forge tasks/containers was unavailable. The runner reports each item with its evidence.
+
 ## PH8 exit: clean machine to a working first automation
 
 The Windows desktop CI job builds and silently installs the NSIS installer on a clean GitHub
