@@ -138,14 +138,17 @@ def recommend(machine):
     # download needed); 3) the recommended default for this mode.
     # Glacier's evaluated default wins when present; otherwise prefer the smallest
     # evaluated model, then another installed chat model.
-    model = DEFAULT_MODEL if DEFAULT_MODEL in installed else next(
-        (name for name in INSTALLED_MODEL_ORDER if name in installed), None)
+    # Prefer the smallest evaluated model that is already available; Granite is
+    # still the default when Ollama has no chat models installed.
+    model = next((name for name in INSTALLED_MODEL_ORDER if name in installed), None)
     if model is None and installed:
         def size(name):
             match = re.search(r"(?:^|[-:])(\d+(?:\.\d+)?)\s*([bm])(?:\b|$)", name.lower())
             return float("inf") if not match else float(match.group(1)) * (1_000 if match.group(2) == "b" else 1)
         model = min(enumerate(installed), key=lambda item: (size(item[1]), item[0]))[1]
-    model = model or (RECOMMENDED_MODELS[mode] if not available_models else None)
+    # Keep the standard default visible on a fresh install. The starter response
+    # marks it as needing a download until Ollama reports it as installed.
+    model = model or (RECOMMENDED_MODELS[mode] if not installed else None)
     return {"mode": mode, "local_model": model,
             "max_parallel_runs": 1 if low else min(4, max(1, cores // 2))}
 

@@ -155,3 +155,17 @@ def test_starter_without_installed_model_says_download_needed(monkeypatch, tmp_p
     proposal = starter.proposal()
     assert proposal["local_model"] is None
     assert "download" in proposal["reason"].lower()
+
+
+def test_starter_keeps_default_and_marks_it_for_download_when_none_installed(monkeypatch, tmp_path):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    machine = _machine()
+    monkeypatch.setattr(system_check, "check_system", lambda: machine)
+    proposal = starter.proposal()
+    assert proposal["local_model"] == "granite3.3:2b"
+    assert proposal["needs_download"] is True
+    assert "download granite3.3:2b" in proposal["reason"].lower()
+    result = starter.apply([], "low")
+    saved = json.loads((tmp_path / "settings.json").read_text())
+    assert result["local_model"] == "granite3.3:2b"
+    assert saved["local_model"] == "granite3.3:2b"

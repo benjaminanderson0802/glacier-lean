@@ -93,7 +93,16 @@ def proposal() -> dict:
     memory = machine.get("memory_gb")
     mode = recommendation["mode"]
     model = recommendation.get("local_model")
-    if model is None:
+    installed_models = [name for name in (machine.get("ollama_models") or [])
+                        if "embed" not in name.lower() and "minilm" not in name.lower()]
+    needs_download = bool(model and model not in installed_models)
+    if needs_download:
+        hardware_reason = (f"Your computer has {memory:g} GB of memory, so Glacier uses the light mode."
+                           if memory is not None and mode == "low" else
+                           "Your computer has limited processing power, so Glacier uses the light mode." if mode == "low" else
+                           "Your computer has enough memory for Glacier's standard mode.")
+        reason = f"{hardware_reason} No local models are installed yet. Download {model} in Settings > Models before using a local assistant."
+    elif model is None:
         reason = "No local model is installed yet. Download a model in Settings > Models before using a local assistant."
     else:
         reason = (f"Your computer has {memory:g} GB of memory, so Glacier uses the light mode."
@@ -131,7 +140,8 @@ def proposal() -> dict:
         missing_useful.append({"name": name, "why": why, "license": license_name, "download_page": url})
         if len(missing_useful) == 3:
             break
-    return {"applied": (_home() / "starter_templates.json").exists(), "mode": mode, "local_model": model, "reason": reason,
+    return {"applied": (_home() / "starter_templates.json").exists(), "mode": mode, "local_model": model,
+            "needs_download": needs_download, "reason": reason,
             "coding_agents_found": agents, "suggested_automations": suggestions,
             "missing_but_useful": missing_useful}
 
@@ -180,9 +190,11 @@ def apply(template_ids: list[str], mode: str) -> dict:
         available_models = machine.get("ollama_models") or []
         selected_model = recommendation.get("local_model")
         old_settings = system_check.effective_settings()
-        if selected_model not in available_models:
+        installed_models = [name for name in available_models
+                            if "embed" not in name.lower() and "minilm" not in name.lower()]
+        if selected_model not in installed_models and installed_models:
             selected_model = None
-        if old_settings.get("local_model") in available_models:
+        if old_settings.get("local_model"):
             selected_model = old_settings["local_model"]
         settings = {"mode": mode, "local_model": selected_model,
                     "max_parallel_runs": 1 if mode == "low" else old_settings.get("max_parallel_runs", 1)}
