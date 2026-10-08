@@ -39,7 +39,11 @@ export function MemoryMap() {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
     const update = () => setReducedMotion(query.matches)
     query.addEventListener('change', update)
-    return () => query.removeEventListener('change', update)
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) go('memory')
+    }
+    window.addEventListener('keydown', key)
+    return () => { query.removeEventListener('change', update); window.removeEventListener('keydown', key) }
   }, [])
   useEffect(() => {
     const el = box.current; if (!el) return
@@ -80,15 +84,16 @@ export function MemoryMap() {
     }
     return ids
   }, [graph.links, hovered])
+  const pixel = useMemo(() => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--px')) || 2, [])
 
   return (
-    <div className="g-memmap">
-      <Panel className="g-map-panel" testid="memory-map">
-        <div ref={box} className="g-map-box">
+    <div className="g-memmap" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) calc(84 * var(--px))', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
+      <Panel title={t('memory.map')} className="g-map-panel" testid="memory-map">
+        <div ref={box} className="g-map-box" style={{ flex: 1, minHeight: 0 }}>
           {err && <div className="g-error">{err}</div>}
           {data && graph.nodes.length === 0 && <Empty>{t('memoryMap.nothing')}</Empty>}
           {graph.nodes.length > 0 && (
-            <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor="transparent" // theme-lint-ignore (library keyword, not a colour)
+            <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor="transparent"
               d3AlphaDecay={0.035} d3VelocityDecay={0.38} d3AlphaMin={0.001}
               nodeRelSize={4} linkColor={(l: { source: string | { id: string }; target: string | { id: string } }) => {
                 if (!highlighted) return line
@@ -100,7 +105,16 @@ export function MemoryMap() {
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
                 return source === hovered || target === hovered ? 2 : 0
-              }} cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 0 : Math.min(24, Math.floor(graph.nodes.length / 25))}
+              }} linkCanvasObjectMode={() => 'replace'} linkWidth={() => 0} cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 0 : Math.min(24, Math.floor(graph.nodes.length / 25))}
+              linkCanvasObject={(link: { source?: string | { x?: number; y?: number }; target?: string | { x?: number; y?: number } }, ctx: CanvasRenderingContext2D) => {
+                if (!link.source || !link.target || typeof link.source !== 'object' || typeof link.target !== 'object') return
+                const snap = (v: number) => Math.round(v / pixel) * pixel
+                const x1 = snap(link.source.x ?? 0), y1 = snap(link.source.y ?? 0), x2 = snap(link.target.x ?? 0), y2 = snap(link.target.y ?? 0)
+                const dx = x2 - x1, dy = y2 - y1
+                const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / pixel))
+                ctx.fillStyle = line
+                for (let i = 0; i <= steps; i++) ctx.fillRect(snap(x1 + dx * i / steps), snap(y1 + dy * i / steps), pixel, pixel)
+              }}
               enableNodeDrag autoPauseRedraw nodePointerAreaPaint={(n: { x?: number; y?: number }, color: string, ctx: CanvasRenderingContext2D) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(n.x ?? 0, n.y ?? 0, 9, 0, Math.PI * 2); ctx.fill() }}
               onNodeClick={(n: { id?: string | number; kind?: string }, event: MouseEvent) => {
                 if (event.detail > 1) {
@@ -116,23 +130,25 @@ export function MemoryMap() {
               onNodeDragEnd={(n: { fx?: number; fy?: number; x?: number; y?: number }) => { n.fx = n.x; n.fy = n.y }}
               nodeCanvasObject={(n: { id?: string | number; x?: number; y?: number; kind?: string; title?: string }, ctx: CanvasRenderingContext2D, scale: number) => {
                 const glowing = lit[String(n.id ?? '')]
-                const s = glowing ? 9 : n.kind === 'author' ? 7 : 5
+                const s = pixel * (glowing ? 5 : n.kind === 'author' ? 4 : 3)
+                const x = Math.round((n.x ?? 0) / pixel) * pixel, y = Math.round((n.y ?? 0) / pixel) * pixel
                 const faded = highlighted && !highlighted.has(String(n.id ?? ''))
                 ctx.globalAlpha = faded ? 0.16 : 1
-                if (glowing) { ctx.fillStyle = colours.author; ctx.fillRect(Math.round((n.x ?? 0) - s / 2 - 2), Math.round((n.y ?? 0) - s / 2 - 2), s + 4, s + 4) }
+                if (glowing) { ctx.fillStyle = colours.author; ctx.fillRect(x - s / 2 - pixel, y - s / 2 - pixel, s + pixel * 2, s + pixel * 2) }
                 ctx.fillStyle = colours[n.kind ?? 'note'] ?? colours.note
-                ctx.fillRect(Math.round((n.x ?? 0) - s / 2), Math.round((n.y ?? 0) - s / 2), s, s)
+                ctx.fillRect(x - s / 2, y - s / 2, s, s)
                 if (scale > 1.4 || n.kind === 'author' || glowing) {
-                  ctx.font = `${Math.max(8, 14 / scale)}px ${font}`
+                  const fontSize = Math.max(pixel * 3, Math.round((14 / scale) / pixel) * pixel)
+                  ctx.font = `${fontSize}px ${font}`
                   ctx.fillStyle = text
-                  ctx.fillText(n.title ?? '', (n.x ?? 0) + s, (n.y ?? 0) + 3)
+                  ctx.fillText(n.title ?? '', x + s, y + pixel)
                 }
                 ctx.globalAlpha = 1
               }} />
           )}
         </div>
       </Panel>
-      <Panel title={t('memoryMap.stats')} testid="memory-stats">
+      <Panel title={t('memoryMap.stats')} testid="memory-stats" style={{ fontSize: 'calc(5 * var(--px))' }}>
         <dl className="g-kv g-kv-tight">
           {Object.entries(KIND_LABEL).filter(([k]) => counts[k]).map(([k, label]) => (
             <Fragment key={k}><dt><i className="g-swatch" style={{ background: `var(${KIND_TOKEN[k]})` }} />{label}</dt><dd>{counts[k]}</dd></Fragment>

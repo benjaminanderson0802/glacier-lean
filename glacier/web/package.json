@@ -5,18 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run render:templates",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "mock": "node mock/mock_server.mjs",
-    "render:templates": "node scripts/render-template-previews.mjs",
     "e2e": "node e2e/core.spec.mjs",
     "check:ui": "node scripts/check-ui.mjs"
   },
   "dependencies": {
     "@ag-ui/client": "0.0.59",
     "@assistant-ui/react": "0.15.25",
-    "@dagrejs/dagre": "1.1.5",
     "@monaco-editor/react": "4.7.0",
     "@tauri-apps/api": "2.12.1",
     "@tauri-apps/cli": "2.12.1",
@@ -29,7 +26,6 @@
   },
   "devDependencies": {
     "@types/d3-force": "3.0.10",
-    "@types/dagre": "0.7.52",
     "@types/node": "24.19.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
