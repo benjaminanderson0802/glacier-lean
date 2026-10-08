@@ -12,6 +12,7 @@ import { TerminalPanel } from './TerminalPanel.tsx'
 import { VaultView } from './VaultView.tsx'
 import { tok } from '../ui/tok.ts'
 import { takeDraft } from '../draft.ts'
+import { t } from '../i18n/index.ts'
 import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import './build.css'
 
@@ -133,13 +134,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       const r = await api.restoreEnv(envId, commit)
       setConfirmRestore('')
       await loadEnv(envId)
-      setMsg(`Restored the version from ${commit}. It is now saved as ${r.new_commit}.`)
+      setMsg(t('build.restoredVersion', { commit, newCommit: r.new_commit }))
       loadVersions(envId)
     } catch (e) { setMsg(String(e).replace(/^Error: /, '')) }
   }
 
   const selectEnv = (id: string, name?: string) => {
-    if (dirty && envId && envId !== id && !window.confirm('Discard unsaved changes?')) return
+    if (dirty && envId && envId !== id && !window.confirm(t('build.discardUnsaved'))) return
     loadEnv(id, name)
   }
 
@@ -157,7 +158,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     extras.current = d ? rest : {}
     const f = d ? toFlow({ ...d, id, name }) : { nodes: [], edges: [] }
     setEnvId(id); setEnvName(name); setNodes(f.nodes); setEdges(f.edges); setDirty(true)
-    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg(d ? 'Proposed flow loaded - change anything, then Save.' : 'New flow - add steps, then Save.'); setTab('canvas')
+    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setMsg(d ? t('build.proposedLoaded') : t('build.newFlowInfo')); setTab('canvas')
   }
 
   // ---------- live events ----------
@@ -250,7 +251,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     setBusy(true)
     try {
       const r = await api.saveEnv({ ...extras.current, ...fromFlow(envId, envName || envId, nodes, edges) })
-      setLastCommit(r.commit); setDirty(false); setMsg('Saved.')
+      setLastCommit(r.commit); setDirty(false); setMsg(t('build.saved'))
       setUnsaved(u => u.filter(e => e.id !== envId))
       refreshEnvs()
       return true
@@ -269,7 +270,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       }
       setActiveRun(pending)
       activeRunIdRef.current = run_id
-      setMsg(`Run ${run_id} started.`)
+      setMsg(t('build.lastRunStarted', { id: run_id }))
       api.getRun(run_id).then(r => setActiveRun(cur => (cur?.run_id === run_id ? r : cur))).catch(() => {})
       refreshRuns(envId)
     } catch (e) { setMsg(String(e)) } finally { setBusy(false) }
@@ -290,7 +291,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     else if (initialRun) openRun(initialRun)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialEnv, initialRun, newNameProp])
-  useEffect(() => { onStatus?.(msg ? msg.slice(0, 90) : 'Ready.') }, [msg, onStatus])
+  useEffect(() => { onStatus?.(msg ? msg.slice(0, 90) : t('build.ready')) }, [msg, onStatus])
 
   const decide = async (approved: boolean) => {
     if (!activeRun?.waiting_on) return
@@ -331,7 +332,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const openSubRun = async (output: string) => {
     const m = output.match(/sub-run ([\w-]+) of ([\w-]+)/)
     if (!m) return
-    if (dirty && !window.confirm('Discard unsaved changes?')) return
+    if (dirty && !window.confirm(t('build.discardUnsaved'))) return
     await loadEnv(m[2])
     openRun(m[1])
   }
@@ -346,36 +347,36 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     <div className="app">
       {/* ---------- left ---------- */}
       <aside className="left">
-        <div className="build-head"><a className="ghost-link" href="#/automations">‹ All flows</a><span className="live-label">{wsUp ? 'live' : 'offline'}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? 'live events connected' : 'live events disconnected'} /></div>
-        <div className="section-head"><span>Flows</span></div>
+        <div className="build-head"><a className="ghost-link" href="#/automations">‹ All flows</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
+        <div className="section-head"><span>{t('build.flows')}</span></div>
         <div className="list" data-testid="env-list">
           {allEnvs.map(e => (
             <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>
-              {e.name}{unsaved.some(u => u.id === e.id) && <span className="tag">unsaved</span>}
+              {e.name}{unsaved.some(u => u.id === e.id) && <span className="tag">{t('build.unsaved')}</span>}
             </button>
           ))}
-          {allEnvs.length === 0 && <div className="muted">No flows yet.</div>}
+          {allEnvs.length === 0 && <div className="muted">{t('build.noFlows')}</div>}
         </div>
         {creating ? (
           <form className="new-env" onSubmit={ev => { ev.preventDefault(); createEnv() }}>
-            <input autoFocus data-testid="new-env-name" placeholder="Flow name" value={newName} onChange={e => setNewName(e.target.value)} />
+            <input autoFocus data-testid="new-env-name" placeholder={t('build.flowName')} value={newName} onChange={e => setNewName(e.target.value)} />
             <div className="row">
-              <button type="submit" className="primary" data-testid="new-env-create">Create</button>
-              <button type="button" className="ghost" data-testid="new-env-cancel" onClick={() => setCreating(false)}>Cancel</button>
+              <button type="submit" className="primary" data-testid="new-env-create">{t('build.create')}</button>
+              <button type="button" className="ghost" data-testid="new-env-cancel" onClick={() => setCreating(false)}>{t('build.cancel')}</button>
             </div>
           </form>
         ) : (
-          <button className="primary block" data-testid="new-env" onClick={() => setCreating(true)}>+ New flow</button>
+          <button className="primary block" data-testid="new-env" onClick={() => setCreating(true)}>{t('build.newFlow')}</button>
         )}
 
         {envId && (
           <>
             <div className="section-head">
-              <span>Runs</span>
-              <button className="ghost" data-testid="runs-refresh" onClick={() => refreshRuns(envId)}>Refresh</button>
+              <span>{t('build.runs')}</span>
+              <button className="ghost" data-testid="runs-refresh" onClick={() => refreshRuns(envId)}>{t('build.refresh')}</button>
             </div>
             <div className="list" data-testid="run-list">
-              {runs.length === 0 && <div className="muted">No runs yet.</div>}
+              {runs.length === 0 && <div className="muted">{t('build.noRuns')}</div>}
               {runs.map(r => (
                 <button key={r.run_id} className={`list-item run-item${activeRun?.run_id === r.run_id ? ' active' : ''}`} data-testid={`run-${r.run_id}`} data-status={r.status} onClick={() => openRun(r.run_id)}>
                   <span className={`badge status-${r.status}`}>{r.status}</span>
@@ -391,8 +392,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       {/* ---------- center ---------- */}
       <main className="center">
         <div className="tabs">
-          <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" onClick={() => setTab('canvas')}>Canvas</button>
-          <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>Notes</button>
+          <button className={`tab${tab === 'canvas' ? ' active' : ''}`} data-testid="tab-canvas" onClick={() => setTab('canvas')}>{t('build.canvas')}</button>
+          <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>{t('build.notes')}</button>
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
               {catalog.filter(t => layout !== 'simple' || SIMPLE_STEP_TYPES.has(t.type)).map(t => (
@@ -403,15 +404,15 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
         </div>
 
         {tab === 'vault' ? <VaultView /> : !envId ? (
-          <div className="empty">Pick a flow on the left, or create a new one.</div>
+          <div className="empty">{t('build.pickFlow')}</div>
         ) : (
           <div className="canvas-wrap">
             {activeRun && waitingNode && activeRun.status === 'waiting' && (
               <div className="approval-banner" data-testid="approval-banner">
-                <span className="approval-label">Waiting for approval on {waitingNode.id}:</span>
+                <span className="approval-label">Waiting for approval on {t('build.waitingApproval', { id: waitingNode.id })}</span>
                 <span className="approval-prompt" data-testid="approval-prompt">{waitingNode.data.config.prompt}</span>
-                <button className="ok" data-testid="approve" onClick={() => decide(true)}>Approve</button>
-                <button className="danger" data-testid="reject" onClick={() => decide(false)}>Reject</button>
+                <button className="ok" data-testid="approve" onClick={() => decide(true)}>{t('build.approve')}</button>
+                <button className="danger" data-testid="reject" onClick={() => decide(false)}>{t('build.reject')}</button>
               </div>
             )}
             <div className="canvas" data-testid="canvas">
@@ -436,8 +437,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
             {activeRun && selNode && (
               <div className="term-panel" data-testid="terminal-panel">
                 <div className="term-head">
-                  <span>Output of <b data-testid="terminal-node">{selNode.id}</b> ({selNode.type}) - {activeRun.node_states[selNode.id] ?? 'pending'}</span>
-                  <button className="ghost" data-testid="terminal-close" onClick={() => setSelected(null)}>Close</button>
+                  <span>{t('build.outputStatus', { id: selNode.id, type: selNode.type, status: activeRun.node_states[selNode.id] ?? 'pending' })}</span>
+                  <button className="ghost" data-testid="terminal-close" onClick={() => setSelected(null)}>{t('build.close')}</button>
                 </div>
                 <TerminalPanel text={activeRun.outputs[selNode.id] ?? ''} />
               </div>
@@ -450,34 +451,34 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       <aside className="right">
         {envId ? (
           <>
-            <div className="section-head"><span>Flow</span>{dirty && <span className="tag" data-testid="dirty">unsaved</span>}</div>
+            <div className="section-head"><span>{t('build.flow')}</span>{dirty && <span className="tag" data-testid="dirty">{t('build.unsaved')}</span>}</div>
             <label className="field">
-              <span>Name</span>
+              <span>{t('build.name')}</span>
               <input data-testid="env-name" value={envName} onChange={e => { setEnvName(e.target.value); setDirty(true) }} />
             </label>
-            {layout !== 'simple' && <div className="field"><span>Id</span><code data-testid="env-id">{envId}</code></div>}
+            {layout !== 'simple' && <div className="field"><span>{t('build.id')}</span><code data-testid="env-id">{envId}</code></div>}
             <div className="row">
-              <button className="primary" data-testid="save" disabled={busy} onClick={() => save()}>Save</button>
-              <button className="run" data-testid="run" disabled={busy || nodes.length === 0} onClick={run}>Run</button>
+              <button className="primary" data-testid="save" disabled={busy} onClick={() => save()}>{t('build.save')}</button>
+              <button className="run" data-testid="run" disabled={busy || nodes.length === 0} onClick={run}>{t('build.run')}</button>
             </div>
             <div className="field" style={layout === 'simple' ? { display: 'none' } : undefined}>
-              <span>Last save commit</span>
+              <span>{t('build.lastSaveCommit')}</span>
               <code data-testid="last-commit">{lastCommit || '-'}</code>
             </div>
             {versions.length > 1 && (
               <div data-testid="versions">
-                <div className="section-head"><span>Saved versions</span></div>
+                <div className="section-head"><span>{t('build.savedVersions')}</span></div>
                 <div className="list">
                   {versions.map((v, i) => (
                     <div key={v.commit} className="list-item" data-testid={`version-${i}`} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-                      <span>{i === 0 ? 'Current' : ago(v.date) || v.date.slice(0, 16)} <span className="muted small">· {v.author} · {v.commit}</span></span>
+                      <span>{i === 0 ? t('build.current') : ago(v.date) || v.date.slice(0, 16)} <span className="muted small">· {v.author} · {v.commit}</span></span>
                       {i > 0 && (confirmRestore === v.commit
-                        ? <span className="row"><button className="primary" data-testid={`version-restore-yes-${i}`} onClick={() => restoreVersion(v.commit)}>Restore it</button><button className="ghost" onClick={() => setConfirmRestore('')}>Cancel</button></span>
-                        : <button className="ghost" data-testid={`version-restore-${i}`} disabled={dirty} title={dirty ? 'Save or discard your changes first' : 'Make this version current again'} onClick={() => setConfirmRestore(v.commit)}>Restore</button>)}
+                        ? <span className="row"><button className="primary" data-testid={`version-restore-yes-${i}`} onClick={() => restoreVersion(v.commit)}>{t('build.restoreIt')}</button><button className="ghost" onClick={() => setConfirmRestore('')}>{t('build.cancel')}</button></span>
+                        : <button className="ghost" data-testid={`version-restore-${i}`} disabled={dirty} title={dirty ? t('build.saveOrDiscard') : t('build.restoreTitle')} onClick={() => setConfirmRestore(v.commit)}>{t('build.restore')}</button>)}
                     </div>
                   ))}
                 </div>
-                <div className="muted small">Restoring keeps every version; it saves the old one as a new version.</div>
+                <div className="muted small">{t('build.restoreDescription')}</div>
               </div>
             )}
             {msg && <div className="msg" data-testid="message">{msg}</div>}
@@ -485,28 +486,28 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
             {activeRun && (
               <div className="run-box" data-testid="run-box">
                 <div className="section-head">
-                  <span>Run</span>
-                  <button className="ghost" data-testid="clear-run" onClick={() => setActiveRun(null)}>Back to edit</button>
+                  <span>{t('build.run')}</span>
+                  <button className="ghost" data-testid="clear-run" onClick={() => setActiveRun(null)}>{t('build.backToEdit')}</button>
                 </div>
-                <div className="field"><span>Id</span><code data-testid="active-run-id">{activeRun.run_id}</code></div>
-                <div className="field"><span>Status</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
-                <div className="muted small">Click a node to see its output.</div>
+                <div className="field"><span>{t('build.id')}</span><code data-testid="active-run-id">{activeRun.run_id}</code></div>
+                <div className="field"><span>{t('build.status')}</span><span className={`badge status-${activeRun.status}`} data-testid="run-status">{activeRun.status}</span></div>
+                <div className="muted small">{t('build.clickNode')}</div>
                 {selNode?.type === 'flow' && /sub-run [\w-]+ of /.test(activeRun.outputs[selNode.id] ?? '') && (
-                  <button className="ghost" data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>Open sub-flow run</button>
+                  <button className="ghost" data-testid="open-subrun" onClick={() => openSubRun(activeRun.outputs[selNode.id])}>{t('build.openSubrun')}</button>
                 )}
               </div>
             )}
 
             {selNode && (
               <div className="inspector" data-testid="inspector">
-                <div className="section-head"><span>{layout === 'simple' ? (typeInfo(selNode.type)?.label ?? selNode.type) : `Node ${selNode.id} · ${selNode.type}`}</span>
-                  {layout === 'simple' && <button className="ghost" data-testid="more-fields" onClick={() => setMoreFields(m => !m)}>{moreFields ? 'fewer settings' : 'more settings'}</button>}</div>
+                <div className="section-head"><span>{layout === 'simple' ? (typeInfo(selNode.type)?.label ?? selNode.type) : t('build.node', { id: selNode.id, type: selNode.type })}</span>
+                  {layout === 'simple' && <button className="ghost" data-testid="more-fields" onClick={() => setMoreFields(m => !m)}>{moreFields ? t('build.fewerSettings') : t('build.moreSettings')}</button>}</div>
                 {(typeInfo(selNode.type)?.fields ?? []).filter(f => layout !== 'simple' || moreFields || !f.optional || (selNode.data.config[f.key] ?? '') !== '').map(f => (
                   <label className="field" key={f.key}>
                     <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
                     {f.picker === 'environment'
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
-                          <option value="">choose…</option>
+                          <option value="">{t('build.choose')}</option>
                           {allEnvs.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                       : f.options
@@ -519,7 +520,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                   </label>
                 ))}
                 {layout === 'full' && <pre className="muted small" data-testid="node-raw" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify({ id: selNode.id, type: selNode.type, config: selNode.data.config }, null, 2)}</pre>}
-                <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>Delete node</button>
+                <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>{t('build.deleteNode')}</button>
               </div>
             )}
 
@@ -528,17 +529,17 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 <div className="section-head"><span>Edge {selEdge.id}: {selEdge.source} → {selEdge.target}</span></div>
                 {branchLabels(selEdgeSrc)?.length ? (
                   <label className="field">
-                    <span>Branch</span>
+                    <span>{t('build.branch')}</span>
                     <select data-testid="edge-label" value={typeof selEdge.label === 'string' ? selEdge.label : ''} onChange={e => setEdgeLabel(selEdge.id, e.target.value)}>
                       {(branchLabels(selEdgeSrc) ?? []).map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </label>
-                ) : <div className="muted small">Unlabelled edge (runs in order).</div>}
-                <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>Delete edge</button>
+                ) : <div className="muted small">{t('build.unlabelled')}</div>}
+                <button className="danger" data-testid="delete-selected" onClick={deleteSelected}>{t('build.deleteEdge')}</button>
               </div>
             )}
           </>
-        ) : <div className="muted">No flow selected.</div>}
+        ) : <div className="muted">{t('build.noSelection')}</div>}
       </aside>
     </div>
   )
