@@ -94,6 +94,17 @@ def test_local_steps_use_the_saved_or_recommended_model_when_none_is_named(monke
     assert system_check.default_local_model() == "my-model"
 
 
+def test_saved_model_choice_survives_mode_change(monkeypatch, tmp_path):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.delenv("GLACIER_LOCAL_MODEL", raising=False)
+    monkeypatch.setattr(system_check, "effective_settings", lambda: {"local_model": "qwen3:0.6b", "mode": "standard"})
+    result = starter.apply([], "low")
+    assert result["local_model"] == "qwen3:0.6b"
+    saved = json.loads((tmp_path / "settings.json").read_text())
+    assert saved["local_model"] == "qwen3:0.6b"
+    assert saved["max_parallel_runs"] == 1
+
+
 def test_failing_hardware_check_falls_back_to_the_small_model(monkeypatch):
     import system_check
     monkeypatch.delenv("GLACIER_LOCAL_MODEL", raising=False)

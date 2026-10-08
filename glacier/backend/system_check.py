@@ -11,10 +11,10 @@ from pathlib import Path
 
 
 DEFAULT_MODEL = "granite3.3:2b"
-# All entries are small, instruct-tuned models under OSI-approved licenses (evidence/live/model_choice.md).
-# Low-resource mode must fit a modest PC: qwen3:0.6b peaks around 1 GiB, granite3.3:2b around 5 GiB.
+# The default is Apache-2.0 and reached 8/10 in the local-model benchmark, including
+# when run sequentially in low-resource mode (evidence/PH8.5-granite-light-bench.md).
 RECOMMENDED_MODELS = {
-    "low": "qwen3:0.6b",
+    "low": DEFAULT_MODEL,
     "standard": DEFAULT_MODEL,
 }
 INSTALLED_MODEL_ORDER = (
@@ -205,6 +205,8 @@ def default_local_model() -> str:
     if configured:
         return configured
     try:
-        return str(effective_settings().get("local_model") or "qwen3:0.6b")
+        # Prefer a persisted owner selection; otherwise the common default is
+        # the same model as the fallback in nodes/local_ai.py.
+        return str(effective_settings().get("local_model") or DEFAULT_MODEL)
     except Exception:  # a failing hardware check must never stop a step
-        return "qwen3:0.6b"
+        return DEFAULT_MODEL

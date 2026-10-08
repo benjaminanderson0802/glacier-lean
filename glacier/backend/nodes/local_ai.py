@@ -8,7 +8,7 @@ from agents_md import find_agents_md, project_instructions_detail
 from egress import open_model_request
 
 
-DEFAULT_MODEL = "qwen3:0.6b"
+DEFAULT_MODEL = "granite3.3:2b"
 DEFAULT_TIMEOUT = 600
 PREV_LIMIT = 8000
 ANSWER_ONLY_SYSTEM = "Reply with only the answer. No explanation, no labels, no markdown, no extra words."

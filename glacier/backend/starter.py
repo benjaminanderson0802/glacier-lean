@@ -173,8 +173,6 @@ def apply(template_ids: list[str], mode: str) -> dict:
         old_settings = system_check.effective_settings()
         settings = {"mode": mode, "local_model": old_settings.get("local_model") or system_check.RECOMMENDED_MODELS[mode],
                     "max_parallel_runs": 1 if mode == "low" else old_settings.get("max_parallel_runs", 1)}
-        if mode != old_settings.get("mode"):
-            settings["local_model"] = system_check.RECOMMENDED_MODELS[mode]
         (_home() / "settings.json").write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
         applied_path.write_text(json.dumps(sorted(applied), indent=2) + "\n", encoding="utf-8")
         return {"created": created, "mode": mode, "local_model": settings["local_model"]}
