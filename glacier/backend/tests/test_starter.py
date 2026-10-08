@@ -38,7 +38,7 @@ def test_low_memory_proposal_uses_light_mode_and_small_model(monkeypatch, tmp_pa
     assert response.status_code == 200
     proposal = response.json()
     assert proposal["mode"] == "low"
-    assert proposal["local_model"] == "qwen3:0.6b"
+    assert proposal["local_model"] == "granite3.3:2b"  # owner decision 2026-10-08: granite everywhere
     assert "8 GB" in proposal["reason"]
 
 
@@ -74,7 +74,7 @@ def test_apply_creates_only_chosen_flows_once_and_saves_settings(server, monkeyp
     assert len(list((Path(server.home) / "vault" / "environments").glob("*.json"))) == 1
     settings = json.loads((Path(server.home) / "settings.json").read_text())
     assert settings["mode"] == "low"
-    assert settings["local_model"] == "qwen3:0.6b"
+    assert settings["local_model"] == "granite3.3:2b"  # owner decision 2026-10-08: granite everywhere
     assert server.get("/api/system/settings")["local_model"] == "qwen3:0.6b"
 
 
@@ -111,7 +111,7 @@ def test_failing_hardware_check_falls_back_to_the_small_model(monkeypatch):
     def broken():
         raise RuntimeError("no hardware info")
     monkeypatch.setattr(system_check, "effective_settings", broken)
-    assert system_check.default_local_model() == "qwen3:0.6b"
+    assert system_check.default_local_model() == "granite3.3:2b"  # owner decision 2026-10-08: granite everywhere
 
 
 def test_proposal_says_whether_the_starter_was_already_applied(tmp_path, monkeypatch):

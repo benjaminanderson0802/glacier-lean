@@ -55,7 +55,7 @@ mkdir -p "$data_dir"
 export GLACIER_HOME="$data_dir"
 # Match desktop/src-tauri/src/lib.rs and sidecar.json: backend cwd, Python arguments,
 # app-data location, and low-resource environment are the same as the packaged app.
-export GLACIER_LOCAL_MODEL="qwen3:0.6b"
+export GLACIER_LOCAL_MODEL="granite3.3:2b"
 export GLACIER_MAX_PARALLEL_RUNS="1"
 
 listener_python="$(command -v python3 || command -v python)"

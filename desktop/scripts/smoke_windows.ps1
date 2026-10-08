@@ -48,7 +48,7 @@ try {
     # Match desktop/src-tauri/src/lib.rs: cwd=backend; python -m uvicorn app:app --host 127.0.0.1 --port <port>;
     # GLACIER_HOME is app data and the two low-resource values come from desktop/sidecar.json.
     $env:GLACIER_HOME = $dataDir
-    $env:GLACIER_LOCAL_MODEL = "qwen3:0.6b"
+    $env:GLACIER_LOCAL_MODEL = "granite3.3:2b"
     $env:GLACIER_MAX_PARALLEL_RUNS = "1"
     $backend = Start-Process -FilePath $python `
         -ArgumentList @("-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "$port") `
