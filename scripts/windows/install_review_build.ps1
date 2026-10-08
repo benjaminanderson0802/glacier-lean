@@ -141,7 +141,7 @@ try {
         $uninstallKeys = @($uninstallKey, 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall')
         $entry = Get-ChildItem -LiteralPath $uninstallKeys -ErrorAction SilentlyContinue | ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath } |
             Where-Object { $_.DisplayName -eq 'Glacier' -and $_.InstallLocation } | Select-Object -First 1
-        if ($entry) { $desktopExe = Join-Path $entry.InstallLocation 'glacier-desktop.exe' }
+        if ($entry) { $desktopExe = Join-Path $entry.InstallLocation.Trim().Trim('"') 'glacier-desktop.exe' }
     }
     if (-not (Test-Path -LiteralPath $desktopExe -PathType Leaf)) { throw 'Could not find the installed glacier-desktop.exe.' }
     Start-Process -FilePath $desktopExe | Out-Null
