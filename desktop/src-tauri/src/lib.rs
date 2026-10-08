@@ -352,6 +352,19 @@ mod tests {
     }
 
     #[test]
+    fn default_capability_allows_minimize_and_close_window_controls() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config: serde_json::Value = serde_json::from_slice(&fs::read(root.join("tauri.conf.json")).unwrap()).unwrap();
+        assert!(config["app"]["security"]["capabilities"].as_array().unwrap().iter().any(|x| x.as_str() == Some("default")));
+        let capability: serde_json::Value = serde_json::from_slice(&fs::read(root.join("capabilities/default.json")).expect("default capability exists")).unwrap();
+        assert!(capability["windows"].as_array().unwrap().iter().any(|window| window.as_str() == Some("main")));
+        let permissions = capability["permissions"].as_array().expect("capability permissions are a list");
+        for required in ["core:window:allow-minimize", "core:window:allow-close"] {
+            assert!(permissions.iter().any(|permission| permission.as_str() == Some(required)), "missing permission {required}");
+        }
+    }
+
+    #[test]
     fn sidecar_config_accepts_a_leading_utf8_bom() {
         let parsed = parse_sidecar_config("\u{feff}{\"low_resource\":true}").unwrap();
         assert_eq!(parsed["low_resource"], true);

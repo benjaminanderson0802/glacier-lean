@@ -2,7 +2,7 @@
 html, body, #root { margin: 0; height: 100%; background: var(--g-void); }
 body { font-family: var(--g-font-body); font-size: var(--g-size-body); color: var(--g-text); -webkit-font-smoothing: none; font-smooth: never; }
 * { box-sizing: border-box; }
-svg.g-icon, svg.g-status, svg.g-logo, svg.g-mascot { display: block; flex: none; image-rendering: pixelated; }
+svg.g-icon, svg.g-status, svg.g-logo { display: block; flex: none; image-rendering: pixelated; }
 
 /* ---------- window ---------- */
 .g-window { height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; background: var(--g-bg); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); overflow: hidden; }
@@ -19,7 +19,7 @@ html[lang="es"] .g-tab > span { min-width: 0; overflow: hidden; text-overflow: e
 .g-tab:focus-visible, .g-btn:focus-visible, .g-row:focus-visible { outline: 1px dashed var(--g-accent); outline-offset: -3px; }
 .g-winctl { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
 html[lang="es"] .g-winctl { flex: none; }
-.g-winbtn { width: 32px; height: 30px; display: grid; place-items: center; background: transparent; border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); color: var(--g-head); cursor: pointer; padding: 0; }
+.g-winbtn { position: relative; z-index: 1; flex: 0 0 32px; width: 32px; height: 30px; display: grid; place-items: center; pointer-events: auto; background: transparent; border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); color: var(--g-head); cursor: pointer; padding: 0; }
 .g-winbtn:hover { background: var(--g-panel-hi); }
 
 .g-main { min-height: 0; overflow: auto; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 16px; }
@@ -31,7 +31,7 @@ html[lang="es"] .g-winctl { flex: none; }
 .g-footer .g-ready { margin-left: auto; }
 .g-key { color: var(--g-head); }
 
-/* ---------- page header (mascot + title) ---------- */
+/* ---------- page header ---------- */
 .g-pagehead { display: flex; align-items: center; gap: 18px; }
 html[lang="es"] .g-pagehead { flex-wrap: wrap; }
 .g-pagehead .g-titles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -151,8 +151,6 @@ html[lang="es"] .g-statusbox > div { min-width: 0; }
 .g-splash-art { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; }
 .g-splash-title { position: absolute; left: 0; right: 0; top: 7%; text-align: center; display: flex; flex-direction: column; gap: 6px; }
 .g-splash-word { font-family: var(--g-font-head); font-weight: 700; font-size: 104px; letter-spacing: 6px; color: var(--g-head); text-shadow: 4px 4px 0 var(--g-line), 0 0 18px var(--g-accent-dim); line-height: 1; }
-.g-splash-tag { font-family: var(--g-font-head); font-size: var(--g-size-h2); color: var(--g-head); letter-spacing: 2px; }
-.g-splash-note { position: absolute; right: 3%; top: 4%; font-size: var(--g-size-small); color: var(--g-text); }
 .g-splash-menu { position: absolute; left: 50%; top: 46%; transform: translateX(-50%); width: 320px; gap: 4px; padding: 10px; }
 .g-splash-menu .g-navitem { padding: 6px 14px; }
 .g-splash-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; padding: 8px 16px; background: var(--g-bar); border-top: var(--g-border) solid var(--g-line); font-size: var(--g-size-small); }

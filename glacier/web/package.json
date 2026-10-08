@@ -11,7 +11,7 @@
     "mock": "node mock/mock_server.mjs",
     "render:templates": "node scripts/render-template-previews.mjs",
     "e2e": "node e2e/core.spec.mjs",
-    "check:ui": "node e2e/theme_lint.mjs && node scripts/check-i18n.mjs --fail && tsc -b && npm run render:templates && vite build && node e2e/core.spec.mjs && node e2e/shell.spec.mjs && node e2e/http_step.spec.mjs && node e2e/triggers.spec.mjs && node e2e/spanish.spec.mjs && node e2e/updates.spec.mjs && node e2e/memory_map_physics.spec.mjs"
+    "check:ui": "node e2e/theme_lint.mjs && node scripts/check-i18n.mjs --fail && tsc -b && npm run render:templates && vite build && node e2e/core.spec.mjs && node e2e/shell.spec.mjs && node e2e/window_controls.spec.mjs && node e2e/http_step.spec.mjs && node e2e/triggers.spec.mjs && node e2e/spanish.spec.mjs && node e2e/updates.spec.mjs && node e2e/memory_map_physics.spec.mjs"
   },
   "dependencies": {
     "@ag-ui/client": "0.0.59",

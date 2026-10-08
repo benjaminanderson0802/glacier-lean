@@ -82,7 +82,7 @@ export function AutomationsScreen() {
 
   return (
     <>
-      <PageHead title={t('automations.title')} sub={t('automations.subtitle')} side={
+      <PageHead title={t('automations.title')} side={
         naming
           ? <form style={{ display: 'flex', gap: 8 }} onSubmit={e => { e.preventDefault(); create() }}>
               <input className="g-input" autoFocus placeholder={t('automations.newName')} value={name} onChange={e => setName(e.target.value)} data-testid="flow-new-name" style={{ width: 240 }} />

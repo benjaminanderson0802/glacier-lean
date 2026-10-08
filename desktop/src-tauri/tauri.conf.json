@@ -19,6 +19,7 @@
     "withGlobalTauri": true,
     "windows": [],
     "security": {
+      "capabilities": ["default"],
       "csp": "default-src 'self' http://127.0.0.1:*; script-src 'self'; connect-src ipc: http://127.0.0.1:* ws://127.0.0.1:* http://tauri.localhost https://tauri.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'"
     }
   },

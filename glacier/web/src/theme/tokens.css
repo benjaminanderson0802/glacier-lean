@@ -38,16 +38,6 @@
   --g-bad: #e45448;
   --g-bad-ink: #ffffff;
 
-  /* pixel-art palette (mascot only) */
-  --g-art-hair: #1c1a26;
-  --g-art-hair-hi: #3b3852;
-  --g-art-skin: #f2b48a;
-  --g-art-skin-sh: #c67d58;
-  --g-art-ink: #0d0d16;
-  --g-art-mouth: #9c3c30;
-  --g-art-strap: #8a5a2c;
-  --g-art-pants: #22344c;
-
   /* type */
   --g-font-head: 'Glacier Head', monospace;
   --g-font-body: 'Glacier Body', monospace;
