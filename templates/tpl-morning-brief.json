@@ -1,0 +1,82 @@
+{
+  "id": "tpl-morning-brief",
+  "name": "Morning brief from my notes",
+  "description": "Finds yesterday’s changed notes on this computer, summarises them with a local model, and saves a brief.",
+  "when_to_use": "Use it in the morning to catch up on notes you changed the day before.",
+  "goal": "Summarise notes changed yesterday and save a short morning brief.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "find \"$GLACIER_HOME/vault/briefs\" -type f -name 'morning-brief-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 8 * * *"
+      },
+      "position": {
+        "x": -260,
+        "y": 0
+      }
+    },
+    {
+      "id": "find_yesterday",
+      "type": "command",
+      "config": {
+        "cmd": "find \"$GLACIER_HOME/vault\" -type f -name \"*.md\" -mtime 1 -print0 | xargs -0 cat",
+        "timeout": "60"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "summarise_notes",
+      "type": "local_ai",
+      "config": {
+        "prompt": "Write a short morning brief from the notes below. Mention key updates and next steps. If there are no notes, say that clearly.\n\nNotes changed yesterday:\n{prev_output}",
+        "answer_style": "Free text"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_brief",
+      "type": "note",
+      "config": {
+        "path": "briefs/morning-brief-{run}.md",
+        "template": "# Morning brief\n\nRun {run}\n{prev_output}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "schedule",
+      "target": "find_yesterday",
+      "label": ""
+    },
+    {
+      "id": "e1",
+      "source": "find_yesterday",
+      "target": "summarise_notes",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "summarise_notes",
+      "target": "save_brief",
+      "label": ""
+    }
+  ]
+}

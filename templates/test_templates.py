@@ -17,7 +17,16 @@ EXPECTED_IDS = {
     "tpl-sub-flow-example",
     "tpl-nightly-job",
     "tpl-explain-error",
+    # six everyday templates added later; each carries its own acceptance check
+    "tpl-document-note",
+    "tpl-downloads-tidy",
+    "tpl-meeting-tasks",
+    "tpl-web-change-watch",
+    "tpl-morning-brief",
+    "tpl-backup-check",
 }
+EVERYDAY_IDS = {"tpl-document-note", "tpl-downloads-tidy", "tpl-meeting-tasks",
+                "tpl-web-change-watch", "tpl-morning-brief", "tpl-backup-check"}
 DESTRUCTIVE_COMMAND = re.compile(
     r"(?:^|[;&|]\s*)(?:sudo\s+)?(?:rm|rmdir|shred|unlink)\b"
     r"|\bfind\b[^\n]*\s-delete\b|(?:^|\s)-exec\s+rm\b"
@@ -27,16 +36,30 @@ DESTRUCTIVE_COMMAND = re.compile(
 
 
 def load_catalog():
-    return json.loads(CATALOG.read_text(encoding="utf-8"))["types"]
+    """Core step types plus the step plug-ins shipped in glacier/backend/nodes (same catalog the screen gets)."""
+    import importlib.util
+    import sys
+    types = json.loads(CATALOG.read_text(encoding="utf-8"))["types"]
+    backend = ROOT.parent / "glacier" / "backend"
+    if str(backend) not in sys.path:
+        sys.path.insert(0, str(backend))
+    for path in sorted((backend / "nodes").glob("*.py")):
+        spec = importlib.util.spec_from_file_location(f"_tpl_check_{path.stem}", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        catalog = getattr(module, "NODE", {}).get("catalog") if isinstance(getattr(module, "NODE", None), dict) else None
+        if isinstance(catalog, dict) and catalog.get("type"):
+            types.append(catalog)
+    return types
 
 
 def load_templates():
     return [json.loads(path.read_text(encoding="utf-8")) for path in sorted(ROOT.glob("*.json"))]
 
 
-def test_gallery_has_the_ten_requested_templates():
+def test_gallery_has_the_sixteen_requested_templates():
     templates = load_templates()
-    assert len(templates) == 10
+    assert len(templates) == 16
     assert {template["id"] for template in templates} == EXPECTED_IDS
 
 
@@ -47,7 +70,10 @@ def test_templates_follow_the_environment_contract_and_catalog():
     assert len(ids) == len(set(ids))
 
     for template in templates:
-        assert set(template) <= {"id", "name", "nodes", "edges", "max_steps"}
+        assert set(template) <= {"id", "name", "nodes", "edges", "max_steps",
+                                 "goal", "acceptance", "description", "when_to_use"}
+        if template["id"] in EVERYDAY_IDS:
+            assert template.get("goal") and template.get("acceptance"), template["id"]
         assert template["id"].startswith("tpl-")
         assert template["name"].strip()
         assert "_" not in template["name"]

@@ -1,0 +1,64 @@
+{
+  "id": "tpl-downloads-tidy",
+  "name": "Weekly tidy of my Downloads folder",
+  "description": "Lists files older than seven days in a review note. It never moves or deletes anything; you decide what to do with the list.",
+  "when_to_use": "Use it for a weekly review when your Downloads folder has built up and you want a clear list of older files.",
+  "goal": "List downloads older than seven days in a note for review.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "find \"$GLACIER_HOME/vault/downloads\" -type f -name '*.md' -mmin -10 -print0 | xargs -0 grep -q ."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * 1"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "list_old",
+      "type": "command",
+      "config": {
+        "cmd": "find \"$HOME/Downloads\" -type f -mtime +7 -print",
+        "timeout": "60"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_review",
+      "type": "note",
+      "config": {
+        "path": "downloads/review-{run}.md",
+        "template": "# Older Downloads to review\n\nThese files are older than 7 days. Nothing has been moved or deleted yet.\n\n{prev_output}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "schedule",
+      "target": "list_old",
+      "label": ""
+    },
+    {
+      "id": "e1",
+      "source": "list_old",
+      "target": "save_review",
+      "label": ""
+    }
+  ]
+}

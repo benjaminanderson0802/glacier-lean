@@ -1,0 +1,64 @@
+{
+  "id": "tpl-document-note",
+  "name": "Summarise a document into a note",
+  "description": "Reads a document, makes a short local summary, and saves it as a note.",
+  "when_to_use": "Use it when you want the main points of a report, article, or other file in your notes.",
+  "goal": "Summarise a document and save a useful note.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "find \"$GLACIER_HOME/vault/notes\" -type f -name 'document-summary-*.md' -mmin -10 -print0 | xargs -0 grep -q ."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "read_document",
+      "type": "read_document",
+      "config": {
+        "source": "Set this to the document you want to summarise, for example $HOME/Documents/report.txt"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "summarise",
+      "type": "local_ai",
+      "config": {
+        "prompt": "Summarise this document in a few plain-language sentences. Keep names, dates, decisions, and next steps accurate. If the document is unclear, say so.\n\nDocument:\n{prev_output}",
+        "answer_style": "Free text"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_note",
+      "type": "note",
+      "config": {
+        "path": "notes/document-summary-{run}.md",
+        "template": "# Document summary\n\nRun {run}\n{prev_output}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "read_document",
+      "target": "summarise",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "summarise",
+      "target": "save_note",
+      "label": ""
+    }
+  ]
+}
