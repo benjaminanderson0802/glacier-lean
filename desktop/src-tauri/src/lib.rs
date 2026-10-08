@@ -169,6 +169,13 @@ fn show_start_error(app: &tauri::AppHandle, log_path: &Path) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(BackendProcess::default())
         .invoke_handler(tauri::generate_handler![available_tools, check_update, install_update])
@@ -278,6 +285,16 @@ mod tests {
         assert!(navigation_is_allowed(&format!("http://127.0.0.1:{port}/api/node-types").parse().unwrap(), port));
         assert!(!navigation_is_allowed(&"https://example.com/".parse().unwrap(), port));
         assert!(!navigation_is_allowed(&format!("http://127.0.0.1:{}/", port + 1).parse().unwrap(), port));
+    }
+
+    #[test]
+    fn single_instance_plugin_is_pinned_and_configured() {
+        let manifest = include_str!("../Cargo.toml");
+        assert!(manifest.contains("tauri-plugin-single-instance = \"=2.4.0\""));
+        let source = include_str!("lib.rs");
+        assert!(source.contains("tauri_plugin_single_instance::init"));
+        assert!(source.contains("window.unminimize()"));
+        assert!(source.contains("window.set_focus()"));
     }
 
     #[test]

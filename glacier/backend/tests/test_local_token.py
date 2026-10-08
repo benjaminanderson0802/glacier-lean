@@ -5,9 +5,11 @@ import subprocess
 import sys
 
 import pytest
-from conftest import TEST_TOKEN, raw_httpx
+from conftest import TEST_TOKEN, raw_httpx, raw_ws_connect
 from websockets.exceptions import InvalidStatus, ConnectionClosed
 from websockets.sync.client import connect as ws_connect
+from log_redaction import RedactWebSocketToken
+import logging
 
 NOT_OURS = "This request isn't from your Glacier app."
 
@@ -46,6 +48,33 @@ def test_websocket_needs_the_token(server):
             ws.recv(timeout=2)
     with ws_connect(url + "?token=" + TEST_TOKEN) as ws:  # accepted
         pass
+
+
+def test_websocket_protocol_auth_rejects_missing_and_wrong_token(server):
+    url = server.url.replace("http", "ws") + "/api/events"
+    for protocols in (None, ["glacier-events", "wrong"]):
+        with pytest.raises((InvalidStatus, ConnectionClosed)):
+            with raw_ws_connect(url, subprotocols=protocols) as ws:
+                ws.recv(timeout=2)
+    with raw_ws_connect(url, subprotocols=["glacier-events", TEST_TOKEN]) as ws:
+        pass
+
+
+def test_websocket_access_log_redacts_query_token(server):
+    url = server.url.replace("http", "ws") + "/api/events?token=super-secret-query-token"
+    with pytest.raises((InvalidStatus, ConnectionClosed)):
+        with ws_connect(url) as ws:
+            ws.recv(timeout=2)
+    log = server.diagnostics()
+    assert "super-secret-query-token" not in log
+    assert '"WebSocket /api/events" 403' in log
+
+
+def test_access_log_filter_redacts_query_token():
+    record = logging.LogRecord("uvicorn.access", logging.INFO, "", 0,
+                               'WebSocket /api/events?token=secret - "client" 403', (), None)
+    assert RedactWebSocketToken().filter(record)
+    assert record.getMessage() == 'WebSocket /api/events?token=[redacted] - "client" 403'
 
 
 def test_token_file_created_owner_only(tmp_path):

@@ -60,11 +60,17 @@ class LocalRequestGuard:
             return
 
         if scope["type"] == "websocket":
+            event_query = None
+            if scope.get("path") == "/api/events":
+                event_query = scope.get("query_string", b"")
+                # Preserve only for the legacy credential check; Uvicorn must never see it.
+                scope["query_string"] = b""
             origin = headers.get("origin")
             if origin and not _allowed_origin(origin, _RequestView(scope, headers)):
                 await self._reject(scope, receive, send)
                 return
-            if not self._has_token(scope, headers):
+            authenticated = self._has_token(scope, headers, event_query)
+            if not authenticated:
                 await self._unauthorized(scope, receive, send)
                 return
             await self.app(scope, receive, send)
@@ -88,13 +94,17 @@ class LocalRequestGuard:
         await self.app(scope, receive, send)
 
     @staticmethod
-    def _has_token(scope, headers) -> bool:
+    def _has_token(scope, headers, websocket_query: bytes | None = None) -> bool:
         """Install token required on /api (except the open health check and CORS preflight)."""
         path = scope.get("path", "")
         if not (path.startswith("/api") or path in A2A_PATHS) or path in OPEN_PATHS or scope.get("method", "").upper() == "OPTIONS":
             return True
-        query = scope.get("query_string", b"").decode("latin1") if scope["type"] == "websocket" else ""
-        return local_token.matches(local_token.from_headers_or_query(headers, query))
+        candidate = local_token.from_headers_or_protocol(headers)
+        if candidate is None and websocket_query is not None:
+            from urllib.parse import parse_qs
+            values = parse_qs(websocket_query.decode("latin1")).get("token")
+            candidate = values[0] if values else None
+        return local_token.matches(candidate)
 
 
     @staticmethod
