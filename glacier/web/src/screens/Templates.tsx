@@ -8,14 +8,14 @@ import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.ts
 
 export function Templates() {
   const [items, setItems] = useState<TemplateItem[] | null>(null)
-  const [tag, setTag] = useState(t('templates.all'))
+  const [tag, setTag] = useState('all')
   const [pick, setPick] = useState<TemplateItem | null>(null)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   useEffect(() => { templatesApi.list().then(setItems).catch(e => setErr(String(e))) }, [])
-  const tags = [t('templates.all'), ...new Set((items ?? []).flatMap(t => t.template?.tags ?? []))]
-  const shown = (items ?? []).filter(item => tag === t('templates.all') || item.template?.tags?.includes(tag))
+  const tags = [...new Set((items ?? []).flatMap(item => item.template?.tags ?? []))]
+  const shown = (items ?? []).filter(item => tag === 'all' || item.template?.tags?.includes(tag))
 
   const use = async (t: TemplateItem) => {
     if (!t.template) return
@@ -35,7 +35,7 @@ export function Templates() {
       <PageHead title={t('templates.title')} crumb={t('templates.crumb')} sub={t('templates.subtitle')} side={<Btn onClick={() => go('automations')}>{t('templates.back')}</Btn>} />
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
-      {tags.length > 1 && <div className="g-seg" style={{ alignSelf: 'flex-start' }}>{tags.map(value => <button key={value} className={`g-seg-btn${value === tag ? ' active' : ''}`} onClick={() => setTag(value)}>{value}</button>)}</div>}
+      {tags.length > 0 && <div className="g-seg" style={{ alignSelf: 'flex-start' }}><button className={`g-seg-btn${tag === 'all' ? ' active' : ''}`} onClick={() => setTag('all')}>{t('templates.all')}</button>{tags.map(value => <button key={value} className={`g-seg-btn${value === tag ? ' active' : ''}`} onClick={() => setTag(value)}>{value}</button>)}</div>}
       <Window title={t('templates.title')} className="template-window" testid="templates-window"><div className="g-cards" data-testid="template-grid">
         {shown.map(item => (
           <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

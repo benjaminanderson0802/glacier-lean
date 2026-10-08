@@ -76,7 +76,7 @@ export function HomeScreen() {
             <div className="g-rows">
               {data?.recent_notes.length === 0 && <Empty>{t('home.noNotes')}</Empty>}
               {data?.recent_notes.map(n => (
-                <Row key={n.path + n.at} icon="note" lead={n.summary} when={ago(n.at)} onClick={() => go(`memory/${encodeURIComponent(n.path)}`)} testid={`note-${n.path}`} />
+                <Row key={n.path + n.at} icon="note" lead={n.summary} leadTitle={n.summary} when={ago(n.at)} onClick={() => go(`memory/${encodeURIComponent(n.path)}`)} testid={`note-${n.path}`} />
               ))}
             </div>
           </Panel>
