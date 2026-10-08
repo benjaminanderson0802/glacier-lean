@@ -18,10 +18,15 @@ class Goal(BaseModel):
 def propose(g: Goal):
     import app  # the live catalog (core + plug-ins)
     fid = g.flow_id or (re.sub(r"[^a-z0-9]+", "-", g.goal.lower()).strip("-")[:40] or "new-flow")
-    if g.engine not in ("codex", "local"):
-        raise HTTPException(400, "engine must be codex or local")
+    if g.engine not in ("codex", "claude", "gemini", "openai", "anthropic", "local"):
+        raise HTTPException(400, "Choose an available Ask engine")
     try:
-        result = assistant.plan(g.goal, app.NODE_CATALOG, fid, g.engine)
+        import ask_context
+        import secrets_store
+        context = ask_context.build(g.goal, engine=g.engine,
+                                    model=ask_context._settings().get("local_model") if g.engine == "local" else None)
+        prompt = f"Shared context pack:\n{context}\n\nCurrent goal:\n{secrets_store.redact(g.goal)}"
+        result = assistant.plan(prompt, app.NODE_CATALOG, fid, g.engine)
         audit_log.record("assistant.plan_requested", what={"flow_id": fid, "engine": g.engine})
         return result
     except ValueError as e:

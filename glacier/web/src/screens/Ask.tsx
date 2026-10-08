@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ago, api, applyProposal, chat, conversationsApi, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
+import { ago, api, applyProposal, askSettingsApi, chat, conversationsApi, type AskSettings, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { Icon, Mascot } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -11,6 +11,7 @@ type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProp
 
 // Conversation lives for the app session (module scope), so switching tabs does not lose it.
 let saved: { conv: string | null; msgs: Msg[]; title: string } = { conv: null, msgs: [], title: '' }
+if (typeof window !== 'undefined') window.addEventListener('glacier:forget-ask-chats', () => { saved = { conv: null, msgs: [], title: '' } })
 
 const time = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
@@ -33,13 +34,24 @@ export function AskScreen() {
   const [q, setQ] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
   const [err, setErr] = useState('')
+  const [engineSettings, setEngineSettings] = useState<AskSettings | null>(null)
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => { saved = { conv, msgs, title }; end.current?.scrollIntoView({ block: 'end' }) }, [msgs, conv, title])
+  useEffect(() => {
+    const clear = () => { saved = { conv: null, msgs: [], title: '' }; setMsgs([]); setConv(null); setTitle(''); setView('chat') }
+    window.addEventListener('glacier:forget-ask-chats', clear)
+    return () => window.removeEventListener('glacier:forget-ask-chats', clear)
+  }, [])
   useEffect(() => {
     if (view !== 'past') return
     const t = setTimeout(() => conversationsApi.list(q).then(setPast).catch(e => setErr(String(e))), q ? 250 : 0)
     return () => clearTimeout(t)
   }, [view, q])
+  useEffect(() => { askSettingsApi.get().then(setEngineSettings).catch(() => {}) }, [])
+  const switchEngine = async (engine: string) => {
+    try { setEngineSettings(await askSettingsApi.save({ engine })) }
+    catch (e) { setErr(String(e)) }
+  }
 
   const reopen = async (id: string) => {
     try {
@@ -116,9 +128,16 @@ export function AskScreen() {
   return (
     <>
       <PageHead title={t('ask.title')} sub={t('ask.subtitle')} side={
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <label className="g-muted" htmlFor="ask-engine">{t('ask.engine')}</label>
+        <select id="ask-engine" className="g-input" value={engineSettings?.active_engine ?? engineSettings?.engine ?? 'codex'} onChange={e => switchEngine(e.target.value)} data-testid="ask-engine">
+          {(engineSettings?.engines ?? []).filter(x => x.available).map(x => <option key={x.id} value={x.id}>{t(`ask.engine${x.id[0].toUpperCase()}${x.id.slice(1)}`)}</option>)}
+        </select>
+        {engineSettings && engineSettings.engine !== engineSettings.active_engine && <span className="g-muted" data-testid="ask-engine-fallback">{engineSettings.active_engine ? t('ask.engineFallback', { engine: t(`ask.engine${engineSettings.active_engine[0].toUpperCase()}${engineSettings.active_engine.slice(1)}`) }) : t('ask.noEngineReady')} {t(`ask.engineUnavailable.${engineSettings.fallback_reason_code ?? 'missing'}`)}</span>}
         <div className="g-seg" data-testid="ask-views">
           <button className={`g-seg-btn${view === 'chat' ? ' active' : ''}`} onClick={() => setView('chat')} data-testid="askview-chat">{t('ask.chat')}</button>
           <button className={`g-seg-btn${view === 'past' ? ' active' : ''}`} onClick={() => setView('past')} data-testid="askview-past">{t('ask.pastChats')}</button>
+        </div>
         </div>} />
       {err && <div className="g-error">{err}</div>}
       {view === 'past' ? (

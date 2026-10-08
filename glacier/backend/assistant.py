@@ -129,11 +129,26 @@ def plan(goal: str, catalog: list[dict], flow_id: str, engine: str = "codex") ->
     """Returns {"flow", "explanation", "problems"}; problems is empty when the plan is ready to review and save."""
     if not goal.strip():
         raise ValueError("describe the goal first")
-    ask = _ask_local if engine == "local" else _ask_codex
     schema = _schema([t["type"] for t in catalog if t["type"] != "schedule"] + ["schedule"])
     errors, p = "", {}
     for _ in range(2):  # one repair attempt (self-fix budget)
-        p = _normalize(ask(_prompt(goal, catalog, errors), schema))
+        prompt = _prompt(goal, catalog, errors)
+        if engine == "local":
+            p = _ask_local(prompt, schema)
+        elif engine == "codex":
+            p = _ask_codex(prompt, schema)
+        else:
+            # Reuse Ask's official CLI/API adapters so the selected engine also handles
+            # proposals; provider-specific credentials and outbound rules stay centralized.
+            from routes import assistant_chat
+            request = prompt + "\n\nReturn only the requested JSON object and no surrounding text."
+            answer = assistant_chat._ask_engine(request, engine, schema=schema)
+            try:
+                raw = answer.get("reply", "")
+                p = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
+            except (ValueError, TypeError):
+                p = {}
+        p = _normalize(p)
         problems = validate(p, catalog)
         if not problems:
             return {"flow": to_flow(p, flow_id, goal), "explanation": p.get("explanation", ""), "problems": []}
