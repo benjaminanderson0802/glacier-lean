@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { tok } from '../ui/tok.ts'
 import { Icon, type IconName } from '../ui/Pixel.tsx'
+import { t } from '../i18n/index.ts'
 
 const W = 192, H = 120
 
@@ -59,10 +60,10 @@ function draw(c: HTMLCanvasElement) {
 }
 
 const MENU: { label: string; icon: IconName; go: string }[] = [
-  { label: 'Continue', icon: 'run', go: 'home' },
-  { label: 'New automation', icon: 'plus', go: 'ask' },
-  { label: 'Settings', icon: 'settings', go: 'settings' },
-  { label: 'Exit', icon: 'close', go: 'exit' },
+  { label: t('splash.continueMenu'), icon: 'run', go: 'home' },
+  { label: t('splash.newAutomation'), icon: 'plus', go: 'ask' },
+  { label: t('splash.settings'), icon: 'settings', go: 'settings' },
+  { label: t('splash.exit'), icon: 'close', go: 'exit' },
 ]
 
 export function Splash({ onDone, version }: { onDone: (to: string) => void; version: string }) {
@@ -86,11 +87,11 @@ export function Splash({ onDone, version }: { onDone: (to: string) => void; vers
     <div className="g-splash" data-testid="splash">
       <canvas ref={cv} width={W} height={H} className="g-splash-art" />
       <div className="g-splash-title">
-        <div className="g-splash-word">GLACIER</div>
-        <div className="g-splash-tag">Build. Run. Trust.</div>
-        <div className="g-sub">Your AI workforce. Your world.</div>
+        <div className="g-splash-word">{t('splash.name')}</div>
+        <div className="g-splash-tag">{t('splash.tag')}</div>
+        <div className="g-sub">{t('splash.subtitle')}</div>
       </div>
-      <div className="g-splash-note g-panel">Local first.<br />Model agnostic.<br />Yours.</div>
+      <div className="g-splash-note g-panel">{t('splash.local')}<br />{t('splash.model')}<br />{t('splash.yours')}</div>
       <nav className="g-splash-menu g-panel">
         {MENU.map((m, i) => (
           <button key={m.label} className={`g-navitem${i === sel ? ' active' : ''}`} onMouseEnter={() => setSel(i)} onClick={() => onDone(m.go)} data-testid={`splash-${m.go}`}>
@@ -98,7 +99,7 @@ export function Splash({ onDone, version }: { onDone: (to: string) => void; vers
           </button>
         ))}
       </nav>
-      <div className="g-splash-foot"><span>v{version}</span><span>Press Enter to continue…</span><span>{now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>
+      <div className="g-splash-foot"><span>v{version}</span><span>{t('splash.continue')}</span><span>{now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>
     </div>
   )
 }
