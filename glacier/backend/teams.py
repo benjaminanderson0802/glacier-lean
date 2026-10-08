@@ -674,6 +674,13 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
                 return state
             item.update(status="pending", **result)
             _save_task(team_id, task_id, item)
+        persisted_status = _persisted_status(team_id)
+        if persisted_status in {"pausing", "paused", "stopped"}:
+            current = _read(team_id)
+            final_status = "paused" if persisted_status == "pausing" else persisted_status
+            current["state"]["status"] = final_status
+            _save(team_id, status=final_status, state=current["state"])
+            return {**current["state"], "status": final_status}
         if plan.get("features") and not _uses_feature_evaluators(plan):
             for feature in plan["features"]:
                 related = [task for task in plan.get("tasks", []) if task.get("feature_id") in (None, feature["id"])]
