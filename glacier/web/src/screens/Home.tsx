@@ -45,8 +45,8 @@ export function HomeScreen() {
         </div>
       } />
       {err && <div className="g-error">{err}</div>}
-      <div className="g-grid-2 g-home-grid" style={{ flex: 1, minHeight: 0, gridColumn: '1 / -1', gridRow: '2 / 4', display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)', gap: 'calc(2 * var(--px))' }}>
-        <div className="g-stack" style={{ gridColumn: 1, gridRow: 1, minHeight: 0 }}>
+      <div className="g-grid-2 g-home-grid">
+        <div className="g-stack g-home-left" style={{ gridColumn: 1, gridRow: 1, minHeight: 0 }}>
         <StarterPanel />
         <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you" style={{ flex: 1 }}>
           <div className="g-rows">

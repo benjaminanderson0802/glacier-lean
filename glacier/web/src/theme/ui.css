@@ -170,4 +170,8 @@ button { cursor: pointer; }
 .g-delete-confirm { position:relative;display:inline-flex;align-items:center;flex-wrap:wrap;gap:calc(2 * var(--px));padding:calc(2 * var(--px)) calc(2 * var(--px)) calc(7 * var(--px));border:var(--px) solid var(--g-navy);background:var(--g-ice2); }
 .g-delete-confirm .g-more-arrow { display:block; }
 .g-delete-confirm .g-hintbar { flex:1 0 100%; }
-.g-main[data-testid="screen-home"] .g-panel { min-height:0;overflow-y:auto; }
+.g-main[data-testid="screen-home"] .g-panel { min-height:0; }
+.g-main[data-testid="screen-home"] .g-home-left > .g-panel:first-child { flex:0 0 auto; }
+.g-main[data-testid="screen-home"] .g-home-left > .g-panel:first-child > :not(.g-panel-title) { overflow:visible; }
+.g-main[data-testid="screen-home"] .g-home-left > .g-panel:last-child { flex:1; }
+.g-main[data-testid="screen-home"] .g-home-left > .g-panel:last-child > :not(.g-panel-title) { min-height:0;overflow-y:auto; }
