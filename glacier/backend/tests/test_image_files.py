@@ -72,6 +72,7 @@ def test_huge_dimension_image_is_refused_cleanly(server):
     assert "image" in response.json().get("message", "").lower()
 
 
+@pytest.mark.serial  # timing: a busy parallel batch can delay the fake program's start past the limit
 def test_ocr_timeout_is_enforced(monkeypatch, tmp_path):
     _fake_tesseract(tmp_path, "too late", sleep=2, monkeypatch=monkeypatch)
     image = tmp_path / "slow.png"
