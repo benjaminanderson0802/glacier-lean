@@ -141,19 +141,25 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
     return sha
 
 
-def read_note_metadata(path: str) -> tuple[dict, str]:
-    """Return parsed note metadata/body, reusing it while the file mtime is unchanged."""
+def read_note_metadata_with_stat(path: str) -> tuple[dict, str, os.stat_result]:
+    """Return metadata, body and the validating stat, reusing parsed data when possible."""
     full = safe_path(path)
     stat = os.stat(full)
     with _note_metadata_cache_lock:
         cached = _note_metadata_cache.get(path)
         if cached and cached[0] == stat.st_mtime_ns and cached[1] == stat.st_size:
-            return cached[2], cached[3]
+            return cached[2], cached[3], stat
     with open(full, encoding="utf-8") as f:
         text = f.read()
     meta, body = memory_meta.parse(text, path)
     with _note_metadata_cache_lock:
         _note_metadata_cache[path] = (stat.st_mtime_ns, stat.st_size, meta, body)
+    return meta, body, stat
+
+
+def read_note_metadata(path: str) -> tuple[dict, str]:
+    """Return parsed note metadata/body, reusing it while the file mtime is unchanged."""
+    meta, body, _ = read_note_metadata_with_stat(path)
     return meta, body
 
 
