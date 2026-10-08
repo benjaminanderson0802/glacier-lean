@@ -20,7 +20,7 @@ def test_recommendation_table(machine, expected):
 
 def test_check_reports_missing_tools_and_friendly_message(monkeypatch):
     system_check.clear_cache()
-    monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda _name: None)
     result = system_check.check_system()
     assert set(result["tools"]) == {"codex", "ollama", "git", "python", "node", "tesseract"}  # tesseract: optional image text reader
     assert all(tool == {"found": False, "version": ""} for tool in result["tools"].values())
@@ -38,7 +38,7 @@ def test_check_reads_models_from_fake_ollama_on_path(tmp_path, monkeypatch):
         script.write_text("#!/bin/sh\nprintf 'NAME\\tID\\nqwen3:0.6b\\t1\\nllama3.2:1b\\t2'\n", encoding="utf-8")
         script.chmod(0o755)
     monkeypatch.setenv("PATH", str(tmp_path))
-    monkeypatch.setattr(system_check.shutil, "which", lambda name: str(script) if name == "ollama" else None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda name: str(script) if name == "ollama" else None)
     monkeypatch.setattr(system_check, "_machine_stats", lambda: (4, 8.0, 10.0))
     result = system_check.check_system()
     assert result["tools"]["ollama"]["found"] is True
@@ -50,7 +50,7 @@ def test_settings_environment_overrides_recommendation(monkeypatch):
     system_check.clear_cache()
     monkeypatch.setattr(system_check, "_machine_stats", lambda: (8, 16.0, 10.0))
     monkeypatch.setattr(system_check, "_ollama_models", lambda: ["qwen3:1.7b"])
-    monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda _name: None)
     monkeypatch.setenv("GLACIER_LOCAL_MODEL", "custom:1b")
     monkeypatch.setenv("GLACIER_MAX_PARALLEL_RUNS", "3")
     assert system_check.effective_settings() == {
@@ -102,7 +102,7 @@ def test_unknown_memory_is_not_treated_as_low(monkeypatch):
 
 def test_tool_with_nonzero_version_exit_is_not_found(monkeypatch):
     system_check.clear_cache()
-    monkeypatch.setattr(system_check.shutil, "which", lambda name: "/fake/python" if name == "python" else None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda name: "/fake/python" if name == "python" else None)
     monkeypatch.setattr(system_check, "_run", lambda _command, **_kwargs: "" )
     result = system_check.check_system()
     assert result["tools"]["python"] == {"found": False, "version": ""}
@@ -119,7 +119,7 @@ def test_check_system_caches_result_for_60_seconds(monkeypatch):
     calls = []
     monkeypatch.setattr(system_check, "_machine_stats", lambda: (calls.append("stats") or (8, 16.0, 20.0)))
     monkeypatch.setattr(system_check, "_ollama_models", lambda: [])
-    monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda _name: None)
     monkeypatch.setattr(system_check.time, "monotonic", lambda: 10.0)
     system_check.clear_cache()
     first = system_check.check_system()
@@ -131,7 +131,7 @@ def test_check_system_caches_result_for_60_seconds(monkeypatch):
 def test_missing_memory_is_reported_as_unknown(monkeypatch):
     monkeypatch.setattr(system_check, "_machine_stats", lambda: (8, None, 20.0))
     monkeypatch.setattr(system_check, "_ollama_models", lambda: [])
-    monkeypatch.setattr(system_check.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda _name: None)
     system_check.clear_cache()
     result = system_check.check_system()
     assert result["memory_gb"] is None

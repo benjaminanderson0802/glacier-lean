@@ -38,6 +38,10 @@ fn api_initialization_script(port: u16, token: &str) -> String {
     format!("window.__GLACIER_API__ = \"http://127.0.0.1:{port}\"; window.__GLACIER_TOKEN__ = {token};")
 }
 
+fn updater_initialization_script() -> &'static str {
+    "window.glacierUpdater = { check: async () => window.__TAURI__.core.invoke('check_update'), install: (version) => window.__TAURI__.core.invoke('install_update', { expectedVersion: version }) };"
+}
+
 /// The per-install engine token (GLACIER_HOME/.engine-token), shared with the engine and command-line tools.
 /// Created here on first launch with 32 random bytes; owner-only on Unix, user-profile ACL on Windows.
 fn engine_token(data_dir: &Path) -> Result<String, String> {
@@ -65,6 +69,31 @@ fn engine_token(data_dir: &Path) -> Result<String, String> {
 
 #[tauri::command]
 fn available_tools() -> Vec<ToolStatus> { detect_tools_in(&env::var_os("PATH").unwrap_or_default()) }
+
+#[derive(Debug, Clone, Serialize)]
+struct UpdateInfo { version: String, notes: String }
+
+#[tauri::command]
+async fn check_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    updater.check().await.map_err(|e| e.to_string()).map(|update| update.map(|u| UpdateInfo {
+        version: u.version,
+        notes: u.body.unwrap_or_default(),
+    }))
+}
+
+#[tauri::command]
+async fn install_update(app: tauri::AppHandle, expected_version: String) -> Result<(), String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let update = updater.check().await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "No update is available now. Check again.".to_string())?;
+    if update.version != expected_version {
+        return Err("The available version changed. Check for updates again.".into());
+    }
+    update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())
+}
 
 #[derive(Default)]
 struct BackendProcess(Mutex<Option<Child>>);
@@ -100,8 +129,10 @@ fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf),
         return Err(format!("The bundled Python runtime is missing at {}", python.display()));
     }
     let mut command = Command::new(python);
-    command.current_dir(backend_dir).args(["-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", &port_text])
-        .env("GLACIER_HOME", data_dir).stdin(Stdio::null()).stdout(Stdio::from(log_file)).stderr(Stdio::from(log_stderr));
+    // -s and PYTHONNOUSERSITE: the bundled Python must ignore packages in the user's own profile
+    // (seen on a real PC: an unrelated user-site add-on patched subprocess inside Glacier).
+    command.current_dir(backend_dir).args(["-s", "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", &port_text])
+        .env("GLACIER_HOME", data_dir).env("PYTHONNOUSERSITE", "1").stdin(Stdio::null()).stdout(Stdio::from(log_file)).stderr(Stdio::from(log_stderr));
     if low_resource {
         if let Some(values) = config.get("low_resource_env").and_then(|x| x.as_object()) {
             for (key, value) in values {
@@ -118,7 +149,9 @@ fn backend_ready(port: u16) -> bool {
     let addr = format!("127.0.0.1:{port}");
     let Ok(mut stream) = std::net::TcpStream::connect(&addr) else { return false; };
     let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
-    let request = format!("GET /api/node-types HTTP/1.0\r\nHost: {addr}\r\n\r\n");
+    // /api/health is the one route open without the install token; every other /api route
+    // answers 401 to this probe, which made the app report "engine didn't start" while it was running.
+    let request = format!("GET /api/health HTTP/1.0\r\nHost: {addr}\r\n\r\n");
     if stream.write_all(request.as_bytes()).is_err() { return false; }
     let mut response = String::new();
     stream.read_to_string(&mut response).is_ok() && (response.starts_with("HTTP/1.1 200") || response.starts_with("HTTP/1.0 200"))
@@ -135,8 +168,9 @@ fn show_start_error(app: &tauri::AppHandle, log_path: &Path) {
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(BackendProcess::default())
-        .invoke_handler(tauri::generate_handler![available_tools])
+        .invoke_handler(tauri::generate_handler![available_tools, check_update, install_update])
         .setup(|app| {
             let port = free_listener().local_addr()?.port();
             let data_dir = app.path().app_data_dir()?;
@@ -144,9 +178,26 @@ pub fn run() {
             let token = engine_token(&data_dir).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             let window = WebviewWindowBuilder::new(app.handle(), "main", WebviewUrl::App("first-run/index.html".into()))
                 .title("Welcome to Glacier").inner_size(1280.0, 820.0)
-                .initialization_script(api_initialization_script(port, &token))
+                .initialization_script(format!("{}{}", api_initialization_script(port, &token), updater_initialization_script()))
                 .on_navigation(move |url| navigation_is_allowed(url, port))
                 .build()?;
+            {
+                use tauri_plugin_updater::UpdaterExt;
+                let handle = app.handle().clone();
+                let update_window_handle = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Ok(updater) = handle.updater() {
+                        if let Ok(Some(update)) = updater.check().await {
+                            let version = serde_json::to_string(&update.version).unwrap_or_else(|_| "\"unknown\"".into());
+                            let notes = serde_json::to_string(update.body.as_deref().unwrap_or("")).unwrap_or_else(|_| "\"\"".into());
+                            if let Some(window) = update_window_handle.get_webview_window("main") {
+                                let script = format!("window.__GLACIER_UPDATE_NOTICE__ = {{ version: {version}, notes: {notes} }}; window.dispatchEvent(new CustomEvent('glacier-update-available', {{ detail: window.__GLACIER_UPDATE_NOTICE__ }}));");
+                                let _ = window.eval(&script);
+                            }
+                        }
+                    }
+                });
+            }
             match launch_backend(&app.handle(), port) {
                 Ok((child, log_path)) => {
                     let state = app.state::<BackendProcess>();
@@ -214,6 +265,23 @@ mod tests {
     #[test]
     fn api_address_is_injected_into_bundled_pages() {
         assert_eq!(api_initialization_script(43127, "abc"), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\"; window.__GLACIER_TOKEN__ = \"abc\";");
+    }
+
+    #[test]
+    fn readiness_probe_uses_the_open_health_route() {
+        // Every /api route except /api/health needs the install token; the probe sends none.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0u8; 512];
+            let n = std::io::Read::read(&mut stream, &mut buf).unwrap();
+            let request = String::from_utf8_lossy(&buf[..n]).to_string();
+            let reply = if request.starts_with("GET /api/health ") { "HTTP/1.1 200 OK\r\n\r\n{}" } else { "HTTP/1.1 401 Unauthorized\r\n\r\n" };
+            std::io::Write::write_all(&mut stream, reply.as_bytes()).unwrap();
+        });
+        assert!(backend_ready(port));
+        server.join().unwrap();
     }
 
     #[test]

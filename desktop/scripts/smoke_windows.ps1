@@ -45,13 +45,22 @@ try {
     $listener.Stop()
     $baseUrl = "http://127.0.0.1:$port"
 
-    # Match desktop/src-tauri/src/lib.rs: cwd=backend; python -m uvicorn app:app --host 127.0.0.1 --port <port>;
+    # Match desktop/src-tauri/src/lib.rs: cwd=backend; python -s -m uvicorn app:app --host 127.0.0.1 --port <port>;
     # GLACIER_HOME is app data and the two low-resource values come from desktop/sidecar.json.
     $env:GLACIER_HOME = $dataDir
     $env:GLACIER_LOCAL_MODEL = "granite3.3:2b"
     $env:GLACIER_MAX_PARALLEL_RUNS = "1"
+    $env:PYTHONNOUSERSITE = "1"
+    # A real PC had npm's extensionless "codex" script on PATH; starting it shows a blocking
+    # "Unsupported 16-bit application" box. Put the same kind of file first on PATH so the
+    # smoke test fails (times out) if the engine ever tries to run it again.
+    $trap = Join-Path $env:RUNNER_TEMP "glacier-npm-trap"
+    New-Item -ItemType Directory -Force $trap | Out-Null
+    Set-Content -LiteralPath (Join-Path $trap "codex") -Value "#!/bin/sh`nexit 0`n"
+    Set-Content -LiteralPath (Join-Path $trap "gemini") -Value "#!/bin/sh`nexit 0`n"
+    $env:PATH = "$trap;$env:PATH"
     $backend = Start-Process -FilePath $python `
-        -ArgumentList @("-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "$port") `
+        -ArgumentList @("-s", "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "$port") `
         -WorkingDirectory $backendDir -RedirectStandardOutput (Join-Path $dataDir "backend.log") `
         -RedirectStandardError (Join-Path $dataDir "backend-error.log") -PassThru
 

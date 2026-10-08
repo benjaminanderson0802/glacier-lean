@@ -88,8 +88,31 @@ def _run(command, timeout=2, first_line=True):
     return output
 
 
+def _ollama_api_models():
+    """Models from the running Ollama server's own API (None when it does not answer).
+
+    More reliable than the command line: a PC can have several ollama.exe copies on PATH and
+    the first one may not run (seen on a real PC: a broken winget link ahead of the real install).
+    """
+    import urllib.request
+    url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/") + "/api/tags"
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(url, timeout=1) as response:
+            payload = json.loads(response.read(2_000_000))
+    except Exception:
+        return None
+    models = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(models, list):
+        return None
+    return [str(m.get("name")) for m in models if isinstance(m, dict) and m.get("name")]
+
+
 def _ollama_models():
-    path = shutil.which("ollama")
+    from_api = _ollama_api_models()
+    if from_api is not None:
+        return from_api
+    path = shell_commands.which("ollama")
     if not path:
         return []
     output = _run([path, "list"], first_line=False)
@@ -133,10 +156,13 @@ def check_system():
     cores, memory_gb, disk_free_gb = _machine_stats()
     tools = {}
     for name, (binary, args) in TOOL_COMMANDS.items():
-        path = shutil.which(binary)
+        path = shell_commands.which(binary)
         version = _run([path, *args]) if path else ""
         tools[name] = {"found": bool(path and version), "version": version}
     models = _ollama_models()
+    if not tools["ollama"]["found"] and _ollama_api_models() is not None:
+        # The server is running even if the ollama command on PATH could not be started.
+        tools["ollama"] = {"found": True, "version": "running (local API)"}
     machine = {"cpu_cores": cores, "memory_gb": memory_gb, "disk_free_gb": disk_free_gb,
                "ollama_models": models}
     messages = []
@@ -169,8 +195,20 @@ def clear_cache():
     _check_cache_key = None
 
 
+def _recommended_light():
+    """Recommendation from hardware and installed models only (no tool probes).
+
+    Used at start-up so a slow or broken tool on PATH can never stop the engine starting.
+    """
+    if _check_cache is not None:
+        return dict(_check_cache["recommended"])
+    cores, memory_gb, disk_free_gb = _machine_stats()
+    return recommend({"cpu_cores": cores, "memory_gb": memory_gb, "disk_free_gb": disk_free_gb,
+                      "ollama_models": _ollama_models()})
+
+
 def effective_settings(include_ask_route: bool = False):
-    result = dict(check_system()["recommended"])
+    result = _recommended_light()
     settings_path = Path(os.environ.get("GLACIER_HOME", "data")) / "settings.json"
     try:
         saved = json.loads(settings_path.read_text(encoding="utf-8"))
