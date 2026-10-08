@@ -92,8 +92,11 @@ def proposal() -> dict:
     recommendation = machine.get("recommended") or system_check.recommend(machine)
     memory = machine.get("memory_gb")
     mode = recommendation["mode"]
-    model = recommendation["local_model"]
-    reason = (f"Your computer has {memory:g} GB of memory, so Glacier uses the light mode."
+    model = recommendation.get("local_model")
+    if model is None:
+        reason = "No local model is installed yet. Download a model in Settings > Models before using a local assistant."
+    else:
+        reason = (f"Your computer has {memory:g} GB of memory, so Glacier uses the light mode."
               if memory is not None and mode == "low" else
               "Your computer has enough memory for Glacier's standard mode." if mode == "standard" else
               "Your computer has limited processing power, so Glacier uses the light mode.")
@@ -172,8 +175,16 @@ def apply(template_ids: list[str], mode: str) -> dict:
             vault.write_note(f"environments/{env_id}.json", json.dumps(flow, indent=2), agent="glacier-api")
             applied.add(item["id"])
             created.append({"template_id": item["id"], "id": env_id, "name": item["name"]})
+        machine = system_check.check_system()
+        recommendation = machine.get("recommended") or system_check.recommend(machine)
+        available_models = machine.get("ollama_models") or []
+        selected_model = recommendation.get("local_model")
         old_settings = system_check.effective_settings()
-        settings = {"mode": mode, "local_model": old_settings.get("local_model") or system_check.RECOMMENDED_MODELS[mode],
+        if selected_model not in available_models:
+            selected_model = None
+        if old_settings.get("local_model") in available_models:
+            selected_model = old_settings["local_model"]
+        settings = {"mode": mode, "local_model": selected_model,
                     "max_parallel_runs": 1 if mode == "low" else old_settings.get("max_parallel_runs", 1)}
         (_home() / "settings.json").write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
         applied_path.write_text(json.dumps(sorted(applied), indent=2) + "\n", encoding="utf-8")

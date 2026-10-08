@@ -18,9 +18,9 @@ RECOMMENDED_MODELS = {
     "standard": DEFAULT_MODEL,
 }
 INSTALLED_MODEL_ORDER = (
+    "granite3.3:2b",
     "qwen3:0.6b",
     "qwen3:1.7b",
-    "granite3.3:2b",
     "smollm2:1.7b",
 )
 CACHE_SECONDS = 60
@@ -131,17 +131,21 @@ def recommend(machine):
     memory = float(raw_memory) if raw_memory is not None else None
     low = (memory is not None and memory <= 8) or cores <= 4
     mode = "low" if low else "standard"
-    installed = [m for m in (machine.get("ollama_models") or [])
+    available_models = machine.get("ollama_models") or []
+    installed = [m for m in available_models
                  if "embed" not in m.lower() and "minilm" not in m.lower()]
     # 1) an evaluated model already installed; 2) any other chat model the user installed (smallest first, no
     # download needed); 3) the recommended default for this mode.
-    model = next((name for name in INSTALLED_MODEL_ORDER if name in installed), None)
+    # Glacier's evaluated default wins when present; otherwise prefer the smallest
+    # evaluated model, then another installed chat model.
+    model = DEFAULT_MODEL if DEFAULT_MODEL in installed else next(
+        (name for name in INSTALLED_MODEL_ORDER if name in installed), None)
     if model is None and installed:
         def size(name):
             match = re.search(r"(?:^|[-:])(\d+(?:\.\d+)?)\s*([bm])(?:\b|$)", name.lower())
             return float("inf") if not match else float(match.group(1)) * (1_000 if match.group(2) == "b" else 1)
         model = min(enumerate(installed), key=lambda item: (size(item[1]), item[0]))[1]
-    model = model or RECOMMENDED_MODELS[mode]
+    model = model or (RECOMMENDED_MODELS[mode] if not available_models else None)
     return {"mode": mode, "local_model": model,
             "max_parallel_runs": 1 if low else min(4, max(1, cores // 2))}
 
@@ -215,7 +219,10 @@ def effective_settings(include_ask_route: bool = False):
         if saved.get("mode") in {"low", "standard"}:
             result["mode"] = saved["mode"]
         if isinstance(saved.get("local_model"), str) and saved["local_model"].strip():
-            result["local_model"] = saved["local_model"].strip()
+            saved_model = saved["local_model"].strip()
+            installed = check_system().get("ollama_models") or []
+            if saved_model in installed:
+                result["local_model"] = saved_model
         if isinstance(saved.get("max_parallel_runs"), int) and saved["max_parallel_runs"] > 0:
             result["max_parallel_runs"] = saved["max_parallel_runs"]
     except (OSError, ValueError, TypeError):
