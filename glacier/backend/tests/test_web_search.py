@@ -150,3 +150,12 @@ def test_oversized_response_refused(monkeypatch):
         stop(server, thread)
     assert result["state"] == "failed"
     assert "2 MB" in result["output"]
+
+
+@pytest.mark.parametrize("value", ["No", "no", "false", "False", "", "0"])
+def test_private_network_needs_an_explicit_yes(value):
+    from nodes import web_search
+    result = web_search.run({"config": {"search_server": "http://127.0.0.1:9", "query": "x",
+                                        "allow_private_network": value}})
+    assert result["state"] == "failed"
+    assert "private or reserved network" in result["output"]

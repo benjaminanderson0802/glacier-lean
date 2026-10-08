@@ -212,7 +212,8 @@ def run(ctx: dict) -> dict:
     except (TypeError, ValueError):
         count = 5
     count = max(1, min(20, count))
-    allow_private = bool(config.get("allow_private_network", False))
+    # The screen sends text; only an explicit yes allows a private-network server.
+    allow_private = str(config.get("allow_private_network", "No")).strip().lower() in {"yes", "true", "1", "on"}
     try:
         results = _search(server, query, count, allow_private)
     except EgressError as exc:
@@ -240,8 +241,9 @@ NODE = {
         "fields": [
             {"key": "query", "label": "Search words", "placeholder": "What would you like to find?", "default": ""},
             {"key": "search_server", "label": "Search server", "placeholder": "http://localhost:8888", "default": ""},
-            {"key": "result_count", "label": "Number of results", "placeholder": "5", "default": 5},
-            {"key": "allow_private_network", "label": "The search server runs on this computer or my network", "default": False},
+            {"key": "result_count", "label": "Number of results", "placeholder": "5", "default": "5", "optional": True},
+            {"key": "allow_private_network", "label": "The search server runs on this computer or my network", "default": "No",
+             "optional": True, "options": ["No", "Yes"]},
         ],
         "branches": None, "worker": True,
     },
