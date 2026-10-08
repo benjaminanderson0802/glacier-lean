@@ -65,6 +65,18 @@ def test_maintenance_is_weekly_proposal_only_without_write_enabled_worker():
                    for n in flow["nodes"])
 
 
+def test_maintenance_acceptance_checks_the_saved_proposal_note():
+    flow = load(MAINTENANCE)
+    checks = flow.get("acceptance", [])
+    assert len(checks) == 1
+    check = checks[0]
+    assert check["kind"] == "command"
+    assert "GLACIER_HOME" in check["cmd"]
+    assert "maintenance-" in check["cmd"] and "proposals" in check["cmd"]
+    assert "Weekly maintenance proposal" in check["cmd"]
+    assert "Nothing was installed or changed" in check["cmd"]
+
+
 @pytest.mark.parametrize("worker_action,expected", [("delete_test", False), ("passing_change", True)])
 def test_feature_run_merges_only_when_verified(server, tmp_path, worker_action, expected):
     repo = tmp_path / "toy-repo"
