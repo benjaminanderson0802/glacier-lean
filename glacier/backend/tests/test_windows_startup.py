@@ -65,3 +65,19 @@ def test_ollama_found_through_its_api_even_if_the_command_fails(monkeypatch):
     assert result["tools"]["ollama"]["found"] is True
     assert result["ollama_models"] == ["granite3.3:2b"]
     system_check.clear_cache()
+
+
+def test_windows_which_skips_a_program_file_that_is_not_a_program(tmp_path, monkeypatch):
+    # Seen on a real PC: a winget link named ollama.exe pointing at an unextracted zip
+    # sat first on PATH; starting it opened a blocking "16-bit application" box.
+    broken, real = tmp_path / "links", tmp_path / "programs"
+    broken.mkdir(), real.mkdir()
+    (broken / "ollama.exe").write_bytes(b"PK\x03\x04 not a program")
+    (real / "ollama.exe").write_bytes(b"MZ\x90\x00 a program")
+    monkeypatch.setattr(shell_commands.os, "name", "nt")
+    monkeypatch.setattr(shell_commands.shutil, "which", lambda name: str(broken / "ollama.exe"))
+    monkeypatch.setenv("PATH", os.pathsep.join([str(broken), str(real)]))
+    monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+    assert shell_commands.which("ollama") == str(real / "ollama.exe")
+    (real / "ollama.exe").unlink()
+    assert shell_commands.which("ollama") is None
