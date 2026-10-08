@@ -77,10 +77,17 @@ def render(path: str, body: str, author: str, run_id: str = "", existing: str | 
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     meta = {"title": title, "author": author, "run_id": run_id,
             "created": old.get("created") or now, "updated": now, "tags": sorted(tags)}
-    front = "---\n" + "\n".join((
-        f"title: {json.dumps(meta['title'], ensure_ascii=False)}", f"author: {author}",
-        f"run_id: {run_id}", f"created: {meta['created']}", f"updated: {now}",
-        f"tags: [{', '.join(meta['tags'])}]", *custom_fields)) + "\n---\n"
+    front_fields = [
+        f"title: {json.dumps(meta['title'], ensure_ascii=False)}",
+        f"author: {author}",
+    ]
+    if run_id:
+        front_fields.append(f"run_id: {run_id}")
+    front_fields.extend((f"created: {meta['created']}", f"updated: {now}"))
+    if meta["tags"]:
+        front_fields.append(f"tags: [{', '.join(meta['tags'])}]")
+    front_fields.extend(custom_fields)
+    front = "---\n" + "\n".join(front_fields) + "\n---\n"
     return meta, front + content.lstrip("\n")
 
 
