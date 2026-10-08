@@ -33,6 +33,10 @@ AUDITED_ROUTES = {
     "POST /api/templates/import": "template.reviewed",
     "POST /api/claims": "claim.filed",
     "POST /api/assistant/plan": "assistant.plan_requested",
+    "DELETE /api/environments/{env_id}": "flow.deleted",
+    "POST /api/environments/{env_id}/undo-delete": "flow.delete_undone",
+    "DELETE /api/runs/{run_id}": "run.deleted",
+    "POST /api/runs/{run_id}/undo-delete": "run.delete_undone",
 }
 
 # Runtime nodes that can perform an external or local side effect when executed.
