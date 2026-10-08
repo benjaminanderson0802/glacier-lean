@@ -27,7 +27,7 @@ export function AutomationsScreen() {
   const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
 
   useEffect(() => {
-    teamsApi.list().then(setTeams).catch(() => {})
+    teamsApi.list().then(list => setTeams(Array.isArray(list) ? list : [])).catch(() => {})
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
         const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])

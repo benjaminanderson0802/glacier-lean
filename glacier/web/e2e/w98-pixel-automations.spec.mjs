@@ -26,6 +26,7 @@ await page.route('**/api/**', route => {
   if (p === '/api/environments') body = [env]
   else if (p === '/api/environments/weekly-report') body = env
   else if (p === '/api/runs') body = []
+  else if (p === '/api/teams') body = []
   else if (p === '/api/templates') body = templates
   else if (p === '/api/node-types') body = [
     { type: 'schedule', label: 'Schedule', description: 'Start on a timer', fields: [{ key: 'cron', label: 'Schedule', placeholder: '', default: '' }], branches: null },
