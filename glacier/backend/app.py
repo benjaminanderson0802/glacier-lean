@@ -120,6 +120,7 @@ def delete_environment(env_id: str):
         raise HTTPException(404, "Flow not found")
     except ValueError as exc:
         raise HTTPException(400, "That flow cannot be removed") from exc
+    audit_log.record("flow.deleted", what={"env_id": env_id, "commit": commit})
     return {"deleted": True, "id": env_id, "commit": commit}
 
 
@@ -139,6 +140,7 @@ def undo_delete_environment(env_id: str, body: UndoDelete):
         raise HTTPException(409, "That flow already exists") from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+    audit_log.record("flow.delete_undone", what={"env_id": env_id, "commit": commit})
     return {"restored": True, "commit": commit}
 
 
@@ -188,6 +190,7 @@ def delete_run(run_id: str):
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
     vault.record_event("owner", "delete", {"kind": "run", "id": run_id})
+    audit_log.record("run.deleted", what={"run_id": run_id})
     return {"deleted": True, "run_id": run_id}
 
 
@@ -196,6 +199,7 @@ def undo_delete_run(run_id: str):
     if not store.restore_hidden_run(run_id):
         raise HTTPException(404, "Removed run not found")
     vault.record_event("owner", "restore", {"kind": "run", "id": run_id})
+    audit_log.record("run.delete_undone", what={"run_id": run_id})
     return {"restored": True, "run_id": run_id}
 
 
