@@ -101,3 +101,23 @@ def test_unset_harness_defaults_to_opencode(monkeypatch, tmp_path):
     result = module.run({"config": {"prompt": "hello"}, "env_id": "x", "run_id": "y", "home": str(tmp_path)})
     assert result["state"] == "done"
     assert captured == [["opencode", "acp"]]
+
+
+def test_opencode_debug_logs_are_opt_in(monkeypatch, tmp_path):
+    import importlib.util
+    path = os.path.join(HERE, "..", "nodes", "acp_agent.py")
+    spec = importlib.util.spec_from_file_location("acp_agent_debug_logs", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    captured = []
+
+    async def fake_run(acp, command, *rest):
+        captured.append(command)
+        return "ok", 0
+
+    monkeypatch.setattr(module, "_run_acp", fake_run)
+    monkeypatch.setattr(module.shell_commands, "which", lambda name: "/usr/bin/opencode")
+    module.run({"config": {"harness": "opencode", "debug_logs": True, "prompt": "Say hello"},
+                "env_id": "debug", "run_id": "debug", "home": str(tmp_path)})
+
+    assert captured == [["opencode", "acp", "--print-logs", "--log-level", "INFO"]]
