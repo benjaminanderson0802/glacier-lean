@@ -341,3 +341,27 @@ The saved run/node/check records for `229fab86376e` confirmed the worker stopped
 Commit `6a8ed33` updates the flow to replace that legacy interpreter spelling and bare `python` acceptance commands with `GLACIER_PYTHON` or `sys.executable`; the worker prompt now repeats the full card, its acceptance requirements, explicit practice-worktree edit authorization, and the instruction to file a claim before stopping on a question or blocker. Runtime setup scripts and the security bench README no longer require the old path. Regression coverage checks generated flow acceptance commands for both interpreter modes and asserts the handoff prompt includes those instructions.
 
 The required focused self-build tests were queued under `/tmp/glacier-suite.lock`, behind multiple workers' long-running full backend suites. They had not started by the time this record was written. No new practice run was started without the regression check and serialized test capacity. Therefore this round has no new run ID, no VERIFIED result, and no practice merge commit. The previous `229fab86376e` remains rejected; practice main remained at `bf3bffcf8a2b78ad5b2febf01cc5bc659a14781a` at that time.
+
+# W66 follow-up round 6: three practice attempts, still unverified
+
+## Drift check and acceptance
+
+This continues PH9.2, the real feature flow. It serves P-VERIFY and P-GOALS and PH9's three-consecutive-run metric. PH5 remains in progress; this is the integrator-authorized, verified-merge-only trial. The existing free, open-source feature flow is the tool for this task. Acceptance is all saved checks passing, the final owner gate being approved, and a local practice merge. No attempt met acceptance, and no practice merge occurred.
+
+## Practice setup
+
+- Card: `setup/selfbuild/cards/scan-list-sources.md`, the same small source-list card used in earlier W66 runs.
+- API: `127.0.0.1:8765`; practice home: `/tmp/glacier-w66-round6-home`.
+- `run_card.py` installed `setup/requirements.txt` into the active project interpreter before each attempt. The pinned `markitdown[docx,pdf]==0.1.8` requirement and its PDF/DOCX dependencies were satisfied.
+- Each start gate was approved after checking the isolated worktree and local-only merge gate. Each worker exited 0 and implemented the requested option and test. The protected-path guard passed on all three runs.
+- Other project checks passed on all three runs (`77 passed`); verification benchmark passed (false-done `0.00%` (0/20), verified `100.00%` (30/30)); security benchmark passed (`P 400 | blocked |`).
+
+| Run | Backend gate | Outcome |
+| --- | --- | --- |
+| `617614d66236` | Failed: `test_send_get_completes_with_output_and_author`, `test_codex_prev_output_substitution`, and `test_codex_streams_live_log_while_running`; `3 failed, 602 passed, 1 skipped, 1 warning in 495.84s (0:08:15)`. This first acceptance command did not use the shared suite lock. | Final gate rejected; unverified and unmerged. |
+| `ca0e17832d79` | Same three tests failed under `flock /tmp/glacier-suite.lock`; `3 failed, 602 passed, 1 skipped, 1 warning in 471.09s (0:07:51)`. | Final gate rejected; unverified and unmerged. |
+| `41ff928d74e8` | Same three tests failed under `flock /tmp/glacier-suite.lock`; `3 failed, 602 passed, 1 skipped, 1 warning in 457.42s (0:07:37)`. | Final gate rejected; unverified and unmerged. |
+
+After the first rejection, the backend acceptance command in `flows/self/feature.json` was changed to acquire `/tmp/glacier-suite.lock`. The same backend failures persisted in both serialized runs. A direct focused rerun of those three test cases passed (`3 passed in 8.31s`), so their suite-level failure cause remains unresolved; the acceptance output did not preserve the full assertion details. No test or acceptance criteria were changed. The flow change and focused self-build tests passed (`16 passed in 5.08s`).
+
+The three-attempt limit is reached. No other cards were run because none reached a verified merge. All three runs have `verified: false`, `merged: false`; practice `main` remains at source commit `e527f5a4169170e4e2423ee8c29a2294f88444b1`. That is the flow update used as the practice base, not a feature merge commit. PH9.2 remains unverified.
