@@ -426,16 +426,28 @@ def ask_route() -> tuple[str | None, str]:
     codex = (os.environ.get("GLACIER_CHAT_BIN") or os.environ.get("CODEX_BIN") or "codex")
     if configured not in {"", "auto"}:
         if configured in {"local", "codex"}:
-            return configured, f"Ask is set to use {configured.title()} directly."
+            if configured == "local" and _ollama_answers():
+                return "local", "Ask is set to use Local directly."
+            if configured == "codex":
+                found = shell_commands.which(codex) or (os.path.isabs(codex) and os.path.isfile(codex))
+                if found and _codex_signed_in():
+                    return "codex", "Ask is set to use Codex directly."
+            # An unavailable forced route falls through to the next ready option,
+            # with the reason below explaining the fallback.
+            unavailable_reason = f"The selected {configured.title()} route is unavailable; "
+        else:
+            unavailable_reason = ""
         configured = "auto"
+    else:
+        unavailable_reason = ""
     # A configured chat program given as a full path counts as found even when Windows would not
     # treat its file type as runnable on its own (shell_commands handles running it).
     found = shell_commands.which(codex) or (os.path.isabs(codex) and os.path.isfile(codex))
     if found and _codex_signed_in():
-        return "codex", "Codex is installed and signed in."
+        return "codex", unavailable_reason + "Codex is installed and signed in."
     if _ollama_answers():
-        return "local", "Codex is unavailable or signed out, so Ask will use Ollama on this computer."
-    return None, "Neither Codex sign-in nor a local Ollama model is available. Install Ollama with a model or sign in to Codex."
+        return "local", unavailable_reason + "Codex is unavailable or signed out, so Ask will use Ollama on this computer."
+    return None, unavailable_reason + "Neither Codex sign-in nor a local Ollama model is available. Install Ollama with a model or sign in to Codex."
 
 
 def _ask_codex(message: str) -> dict:
