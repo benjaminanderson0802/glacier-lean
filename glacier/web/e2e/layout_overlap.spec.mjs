@@ -39,12 +39,29 @@ try {
       if (hit !== id) throw new Error(`${viewport.width}px ${id} center is intercepted by ${hit}`)
       await target.click({ force: true })
     }
+    const assertNoOverlayAtNodeCenters = async stage => {
+      const result = await page.evaluate(() => {
+        const nodes = [...document.querySelectorAll('[data-testid^="node-"]')]
+        const controls = document.querySelector('.react-flow__controls')
+        const minimap = document.querySelector('.react-flow__minimap')
+        const inRect = (x, y, rect) => rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+        return nodes.map(node => {
+          const rect = node.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2
+          const hit = document.elementFromPoint(x, y)
+          return { id: node.getAttribute('data-testid'), hit: hit?.closest('[data-testid^="node-"]')?.getAttribute('data-testid') ?? hit?.getAttribute('data-testid'), controlsCover: inRect(x, y, controls?.getBoundingClientRect()), minimapCover: inRect(x, y, minimap?.getBoundingClientRect()) }
+        })
+      })
+      check(result.length > 0 && result.every(item => item.id === item.hit && !item.controlsCover && !item.minimapCover), `${viewport.width}px ${stage}: zoom controls and minimap do not cover node centers (${JSON.stringify(result)})`)
+    }
     await page.goto(UI + '/#/automations/build', { waitUntil: 'networkidle' })
     await page.waitForSelector('[data-testid="ws-status"][data-connected="true"]', { timeout: 10000 })
     await page.waitForTimeout(300)
     await tid('new-env').click({ force: true })
     await tid('new-env-name').fill(`Layout ${viewport.width}`)
     await tid('new-env-create').click({ force: true })
+    await page.waitForSelector('[data-testid="canvas"]')
+    await page.waitForTimeout(150)
+    check(await tid('minimap-toggle').getAttribute('aria-expanded') === 'false', `${viewport.width}px: minimap starts collapsed on a short canvas`)
     const paletteCommand = tid('palette-command')
     await paletteCommand.evaluate(el => el.scrollIntoView({ block: 'nearest', inline: 'center' }))
     await page.waitForTimeout(100)
@@ -59,6 +76,19 @@ try {
     await tid('field-cmd').fill('echo layout-ok')
     const fit = page.locator('.react-flow__controls-fitview')
     if (await fit.count()) { await fit.click(); await page.waitForTimeout(250) }
+    await assertNoOverlayAtNodeCenters('after fit-view with 1 node')
+    for (const count of [4, 5]) {
+      while (await page.locator('[data-testid^="node-"]').count() < count) {
+        const button = tid('palette-command')
+        await button.evaluate(el => el.scrollIntoView({ block: 'nearest', inline: 'center' }))
+        await button.click({ force: true })
+        await page.waitForTimeout(100)
+      }
+      await fit.click()
+      await page.waitForTimeout(150)
+      await assertNoOverlayAtNodeCenters(`after ${count} nodes and fit-view`)
+    }
+
     await clickAtCenter('run')
     await waitState('n1', 'done')
     await tid('terminal-panel').waitFor({ state: 'visible', timeout: 5000 })

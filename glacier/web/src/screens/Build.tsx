@@ -128,6 +128,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [selected, setSelected] = useState<Selection>(null)
   const [undoStack, setUndoStack] = useState<Array<{ nodes: GNode[]; edges: Edge[] }>>([])
   const [tab, setTab] = useState<'canvas' | 'vault'>('canvas')
+  const [minimapOpen, setMinimapOpen] = useState(true)
+  const [canvasShort, setCanvasShort] = useState(true)
+  const canvasRef = useRef<HTMLDivElement>(null)
   const [wsUp, setWsUp] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
@@ -150,6 +153,20 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
   const flowEdgeTypes = useMemo(() => ({ pixel: PixelEdge }), [])
+  const showMinimap = minimapOpen && !canvasShort
+  const fitCanvas = useCallback(() => {
+    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, duration: 0 })
+  }, [fitView, showMinimap])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const update = () => setCanvasShort(canvas.clientHeight < 520)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [envId, tab, activeRun])
 
   /** Fields of the flow the builder does not edit (goal, acceptance checks, isolate, ...): kept on save. */
   const extras = useRef<Record<string, unknown>>({})
@@ -161,9 +178,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   // Refit after the terminal row opens so the reduced canvas still shows every node.
   useEffect(() => {
     if (!activeRun || !selected || tab !== 'canvas') return
-    const frame = requestAnimationFrame(() => { void fitView({ padding: 0.2, duration: 0 }) })
+    const frame = requestAnimationFrame(fitCanvas)
     return () => cancelAnimationFrame(frame)
-  }, [activeRun?.run_id, selected?.id, tab, fitView])
+  }, [activeRun?.run_id, selected?.id, tab, fitCanvas])
 
   // ---------- loading ----------
   const refreshEnvs = useCallback(() => api.listEnvs().then(setEnvs).catch(e => setMsg(String(e))), [])
@@ -533,6 +550,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
             <div className="canvas-tools">
               <button className="ghost" onClick={autoLayout} data-testid="auto-layout">{t('build.autoLayout')}</button>
               <button className="ghost" onClick={undo} disabled={!undoStack.length} data-testid="undo">{t('build.undo')}</button>
+              <button className="ghost" onClick={() => setMinimapOpen(open => !open)} aria-expanded={showMinimap} data-testid="minimap-toggle">{showMinimap ? 'Hide map' : 'Show map'}</button>
             </div>
           )}
           {tab === 'canvas' && envId && (
@@ -556,7 +574,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 <button className="danger" data-testid="reject" onClick={() => decide(false)}>{t('build.reject')}</button>
               </div>
             )}
-            <div className="canvas" data-testid="canvas">
+            <div className={`canvas${showMinimap ? ' canvas-minimap-open' : ''}`} data-testid="canvas" ref={canvasRef}>
               <ReactFlow<GNode, Edge>
                 key={envId}
                 nodes={displayNodes}
@@ -574,13 +592,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 snapGrid={[20, 20]}
                 onNodeDragStop={(_, node) => { nudgeOverlaps(node.id, node.position); setDirty(true) }}
                 fitView
-                fitViewOptions={{ padding: 0.18 }}
+                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 } }}
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={16} size={1} color={tok('--g-ice4')} />
                 <Controls showInteractive={false} position="top-left" />
-                <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />
+                {showMinimap && <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />}
               </ReactFlow>
             </div>
           </div>
