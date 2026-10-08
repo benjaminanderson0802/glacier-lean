@@ -1,7 +1,7 @@
 """Claims API (docs/contracts/VERIFICATION.md)."""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import claims, claims_research, runner, store, vault
+import claims, claims_research, runner, store
 
 router = APIRouter()
 
@@ -65,17 +65,17 @@ def rerun_claim(cid: str):
     if not run:
         raise HTTPException(400, "This claim did not come from a run, so there is nothing to run again.")
     env_id = run["env_id"]
-    with vault._lock:
-        # Research can update this note as soon as the claim is filed. Keep the
-        # read/start/append sequence together so neither writer loses the other's text.
-        c = claims.get_claim(cid)
-        meta, body = c["meta"], c["body"]
-        try:
+    try:
+        def append_rerun(meta: dict, body: str):
+            nonlocal run_id
             run_id = runner.start_run(env_id, {"_rerun_of": cid})
-        except FileNotFoundError:
-            raise HTTPException(400, "The flow behind this claim no longer exists.")
-        meta.update(updated=claims._now())
-        body = claims.append_resolution(body, f"- {claims._now()} Owner ran the flow again to check: run {run_id}.")
-        vault.write_note(claims._path(cid), claims._render(meta, body), agent="owner")
-    store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
+            meta.update(updated=claims._now())
+            body = claims.append_resolution(body, f"- {claims._now()} Owner ran the flow again to check: run {run_id}.")
+            return meta, body
+
+        run_id = ""
+        saved = claims.update_claim(cid, append_rerun, agent="owner")
+    except FileNotFoundError:
+        raise HTTPException(400, "The flow behind this claim no longer exists.")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": saved["meta"].get("status")})
     return {"run_id": run_id, "env_id": env_id}

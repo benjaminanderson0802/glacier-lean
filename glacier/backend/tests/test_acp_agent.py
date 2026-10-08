@@ -124,7 +124,11 @@ def test_acp_denies_symlink_path_resolving_outside_workdir(server, tmp_path):
     outside = tmp_path / "outside"
     outside.mkdir()
     link = workdir / "escape"
-    link.symlink_to(outside, target_is_directory=True)
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        import pytest
+        pytest.skip(f"OS does not permit creating symlinks: {exc}")
     run = _run(server, "acp-symlink", workdir, f"{link / 'file.txt'}")
     assert run["outputs"]["agent"].endswith("permission=cancelled)")
 

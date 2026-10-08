@@ -2,6 +2,12 @@
 import os, sys, time, socket, signal, subprocess
 import httpx, pytest
 
+# Make subprocess-created Git commits independent of the host's global config.
+os.environ.setdefault("GIT_AUTHOR_NAME", "Glacier Tests")
+os.environ.setdefault("GIT_AUTHOR_EMAIL", "glacier-tests@localhost")
+os.environ.setdefault("GIT_COMMITTER_NAME", "Glacier Tests")
+os.environ.setdefault("GIT_COMMITTER_EMAIL", "glacier-tests@localhost")
+
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAKE_CODEX = os.path.join(BACKEND, "tests", "fake_codex.py")  # tests never call the real Codex CLI
 
@@ -16,6 +22,20 @@ os.environ["GLACIER_GEMINI_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-
 os.environ["GLACIER_TOKEN"] = TEST_TOKEN
 # Tests never talk to a real Ollama on this machine; a test that needs one starts a fake and sets this itself.
 os.environ["GLACIER_OLLAMA_URL"] = "http://127.0.0.1:9"
+
+# Server subprocesses do their own command discovery. Shadow only the Ollama CLI
+# so its `list` fallback cannot read models installed on the developer's machine.
+_TEST_BIN = os.path.join(os.path.dirname(BACKEND), ".test-bin")
+os.makedirs(_TEST_BIN, exist_ok=True)
+if os.name == "nt":
+    with open(os.path.join(_TEST_BIN, "ollama.cmd"), "w", encoding="utf-8") as _fake_ollama:
+        _fake_ollama.write("@echo NAME ID SIZE MODIFIED\r\n")
+else:
+    _fake_ollama_path = os.path.join(_TEST_BIN, "ollama")
+    with open(_fake_ollama_path, "w", encoding="utf-8") as _fake_ollama:
+        _fake_ollama.write("#!/bin/sh\nprintf 'NAME ID SIZE MODIFIED\\n'\n")
+    os.chmod(_fake_ollama_path, 0o755)
+os.environ["PATH"] = _TEST_BIN + os.pathsep + os.environ.get("PATH", "")
 raw_httpx = {name: getattr(httpx, name) for name in ("get", "post", "put", "patch", "delete", "options", "head", "stream", "request")}
 _LOCAL = ("http://127.0.0.1", "http://localhost")
 

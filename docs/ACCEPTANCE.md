@@ -1,4 +1,19 @@
-# Desktop acceptance checks
+# Acceptance checks
+
+## PH0 exit: core tools and legacy cleanup
+
+Run `.venv/bin/python bench/ph0/run_ph0.py` from the repository root. It checks the pinned
+Python and JavaScript core tools, their installed import/version/licence metadata, the repository
+setup markers, every explicit legacy module row, and whether current evidence exists for disabled
+prior systems. Tool metadata is read from the active Python environment and `glacier/web/node_modules`;
+the PH0.4 check stays FAIL until current, inspectable evidence replaces its historical session log.
+It does not change dependencies or run the full health board. `setup/health_check.py` remains the
+integration health runner; run it separately when a full sandbox health check is needed.
+
+Result on 2026-10-08 in this worktree: **FAIL**. DBOS, GitPython, repository setup and 51 legacy
+entries passed. MAF and ACP had no recorded licence metadata; Bifrost had no pinned/importable Python
+package; the four JavaScript packages were absent from `node_modules`; and current disabled-state
+evidence for Forge tasks/containers was unavailable. The runner reports each item with its evidence.
 
 ## PH8 exit: clean machine to a working first automation
 
@@ -52,3 +67,25 @@ Run its pytest wrapper from `glacier/backend`:
 ```sh
 ../../.venv/bin/python -m pytest -q tests/test_memory_reinstall_proof.py
 ```
+
+## PH10 acceptance runner
+
+Run the PH10 proof table from the repository root:
+
+```sh
+.venv/bin/python bench/ph10/run_ph10.py
+```
+
+The runner calls the existing guide/help link check, template manifest and safety tests, localization checker, screen test when available, and interoperability tests by pytest node ID. Its process exit is nonzero when any check fails. A missing Spanish browser test or browser wrapper is shown as `SKIPPED` with the reason.
+
+The current template stand-in execution test runs six everyday templates to verified `done`; the other ten have existing validation and provenance checks but no end-to-end stand-in runner. The table reports this coverage explicitly as a failure for the full 16-template exit requirement. This runner does not claim those ten templates completed.
+
+## Checks included
+
+- Every `docs/guide/*.md` page's local Markdown links and the screen's `settings/help` destinations.
+- Template manifest hashes/reviewer fields, template contract/safety, and the existing six-template stand-in end-to-end test.
+- English/Spanish dictionary key and placeholder parity using `glacier/web/scripts/check-i18n.mjs --fail`.
+- `glacier/web/e2e/spanish.spec.mjs` through `bash ~/tools/e2e.sh` when both files exist.
+- Existing backend checks for flow round trip, A2A, MCP memory stdio, ACP stand-ins, AG-UI events, and AGENTS.md.
+
+The runner is intentionally glue around the existing checks; it does not implement alternative validators or test harnesses.

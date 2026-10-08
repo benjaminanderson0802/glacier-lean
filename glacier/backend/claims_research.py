@@ -63,34 +63,36 @@ def research(cid: str) -> str:
 
 @DBOS.step(retries_allowed=True, max_attempts=3)
 def record_and_route(cid: str, fixes: list, findings: str) -> dict:
-    # Keep read/modify/write atomic with owner actions such as claim reruns.
-    with vault._lock:
-        return _record_and_route_locked(cid, fixes, findings)
+    return _record_and_route_locked(cid, fixes, findings)
 
 
 def _record_and_route_locked(cid: str, fixes: list, findings: str) -> dict:
-    c = claims.get_claim(cid)
-    meta, body = c["meta"], c["body"]
-    kind = meta.get("kind")
-    section = "## Research\n"
-    section += ("Past fixes that look similar:\n" + "\n".join(f"- {f}" for f in fixes) + "\n\n") if fixes else "No similar past fix found.\n\n"
-    if findings:
-        section += "Free/open-source search:\n" + findings.strip() + "\n"
-    if kind == "capability_gap":
-        free = "VERDICT: FREE OPTION FOUND" in findings.upper()  # past similar claims are hints only; the verdict decides
-        assigned, status = ("fixer", "routed") if free else ("owner", "proposed")
-    else:
-        assigned = ROUTES.get(kind, "researcher")
-        status = "proposed" if assigned == "owner" else "routed"
-    if status == "proposed":
-        section += ("\n## Proposal\nNo free option fits (or this needs your decision). Options, costs, lock-in and the "
-                    "recommendation are in the research above. Approve one option, reject (the task gets a workaround or is "
-                    "deferred), or ask for more research.\n")
-    body = re.sub(r"## Research\n.*?(?=\n## Resolution)", section.rstrip() + "\n", body, flags=re.S) if "## Research" in body else body + "\n" + section
-    meta.update(status=status, assigned_to=assigned, updated=claims._now())
-    vault.write_note(claims._path(cid), claims._render(meta, body), agent="glacier-researcher")
-    store.broadcaster.publish({"type": "claim", "id": cid, "status": status})
-    return {"status": status, "assigned_to": assigned, "has_run": bool(meta.get("run_id"))}
+    result = {}
+
+    def apply(meta: dict, body: str):
+        kind = meta.get("kind")
+        section = "## Research\n"
+        section += ("Past fixes that look similar:\n" + "\n".join(f"- {f}" for f in fixes) + "\n\n") if fixes else "No similar past fix found.\n\n"
+        if findings:
+            section += "Free/open-source search:\n" + findings.strip() + "\n"
+        if kind == "capability_gap":
+            free = "VERDICT: FREE OPTION FOUND" in findings.upper()
+            assigned, status = ("fixer", "routed") if free else ("owner", "proposed")
+        else:
+            assigned = ROUTES.get(kind, "researcher")
+            status = "proposed" if assigned == "owner" else "routed"
+        if status == "proposed":
+            section += ("\n## Proposal\nNo free option fits (or this needs your decision). Options, costs, lock-in and the "
+                        "recommendation are in the research above. Approve one option, reject (the task gets a workaround or is "
+                        "deferred), or ask for more research.\n")
+        updated_body = re.sub(r"## Research\n.*?(?=\n## Resolution)", section.rstrip() + "\n", body, flags=re.S) if "## Research" in body else body + "\n" + section
+        meta.update(status=status, assigned_to=assigned, updated=claims._now())
+        result.update(status=status, assigned_to=assigned, has_run=bool(meta.get("run_id")))
+        return meta, updated_body
+
+    claims.update_claim(cid, apply, agent="glacier-researcher")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": result["status"]})
+    return {"status": result["status"], "assigned_to": result["assigned_to"], "has_run": result["has_run"]}
 
 
 @DBOS.workflow()

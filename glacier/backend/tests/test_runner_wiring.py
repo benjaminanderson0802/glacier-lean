@@ -1,7 +1,9 @@
+import json
 import socket
 import sys
 import time
 import pytest
+from websockets.sync.client import connect
 
 import runner
 import sandboxing
@@ -206,3 +208,24 @@ def test_local_approval_notifications_use_a_short_poll_interval():
     import app
 
     assert app.DBOS_INSTANCE._config["runtimeConfig"]["notification_listener_polling_interval_sec"] == 0.1
+
+
+def test_run_status_finishes_promptly_after_last_node_event(server):
+    server.put("/api/environments/last-node", env("last-node", [
+        ("last", "command", {"cmd": "true"})
+    ], []))
+    with connect(server.url.replace("http", "ws") + "/api/events") as ws:
+        run_id = server.post("/api/environments/last-node/run")["run_id"]
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            event = json.loads(ws.recv(timeout=max(0.1, deadline - time.monotonic())))
+            if event.get("run_id") == run_id and event.get("node_id") == "last" and event.get("state") == "done":
+                node_done_at = time.monotonic()
+                break
+        else:
+            raise AssertionError("last node did not finish")
+
+        run = server.wait_run(run_id, timeout=max(0.1, deadline - time.monotonic()))
+        latency = time.monotonic() - node_done_at
+        print(f"LAST_NODE_TO_FINAL_SECONDS={latency:.6f}")
+        assert run["status"] == "done"
