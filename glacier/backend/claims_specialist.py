@@ -33,20 +33,21 @@ def run_specialist(workdir: str, prompt: str) -> tuple[int, str]:
 
 
 def _append(cid: str, text: str, **updates) -> None:
-    c = claims.get_claim(cid)
-    meta, body = c["meta"], c["body"]
-    meta.update(updated=claims._now(), **updates)
-    vault.write_note(claims._path(cid), claims._render(meta, body.rstrip() + "\n" + text.strip() + "\n"), agent="glacier-specialist")
-    store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
+    def apply(meta: dict, body: str):
+        meta.update(updated=claims._now(), **updates)
+        return meta, body.rstrip() + "\n" + text.strip() + "\n"
+
+    saved = claims.update_claim(cid, apply, agent="glacier-specialist")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": saved["meta"].get("status")})
 
 
 def _append_resolution(cid: str, text: str, **updates) -> None:
-    c = claims.get_claim(cid)
-    meta, body = c["meta"], c["body"]
-    meta.update(updated=claims._now(), **updates)
-    body = claims.append_resolution(body, text)
-    vault.write_note(claims._path(cid), claims._render(meta, body), agent="glacier-specialist")
-    store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
+    def apply(meta: dict, body: str):
+        meta.update(updated=claims._now(), **updates)
+        return meta, claims.append_resolution(body, text)
+
+    saved = claims.update_claim(cid, apply, agent="glacier-specialist")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": saved["meta"].get("status")})
 
 
 def _resolution_summary(text: str) -> str:
