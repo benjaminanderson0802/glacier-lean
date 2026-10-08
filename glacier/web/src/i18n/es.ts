@@ -1,7 +1,7 @@
 export const es: Record<string, string> = {
   'nav.home': 'Inicio',
   'nav.ask': 'Preguntar',
-  'nav.automations': 'Automatizaciones',
+  'nav.automations': 'Automatizar',
   'nav.memory': 'Memoria',
   'nav.settings': 'Ajustes',
   'shell.help': 'Ayuda',

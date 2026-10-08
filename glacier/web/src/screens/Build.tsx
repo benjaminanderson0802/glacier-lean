@@ -12,7 +12,7 @@ import { TerminalPanel } from './TerminalPanel.tsx'
 import { VaultView } from './VaultView.tsx'
 import { tok } from '../ui/tok.ts'
 import { takeDraft } from '../draft.ts'
-import { t } from '../i18n/index.ts'
+import { getLanguage, t } from '../i18n/index.ts'
 import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import './build.css'
 
@@ -424,7 +424,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           <>
             <div className="section-head">
               <span>{t('build.runs')}</span>
-              <button className="ghost" data-testid="runs-refresh" onClick={() => refreshRuns(envId)}>{t('build.refresh')}</button>
+              <button className={`ghost${getLanguage() === 'es' ? ' es-run-refresh' : ''}`} data-testid="runs-refresh" onClick={() => refreshRuns(envId)}>{t('build.refresh')}</button>
             </div>
             <div className="list" data-testid="run-list">
               {runs.length === 0 && <div className="muted">{t('build.noRuns')}</div>}

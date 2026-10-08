@@ -143,7 +143,7 @@ export function AboutSection({ version }: { version: string }) {
     if (desktop) void checkForUpdates()
   }, [desktop])
   return (
-    <Panel title={t('settingsSections.about')} testid="settings-about">
+    <Panel title={t('settingsSections.about')} testid="settings-about-content">
       <dl className="g-kv">
         <dt>{t('settingsSections.glacier')}</dt><dd data-testid="settings-version">{t('settingsSections.version', { version })}</dd>
         <dt>{t('settingsSections.licence')}</dt><dd>{t('settingsSections.licenceValue')}</dd>
@@ -156,7 +156,7 @@ export function AboutSection({ version }: { version: string }) {
           <div className="g-detail">{state === 'checking' && t('settingsSections.updateChecking')}{state === 'current' && <span data-testid="update-current">{t('settingsSections.upToDate')}</span>}{state === 'available' && <span>{t('settingsSections.updateAvailable', { version: update?.version ?? '' })}</span>}{state === 'installing' && t('settingsSections.updateInstalling')}{state === 'restart' && <span data-testid="update-restart">{t('settingsSections.updateRestart')}</span>}{state === 'error' && <span data-testid="update-error">{error}</span>}</div>
           {state === 'available' && update && <div className="g-detail" data-testid="update-notes" style={{ whiteSpace: 'pre-wrap' }}>{update.notes}</div>}
           {state === 'available' && <Btn primary onClick={installUpdate} data-testid="update-install">{t('settingsSections.updateInstall')}</Btn>}
-          {state !== 'installing' && state !== 'restart' && <Btn onClick={checkForUpdates} disabled={state === 'checking'} data-testid="update-check">{t('settingsSections.updateCheck')}</Btn>}
+          {state !== 'installing' && <Btn onClick={checkForUpdates} disabled={state === 'checking'} data-testid="update-check">{t('settingsSections.updateCheck')}</Btn>}
         </div>
       )}
     </Panel>

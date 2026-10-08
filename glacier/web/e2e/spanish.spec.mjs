@@ -46,28 +46,37 @@ try {
     await page.goto(UI + '/#/home', { waitUntil: 'networkidle' })
     await page.getByTestId('screen-home').waitFor()
 
-    // Check rendered text nodes with their immediate visual boxes, including tab labels and controls.
+    // Check every rendered box against the viewport and horizontal scroll containers, plus text clipping.
     const checkTextFit = async label => {
       const overflows = await page.evaluate(() => {
-        const ignored = new Set(['SCRIPT', 'STYLE', 'SVG', 'PATH'])
+        const ignored = new Set(['SCRIPT', 'STYLE', 'PATH', 'RECT', 'LINE', 'CIRCLE', 'POLYGON', 'POLYLINE', 'ELLIPSE'])
         const elements = [...document.querySelectorAll('body *')].filter(el => {
-          if (ignored.has(el.tagName) || !el.getClientRects().length) return false
-          const text = [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
-          return text && getComputedStyle(el).visibility !== 'hidden'
+          if (ignored.has(el.tagName.toUpperCase()) || !el.getClientRects().length) return false
+          return getComputedStyle(el).visibility !== 'hidden'
         })
         return elements.flatMap(el => {
           const style = getComputedStyle(el)
-          const horizontalClip = el.scrollWidth > el.clientWidth + 1 && ['hidden', 'clip'].includes(style.overflowX)
-          const verticalClip = el.scrollHeight > el.clientHeight + 1 && ['hidden', 'clip'].includes(style.overflowY)
+          const text = [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
+          const accessibleEllipsis = style.textOverflow === 'ellipsis' && Boolean(el.getAttribute('title'))
+          const horizontalClip = text && !accessibleEllipsis && el.scrollWidth > el.clientWidth + 1 && ['hidden', 'clip'].includes(style.overflowX)
+          const verticalClip = text && el.scrollHeight > el.clientHeight + 1 && ['hidden', 'clip'].includes(style.overflowY)
           const rect = el.getBoundingClientRect()
+          const outsideViewport = rect.left < -1 || rect.right > innerWidth + 1
           const parent = el.parentElement?.getBoundingClientRect()
-          const escapesParent = parent && (rect.left < parent.left - 1 || rect.right > parent.right + 1 || rect.top < parent.top - 1 || rect.bottom > parent.bottom + 1)
-          return horizontalClip || verticalClip || escapesParent
-            ? [{ text: el.textContent.trim().replace(/\s+/g, ' ').slice(0, 80), tag: el.tagName, className: String(el.className).slice(0, 80) }]
+          const textEscapesParent = text && parent && (rect.left < parent.left - 1 || rect.right > parent.right + 1 || rect.top < parent.top - 1 || rect.bottom > parent.bottom + 1)
+          let outsideScrollContainer = false
+          for (let ancestor = el.parentElement; ancestor; ancestor = ancestor.parentElement) {
+            const ancestorStyle = getComputedStyle(ancestor)
+            if (!/(auto|scroll|hidden|clip)/.test(ancestorStyle.overflowX)) continue
+            const box = ancestor.getBoundingClientRect()
+            if (rect.right > box.right + 1) outsideScrollContainer = true
+          }
+          return horizontalClip || verticalClip || textEscapesParent || outsideViewport || outsideScrollContainer
+            ? [{ text: el.textContent.trim().replace(/\s+/g, ' ').slice(0, 30), tag: el.tagName, className: typeof el.className === 'string' ? el.className.slice(0, 40) : '', rect: [rect.left, rect.top, rect.right, rect.bottom].map(Math.round), parent: parent && [parent.left, parent.top, parent.right, parent.bottom].map(Math.round), parentClass: el.parentElement?.className, width: innerWidth }]
             : []
         })
       })
-      check(overflows.length === 0, `${suffix} ${label}: text fits (${overflows.map(x => `${x.tag}.${x.className}: ${x.text}`).join(' | ')})`)
+      check(overflows.length === 0, `${suffix} ${label}: text fits (${overflows.slice(0, 25).map(x => `${x.tag}.${x.className} ${x.rect.join(',')} parent ${x.parent?.join(',')} .${x.parentClass}: ${x.text}`).join(' | ')})`)
     }
 
     // Screenshot the fresh Home view with Get started, and then the same tab set after visiting each.
@@ -80,7 +89,7 @@ try {
     await page.locator('section[data-testid="settings-general"] select').selectOption('es')
     const spanishTabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
     const tabIds = await page.locator('[role=tablist] [role=tab]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
-    check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && spanishTabs.map(x => x.trim()).join(',') === 'Inicio,Preguntar,Automatizaciones,Memoria,Ajustes', `${suffix} exactly five Spanish tabs (${spanishTabs.join(',')})`)
+    check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && spanishTabs.map(x => x.trim()).join(',') === 'Inicio,Preguntar,Automatizar,Memoria,Ajustes', `${suffix} exactly five Spanish tabs (${spanishTabs.join(',')})`)
     for (const tab of ['home', 'ask', 'automations', 'memory', 'settings']) {
       await page.getByTestId(`nav-${tab}`).click()
       await page.getByTestId(`screen-${tab}`).waitFor()

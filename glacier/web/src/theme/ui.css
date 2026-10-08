@@ -5,15 +5,19 @@ body { font-family: var(--g-font-body); font-size: var(--g-size-body); color: va
 svg.g-icon, svg.g-status, svg.g-logo, svg.g-mascot { display: block; flex: none; image-rendering: pixelated; }
 
 /* ---------- window ---------- */
-.g-window { height: 100vh; display: grid; grid-template-rows: auto 1fr auto; background: var(--g-bg); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); overflow: hidden; }
-.g-topbar { display: flex; align-items: stretch; height: 58px; background: var(--g-bar); border-bottom: var(--g-border) solid var(--g-line); user-select: none; }
+.g-window { height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; background: var(--g-bg); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); overflow: hidden; }
+.g-topbar { display: flex; align-items: stretch; height: 58px; min-width: 0; background: var(--g-bar); border-bottom: var(--g-border) solid var(--g-line); user-select: none; }
 .g-brand { display: flex; align-items: center; gap: 10px; padding: 0 22px 0 14px; font-family: var(--g-font-head); font-weight: 700; font-size: 34px; color: var(--g-head); border-right: 1px solid var(--g-line-dim); }
+html[lang="es"] .g-brand { flex: none; }
 .g-tabs { display: flex; align-items: stretch; flex: 1; min-width: 0; }
 .g-tab { display: flex; align-items: center; gap: 8px; padding: 0 20px; background: transparent; border: 0; border-right: 1px solid var(--g-line-dim); color: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-tab); cursor: pointer; white-space: nowrap; }
+html[lang="es"] .g-tab { flex: 1 1 auto; min-width: 0; }
+html[lang="es"] .g-tab > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .g-tab:hover { background: var(--g-panel-hi); color: var(--g-head); }
 .g-tab.active { background: var(--g-accent); color: var(--g-accent-ink); }
 .g-tab:focus-visible, .g-btn:focus-visible, .g-row:focus-visible { outline: 1px dashed var(--g-accent); outline-offset: -3px; }
 .g-winctl { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+html[lang="es"] .g-winctl { flex: none; }
 .g-winbtn { width: 32px; height: 30px; display: grid; place-items: center; background: transparent; border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); color: var(--g-head); cursor: pointer; padding: 0; }
 .g-winbtn:hover { background: var(--g-panel-hi); }
 
@@ -28,11 +32,13 @@ svg.g-icon, svg.g-status, svg.g-logo, svg.g-mascot { display: block; flex: none;
 
 /* ---------- page header (mascot + title) ---------- */
 .g-pagehead { display: flex; align-items: center; gap: 18px; }
+html[lang="es"] .g-pagehead { flex-wrap: wrap; }
 .g-pagehead .g-titles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .g-crumb { color: var(--g-muted); font-size: var(--g-size-small); }
 .g-title { margin: 0; font-family: var(--g-font-head); font-weight: 600; font-size: var(--g-size-title); color: var(--g-head); line-height: 1; }
 .g-sub { color: var(--g-sub); font-size: var(--g-size-h2); }
 .g-pagehead .g-headside { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+html[lang="es"] .g-pagehead .g-headside { max-width: 100%; }
 
 /* ---------- panels ---------- */
 .g-panel { background: var(--g-panel); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); padding: 12px 16px; min-width: 0; display: flex; flex-direction: column; }
@@ -76,6 +82,7 @@ button.g-row:hover { background: var(--g-panel-hi); }
 /* ---------- status box (header right) ---------- */
 .g-statusbox { display: flex; align-items: stretch; border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); background: var(--g-panel); }
 .g-statusbox > div { padding: 10px 22px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+html[lang="es"] .g-statusbox > div { min-width: 0; }
 .g-statusbox > div + div { border-left: 1px solid var(--g-line); }
 .g-online { color: var(--g-ok); display: flex; align-items: center; gap: 10px; }
 .g-online.off { color: var(--g-bad); }

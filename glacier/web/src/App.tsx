@@ -81,7 +81,7 @@ export default function App() {
         <div className="g-tabs" role="tablist">
           {TABS.map(t => (
             <button key={t} role="tab" aria-selected={t === tab} className={`g-tab${t === tab ? ' active' : ''}`} data-testid={`nav-${t}`} onClick={() => go(t)}>
-              <Icon name={t as IconName} />{translate(LABEL[t])}
+              <Icon name={t as IconName} /><span title={translate(LABEL[t])}>{translate(LABEL[t])}</span>
             </button>
           ))}
         </div>
