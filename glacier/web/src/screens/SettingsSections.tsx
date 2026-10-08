@@ -118,14 +118,47 @@ export function DataSection() {
 }
 
 export function AboutSection({ version }: { version: string }) {
+  const [update, setUpdate] = useState<{ version: string; notes: string } | null>(null)
+  const [state, setState] = useState<'idle' | 'checking' | 'current' | 'available' | 'installing' | 'restart' | 'error'>('idle')
+  const [error, setError] = useState('')
+  const desktop = typeof window !== 'undefined' && Boolean(window.glacierUpdater)
+  const checkForUpdates = async () => {
+    if (!window.glacierUpdater) return
+    setState('checking'); setError(''); setUpdate(null)
+    try {
+      const found = await window.glacierUpdater.check()
+      setUpdate(found)
+      setState(found ? 'available' : 'current')
+    } catch {
+      setState('error'); setError(t('settingsSections.updateError'))
+    }
+  }
+  const installUpdate = async () => {
+    if (!update || !window.glacierUpdater) return
+    setState('installing'); setError('')
+    try { await window.glacierUpdater.install(update.version); setState('restart') }
+    catch { setState('error'); setError(t('settingsSections.installError')) }
+  }
+  useEffect(() => {
+    if (desktop) void checkForUpdates()
+  }, [desktop])
   return (
     <Panel title={t('settingsSections.about')} testid="settings-about">
       <dl className="g-kv">
-        <dt>{t('settingsSections.glacier')}</dt><dd>{t('settingsSections.version', { version })}</dd>
+        <dt>{t('settingsSections.glacier')}</dt><dd data-testid="settings-version">{t('settingsSections.version', { version })}</dd>
         <dt>{t('settingsSections.licence')}</dt><dd>{t('settingsSections.licenceValue')}</dd>
         <dt>{t('settingsSections.fonts')}</dt><dd>{t('settingsSections.fontsValue')}</dd>
         <dt>{t('settingsSections.source')}</dt><dd>{t('settingsSections.repo')}</dd>
       </dl>
+      <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.updates')}</h3>
+      {!desktop ? <div className="g-detail" data-testid="update-browser">{t('settingsSections.updateDesktopOnly')}</div> : (
+        <div className="g-stack" style={{ gap: 8 }}>
+          <div className="g-detail">{state === 'checking' && t('settingsSections.updateChecking')}{state === 'current' && <span data-testid="update-current">{t('settingsSections.upToDate')}</span>}{state === 'available' && <span>{t('settingsSections.updateAvailable', { version: update?.version ?? '' })}</span>}{state === 'installing' && t('settingsSections.updateInstalling')}{state === 'restart' && <span data-testid="update-restart">{t('settingsSections.updateRestart')}</span>}{state === 'error' && <span data-testid="update-error">{error}</span>}</div>
+          {state === 'available' && update && <div className="g-detail" data-testid="update-notes" style={{ whiteSpace: 'pre-wrap' }}>{update.notes}</div>}
+          {state === 'available' && <Btn primary onClick={installUpdate} data-testid="update-install">{t('settingsSections.updateInstall')}</Btn>}
+          {state !== 'installing' && state !== 'restart' && <Btn onClick={checkForUpdates} disabled={state === 'checking'} data-testid="update-check">{t('settingsSections.updateCheck')}</Btn>}
+        </div>
+      )}
     </Panel>
   )
 }
