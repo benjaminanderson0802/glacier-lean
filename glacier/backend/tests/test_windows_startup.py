@@ -54,3 +54,14 @@ def test_windows_which_keeps_python_helpers(tmp_path, monkeypatch):
     monkeypatch.setattr(shell_commands.os, "name", "nt")
     monkeypatch.setattr(shell_commands.shutil, "which", lambda name: helper)
     assert shell_commands.which("ollama") == helper
+
+
+def test_ollama_found_through_its_api_even_if_the_command_fails(monkeypatch):
+    system_check.clear_cache()
+    monkeypatch.setattr(system_check, "_run", lambda command, *a, **k: "")
+    monkeypatch.setattr(system_check, "_ollama_api_models", lambda: ["granite3.3:2b"])
+    monkeypatch.setattr(system_check, "_machine_stats", lambda: (8, 16.0, 50.0))
+    result = system_check.check_system()
+    assert result["tools"]["ollama"]["found"] is True
+    assert result["ollama_models"] == ["granite3.3:2b"]
+    system_check.clear_cache()
