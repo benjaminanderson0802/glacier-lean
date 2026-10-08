@@ -20,7 +20,7 @@
   ],
   "acceptance": [
     {"kind": "command", "cmd": "python {guard} --repo . --baseline-root {baseline}", "timeout": 120, "required": true},
-    {"kind": "command", "cmd": "cd glacier/backend && python -m pytest -q tests", "timeout": 720, "required": true},
+    {"kind": "command", "cmd": "flock /tmp/glacier-suite.lock bash -c 'cd glacier/backend && python -m pytest -q tests'", "timeout": 720, "required": true},
     {"kind": "command", "cmd": "python -m pytest -q glacier/importers templates bench tools/scan tools/catalog", "timeout": 600, "required": true},
     {"kind": "command", "cmd": "python bench/verification/run_glacier.py --results verification-results.md", "timeout": 600, "required": true},
     {"kind": "command", "cmd": "python bench/security/run_glacier.py --results security-results.md", "timeout": 600, "required": true},
