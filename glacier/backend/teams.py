@@ -179,6 +179,51 @@ def _save_task(team_id: str, task_id: str, item: dict, status: str | None = None
                   (json.dumps(state), status or row["status"], team_id))
 
 
+def _save_feature_evaluation(team_id: str, evaluation: dict) -> None:
+    """Persist evaluator evidence without replacing concurrent task updates."""
+    with _conn() as c:
+        row = c.execute("SELECT state FROM glacier_teams WHERE team_id=?", (team_id,)).fetchone()
+        if not row:
+            raise ValueError("team not found")
+        state = json.loads(row["state"])
+        state.setdefault("features", {})[evaluation["feature_id"]] = {
+            "status": "passing", "evaluator_evidence": evaluation["evaluator_evidence"]}
+        c.execute("UPDATE glacier_teams SET state=? WHERE team_id=?", (json.dumps(state), team_id))
+
+
+LEGACY_COMPLETION_NOTE = "legacy: finished before evaluator grading"
+
+
+def _mark_legacy_completions(plan: dict, state: dict) -> None:
+    """Label pre-evaluator completed work while preserving its completed status."""
+    tasks = {task["id"]: task for task in plan.get("tasks", [])}
+    legacy_ids = []
+    for task_id, item in state.get("tasks", {}).items():
+        task = tasks.get(task_id, {})
+        if (item.get("status") == "done" and task.get("role") not in {"evaluator", "skeptical-evaluator"}
+                and not item.get("evaluator_evidence")):
+            item["legacy_note"] = LEGACY_COMPLETION_NOTE
+            legacy_ids.append(task_id)
+    if legacy_ids:
+        entries = [f"{LEGACY_COMPLETION_NOTE}: task {task_id}" for task_id in legacy_ids]
+        existing = str(state.get("progress_log", ""))
+        for entry in entries:
+            if entry not in existing:
+                existing = f"{existing.rstrip()}\n{entry}".strip()
+        state["progress_log"] = existing
+    if _uses_feature_evaluators(plan):
+        for feature_state in state.get("features", {}).values():
+            evidence = feature_state.get("evaluator_evidence")
+            if evidence in {"legacy completed task records; final objective check required",
+                            "independent governor and final Spec check required"}:
+                feature_state.update(status="pending", evaluator_evidence=None)
+
+
+def _uses_feature_evaluators(plan: dict) -> bool:
+    """Feature-linked plans use explicit evaluator tasks; old plans keep their format semantics."""
+    return bool(plan.get("features")) and any(task.get("feature_id") for task in plan.get("tasks", []))
+
+
 def create_vision(vision: dict) -> dict:
     if not isinstance(vision, dict) or not str(vision.get("goal", "")).strip() or not isinstance(vision.get("done"), list) or not vision["done"]:
         raise ValueError("vision needs a goal and a non-empty done list")
@@ -356,7 +401,7 @@ def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: 
     feature_id = task.get("feature_id")
     feature = next((item for item in plan.get("features", []) if item.get("id") == feature_id), None)
     contract = task.get("contract")
-    if feature and task.get("role") not in ("lead", "evaluator") and (not contract or not contract.get("pass_criteria")):
+    if feature and task.get("role") not in ("lead", "evaluator", "skeptical-evaluator") and (not contract or not contract.get("pass_criteria")):
         return {"status": "retry", "output": "", "review": {"passed": False, "evidence": "contract missing"},
                 "checks": {"passed": False, "evidence": "contract must exist before building"}}
     if feature and task.get("role") == "builder":
@@ -374,11 +419,14 @@ def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: 
     checks = _check_task(task, output, workspace) if review.get("passed") else {"passed": False, "evidence": review.get("evidence")}
     if not review.get("passed") or not checks.get("passed") or result.get("exit_code", 1) != 0:
         return {"status": "retry", "output": output, "review": review, "checks": checks}
-    if feature and task.get("role") == "evaluator":
+    if feature and task.get("role") in ("evaluator", "skeptical-evaluator"):
         feature_state = state.setdefault("features", {}).get(feature_id, {})
         feature_state.update(status="passing", evaluator_evidence=json.dumps(checks.get("evidence", [])))
     return {"status": "awaiting_approval" if task.get("requires_approval") else "done",
-            "output": output, "review": review, "checks": checks}
+            "output": output, "review": review, "checks": checks,
+            **({"feature_evaluation": {"feature_id": feature_id,
+                 "evaluator_evidence": json.dumps(checks.get("evidence", []))}}
+               if feature and task.get("role") in ("evaluator", "skeptical-evaluator") else {})}
 
 
 def stuck_claim(run_id: str, task_id: str, attempts: int, evidence: str) -> str:
@@ -389,9 +437,10 @@ def stuck_claim(run_id: str, task_id: str, attempts: int, evidence: str) -> str:
 def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None = None) -> dict:
     """Synchronous testable engine. Production workflow uses durable per-task workflow steps below."""
     state = state or {"status": "running", "tasks": {t["id"]: {"status": "pending", "attempts": 0} for t in plan["tasks"]}}
+    _mark_legacy_completions(plan, state)
     state.setdefault("features", {feature["id"]: {"status": "pending", "evaluator_evidence": None}
                                    for feature in plan.get("features", [])})
-    if plan.get("features") and not any(task.get("feature_id") for task in plan.get("tasks", [])):
+    if plan.get("features") and not _uses_feature_evaluators(plan):
         # Older persisted runs have no feature records. Rebuild evaluator evidence from
         # their independently reviewed, completed task results when resuming.
         for feature in plan["features"]:
@@ -440,7 +489,7 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
                 store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "task_id": task_id, "claim_id": cid})
                 return state
             item.update(status="pending", **result)
-        if plan.get("features") and not any(task.get("feature_id") for task in plan.get("tasks", [])):
+        if plan.get("features") and not _uses_feature_evaluators(plan):
             for feature in plan["features"]:
                 related = [task for task in plan.get("tasks", []) if task.get("feature_id") in (None, feature["id"])]
                 completed = [state.get("tasks", {}).get(task["id"], {}) for task in related]
@@ -455,8 +504,7 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
         state["status"] = "waiting"
         return state
     governed = _govern(plan, state["tasks"])
-    if governed.get("passed") and plan.get("features") and not any(
-            task.get("feature_id") for task in plan.get("tasks", [])):
+    if governed.get("passed") and plan.get("features") and not _uses_feature_evaluators(plan):
         for feature in plan["features"]:
             state["features"][feature["id"]] = {"status": "passing",
                 "evaluator_evidence": "independent governor and final Spec check required"}
@@ -488,10 +536,13 @@ def team_task_step(team_id: str, task_id: str) -> dict:
                                                    f"team-{team_id}", f"{team_id}-{task_id}", True)
     result = execute_task(team_id, task_id, plan, task, task_workspace, state, current["attempts"])
     current.update(result)
+    evaluation = result.get("feature_evaluation")
     if plan["team"]["worker_mode"] == "parallel" and result.get("status") == "done":
         runner.workspaces.finish(os.path.abspath(os.environ.get("GLACIER_HOME", "data")),
                                  f"team-{team_id}", f"{team_id}-{task_id}", True)
     _save_task(team_id, task_id, current)
+    if evaluation:
+        _save_feature_evaluation(team_id, evaluation)
     return result
 
 
@@ -504,6 +555,7 @@ def team_task_workflow(team_id: str, task_id: str) -> dict:
 def run_team(team_id: str) -> str:
     row = _read(team_id)
     plan, state = row["plan"], row["state"]
+    _mark_legacy_completions(plan, state)
     state["status"] = "running"
     _save(team_id, status="running", state=state)
     store.broadcaster.publish({"type": "team_started", "team_id": team_id})
