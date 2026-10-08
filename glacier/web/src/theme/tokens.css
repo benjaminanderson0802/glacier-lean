@@ -1,7 +1,9 @@
 /* Glacier's original pixel-art palette and integer art grid. */
 @font-face { font-family: 'Press Start 2P'; src: url('./fonts/PressStart2P.ttf') format('truetype'); font-weight: 400; font-display: block; }
 :root {
-c34; --g-ink: #162c4e; --g-ink2: #42628a;
+  --g-void: #081226; --g-navy: #14284a; --g-navy2: #22406c; --g-navy3: #345c92;
+  --g-ice0: #f4faff; --g-ice1: #deecf9; --g-ice2: #c4dbf1; --g-ice3: #a0c3e5; --g-ice4: #76a0ce;
+  --g-white: #ffffff; --g-shadow: #0c1c34; --g-ink: #162c4e; --g-ink2: #42628a;
   --g-ok: #38a858; --g-ok2: #78dc82; --g-warn: #ecb228; --g-gold: #fcd66e; --g-bad: #d64848; --g-bad2: #ff8c82;
   --g-bg: var(--g-ice1); --g-panel: var(--g-ice0); --g-panel-hi: var(--g-ice2); --g-bar: var(--g-navy2);
   --g-line: var(--g-navy); --g-line-dim: var(--g-ice4); --g-head: var(--g-navy); --g-text: var(--g-ink); --g-sub: var(--g-ink2); --g-muted: var(--g-ink2);

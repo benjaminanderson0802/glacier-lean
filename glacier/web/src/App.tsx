@@ -1,6 +1,6 @@
 // Glacier window: top bar with exactly five options, the active screen, and the keyboard footer.
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { Icon, Logo, type IconName } from './ui/Pixel.tsx'
+import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
 import { HomeScreen } from './screens/Home.tsx'
 import { BuildTeamsScreen } from './screens/BuildTeams.tsx'
@@ -24,7 +24,7 @@ const LABEL: Record<Tab, string> = { home: 'nav.home', ask: 'nav.build', automat
 const isDesktop = '__TAURI_INTERNALS__' in window
 
 async function winAction(a: 'minimize' | 'close') {
-  if (!isDesktop) return
+  if (!('__TAURI_INTERNALS__' in window)) return
   const { getCurrentWindow } = await import('@tauri-apps/api/window')
   await getCurrentWindow()[a]()
 }
@@ -88,21 +88,15 @@ export default function App() {
   return (
     <div className="g-window" data-testid="window">
       <nav className="g-topbar" data-tauri-drag-region>
-        <div className="g-brand"><Logo px={3} />{translate('pixel.glacier')}</div>
-        <div className="g-tabs" role="tablist">
-          {TABS.map(t => (
-            <button key={t} role="tab" aria-selected={t === tab} className={`g-tab${t === tab ? ' active' : ''}`} data-testid={`nav-${t}`} onClick={() => go(t)}>
-              <Icon name={t as IconName} /><span title={translate(LABEL[t])}>{translate(LABEL[t])}</span>
-            </button>
-          ))}
-        </div>
+        <div className="g-brand" data-tauri-drag-region><Logo px={3} /><span className="g-brand-name">GLACIER - {translate(LABEL[tab]).toUpperCase()}</span></div>
+        <div className="g-tabs" aria-hidden="true" />
         {isDesktop && <div className="g-winctl" data-tauri-drag-region="false">
           <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
           <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>
         </div>}
       </nav>
       <aside className="g-side" data-testid="game-menu">
-        <section className="g-panel"><h2 className="g-panel-title">MENU</h2><div className="g-menu-list">{TABS.map((item) => <button key={item} data-testid={`nav-${item}`} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}><span className="g-menu-cursor"/><span className="g-menu-icon" style={{ '--icon': `url('./theme/sprites/icon-${item === 'ask' ? 'build' : item}.png')` } as React.CSSProperties}/>{translate(LABEL[item])}</button>)}</div></section>
+        <section className="g-panel"><h2 className="g-panel-title">MENU</h2><div className="g-menu-list" role="tablist" aria-orientation="vertical">{TABS.map((item) => <button key={item} role="tab" aria-selected={item === tab} data-testid={`nav-${item}`} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}><span className="g-menu-cursor"/><span className="g-menu-icon" style={{ '--icon': `url('./theme/sprites/icon-${item === 'ask' ? 'build' : item}.png')` } as React.CSSProperties}/>{translate(LABEL[item])}</button>)}</div></section>
         <section className="g-panel g-engines"><h2 className="g-panel-title">ENGINES</h2><small>● Codex</small><small>● granite</small></section>
       </aside>
       <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
