@@ -97,7 +97,7 @@ export function AutomationsScreen() {
           : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
       <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
-      <Panel>
+      <Panel className="automations-window">
         <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
