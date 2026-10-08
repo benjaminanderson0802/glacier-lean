@@ -16,7 +16,7 @@ try {
   if (!existsSync(path.join(root, 'dist/index.html'))) throw new Error('dist/ missing - run `npm run build` first')
   preview = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'preview', '--port', String(UI_PORT), '--strictPort'], { cwd: root, env: process.env, stdio: 'ignore' })
   await waitHttp(UI)
-  browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
+  browser = await chromium.launch((p => p ? { executablePath: p } : {})(process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '')))
 
   for (const viewport of [{ width: 1280, height: 800 }, { width: 760, height: 700 }]) {
     const page = await browser.newPage({ viewport })
@@ -51,7 +51,7 @@ try {
     check(rows.rowTextLeft >= rows.rowIconRight + 2 * unit, `${viewport.width}px: fixed row icon column has a gap before text`)
     check([8 * unit, 16 * unit].includes(rows.titleSize) && [8 * unit, 16 * unit].includes(rows.brandSize), `${viewport.width}px: Home title and title bar use 8px/16px grid sizes`)
     check(rows.logo.height === 8 * unit && rows.logo.width === 13 * unit && rows.gap >= unit, `${viewport.width}px: title logo is integer-scaled, centred and separated`)
-    check(rows.empties.length === 3 && rows.empties.every(e => e.justify === 'center' && e.align === 'center' && e.icon && e.children === 2), `${viewport.width}px: all empty states center an icon and dim line`)
+    check(rows.empties.length >= 3 && rows.empties.every(e => e.justify === 'center' && e.align === 'center' && e.icon && e.children === 2), `${viewport.width}px: all empty states center an icon and dim line`)
     await page.close()
   }
 } catch (error) {

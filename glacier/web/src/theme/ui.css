@@ -7,7 +7,7 @@ button { cursor: pointer; }
 .g-window { position: relative; width: 100vw; height: 100vh; padding: calc(2 * var(--px)); display: grid; grid-template-columns: calc(116 * var(--px)) minmax(0,1fr); grid-template-rows: calc(14 * var(--px)) minmax(0,1fr) calc(15 * var(--px)); gap: calc(3 * var(--px)); background: var(--g-void) url('./sprites/dither-8.png') repeat; overflow: hidden; }
 .g-topbar { grid-column: 1 / -1; display: flex; min-width: 0; align-items: center; gap: calc(2 * var(--px)); padding: 0 calc(2 * var(--px)); background: var(--g-navy2); border: var(--px) solid var(--g-navy); color: var(--g-white); }
 .g-brand { display: flex; align-items: center; gap: var(--px); flex: 1; min-width: 0; text-transform: uppercase; white-space: nowrap; font-size: calc(8 * var(--px)); }
-.g-brand .g-logo { width: calc(8 * var(--px)); height: calc(8 * var(--px)); object-fit: contain; }
+.g-brand .g-logo { width: calc(13 * var(--px)); height: calc(8 * var(--px)); flex: none; image-rendering: pixelated; }
 .g-brand-name { font-size: calc(8 * var(--px)); }
 .g-tabs { display: none; }
 .g-winctl { display: flex; gap: var(--px); }
@@ -267,3 +267,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 *::-webkit-scrollbar { width: calc(8 * var(--px)); height: calc(8 * var(--px)); background: var(--g-ice2); }
 *::-webkit-scrollbar-track { background: var(--g-ice2); }
 *::-webkit-scrollbar-thumb { border: var(--px) solid var(--g-navy); background: var(--g-ice4); }
+
+/* Home polish rules lost in the release-candidate merge */
+.g-row .g-ico { width: calc(11 * var(--px)); height: calc(11 * var(--px)); }
+.g-empty { display:flex;align-items:center;justify-content:center;gap:calc(2 * var(--px));text-align:center; }.g-empty .g-status { flex:none; }
+.g-row { grid-template-columns: calc(12 * var(--px)) minmax(0,1fr) auto; }
+@media (max-width: 760px) { .g-row { grid-template-columns: calc(12 * var(--px)) minmax(0,1fr); } }
