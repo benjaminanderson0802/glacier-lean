@@ -282,7 +282,10 @@ def write_note(path: str, body: str, agent: str = "unknown", *, author: str | No
         if agent == "glacier-runner" and metadata_run_id:
             message += f" [run:{metadata_run_id}]"
         actor = git.Actor(git_writer, "glacier@localhost")
-        _repo.index.add([os.path.relpath(full, VAULT)])
+        # GitPython resolves relative index paths from the process cwd. The cwd
+        # may be on another Windows drive than GLACIER_HOME, so stage the
+        # absolute vault path; Git resolves it against this repository's worktree.
+        _repo.index.add([full])
         sha = _repo.index.commit(message, author=actor, committer=actor).hexsha[:8]
         history_path = os.path.relpath(full, VAULT).replace(os.sep, "/")
         invalidate_note_history([history_path])
