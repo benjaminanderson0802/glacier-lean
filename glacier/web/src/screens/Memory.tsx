@@ -97,7 +97,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
           </div>
         </Panel>
         <Panel title={editing === 'new' ? 'New note' : note ? String(note.meta?.title ?? note.path) : 'Note'}
-          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setRenaming(note.path)} data-testid="note-rename">Rename</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">Edit</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">New note</Btn></span>}
+          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">Rename</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">Edit</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">New note</Btn></span>}
           testid="memory-note" className="g-scroll">
           {saved && !editing && (
             <div className="g-saved" data-testid="note-saved">Saved (version {saved.commit}).
