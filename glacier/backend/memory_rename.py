@@ -188,6 +188,7 @@ def rename(source: str, target: str) -> dict:
                     stream.write(original)
             raise
 
+        vault.invalidate_note_history([old, new, *updated])
         for path in [old, new, *updated]:
             with vault._note_metadata_cache_lock:
                 vault._note_metadata_cache.pop(path, None)

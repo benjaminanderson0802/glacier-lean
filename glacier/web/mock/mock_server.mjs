@@ -368,14 +368,14 @@ const server = http.createServer(async (req, res) => {
       return send(200, { run_id, env_id: 'nightly-sync' })
     }
     if (p === '/api/templates' && req.method === 'GET') return send(200, mockTemplates)
-    if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name })))
+    if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name, enabled: e.enabled })))
     if ((m = p.match(/^\/api\/environments\/([^/]+)$/))) {
       const id = decodeURIComponent(m[1])
       if (req.method === 'GET') return envs.has(id) ? send(200, envs.get(id)) : send(404, { detail: 'environment not found' })
       if (req.method === 'PUT') {
         const body = await readBody()
         if (!body || !Array.isArray(body.nodes) || !Array.isArray(body.edges)) return send(422, { detail: 'invalid environment' })
-        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !CATALOG.some(c => c.type === t))
+        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !CATALOG.some(c => c.type === t) && !['file_trigger', 'webhook_trigger'].includes(t))
         if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
         envs.set(id, { ...body, id })
         const commit = commitId(), epath = `environments/${id}.json`, text = JSON.stringify({ ...body, id }, null, 2)
@@ -497,7 +497,9 @@ server.on('upgrade', (req, sock, head) => {
 const broadcast = msg => { const s = JSON.stringify(msg); for (const c of wss.clients) if (c.readyState === 1) c.send(s) }
 
 function publicRun(r) {
-  return { run_id: r.run_id, env_id: r.env_id, status: r.status, node_states: r.node_states, outputs: r.outputs, waiting_on: r.waiting_on }
+  const startNode = r.graph.nodes.find(n => ['schedule', 'file_trigger', 'webhook_trigger'].includes(n.type))
+  return { run_id: r.run_id, env_id: r.env_id, status: r.status, node_states: r.node_states, outputs: r.outputs, waiting_on: r.waiting_on,
+    ...(startNode ? { trigger: { type: startNode.type === 'schedule' ? 'schedule' : startNode.type === 'file_trigger' ? 'file' : 'webhook', node_id: startNode.id } } : {}) }
 }
 
 function setState(r, nodeId, state, output) {

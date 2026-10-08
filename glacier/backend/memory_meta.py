@@ -5,33 +5,54 @@ import os
 import re
 from datetime import datetime, timezone
 
+import yaml
+
 def _is_claims_path(path: str) -> bool:
     """Claims are never edited through memory; compare without case and with either slash (Windows/macOS ignore case)."""
     p = str(path).replace("\\", "/").casefold().lstrip("./")
     return p == "claims" or p.startswith("claims/")
 
 
+def split_front_matter(text: str) -> tuple[dict | None, str, str | None]:
+    """Parse a closed YAML front matter block without changing its body text."""
+    if not text.startswith("---") or not text.splitlines() or text.splitlines()[0].strip() != "---":
+        return None, text, None
+    lines = text.splitlines(keepends=True)
+    closing = next((index for index, line in enumerate(lines[1:], 1) if line.strip() == "---"), None)
+    if closing is None:
+        return None, text, "The opening front matter marker has no closing --- line."
+    raw = "".join(lines[1:closing])
+    body = "".join(lines[closing + 1:])
+    try:
+        metadata = yaml.safe_load(raw)
+        if metadata is None:
+            metadata = {}
+        if not isinstance(metadata, dict):
+            return None, text, "front matter must contain key and value fields"
+    except yaml.YAMLError as exc:
+        return None, text, str(exc)
+    return metadata, body, None
+
+
 
 def parse(text: str, path: str = "") -> tuple[dict, str]:
     """Return parsed metadata and the note body, excluding front matter."""
-    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n?", text, re.S)
-    raw = {}
-    if match:
-        for line in match.group(1).splitlines():
-            item = re.match(r"([a-z_]+):\s*(.*)$", line.strip())
-            if item:
-                raw[item.group(1)] = item.group(2).strip()
-    body = text[match.end():] if match else text
-    title = raw.get("title", "").strip('"')
+    raw, body, _ = split_front_matter(text)
+    raw = raw or {}
+    raw = {key: value.isoformat() if hasattr(value, "isoformat") else value
+           for key, value in raw.items()}
+    title = str(raw.get("title") or "").strip('"')
     if not title:
         heading = re.search(r"(?m)^#\s+(.+?)\s*#*\s*$", body)
         title = heading.group(1).strip() if heading else os.path.splitext(os.path.basename(path))[0]
-    tags = re.findall(r"[\w-]+", raw.get("tags", "").strip("[]"))
+    raw_tags = raw.get("tags", [])
+    tags = ([str(tag) for tag in raw_tags] if isinstance(raw_tags, list)
+            else re.findall(r"[\w-]+", str(raw_tags).strip("[]")))
     if not tags:
         tags = re.findall(r"(?<![\w])#([\w-]+)", body)
-    return ({"title": title, "author": raw.get("author", "owner"),
-             "run_id": raw.get("run_id", ""), "created": raw.get("created", ""),
-             "updated": raw.get("updated", ""), "tags": sorted(set(tags))}, body)
+    return ({"title": title, "author": raw.get("author") or "owner",
+             "run_id": raw.get("run_id") or "", "created": raw.get("created") or "",
+             "updated": raw.get("updated") or "", "tags": sorted(set(tags))}, body)
 
 
 def render(path: str, body: str, author: str, run_id: str = "", existing: str | None = None) -> tuple[dict, str]:
