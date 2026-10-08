@@ -31,7 +31,7 @@ export function MemoryScreen({ path }: { path?: string }) {
   if (view) return (
     <>
       <PageHead title={view === '~map' ? t('memory.title') : view === '~add' ? t('memory.addTitle') : t('memory.cleanupTitle')} crumb={t('memory.title')}
-        sub={view === '~map' ? t('memory.subtitle') : view === '~add' ? t('memory.importSubtitle') : t('memory.organizeSubtitle')} side={switcher} />
+        sub={view === '~map' ? undefined : view === '~add' ? t('memory.importSubtitle') : t('memory.organizeSubtitle')} side={switcher} />
       {view === '~map' ? <Suspense fallback={<div className="g-empty">{t('memory.drawMap')}</div>}><MemoryMap /></Suspense> : view === '~add' ? <MemoryAdd /> : <MemoryCleanup />}
     </>
   )
@@ -89,14 +89,14 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
 
   return (
     <>
-      <PageHead title={t('memory.title')} sub={t('memory.subtitle')} side={<>{switcher}<input className="g-input" style={{ width: 240 }} placeholder={t('memory.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
+      <PageHead title={t('memory.title')} side={<>{switcher}<input className="g-input" style={{ width: 240 }} placeholder={t('memory.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       <div className="g-memory">
         <Panel className="g-sidenav" testid="memory-tags">
-          {[t('memory.all'), ...tags.map(t => t[0])].map(t => (
-            <button key={t} className={`g-navitem${t === tag ? ' active' : ''}`} onClick={() => { setTag(t); setQ('') }}>
-              <span>{t}</span><span className="g-muted">{t === 'All' ? notes?.length ?? '' : tags.find(x => x[0] === t)?.[1]}</span>
+          {[t('memory.all'), ...tags.map(t => t[0])].map(label => (
+            <button key={label} className={`g-navitem${label === tag ? ' active' : ''}`} onClick={() => { setTag(label); setQ('') }}>
+              <span>{label}</span><span className="g-muted">{label === t('memory.all') ? notes?.length ?? '' : tags.find(x => x[0] === label)?.[1]}</span>
             </button>
           ))}
         </Panel>

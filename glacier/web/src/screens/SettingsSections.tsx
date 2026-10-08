@@ -19,7 +19,7 @@ export function ModelsSection() {
             <dt>{t('settingsSections.usingNow')}</dt><dd data-testid="model-in-use">{eff?.local_model ?? c.recommended.local_model}</dd>
             <dt>{t('settingsSections.mode')}</dt><dd>{(eff?.mode ?? c.recommended.mode) === 'low' ? t('settingsSections.lightSmall') : t('settingsSections.standard')}</dd>
             <dt>{t('settingsSections.runsAtOnce')}</dt><dd>{eff?.max_parallel_runs ?? c.recommended.max_parallel_runs}</dd>
-            <dt>{t('settingsSections.askUses')}</dt><dd data-testid="ask-route">{eff?.ask_route === 'codex' ? t('settingsSections.codexPlan') : eff?.ask_route === 'local' ? t('settingsSections.localRoute', { name: eff.local_model }) : eff?.ask_route === 'unavailable' ? 'Nothing yet' : 'Checking…'}{eff?.ask_route_reason ? <div className="g-muted">{eff.ask_route_reason}</div> : null}</dd>
+            <dt>{t('settingsSections.askUses')}</dt><dd data-testid="ask-route">{eff?.ask_route === 'codex' ? t('settingsSections.codexPlan') : eff?.ask_route === 'local' ? t('settingsSections.localRoute', { name: eff.local_model }) : eff?.ask_route === 'unavailable' ? t('settingsSections.nothingYet') : t('settingsSections.checking')}{eff?.ask_route_reason ? <div className="g-muted">{eff.ask_route_reason}</div> : null}</dd>
             <dt>{t('settingsSections.paidModels')}</dt><dd>{t('settingsSections.paidDescription')}</dd>
           </dl>
           <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.installed')}</h3>

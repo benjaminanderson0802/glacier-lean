@@ -185,7 +185,7 @@ function PastRuns({ envId }: { envId: string }) {
   }
   return (
     <>
-      <PageHead title={t('run.pastRunsTitle', { name: env?.name ?? envId })} crumb="Automations" sub={t('run.totalRuns', { count: runs.length })}
+      <PageHead title={t('run.pastRunsTitle', { name: env?.name ?? envId })} crumb={t('run.automations')} sub={t('run.totalRuns', { count: runs.length })}
         side={<><Btn onClick={() => go(`automations/flow/${envId}`)}>{t('run.back')}</Btn><Btn primary icon="run" onClick={() => api.runEnv(envId).then(r => go(`automations/flow/${envId}/${r.run_id}`)).catch(e => setErr(String(e)))} data-testid="rerun">{t('run.rerun')}</Btn></>} />
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />

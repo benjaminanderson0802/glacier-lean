@@ -185,35 +185,3 @@ const LOGO = mountains()
 export function Logo({ px = 2 }: { px?: number }) {
   return <PixelArt rows={LOGO} pal={{ w: 'var(--g-head)', a: 'var(--g-accent)', l: 'var(--g-line)' }} px={px} className="g-logo" title={t('pixel.glacier')} />
 }
-
-// ---------- mascot: an original little operator with dark hair and a backpack ----------
-const MASCOT = [
-  '....hh.hhhh.hh....',
-  '..hhhhhhhhhhhhhh..',
-  '.hhhhHhhhhhhHhhhh.',
-  'hhhhhhhhhhhhhhhhhh',
-  'hhhhhhhhhhhhhhhhhh',
-  'hhhsshhhhhhhhsshhh',
-  '.hhsssssssssssshh.',
-  '.hsseesssssseessh.',
-  '.hssssssssssssssh.',
-  '..sssssssmmsssss..',
-  '...SSssssssssSS...',
-  '.....wwwSSwww.....',
-  '...bwwwwwwwwwwb...',
-  '..bbwwwWwwWwwwbb..',
-  '..bbswwWwwWwwsbb..',
-  '...sswwwwwwwwss...',
-  '.....pppppppp.....',
-  '.....ppp..ppp.....',
-  '....kkkk..kkkk....',
-]
-export function Mascot({ px = 4 }: { px?: number }) {
-  return (
-    <PixelArt rows={MASCOT} px={px} className="g-mascot" pal={{
-      h: 'var(--g-art-hair)', H: 'var(--g-art-hair-hi)', s: 'var(--g-art-skin)', S: 'var(--g-art-skin-sh)',
-      e: 'var(--g-art-ink)', m: 'var(--g-art-mouth)', w: 'var(--g-head)', W: 'var(--g-text)',
-      b: 'var(--g-art-strap)', p: 'var(--g-art-pants)', k: 'var(--g-art-ink)',
-    }} />
-  )
-}
