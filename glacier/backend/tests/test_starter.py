@@ -75,7 +75,7 @@ def test_apply_creates_only_chosen_flows_once_and_saves_settings(server, monkeyp
     settings = json.loads((Path(server.home) / "settings.json").read_text())
     assert settings["mode"] == "low"
     assert settings["local_model"] == "granite3.3:2b"  # owner decision 2026-10-08: granite everywhere
-    assert server.get("/api/system/settings")["local_model"] == "qwen3:0.6b"
+    assert server.get("/api/system/settings")["local_model"] == "granite3.3:2b"  # owner decision 2026-10-08: granite everywhere
 
 
 def test_unknown_template_id_returns_plain_400(server):
