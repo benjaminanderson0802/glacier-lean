@@ -43,20 +43,20 @@ try {
   await page.getByTestId('starter-hide').click()
   check(await page.getByTestId('starter').count() === 0, 'Get started can be closed')
 
-  const tabIds = await page.locator('[role=tablist] [role=tab]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
+  const tabIds = await page.locator('.g-menu-item').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
   const tabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
-  check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && tabs.map(x => x.trim()).join(',') === 'Home,Ask,Automations,Memory,Settings', `exactly five English tabs (got ${tabs.join(',')})`)
+  check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && tabs.map(x => x.trim()).join(',') === 'Home,Build,Automations,Memory,Settings', `exactly five English menu options (got ${tabs.join(',')})`)
   for (const t of ['home', 'ask', 'automations', 'memory', 'settings']) {
     await page.getByTestId(`nav-${t}`).click()
     await page.getByTestId(`screen-${t}`).waitFor()
-    const active = await page.getByTestId(`nav-${t}`).getAttribute('aria-selected')
+    const active = await page.getByTestId(`nav-${t}`).getAttribute('aria-current')
     const font = await page.getByTestId('page-title').evaluate(el => getComputedStyle(el).fontFamily)
-    check(active === 'true' && /Glacier Head/.test(font), `${t}: opens, tab active, title in the pixel font`)
+    check(active === 'page' && /Press Start 2P/.test(font), `${t}: opens, menu active, title in Press Start 2P`)
   }
   const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
-  check(/Glacier Body/.test(bodyFont), 'body text uses the pixel body font')
-  const fontsOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('20px "Glacier Body"') && document.fonts.check('20px "Glacier Head"') })
-  check(fontsOk, 'bundled pixel fonts loaded (offline)')
+  check(/Press Start 2P/.test(bodyFont), 'body text uses Press Start 2P')
+  const fontsOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('16px "Press Start 2P"') })
+  check(fontsOk, 'bundled Press Start 2P font loaded (offline)')
 
   await page.getByTestId('nav-automations').click()
   await page.getByTestId('flow-new').click()

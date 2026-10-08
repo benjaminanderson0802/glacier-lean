@@ -1,6 +1,7 @@
 export const en: Record<string, string> = {
   'nav.home': 'Home',
-  'nav.ask': 'Ask',
+  'nav.ask': 'Build',
+  'nav.build': 'Build',
   'nav.automations': 'Automations',
   'nav.memory': 'Memory',
   'nav.settings': 'Settings',
@@ -107,6 +108,8 @@ export const en: Record<string, string> = {
   'build.liveConnected': 'live events connected',
   'build.liveDisconnected': 'live events disconnected',
   'build.flows': 'Flows',
+  'build.hideFlows': 'Hide flows list',
+  'build.showFlows': 'Show flows list',
   'build.noFlows': 'No flows yet.',
   'build.flowName': 'Flow name',
   'build.create': 'Create',

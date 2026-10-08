@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges,
+  Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges, EdgeText,
   type Connection, type Edge, type EdgeChange, type NodeChange, useReactFlow,
 } from '@xyflow/react'
 import {
@@ -30,10 +30,23 @@ const nextId = (prefix: string, ids: string[]) => {
 }
 
 const edgeStyle = (label: string) => ({
+  type: 'pixel',
   label: label || undefined,
   markerEnd: { type: MarkerType.ArrowClosed, color: tok('--g-line') },
   className: label ? `edge-${label}` : undefined,
 })
+
+function PixelEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, style, selected, label }: import('@xyflow/react').EdgeProps) {
+  const middle = Math.round((sourceX + targetX) / 2)
+  const vertical = Math.abs(targetY - sourceY) > Math.abs(targetX - sourceX)
+  const labelX = Math.round((sourceX + targetX) / 2 + (vertical ? 20 : 0))
+  const labelY = Math.round((sourceY + targetY) / 2 + (vertical ? 0 : -16))
+  const d = `M ${sourceX} ${sourceY} H ${middle} V ${targetY} H ${targetX}`
+  return <>
+    <path id={id} d={d} className={`react-flow__edge-path${selected ? ' selected' : ''}`} markerEnd={markerEnd} style={style} />
+    {label && <EdgeText x={labelX} y={labelY} label={label} labelShowBg />}
+  </>
+}
 
 function httpAddressError(address: string, allowedSites: string): string {
   const value = address.trim()
@@ -100,6 +113,8 @@ export default function BuildScreen(props: BuildProps) {
 
 function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: BuildProps) {
   const reactFlow = useReactFlow<GNode, Edge>()
+  const { fitView } = reactFlow
+  const connectingRef = useRef(false)
   const [envs, setEnvs] = useState<EnvSummary[]>([])
   const [unsaved, setUnsaved] = useState<EnvSummary[]>([])
   const [envId, setEnvId] = useState<string | null>(null)
@@ -114,6 +129,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [selected, setSelected] = useState<Selection>(null)
   const [undoStack, setUndoStack] = useState<Array<{ nodes: GNode[]; edges: Edge[] }>>([])
   const [tab, setTab] = useState<'canvas' | 'vault'>('canvas')
+  const [minimapOpen, setMinimapOpen] = useState(true)
+  const [canvasShort, setCanvasShort] = useState(true)
+  const canvasRef = useRef<HTMLDivElement>(null)
   const [wsUp, setWsUp] = useState(false)
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
@@ -127,6 +145,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [moreFields, setMoreFields] = useState(false)
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const [flowRemoved, setFlowRemoved] = useState(false)
+  const [flowsOpen, setFlowsOpen] = useState(true)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -135,6 +154,22 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     return t.branches_from === 'options' ? splitOptions(n.data.config.options) : null
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
+  const flowEdgeTypes = useMemo(() => ({ pixel: PixelEdge }), [])
+  const showMinimap = minimapOpen && !canvasShort
+  const fitCanvas = useCallback(() => {
+    if (connectingRef.current) return
+    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, duration: 0, minZoom: 0.6 })
+  }, [fitView, showMinimap])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const update = () => setCanvasShort(canvas.clientHeight < 520)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [envId, tab, activeRun])
 
   /** Fields of the flow the builder does not edit (goal, acceptance checks, isolate, ...): kept on save. */
   const extras = useRef<Record<string, unknown>>({})
@@ -142,6 +177,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   envIdRef.current = envId
   const activeRunIdRef = useRef<string | null>(null)
   activeRunIdRef.current = activeRun?.run_id ?? null
+
+  // Refit after the terminal row opens so the reduced canvas still shows every node.
+  useEffect(() => {
+    if (!activeRun || !selected || tab !== 'canvas') return
+    const frame = requestAnimationFrame(fitCanvas)
+    return () => cancelAnimationFrame(frame)
+  }, [activeRun?.run_id, selected?.id, tab, fitCanvas])
 
   // ---------- loading ----------
   const refreshEnvs = useCallback(() => api.listEnvs().then(setEnvs).catch(e => setMsg(String(e))), [])
@@ -262,6 +304,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   }, [selected])
 
   const onConnect = useCallback((c: Connection) => {
+    connectingRef.current = false
     setEdges(es => {
       const src = nodes.find(n => n.id === c.source)
       let label = ''
@@ -273,6 +316,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     setDirty(true)
   }, [nodes, branchLabels])
 
+  const onConnectStart = useCallback(() => { connectingRef.current = true }, [])
+  const onConnectEnd = useCallback(() => { connectingRef.current = false }, [])
+
   const addNode = (kind: NodeKind) => {
     const id = nextId('n', nodes.map(n => n.id))
     const config = Object.fromEntries((typeInfo(kind)?.fields ?? []).map(f => [f.key, f.default]))
@@ -281,10 +327,25 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     const incomingParent = selectedIncoming && nodes.find(n => n.id === selectedIncoming.source)
     const parent = selectedNode && incomingParent && branchLabels(incomingParent)?.length
       ? incomingParent : selectedNode
-    const x = parent ? parent.position.x + 260 : (nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60)
-    const y = parent && parent.id !== selectedNode?.id ? parent.position.y + (edges.filter(e => e.source === parent.id).length * 140)
-      : parent ? parent.position.y : 60
-    const node: GNode = { id, type: kind, position: { x: Math.round(x / 20) * 20, y: Math.round(y / 20) * 20 }, data: { config }, selected: true }
+    // Place the new step next to its parent (branch rows below), or in a zig-zag row when
+    // nothing is selected, so long links never run under another step; then nudge down on
+    // the 20px grid until the box is free.
+    let x: number, y: number
+    if (parent) {
+      x = parent.position.x + 260
+      y = parent.id !== selectedNode?.id ? parent.position.y + edges.filter(e => e.source === parent.id).length * 140 : parent.position.y
+    } else {
+      x = nodes.length ? Math.max(...nodes.map(n => n.position.x)) + 260 : 60
+      y = 60 + (nodes.length % 2) * 140
+    }
+    x = Math.round(x / 20) * 20
+    y = Math.round(y / 20) * 20
+    const overlaps = (left: number, top: number) => nodes.some(n => left < n.position.x + 220 && left + 220 > n.position.x && top < n.position.y + 110 && top + 110 > n.position.y)
+    while (overlaps(x, y)) {
+      y += 140
+      if (y > Math.max(60, ...nodes.map(n => n.position.y)) + 600) { x += 260; y = 60 }
+    }
+    const node: GNode = { id, type: kind, position: { x, y }, data: { config }, selected: true }
     setNodes(ns => [...ns.map(n => ({ ...n, selected: false })), node])
     setEdges(es => {
       if (!parent) return es.map(e => ({ ...e, selected: false }))
@@ -294,6 +355,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     })
     setSelected({ kind: 'node', id })
     setDirty(true)
+    requestAnimationFrame(() => requestAnimationFrame(fitCanvas))
   }
 
   const setConfig = (id: string, key: string, value: string) => {
@@ -334,7 +396,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       return { ...node, position: { x: Math.round((p.x - 105) / 20) * 20, y: Math.round((p.y - 45) / 20) * 20 } }
     }))
     setDirty(true)
-    requestAnimationFrame(() => { void reactFlow.fitView({ padding: 0.18 }) })
+    requestAnimationFrame(() => { if (!connectingRef.current) void reactFlow.fitView({ padding: 0.18, minZoom: 0.6 }) })
   }, [nodes, edges, reactFlow])
 
   const nudgeOverlaps = useCallback((draggedId: string, position: { x: number; y: number }) => {
@@ -457,11 +519,11 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const allEnvs = [...envs, ...unsaved.filter(u => !envs.some(e => e.id === u.id))]
 
   return (
-    <div className="app">
+    <div className={`app${envId ? ' flow-open' : ''}${envId && !flowsOpen ? ' flows-hidden' : ''}`}>
       {/* ---------- left ---------- */}
-      <aside className="left">
+      <aside className={`left${envId && !flowsOpen ? ' flows-collapsed' : ' flows-open'}`}>
         <div className="build-head"><a className="ghost-link" href="#/automations">{t('build.allFlows')}</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
-        <div className="section-head"><span>{t('build.flows')}</span></div>
+        <div className="section-head"><span>{t('build.flows')}</span>{envId && <button className="ghost" type="button" data-testid="flows-toggle" aria-expanded={flowsOpen} title={flowsOpen ? t('build.hideFlows') : t('build.showFlows')} aria-label={flowsOpen ? t('build.hideFlows') : t('build.showFlows')} onClick={() => setFlowsOpen(open => !open)}>{flowsOpen ? '›' : '‹'}</button>}</div>
         <div className="list" data-testid="env-list">
           {allEnvs.map(e => (
             <button key={e.id} className={`list-item${e.id === envId ? ' active' : ''}`} data-testid={`env-${e.id}`} onClick={() => selectEnv(e.id, e.name)}>
@@ -511,6 +573,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
             <div className="canvas-tools">
               <button className="ghost" onClick={autoLayout} data-testid="auto-layout">{t('build.autoLayout')}</button>
               <button className="ghost" onClick={undo} disabled={!undoStack.length} data-testid="undo">{t('build.undo')}</button>
+              <button className="ghost" onClick={() => setMinimapOpen(open => !open)} aria-expanded={showMinimap} data-testid="minimap-toggle">{showMinimap ? 'Hide map' : 'Show map'}</button>
             </div>
           )}
           {tab === 'canvas' && envId && (
@@ -534,15 +597,19 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 <button className="danger" data-testid="reject" onClick={() => decide(false)}>{t('build.reject')}</button>
               </div>
             )}
-            <div className="canvas" data-testid="canvas">
+            <div className={`canvas${showMinimap ? ' canvas-minimap-open' : ''}`} data-testid="canvas" ref={canvasRef}>
               <ReactFlow<GNode, Edge>
                 key={envId}
                 nodes={displayNodes}
                 edges={displayEdges}
                 nodeTypes={flowNodeTypes}
+                edgeTypes={flowEdgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
+                connectionRadius={24}
                 onNodeClick={(_, n) => setSelected({ kind: 'node', id: n.id })}
                 onEdgeClick={(_, e) => setSelected({ kind: 'edge', id: e.id })}
                 onPaneClick={() => setSelected(null)}
@@ -551,16 +618,18 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 snapGrid={[20, 20]}
                 onNodeDragStop={(_, node) => { nudgeOverlaps(node.id, node.position); setDirty(true) }}
                 fitView
-                fitViewOptions={{ padding: 0.18 }}
+                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, minZoom: 0.6 }}
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
-                <Background gap={20} color={tok('--g-line-dim')} />
-                <Controls showInteractive={false} />
-                <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />
+                <Background gap={16} size={1} color={tok('--g-ice4')} />
+                <Controls showInteractive={false} position="top-left" />
+                {showMinimap && <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />}
               </ReactFlow>
             </div>
-            {activeRun && selNode && (
+          </div>
+        )}
+        {tab === 'canvas' && activeRun && selNode && (
               <div className="term-panel" data-testid="terminal-panel">
                 <div className="term-head">
                   <span>{t('build.outputStatus', { id: selNode.id, type: selNode.type, status: activeRun.node_states[selNode.id] ?? 'pending' })}</span>
@@ -570,8 +639,6 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 <TerminalPanel text={activeRun.outputs[selNode.id] ?? ''} />
               </div>
             )}
-          </div>
-        )}
       </main>
 
       {/* ---------- right ---------- */}
