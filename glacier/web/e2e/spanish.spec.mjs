@@ -89,7 +89,7 @@ try {
     await page.locator('section[data-testid="settings-general"] select').selectOption('es')
     const spanishTabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
     const tabIds = await page.locator('[role=tablist] [role=tab]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
-    check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && spanishTabs.map(x => x.trim()).join(',') === 'Inicio,Preguntar,Flujos,Memoria,Ajustes', `${suffix} exactly five Spanish tabs (${spanishTabs.join(',')})`)
+    check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && spanishTabs.map(x => x.trim()).join(',') === 'Inicio,Crear,Flujos,Memoria,Ajustes', `${suffix} exactly five Spanish menu options (${spanishTabs.join(',')})`)
     for (const tab of ['home', 'ask', 'automations', 'memory', 'settings']) {
       await page.getByTestId(`nav-${tab}`).click()
       await page.getByTestId(`screen-${tab}`).waitFor()
