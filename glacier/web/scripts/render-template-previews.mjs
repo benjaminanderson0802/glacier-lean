@@ -43,7 +43,7 @@ for (const filename of fs.readdirSync(templatesDir).filter(name => name.endsWith
     const mid = points[Math.floor(points.length / 2)]
     return `<path class="edge" d="${d}"/>${edge.label ? `<text class="label" x="${mid.x}" y="${mid.y - 5}">${escape(edge.label)}</text>` : ''}`
   }).join('')
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#10131a"/><style>.edge{fill:none;stroke:#7c879d;stroke-width:2}.node{fill:#1c2230;stroke:#7583a1;stroke-width:2}.name{fill:#f3f4f8;font:600 16px Arial,sans-serif}.type{fill:#aab5ca;font:12px Arial,sans-serif}.label{fill:#b8c2d3;font:11px Arial,sans-serif}</style>${edges}${nodes}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#081226"/><defs><pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#76a0ce"/></pattern></defs><rect width="100%" height="100%" fill="url(#dots)"/><style>.edge{fill:none;stroke:#a0c3e5;stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}.node{fill:#deecf9;stroke:#14284a;stroke-width:3}.name{fill:#14284a;font:8px 'Press Start 2P',monospace}.type{fill:#22406c;font:6px 'Press Start 2P',monospace}.label{fill:#ffffff;font:6px 'Press Start 2P',monospace}</style>${edges}${nodes}</svg>`
   const { spawnSync } = await import('node:child_process')
   const venvPython = path.resolve(root, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python')
   const python = process.env.PYTHON ?? (fs.existsSync(venvPython) ? venvPython : process.platform === 'win32' ? 'python' : 'python3')

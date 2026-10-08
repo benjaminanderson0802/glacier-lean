@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
 import { HomeScreen } from './screens/Home.tsx'
+import { BuildTeamsScreen } from './screens/BuildTeams.tsx'
 import { AskScreen } from './screens/Ask.tsx'
 import { AutomationsScreen } from './screens/Automations.tsx'
 import { MemoryScreen } from './screens/Memory.tsx'
@@ -81,18 +82,20 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [tab])
 
-  const building = tab === 'ask' || tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
+  const building = tab === 'ask' && rest[0] !== 'chat' || tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
   const screen = useMemo(() => {
     switch (tab) {
-      case 'ask': return <AskScreen />
+      case 'ask': return rest[0] === 'chat' ? <AskScreen /> : <BuildTeamsScreen />
       case 'automations': return building
-        ? <Suspense fallback={<div className="g-empty">Loading the builder…</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
+        ? <Suspense fallback={<div className="g-empty">{translate('build.loading')}</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
+        : rest[0] === 'team' && rest[1] ? <BuildTeamsScreen teamId={rest[1]} />
         : rest[0] === 'flow' && rest[1]
           ? <RunView key={rest.join('/')} envId={rest[1]} runId={rest[2] !== 'history' ? rest[2] : undefined} history={rest[2] === 'history'} />
           : rest[0] === 'templates' ? <Templates /> : <AutomationsScreen />
+      case 'home': return rest[0] === 'claim' && rest[1] ? <ClaimDetail id={rest[1]} /> : rest[0] === 'claims' ? <ClaimsList /> : <HomeScreen />
       case 'memory': return <MemoryScreen path={rest[0]} />
       case 'settings': return <SettingsScreen section={rest[0]} />
-      default: return rest[0] === 'claim' && rest[1] ? <ClaimDetail id={rest[1]} /> : rest[0] === 'claims' ? <ClaimsList /> : <HomeScreen />
+      default: return <HomeScreen />
     }
   }, [tab, rest, building])
 
@@ -100,7 +103,7 @@ export default function App() {
     <div className="g-window" data-testid="window">
       <nav className="g-topbar" data-tauri-drag-region>
         <div className="g-brand" data-tauri-drag-region><Logo px={3} /><span className="g-brand-name">GLACIER - {translate(LABEL[tab]).toUpperCase()}</span></div>
-        <div className="g-tabs" aria-hidden="true" />
+        <div className="g-tabs" role="tablist" aria-hidden="true" />
         {isDesktop && <div className="g-winctl" data-tauri-drag-region="false">
           <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
           <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>
@@ -117,7 +120,7 @@ export default function App() {
         <span><span className="g-key">F1</span> {translate('shell.help')}</span>
         <span><span className="g-key">Ctrl+K</span> {translate('shell.command')}</span>
         <span><span className="g-key">Ctrl+Tab</span> {translate('shell.switch')}</span>
-        <span className="g-ready" data-testid="status-line">{status}</span>
+        <span className="g-ready" data-testid="status-line" title={status}>{status}</span>
       </footer>
       {palette && <CommandPalette onClose={() => setPalette(false)} />}
       {splash && <Splash version={__APP_VERSION__} onDone={to => { splashSeen = true; setSplash(false); if (to === 'exit') winAction('close'); else go(to) }} />}

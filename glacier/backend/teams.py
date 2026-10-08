@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
+import threading
 import sqlite3
 import tempfile
 import time
@@ -18,9 +20,15 @@ import runner
 import store
 import vault
 import verify
+import audit_log
 
 PLANNER_IDS = {"planner", "the-planner"}
 DB = ""
+_worker_processes: dict[tuple[str, str], object] = {}
+_worker_process_lock = threading.RLock()
+_team_state_lock = threading.RLock()
+_engine_call_override = None
+ASK_ENGINES = {"codex", "claude", "gemini", "openai", "anthropic", "local"}
 
 
 def init(path: str | None = None) -> None:
@@ -78,6 +86,13 @@ def validate_plan(plan: dict) -> dict:
     limit = team.get("parallel_limit", 1)
     if not isinstance(limit, int) or limit < 1 or limit > 32:
         raise ValueError("parallel_limit must be between 1 and 32")
+    engine = team.get("engine")
+    if engine and engine not in ASK_ENGINES:
+        raise ValueError("team engine is not supported")
+    if engine == "local" and (team.get("worker_mode") != "sequential" or limit != 1):
+        raise ValueError("local teams run one worker at a time")
+    if engine in ASK_ENGINES - {"local"} and (team.get("worker_mode") != "parallel" or not 3 <= limit <= 5):
+        raise ValueError("subscription and API teams need 3 to 5 parallel workers")
     roles = {}
     for role in team["roles"]:
         if not isinstance(role, dict) or not role.get("id") or not role.get("charter"):
@@ -169,14 +184,32 @@ def _save(team_id: str, *, status=None, plan=None, state=None) -> None:
 
 def _save_task(team_id: str, task_id: str, item: dict, status: str | None = None) -> None:
     """Update just one task atomically so parallel task workers cannot overwrite each other's state."""
-    with _conn() as c:
+    with _team_state_lock, _conn() as c:
         row = c.execute("SELECT state,status FROM glacier_teams WHERE team_id=?", (team_id,)).fetchone()
         if not row:
             raise ValueError("team not found")
         state = json.loads(row["state"])
         state["tasks"][task_id] = item
+        _append_progress(state, task_id, item)
         c.execute("UPDATE glacier_teams SET state=?,status=? WHERE team_id=?",
                   (json.dumps(state), status or row["status"], team_id))
+
+
+def _append_progress(state: dict, task_id: str, item: dict) -> None:
+    status = item.get("status")
+    if status not in {"done", "retry", "needs_owner", "stopped"}:
+        return
+    entry = f"Task {task_id}: {status}"
+    log = str(state.get("progress_log", ""))
+    if entry not in log.splitlines():
+        state["progress_log"] = f"{log.rstrip()}\n{entry}".strip()
+
+
+def _persisted_status(team_id: str) -> str | None:
+    try:
+        return _read(team_id)["status"]
+    except ValueError:
+        return None
 
 
 def _save_feature_evaluation(team_id: str, evaluation: dict) -> None:
@@ -243,9 +276,35 @@ def read_vision(path: str) -> dict:
     return json.loads(match.group(1))
 
 
+def ask_engine(prompt: str, engine: str, schema: dict | None = None) -> dict:
+    """Use the selected Ask adapter for Build responses while keeping its answer shape consistent."""
+    if engine not in ASK_ENGINES:
+        raise ValueError("Choose one of the available Ask engines.")
+    from routes import assistant_chat
+    if schema:
+        prompt += "\n\nReturn one JSON object matching this schema:\n" + json.dumps(schema)
+    answer = assistant_chat._ask_engine(prompt, engine)
+    if not isinstance(answer, dict):
+        raise ValueError("the selected engine returned an invalid answer")
+    return answer
+
+
+def _structured_plan(answer: dict) -> dict:
+    if isinstance(answer.get("reply"), str):
+        raw = answer["reply"]
+        try:
+            value = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
+        except (ValueError, TypeError):
+            raise ValueError("the selected engine did not return a structured team plan") from None
+        if isinstance(value, dict):
+            return value
+    return answer
+
+
 def plan_team(vision: dict, engine: str = "codex") -> dict:
     """Ask the selected existing Ask engine for a structured work plan."""
-    import assistant
+    if engine not in ASK_ENGINES:
+        raise ValueError("Choose one of the available Ask engines.")
     nullable_string = {"type": ["string", "null"]}
     check = {
         "type": "object", "additionalProperties": False,
@@ -342,10 +401,17 @@ def plan_team(vision: dict, engine: str = "codex") -> dict:
               "Lead, Builder(s), skeptical Evaluator; add Researcher/Reviewer only when needed. Each feature needs "
               "id,title,description,acceptance. Tasks must reference features. A feature may pass only after evaluator. "
               "The designer is never a team member. Include worker_mode, parallel_limit, and model per role.\nVision:\n" + json.dumps(vision))
-    ask = assistant._ask_local if engine == "local" else assistant._ask_codex
-    result = ask(prompt, schema)
+    result = _structured_plan(ask_engine(prompt, engine, schema))
+    if not isinstance(result, dict):
+        raise ValueError("the selected engine did not return a structured team plan")
+    result.setdefault("team", {})
+    result["team"]["engine"] = engine
+    result["team"]["worker_mode"] = "sequential" if engine == "local" else "parallel"
+    result["team"]["parallel_limit"] = 1 if engine == "local" else min(5, max(3, int(result["team"].get("parallel_limit", 3))))
     plan = validate_plan({"vision": vision, **result})
     return plan
+
+
 
 
 def save_plan(plan: dict, vision_path: str, workspace: str | None = None) -> dict:
@@ -414,10 +480,114 @@ def _relevant_memory(task: dict) -> list[dict]:
 
 
 def _worker(context: str, workspace: str, task: dict) -> dict:
-    """Worker adapter uses the installed Codex CLI contract; each invocation gets only the mask."""
+    """Run a fresh task through the selected engine; API/model replies are applied as checked patches."""
+    engine = task.get("engine", "codex")
+    if engine != "codex":
+        return _worker_patch(context, workspace, task, engine, task.get("_team_id", ""))
     cfg = {"prompt": context, "sandbox": "workspace-write"}
     timeout = int(task.get("timeout_seconds", 1800))
-    return runner.run_codex("team", "team", task["id"], cfg, "", timeout=timeout, ws=workspace)
+    try:
+        return runner.run_codex("team", "team", task["id"], cfg, "", timeout=timeout, ws=workspace,
+                                on_process=lambda process: _register_worker_process(task.get("_team_id", ""), task["id"], process))
+    finally:
+        _unregister_worker_process(task.get("_team_id", ""), task["id"])
+
+
+def _worker_patch(context: str, workspace: str, task: dict, engine: str, team_id: str = "") -> dict:
+    """Ask non-Codex engines for a unified diff, then validate and apply it in the task workspace."""
+    inventory = subprocess.run(["git", "-C", workspace, "ls-files", "--cached", "--others", "--exclude-standard"],
+                               capture_output=True, text=True, timeout=10, check=False).stdout.splitlines()
+    files = []
+    terms = set(re.findall(r"[A-Za-z0-9_.-]{3,}", task.get("title", "").casefold()))
+    ranked = sorted(inventory, key=lambda path: (-sum(term in path.casefold() for term in terms), path))
+    total = 0
+    for relative in ranked[:40]:
+        path = os.path.realpath(os.path.join(workspace, relative))
+        root = os.path.realpath(workspace)
+        if not path.startswith(root + os.sep) or not os.path.isfile(path):
+            continue
+        try:
+            with open(path, encoding="utf-8") as handle:
+                body = handle.read(12000)
+        except (OSError, UnicodeError):
+            continue
+        if total + len(body) > 40000:
+            continue
+        files.append(f"\n--- {relative} ---\n{body}")
+        total += len(body)
+    prompt = ("Complete this task and return a JSON object with a string field named reply and a boolean "
+              "field named automation. Put only one unified diff in reply and set automation to false. "
+              "Do not use tools or run commands. The diff must use paths relative to the workspace, "
+              "must not change acceptance checks, and must apply with git apply. Return an empty reply "
+              "only if no file change is needed.\n\n" +
+              context + "\n\nWorkspace files:\n" + "\n".join(files))
+    answer = _run_engine_process(prompt, engine, task, team_id)
+    diff = str(answer.get("reply", "")) if isinstance(answer, dict) else str(answer)
+    match = re.search(r"```(?:diff|patch)?\s*\n(.*?)```", diff, re.S)
+    if match:
+        diff = match.group(1).strip()
+    if not diff.startswith(("diff --git ", "--- ")):
+        return {"output": diff[:12000], "exit_code": 1, "usage": {"route": engine}}
+    checked = subprocess.run(["git", "-C", workspace, "apply", "--check", "-"], input=diff,
+                             capture_output=True, text=True, timeout=10, check=False)
+    if checked.returncode:
+        return {"output": f"The {engine} worker returned a patch that does not apply: {checked.stderr[-1000:]}",
+                "exit_code": 1, "usage": {"route": engine}}
+    applied = subprocess.run(["git", "-C", workspace, "apply", "-"], input=diff,
+                             capture_output=True, text=True, timeout=10, check=False)
+    return {"output": diff[:12000] if not applied.returncode else applied.stderr[-1000:],
+            "exit_code": 0 if not applied.returncode else 1, "usage": {"route": engine}}
+
+
+def _run_engine_process(prompt: str, engine: str, task: dict, team_id: str) -> dict:
+    """Isolate API and subscription calls so Stop can terminate their worker process."""
+    if _engine_call_override is not None:
+        return _engine_call_override(prompt, engine)
+    import sys
+    script = ("import json,sys; sys.path.insert(0, " + json.dumps(os.path.dirname(os.path.abspath(__file__))) + "); "
+              "from routes import assistant_chat; payload=json.load(sys.stdin); "
+              "print(json.dumps(assistant_chat._ask_engine(payload['prompt'], payload['engine'])))")
+    options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+    process = subprocess.Popen([sys.executable, "-c", script], cwd=os.path.dirname(os.path.abspath(__file__)),
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               text=True, **options)
+    _register_worker_process(team_id, task["id"], process)
+    try:
+        stdout, stderr = process.communicate(json.dumps({"prompt": prompt, "engine": engine}),
+                                             timeout=int(task.get("timeout_seconds", 1800)))
+        if process.returncode:
+            raise RuntimeError(f"{engine.title()} worker could not answer: {stderr[-500:]}")
+        return json.loads(stdout)
+    except subprocess.TimeoutExpired:
+        runner.terminate_process(process)
+        process.communicate()
+        raise RuntimeError(f"{engine.title()} worker timed out") from None
+    finally:
+        _unregister_worker_process(team_id, task["id"])
+
+
+def _register_worker_process(team_id: str, task_id: str, process) -> None:
+    if not team_id:
+        return
+    with _worker_process_lock:
+        if _persisted_status(team_id) == "stopped":
+            runner.terminate_process(process)
+            return
+        _worker_processes[(team_id, task_id)] = process
+
+
+def _unregister_worker_process(team_id: str, task_id: str) -> None:
+    with _worker_process_lock:
+        _worker_processes.pop((team_id, task_id), None)
+
+
+def _terminate_worker_processes(team_id: str) -> None:
+    with _worker_process_lock:
+        processes = [(key, process) for key, process in _worker_processes.items() if key[0] == team_id]
+    for key, process in processes:
+        if process.poll() is None:
+            runner.terminate_process(process)
+        _unregister_worker_process(*key)
 
 
 def _review(plan: dict, task: dict, output: str, attempt: int) -> dict:
@@ -483,6 +653,9 @@ def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: 
     role = next(role for role in plan["team"]["roles"] if role["id"] == task["role"])
     _forbid_planner(role["id"], "task role")
     effective_task = dict(task)
+    team_config = plan.get("team", {})
+    effective_task["engine"] = team_config.get("engine") or ("local" if team_config.get("worker_mode") == "sequential" else "codex")
+    effective_task["_team_id"] = team_id
     effective_task["timeout_seconds"] = int(task.get("timeout_seconds") or (plan.get("guards") or {}).get("task_timeout_seconds", 1800))
     feature_id = task.get("feature_id")
     feature = next((item for item in plan.get("features", []) if item.get("id") == feature_id), None)
@@ -496,7 +669,14 @@ def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: 
     else:
         context = task_context(role, effective_task, _relevant_memory(task), plan.get("vision"))
     os.makedirs(workspace, exist_ok=True)
-    result = _worker(context, workspace, effective_task)
+    try:
+        result = _worker(context, workspace, effective_task)
+    except Exception:
+        if _persisted_status(team_id) == "stopped":
+            return {"status": "stopped", "output": "Worker stopped by the owner."}
+        return {"status": "retry", "output": "The selected engine could not complete this task.",
+                "review": {"passed": False, "evidence": "worker did not return a result"},
+                "checks": {"passed": False, "evidence": "worker did not return a result"}}
     output = str(result.get("output", ""))
     store.broadcaster.publish({"type": "team_handover", "team_id": team_id, "task_id": task_id, "role": role["id"]})
     review = _review(plan, task, output, attempt)
@@ -523,6 +703,9 @@ def stuck_claim(run_id: str, task_id: str, attempts: int, evidence: str) -> str:
 def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None = None) -> dict:
     """Synchronous testable engine. Production workflow uses durable per-task workflow steps below."""
     state = state or {"status": "running", "tasks": {t["id"]: {"status": "pending", "attempts": 0} for t in plan["tasks"]}}
+    def persist_task(task_id: str, item: dict) -> None:
+        if _persisted_status(team_id) is not None:
+            _save_task(team_id, task_id, item)
     _mark_legacy_completions(plan, state)
     state.setdefault("features", {feature["id"]: {"status": "pending", "evaluator_evidence": None}
                                    for feature in plan.get("features", [])})
@@ -547,6 +730,7 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
             item = state["tasks"].setdefault(task_id, {"status": "pending", "attempts": 0})
             item["status"] = "running"
             item["attempts"] += 1
+            persist_task(task_id, item)
             store.broadcaster.publish({"type": "team_task_taken", "team_id": team_id, "task_id": task_id, "role": task["role"]})
             task_workspace = workspace
             if plan["team"]["worker_mode"] == "parallel":
@@ -563,18 +747,29 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
             task_id = task["id"]
             if result["status"] == "awaiting_approval":
                 item.update(result)
+                persist_task(task_id, item)
                 continue
             if result["status"] == "done":
                 item.update(result)
                 item["status"] = "done"
+                persist_task(task_id, item)
                 continue
             if item["attempts"] >= limit:
                 cid = stuck_claim(team_id, task_id, item["attempts"], json.dumps(result))
                 item.update(status="needs_owner", claim_id=cid, **result)
+                persist_task(task_id, item)
                 state["status"] = "needs_owner"
                 store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "task_id": task_id, "claim_id": cid})
                 return state
             item.update(status="pending", **result)
+            persist_task(task_id, item)
+        persisted_status = _persisted_status(team_id)
+        if persisted_status in {"pausing", "paused", "stopped"}:
+            current = _read(team_id)
+            final_status = "paused" if persisted_status == "pausing" else persisted_status
+            current["state"]["status"] = final_status
+            _save(team_id, status=final_status, state=current["state"])
+            return {**current["state"], "status": final_status}
         if plan.get("features") and not _uses_feature_evaluators(plan):
             for feature in plan["features"]:
                 related = [task for task in plan.get("tasks", []) if task.get("feature_id") in (None, feature["id"])]
@@ -826,8 +1021,11 @@ def summary() -> list[dict]:
     result = []
     for row in rows:
         state = json.loads(row["state"])
-        result.append({"team_id": row["team_id"], "status": row["status"], "done": sum(x.get("status") == "done" for x in state["tasks"].values()),
-                       "tasks": len(state["tasks"]), "needs_owner": sum(x.get("status") in {"needs_owner", "awaiting_approval"} for x in state["tasks"].values())})
+        plan = json.loads(row["plan"])
+        feature_states = state.get("features", {})
+        result.append({"team_id": row["team_id"], "name": str(plan.get("vision", {}).get("goal", row["team_id"])), "status": row["status"], "done": sum(x.get("status") == "done" for x in state["tasks"].values()),
+                       "tasks": len(state["tasks"]), "passing": sum(feature_states.get(f["id"], {}).get("status") == "passing" for f in plan.get("features", [])),
+                       "feature_count": len(plan.get("features", [])), "needs_owner": sum(x.get("status") in {"needs_owner", "awaiting_approval"} for x in state["tasks"].values())})
     return result
 
 
@@ -835,5 +1033,51 @@ def get(team_id: str) -> dict:
     row = _read(team_id)
     return {"team_id": team_id, "status": row["status"], "vision_path": row["vision_path"], "plan": row["plan"], **row["state"]}
 
+
+def control(team_id: str, action: str) -> dict:
+    if action not in {"pause", "resume", "stop"}:
+        raise ValueError("unknown team action")
+    with _team_state_lock:
+        row = _read(team_id)
+        status = row["status"]
+        allowed = {"pause": {"running"}, "resume": {"paused"},
+                   "stop": {"running", "pausing", "paused", "waiting", "approved"}}
+        if status not in allowed[action]: raise ValueError(f"team cannot {action} while {status}")
+        active = any(item.get("status") in {"running", "reviewing"} for item in row["state"].get("tasks", {}).values())
+        next_status = {"pause": "pausing" if active else "paused", "resume": "running", "stop": "stopped"}[action]
+        row["state"]["status"] = next_status
+        if action == "resume":
+            workflow_id = f"{team_id}-resume-{uuid.uuid4().hex[:10]}"
+            row["state"]["workflow_id"] = workflow_id
+        if action == "stop":
+            for task_id, item in row["state"].get("tasks", {}).items():
+                if item.get("status") in {"running", "reviewing"}:
+                    item["status"] = "stopped"
+                    _append_progress(row["state"], task_id, item)
+        _save(team_id, status=next_status, state=row["state"])
+    event_name = {"pause": "team.paused", "resume": "team.resumed", "stop": "team.stopped"}[action]
+    audit_log.record(event_name, what={"team_id": team_id, "status": next_status})
+    if action == "stop":
+        _terminate_worker_processes(team_id)
+        if status == "waiting":
+            DBOS.send(row["state"].get("workflow_id", team_id), {"action": "stop"}, topic="owner_approval")
+    elif action == "resume":
+        with SetWorkflowID(row["state"]["workflow_id"]):
+            DBOS.start_workflow(run_team, team_id)
+    return {"team_id": team_id, "status": next_status}
+
+def remove(team_id: str) -> dict:
+    with _conn() as c:
+        row = c.execute("SELECT * FROM glacier_teams WHERE team_id=?", (team_id,)).fetchone()
+        if not row: raise ValueError("team not found")
+        saved = dict(row)
+        if saved["status"] in {"running", "paused"}: raise ValueError("stop the team before deleting it")
+        c.execute("DELETE FROM glacier_teams WHERE team_id=?", (team_id,))
+    return saved
+
+def restore(saved: dict) -> None:
+    with _conn() as c:
+        c.execute("INSERT OR REPLACE INTO glacier_teams(team_id,status,vision_path,plan,state,workspace,created_at) VALUES(?,?,?,?,?,?,?)",
+                  tuple(saved.get(key) for key in ("team_id", "status", "vision_path", "plan", "state", "workspace", "created_at")))
 
 init()

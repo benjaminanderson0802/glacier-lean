@@ -1,11 +1,24 @@
 """Acceptance tests for Build teams: plans, role masks, durable task scheduling and proof."""
 import json
+import multiprocessing
 import os
+import subprocess
+import threading
 import time
 
 import pytest
 
 import teams
+
+
+def _reserve_api_budget_in_child(home, results):
+    os.environ["GLACIER_HOME"] = str(home)
+    import routes.assistant_chat as assistant_chat
+    try:
+        assistant_chat._reserve_api_budget("openai", "x" * 1000, max_output_tokens=1200)
+        results.put(True)
+    except RuntimeError:
+        results.put(False)
 
 
 def _plan(mode="sequential", approvals=False):
@@ -39,17 +52,16 @@ def test_team_plan_rejects_planner_as_task_or_supervisor():
 
 
 def test_planner_schema_is_accepted_by_codex_strict_structured_output(monkeypatch):
-    import assistant
-
     captured = {}
     plan = _plan()
     vision = plan.pop("vision")
 
-    def answer(_prompt, schema):
+    def answer(_prompt, engine, schema=None):
+        assert engine == "codex"
         captured["schema"] = schema
         return plan
 
-    monkeypatch.setattr(assistant, "_ask_codex", answer)
+    monkeypatch.setattr(teams, "ask_engine", answer)
     teams.plan_team(vision, engine="codex")
 
     schema = captured["schema"]
@@ -154,6 +166,157 @@ def test_resume_skips_finished_tasks(tmp_path, monkeypatch):
     result = teams.run_team_local("resume", plan, str(tmp_path), state=state)
     assert calls == ["second"] and result["status"] == "done"
     assert governed, "the resumed team still reaches the governor's final check"
+
+
+@pytest.mark.parametrize("engine", ["codex", "claude", "gemini", "openai", "anthropic", "local"])
+def test_plan_team_uses_selected_ask_engine(engine, monkeypatch):
+    import routes.assistant_chat as assistant_chat
+    seen = []
+    response = {key: value for key, value in _plan().items() if key != "vision"}
+    monkeypatch.setattr(teams, "ask_engine", lambda prompt, route, schema=None: seen.append((route, schema)) or response)
+    plan = teams.plan_team(_plan()["vision"], engine)
+    assert plan["team"]["engine"] == engine
+    assert seen and seen[0][0] == engine
+    assert plan["team"]["worker_mode"] == ("sequential" if engine == "local" else "parallel")
+    if engine != "local":
+        assert 3 <= plan["team"]["parallel_limit"] <= 5
+
+
+@pytest.mark.parametrize("engine", ["codex", "claude", "gemini", "openai", "anthropic", "local"])
+def test_build_interview_accepts_each_ask_engine(monkeypatch, engine):
+    import routes.assistant_chat as assistant_chat
+    import routes.teams as team_routes
+    seen = []
+    monkeypatch.setattr(teams, "ask_engine", lambda prompt, route, schema=None: seen.append(route) or {
+        "reply": "What should the finished project do?", "automation": False})
+    monkeypatch.setattr(assistant_chat, "_conversation_id", lambda value: value)
+    monkeypatch.setattr(assistant_chat, "_conversation_context", lambda value: "")
+    monkeypatch.setattr(assistant_chat, "_with_conversation_context", lambda message, context: message)
+    monkeypatch.setattr(assistant_chat, "_append_conversation", lambda *args: None)
+    monkeypatch.setattr(assistant_chat, "_conversation_path", lambda value: "interviews/test.md")
+    result = team_routes.interview(team_routes.InterviewTurn(message="Build a project", engine=engine))
+    assert result["reply"] == "What should the finished project do?"
+    assert seen == [engine]
+
+
+def test_team_control_actions_are_audited(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    teams.init(str(tmp_path / "glacier.sqlite"))
+    import audit_log
+    import vault
+    vault.init(str(tmp_path / "vault"))
+    vision = teams.create_vision({"goal": "Build", "done": ["works"]})
+    saved = teams.save_plan(_plan(), vision["path"])
+    events = []
+    monkeypatch.setattr(audit_log, "record", lambda event, **kwargs: events.append((event, kwargs)))
+    monkeypatch.setattr(teams.DBOS, "start_workflow", lambda *args: None)
+    monkeypatch.setattr(teams.DBOS, "send", lambda *args, **kwargs: None)
+    teams._save(saved["team_id"], status="running")
+    teams.control(saved["team_id"], "pause")
+    teams.control(saved["team_id"], "resume")
+    teams.control(saved["team_id"], "stop")
+    assert [event for event, _ in events] == ["team.paused", "team.resumed", "team.stopped"]
+
+
+def test_pause_finishes_active_task_and_starts_nothing_new(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    import vault
+    vault.init(str(tmp_path / "vault"))
+    plan = _plan()
+    vision = teams.create_vision(plan["vision"])
+    saved = teams.save_plan(plan, vision["path"], str(tmp_path / "workspace"))
+    teams._save(saved["team_id"], status="running")
+    entered, release = threading.Event(), threading.Event()
+    calls = []
+
+    def worker(context, workspace, task):
+        calls.append(task["id"])
+        entered.set()
+        assert release.wait(5)
+        return {"output": "finished", "exit_code": 0}
+
+    monkeypatch.setattr(teams, "_worker", worker)
+    monkeypatch.setattr(teams, "_review", lambda *a: {"passed": True, "evidence": "reviewed"})
+    monkeypatch.setattr(teams, "_check_task", lambda *a: {"passed": True, "evidence": "passed"})
+    result = {}
+    thread = threading.Thread(target=lambda: result.update(teams.run_team_local(saved["team_id"], plan,
+        str(tmp_path / "workspace"), state=teams.get(saved["team_id"]))))
+    thread.start()
+    assert entered.wait(5)
+    assert teams.control(saved["team_id"], "pause")["status"] == "pausing"
+    release.set()
+    thread.join(5)
+
+    assert not thread.is_alive()
+    assert calls == ["first"]
+    assert result["status"] == "paused"
+    assert teams.get(saved["team_id"])["tasks"]["first"]["status"] == "done"
+    assert "Task first: done" in teams.get(saved["team_id"])["progress_log"]
+
+
+def test_stop_terminates_running_worker_and_keeps_workspace(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    import vault
+    vault.init(str(tmp_path / "vault"))
+    vision = teams.create_vision({"goal": "Build", "done": ["works"]})
+    saved = teams.save_plan(_plan(), vision["path"])
+    teams._save(saved["team_id"], status="running")
+    worktree = tmp_path / "worktree"
+    worktree.mkdir()
+    process = subprocess.Popen(["sleep", "30"], start_new_session=True)
+    teams._register_worker_process(saved["team_id"], "first", process)
+
+    result = teams.control(saved["team_id"], "stop")
+
+    assert result["status"] == "stopped"
+    assert process.poll() is not None
+    assert worktree.is_dir()
+    assert teams.get(saved["team_id"])["status"] == "stopped"
+
+
+@pytest.mark.parametrize("engine", ["claude", "gemini", "openai", "anthropic", "local"])
+def test_api_team_worker_uses_fake_engine_and_applies_only_checked_patch(tmp_path, monkeypatch, engine):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    subprocess.run(["git", "init", "-q", str(workspace)], check=True)
+    (workspace / "result.txt").write_text("before\n")
+    patch = """diff --git a/result.txt b/result.txt
+index 3f4c56d..d5c6e76 100644
+--- a/result.txt
++++ b/result.txt
+@@ -1 +1 @@
+-before
++after
+"""
+    seen = []
+    monkeypatch.setattr(teams, "_engine_call_override", lambda prompt, engine: seen.append(engine) or {"reply": patch})
+    result = teams._worker_patch("task context", str(workspace), {"id": "task", "title": "Update result",
+                                    "engine": engine, "timeout_seconds": 5}, engine)
+    assert seen == [engine]
+    assert result["exit_code"] == 0
+    assert (workspace / "result.txt").read_text() == "after\n"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="the process-lock race check uses fork")
+def test_parallel_api_workers_reserve_monthly_budget_across_processes(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    (tmp_path / "settings.json").write_text(json.dumps({
+        "openai_monthly_cap_usd": 3.0,
+        "openai_input_usd_per_million": 1000.0,
+        "openai_output_usd_per_million": 1000.0,
+    }))
+    context = multiprocessing.get_context("fork")
+    results = context.Queue()
+    workers = [context.Process(target=_reserve_api_budget_in_child, args=(tmp_path, results)) for _ in range(4)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(5)
+    assert all(not worker.is_alive() and worker.exitcode == 0 for worker in workers)
+    accepted = [results.get(timeout=1) for _ in workers]
+    assert sum(accepted) == 1
+    import routes.assistant_chat as assistant_chat
+    assert assistant_chat._monthly_api_spend("openai") == 2.2
 
 
 def test_resume_honors_legacy_done_and_requires_evaluator_for_new_work(tmp_path, monkeypatch):

@@ -1,21 +1,16 @@
 import { useEffect, useState } from 'react'
 import { system, type SystemCheck } from '../api.ts'
-import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
+import { Btn, Empty, Hint, HintBar, KeyboardMenu, PageHead, Panel, Row, Window } from '../ui/kit.tsx'
 import { go } from '../route.ts'
 import { setLayout, useLayout, type Layout } from '../layout.ts'
 import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
 import { chooseDictionary, getLanguage, subscribeLanguage, t, type Language } from '../i18n/index.ts'
+import './Settings.css'
 
-const SECTIONS = [
-  { id: 'general', label: t('settings.general') },
-  { id: 'models', label: t('settings.models') },
-  { id: 'secrets', label: t('settings.secrets') },
-  { id: 'usage', label: t('settings.usage') },
-  { id: 'data', label: t('settings.data') },
-  { id: 'system', label: t('settings.system') },
-  { id: 'help', label: t('settings.help') },
-  { id: 'about', label: t('settings.about') },
-] as const
+const SECTION_LABELS: Record<string, string> = {
+  general: 'settings.general', models: 'settings.models', secrets: 'settings.navSecrets', usage: 'settings.usage',
+  data: 'settings.data', system: 'settings.navSystem', help: 'settings.navHelp', about: 'settings.about',
+}
 
 export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const layout = useLayout()
@@ -25,17 +20,18 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const load = () => { setCheck(null); system.check().then(setCheck).catch(e => setErr(String(e))) }
   useEffect(load, [])
   useEffect(() => subscribeLanguage(() => setLanguage(getLanguage())), [])
-  const cur = SECTIONS.find(s => s.id === section) ?? SECTIONS[0]
+  const sections = Object.entries(SECTION_LABELS).map(([id, key]) => ({ id, label: t(key) }))
+  const cur = sections.find(s => s.id === section) ?? sections[0]
 
   return (
     <>
       <PageHead title={t('settings.title')} sub={cur.id === 'system' ? t('settings.systemSubtitle') : t('settings.subtitle')} />
       <div className="g-settings">
-        <Panel className="g-sidenav">
-          {SECTIONS.map(s => <button key={s.id} className={`g-navitem${s.id === cur.id ? ' active' : ''}`} onClick={() => go(`settings/${s.id}`)} data-testid={`settings-${s.id}`}><span>{s.label}</span></button>)}
-        </Panel>
+        <Window className="g-sidenav" title={t('settings.sections')}>
+          <KeyboardMenu label={t('settings.sections')} items={sections.map(s => ({ id: s.id, label: s.label, testid: `settings-${s.id}` }))} selected={cur.id} onSelect={id => go(`settings/${id}`)} />
+        </Window>
         {cur.id === 'general' && (
-          <Panel title={t('settings.general')} testid="settings-general">
+          <Panel title={t('settings.general')} testid="settings-general" className="g-scroll">
             {err && <div className="g-error">{err}</div>}
             {!check ? <Empty>{t('settings.checkingComputer')}</Empty> : (
               <dl className="g-kv">
@@ -45,8 +41,8 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme')}</dd>
                 <dt>{t('settings.language')}</dt><dd>
                   <select className="g-input" value={language} onChange={e => chooseDictionary(e.target.value as Language)} aria-label={t('settings.language')}>
-                    <option value="en">{t('settings.languageEnglish')}</option>
-                    <option value="es">{t('settings.languageSpanish')}</option>
+                    <option value="en">{language === 'es' ? 'Inglés' : 'English'}</option>
+                    <option value="es">{language === 'es' ? 'Español' : 'Spanish'}</option>
                   </select>
                 </dd>
                 <dt>{t('settings.detailLevel')}</dt><dd>
@@ -61,7 +57,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
           </Panel>
         )}
         {cur.id === 'system' && (
-          <Panel title={t('settings.system')} aside={<Btn onClick={load} data-testid="system-recheck">{t('settings.runCheckAgain')}</Btn>} testid="settings-system">
+          <Panel title={t('settings.system')} aside={<Btn onClick={load} data-testid="system-recheck">{t('settings.runCheckAgain')}</Btn>} testid="settings-system" className="g-scroll">
             {err && <div className="g-error">{err}</div>}
             {!check ? <Empty>{t('settings.checking')}</Empty> : (
               <div className="g-rows">
@@ -90,6 +86,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
           </Panel>
         )}
       </div>
+      <HintBar><Hint keyLabel="↑↓">{t('hint.changeSection')}</Hint><Hint keyLabel="Enter">{t('hint.open')}</Hint></HintBar>
     </>
   )
 }

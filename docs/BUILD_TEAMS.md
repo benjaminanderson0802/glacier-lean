@@ -22,3 +22,11 @@ Automations hold not only closed loops and pipelines but also **running teams**.
 
 ## 4. Proof
 A build is done only when every task's checks pass and the governor confirms the Vision's "done" list is met. The same verification rules as the rest of Glacier (no false "done").
+
+## Engine choices and controls
+
+Build uses the same engines as Ask: Codex, Claude Code, Gemini CLI, an OpenAI-compatible API, Anthropic API, or a local Ollama model. API keys stay in the operating-system keyring. An API run also needs its allowed host and monthly cap configured in Settings > Models. Glacier reserves the estimated cost before each request and refuses a request that would pass the cap; the default cap remains $0 under decision D4.
+
+Codex workers use the Codex workspace runner. Other engines receive a fresh task brief and the relevant workspace files, then return a unified patch that Glacier checks before applying. Each task still gets its own independent review and acceptance checks. Subscription and API teams use separate Git worktrees and run three to five workers at once. Local teams run one worker at a time and receive a fresh task context.
+
+Pause finishes the tasks already running and then waits before starting more. Resume starts from the saved task states and leaves completed tasks alone. Stop terminates active worker processes, marks the team stopped, and leaves its worktrees on disk for inspection. Pause, resume, and stop are recorded in the audit log.

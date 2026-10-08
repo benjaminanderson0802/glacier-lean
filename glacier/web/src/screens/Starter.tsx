@@ -36,7 +36,7 @@ export function StarterPanel() {
   const agents = p.coding_agents_found.filter(a => a.found)
 
   return (
-    <Panel title={t('starter.title')} testid="starter" aside={<button className="g-link" onClick={hide} data-testid="starter-hide">{t('starter.notNow')}</button>}>
+    <Panel title={t('starter.title')} testid="starter" className="starter-window" aside={<button className="g-link" onClick={hide} data-testid="starter-hide">{t('starter.notNow')}</button>} style={{ flex: 1, minHeight: 0 }}>
       {done ? (
         <div data-testid="starter-done">
           <div className="g-saved">{done.length ? t('starter.added', { count: done.length, plural: done.length > 1 ? 's' : '' }) : t('starter.nothingNew')}</div>
@@ -45,8 +45,8 @@ export function StarterPanel() {
         </div>
       ) : (
         <>
-          <div className="g-detail" data-testid="starter-reason">{p.reason} {p.local_model && t('starter.localModel', { name: p.local_model })}</div>
-          <div className="g-detail">{t('starter.agentsFound', { value: agents.length ? agents.map(a => a.name).join(', ') : t('starter.noAgents') })}</div>
+          <div className="g-detail" data-testid="starter-reason" title={p.reason}>{p.reason} {p.local_model && t('starter.localModel', { name: p.local_model })}</div>
+          <div className="g-detail" title={t('starter.agentsFound', { value: agents.length ? agents.map(a => a.name).join(', ') : t('starter.noAgents') })}>{t('starter.agentsFound', { value: agents.length ? agents.map(a => a.name).join(', ') : t('starter.noAgents') })}</div>
           <div className="g-muted" style={{ marginTop: 10 }}>{t('starter.suggested')}</div>
           <div className="g-rows">
             {p.suggested_automations.map((a, i) => (

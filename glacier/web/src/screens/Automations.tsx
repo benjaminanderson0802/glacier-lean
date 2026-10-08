@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ago, api, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
-import { Btn, Empty, PageHead, Panel } from '../ui/kit.tsx'
+import { ago, api, teamsApi, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
+import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
@@ -24,8 +24,10 @@ export function AutomationsScreen() {
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
   const [undo, setUndo] = useState<UndoAction | null>(null)
+  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
 
   useEffect(() => {
+    teamsApi.list().then(list => setTeams(Array.isArray(list) ? list : [])).catch(() => {})
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
         const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])
@@ -84,7 +86,7 @@ export function AutomationsScreen() {
 
   return (
     <>
-      <PageHead title={t('automations.title')} side={
+      <PageHead title={t('automations.title')} sub={t('automations.subtitle')} side={
         naming
           ? <form style={{ display: 'flex', gap: 8 }} onSubmit={e => { e.preventDefault(); create() }}>
               <input className="g-input" autoFocus placeholder={t('automations.newName')} value={name} onChange={e => setName(e.target.value)} data-testid="flow-new-name" style={{ width: 240 }} />
@@ -94,7 +96,8 @@ export function AutomationsScreen() {
           : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
       <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
-      <Panel>
+      <Panel className="automations-window" testid="automations-window">
+        <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
             {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={`filter-${f}`}>{f}</button>)}

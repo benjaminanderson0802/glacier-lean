@@ -1,10 +1,11 @@
 // Add to memory (mockup panel 11): drop files, write text, import ChatGPT / Claude chats, or save a coding-agent session.
 import { useEffect, useRef, useState } from 'react'
 import { addToMemory, ago, memory, sessionsApi, slugify, type CodingSession, type SessionEvent } from '../api.ts'
-import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
+import { Btn, Empty, KeyboardMenu, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { Hint, HintBar } from '../ui/kit.tsx'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Tab = 'files' | 'text' | 'chats' | 'sessions'
@@ -27,18 +28,29 @@ export function MemoryAdd() {
   const [sessions, setSessions] = useState<CodingSession[] | null>(null)
   const [sel, setSel] = useState<(CodingSession & { events: SessionEvent[] }) | null>(null)
   const [sessErr, setSessErr] = useState('')
-  const [uploaded, setUploaded] = useState<{ name: string; project: string; size: number }[] | null>(null)
-  const [fileUndo, setFileUndo] = useState<UndoAction | null>(null)
-  const [fileErr, setFileErr] = useState('')
-  const loadUploaded = () => addToMemory.files().then(setUploaded).catch(e => setFileErr(String(e)))
-  useEffect(() => { if (tab === 'files') loadUploaded() }, [tab])
+  const [uploaded,setUploaded]=useState<{name:string;project:string;size:number}[]|null>(null)
+  const [fileUndo,setFileUndo]=useState<UndoAction|null>(null)
+  const [fileErr,setFileErr]=useState('')
+  const loadUploaded=()=>addToMemory.files().then(setUploaded).catch(e=>setFileErr(String(e)))
+  useEffect(()=>{if(tab==='files')loadUploaded()},[tab])
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLButtonElement) return
+      if (event.key === 'Enter') {
+        const action = document.querySelector<HTMLButtonElement>('[data-testid="add-go"], [data-testid="session-save"]')
+        if (action && !action.disabled) { event.preventDefault(); action.click() }
+      }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [tab, files.length, busy, sel])
   useEffect(() => { if (tab === 'sessions') { setSessErr(''); sessionsApi.list().then(setSessions).catch(e => { setSessions([]); setSessErr(String(e).replace(/^Error: /, '')) }) } }, [tab])
   const openSession = (id: string) => sessionsApi.get(id).then(setSel).catch(e => setSessErr(String(e).replace(/^Error: /, '')))
   const saveSession = async () => {
     if (!sel) return
     setBusy(true)
-    try { const r = await sessionsApi.save(sel.id); setDone([{ name: sel.title || t('memoryAdd.session'), ok: true, detail: r.saved ? t('memoryAdd.savedAs', { path: r.path }) : t('memoryAdd.alreadyInMemory') }]) }
-    catch (e) { setDone([{ name: sel.title || t('memoryAdd.session'), ok: false, detail: String(e).replace(/^Error: /, '') }]) }
+    try { const r = await sessionsApi.save(sel.id); setDone([{ name: sel.title || 'Session', ok: true, detail: r.saved ? `saved as ${r.path}` : t('memoryAdd.alreadyInMemory') }]) }
+    catch (e) { setDone([{ name: sel.title || 'Session', ok: false, detail: String(e).replace(/^Error: /, '') }]) }
     finally { setBusy(false) }
   }
   const toolName = (s: CodingSession) => ({ opencode: 'OpenCode', claude: 'Claude Code', 'claude-code': 'Claude Code', gemini: 'Gemini CLI' } as Record<string, string>)[s.source ?? ''] ?? 'Codex'
@@ -47,16 +59,16 @@ export function MemoryAdd() {
     try {
       const r = await addToMemory.refreshImports()
       const rows = Object.entries(r).map(([src, counts]) => ({ name: src === 'chatgpt' ? 'ChatGPT' : 'Claude', ok: true, detail: Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ') }))
-      setDone(rows.length ? rows : [{ name: t('memoryAdd.chatImport'), ok: true, detail: t('memoryAdd.nothingNew') }])
+      setDone(rows.length ? rows : [{ name: 'Chats', ok: true, detail: t('memoryAdd.nothingNew') }])
       loadImports()
-    } catch (e) { setDone([{ name: t('memoryAdd.chatImport'), ok: false, detail: String(e).replace(/^Error: /, '') }]) } finally { setBusy(false) }
+    } catch (e) { setDone([{ name: 'Chats', ok: false, detail: String(e).replace(/^Error: /, '') }]) } finally { setBusy(false) }
   }
 
   const add = async () => {
     setBusy(true); const out: Done[] = []
     try {
       if (tab === 'text') {
-        if (!title.trim() || !text.trim()) { out.push({ name: t('memoryAdd.noteLabel'), ok: false, detail: t('memoryAdd.giveTitle') }) }
+        if (!title.trim() || !text.trim()) { out.push({ name: 'Note', ok: false, detail: t('memoryAdd.giveTitle') }) }
         else { const r = await memory.save(`${slugify(title)}.md`, `# ${title.trim()}\n\n${text}`); out.push({ name: title, ok: true, detail: t('memoryAdd.savedVersion', { commit: r.commit }) }); setTitle(''); setText('') }
       } else {
         for (const f of files) {
@@ -66,8 +78,7 @@ export function MemoryAdd() {
               out.push({ name: f.name, ok: true, detail: Object.entries(r).map(([k, v]) => `${v} ${k}`).join(', ') || t('memoryAdd.imported') })
             } else {
               const r = await addToMemory.file(f, project.trim() || undefined)
-              out.push({ name: f.name, ok: true, detail: r.duplicate ? t('memoryAdd.alreadyInMemory') : t('memoryAdd.added') })
-              loadUploaded()
+              out.push({ name: f.name, ok: true, detail: r.duplicate ? t('memoryAdd.alreadyInMemory') : t('memoryAdd.added') }); loadUploaded()
             }
           } catch (e) { out.push({ name: f.name, ok: false, detail: String(e).replace(/^Error: /, '') }) }
         }
@@ -77,22 +88,14 @@ export function MemoryAdd() {
   }
 
   return (
-    <div className="g-memadd">
-      <Panel testid="memory-add">
-        <div className="g-seg" style={{ alignSelf: 'flex-start', marginBottom: 12 }}>
-          {([['files', 'memoryAdd.files'], ['text', 'memoryAdd.text'], ['chats', 'memoryAdd.chatImport'], ['sessions', 'memoryAdd.sessions']] as [Tab, string][]).map(([id, label]) =>
-            <button key={id} className={`g-seg-btn${id === tab ? ' active' : ''}`} onClick={() => { setTab(id); setDone([]) }} data-testid={`add-tab-${id}`}>{t(label)}</button>)}
-        </div>
+    <div className="g-memadd" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
+      <Panel title={tab === 'files' ? t('memoryAdd.files') : tab === 'text' ? t('memoryAdd.text') : tab === 'chats' ? t('memoryAdd.chatImport') : t('memoryAdd.sessions')} testid="memory-add" className="g-scroll">
+        <KeyboardMenu orientation="horizontal" label={t('memory.title')} items={([['files', t('memoryAdd.files')], ['text', t('memoryAdd.text')], ['chats', t('memoryAdd.chatImport')], ['sessions', t('memoryAdd.sessions')]] as [Tab, string][]).map(([id, label]) => ({ id, label, testid: `add-tab-${id}` }))} selected={tab} onSelect={id => { setTab(id as Tab); setDone([]) }} />
         {tab === 'sessions' ? (
           <div className="g-rows g-scroll" data-testid="sessions-list">
             {sessErr && <div className="g-error">{sessErr}</div>}
             {sessions === null ? <Empty>{t('memoryAdd.findingSessions')}</Empty> : sessions.length === 0 ? <Empty>{t('memoryAdd.noSessions')}</Empty> :
-              sessions.map((x, i) => (
-                <button key={x.id} type="button" className={`g-row${sel?.id === x.id ? ' sel' : ''}`} onClick={() => openSession(x.id)} data-testid={`session-${i}`}>
-                  <span className="g-ico"><Icon name="run" /></span>
-                  <span className="g-mid"><span className="g-lead">{x.title || t('memoryAdd.untitled')}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? t('memoryAdd.runningNow') : ''}</span></span>
-                  <span className="g-when">{x.updated ? ago(x.updated) : ''}</span>
-                </button>))}
+              <KeyboardMenu label={t('memoryAdd.sessions')} items={sessions.map((x, i) => ({ id: x.id, testid: `session-${i}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{x.title || t('memoryAdd.untitled')}</span><span className="g-detail">{toolName(x)}{x.cwd ? ` · ${x.cwd}` : ''}{x.active ? t('memoryAdd.runningNow') : ''}{x.updated ? ` · ${ago(x.updated)}` : ''}</span></span> }))} selected={sel?.id ?? ''} onSelect={openSession} />}
           </div>
         ) : tab === 'text' ? (
           <div className="g-editor">
@@ -100,7 +103,8 @@ export function MemoryAdd() {
             <textarea className="g-input g-textarea" style={{ minHeight: 220 }} placeholder={t('memoryAdd.textPlaceholder')} value={text} onChange={e => setText(e.target.value)} data-testid="add-text" />
           </div>
         ) : (
-          <div className={`g-drop${over ? ' over' : ''}`} data-testid="add-drop" onClick={() => pick.current?.click()}
+          <div className={`g-drop${over ? ' over' : ''}`} data-testid="add-drop" role="button" tabIndex={0} style={{ minHeight: 'calc(58 * var(--px))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'calc(2 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: 'var(--g-ice1)', color: 'var(--g-ink)', cursor: 'pointer' }} onClick={() => pick.current?.click()}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.current?.click() } }}
             onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
             onDrop={e => { e.preventDefault(); setOver(false); const dropped = Array.from(e.dataTransfer.files); setFiles(f => [...f, ...dropped]) }}>
             <Icon name="note" px={5} />
@@ -112,22 +116,8 @@ export function MemoryAdd() {
         )}
         <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? t('memoryAdd.sessionInfo') : tab === 'chats' ? t('memoryAdd.chatInfo') : tab === 'files' ? t('memoryAdd.filesInfo') : t('memoryAdd.noteInfo')}</div>
       </Panel>
-      <Panel title={tab === 'sessions' ? t('memoryAdd.session') : t('memoryAdd.options')} testid="add-options">
-        {tab === 'files' && <>
-          <h3 className="g-panel-title">{t('memoryAdd.uploadedFiles')}</h3>
-          {fileErr && <div className="g-error">{fileErr}</div>}
-          <DeleteUndo action={fileUndo} onDone={() => setFileUndo(null)} onError={e => setFileErr(String(e))} />
-          <div className="g-rows" data-testid="uploaded-files">
-            {(uploaded ?? []).map(file => <div key={`${file.project}/${file.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ flex: 1 }}><Row icon="note" lead={file.name} detail={file.project} /></div>
-              <DeleteAction label={t('memoryAdd.deleteFile')} impact={t('delete.fileImpact')} testid={`file-delete-${file.project}-${file.name}`}
-                onDelete={async () => { const result = await addToMemory.deleteFile(file.project, file.name); return { title: t('delete.removed'), run: async () => { await addToMemory.undoDeleteFile(result.undo_id); loadUploaded() } } }}
-                onDeleted={action => { setFileUndo(action ?? null); setUploaded(current => current?.filter(item => item.name !== file.name || item.project !== file.project) ?? null) }}
-                onError={e => setFileErr(String(e))} />
-            </div>)}
-            {uploaded && uploaded.length === 0 && <Empty>{t('memoryAdd.noUploadedFiles')}</Empty>}
-          </div>
-        </>}
+      <Panel title={tab === 'sessions' ? t('memoryAdd.session') : t('memoryAdd.options')} testid="add-options" className="g-scroll">
+        {tab === 'files' && <><h3 className="g-panel-title">{t('memoryAdd.uploadedFiles')}</h3>{fileErr&&<div className="g-error">{fileErr}</div>}<DeleteUndo action={fileUndo} onDone={()=>setFileUndo(null)} onError={e=>setFileErr(String(e))}/><div className="g-rows" data-testid="uploaded-files">{(uploaded??[]).map(file=><div key={`${file.project}/${file.name}`} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1}}><Row icon="note" lead={file.name} detail={file.project}/></div><DeleteAction label={t('memoryAdd.deleteFile')} impact={t('delete.fileImpact')} testid={`file-delete-${file.project}-${file.name}`} onDelete={async()=>{const r=await addToMemory.deleteFile(file.project,file.name);return {title:t('delete.removed'),run:async()=>{await addToMemory.undoDeleteFile(r.undo_id);loadUploaded()}}}} onDeleted={action=>{setFileUndo(action??null);setUploaded(current=>current?.filter(x=>x.name!==file.name||x.project!==file.project)??null)}} onError={e=>setFileErr(String(e))}/></div>)}{uploaded&&uploaded.length===0&&<Empty>{t('memoryAdd.noUploadedFiles')}</Empty>}</div></>}
         {tab === 'files' && <label className="g-field"><span className="g-detail">{t('memoryAdd.project')}</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder={t('memoryAdd.none')} data-testid="add-project" /></label>}
         {tab === 'chats' && imports.length > 0 && (
           <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">
@@ -144,9 +134,9 @@ export function MemoryAdd() {
           sel ? (
             <div data-testid="session-detail">
               <div className="g-lead">{sel.title || t('memoryAdd.untitled')}</div>
-              <div className="g-detail">{toolName(sel)} · {t('memoryAdd.steps', { count: sel.events.length, plural: sel.events.length === 1 ? '' : 's' })}{sel.started ? ` · ${t('memoryAdd.started')} ${ago(sel.started)}` : ''}</div>
+              <div className="g-detail">{toolName(sel)} · {t('memoryAdd.steps', { count: sel.events.length, plural: sel.events.length === 1 ? '' : 's' })}{sel.started ? ` · started ${ago(sel.started)}` : ''}</div>
               <div className="g-rows g-scroll" style={{ maxHeight: 360, marginTop: 8 }}>
-                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? t('ask.you') : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? t('shell.command') : ev.type === 'command_output' ? t('run.output') : t('memoryAdd.stepLabel')} detail={ev.text.slice(0, 160)} />)}
+                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? 'You' : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? 'Command' : ev.type === 'command_output' ? 'Output' : 'Step'} detail={ev.text.slice(0, 160)} />)}
               </div>
               <Btn primary onClick={saveSession} disabled={busy} data-testid="session-save" style={{ marginTop: 12 }}>{t('memoryAdd.saveMemory')}</Btn>
             </div>
@@ -157,6 +147,7 @@ export function MemoryAdd() {
         </div>
         {done.some(d => d.ok) && <button className="g-link" onClick={() => go('memory')}>{t('memoryAdd.seeNotes')}</button>}
       </Panel>
+      <HintBar><Hint keyLabel="←→">{t('hint.moveTab')}</Hint><Hint keyLabel="Enter">{t('hint.save')}</Hint></HintBar>
     </div>
   )
 }

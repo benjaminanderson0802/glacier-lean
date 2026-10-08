@@ -1,0 +1,77 @@
+.g-settings {
+  display: grid;
+  grid-template-columns: calc(88 * var(--px)) minmax(0, 1fr);
+  gap: calc(2 * var(--px));
+  flex: 1;
+  min-width: 0;
+}
+
+.g-settings > .g-sidenav {
+  padding: calc(2 * var(--px));
+  gap: calc(2 * var(--px));
+}
+
+.g-settings .g-menu-item {
+  min-height: calc(20 * var(--px));
+  font-family: var(--g-font-body);
+  font-size: calc(8 * var(--px));
+}
+
+.g-memory-text,.g-run-text,.g-usage-table { font-family:var(--g-font-body);font-size:calc(8 * var(--px));line-height:1.6; }
+.g-memory-text { line-height:1.7; }
+
+/* Keep the model list heading, release details and table cells inside their scroll areas. */
+.g-settings .settings-scroll-body { min-height: 0; overflow-y: auto; }
+.g-settings .settings-scroll-panel { overflow: hidden; }
+.g-settings .g-usage-table td.g-lead { white-space: normal; overflow-wrap: anywhere; }
+
+/* Settings uses the kit's two readable text sizes throughout. */
+.g-settings :is(.g-panel-title, .g-menu-item, .g-row, .g-row .g-detail, .g-row .g-when,
+  .g-empty, .g-error, .g-sub, .g-crumb, .g-hintbar, .g-btn, .g-input, .g-detail,
+  .g-muted, .g-kv, .g-table th, .g-table td, label, input, select, button) {
+  font-family: var(--g-font-body);
+  font-size: calc(8 * var(--px));
+}
+
+.g-settings .g-title {
+  font-family: var(--g-font-head);
+  font-size: calc(16 * var(--px));
+}
+
+.g-settings .g-menu-item {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.g-settings .g-kv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: start;
+  gap: calc(2 * var(--px)) calc(3 * var(--px));
+  margin: 0;
+}
+
+.g-settings .g-kv dt,
+.g-settings .g-kv dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.g-settings .g-kv dt {
+  color: var(--g-ink2);
+}
+
+.g-settings .g-kv dd {
+  color: var(--g-ink);
+}
+
+@media (max-width: 760px) {
+  .g-settings {
+    grid-template-columns: calc(88 * var(--px)) minmax(0, 1fr);
+  }
+
+  .g-settings .g-menu-item {
+    font-size: calc(8 * var(--px));
+  }
+}
