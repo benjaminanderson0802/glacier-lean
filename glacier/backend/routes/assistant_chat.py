@@ -11,7 +11,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import shell_commands
 from pydantic import BaseModel
@@ -35,6 +35,123 @@ class ChatRequest(BaseModel):
 
 class ApplyRequest(BaseModel):
     approve: bool
+
+
+def _conversation_id(value: str) -> str:
+    if not re.fullmatch(r"[0-9a-fA-F-]{36}", value):
+        raise HTTPException(400, "conversation_id must be a UUID")
+    return value
+
+
+def _conversation_messages(note: str) -> list[dict]:
+    """Read only known timestamp sections and speaker labels from an editable note."""
+    frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n?", note, re.S)
+    body = note[frontmatter.end():] if frontmatter else note
+    sections: list[tuple[str, list[str]]] = []
+    current_at: str | None = None
+    current_lines: list[str] = []
+
+    def finish() -> None:
+        if current_at is not None:
+            sections.append((current_at, current_lines.copy()))
+
+    for line in body.splitlines():
+        heading = re.match(r"^##\s+(.+?)\s*#*\s*$", line)
+        if heading:
+            finish()
+            current_lines = []
+            candidate = heading.group(1).strip()
+            try:
+                datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+                current_at = candidate
+            except ValueError:
+                current_at = None
+            continue
+        if current_at is not None:
+            current_lines.append(line)
+    finish()
+
+    messages: list[dict] = []
+    for at, lines in sections:
+        who: str | None = None
+        content: list[str] = []
+
+        def emit() -> None:
+            if who is not None:
+                text = "\n".join(content).strip()
+                if text:
+                    messages.append({"who": who, "text": text, "at": at})
+
+        for line in lines:
+            speaker = re.match(r"^\*\*(You|Assistant):\*\*\s*(.*)$", line, re.I)
+            if speaker:
+                emit()
+                who = "you" if speaker.group(1).casefold() == "you" else "glacier"
+                content = [speaker.group(2)]
+            elif who is not None:
+                content.append(line)
+        emit()
+    return messages
+
+
+def _conversation_title(conversation_id: str, meta: dict, messages: list[dict]) -> str:
+    saved = str(meta.get("title", "")).strip()
+    if saved and saved != f"Conversation {conversation_id}":
+        return saved
+    first_question = next((message["text"] for message in messages if message["who"] == "you"), "")
+    one_line = " ".join(first_question.split())
+    return one_line[:60].rstrip() or "Untitled conversation"
+
+
+def _conversation_note(conversation_id: str) -> tuple[str, dict, list[dict]]:
+    path = _conversation_path(conversation_id)
+    try:
+        note = vault.read_raw_note(path)
+        meta, _ = vault.read_note_metadata(path)
+    except (FileNotFoundError, OSError, UnicodeError, ValueError):
+        raise HTTPException(404, "Conversation not found")
+    messages = _conversation_messages(note)
+    return path, meta, messages
+
+
+def _conversation_items(q: str = "") -> list[dict]:
+    items = []
+    words = [word.casefold() for word in re.findall(r"\w+", q) if word]
+    for path in vault.list_notes(".md", "conversations"):
+        conversation_id = os.path.basename(path)[:-3]
+        if not re.fullmatch(r"[0-9a-fA-F-]{36}", conversation_id):
+            continue
+        try:
+            _, meta, messages = _conversation_note(conversation_id)
+        except HTTPException:
+            continue
+        title = _conversation_title(conversation_id, meta, messages)
+        searchable = " ".join([title, *(item["text"] for item in messages)]).casefold()
+        if words and not all(word in searchable for word in words):
+            continue
+        updated_values = [str(meta.get("updated", "")), *(item["at"] for item in messages)]
+        dated = []
+        for value in updated_values:
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                dated.append((parsed, value))
+            except (ValueError, TypeError):
+                continue
+        updated = max(dated, key=lambda entry: entry[0])[1] if dated else ""
+        if not updated:
+            try:
+                updated = datetime.fromtimestamp(os.path.getmtime(vault.safe_path(path)), timezone.utc).isoformat()
+            except OSError:
+                updated = ""
+        items.append({"id": conversation_id, "title": title, "updated": updated, "messages": len(messages)})
+    return sorted(items, key=lambda item: item["updated"], reverse=True)
+
+
+class RenameRequest(BaseModel):
+    title: object = None
+    model_config = {"extra": "forbid"}
 
 
 def _event(name: str, **data) -> str:
@@ -149,6 +266,40 @@ def _append_conversation(conversation_id: str, user_message: str, answer: str) -
     stamp = datetime.now(timezone.utc).isoformat()
     body = previous + f"\n\n## {stamp}\n\n**You:** {secrets_store.redact(user_message)}\n\n**Assistant:** {secrets_store.redact(answer)}\n"
     vault.write_note(path, body, agent="assistant")
+
+
+@router.get("/api/assistant/conversations")
+def list_conversations(q: str = ""):
+    return _conversation_items(q)
+
+
+@router.get("/api/assistant/conversations/{conversation_id}")
+def get_conversation(conversation_id: str):
+    conversation_id = _conversation_id(conversation_id)
+    _, meta, messages = _conversation_note(conversation_id)
+    return {"id": conversation_id, "title": _conversation_title(conversation_id, meta, messages), "messages": messages}
+
+
+@router.post("/api/assistant/conversations/{conversation_id}/rename")
+def rename_conversation(conversation_id: str, request: RenameRequest):
+    conversation_id = _conversation_id(conversation_id)
+    if not isinstance(request.title, str):
+        raise HTTPException(400, "Title must be 1 to 80 characters with no line breaks")
+    title = request.title.strip()
+    if not 1 <= len(title) <= 80 or "\n" in title or "\r" in title:
+        raise HTTPException(400, "Title must be 1 to 80 characters with no line breaks")
+    path, _, _ = _conversation_note(conversation_id)
+    raw = vault.read_raw_note(path)
+    frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n?", raw, re.S)
+    prefix = raw[:frontmatter.end()] if frontmatter else ""
+    body = raw[frontmatter.end():] if frontmatter else raw
+    heading = re.search(r"(?m)^#\s+.+$", body)
+    if heading:
+        body = body[:heading.start()] + "# " + title + body[heading.end():]
+    else:
+        body = "# " + title + "\n\n" + body
+    commit = vault.write_note(path, prefix + body, author="owner")
+    return {"id": conversation_id, "title": title, "commit": commit}
 
 
 @router.post("/api/assistant/chat")
