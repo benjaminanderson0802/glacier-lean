@@ -5,10 +5,11 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { e2ePorts } from './ports.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const evidence = path.resolve(root, '../../evidence/ui')
-const MOCK_PORT = 8789, UI_PORT = 4319, UI = `http://localhost:${UI_PORT}`
+const { mockPort: MOCK_PORT, uiPort: UI_PORT, api: API, ui: UI } = await e2ePorts()
 const procs = []
 const start = (cmd, args, env = {}) => {
   const p = spawn(cmd, args, { cwd: root, env: { ...process.env, ...env }, stdio: 'ignore', detached: true })
@@ -34,7 +35,7 @@ try {
   mkdirSync(evidence, { recursive: true })
   start('node', ['mock/mock_server.mjs', String(MOCK_PORT)])
   await waitHttp(`http://localhost:${MOCK_PORT}/api/environments`)
-  start('npx', ['vite', 'preview', '--port', String(UI_PORT), '--strictPort'], { GLACIER_API: `http://localhost:${MOCK_PORT}` })
+  start('npx', ['vite', 'preview', '--port', String(UI_PORT), '--strictPort'], { GLACIER_API: API })
   await waitHttp(UI)
   const exe = process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined)
   browser = await chromium.launch(exe ? { executablePath: exe } : {})

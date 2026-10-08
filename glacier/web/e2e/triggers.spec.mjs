@@ -4,11 +4,12 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { e2ePorts } from './ports.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const out = path.resolve(root, '../../evidence/ui')
 mkdirSync(out, { recursive: true })
-const MOCK = 8790, UI_PORT = 4320, UI = `http://localhost:${UI_PORT}`
+const { mockPort: MOCK, uiPort: UI_PORT, api: API, ui: UI } = await e2ePorts()
 const procs = []
 const start = (cmd, args, env = {}) => { const p = spawn(cmd, args, { cwd: root, env: { ...process.env, ...env }, stdio: 'ignore', detached: true }); procs.push(p); return p }
 const cleanup = () => { for (const p of procs.reverse()) { try { process.kill(-p.pid, 'SIGTERM') } catch {} } }
@@ -20,7 +21,7 @@ let browser
 try {
   start('node', ['mock/mock_server.mjs', String(MOCK)])
   await waitHttp(`http://localhost:${MOCK}/api/environments`)
-  start('npx', ['vite', 'preview', '--port', String(UI_PORT), '--strictPort'], { GLACIER_API: `http://localhost:${MOCK}` })
+  start('npx', ['vite', 'preview', '--port', String(UI_PORT), '--strictPort'], { GLACIER_API: API })
   await waitHttp(UI)
   const base = `http://localhost:${MOCK}`
   await fetch(`${base}/api/environments/triggers-demo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'triggers-demo', name: 'Folder watch', enabled: true, nodes: [{ id: 'work', type: 'command', config: { cmd: 'echo ready' }, position: { x: 80, y: 80 } }], edges: [] }) })

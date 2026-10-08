@@ -1,18 +1,16 @@
 // End-to-end test of the Glacier core v0 screen against the in-memory mock backend.
 // Run from glacier/web after `npx vite build`:   node e2e/core.spec.mjs
-// It starts mock/mock_server.mjs (port 8787) and `vite preview` (port 4173, proxying /api to the mock).
+// It starts the mock and `vite preview` on dynamically selected ports.
 // Set API_URL=http://localhost:8000 and SKIP_MOCK=1 to point it at the real backend instead.
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { e2ePorts } from './ports.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const MOCK_PORT = 8787
-const UI_PORT = Number(process.env.UI_PORT ?? 4317)
-const API = process.env.API_URL ?? `http://localhost:${MOCK_PORT}`
-const UI = `http://localhost:${UI_PORT}`
+const { mockPort: MOCK_PORT, uiPort: UI_PORT, api: API, ui: UI } = await e2ePorts()
 const procs = []
 const log = (...a) => console.log('[e2e]', ...a)
 // Direct checks against the engine carry its install token (real engine only; the mock ignores it).
