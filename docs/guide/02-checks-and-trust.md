@@ -1,4 +1,4 @@
-# Checks and trust
+# To check whether work is done
 
 An AI helper can sound certain and still be wrong. A check gives you a separate way to decide whether the result meets the goal. Choose the check before the work begins, so the worker cannot quietly change what counts as success.
 

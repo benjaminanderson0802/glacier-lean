@@ -7,7 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const guide = path.join(root, '..', 'docs/guide')
 const tutorials = [
   '01-first-automation.md',
-  '02-ask-for-automation.md',
+  '02-build-a-team.md',
   '03-add-memory.md',
   '04-claims.md',
   '05-undo.md',
