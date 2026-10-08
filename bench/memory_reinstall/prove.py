@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import socket
 import subprocess
 import sys
@@ -28,6 +29,27 @@ BACKEND = ROOT / "glacier" / "backend"
 TOKEN = "memory-reinstall-proof-token"
 FAKE_CODEX = BACKEND / "tests" / "fake_codex.py"
 
+
+
+def remove_tree(path: Path, attempts: int = 10) -> None:
+    """Delete a folder like a reinstall would, including Git's read-only object files on Windows."""
+    def make_writable_and_retry(func, target, _exc):
+        os.chmod(target, stat.S_IWRITE)
+        func(target)
+
+    for attempt in range(attempts):
+        try:
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(path, onexc=make_writable_and_retry)
+            else:
+                shutil.rmtree(path, onerror=make_writable_and_retry)
+            return
+        except FileNotFoundError:
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.5)  # a just-stopped process can hold a handle for a moment on Windows
 
 class ProofFailure(RuntimeError):
     pass
@@ -74,7 +96,10 @@ class Backend:
     def stop(self) -> None:
         if self.process and self.process.poll() is None:
             if os.name == "nt":
-                self.process.terminate()
+                # Stop the whole tree: the backend's long-lived `git cat-file` helpers
+                # would otherwise keep vault files open and block deleting the folder.
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
+                               capture_output=True, check=False)
             else:
                 os.killpg(self.process.pid, signal.SIGTERM)
             try:
@@ -192,7 +217,7 @@ def main() -> int:
             timed(rows, "Push vault history to local bare remote", push_remote)
 
             def delete_home():
-                shutil.rmtree(first_home)
+                remove_tree(first_home)
                 if first_home.exists():
                     raise ProofFailure("Old GLACIER_HOME still exists")
 
