@@ -161,3 +161,10 @@ button { cursor: pointer; }
 .g-delete-confirm { position:relative;display:inline-flex;align-items:center;flex-wrap:wrap;gap:calc(2 * var(--px));padding:calc(2 * var(--px)) calc(2 * var(--px)) calc(7 * var(--px));border:var(--px) solid var(--g-navy);background:var(--g-ice2); }
 .g-delete-confirm .g-more-arrow { display:block; }
 .g-delete-confirm .g-hintbar { flex:1 0 100%; }
+
+/* What's new (release notes) in pixel units */
+.g-notice .g-detail { white-space: pre-wrap; }
+.g-release-notes { color: var(--g-ink); }
+.g-release-notes p { margin: calc(2 * var(--px)) 0; }
+.g-release-notes ul { margin: calc(2 * var(--px)) 0; padding-left: calc(8 * var(--px)); }
+.g-release-notes .g-panel-title { margin: calc(3 * var(--px)) 0 var(--px); }
