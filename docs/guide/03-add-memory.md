@@ -1,4 +1,4 @@
-# Add things to memory
+# To add things to memory
 
 ## What you will do
 
@@ -19,7 +19,8 @@ Have something you are allowed to save: a file, text to remember, an official ch
 
 ## If something goes wrong
 
-Read the error shown under the form. A file may be rejected with “This file type is not allowed.” Choose a supported file type. For chat import, choose the right source and a valid export; Glacier may say “This does not look like a valid ChatGPT export” or “This does not look like a valid Claude export.” Export the data again and try the matching source. If no coding sessions are found, the list says “No Codex or OpenCode sessions found on this computer.”
+Read the error shown under the form. A file may be rejected with “This file type is not allowed.” Choose a supported file type. For chat import, choose the right source and a valid export.
+Glacier may say “This does not look like a valid ChatGPT export” or “This does not look like a valid Claude export.” Export the data again and try the matching source. If no coding sessions are found, the list says “No Codex or OpenCode sessions found on this computer.”
 
 ## What to try next
 

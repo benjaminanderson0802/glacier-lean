@@ -1,4 +1,4 @@
-# When something breaks
+# To handle a problem
 
 If a run fails, Glacier can send a plain-language alert to the destinations configured for that flow or installation. Open the run details and read which step failed and what its output says. A failed step may need attention even if earlier steps succeeded.
 

@@ -2,6 +2,7 @@
 
 - **Approval:** A pause that asks you whether a connected action may continue.
 - **Automation:** Steps that Glacier runs in order or on a schedule.
+- **Build:** An interview that prepares a spec and a team plan for you to approve.
 - **Check:** A rule used to judge whether work met its goal.
 - **Claim:** A saved report of a problem, missing ability, or unclear instruction, with evidence.
 - **Flow:** Glacier's saved set of connected steps; also called an automation in this guide.

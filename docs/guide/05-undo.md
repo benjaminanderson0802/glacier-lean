@@ -1,18 +1,19 @@
-# Undo a change
+# To undo a change
 
 ## What you will do
 
-You will restore an earlier note, undo changes made by a run, or bring back an earlier version of an automation.
+You will undo a recent removal, restore an earlier note, undo changes made by a run, or bring back an earlier version of an automation.
 
 ## What you need
 
-Know which note or run changed. Undo applies to the selected saved change, so check the item before you confirm.
+Know which item changed. Removals from lists show an **Undo** option for a short time; choose it to bring that item back. This applies to flows, runs, notes, claims, conversations, and imported templates.
+Saved secrets are different: removing a secret from the computer's keychain cannot be undone here.
 
 ## Steps
 
-1. For a note: Open **Memory** and select the note. After saving an edit, the “Saved (version …)” message includes **Undo**. Choose it to restore the note from before that save. In an older note with saved history, **undo last change** restores its previous version.
+1. For a note: Open **Memory** and select the note. After saving an edit, the “Saved (version …)” message includes **Undo**. Choose it to restore the note from before that save. In an older note with saved history, **undo last change** restores its previous version. Deleted notes can be restored from the **Undo** message in the list.
 2. For a run: Open **Automations**, select the automation, then choose **Past runs**. Select the run and choose **Undo**. Read “Put back everything this run changed?” and choose **Yes, undo** to confirm, or **No** to cancel.
-3. For an automation's saved version: Open **Automations** and open the automation in the editor. Under **Saved versions** you see every save, newest first, marked **Current** at the top. Choose **Restore** next to the version you want, then **Restore it** to confirm, or **Cancel**. Glacier keeps every version: the old one is saved again as the newest. If you have unsaved changes, save them first; **Restore** is unavailable until you do.
+3. For an automation's saved version: Open **Automations** and open it in the editor. **Saved versions** lists each save, with the newest marked **Current**. Choose **Restore** next to the version you want, then **Restore it** to confirm or **Cancel**. Restoring saves the old version as the newest. Save any unsaved changes first; **Restore** is unavailable until then.
 
 ## If something goes wrong
 
