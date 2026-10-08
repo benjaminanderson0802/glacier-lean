@@ -52,6 +52,14 @@ def prepare_checkout(home: Path, source: Path) -> Path:
     return target
 
 
+def install_practice_requirements(repo: Path) -> None:
+    """Install the exact pinned project environment before any practice verification."""
+    python = Path(sys.executable)
+    requirements = repo / "setup" / "requirements.txt"
+    subprocess.run([str(python), "-m", "pip", "install", "-r", str(requirements)],
+                   cwd=repo, check=True)
+
+
 def _auth_headers() -> dict:
     """The engine's install token: GLACIER_TOKEN, else <GLACIER_HOME or ~/.glacier>/.engine-token."""
     token = os.environ.get("GLACIER_TOKEN", "").strip()
@@ -113,8 +121,9 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"Could not read card file {card_path}: {error}")
     try:
         repo = prepare_checkout(args.home.expanduser().resolve(), args.source.expanduser().resolve())
+        install_practice_requirements(repo)
     except (OSError, subprocess.CalledProcessError, RuntimeError) as error:
-        print(f"Could not prepare the self-build checkout: {error}", file=sys.stderr)
+        print(f"Could not prepare the self-build checkout and pinned Python requirements: {error}", file=sys.stderr)
         return 1
     flow = json.loads(FLOW_PATH.read_text(encoding="utf-8"))
     flow["goal"] = f"Build feature from {card_path.name}: {card_text[:300]}"

@@ -14,6 +14,8 @@ import verify
 from conftest import BACKEND, env
 
 ROOT = Path(BACKEND).parents[1]
+sys.path.insert(0, str(ROOT / "setup" / "selfbuild"))
+import run_card as selfbuild_run_card  # noqa: E402
 FEATURE = ROOT / "flows/self/feature.json"
 MAINTENANCE = ROOT / "flows/self/maintenance.json"
 
@@ -132,7 +134,7 @@ def test_feature_run_merges_only_when_verified(server, tmp_path, worker_action, 
         assert "glacier/backend/tests/test_toy.py" not in branch_paths
 
 
-def test_run_card_posts_card_and_prints_watch_instructions(tmp_path):
+def test_run_card_posts_card_and_prints_watch_instructions(tmp_path, capsys):
     card = tmp_path / "card.md"
     card.write_text("Build a tiny feature", encoding="utf-8")
     import threading
@@ -157,14 +159,21 @@ def test_run_card_posts_card_and_prints_watch_instructions(tmp_path):
     source = tmp_path / "source"
     subprocess.run(["git", "init", "-q", "-b", "main", str(source)], check=True)
     (source / "README.md").write_text("toy", encoding="utf-8")
+    (source / "setup").mkdir()
+    (source / "setup/requirements.txt").write_text("sample==1.0\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(source), "add", "-A"], check=True)
     subprocess.run(["git", "-C", str(source), "-c", "user.name=t", "-c", "user.email=t@x", "commit", "-qm", "start"], check=True)
     try:
-        result = subprocess.run([sys.executable, str(ROOT / "setup/selfbuild/run_card.py"), str(card),
-                                 "--api", f"http://127.0.0.1:{api.server_port}",
-                                 "--home", str(tmp_path / "home"), "--source", str(source)], text=True, capture_output=True)
-        assert result.returncode == 0, result.stderr
-        assert "abc123" in result.stdout and "/api/runs/abc123" in result.stdout
+        original_install = selfbuild_run_card.install_practice_requirements
+        selfbuild_run_card.install_practice_requirements = lambda _repo: None
+        try:
+            result = selfbuild_run_card.main([str(card), "--api", f"http://127.0.0.1:{api.server_port}",
+                                              "--home", str(tmp_path / "home"), "--source", str(source)])
+            assert result == 0
+        finally:
+            selfbuild_run_card.install_practice_requirements = original_install
+        output = capsys.readouterr().out
+        assert "abc123" in output and "/api/runs/abc123" in output
         assert "Build a tiny feature" in seen["flow"]["nodes"][0]["config"]["cmd"]
         assert "Build a tiny feature" in seen["flow"]["nodes"][0]["config"]["cmd"]
         worker = next(node for node in seen["flow"]["nodes"] if node["type"] == "codex")
