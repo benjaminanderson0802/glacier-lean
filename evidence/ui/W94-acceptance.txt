@@ -1,0 +1,6 @@
+Acceptance tests written before feature work (card requirement):
+- `node e2e/theme_lint.mjs`, i18n parity and type/build pass with sprite/font/palette rules enforced.
+- Shell test asserts five options Home, Build, Automations, Memory, Settings; arrow keys select menu items; Enter opens; `/ask` redirects to `/build`.
+- Home renders target layout boxes at 1280x800, captures 1280x800 and 1920x1080 screenshots, and reports box-layout diff within tolerance against target-home.png.
+- `bash ~/tools/e2e.sh` and `bash ~/tools/suite.sh` finish successfully; do not edit tests to weaken them.
+Drift: advances PH5.4 ordinary UX (P-USABLE/M-TTFA proxy); PH5 dependencies not at exit, but assigned UI card is explicitly allowed to start parallel. No existing maintained OSS UI kit provides the specified hand-drawn sprite/theme integration; custom code is UX glue, Press Start 2P is bundled under SIL OFL. No checkpoint status fields will be changed.

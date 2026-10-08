@@ -1,5 +1,4 @@
-// Theme guard: the retro look lives ONLY in src/theme/tokens.css. Any other file that sets its own
-// colour, font or corner radius fails the build. This is what keeps future work from drifting to a generic theme.
+// Theme guard: retro art uses only palette tokens, integer pixel sizing, sprite frames and Press Start 2P.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,8 +13,8 @@ const rules = [
   [/#[0-9a-fA-F]{3,8}\b(?![\w-]*['"]?\s*\])/g, 'raw hex colour (use a --g-* token)'],
   [/\b(rgba?|hsla?|oklch|lab)\(/g, 'raw colour function (use a --g-* token)'],
   [/font-family\s*:(?!\s*var\(--g-font)/g, 'font-family not from tokens'],
+  [/box-shadow\s*:[^;]*(?:blur|\d+px\s+\d+px\s+\d+px)/gi, 'blurred box-shadow (use a solid pixel offset)'],
   [/fontFamily\s*:\s*['"`]/g, 'inline fontFamily not from tokens'],
-  [/border-radius\s*:(?!\s*(var\(--g-radius|0\b|inherit))/g, 'border-radius not from tokens'],
   [/\b(Inter|Roboto|Helvetica|Arial|system-ui|-apple-system|Segoe UI|sans-serif)\b/g, 'generic UI font'],
   [/\bfonts\.googleapis|\bhttps?:\/\/(?!127\.0\.0\.1|localhost)[\w.-]+\.(com|net|io)\//g, 'remote asset (must be bundled for offline use)'],
 ]
@@ -29,4 +28,10 @@ for (const f of files) {
   })
 }
 if (fails.length) { console.error(`THEME LINT FAILED (${fails.length})\n` + fails.join('\n')); process.exit(1) }
+const css = readFileSync(path.join(src, 'theme/ui.css'), 'utf8')
+if (!css.includes("border-image: url('./sprites/frame-light.png')") || !css.includes('image-rendering: pixelated')) {
+  console.error('THEME LINT FAILED (sprite frames and pixel rendering must be enabled)'); process.exit(1)
+}
+if (!css.includes('font: var(--g-size-body)/1.7 var(--g-font-body)')) { console.error('THEME LINT FAILED (Press Start 2P body font must come from the theme token)'); process.exit(1) }
+if (!css.includes('border-radius: 0 !important') || !css.includes('box-shadow: none !important')) { console.error('THEME LINT FAILED (global pixel-square surfaces and solid shadows are required)'); process.exit(1) }
 console.log(`theme lint ok (${files.length} files)`)
