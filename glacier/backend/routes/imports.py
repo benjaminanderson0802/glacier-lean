@@ -7,6 +7,7 @@ from starlette.datastructures import UploadFile
 
 from bounded_body import read_bounded_body
 import import_service
+import audit_log
 
 router = APIRouter()
 IMPORT_REQUEST_LIMIT = 200 * 1024 * 1024 + 64 * 1024
@@ -38,8 +39,10 @@ async def import_conversations(request: Request):
             if not isinstance(source, str) or not isinstance(file, UploadFile):
                 raise HTTPException(400, "Choose an export source and file")
             try:
-                return await run_in_threadpool(import_service.import_export, source, upload=file.file,
-                                               filename=file.filename or "export.zip")
+                result = await run_in_threadpool(import_service.import_export, source, upload=file.file,
+                                                 filename=file.filename or "export.zip")
+                audit_log.record("memory.imported", what={"source": source, "written": result.get("written", 0)})
+                return result
             except ValueError as exc:
                 raise _error(exc) from exc
         finally:
@@ -49,7 +52,9 @@ async def import_conversations(request: Request):
     except Exception as exc:
         raise HTTPException(400, "Choose ChatGPT or Claude and provide an export file path") from exc
     try:
-        return await run_in_threadpool(import_service.import_export, item.source, item.path)
+        result = await run_in_threadpool(import_service.import_export, item.source, item.path)
+        audit_log.record("memory.imported", what={"source": item.source, "written": result.get("written", 0)})
+        return result
     except ValueError as exc:
         raise _error(exc) from exc
 
@@ -57,7 +62,9 @@ async def import_conversations(request: Request):
 @router.post("/api/imports/refresh")
 def refresh_imports():
     try:
-        return import_service.refresh()
+        result = import_service.refresh()
+        audit_log.record("memory.imports_refreshed", what={"written": result.get("written", 0)})
+        return result
     except ValueError as exc:
         raise _error(exc) from exc
 

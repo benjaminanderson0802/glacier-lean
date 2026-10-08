@@ -6,6 +6,7 @@ from collections import defaultdict, deque
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 import shell_commands
+import audit_log
 from agents_md import project_instructions_detail
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
@@ -59,6 +60,10 @@ def start_run(env_id: str, run_settings: dict | None = None, run_id: str | None 
     store.create_run(run_id, env_id, graph)
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)
+    trigger = (run_settings or {}).get("_trigger") or {}
+    audit_log.record("run.started", who=(run_settings or {}).get("_author", "owner"),
+                     what={"env_id": env_id, "run_id": run_id,
+                           "source": trigger.get("type", "runtime"), "node_id": trigger.get("node_id", "")})
     return run_id
 
 
@@ -210,6 +215,8 @@ def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
         ap.add(u)
     ok = ap.notify(title=f"Glacier: '{name}' ({env_id}) failed",
                    body=f"Run {run_id} stopped at step {', '.join(bad) or '?'}.\n\nLast output:\n{detail}")
+    audit_log.record("notification.sent" if ok else "notification.failed",
+                     what={"run_id": run_id, "targets": len(urls), "channel": "apprise"})
     return "sent" if ok else "alert failed"
 
 
@@ -224,6 +231,7 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     if kind not in ("file_trigger", "webhook_trigger"):
         cfg = _expand_trigger_values(cfg, trigger)
     store.set_node(run_id, env_id, nid, "running")
+    run_record = store.get_run(run_id) or {"author": "owner"}
     res = {"state": "done", "output": ""}
     try:
         if kind in ("command", "codex"):
@@ -265,6 +273,10 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                     break
                 store.set_node(run_id, env_id, nid, "running", res["output"] + "\n[retrying]")
                 time.sleep(min(attempt, 10))
+            audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
+                             who=run_record.get("author", "owner"),
+                             what={"env_id": env_id, "run_id": run_id, "node_id": nid,
+                                   "step_type": kind, "exit_code": res.get("exit_code")})
         elif kind == "check":
             if last is None:
                 raise ValueError("check has no previous command/codex result")
@@ -275,6 +287,9 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
             prev = (last or {}).get("output") or ""
             question = (cfg.get("question") or "").replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev[-PREV_LIMIT:])
             d = decider.decide(question, options, prev, cfg.get("engine") or "auto", cfg.get("model") or "")
+            audit_log.record("outbound.model_call", who=store.get_run(run_id).get("author", "owner"),
+                             what={"env_id": env_id, "run_id": run_id, "node_id": nid, "step_type": "decide",
+                                   "route": d.get("engine", "unknown")})
             res = {"state": "done", "output": f"decided: {d['choice']} (by {d['engine']})", "branch": d["choice"].strip().lower()}
         elif kind == "note":
             run = store.get_run(run_id)
@@ -287,6 +302,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
             path = fill_path(cfg.get("path") or "runs/{env}-{run}.md")
             sha = vault.write_note(path, secrets_store.redact(fill(cfg.get("template") or "Run {run} of {env}: {summary}")),
                                    agent="glacier-runner", run_id=run_id)
+            audit_log.record("vault.note_written", who=run_record.get("author", "owner"),
+                             what={"path": path, "run_id": run_id, "node_id": nid, "commit": sha})
             res["output"] = f"{path} (commit {sha})"
         elif kind in plugins.NODES:
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
@@ -300,6 +317,32 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
             if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
                 res["exit_code"] = 0 if res["state"] == "done" else 1
             res["output"] = secrets_store.redact(res.get("output", "")[-OUTPUT_LIMIT:])
+            event = {"http_request": "outbound.http_request", "fetch_page": "outbound.web_fetch",
+                     "web_search": "outbound.web_search", "read_document": "outbound.document_fetch",
+                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call"}.get(kind)
+            if event:
+                safe = {"env_id": env_id, "run_id": run_id, "node_id": nid, "step_type": kind}
+                if kind == "http_request":
+                    safe["destination"] = re.sub(r"(://[^:/@]+):[^/@]+@", r"\1@", str(cfg.get("url", "")))
+                    safe["method"] = str(cfg.get("method", "GET"))
+                elif kind in {"fetch_page", "read_document"}:
+                    safe["destination"] = str(cfg.get("url") or cfg.get("source") or "")
+                elif kind == "web_search":
+                    safe["destination"] = str(cfg.get("search_server", ""))
+                audit_log.record(event, who=run_record.get("author", "owner"), what=safe)
+            event = {"http_request": "outbound.http_request", "fetch_page": "outbound.web_fetch",
+                     "web_search": "outbound.web_search", "read_document": "outbound.document_fetch",
+                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call"}.get(kind)
+            if event:
+                safe = {"env_id": env_id, "run_id": run_id, "node_id": nid, "step_type": kind}
+                if kind == "http_request":
+                    safe["destination"] = re.sub(r"(://[^:/@]+):[^/@]+@", r"\1@", str(cfg.get("url", "")))
+                    safe["method"] = str(cfg.get("method", "GET"))
+                elif kind in {"fetch_page", "read_document"}:
+                    safe["destination"] = str(cfg.get("url") or cfg.get("source") or "")
+                elif kind == "web_search":
+                    safe["destination"] = str(cfg.get("search_server", ""))
+                audit_log.record(event, who=store.get_run(run_id).get("author", "owner"), what=safe)
         elif kind != "schedule":
             raise ValueError(f"unknown node type {kind!r}")
     except Exception as e:  # a broken node fails itself, not the whole server
@@ -453,6 +496,10 @@ def start_child(env_id: str, run_id: str, node_id: str, child_env: str, child_ru
         if depth >= MAX_FLOW_DEPTH:
             raise ValueError(f"sub-flows nested more than {MAX_FLOW_DEPTH} deep; stopping")
         store.create_run(child_run, child_env, load_env(child_env))
+        audit_log.record("run.child_started", who=store.get_run(run_id).get("author", "owner"),
+                         what={"env_id": child_env, "run_id": child_run, "parent_run_id": run_id, "node_id": node_id})
+        audit_log.record("run.child_started", who=store.get_run(run_id).get("author", "owner"),
+                         what={"env_id": child_env, "run_id": child_run, "parent_run_id": run_id, "node_id": node_id})
     except (FileNotFoundError, ValueError) as e:
         msg = str(e) if "nested" in str(e) else f"sub-flow {child_env!r} not found"
         store.set_node(run_id, env_id, node_id, "failed", f"error: {msg}")
