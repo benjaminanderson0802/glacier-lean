@@ -126,3 +126,7 @@ governance layer. No existing sandbox was present that provided these controls
 in the Codespace. The selected kernel feature is already present and maintained
 as part of Linux; the custom code is only the glue needed to express Glacier's
 per-step policy. No phase status is changed by this card.
+
+## Search the web
+
+The **Search the web** step sends the search words to the SearXNG address configured in that step. The server address is checked before connecting, and the connection is pinned to a checked address. Redirects are checked again, requests have a 10 second timeout and a 2 MB response limit, and the step sends no cookies. Public addresses are allowed by default; local or private addresses are allowed only when the user turns on **The search server runs on this computer or my network**. Search result links are returned as text and are never fetched by this step. Secret placeholders are refused in both the address and search words. See [WEB_SEARCH.md](WEB_SEARCH.md) for setup and privacy details.
