@@ -38,6 +38,36 @@ def test_team_plan_rejects_planner_as_task_or_supervisor():
         teams.validate_plan(plan)
 
 
+def test_planner_schema_is_accepted_by_codex_strict_structured_output(monkeypatch):
+    import assistant
+
+    captured = {}
+    plan = _plan()
+    vision = plan.pop("vision")
+
+    def answer(_prompt, schema):
+        captured["schema"] = schema
+        return plan
+
+    monkeypatch.setattr(assistant, "_ask_codex", answer)
+    teams.plan_team(vision, engine="codex")
+
+    schema = captured["schema"]
+
+    def check_strict_objects(value):
+        if isinstance(value, dict):
+            if value.get("type") == "object":
+                assert value.get("additionalProperties") is False
+                assert set(value.get("required", [])) == set(value.get("properties", {}))
+            for nested in value.values():
+                check_strict_objects(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                check_strict_objects(nested)
+
+    check_strict_objects(schema)
+
+
 def test_mask_contains_role_task_and_only_relevant_memory():
     task = dict(_plan()["tasks"][0], description="use relevant information")
     context = teams.task_context(_plan()["team"]["roles"][0], task,

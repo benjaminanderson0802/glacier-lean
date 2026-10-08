@@ -166,8 +166,10 @@ def build(message: str, *, engine: str, model: str | None = None, conversation_i
             model = None
     small = character_limit(model) <= 5_000
     budgets = (430, 730, 650, 900, 1250, 500) if small else (600, 1800, 1600, 4000, 4200, 2800)
+    history_instruction = (" Previous chat history is off. Do not claim to remember earlier Ask messages; say that earlier chats are not available."
+                          if not remember_chats() else "")
     sections = [
-        "You are Glacier's assistant, helping the owner operate Glacier, a local app for making, running, and checking automations. Keep replies plain and concise. Never claim a flow ran unless the app confirms it. Ask before consequential actions; proposals need owner approval.",
+        "You are Glacier's assistant, helping the owner operate Glacier, a local app for making, running, and checking automations. Keep replies plain and concise. Never claim a flow ran unless the app confirms it. Ask before consequential actions; proposals need owner approval." + history_instruction,
         _owner_note(), _system_state(engine, model), _memory(message), _guide(),
     ]
     if conversation_id and remember_chats():
