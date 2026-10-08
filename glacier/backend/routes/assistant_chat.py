@@ -1,5 +1,6 @@
 """Conversational assistant API. Planning is review-only; saving requires explicit approval."""
 import json
+import contextlib
 import os
 import re
 import subprocess
@@ -36,6 +37,39 @@ MAX_PROPOSALS = 100
 MAX_CONTEXT_EXCHANGES = 10
 MAX_CONTEXT_CHARS = 6000
 _api_budget_lock = threading.Lock()
+
+
+@contextlib.contextmanager
+def _api_budget_guard():
+    """Serialize monthly reservations across threads and parallel worker processes."""
+    with _api_budget_lock:
+        path = _api_budget_path() + ".lock"
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        handle = open(path, "a+b")
+        try:
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0, os.SEEK_END)
+                if handle.tell() == 0:
+                    handle.write(b"0")
+                    handle.flush()
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            yield
+        finally:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                handle.close()
 
 
 def _open_ollama_request(request, timeout=600):
@@ -337,7 +371,7 @@ def _reserve_api_budget(engine: str, prompt: str, max_output_tokens: int = 1200)
     input_tokens = len(prompt.encode("utf-8"))
     estimate = math.ceil((input_tokens * input_rate + max_output_tokens * output_rate) / 1_000_000 * 1_000_000) / 1_000_000
     month = datetime.now(timezone.utc).strftime("%Y-%m")
-    with _api_budget_lock:
+    with _api_budget_guard():
         ledger = _read_api_budget()
         month_data = ledger.setdefault(month, {})
         current = float(month_data.get(engine, 0))
@@ -361,7 +395,7 @@ def _finish_api_budget(engine: str, estimate: float, usage: dict | None) -> None
     except (KeyError, TypeError, ValueError):
         return
     month = datetime.now(timezone.utc).strftime("%Y-%m")
-    with _api_budget_lock:
+    with _api_budget_guard():
         ledger = _read_api_budget()
         month_data = ledger.setdefault(month, {})
         month_data[engine] = round(max(0.0, float(month_data.get(engine, 0)) - estimate + actual), 6)

@@ -5,6 +5,7 @@ import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { teamsApi } from '../api.ts'
+import { DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Flow = EnvSummary & { last?: RunSummary }
 const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
@@ -23,6 +24,7 @@ export function AutomationsScreen() {
   const [details, setDetails] = useState<Record<string, Environment>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
+  const [undo, setUndo] = useState<UndoAction | null>(null)
   const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
 
   useEffect(() => {
@@ -94,6 +96,7 @@ export function AutomationsScreen() {
             </form>
           : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
+      <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
       <Panel className="automations-window" testid="automations-window">
         <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">

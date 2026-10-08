@@ -64,7 +64,8 @@ def start_run(env_id: str, run_settings: dict | None = None, run_id: str | None 
     return run_id
 
 
-def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, timeout: int = CODEX_TIMEOUT, ws: str = "") -> dict:
+def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, timeout: int = CODEX_TIMEOUT, ws: str = "",
+              on_process=None) -> dict:
     """Hand the prompt to `codex exec` (ChatGPT sign-in, no API key). Streams a short live log into the node output
     every ~2s; the final output is "codex exit <code>" plus Codex's last message."""
     fill = lambda s: s.replace("{env}", env_id).replace("{run}", run_id).replace("{prev_output}", prev_output[-PREV_LIMIT:])
@@ -87,11 +88,15 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     args = shell_commands.executable_invocation(executable, "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
             "-C", workdir, "-o", last_file) + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
     try:
-        p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=workdir)
+        process_options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+        p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                             cwd=workdir, **process_options)
     except FileNotFoundError:
         os.unlink(last_file)
         raise RuntimeError(f"Codex CLI not found ({args[0]}); install it, then run: codex login --device-auth")
-    timer = threading.Timer(timeout, p.kill); timer.start()
+    if on_process:
+        on_process(p)
+    timer = threading.Timer(timeout, terminate_process, args=(p,)); timer.start()
     log, errs, agent_msg, started, tok = [], [], "", time.time(), {}
     flushed = started
     try:
@@ -137,6 +142,27 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     usage = {"model": cfg.get("model") or "default (sandbox Codex setting)", "route": "codex/chatgpt-plan", "cost_usd": 0.0,
              "tokens_in": tok.get("input_tokens", 0), "tokens_out": tok.get("output_tokens", 0)}
     return {"state": "done" if code == 0 else "failed", "output": out[-OUTPUT_LIMIT:], "exit_code": code, "usage": usage}
+
+
+def terminate_process(process) -> None:
+    """Stop a worker and its child processes without removing its workspace."""
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], capture_output=True)
+    else:
+        import signal
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
 
 
 # ---- steps -------------------------------------------------------------------------------
