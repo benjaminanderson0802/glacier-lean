@@ -4,6 +4,7 @@ import re
 from fastapi import APIRouter, HTTPException
 
 import secrets_store
+import audit_log
 import session_mirror
 import vault
 
@@ -57,7 +58,8 @@ def save_to_memory(session_id: str):
         lines.append(f"\n**{label}:** {event['text']}")
     body = secrets_store.redact("\n".join(lines))
     try:
-        vault.write_note(path, body, author="glacier-mirror")
+        commit = vault.write_note(path, body, author="glacier-mirror")
     except ValueError as exc:
         raise HTTPException(400, "This session could not be saved to memory") from exc
+    audit_log.record("memory.session_saved", what={"session_id": session_id, "path": path, "commit": commit})
     return {"saved": True, "path": path}

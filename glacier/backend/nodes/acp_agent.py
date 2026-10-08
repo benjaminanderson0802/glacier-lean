@@ -25,6 +25,7 @@ NODE = {
         "fields": [
             {"key": "harness", "label": "Coding agent", "placeholder": "", "default": "opencode",
              "options": ["codex-acp", "opencode", "custom"]},
+            {"key": "debug_logs", "label": "OpenCode logs", "placeholder": "", "default": False, "optional": True},
             {"key": "command", "label": "Command", "placeholder": "python fake_acp_agent.py", "default": "", "optional": True},
             {"key": "prompt", "label": "Task ({env} {run} {prev_output})", "placeholder": "Fix the failing tests: {prev_output}", "default": "", "multiline": True},
             {"key": "workdir", "label": "Working folder", "placeholder": "default: GLACIER_HOME/workspaces/<env>", "default": "", "optional": True},
@@ -179,6 +180,8 @@ def run(ctx):
     harness = config.get("harness") or "opencode"
     if harness == "opencode":
         command = ["opencode", "acp"]
+        if config.get("debug_logs"):
+            command += ["--print-logs", "--log-level", "INFO"]
         missing_message = "This coding agent isn't installed: opencode"
     elif harness == "codex-acp":
         command = ["codex-acp"]

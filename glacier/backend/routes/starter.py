@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 import starter
 import system_check
+import audit_log
 
 router = APIRouter()
 
@@ -24,6 +25,8 @@ def apply_starter(body: StarterApply):
     try:
         result = starter.apply(body.template_ids, body.mode)
         system_check.clear_cache()
+        audit_log.record("starter.applied", what={"mode": body.mode, "template_ids": body.template_ids,
+                                                   "created": [item.get("id") for item in result.get("created", [])]})
         return result
     except KeyError:
         raise HTTPException(400, "We could not find the selected starter automation.")
