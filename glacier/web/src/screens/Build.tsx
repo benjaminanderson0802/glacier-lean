@@ -15,6 +15,7 @@ import { takeDraft } from '../draft.ts'
 import { getLanguage, t } from '../i18n/index.ts'
 import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import dagre from '@dagrejs/dagre'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -124,6 +125,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const typeInfo = useCallback((k: string) => catalog.find(t => t.type === k), [catalog])
   const layout = useLayout()
   const [moreFields, setMoreFields] = useState(false)
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
+  const [flowRemoved, setFlowRemoved] = useState(false)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -151,6 +154,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   }, [])
 
   const loadEnv = useCallback(async (id: string, fallbackName?: string) => {
+    setFlowRemoved(false); setDeleteUndo(null)
     setEnvId(id); setSelected(null); setActiveRun(null); setLastCommit(''); setMsg(''); setRuns([]); setTab('canvas')
     try {
       const env = await api.getEnv(id)
@@ -581,9 +585,17 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
             </label>
             {layout !== 'simple' && <div className="field"><span>{t('build.id')}</span><code data-testid="env-id">{envId}</code></div>}
             <div className="row">
-              <button className="primary" data-testid="save" disabled={busy} onClick={() => save()}>{t('build.save')}</button>
-              <button className="run" data-testid="run" disabled={busy || nodes.length === 0} onClick={run}>{t('build.run')}</button>
+              <button className="primary" data-testid="save" disabled={busy || flowRemoved} onClick={() => save()}>{t('build.save')}</button>
+              <button className="run" data-testid="run" disabled={busy || flowRemoved || nodes.length === 0} onClick={run}>{t('build.run')}</button>
             </div>
+            {!flowRemoved && <DeleteAction label={t('automations.deleteFlow')} impact={t('delete.flowImpact')} testid="builder-delete-flow"
+              onDelete={async () => {
+                const result = await api.deleteEnv(envId)
+                setFlowRemoved(true)
+                return { title: t('delete.removed'), run: async () => { await api.undoDeleteEnv(envId, result.commit); setFlowRemoved(false); await loadEnv(envId); refreshEnvs() } }
+              }}
+              onDeleted={action => setDeleteUndo(action ?? null)} onError={e => setMsg(String(e))} />}
+            {flowRemoved && <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setMsg(String(e))} />}
             <div className="field" style={layout === 'simple' ? { display: 'none' } : undefined}>
               <span>{t('build.lastSaveCommit')}</span>
               <code data-testid="last-commit">{lastCommit || '-'}</code>

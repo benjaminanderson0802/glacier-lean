@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import uuid
 from pathlib import Path
 
 import vault
@@ -143,7 +144,7 @@ def _entries(project: str | None = None) -> list[dict]:
     root = _home() / "files"
     if not root.is_dir():
         return []
-    projects = [root / project] if project else sorted(p for p in root.iterdir() if p.is_dir())
+    projects = [root / project] if project else sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
     entries = []
     for folder in projects:
         if not folder.is_dir():
@@ -166,8 +167,71 @@ def list_projects() -> list[dict]:
     root = _home() / "files"
     names = {DEFAULT_PROJECT}
     if root.is_dir():
-        names.update(p.name for p in root.iterdir() if p.is_dir())
+        names.update(p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
     return [{"name": name, "count": len(_entries(name))} for name in sorted(names, key=str.casefold)]
+
+
+def delete_file(project: str, name: str) -> dict:
+    """Move one uploaded original into private local trash so the screen can offer Undo."""
+    project = validate_project(project)
+    name = validate_filename(name)
+    folder = _home() / "files" / project
+    trash_root = _home() / "files" / ".trash"
+    trash_root.mkdir(parents=True, exist_ok=True)
+    undo_id = uuid.uuid4().hex
+    with _project_lock(folder):
+        source = folder / name
+        index = _load_index(folder)
+        metadata = index.get(name)
+        if not source.is_file() or not isinstance(metadata, dict):
+            raise FileNotFoundError(name)
+        note_path = f"files/{project}/{name}.md"
+        note_commit = None
+        note_full = _home() / "vault" / note_path
+        if note_full.is_file():
+            import vault
+            note_commit = vault.delete_note(note_path, agent="owner", kind="upload_note")
+        target_folder = trash_root / undo_id
+        target_folder.mkdir(parents=True, exist_ok=False)
+        os.replace(source, target_folder / name)
+        index.pop(name, None)
+        _write_index(folder, index)
+        record = {"project": project, "name": name, "metadata": metadata,
+                  "note_path": note_path if note_commit else None, "note_commit": note_commit}
+        (target_folder / "record.json").write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
+    import vault
+    vault.record_event("owner", "delete", {"kind": "uploaded_file", "project": project, "name": name, "undo_id": undo_id})
+    return {"deleted": True, "undo_id": undo_id, "name": name, "project": project}
+
+
+def undo_delete_file(undo_id: str) -> dict:
+    if not re.fullmatch(r"[0-9a-f]{32}", undo_id or ""):
+        raise ValueError("That file cannot be restored")
+    trash = _home() / "files" / ".trash" / undo_id
+    record_path = trash / "record.json"
+    try:
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        project, name = validate_project(record["project"]), validate_filename(record["name"])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise FileNotFoundError("Removed file not found") from exc
+    folder = _home() / "files" / project
+    destination = folder / name
+    source = trash / name
+    with _project_lock(folder):
+        if destination.exists() or not source.is_file():
+            raise FileExistsError("A file with that name is already in this project")
+        os.replace(source, destination)
+        index = _load_index(folder)
+        index[name] = record["metadata"]
+        _write_index(folder, index)
+        if record.get("note_path") and record.get("note_commit"):
+            import vault
+            vault.restore_deleted_note(record["note_path"], record["note_commit"])
+        record_path.unlink(missing_ok=True)
+        trash.rmdir()
+    import vault
+    vault.record_event("owner", "restore", {"kind": "uploaded_file", "project": project, "name": name})
+    return {"restored": True, "name": name, "project": project}
 
 
 def create_project(name: str) -> dict:

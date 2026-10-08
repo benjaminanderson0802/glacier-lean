@@ -5,6 +5,7 @@ import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 const OPEN = ['proposed', 'open', 'researching']
 const lines = (t?: string) => (t ?? '').split('\n').map(l => l.replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean)
@@ -12,6 +13,7 @@ const lines = (t?: string) => (t ?? '').split('\n').map(l => l.replace(/^\s*[-*]
 export function ClaimsList() {
   const [items, setItems] = useState<ClaimSummary[] | null>(null)
   const [err, setErr] = useState('')
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   useEffect(() => { claimsApi.list().then(setItems).catch(e => setErr(String(e))) }, [])
   const open = (items ?? []).filter(c => OPEN.includes(c.status))
   const done = (items ?? []).filter(c => !OPEN.includes(c.status))
@@ -19,16 +21,17 @@ export function ClaimsList() {
     <>
       <PageHead title={t('claims.title')} crumb={t('claims.crumb')} sub={t('claims.subtitle')} />
       {err && <div className="g-error">{err}</div>}
+      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       <div className="g-grid-2" style={{ flex: 1 }}>
         <Panel title={t('claims.waiting')} aside={open.length} testid="claims-open" className="g-scroll">
           <div className="g-rows">
-            {open.map(c => <Row key={c.id} status={c.status === 'proposed' ? 'bad' : 'warn'} lead={c.summary} detail={`${c.kind} · ${c.status}`} when={ago(c.updated)} onClick={() => go(`home/claim/${c.id}`)} testid={`claim-${c.id}`} />)}
+            {open.map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1 }}><Row status={c.status === 'proposed' ? 'bad' : 'warn'} lead={c.summary} detail={`${c.kind} · ${c.status}`} when={ago(c.updated)} onClick={() => go(`home/claim/${c.id}`)} testid={`claim-${c.id}`} /></div><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid={`claim-delete-${c.id}`} onDelete={async () => { const result = await claimsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await claimsApi.undoDelete(c.id, result.commit); setItems(await claimsApi.list()) } } }} onDeleted={action => { setDeleteUndo(action ?? null); setItems(current => current?.filter(item => item.id !== c.id) ?? null) }} onError={e => setErr(String(e))} /></div>)}
             {items && open.length === 0 && <Empty>{t('claims.nothingWaiting')}</Empty>}
           </div>
         </Panel>
         <Panel title={t('claims.settled')} aside={done.length} className="g-scroll">
           <div className="g-rows">
-            {done.map(c => <Row key={c.id} status={c.status === 'resolved' ? 'ok' : 'idle'} lead={c.summary} detail={c.status} when={ago(c.updated)} onClick={() => go(`home/claim/${c.id}`)} />)}
+            {done.map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1 }}><Row status={c.status === 'resolved' ? 'ok' : 'idle'} lead={c.summary} detail={c.status} when={ago(c.updated)} onClick={() => go(`home/claim/${c.id}`)} /></div><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid={`claim-delete-${c.id}`} onDelete={async () => { const result = await claimsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await claimsApi.undoDelete(c.id, result.commit); setItems(await claimsApi.list()) } } }} onDeleted={action => { setDeleteUndo(action ?? null); setItems(current => current?.filter(item => item.id !== c.id) ?? null) }} onError={e => setErr(String(e))} /></div>)}
             {items && done.length === 0 && <Empty>{t('claims.noneYet')}</Empty>}
           </div>
         </Panel>
@@ -41,6 +44,7 @@ export function ClaimDetail({ id }: { id: string }) {
   const [c, setC] = useState<ClaimFull | null>(null)
   const [err, setErr] = useState('')
   const [done, setDone] = useState('')
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const load = () => claimsApi.get(id).then(setC).catch(e => setErr(String(e)))
   useEffect(() => { load() }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   const s = sections(c?.body ?? '')
@@ -59,6 +63,7 @@ export function ClaimDetail({ id }: { id: string }) {
     <>
       <PageHead title={t('claims.detail')} crumb={t('claims.detailCrumb')} side={<span className="g-detail">{t('claims.id', { id: id.slice(0, 8) })} · {m?.updated ? ago(String(m.updated)) : ''}</span>} />
       {err && <div className="g-error">{err}</div>}
+      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       {m && (
         <div className="g-banner" data-testid="claim-banner"><StatusIcon kind={open ? 'bad' : 'ok'} /><span className="g-lead">{m.kind ? `${String(m.kind)[0].toUpperCase()}${String(m.kind).slice(1)}: ` : ''}{m.summary ?? s['Problem']}</span><span className="g-chip">{String(m.status)}</span></div>
       )}
@@ -86,6 +91,9 @@ export function ClaimDetail({ id }: { id: string }) {
           <Btn onClick={() => decide('research_more')} data-testid="claim-more">{t('claims.moreResearch')}</Btn>
         </div>
       )}
+      {c && <div style={{ marginTop: 8 }}><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid="claim-detail-delete"
+        onDelete={async () => { const result = await claimsApi.delete(id); return { title: t('delete.removed'), run: async () => { await claimsApi.undoDelete(id, result.commit); await load() } } }}
+        onDeleted={action => { setDeleteUndo(action ?? null); setC(null) }} onError={e => setErr(String(e))} /></div>}
     </>
   )
 }
