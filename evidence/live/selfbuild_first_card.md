@@ -257,3 +257,23 @@ Exact final line:
 ```text
 421 passed, 1 skipped, 1 warning in 513.81s (0:08:33)
 ```
+
+# W66 practice run (three attempts; not verified)
+
+This card advances PH9.2 and serves P-VERIFY/P-GOALS and M-VERIFIED/M-INTERVENE. PH3 and PH7 have approved exits; PH5 remains in progress, so this is an owner-authorized verified-merge-only trial. The feature flow is the existing open-source implementation, so no replacement tool was added. Acceptance is all six saved checks passing (protected guard, backend suite, other suites, verification benchmark, security benchmark, and final owner gate), followed by a local merge into the scratch practice checkout. No attempt below merged.
+
+| Run | Outcome | Checks and reason |
+| --- | --- | --- |
+| `96510c89fd81` | Rejected; unmerged | Worker completed the unprotected `tools/scan/` card. Check 0 failed because the guard compared the run tree based on scratch `main` (`fd0a239`) against the newer source worktree. This exposed stale practice checkout/baseline setup. No other checks ran. |
+| `95750a94f1f9` | Rejected; unmerged | Guard passed (`Protected checks modified or deleted: none`). Backend acceptance failed 3 tests: two document-upload/search tests lacked MarkItDown PDF/DOCX extras in the practice checkout requirements (it was still on old `main`), and `test_run_card_posts_card_and_prints_watch_instructions` rejected its scratch source as an unexpected origin. Other suites passed (`60 passed in 6.88s`); verification benchmark passed (false-done `0.00%`, verified `100.00%`); security benchmark passed (`P 400 | blocked |`). Rejected at final gate. |
+| `01a859d43e5c` | Rejected at start; unmerged | Before approving the start gate, inspection showed practice `main` had again been refreshed from source `main`, not the current card-branch HEAD: its requirements still contained `markitdown==0.1.8` with no extras. Rejected to avoid running against the wrong source revision. |
+
+The flow fixes now refresh the clean scratch practice checkout from the exact source HEAD and use that practice checkout as the protected guard baseline. A regression test covers refreshing from a non-main feature branch. The pinned requirements line remains `markitdown[pdf,docx]==0.1.8` (commit `9b551bc`, originally `dbafb88` before rebase).
+
+The final required `bash ~/tools/suite.sh` run completed with:
+
+```text
+1 failed, 553 passed, 1 skipped, 4 warnings in 143.70s (0:02:23)
+```
+
+The remaining failure was `tests/test_starter.py::test_apply_creates_only_chosen_flows_once_and_saves_settings`: expected `granite3.3:2b`, received `qwen3:0.6b`. Current `system_check.recommend()` chooses an available evaluated small model in low mode, while this newly rebased test expects the Granite owner decision. This is outside the self-build flow lane and was not changed. The W66 change therefore has no verified practice merge commit; PH9.2 remains unverified.
