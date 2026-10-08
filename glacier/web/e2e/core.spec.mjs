@@ -41,6 +41,7 @@ const cleanup = () => { for (const p of procs.reverse()) { try { process.kill(-p
 process.on('exit', cleanup)
 
 let browser
+let cpuThrottleSession
 let failures = 0
 const check = (cond, label) => { log(`${cond ? 'ok  ' : 'FAIL'} ${label}`); if (!cond) failures++ }
 
@@ -213,6 +214,11 @@ try {
 
   // ---------- flow 5: loop + sub-flow ----------
   {
+    // Repeat the cycle under a smaller viewport and a throttled renderer so
+    // connection hit targets are exercised at the minimum supported zoom.
+    await page.setViewportSize({ width: 1280, height: 720 })
+    cpuThrottleSession = await page.context().newCDPSession(page)
+    await cpuThrottleSession.send('Emulation.setCPUThrottlingRate', { rate: 4 })
     await newEnv('Sub child')
     await deselectCanvas()
     await tid('palette-command').click()
@@ -234,6 +240,7 @@ try {
     await page.waitForTimeout(300)
     await connect('n1', 'n2'); await connect('n2', 'n3'); await connect('n3', 'n2'); await connect('n2', 'n4')
     await page.waitForFunction(() => document.querySelectorAll('.react-flow__edge').length === 4)
+    check(await page.locator('.react-flow__edge').count() === 4, 'throttled 1280x720 loop canvas creates four edges')
     const lbl = (await page.locator('.react-flow__edge-text').allTextContents()).sort().join(',')
     check(lbl === 'again,done', `loop out-edges auto-labelled again/done (got ${lbl})`)
     check(await page.locator('.react-flow__edge.edge-loopback').count() === 2, 'loop-back edges drawn as a cycle')
@@ -290,10 +297,12 @@ try {
 
   await page.screenshot({ path: path.join(root, 'e2e/screen.png') })
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
+  await cpuThrottleSession?.send('Emulation.setCPUThrottlingRate', { rate: 1 })
 } catch (e) {
   failures++
   console.error('[e2e] ERROR', e)
 } finally {
+  await cpuThrottleSession?.detach().catch(() => {})
   await browser?.close()
   cleanup()
 }

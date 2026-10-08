@@ -43,7 +43,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
       data-state={state}
       data-type={type}
     >
-      <Handle type="target" position={Position.Left} data-testid={`handle-in-${id}`} />
+      <Handle type="target" position={Position.Left} className="gnode-handle" data-testid={`handle-in-${id}`} />
       <div className="gnode-head">
         <PixelArt rows={ICONS[type] ?? ICONS.command} pal={ICON_PALETTE} px={2} className="gnode-icon" title={type} />
         <span className="gnode-type">{type === 'codex' ? 'codex worker' : type === 'flow' ? 'sub-flow' : type}</span>
@@ -51,7 +51,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
       </div>
       <div className="gnode-body" title={summary(type, data.config)}>{summary(type, data.config)}</div>
       {state !== 'none' && <div className="gnode-state">{state}</div>}
-      <Handle type="source" position={Position.Right} data-testid={`handle-out-${id}`} />
+      <Handle type="source" position={Position.Right} className="gnode-handle" data-testid={`handle-out-${id}`} />
     </div>
   )
 }
