@@ -120,7 +120,9 @@ fn backend_ready(port: u16) -> bool {
     let addr = format!("127.0.0.1:{port}");
     let Ok(mut stream) = std::net::TcpStream::connect(&addr) else { return false; };
     let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
-    let request = format!("GET /api/node-types HTTP/1.0\r\nHost: {addr}\r\n\r\n");
+    // /api/health is the one route open without the install token; every other /api route
+    // answers 401 to this probe, which made the app report "engine didn't start" while it was running.
+    let request = format!("GET /api/health HTTP/1.0\r\nHost: {addr}\r\n\r\n");
     if stream.write_all(request.as_bytes()).is_err() { return false; }
     let mut response = String::new();
     stream.read_to_string(&mut response).is_ok() && (response.starts_with("HTTP/1.1 200") || response.starts_with("HTTP/1.0 200"))
@@ -216,6 +218,23 @@ mod tests {
     #[test]
     fn api_address_is_injected_into_bundled_pages() {
         assert_eq!(api_initialization_script(43127, "abc"), "window.__GLACIER_API__ = \"http://127.0.0.1:43127\"; window.__GLACIER_TOKEN__ = \"abc\";");
+    }
+
+    #[test]
+    fn readiness_probe_uses_the_open_health_route() {
+        // Every /api route except /api/health needs the install token; the probe sends none.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0u8; 512];
+            let n = std::io::Read::read(&mut stream, &mut buf).unwrap();
+            let request = String::from_utf8_lossy(&buf[..n]).to_string();
+            let reply = if request.starts_with("GET /api/health ") { "HTTP/1.1 200 OK\r\n\r\n{}" } else { "HTTP/1.1 401 Unauthorized\r\n\r\n" };
+            std::io::Write::write_all(&mut stream, reply.as_bytes()).unwrap();
+        });
+        assert!(backend_ready(port));
+        server.join().unwrap();
     }
 
     #[test]
