@@ -19,7 +19,9 @@ def _start(tmp_path, monkeypatch, *, route="auto", codex=True, signed_in=True, o
     import system_check
 
     calls = []
-    monkeypatch.setattr(shutil, "which", lambda name: "/fake/codex" if name == "codex" and codex else None)
+    original_which = assistant_chat.shell_commands.which
+    monkeypatch.setattr(assistant_chat.shell_commands, "which",
+                        lambda name: ("/fake/codex" if codex else None) if name == "codex" else original_which(name))
     monkeypatch.setattr(chat, "_codex_signed_in", lambda: signed_in, raising=False)
     monkeypatch.setattr(chat, "_ollama_answers", lambda: ollama, raising=False)
 
@@ -38,8 +40,8 @@ def _start(tmp_path, monkeypatch, *, route="auto", codex=True, signed_in=True, o
     return calls
 
 
-def _chat_events(message):
-    response = assistant_chat.chat(assistant_chat.ChatRequest(message=message))
+def _chat_events(message, conversation_id=None):
+    response = assistant_chat.chat(assistant_chat.ChatRequest(message=message, conversation_id=conversation_id))
     chunks = asyncio.run(_collect(response.body_iterator))
     return [json.loads(line[6:]) for chunk in chunks for line in chunk.splitlines() if line.startswith("data: ")]
 
@@ -60,6 +62,36 @@ def test_auto_uses_local_when_codex_missing(tmp_path, monkeypatch):
     events = _chat_events("Hello")
     assert calls[0][0] == "local"
     assert next(e for e in events if e["type"] == "TEXT_MESSAGE_CONTENT")["delta"] == "Hello from local."
+
+
+def test_local_followup_prompt_contains_prior_exchange(tmp_path, monkeypatch):
+    calls = _start(tmp_path, monkeypatch, route="local", codex=False)
+    conversation_id = "8" * 36
+    _chat_events("Make it daily", conversation_id=conversation_id)
+    _chat_events("Make it weekly instead", conversation_id=conversation_id)
+
+    assert len(calls) == 2
+    assert "Earlier conversation" in calls[1][1]
+    assert "Make it daily" in calls[1][1]
+    assert "Hello from local." in calls[1][1]
+
+
+def test_conversation_context_keeps_newest_with_exchange_and_character_bounds(tmp_path, monkeypatch):
+    _start(tmp_path, monkeypatch, route="local", codex=False)
+    from routes import assistant_chat as chat
+    conversation_id = "9" * 36
+    for index in range(14):
+        chat._append_conversation(conversation_id, f"Question {index}", f"Answer {index}")
+    # An oversized recent exchange must still leave room for its newest text.
+    chat._append_conversation(conversation_id, "Newest " + "x" * 6500, "Newest answer")
+
+    context = chat._conversation_context(conversation_id)
+    assert "Earlier conversation" in context
+    assert len(context.splitlines()[1:]) < 80
+    assert len(context) <= 6100  # marker is outside the approximately 6,000-character excerpt budget
+    assert "Newest answer" in context
+    assert "Question 13" in context
+    assert "Question 0" not in context
 
 
 def test_auto_with_neither_provider_emits_plain_message(tmp_path, monkeypatch):
