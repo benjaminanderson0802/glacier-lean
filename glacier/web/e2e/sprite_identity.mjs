@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const web = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const temp = mkdtempSync(path.join(os.tmpdir(), 'glacier-sprites-'))
 try {
-  const run = spawnSync('/home/glacier/w/glacier-lean/.venv/bin/python', [path.resolve(web, '../../tools/pixelart/make_sprites.py'), temp], { encoding: 'utf8' })
+  const run = spawnSync(path.resolve(web, '../../.venv/bin/python'), [path.resolve(web, '../../tools/pixelart/make_sprites.py'), temp], { encoding: 'utf8' })
   if (run.status !== 0) throw new Error(run.stderr || run.stdout || 'sprite generation failed')
   const committed = path.join(web, 'src/theme/sprites')
   const names = readdirSync(committed).filter(n => n.endsWith('.png')).sort()
