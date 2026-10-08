@@ -76,6 +76,10 @@ def _guide() -> str:
             tabs.append(f"{label}: {words}")
         if tabs:
             pieces.append("Five tabs, from the built-in guide: " + " ".join(tabs))
+        pieces.append(
+            "Approvals: In Automations, read each request; choose Approve for actions you understand or Reject if unclear. "
+            "In Build, review and approve the spec, then review the tasks, roles and checks and approve the plan to start the team."
+        )
         for filename, label, limit in (("02-build-a-team.md", "Building a project with a team", 420),
                                         ("01-first-automation.md", "Making and running a flow", 420),
                                         ("03-memory.md", "Using Memory", 350),
