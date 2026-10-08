@@ -4,10 +4,10 @@ import datetime as dt
 import hashlib
 import json
 import os
-import re
 
 import vault
 from memory_links import front_matter, parse_links, rewrite_wikilinks
+from memory_meta import parse as parse_metadata
 
 
 def _home():
@@ -43,15 +43,7 @@ def _body(raw):
 
 
 def _metadata(raw):
-    match = re.match(r"\A---\s*\r?\n(.*?)\r?\n---\s*(?:\r?\n|$)", raw, re.S)
-    if not match:
-        return {}
-    result = {}
-    for line in match.group(1).splitlines():
-        key, sep, value = line.partition(":")
-        if sep:
-            result[key.strip()] = value.strip().strip("\"'")
-    return result
+    return parse_metadata(raw)[0]
 
 
 def _date(raw, full_path):

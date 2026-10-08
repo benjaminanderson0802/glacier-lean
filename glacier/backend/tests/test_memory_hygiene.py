@@ -140,6 +140,16 @@ def test_merge_link_rewrite_preserves_aliases_fragments_and_ignores_code():
     )
 
 
+def test_merge_front_matter_parser_preserves_nested_custom_yaml():
+    from memory_meta import split_front_matter
+
+    raw = "---\r\ncustom:\r\n  nested: [one, two]\r\n---\r\nBody\r\n"
+    metadata, body, error = split_front_matter(raw)
+    assert metadata == {"custom": {"nested": ["one", "two"]}}
+    assert body == "Body\r\n"
+    assert error is None
+
+
 def test_commit_failure_restores_changed_and_removed_files(tmp_path, monkeypatch):
     root = tmp_path / "vault"
     root.mkdir()
