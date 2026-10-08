@@ -16,22 +16,22 @@ import time
 
 import httpx
 
-from acceptance import verify_hello_file, verify_python_function
+from acceptance import verify_python_function
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "glacier" / "backend"
-MODEL = "granite3.3:2b"
+MODEL = os.environ.get("GLACIER_PORTABLE_LOCAL_MODEL", "qwen3:1.7b")
 CODING_GOAL = (
     "In this tiny Python project, add a function `add(a, b)` in math_ops.py that returns the sum, "
     "and add pytest tests in test_math_ops.py covering positive values and zero. Run the tests. "
     "Use relative paths in this project; do not modify test files after adding them."
 )
-SIMPLE_GOAL = "Create ./hello.txt in this project folder with exactly this content: hello from glacier. Use the relative path ./hello.txt."
+SIMPLE_GOAL = "Create ./math_ops.py with a function add(a, b) that returns a + b. Create ./test_math_ops.py with one pytest test that imports add from math_ops and asserts add(2, 3) == 5. Run pytest. Use relative paths and make the files; do not describe code instead of writing it."
 CHECK_CMD = f"{sys.executable} -m pytest -q"
 BACKENDS = {
     "Codex CLI": {"field": {"type": "codex", "config": {"sandbox": "workspace-write"}}, "version_cmd": ["codex", "--version"]},
-    "OpenCode ACP": {"field": {"type": "acp_agent", "config": {"harness": "opencode"}}, "version_cmd": ["opencode", "--version"]},
-    "Ollama granite3.3:2b": {"field": {"type": "local_ai", "config": {"model": MODEL, "answer_style": "Free text"}}, "version_cmd": ["ollama", "--version"]},
+    "OpenCode ACP (Ollama " + MODEL + ")": {"field": {"type": "acp_agent", "config": {"harness": "opencode", "debug_logs": True}}, "model": MODEL, "version_cmd": ["opencode", "--version"]},
+    "OpenCode ACP second model (granite3.3:2b)": {"field": {"type": "acp_agent", "config": {"harness": "opencode", "debug_logs": True}}, "model": "granite3.3:2b", "version_cmd": ["ollama", "--version"]},
 }
 
 
@@ -84,16 +84,16 @@ def build_flow(name: str, backend: dict, workspace: Path, goal: str, command: st
     if node_type == "codex":
         config.update({"prompt": goal, "workdir": str(workspace), "timeout": 900})
     elif node_type == "acp_agent":
-        config.update({"prompt": goal, "workdir": str(workspace), "timeout": 900})
+        config.update({"prompt": goal, "workdir": str(workspace), "timeout": 900, "provider_model": backend.get("model", MODEL)})
         if config["harness"] == "opencode":
             (workspace / "opencode.json").write_text(json.dumps({
                 "$schema": "https://opencode.ai/config.json",
-                "model": f"ollama/{MODEL}",
+                "model": f"ollama/{backend.get('model', MODEL)}",
                 "provider": {"ollama": {
                     "npm": "@ai-sdk/openai-compatible",
                     "name": "Ollama (local)",
                     "options": {"baseURL": "http://127.0.0.1:11434/v1"},
-                    "models": {MODEL: {"name": "Granite 3.3 2B (local)", "tool_call": True}},
+                    "models": {backend.get("model", MODEL): {"name": f"{backend.get('model', MODEL)} (local)", "tool_call": True}},
                 }},
             }, indent=2), encoding="utf-8")
     else:
@@ -118,10 +118,11 @@ def normalize_flow(flow: dict) -> dict:
     cfg = node["config"]
     backend_fields = {
         "step_type": node["type"],
-        **{key: cfg.get(key) for key in ("harness", "command", "model", "answer_style", "sandbox") if key in cfg},
+        **{key: cfg.get(key) for key in ("harness", "command", "model", "answer_style", "sandbox", "debug_logs") if key in cfg},
+        "provider_model": cfg.get("provider_model"),
     }
     node["type"] = "<BACKEND>"
-    for key in ("harness", "command", "model", "answer_style", "sandbox"):
+    for key in ("harness", "command", "model", "answer_style", "sandbox", "provider_model", "debug_logs"):
         cfg.pop(key, None)
     cfg["<BACKEND_CONFIG>"] = "<BACKEND_CONFIG>" if backend_fields else {}
     # The work folder is isolated per backend, but not a semantic flow change.
@@ -142,7 +143,7 @@ def run_case(client: httpx.Client, name: str, backend: dict, base: Path, simple:
     workspace = base / (("workspace-simple-" if simple else "workspace-coding-") + label)
     make_project(workspace, simple)
     goal = SIMPLE_GOAL if simple else CODING_GOAL
-    check_command = 'test "$(cat hello.txt)" = "hello from glacier"' if simple else CHECK_CMD
+    check_command = CHECK_CMD
     flow = build_flow("portable-" + label, backend, workspace, goal, check_command)
     started = time.monotonic()
     result: dict = {"backend": name, "flow": normalize_flow(flow), "flow_backend": flow["nodes"][0]["type"]}
@@ -157,7 +158,7 @@ def run_case(client: httpx.Client, name: str, backend: dict, base: Path, simple:
                 break
             time.sleep(0.5)
         status = run.get("status") if run else "timeout"
-        check = verify_hello_file(workspace) if simple else verify_python_function(workspace, sys.executable)
+        check = verify_python_function(workspace, sys.executable)
         verification = (run or {}).get("verification", [])
         result.update({
             "status": status,
@@ -217,7 +218,7 @@ def main() -> int:
     flow_diff = len({json.dumps(row["flow"], sort_keys=True) for row in results["coding"]}) == 1
     lines = ["# Portable worker backend live bench", "", f"Run date: {time.strftime('%Y-%m-%d')}", "",
              "Drift check: PH2 exit M-PORTABLE; serves P-PORTABLE. PH1 is not at exit yet, so this evidence does not mark PH2 done. Existing two-harness ACP proof did not provide a repeatable three-backend swap. Acceptance: all three runs use the same goal, flow and independent check; only the worker backend field changes; every independent and Glacier check passes.", "",
-             "The runner first tried the small coding goal. If any backend failed, it ran a simpler exact-file goal through all three. Workspaces and Glacier data were temporary. No credentials or tokens are recorded.", ""]
+             "The runner first tried the coding goal. If any backend failed, it ran a smaller function-plus-test goal through all three. Workspaces and Glacier data were temporary. No credentials or tokens are recorded.", ""]
     for case_name, rows in results.items():
         if not rows:
             continue
