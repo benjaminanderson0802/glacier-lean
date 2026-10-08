@@ -88,7 +88,11 @@ def fill_command(cmd: str, guard: str = "", baseline: str = "") -> str:
     """Fill {guard}/{baseline} and run every bare `python` word with the interpreter running this script
     (many computers have no `python` command)."""
     cmd = cmd.replace("{guard}", guard).replace("{baseline}", baseline)
-    return re.sub(r"(?<![\w./-])python(?=\s)", lambda _m: shlex.quote(sys.executable), cmd)
+    python = os.environ.get("GLACIER_PYTHON") or sys.executable
+    cmd = re.sub(r"(?<![\w./-])python(?=\s)", lambda _m: shlex.quote(python), cmd)
+    # Acceptance commands may already contain a stale absolute Codespaces interpreter.
+    cmd = cmd.replace("/workspaces/glacier-lean/.venv/bin/python", shlex.quote(python))
+    return cmd
 
 
 def prepare_commands(flow: dict, guard: str = "", baseline: str = "") -> None:
@@ -143,7 +147,16 @@ def main(argv: list[str] | None = None) -> int:
     for node in flow["nodes"]:
         config = node.get("config", {})
         if node.get("type") == "codex":
-            config["prompt"] += f"\n\nApproved card text:\n{card_text}"
+            config["prompt"] += (
+                f"\n\nFULL APPROVED CARD (including its acceptance requirements):\n{card_text}"
+                "\n\nImplement every requested behavior and test in this card in the isolated practice"
+                " worktree. You are authorized to edit the practice worktree files needed to implement"
+                " the card. Do not park merely because an interpreter path is unavailable: use the"
+                " active interpreter selected by this flow (GLACIER_PYTHON when set, otherwise the"
+                " current Python interpreter). Run the card's acceptance commands and report exact"
+                " results. If you need a decision or cannot proceed, file a claim in vault/claims/"
+                " with the reason and evidence before stopping; never leave a question as a silent park."
+            )
     prepare_commands(flow, guard=str(GUARD_PATH), baseline=str(repo))
     try:
         with httpx.Client(base_url=args.api.rstrip("/"), timeout=30, headers=_auth_headers()) as client:

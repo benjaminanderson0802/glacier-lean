@@ -53,6 +53,28 @@ def test_feature_flow_has_isolated_approved_worker_and_fixed_gates():
     human = "\n".join(c.get("question", "") for c in checks if c["kind"] == "human")
     assert "Approve only if you reviewed the protected-path list above" in human
     assert "push" in feature["name"].lower() or "push" in json.dumps(feature).lower()
+    prompt = next(n["config"]["prompt"] for n in codex)
+    assert "full approved card" in prompt.lower()
+    assert "authorized to edit the practice worktree" in prompt.lower()
+    assert "file a claim in vault/claims/" in prompt.lower()
+    assert "acceptance commands" in prompt.lower()
+
+
+def test_feature_commands_use_current_or_configured_interpreter_without_workspaces(monkeypatch):
+    feature = load(FEATURE)
+    monkeypatch.delenv("GLACIER_PYTHON", raising=False)
+    selfbuild_run_card.prepare_commands(feature, guard="/tmp/guard.py", baseline="/tmp/practice")
+    commands = [check["cmd"] for check in feature["acceptance"] if check["kind"] == "command"]
+    assert commands
+    assert all("/workspaces" not in cmd for cmd in commands)
+    assert all(shlex.quote(sys.executable) in cmd for cmd in commands)
+
+    monkeypatch.setenv("GLACIER_PYTHON", "/custom/python")
+    feature = load(FEATURE)
+    selfbuild_run_card.prepare_commands(feature, guard="/tmp/guard.py", baseline="/tmp/practice")
+    commands = [check["cmd"] for check in feature["acceptance"] if check["kind"] == "command"]
+    assert all("/workspaces" not in cmd for cmd in commands)
+    assert all("/custom/python" in cmd for cmd in commands)
 
 
 def test_maintenance_is_weekly_proposal_only_without_write_enabled_worker():
