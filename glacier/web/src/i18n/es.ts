@@ -57,6 +57,8 @@ export const es: Record<string, string> = {
   'automations.never': 'nunca',
   'automations.noMatches': 'No hay flujos que coincidan.',
   'automations.empty': 'Todavía no hay flujos. Pulsa Nuevo o pide al asistente que cree uno.',
+  'automations.open': 'abrir',
+  'automations.back': 'volver',
   'automations.title': 'Automatizaciones',
   'automations.newName': 'Pon nombre al nuevo flujo',
   'automations.create': 'Crear',

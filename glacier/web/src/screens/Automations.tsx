@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ago, api, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
-import { Btn, Empty, PageHead, Panel } from '../ui/kit.tsx'
+import { Btn, Empty, PageHead, Panel, TextBox, HintBar } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
@@ -94,7 +94,7 @@ export function AutomationsScreen() {
           : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
       <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
-      <Panel>
+      <Panel className="automations-window" testid="automations-window">
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
             {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={`filter-${f}`}>{f}</button>)}
@@ -147,7 +147,8 @@ export function AutomationsScreen() {
             })}
           </tbody>
         </table>
-        {flows && shown.length === 0 && <Empty>{flows.length ? t('automations.noMatches') : t('automations.empty')}</Empty>}
+        {flows && shown.length === 0 && <TextBox className="automations-empty"><Empty>{flows.length ? t('automations.noMatches') : t('automations.empty')}</Empty></TextBox>}
+        <HintBar><span><b>Enter</b> {t('automations.open')}</span><span><b>Esc</b> {t('automations.back')}</span><span className="g-more-arrow" /></HintBar>
       </Panel>
     </>
   )

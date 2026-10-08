@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges,
+  Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges, EdgeText,
   type Connection, type Edge, type EdgeChange, type NodeChange, useReactFlow,
 } from '@xyflow/react'
 import {
@@ -30,10 +30,23 @@ const nextId = (prefix: string, ids: string[]) => {
 }
 
 const edgeStyle = (label: string) => ({
+  type: 'pixel',
   label: label || undefined,
   markerEnd: { type: MarkerType.ArrowClosed, color: tok('--g-line') },
   className: label ? `edge-${label}` : undefined,
 })
+
+function PixelEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, style, selected, label }: import('@xyflow/react').EdgeProps) {
+  const middle = Math.round((sourceX + targetX) / 2)
+  const vertical = Math.abs(targetY - sourceY) > Math.abs(targetX - sourceX)
+  const labelX = Math.round((sourceX + targetX) / 2 + (vertical ? 20 : 0))
+  const labelY = Math.round((sourceY + targetY) / 2 + (vertical ? 0 : -16))
+  const d = `M ${sourceX} ${sourceY} H ${middle} V ${targetY} H ${targetX}`
+  return <>
+    <path id={id} d={d} className={`react-flow__edge-path${selected ? ' selected' : ''}`} markerEnd={markerEnd} style={style} />
+    {label && <EdgeText x={labelX} y={labelY} label={label} labelShowBg />}
+  </>
+}
 
 function httpAddressError(address: string, allowedSites: string): string {
   const value = address.trim()
@@ -135,6 +148,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     return t.branches_from === 'options' ? splitOptions(n.data.config.options) : null
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
+  const flowEdgeTypes = useMemo(() => ({ pixel: PixelEdge }), [])
 
   /** Fields of the flow the builder does not edit (goal, acceptance checks, isolate, ...): kept on save. */
   const extras = useRef<Record<string, unknown>>({})
@@ -540,6 +554,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 nodes={displayNodes}
                 edges={displayEdges}
                 nodeTypes={flowNodeTypes}
+                edgeTypes={flowEdgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
@@ -555,7 +570,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
-                <Background gap={20} color={tok('--g-line-dim')} />
+                <Background gap={16} size={1} color={tok('--g-ice4')} />
                 <Controls showInteractive={false} />
                 <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />
               </ReactFlow>
