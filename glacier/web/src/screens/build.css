@@ -65,9 +65,8 @@
 .tabs { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
 .app button.tab { background: transparent; border-color: var(--g-line-dim); }
 .app button.tab.active { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
-.palette { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
-.canvas-tools { display: flex; gap: 2px; flex: 0 0 auto; }
-.app button.pal { font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
+.palette { display: flex; gap: calc(2 * var(--px)); flex: 0 1 auto; min-width: 0; max-width: 100%; margin-left: auto; flex-wrap: wrap; overflow: visible; }
+.app button.pal { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
 
 .empty { margin: auto; color: var(--g-muted); }
 .canvas-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }

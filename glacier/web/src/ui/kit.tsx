@@ -1,8 +1,22 @@
 // Shared building blocks. Screens are made ONLY from these + Pixel.tsx, so the theme cannot drift.
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Icon, StatusIcon, type IconName, type StatusKind } from './Pixel.tsx'
 
+export function Window({ title, children, className = '', testid }: { title?: ReactNode; children: ReactNode; className?: string; testid?: string }) {
+  return <section className={`g-panel ${className}`} data-testid={testid}>{title && <h2 className="g-panel-title">{title}</h2>}{children}</section>
+}
+
+export function MenuList({ items, selected, onSelect }: { items: { id: string; label: ReactNode; icon?: IconName }[]; selected: string; onSelect: (id: string) => void }) {
+  return <div className="g-menu-list">{items.map(item => <button type="button" key={item.id} className={`g-menu-item${selected === item.id ? ' active' : ''}`} onClick={() => onSelect(item.id)}><span className="g-menu-cursor"/>{item.icon && <Icon name={item.icon}/ >}{item.label}</button>)}</div>
+}
+
 export function HintBar({ children }: { children: ReactNode }) { return <div className="g-hintbar">{children}</div> }
+export function Button({ children, primary, ...props }: { children: ReactNode; primary?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) { return <button {...props} className={`g-btn${primary ? ' primary' : ''} ${props.className ?? ''}`}>{children}</button> }
+export function Bar({ value, max, tone = 'ok' }: { value: number; max: number; tone?: 'ok' | 'warn' | 'bad' }) { const pct = max ? Math.max(0, Math.min(100, value / max * 100)) : 0; return <div className="g-progress" role="progressbar" aria-valuenow={value} aria-valuemax={max}><i className={tone} style={{ width: `${pct}%` }}/></div> }
+export function TextBox({ children, className = '' }: { children: ReactNode; className?: string }) { return <section className={`g-panel g-textbox ${className}`}>{children}<span className="g-more-arrow"/></section> }
+export function TableRows({ children }: { children: ReactNode }) { return <div className="g-rows g-table-rows">{children}</div> }
+export function TitleBar({ title, onMinimize, onClose }: { title: ReactNode; onMinimize?: () => void; onClose?: () => void }) { return <div className="g-titlebar"><strong>{title}</strong><span/><Button onClick={onMinimize}>_</Button><Button onClick={onClose}>×</Button></div> }
+
 export function Hint({ keyLabel, children }: { keyLabel: string; children: ReactNode }) { return <span><span className="g-key">{keyLabel}</span> {children}</span> }
 export function NamedTextBox({ children, className = '', testid }: { children: ReactNode; className?: string; testid?: string }) { return <section className={`g-panel g-textbox ${className}`} data-testid={testid}>{children}<span className="g-more-arrow"/></section> }
 type MenuItem = { id: string; label: ReactNode; icon?: IconName; testid?: string }
@@ -30,7 +44,7 @@ export function PageHead({ title, sub, crumb, side }: { title: string; sub?: str
 export function Panel({ title, aside, children, testid, className, style }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; testid?: string; className?: string; style?: React.CSSProperties }) {
   return (
     <section className={`g-panel ${className ?? ''}`} data-testid={testid} style={style}>
-      {title && <h2 className="g-panel-title">{title}{aside && <span className="g-aside">{aside}</span>}</h2>}
+      {title && <h2 className="g-panel-title"><span className="g-panel-heading">{title}</span>{aside && <span className="g-aside">{aside}</span>}</h2>}
       {children}
     </section>
   )
@@ -41,7 +55,7 @@ export function Row({ status, icon, lead, detail, when, onClick, testid, classNa
   const inner = (
     <>
       <span className="g-ico">{status ? <StatusIcon kind={status} /> : icon ? <Icon name={icon} /> : null}</span>
-      <span className="g-mid"><span className="g-lead">{lead}</span>{detail != null && <span className="g-detail">{detail}</span>}</span>
+      <span className="g-mid"><span className="g-lead" title={typeof lead === 'string' ? lead : undefined}>{lead}</span>{detail != null && <span className="g-detail" title={typeof detail === 'string' ? detail : undefined}>{detail}</span>}</span>
       <span className="g-when">{when}</span>
     </>
   )

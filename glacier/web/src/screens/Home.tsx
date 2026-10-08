@@ -43,7 +43,7 @@ export function HomeScreen() {
       } />
       {err && <div className="g-error">{err}</div>}
       <StarterPanel />
-      <div className="g-grid-2" style={{ flex: 1 }}>
+      <div className="g-grid-2 g-home-grid" style={{ flex: 1 }}>
         <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you">
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>{t('home.noItemsNeedAttention')}</Empty>}
