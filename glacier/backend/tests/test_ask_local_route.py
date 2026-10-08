@@ -58,7 +58,7 @@ def test_auto_uses_signed_in_codex(tmp_path, monkeypatch):
 
 
 def test_auto_uses_local_when_codex_missing(tmp_path, monkeypatch):
-    monkeypatch.setenv("PATH", str(tmp_path / "empty-path"))
+    monkeypatch.setenv("GLACIER_CHAT_BIN", str(tmp_path / "missing-codex"))
     calls = _start(tmp_path, monkeypatch, codex=False, ollama=True)
     events = _chat_events("Hello")
     assert calls[0][0] == "local"
@@ -96,7 +96,7 @@ def test_conversation_context_keeps_newest_with_exchange_and_character_bounds(tm
 
 
 def test_auto_with_neither_provider_emits_plain_message(tmp_path, monkeypatch):
-    monkeypatch.setenv("PATH", str(tmp_path / "empty-path"))
+    monkeypatch.setenv("GLACIER_CHAT_BIN", str(tmp_path / "missing-codex"))
     _start(tmp_path, monkeypatch, codex=False, ollama=False)
     events = _chat_events("Hello")
     assert events[-1]["type"] == "RUN_FINISHED"
