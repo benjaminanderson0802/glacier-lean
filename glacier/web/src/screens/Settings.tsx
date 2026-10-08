@@ -5,6 +5,7 @@ import { go } from '../route.ts'
 import { setLayout, useLayout, type Layout } from '../layout.ts'
 import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
 import { chooseDictionary, getLanguage, subscribeLanguage, t, type Language } from '../i18n/index.ts'
+import './Settings.css'
 
 const SECTION_LABELS: Record<string, string> = {
   general: 'settings.general', models: 'settings.models', secrets: 'settings.navSecrets', usage: 'settings.usage',
@@ -25,7 +26,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
   return (
     <>
       <PageHead title={t('settings.title')} sub={cur.id === 'system' ? t('settings.systemSubtitle') : t('settings.subtitle')} />
-      <div className="g-settings" style={{ display: 'grid', gridTemplateColumns: 'calc(88 * var(--px)) minmax(0, 1fr)', gap: 'calc(2 * var(--px))', flex: 1 }}>
+      <div className="g-settings">
         <Window className="g-sidenav" title={t('settings.sections')}>
           <KeyboardMenu label={t('settings.sections')} items={sections.map(s => ({ id: s.id, label: s.label, testid: `settings-${s.id}` }))} selected={cur.id} onSelect={id => go(`settings/${id}`)} />
         </Window>
@@ -40,8 +41,8 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme')}</dd>
                 <dt>{t('settings.language')}</dt><dd>
                   <select className="g-input" value={language} onChange={e => chooseDictionary(e.target.value as Language)} aria-label={t('settings.language')}>
-                    <option value="en">{t('settings.languageEnglish')}</option>
-                    <option value="es">{t('settings.languageSpanish')}</option>
+                    <option value="en">{language === 'es' ? 'Inglés' : 'English'}</option>
+                    <option value="es">{language === 'es' ? 'Español' : 'Spanish'}</option>
                   </select>
                 </dd>
                 <dt>{t('settings.detailLevel')}</dt><dd>
