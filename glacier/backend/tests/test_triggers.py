@@ -1,6 +1,7 @@
 """Acceptance tests for local file and webhook starts."""
 import json
 import os
+import re
 import time
 
 import httpx
@@ -14,6 +15,13 @@ def test_file_trigger_normalizes_path_to_absolute_native_spelling(tmp_path):
     (tmp_path / "folder").mkdir()
     relative = tmp_path / "folder" / ".." / "folder" / "file.txt"
     assert triggers._native_absolute_path(relative) == str(relative.resolve())
+
+
+def _as_command_sees(path):
+    """Command steps run in Git Bash on Windows, so the runner hands them /c/Users/... paths."""
+    value = str(path)
+    match = re.match(r"^([A-Za-z]):[\\/](.*)$", value) if os.name == "nt" else None
+    return "/" + match.group(1).lower() + "/" + match.group(2).replace("\\", "/") if match else value
 
 
 def _trigger_flow(folder, *, enabled=True, env_id="file-start"):
@@ -51,7 +59,7 @@ def test_file_trigger_finds_new_files_once_across_restart(tmp_path, monkeypatch)
         one = s.wait_run(runs[0]["run_id"])
         assert one["trigger"]["type"] == "file"
         assert one["trigger"]["file"] == str(first)
-        assert one["outputs"]["use"] == str(first)
+        assert one["outputs"]["use"] == _as_command_sees(first)
         s.kill()
         (home / "triggers.sqlite").unlink()
         s.start()
@@ -61,7 +69,7 @@ def test_file_trigger_finds_new_files_once_across_restart(tmp_path, monkeypatch)
         second.write_text("second")
         runs = _wait_for_runs(s, 2)
         two = s.wait_run(next(r["run_id"] for r in runs if r["run_id"] != one["run_id"]))
-        assert two["outputs"]["use"] == str(second)
+        assert two["outputs"]["use"] == _as_command_sees(second)
         assert len(s.get("/api/runs?env_id=file-start")) == 2
     finally:
         s.stop()
