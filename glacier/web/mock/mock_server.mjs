@@ -220,6 +220,24 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
       const emit = (type, data = {}) => res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`)
       emit('RUN_STARTED', { threadId: conversationId, runId })
+      const runMatch = body.message.match(/^\s*run\s+my\s+(.+?)\s+now[.!?\s]*$/i)
+      if (runMatch) {
+        const flow = [...envs.values()].find(e => String(e.name).toLowerCase() === runMatch[1].toLowerCase())
+        const reply = flow ? `Run ${flow.name} now?` : `I could not find an automation named ${runMatch[1]}. Check its name and try again.`
+        if (flow) {
+          const id = crypto.randomUUID()
+          const proposal = { id, conversation_id: conversationId, run_existing: true, flow: { id: flow.id, name: flow.name }, explanation: reply }
+          assistantProposals.set(id, proposal)
+          const toolCallId = crypto.randomUUID()
+          emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+          emit('TOOL_CALL_START', { toolCallId, toolCallName: 'propose_run', parentMessageId: messageId })
+          emit('TOOL_CALL_ARGS', { toolCallId, delta: JSON.stringify(proposal) })
+          emit('TOOL_CALL_END', { toolCallId })
+        } else emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+        emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply }); emit('TEXT_MESSAGE_END', { messageId })
+        emit('RUN_FINISHED', { threadId: conversationId, runId })
+        return res.end()
+      }
       const automation = /make me|automate|every day|daily/i.test(body.message)
       let reply = `I can help with: ${body.message}`
       if (automation) {
@@ -257,6 +275,11 @@ const server = http.createServer(async (req, res) => {
         return send(200, { discarded: true })
       }
       const flow = proposal.flow
+      if (proposal.run_existing) {
+        if (!body.run_now) return send(400, { detail: 'Confirm that you want to run this automation' })
+        assistantProposals.delete(proposal.id)
+        return send(200, { saved: false, run_id: startRun(envs.get(flow.id)), status: 'running' })
+      }
       if (envs.has(flow.id)) return send(409, { detail: 'A flow with this name already exists' })
       const bad = flow.nodes.map(node => node.type).filter(type => !CATALOG.some(item => item.type === type))
       if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
@@ -265,6 +288,7 @@ const server = http.createServer(async (req, res) => {
       const commit = commitId()
       vault.set(`environments/${flow.id}.json`, JSON.stringify(flow, null, 2))
       assistantProposals.delete(proposal.id)
+      if (body.run_now) return send(200, { saved: true, commit, run_id: startRun(flow), status: 'running' })
       return send(200, { saved: true, commit })
     }
     // ---- settings (screen development only) ----

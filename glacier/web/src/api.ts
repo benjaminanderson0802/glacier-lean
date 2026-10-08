@@ -209,7 +209,7 @@ export const system = {
 
 // ---------- Assistant chat (POST /api/assistant/chat, server-sent AG-UI events) ----------
 export interface ProposalCheck { kind?: string; cmd?: string; rubric?: string; question?: string; schema?: unknown }
-export interface ChatProposal { id: string; explanation?: string; flow?: { id?: string; name?: string; goal?: string; nodes?: unknown[]; edges?: unknown[]; acceptance?: ProposalCheck[] }; [k: string]: unknown }
+export interface ChatProposal { id: string; explanation?: string; run_existing?: boolean; flow?: { id?: string; name?: string; goal?: string; nodes?: unknown[]; edges?: unknown[]; acceptance?: ProposalCheck[] }; [k: string]: unknown }
 export type ChatEvent =
   | { type: 'text'; delta: string }
   | { type: 'proposal'; proposal: ChatProposal }
@@ -253,8 +253,8 @@ export const conversationsApi = {
   get: (id: string) => req<ConversationFull>('GET', `/api/assistant/conversations/${enc(id)}`),
   rename: (id: string, title: string) => req<{ id: string; title: string; commit: string }>('POST', `/api/assistant/conversations/${enc(id)}/rename`, { title }),
 }
-export const applyProposal = (id: string, approve: boolean) =>
-  req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, { approve })
+export const applyProposal = (id: string, approve: boolean, runNow = false) =>
+  req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string; status?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, runNow ? { approve, run_now: true } : { approve })
 
 // ---------- Claims (GET/POST /api/claims*) ----------
 export interface ClaimSummary { id: string; kind: string; summary: string; status: string; assigned_to: string | null; updated: string }
