@@ -122,6 +122,40 @@ def test_resume_skips_finished_tasks(tmp_path, monkeypatch):
     assert calls == ["second"] and result["status"] == "done"
 
 
+def test_resume_honors_legacy_done_and_requires_evaluator_for_new_work(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(teams, "_worker", lambda context, workspace, task: calls.append(task["id"]) or
+                        {"output": "ok", "exit_code": 0})
+    monkeypatch.setattr(teams, "_review", lambda *a: {"passed": True, "evidence": "reviewed"})
+    monkeypatch.setattr(teams, "_check_task", lambda *a: {"passed": True, "evidence": "passed"})
+    monkeypatch.setattr(teams, "_govern", lambda *a: {"passed": True, "evidence": "vision met"})
+    monkeypatch.setattr(teams, "_objective_check", lambda *a: {"passed": True, "evidence": "spec passed"})
+    plan = _plan()
+    plan["team"]["roles"].append({"id": "evaluator", "charter": "Grade the feature independently",
+                                    "supervisor": "lead"})
+    plan["tasks"][0]["feature_id"] = "result"
+    plan["tasks"][1]["feature_id"] = "result"
+    plan["tasks"][1]["contract"] = {"pass_criteria": ["result exists"]}
+    plan["tasks"].append({"id": "evaluate", "title": "Evaluate the result", "role": "evaluator",
+                          "feature_id": "result", "depends_on": ["second"],
+                          "acceptance": [{"kind": "command", "cmd": "test -f result.txt"}]})
+    state = {"status": "running", "tasks": {
+        "first": {"status": "done", "attempts": 1},
+        "second": {"status": "pending", "attempts": 0},
+        "evaluate": {"status": "pending", "attempts": 0}},
+        "features": {"result": {"status": "passing",
+                                  "evaluator_evidence": "legacy completed task records; final objective check required"}}}
+
+    result = teams.run_team_local("legacy-resume", plan, str(tmp_path), state=state)
+
+    assert calls == ["second", "evaluate"]
+    assert result["tasks"]["first"]["legacy_note"] == "legacy: finished before evaluator grading"
+    assert "legacy: finished before evaluator grading: task first" in result["progress_log"]
+    assert result["features"]["result"]["status"] == "passing"
+    assert result["features"]["result"]["evaluator_evidence"]
+    assert result["status"] == "done"
+
+
 def test_team_api_saves_approved_plan_and_home_summary(server):
     vision = server.post("/api/build/vision", {"vision": {"goal": "Create an approved result",
                                                            "done": ["result.txt contains approved"]}})
