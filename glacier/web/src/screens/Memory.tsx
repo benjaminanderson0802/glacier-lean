@@ -18,7 +18,7 @@ function whoWrote(author: string): string {
   return author
 }
 
-const VIEWS = [['', t('memory.viewsNotes')], ['~map', t('memoryMap.stats')], ['~add', t('memory.add')], ['~cleanup', t('memory.cleanup')]] as const
+const VIEWS = [['', t('memory.viewsNotes')], ['~map', t('memory.map')], ['~add', t('memory.add')], ['~cleanup', t('memory.cleanup')]] as const
 
 export function MemoryScreen({ path }: { path?: string }) {
   const view = path?.startsWith('~') ? path : ''
