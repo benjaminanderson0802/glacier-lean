@@ -1,9 +1,9 @@
 {
   "id": "tpl-downloads-tidy",
   "name": "Weekly tidy of my Downloads folder",
-  "description": "Lists older Downloads files in a note. It never deletes files, and asks before moving them to a review folder.",
-  "when_to_use": "Use it for a weekly review when Downloads has built up and you want to choose what to move.",
-  "goal": "List downloads older than seven days for review, then move only after approval.",
+  "description": "Lists files older than seven days in a review note. It never moves or deletes anything; you decide what to do with the list.",
+  "when_to_use": "Use it for a weekly review when your Downloads folder has built up and you want a clear list of older files.",
+  "goal": "List downloads older than seven days in a note for review.",
   "acceptance": [
     {
       "kind": "command",
@@ -18,7 +18,7 @@
         "cron": "0 9 * * 1"
       },
       "position": {
-        "x": -260,
+        "x": 0,
         "y": 0
       }
     },
@@ -30,7 +30,7 @@
         "timeout": "60"
       },
       "position": {
-        "x": 0,
+        "x": 260,
         "y": 0
       }
     },
@@ -42,55 +42,8 @@
         "template": "# Older Downloads to review\n\nThese files are older than 7 days. Nothing has been moved or deleted yet.\n\n{prev_output}"
       },
       "position": {
-        "x": 260,
-        "y": 0
-      }
-    },
-    {
-      "id": "approve_move",
-      "type": "approval",
-      "config": {
-        "prompt": "Review the file list in the Downloads review note. Approve moving files older than 7 days into Downloads-review? Nothing will be deleted."
-      },
-      "position": {
         "x": 520,
         "y": 0
-      }
-    },
-    {
-      "id": "move_approved",
-      "type": "command",
-      "config": {
-        "cmd": "mkdir -p \"$HOME/Downloads-review\" && find \"$HOME/Downloads\" -type f -mtime +7 -print0 | xargs -0 -I{} mv -- \"{}\" \"$HOME/Downloads-review/\"",
-        "timeout": "120"
-      },
-      "position": {
-        "x": 780,
-        "y": -140
-      }
-    },
-    {
-      "id": "moved_note",
-      "type": "note",
-      "config": {
-        "path": "downloads/moved-{run}.md",
-        "template": "The approved older files were moved into Downloads-review. No files were deleted.\n\n{prev_output}"
-      },
-      "position": {
-        "x": 1040,
-        "y": -140
-      }
-    },
-    {
-      "id": "declined_note",
-      "type": "note",
-      "config": {
-        "path": "downloads/not-moved-{run}.md",
-        "template": "No files were moved or deleted. The review list is saved in memory."
-      },
-      "position": {
-        "x": 780,
-        "y": 140
       }
     }
   ],
@@ -106,30 +59,6 @@
       "source": "list_old",
       "target": "save_review",
       "label": ""
-    },
-    {
-      "id": "e2",
-      "source": "save_review",
-      "target": "approve_move",
-      "label": ""
-    },
-    {
-      "id": "e3",
-      "source": "approve_move",
-      "target": "move_approved",
-      "label": "yes"
-    },
-    {
-      "id": "e4",
-      "source": "move_approved",
-      "target": "moved_note",
-      "label": ""
-    },
-    {
-      "id": "e5",
-      "source": "approve_move",
-      "target": "declined_note",
-      "label": "no"
     }
   ]
 }

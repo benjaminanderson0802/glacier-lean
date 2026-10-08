@@ -162,7 +162,6 @@ def test_six_templates_run_with_user_settings_and_prove_real_outcomes(make_serve
                     old_time = time.time() - 10 * 24 * 60 * 60
                     os.utime(old, (old_time, old_time))
                     nodes["list_old"]["config"]["cmd"] = f'find "{downloads}" -type f -mtime +7 -print'
-                    nodes["move_approved"]["config"]["cmd"] = f'mkdir -p "{downloads.parent / "Downloads Review"}" && find "{downloads}" -type f -mtime +7 -print0 | xargs -0 -I{{}} mv -- "{{}}" "{downloads.parent / "Downloads Review"}/"'
                 elif template_id == "tpl-meeting-tasks":
                     source = workspace / "my meeting notes.txt"
                     workspace.mkdir(parents=True, exist_ok=True)
@@ -205,17 +204,6 @@ def test_six_templates_run_with_user_settings_and_prove_real_outcomes(make_serve
 
                 server.put(f"/api/environments/{template_id}", flow)
                 run_id = server.post(f"/api/environments/{template_id}/run")["run_id"]
-                run = server.get(f"/api/runs/{run_id}")
-                if template_id == "tpl-downloads-tidy":
-                    deadline = time.time() + 30
-                    while time.time() < deadline:
-                        run = server.get(f"/api/runs/{run_id}")
-                        if run["node_states"].get("approve_move") == "waiting":
-                            break
-                        time.sleep(0.2)
-                    assert run["node_states"]["approve_move"] == "waiting"
-                    assert old.exists()
-                    server.post(f"/api/runs/{run_id}/approve", {"node_id": "approve_move", "approved": True})
                 run = server.wait_run(run_id)
                 assert run["status"] == "done", (template_id, run)
                 assert run["verification"] and all(check["passed"] for check in run["verification"]), (template_id, run["verification"])
@@ -224,8 +212,8 @@ def test_six_templates_run_with_user_settings_and_prove_real_outcomes(make_serve
                 note_dir = home / "vault" / Path(note_prefix).parent
                 if template_id == "tpl-downloads-tidy":
                     note_path = note_dir / f"review-{run_id}.md"
-                    assert not old.exists()
-                    assert (downloads.parent / "Downloads Review" / old.name).is_file()
+                    assert old.is_file()
+                    assert old.name in note_path.read_text(encoding="utf-8")
                 elif template_id == "tpl-web-change-watch":
                     note_path = note_dir / f"run-status-{run_id}.md"
                 elif template_id == "tpl-backup-check":
@@ -241,31 +229,6 @@ def test_six_templates_run_with_user_settings_and_prove_real_outcomes(make_serve
                 if template_id == "tpl-morning-brief":
                     assert body.strip() or "no notes" in body.lower()
 
-            # A second tidy run declined at approval: nothing moves and nothing is deleted.
-            flow = json.loads(json.dumps(templates["tpl-downloads-tidy"]["template"]))
-            downloads = home / "Another Downloads Folder"
-            downloads.mkdir()
-            declined_file = downloads / "keep me.txt"
-            declined_file.write_text("leave in place")
-            old_time = time.time() - 10 * 24 * 60 * 60
-            os.utime(declined_file, (old_time, old_time))
-            nodes = {node["id"]: node for node in flow["nodes"]}
-            nodes["list_old"]["config"]["cmd"] = f'find "{downloads}" -type f -mtime +7 -print'
-            nodes["move_approved"]["config"]["cmd"] = f'mkdir -p "{downloads.parent / "Downloads Review"}" && find "{downloads}" -type f -mtime +7 -print0 | xargs -0 -I{{}} mv -- "{{}}" "{downloads.parent / "Downloads Review"}/"'
-            server.put("/api/environments/tpl-downloads-declined", flow)
-            run_id = server.post("/api/environments/tpl-downloads-declined/run")["run_id"]
-            deadline = time.time() + 30
-            while time.time() < deadline:
-                run = server.get(f"/api/runs/{run_id}")
-                if run["node_states"].get("approve_move") == "waiting":
-                    break
-                time.sleep(0.2)
-            server.post(f"/api/runs/{run_id}/approve", {"node_id": "approve_move", "approved": False})
-            run = server.wait_run(run_id)
-            assert run["status"] == "done"
-            assert all(check["passed"] for check in run["verification"])
-            assert declined_file.is_file()
-            assert not (downloads.parent / "Downloads Review" / declined_file.name).exists()
         finally:
             server.stop()
             page_server.shutdown()

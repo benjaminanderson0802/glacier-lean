@@ -37,10 +37,10 @@
       "id": "tpl-downloads-tidy",
       "file": "tpl-downloads-tidy.json",
       "name": "Weekly tidy of my Downloads folder",
-      "description": "Lists older Downloads files in a note. It never deletes files, and asks before moving them to a review folder.",
+      "description": "Lists files older than seven days in a review note. It never moves or deletes anything; you decide what to do with the list.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "6447fa4d88df3db1cc5f838595b725c4524addb8acdcae97bc8cfedbe8edc4bd",
+      "sha256": "76d1edaad8aadd8e15d80dafe3370099c513756234f1a2f09553a8ab70f17369",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
@@ -150,7 +150,7 @@
       "description": "Reads one approved page, compares it with the previous saved copy, and records whether it changed.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "7d761c1c6af017e34478124869ddd29092be26c4aa6112fdb43b1eda4ef531ec",
+      "sha256": "1dce7a440a6639e2b7fd166c8d47e51145af3fd1654acd793715188d62797884",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },

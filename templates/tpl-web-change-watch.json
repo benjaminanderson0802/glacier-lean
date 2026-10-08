@@ -50,7 +50,7 @@
       "id": "compare_page",
       "type": "command",
       "config": {
-        "cmd": "if test -f \"$GLACIER_HOME/vault/web-watch/last-page.md\" && cmp -s \"$GLACIER_HOME/vault/web-watch/last-page.md\" \"$GLACIER_HOME/vault/web-watch/current-page.md\"; then printf \"No change\\n\" > \"$GLACIER_HOME/vault/web-watch/status-{run}.md\"; else printf \"Page changed\\n\" > \"$GLACIER_HOME/vault/web-watch/status-{run}.md\"; fi; cp \"$GLACIER_HOME/vault/web-watch/current-page.md\" \"$GLACIER_HOME/vault/web-watch/last-page.md\"; cat \"$GLACIER_HOME/vault/web-watch/status-{run}.md\"",
+        "cmd": "if test -f \"$GLACIER_HOME/vault/web-watch/last-page.md\" && cmp -s \"$GLACIER_HOME/vault/web-watch/last-page.md\" \"$GLACIER_HOME/vault/web-watch/current-page.md\"; then printf \"No change\\n\"; else printf \"Page changed\\n\"; fi; cp \"$GLACIER_HOME/vault/web-watch/current-page.md\" \"$GLACIER_HOME/vault/web-watch/last-page.md\"",
         "timeout": "60"
       },
       "position": {
