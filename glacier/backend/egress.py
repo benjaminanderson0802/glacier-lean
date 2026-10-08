@@ -44,7 +44,15 @@ def open_model_request(request: Request | str, timeout: float = 30):
     url = request.full_url if isinstance(request, Request) else request
     _validate_model_url(url)
     opener = model_opener()
-    return opener.open(request, timeout=timeout)
+    try:
+        return opener.open(request, timeout=timeout)
+    except HTTPError as exc:
+        # On Windows, urllib may read/close the redirect body while constructing
+        # its HTTPError and surface WinError 10053 instead. Preserve the explicit
+        # refusal result for redirects without masking unrelated connection errors.
+        if exc.code in {301, 302, 303, 307, 308}:
+            raise HTTPError(exc.url, exc.code, "Model server redirected the request.", exc.headers, None) from None
+        raise
 
 
 def allowed_domains(value: str | list[str] | None) -> set[str]:
