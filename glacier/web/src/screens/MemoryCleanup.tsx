@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { memory, memoryMore, type HygieneProposal } from '../api.ts'
 import { Btn, Empty, Panel } from '../ui/kit.tsx'
 import { StatusIcon } from '../ui/Pixel.tsx'
+import { t } from '../i18n/index.ts'
 
-const WHAT: Record<string, string> = { merge: 'Merge duplicates', archive: 'Archive' }
+const WHAT: Record<string, string> = { merge: t('memoryCleanup.merge'), archive: t('memoryCleanup.archive') }
 
 export function MemoryCleanup() {
   const [items, setItems] = useState<HygieneProposal[] | null>(null)
@@ -21,7 +22,7 @@ export function MemoryCleanup() {
     for (const p of (items ?? []).filter(p => chosen.has(p.id))) {
       try {
         const r = await memoryMore.decide(p.id, approve)
-        out.push({ text: `${approve ? (WHAT[p.kind] ?? p.kind) : 'Dismissed'}: ${p.paths.join(', ')}`, ok: true, undo: r.commit ? { paths: p.paths, commit: r.commit } : undefined })
+        out.push({ text: `${approve ? (WHAT[p.kind] ?? p.kind) : t('memoryCleanup.dismissed')}: ${p.paths.join(', ')}`, ok: true, undo: r.commit ? { paths: p.paths, commit: r.commit } : undefined })
       } catch (e) { out.push({ text: String(e).replace(/^Error: /, ''), ok: false }) }
     }
     setLog(out); setBusy(false); load()
@@ -30,9 +31,9 @@ export function MemoryCleanup() {
   const notes = new Set(sel.flatMap(p => p.kind === 'merge' ? p.paths.slice(1) : p.paths)).size
   return (
     <div className="g-memadd">
-      <Panel title="Suggestions" aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">Scan again</Btn>} testid="cleanup-list" className="g-scroll">
+      <Panel title="Suggestions" aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">{t('memoryCleanup.scanAgain')}</Btn>} testid="cleanup-list" className="g-scroll">
         {err && <div className="g-error">{err}</div>}
-        {items && items.length === 0 && <Empty>Your memory looks tidy. Press Scan again to check.</Empty>}
+        {items && items.length === 0 && <Empty>{t('memoryCleanup.tidy')}</Empty>}
         <div className="g-rows">
           {(items ?? []).map(p => (
             <label key={p.id} className="g-row g-check" data-testid={`cleanup-${p.id}`}>
@@ -43,20 +44,20 @@ export function MemoryCleanup() {
           ))}
         </div>
       </Panel>
-      <Panel title="Impact" testid="cleanup-impact">
+      <Panel title={t('memoryCleanup.impact')} testid="cleanup-impact">
         <dl className="g-kv g-kv-tight">
-          <dt>Selected</dt><dd>{sel.length}</dd>
-          <dt>Tidied</dt><dd>{notes}</dd>
-          <dt>Deleted</dt><dd>none (merged or archived)</dd>
+          <dt>{t('memoryCleanup.selected')}</dt><dd>{sel.length}</dd>
+          <dt>{t('memoryCleanup.tidied')}</dt><dd>{notes}</dd>
+          <dt>{t('memoryCleanup.deleted')}</dt><dd>{t('memoryCleanup.deletedDetail')}</dd>
         </dl>
         <div className="g-actions" style={{ marginTop: 12 }}>
-          <Btn primary onClick={() => apply(true)} disabled={busy || sel.length === 0} data-testid="cleanup-apply">Clean up</Btn>
-          <Btn onClick={() => apply(false)} disabled={busy || sel.length === 0}>Dismiss</Btn>
+          <Btn primary onClick={() => apply(true)} disabled={busy || sel.length === 0} data-testid="cleanup-apply">{t('memoryCleanup.cleanUp')}</Btn>
+          <Btn onClick={() => apply(false)} disabled={busy || sel.length === 0}>{t('memoryCleanup.dismiss')}</Btn>
         </div>
         <div className="g-rows" style={{ marginTop: 10 }}>
           {log.map((l, i) => (
             <div key={i} className="g-row"><span className="g-ico"><StatusIcon kind={l.ok ? 'ok' : 'bad'} /></span><span className="g-mid"><span className="g-lead">{l.text}</span></span>
-              <span className="g-when">{l.undo && <Btn onClick={async () => { for (const path of l.undo!.paths) await memory.undo(path, l.undo!.commit); setLog(x => x.map((y, j) => j === i ? { ...y, text: 'Undone: ' + y.text, undo: undefined } : y)); load() }} data-testid={`cleanup-undo-${i}`}>Undo</Btn>}</span></div>
+              <span className="g-when">{l.undo && <Btn onClick={async () => { for (const path of l.undo!.paths) await memory.undo(path, l.undo!.commit); setLog(x => x.map((y, j) => j === i ? { ...y, text: t('memoryCleanup.undone', { value: y.text }), undo: undefined } : y)); load() }} data-testid={`cleanup-undo-${i}`}>{t('memoryCleanup.undo')}</Btn>}</span></div>
           ))}
         </div>
       </Panel>
