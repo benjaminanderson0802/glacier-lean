@@ -6,6 +6,7 @@ A plan that fails validation gets exactly one repair attempt with the errors (se
 import json, os, re, subprocess, tempfile, urllib.request
 import verify
 import shell_commands
+from egress import open_model_request
 
 MAX_STEPS = 12
 
@@ -62,7 +63,7 @@ def _ask_local(prompt: str, schema: dict) -> dict:
     body = {"model": __import__("system_check").default_local_model(), "stream": False, "think": False, "format": schema,
             "options": {"temperature": 0}, "messages": [{"role": "user", "content": prompt}]}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=600) as r:
+    with open_model_request(req, timeout=600) as r:
         return json.loads(json.loads(r.read())["message"]["content"])
 
 

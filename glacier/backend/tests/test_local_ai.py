@@ -92,7 +92,7 @@ def test_local_ai_uses_environment_model_or_default(monkeypatch):
         captured.append((request.full_url, json.loads(request.data), timeout))
         return Response()
 
-    monkeypatch.setattr("nodes.local_ai.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("nodes.local_ai.open_model_request", fake_urlopen)
     monkeypatch.delenv("GLACIER_OLLAMA_URL", raising=False)
     monkeypatch.setenv("GLACIER_LOCAL_MODEL", "from-env")
     ctx = {"config": {"prompt": "hello", "timeout": 4}, "env_id": "e", "run_id": "r"}
@@ -152,7 +152,7 @@ def test_local_ai_timeout_has_specific_message(monkeypatch):
     def timed_out(request, timeout):
         raise socket.timeout()
 
-    monkeypatch.setattr("nodes.local_ai.urllib.request.urlopen", timed_out)
+    monkeypatch.setattr("nodes.local_ai.open_model_request", timed_out)
     monkeypatch.setenv("GLACIER_OLLAMA_URL", "http://localhost:11434")
     result = run({"config": {"prompt": "hello", "timeout": 7}, "env_id": "e", "run_id": "r"})
 
@@ -179,7 +179,7 @@ def test_local_ai_nonnumeric_timeout_uses_default(monkeypatch):
         captured.append(timeout)
         return Response()
 
-    monkeypatch.setattr("nodes.local_ai.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("nodes.local_ai.open_model_request", fake_urlopen)
     result = run({"config": {"prompt": "hello", "timeout": "slow"}, "env_id": "e", "run_id": "r"})
 
     assert result["state"] == "done"

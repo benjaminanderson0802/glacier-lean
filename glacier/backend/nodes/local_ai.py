@@ -5,6 +5,7 @@ import socket
 import urllib.error
 import urllib.request
 from agents_md import find_agents_md, project_instructions_detail
+from egress import open_model_request
 
 
 DEFAULT_MODEL = "qwen3:0.6b"
@@ -78,7 +79,7 @@ def run(ctx: dict) -> dict:
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with open_model_request(request, timeout=timeout) as response:
             reply = json.loads(response.read())
     except (socket.timeout, TimeoutError):
         return {

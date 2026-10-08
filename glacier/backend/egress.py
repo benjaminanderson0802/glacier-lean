@@ -4,11 +4,46 @@ from __future__ import annotations
 
 import ipaddress
 import socket
+from urllib.error import HTTPError
 from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 
 class EgressError(PermissionError):
     pass
+
+
+class _RejectModelRedirects(HTTPRedirectHandler):
+    """Keep model calls on the exact address selected by the owner."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise HTTPError(req.full_url, code, "Model server redirected the request.", headers, fp)
+
+
+
+
+def _validate_model_url(url: str) -> None:
+    try:
+        parsed = urlsplit(url)
+        _ = parsed.port
+    except ValueError:
+        raise ValueError("Use an http or https model address without sign-in details.") from None
+    if (parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname
+            or parsed.username is not None or parsed.password is not None):
+        raise ValueError("Use an http or https model address without sign-in details.")
+
+
+def model_opener():
+    """Build an opener that bypasses system proxies and refuses model redirects."""
+    return build_opener(ProxyHandler({}), _RejectModelRedirects())
+
+
+def open_model_request(request: Request | str, timeout: float = 30):
+    """Send one request to its configured model URL, without proxy or redirect hops."""
+    url = request.full_url if isinstance(request, Request) else request
+    _validate_model_url(url)
+    opener = model_opener()
+    return opener.open(request, timeout=timeout)
 
 
 def allowed_domains(value: str | list[str] | None) -> set[str]:
