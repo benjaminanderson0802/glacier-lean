@@ -1,23 +1,10 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import type { NodeKind, NodeState } from '../api.ts'
-import { PixelArt } from '../ui/Pixel.tsx'
 
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>
 
-const ICONS: Record<string, string[]> = {
-  schedule: ['..####..','.#....#.','#.##...#','#....#.#','#..##..#','#......#','.#....#.','..####..'],
-  command: ['........','...##...','..#..#..','.....#..','....#...','...#....','..####..','........'],
-  codex: ['...##...','..####..','.##..##.','##....##','##....##','.##..##.','..####..','...##...'],
-  check: ['..####..','.#....#.','#..##..#','#..##..#','#......#','.#....#.','..####..','........'],
-  approval: ['.....#..','....##..','#..##...','##.##...','.###....','..##....','..##....','........'],
-  note: ['.######.','.#....##','.#.##..#','.#.....#','.#.###.#','.#.....#','.#....##','.######.'],
-  loop: ['..####..','.#....#.','#.##..##','#.#...##','#.##..##','.#....#.','..####..','........'],
-  flow: ['.######.','.#....##','.#.##..#','.#.##..#','.#....##','.######.','..####..','........'],
-  decide: ['...##...','..####..','.##..##.','##....##','...##...','...##...','...##...','........'],
-  http_request: ['..####..','.#....#.','#.##...#','#......#','#..###.#','#......#','.#....#.','..####..'],
-}
-const ICON_PALETTE = { '#': 'var(--g-gold)' }
+const ICON: Record<string, string> = { schedule: 'schedule', command: 'command', codex: 'codex', check: 'check-step', approval: 'approval', note: 'note-step', loop: 'loop', flow: 'flow', decide: 'decide' }
 
 function summary(kind: NodeKind, c: Record<string, string>): string {
   switch (kind) {
@@ -45,7 +32,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
     >
       <Handle type="target" position={Position.Left} className="gnode-handle" data-testid={`handle-in-${id}`} />
       <div className="gnode-head">
-        <PixelArt rows={ICONS[type] ?? ICONS.command} pal={ICON_PALETTE} px={2} className="gnode-icon" title={type} />
+        <span className={`gnode-icon gnode-icon-${ICON[type] ?? 'command'}`} aria-hidden="true" />
         <span className="gnode-type">{type === 'codex' ? 'codex worker' : type === 'flow' ? 'sub-flow' : type}</span>
         <span className="gnode-id">{id}</span>
       </div>

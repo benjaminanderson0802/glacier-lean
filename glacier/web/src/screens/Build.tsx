@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Background, Controls, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges, EdgeText,
+  Background, Controls, EdgeLabelRenderer, MiniMap, MarkerType, ReactFlow, ReactFlowProvider, addEdge, applyEdgeChanges, applyNodeChanges,
   type Connection, type Edge, type EdgeChange, type NodeChange, useReactFlow,
 } from '@xyflow/react'
 import {
@@ -36,16 +36,31 @@ const edgeStyle = (label: string) => ({
   className: label ? `edge-${label}` : undefined,
 })
 
-function PixelEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd, style, selected, label }: import('@xyflow/react').EdgeProps) {
-  const middle = Math.round((sourceX + targetX) / 2)
-  const vertical = Math.abs(targetY - sourceY) > Math.abs(targetX - sourceX)
-  const labelX = Math.round((sourceX + targetX) / 2 + (vertical ? 20 : 0))
-  const labelY = Math.round((sourceY + targetY) / 2 + (vertical ? 0 : -16))
-  const d = `M ${sourceX} ${sourceY} H ${middle} V ${targetY} H ${targetX}`
-  return <>
+function PixelEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, style, selected, label, data }: import('@xyflow/react').EdgeProps) {
+  const sourceRight = sourcePosition === 'right'
+  const targetLeft = targetPosition === 'left'
+  const loopback = Boolean(data?.loopback)
+  const maxX = Math.max(sourceX, targetX)
+  const minY = Math.min(sourceY, targetY)
+  let d: string, labelX: number, labelY: number
+  if (loopback && sourceRight && targetLeft) {
+    const laneX = Math.round(maxX + 24)
+    d = `M ${sourceX} ${sourceY} H ${laneX} V ${targetY} H ${targetX}`
+    labelX = laneX; labelY = Math.round((sourceY + targetY) / 2)
+  } else if (sourceRight && targetLeft && targetX >= sourceX) {
+    const middle = Math.round((sourceX + targetX) / 2)
+    d = `M ${sourceX} ${sourceY} H ${middle} V ${targetY} H ${targetX}`
+    labelX = middle; labelY = Math.round((sourceY + targetY) / 2)
+  } else {
+    const laneY = Math.round(minY - 16)
+    d = `M ${sourceX} ${sourceY} V ${laneY} H ${targetX} V ${targetY}`
+    labelX = Math.round((sourceX + targetX) / 2); labelY = laneY
+  }
+  return <g className="pixel-edge" shapeRendering="crispEdges">
+    <path id={`${id}-hit`} d={d} className="react-flow__edge-interaction" />
     <path id={id} d={d} className={`react-flow__edge-path${selected ? ' selected' : ''}`} markerEnd={markerEnd} style={style} />
-    {label && <EdgeText x={labelX} y={labelY} label={label} labelShowBg />}
-  </>
+    {label && <EdgeLabelRenderer><div data-testid={`rf__edge-${id}`}><div className={`pixel-edge-textwrapper react-flow__edge-textwrapper${selected ? ' selected' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}><div className={`pixel-edge-tag react-flow__edge-text${selected ? ' selected' : ''}`}>{label}</div></div></div></EdgeLabelRenderer>}
+  </g>
 }
 
 function httpAddressError(address: string, allowedSites: string): string {
@@ -500,7 +515,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     return edges.map(e => {
       const back = reaches(e.target, e.source)
       const cls = [typeof e.label === 'string' && e.label ? `edge-${e.label}` : '', back ? 'edge-loopback' : ''].filter(Boolean).join(' ')
-      return { ...e, animated: back, className: cls || undefined }
+      return { ...e, animated: false, data: { ...e.data, loopback: back }, className: cls || undefined }
     })
   }, [edges])
 
@@ -624,7 +639,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               >
                 <Background gap={16} size={1} color={tok('--g-ice4')} />
                 <Controls showInteractive={false} position="top-left" />
-                {showMinimap && <MiniMap nodeColor={tok('--g-accent-dim')} maskColor={tok('--g-bg')} />}
+                {showMinimap && <MiniMap pannable={false} zoomable={false} nodeColor={tok('--g-navy3')} maskColor={tok('--g-shadow')} style={{ backgroundColor: tok('--g-ice1'), borderColor: tok('--g-navy') }} />}
               </ReactFlow>
             </div>
           </div>
