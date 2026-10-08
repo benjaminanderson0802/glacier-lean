@@ -91,6 +91,24 @@ def test_local_followup_prompt_contains_prior_exchange(tmp_path, monkeypatch):
     assert "Hello from local." in calls[1][1]
 
 
+def test_disabled_chat_history_tells_assistant_not_to_claim_recall(tmp_path, monkeypatch):
+    _start(tmp_path, monkeypatch, route="local", codex=False)
+    from routes import assistant_chat
+    import ask_context
+
+    conversation_id = "6" * 36
+    assistant_chat._append_conversation(conversation_id, "Private earlier question", "Earlier answer")
+    assistant_chat.save_ask_settings({"engine": "local", "remember_previous_chats": False})
+
+    context = ask_context.build("What did I ask you a moment ago?", engine="local",
+                                model="fake-model", conversation_id=conversation_id)
+
+    assert "Earlier saved chats" not in context
+    assert "Private earlier question" not in context
+    assert "previous chat history is off" in context.casefold()
+    assert "do not claim to remember earlier ask messages" in context.casefold()
+
+
 def test_local_route_sends_glacier_system_message_and_redacted_context(tmp_path, monkeypatch):
     import importlib
     chat = importlib.import_module("routes.assistant_chat")
