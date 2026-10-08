@@ -210,13 +210,34 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         code = p.returncode
     except subprocess.TimeoutExpired:
         if os.name == "nt":
-            subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
+            # Git Bash can leave child processes holding our pipe open. Kill the
+            # whole process tree, then bound cleanup rather than waiting for EOF.
+            try:
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)],
+                               capture_output=True, timeout=2)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            try:
+                p.kill()
+            except OSError:
+                pass
+            if p.stdout:
+                try:
+                    p.stdout.close()
+                except OSError:
+                    pass
+            try:
+                p.wait(timeout=0.2)
+            except subprocess.TimeoutExpired:
+                pass
+            out = ""
         else:
             try:
                 os.killpg(p.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-        out, _ = p.communicate()
+        if os.name != "nt":
+            out, _ = p.communicate()
         code, out = -1, f"{out or ''}\n[timed out after {timeout}s]"
     return {"state": "done" if code == 0 else "failed", "output": (warning + (out or ""))[-OUTPUT_LIMIT:], "exit_code": code}
 
@@ -406,9 +427,9 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
 def mark_waiting(env_id: str, run_id: str, node_id: str) -> None:
-    # Node first: anyone who sees the run waiting must also see which step is waiting.
-    store.set_node(run_id, env_id, node_id, "waiting")
-    store.set_run(run_id, "waiting", node_id)
+    # Persist both sides of the gate before publishing the node event, so API
+    # readers cannot observe a waiting node while the run still looks running.
+    store.set_waiting(run_id, env_id, node_id)
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)

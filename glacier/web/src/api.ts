@@ -112,6 +112,7 @@ export interface TeamPlan {
   features: { id: string; title: string; description?: string; acceptance?: unknown[] }[]
   harness: Record<string, unknown>
   team: { roles: TeamRole[]; engine?: string; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
+  team: { roles: TeamRole[]; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
   tasks: { id: string; title: string; role: string; feature_id?: string; acceptance: unknown[]; depends_on?: string[]; requires_approval?: boolean }[]
   guards?: Record<string, unknown>
 }
@@ -129,6 +130,10 @@ export const teamsApi = {
   control: (teamId: string, action: 'pause' | 'resume' | 'stop') => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/${action}`, {}),
   delete: (kind: 'interview' | 'team', id: string) => req<{ deleted: boolean; undo_id: string }>('DELETE', kind === 'interview' ? `/api/build/interviews/${enc(id)}` : `/api/teams/${enc(id)}`),
   undoDelete: (undo_id: string) => req<Record<string, unknown>>('POST', '/api/build/undo-delete', { undo_id }),
+  list: () => req<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>('GET', '/api/teams'),
+  get: (teamId: string) => req<BuildTeam>('GET', `/api/teams/${enc(teamId)}`),
+  start: (teamId: string) => req<{ team_id: string; status: string }>('POST', `/api/teams/${enc(teamId)}/run`),
+  approveTask: (teamId: string, taskId: string, approved: boolean) => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/tasks/${enc(taskId)}/approve`, { approved }),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
@@ -236,10 +241,18 @@ export interface SystemCheck {
   recommended: { mode: string; local_model: string; max_parallel_runs: number }
   messages: string[]
 }
-export interface EffectiveSettings { mode: string; local_model: string; max_parallel_runs: number; ask_route?: 'codex' | 'local' | 'unavailable'; ask_route_reason?: string }
+export interface EffectiveSettings { mode: string; local_model: string; max_parallel_runs: number; ask_route?: string; ask_route_reason?: string; ask_engine?: string; ask_engines?: AskEngine[]; ask_remember_previous_chats?: boolean }
 export const system = {
   check: () => req<SystemCheck>('GET', '/api/system/check'),
   settings: () => req<EffectiveSettings>('GET', '/api/system/settings'),
+}
+
+export interface AskEngine { id: string; label: string; available: boolean; reason: string; reason_code?: string }
+export interface AskSettings { engine: string; active_engine: string; route_reason?: string; fallback_reason_code?: string; engines: AskEngine[]; remember_previous_chats: boolean; openai_base_url: string; openai_model: string; openai_secret_name: string; openai_monthly_cap_usd: number | string; openai_input_usd_per_million: number | string; openai_output_usd_per_million: number | string; openai_spend_usd: number; anthropic_model: string; anthropic_secret_name: string; anthropic_monthly_cap_usd: number | string; anthropic_input_usd_per_million: number | string; anthropic_output_usd_per_million: number | string; anthropic_spend_usd: number; local_model: string }
+export const askSettingsApi = {
+  get: () => req<AskSettings>('GET', '/api/assistant/settings'),
+  save: (settings: Partial<AskSettings>) => req<AskSettings & { available?: boolean; reason?: string }>('PUT', '/api/assistant/settings', settings),
+  forget: () => req<{ forgotten: number; remember_previous_chats: boolean }>('POST', '/api/assistant/conversations/forget', {}),
 }
 
 // ---------- Assistant chat (POST /api/assistant/chat, server-sent AG-UI events) ----------

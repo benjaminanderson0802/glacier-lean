@@ -44,3 +44,4 @@ Answer every item in `drift_check.before_task`, and write the answers in your pl
 - Never stop, kill or pkill processes you did not start. Other workers run tests at the same time.
 - The full backend suite takes several minutes on a busy machine: start it and wait for it to finish.
 - Backend tests run from inside glacier/backend: `cd glacier/backend && /workspaces/glacier-lean/.venv/bin/python -m pytest -q tests`.
+- New screen checks: add e2e/<name>.spec.mjs; do not edit check:ui.

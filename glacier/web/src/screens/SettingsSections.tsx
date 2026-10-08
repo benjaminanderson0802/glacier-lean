@@ -1,6 +1,6 @@
 // Settings sections beyond General / System check / Help: Models, Secrets, Usage, Data, About.
 import { useEffect, useState } from 'react'
-import { settingsApi, system, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
+import { askSettingsApi, settingsApi, system, type AskSettings, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
 import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { t } from '../i18n/index.ts'
@@ -9,7 +9,19 @@ export function ModelsSection() {
   const [c, setC] = useState<SystemCheck | null>(null)
   const [eff, setEff] = useState<EffectiveSettings | null>(null)
   const [err, setErr] = useState('')
-  useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}) }, [])
+  const [ask, setAsk] = useState<AskSettings | null>(null)
+  const [secretNames, setSecretNames] = useState<string[]>([])
+  const [notice, setNotice] = useState('')
+  useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}); askSettingsApi.get().then(setAsk).catch(() => {}); settingsApi.secrets().then(setSecretNames).catch(() => {}) }, [])
+  const updateAsk = async (partial: Partial<AskSettings>) => {
+    if (!ask) return
+    try { setAsk(await askSettingsApi.save({ ...ask, ...partial })); setNotice('') }
+    catch (e) { setNotice(String(e)) }
+  }
+  const forget = async () => {
+    try { await askSettingsApi.forget(); window.dispatchEvent(new Event('glacier:forget-ask-chats')); setAsk(await askSettingsApi.get()); setNotice(t('settingsSections.chatsForgotten')) }
+    catch (e) { setNotice(String(e)) }
+  }
   return (
     <Panel title={t('settingsSections.models')} testid="settings-models">
       {err && <div className="g-error">{err}</div>}
@@ -27,6 +39,38 @@ export function ModelsSection() {
             {c.ollama_models.map(m => <Row key={m} status="ok" lead={m} when={m === (eff?.local_model ?? c.recommended.local_model) ? t('settingsSections.inUse') : ''} />)}
             {c.ollama_models.length === 0 && <Empty>{t('settingsSections.noLocalModels')}</Empty>}
           </div>
+          {ask && <>
+            <h3 className="g-panel-title" style={{ marginTop: 18 }}>{t('settingsSections.askEngine')}</h3>
+            <div className="g-rows">
+              <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.defaultEngine')}</span><span className="g-detail">{t('settingsSections.chooseEngineHelp')}</span></span>
+                <select className="g-input" value={ask.engine} onChange={e => updateAsk({ engine: e.target.value })} data-testid="settings-ask-engine">
+                  {ask.engines.map(engine => <option key={engine.id} value={engine.id}>{t(`ask.engine${engine.id[0].toUpperCase()}${engine.id.slice(1)}`)}{engine.available ? '' : ` — ${t('settingsSections.unavailable')}`}</option>)}
+                </select>
+              </label>
+              <div className="g-detail" data-testid="ask-engine-reason">{ask.engines.find(x => x.id === ask.engine)?.available ? t('settingsSections.engineReady') : t(`settingsSections.engineUnavailable.${ask.engines.find(x => x.id === ask.engine)?.reason_code ?? 'missing'}`)}</div>
+              {ask.engine === 'openai' && <>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.apiAddress')}</span><input className="g-input" value={ask.openai_base_url} onChange={e => setAsk({ ...ask, openai_base_url: e.target.value })} onBlur={() => updateAsk({ openai_base_url: ask.openai_base_url })} data-testid="openai-base-url" /></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.model')}</span><input className="g-input" value={ask.openai_model} onChange={e => setAsk({ ...ask, openai_model: e.target.value })} onBlur={() => updateAsk({ openai_model: ask.openai_model })} data-testid="openai-model" /></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.secretName')}</span><select className="g-input" value={ask.openai_secret_name} onChange={e => updateAsk({ openai_secret_name: e.target.value })} data-testid="openai-secret">{secretNames.map(n => <option key={n}>{n}</option>)}</select></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.monthlyApiCap')}</span><input type="number" min="0.01" step="0.01" className="g-input" value={ask.openai_monthly_cap_usd} onChange={e => setAsk({ ...ask, openai_monthly_cap_usd: e.target.value })} onBlur={() => updateAsk({ openai_monthly_cap_usd: ask.openai_monthly_cap_usd })} data-testid="openai-monthly-cap" /></label>
+                <div className="g-detail">{t('settingsSections.apiSpendSoFar', { spent: Number(ask.openai_spend_usd).toFixed(4), cap: Number(ask.openai_monthly_cap_usd || 0).toFixed(2) })}</div>
+                <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.inputPrice')}</span><span className="g-detail">{t('settingsSections.priceHelp')}</span></span><input type="number" min="0" step="0.01" className="g-input" value={ask.openai_input_usd_per_million} onChange={e => setAsk({ ...ask, openai_input_usd_per_million: e.target.value })} onBlur={() => updateAsk({ openai_input_usd_per_million: ask.openai_input_usd_per_million })} data-testid="openai-input-price" /></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.outputPrice')}</span><input type="number" min="0" step="0.01" className="g-input" value={ask.openai_output_usd_per_million} onChange={e => setAsk({ ...ask, openai_output_usd_per_million: e.target.value })} onBlur={() => updateAsk({ openai_output_usd_per_million: ask.openai_output_usd_per_million })} data-testid="openai-output-price" /></label>
+              </>}
+              {ask.engine === 'anthropic' && <>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.model')}</span><input className="g-input" value={ask.anthropic_model} onChange={e => setAsk({ ...ask, anthropic_model: e.target.value })} onBlur={() => updateAsk({ anthropic_model: ask.anthropic_model })} data-testid="anthropic-model" /></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.secretName')}</span><select className="g-input" value={ask.anthropic_secret_name} onChange={e => updateAsk({ anthropic_secret_name: e.target.value })} data-testid="anthropic-secret">{secretNames.map(n => <option key={n}>{n}</option>)}</select></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.monthlyApiCap')}</span><input type="number" min="0.01" step="0.01" className="g-input" value={ask.anthropic_monthly_cap_usd} onChange={e => setAsk({ ...ask, anthropic_monthly_cap_usd: e.target.value })} onBlur={() => updateAsk({ anthropic_monthly_cap_usd: ask.anthropic_monthly_cap_usd })} data-testid="anthropic-monthly-cap" /></label>
+                <div className="g-detail">{t('settingsSections.apiSpendSoFar', { spent: Number(ask.anthropic_spend_usd).toFixed(4), cap: Number(ask.anthropic_monthly_cap_usd || 0).toFixed(2) })}</div>
+                <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.inputPrice')}</span><span className="g-detail">{t('settingsSections.priceHelp')}</span></span><input type="number" min="0" step="0.01" className="g-input" value={ask.anthropic_input_usd_per_million} onChange={e => setAsk({ ...ask, anthropic_input_usd_per_million: e.target.value })} onBlur={() => updateAsk({ anthropic_input_usd_per_million: ask.anthropic_input_usd_per_million })} data-testid="anthropic-input-price" /></label>
+                <label className="g-row"><span className="g-lead">{t('settingsSections.outputPrice')}</span><input type="number" min="0" step="0.01" className="g-input" value={ask.anthropic_output_usd_per_million} onChange={e => setAsk({ ...ask, anthropic_output_usd_per_million: e.target.value })} onBlur={() => updateAsk({ anthropic_output_usd_per_million: ask.anthropic_output_usd_per_million })} data-testid="anthropic-output-price" /></label>
+              </>}
+              {ask.engine === 'local' && <label className="g-row"><span className="g-lead">{t('settingsSections.installedModel')}</span><select className="g-input" value={ask.local_model || (c?.ollama_models.includes(c.recommended.local_model) ? c.recommended.local_model : c?.ollama_models[0] ?? '')} onChange={e => updateAsk({ local_model: e.target.value })} data-testid="ask-local-model">{(c?.ollama_models ?? []).map(model => <option key={model}>{model}</option>)}</select></label>}
+              <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.rememberChats')}</span><span className="g-detail">{t('settingsSections.rememberChatsHelp')}</span></span><input type="checkbox" checked={ask.remember_previous_chats} onChange={e => updateAsk({ remember_previous_chats: e.target.checked })} data-testid="remember-previous-chats" /></label>
+              <div className="g-row"><span className="g-detail">{t('settingsSections.forgetChatsHelp')}</span><Btn danger onClick={forget} data-testid="forget-previous-chats">{t('settingsSections.forgetChats')}</Btn></div>
+              {notice && <div className="g-detail" role="status">{notice}</div>}
+            </div>
+          </>}
         </>
       )}
     </Panel>
@@ -87,7 +131,7 @@ export function UsageSection() {
           </dl>
           <table className="g-table" style={{ marginTop: 12 }}>
             <thead><tr><th>{t('settingsSections.model')}</th><th>{t('settingsSections.runs')}</th><th>{t('settingsSections.stepsLabel')}</th><th>{t('settingsSections.tokens')}</th><th>{t('settingsSections.cost')}</th></tr></thead>
-            <tbody>{c.by_model.map(g => <tr key={g.model}><td className="g-lead">{g.model}</td><td>{g.runs}</td><td>{g.steps}</td><td>{tokens(g)}</td><td>${g.cost_usd.toFixed(2)}</td></tr>)}</tbody>
+            <tbody>{c.by_model.map(g => <tr key={g.model}><td className="g-lead" title={g.model}>{g.model}</td><td>{g.runs}</td><td>{g.steps}</td><td>{tokens(g)}</td><td>${g.cost_usd.toFixed(2)}</td></tr>)}</tbody>
           </table>
           {c.by_model.length === 0 && <Empty>{t('settingsSections.noAiSteps')}</Empty>}
         </>

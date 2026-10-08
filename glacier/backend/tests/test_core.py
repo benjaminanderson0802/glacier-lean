@@ -120,7 +120,7 @@ def test_rejected_gate_finishes_run_and_publishes_final_node_state(server, human
 def test_crash_mid_run_resumes_without_rerunning_finished_nodes(make_server, tmp_path):
     marks = tmp_path / "marks"; marks.mkdir()
     e = env("crashy", [("c1", "command", {"cmd": f"echo x >> {marks}/c1"}),
-                       ("slow", "command", {"cmd": f"echo x >> {marks}/slow; sleep 5"}),
+                       ("slow", "command", {"cmd": f'echo x >> {marks}/slow; "{sys.executable}" -c "import time; time.sleep(5)"'}),
                        ("c2", "command", {"cmd": f"echo x >> {marks}/c2"})],
             [("c1", "slow", ""), ("slow", "c2", "")])
     s = make_server().start()
@@ -371,6 +371,44 @@ def test_command_timeout(server):
     t0 = time.time()
     run = server.wait_run(server.post("/api/environments/slow/run")["run_id"])
     assert run["status"] == "failed" and time.time() - t0 < 10 and "timed out after 1s" in run["outputs"]["c"], run
+
+
+def test_command_timeout_kills_windows_process_tree(monkeypatch):
+    import io
+    import runner
+
+    calls = []
+
+    class Process:
+        pid = 4321
+        stdout = io.StringIO()
+        returncode = None
+
+        def communicate(self, timeout):
+            raise subprocess.TimeoutExpired("cmd", timeout)
+
+        def kill(self):
+            calls.append(("kill",))
+
+        def wait(self, timeout=None):
+            calls.append(("wait", timeout))
+            return None
+
+    def fake_run(args, **kwargs):
+        calls.append(("taskkill", args, kwargs))
+
+    monkeypatch.setattr(runner.os, "name", "nt")
+    monkeypatch.setattr(runner.subprocess, "CREATE_NEW_PROCESS_GROUP", 0, raising=False)
+    monkeypatch.setattr(runner.subprocess, "Popen", lambda *args, **kwargs: Process())
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    started = time.monotonic()
+    result = runner.run_command({"cmd": "sleep 20"}, timeout=1)
+
+    assert result["state"] == "failed"
+    assert "timed out after 1s" in result["output"]
+    assert any(call[0] == "taskkill" and call[1] == ["taskkill", "/F", "/T", "/PID", "4321"]
+               and call[2]["timeout"] <= 2 for call in calls)
+    assert time.monotonic() - started < 1
 
 
 def test_failed_run_sends_exactly_one_alert(tmp_path, monkeypatch):
