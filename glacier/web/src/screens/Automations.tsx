@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ago, api, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
-import { Btn, Empty, PageHead, Panel } from '../ui/kit.tsx'
+import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { teamsApi } from '../api.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Flow = EnvSummary & { last?: RunSummary }
@@ -23,9 +24,11 @@ export function AutomationsScreen() {
   const [details, setDetails] = useState<Record<string, Environment>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
+  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>([])
   const [undo, setUndo] = useState<UndoAction | null>(null)
 
   useEffect(() => {
+    teamsApi.list().then(setTeams).catch(() => {})
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
         const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])
@@ -95,6 +98,7 @@ export function AutomationsScreen() {
       } />
       <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
       <Panel>
+        <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
             {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={`filter-${f}`}>{f}</button>)}
