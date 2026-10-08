@@ -1,4 +1,4 @@
-// Tiny hash router: #/home, #/ask, #/automations[/build/<env>[/<run>]], #/memory[/<note>], #/settings[/<section>]
+// Tiny hash router: #/home, #/build[/<interview|spec|plan>], #/automations[/team/<id>|build/<env>], #/memory[/<note>], #/settings[/<section>]
 import { useEffect, useState } from 'react'
 
 export const TABS = ['home', 'ask', 'automations', 'memory', 'settings'] as const

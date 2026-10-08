@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ago, api, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
-import { Btn, Empty, PageHead, Panel, TextBox, HintBar } from '../ui/kit.tsx'
+import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
-import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { teamsApi } from '../api.ts'
 
 type Flow = EnvSummary & { last?: RunSummary }
 const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
@@ -23,9 +23,10 @@ export function AutomationsScreen() {
   const [details, setDetails] = useState<Record<string, Environment>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
-  const [undo, setUndo] = useState<UndoAction | null>(null)
+  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
 
   useEffect(() => {
+    teamsApi.list().then(setTeams).catch(() => {})
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
         const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])
@@ -84,7 +85,7 @@ export function AutomationsScreen() {
 
   return (
     <>
-      <PageHead title={t('automations.title')} side={
+      <PageHead title={t('automations.title')} sub={t('automations.subtitle')} side={
         naming
           ? <form style={{ display: 'flex', gap: 8 }} onSubmit={e => { e.preventDefault(); create() }}>
               <input className="g-input" autoFocus placeholder={t('automations.newName')} value={name} onChange={e => setName(e.target.value)} data-testid="flow-new-name" style={{ width: 240 }} />
@@ -93,8 +94,8 @@ export function AutomationsScreen() {
             </form>
           : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
-      <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
       <Panel className="automations-window" testid="automations-window">
+        <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
             {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={`filter-${f}`}>{f}</button>)}
@@ -103,7 +104,7 @@ export function AutomationsScreen() {
         </div>
         {err && <div className="g-error">{err}</div>}
         <table className="g-table" data-testid="flow-table">
-          <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th><th>{t('delete.action')}</th></tr></thead>
+          <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th></tr></thead>
           <tbody>
             {shown.map(f => {
               const st = f.last ? STATUS[f.last.status] : undefined
@@ -116,10 +117,10 @@ export function AutomationsScreen() {
               const hook = `${apiBase.replace(/\/$/, '')}/api/hooks/${encodeURIComponent(f.id)}`
               return (
                 <tr key={f.id}>
-                  <td className="g-lead"><button className="g-link" title={f.name} style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
+                  <td className="g-lead"><button className="g-link" style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
                   <td>{f.last ? ago(f.last.started_at) : t('automations.never')}</td>
                   <td>{st ? <span className="g-status-cell"><StatusIcon kind={st.kind} />{st.label}</span> : <span className="g-muted">{t('automations.notRun')}</span>}</td>
-                  <td><div className="g-trigger-cell" data-testid={`trigger-${f.id}`}>
+                  <td><div style={{ display: 'grid', gap: 8, minWidth: 330 }} data-testid={`trigger-${f.id}`}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>{t('automations.startsWhen')}</span>
                       <select className="g-input" aria-label={t('automations.startsWhen')} value={choice} disabled={!detail || busy === f.id} onChange={e => void setStart(detail!, e.target.value)} data-testid={`trigger-choice-${f.id}`}>
@@ -133,22 +134,12 @@ export function AutomationsScreen() {
                     <div>{t('automations.lastStart')} {f.last ? <><span>{ago(f.last.started_at)}</span> · <button className="g-link" onClick={() => go(`automations/flow/${f.id}/${f.last!.run_id}`)} data-testid={`last-trigger-run-${f.id}`}>{t('automations.viewRun')}</button></> : t('automations.never')}</div>
                     {detail && <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={active} onChange={e => void save({ ...detail, enabled: e.target.checked })} data-testid={`trigger-enabled-${f.id}`} />{t('automations.enabled')}</label>}
                   </div></td>
-                  <td><DeleteAction label={t('automations.deleteFlow')} impact={t('delete.flowImpact')} testid={`flow-delete-${f.id}`}
-                    onDelete={async () => { const result = await api.deleteEnv(f.id); return { title: t('delete.removed'), run: async () => {
-                      await api.undoDeleteEnv(f.id, result.commit)
-                      const restored = await api.getEnv(f.id)
-                      setDetails(current => ({ ...current, [f.id]: restored }))
-                      setFlows(current => [...(current ?? []).filter(item => item.id !== f.id), { ...f, enabled: restored.enabled }])
-                    } } }}
-                    onDeleted={action => { setUndo(action ?? null); setFlows(current => current?.filter(item => item.id !== f.id) ?? null) }}
-                    onError={e => setErr(String(e))} /></td>
                 </tr>
               )
             })}
           </tbody>
         </table>
-        {flows && shown.length === 0 && <TextBox className="automations-empty"><Empty>{flows.length ? t('automations.noMatches') : t('automations.empty')}</Empty></TextBox>}
-        <HintBar><span><b>Enter</b> {t('automations.open')}</span><span><b>Esc</b> {t('automations.back')}</span><span className="g-more-arrow" /></HintBar>
+        {flows && shown.length === 0 && <Empty>{flows.length ? t('automations.noMatches') : t('automations.empty')}</Empty>}
       </Panel>
     </>
   )

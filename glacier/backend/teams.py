@@ -651,8 +651,11 @@ def summary() -> list[dict]:
     result = []
     for row in rows:
         state = json.loads(row["state"])
-        result.append({"team_id": row["team_id"], "status": row["status"], "done": sum(x.get("status") == "done" for x in state["tasks"].values()),
-                       "tasks": len(state["tasks"]), "needs_owner": sum(x.get("status") in {"needs_owner", "awaiting_approval"} for x in state["tasks"].values())})
+        plan = json.loads(row["plan"])
+        feature_states = state.get("features", {})
+        result.append({"team_id": row["team_id"], "name": str(plan.get("vision", {}).get("goal", row["team_id"])), "status": row["status"], "done": sum(x.get("status") == "done" for x in state["tasks"].values()),
+                       "tasks": len(state["tasks"]), "passing": sum(feature_states.get(f["id"], {}).get("status") == "passing" for f in plan.get("features", [])),
+                       "feature_count": len(plan.get("features", [])), "needs_owner": sum(x.get("status") in {"needs_owner", "awaiting_approval"} for x in state["tasks"].values())})
     return result
 
 
