@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 import asyncio
+import subprocess
+import pytest
 
 from routes import assistant_chat
 
@@ -57,6 +59,17 @@ def test_auto_uses_signed_in_codex(tmp_path, monkeypatch):
     assert next(e for e in events if e["type"] == "TEXT_MESSAGE_CONTENT")["delta"] == "Hello from Codex."
 
 
+def test_codex_login_status_message_on_stderr_counts_as_signed_in(tmp_path, monkeypatch):
+    from routes import assistant_chat as chat
+    fake = tmp_path / "codex.cmd"
+    fake.write_text('@echo off\r\n@echo Logged in using ChatGPT 1>&2\r\nexit /b 0\r\n', encoding="utf-8")
+    monkeypatch.delenv("GLACIER_CHAT_BIN", raising=False)
+    monkeypatch.delenv("CODEX_BIN", raising=False)
+    monkeypatch.setattr(chat.shell_commands, "executable_invocation", lambda *_: [str(fake), "login", "status"])
+    monkeypatch.setattr(chat.subprocess, "run", lambda *_a, **_kw: subprocess.CompletedProcess([], 0, "", "Logged in using ChatGPT"))
+    assert chat._codex_signed_in() is True
+
+
 def test_auto_uses_local_when_codex_missing(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_CHAT_BIN", str(tmp_path / "missing-codex"))
     calls = _start(tmp_path, monkeypatch, codex=False, ollama=True)
@@ -75,6 +88,58 @@ def test_local_followup_prompt_contains_prior_exchange(tmp_path, monkeypatch):
     assert "Earlier conversation" in calls[1][1]
     assert "Make it daily" in calls[1][1]
     assert "Hello from local." in calls[1][1]
+
+
+def test_local_route_sends_glacier_system_message_and_redacted_context(tmp_path, monkeypatch):
+    import importlib
+    chat = importlib.import_module("routes.assistant_chat")
+    captured = []
+    _start(tmp_path, monkeypatch, route="local")
+    monkeypatch.setattr(chat, "_ask_local", lambda message: captured.append(message) or
+                        {"reply": "Glacier builds automations.", "automation": False})
+    conversation_id = "7" * 36
+    _chat_events("What is Glacier for?", conversation_id=conversation_id)
+    import secrets_store
+    monkeypatch.setattr(secrets_store, "redact", lambda value: value.replace("sensitive-example-token", "[hidden]"))
+    chat._append_conversation(conversation_id, "Remember sensitive-example-token", "Saved it.")
+    _chat_events("In one sentence, what is Glacier for?", conversation_id=conversation_id)
+    assert "Earlier conversation" in captured[-1]
+    assert "sensitive-example-token" not in captured[-1]
+
+
+def test_local_request_includes_glacier_system_message(monkeypatch):
+    import importlib
+    from contextlib import closing
+    chat = importlib.import_module("routes.assistant_chat")
+    import system_check
+    monkeypatch.setattr(system_check, "default_local_model", lambda: "granite3.3:2b")
+    sent = []
+    def fake_request(request, **_kwargs):
+        sent.append(json.loads(request.data))
+        response = type("Response", (), {
+            "read": lambda self: json.dumps({"message": {"content": json.dumps({"reply": "ok", "automation": False})}}).encode(),
+            "close": lambda self: None,
+        })()
+        return closing(response)
+    monkeypatch.setattr(chat, "_open_ollama_request", fake_request)
+    chat._ask_local("A short question")
+    system_message = sent[0]["messages"][0]["content"]
+    assert "assistant inside Glacier" in system_message
+    assert "builds and runs automations" in system_message
+
+
+def test_missing_local_model_404_returns_friendly_message(monkeypatch):
+    import importlib
+    import urllib.error
+    chat = importlib.import_module("routes.assistant_chat")
+    import system_check
+    monkeypatch.setattr(system_check, "default_local_model", lambda: "not-installed:4b")
+    monkeypatch.setattr(system_check, "check_system", lambda: {"ollama_models": []})
+    def missing_model(*_args, **_kwargs):
+        raise urllib.error.HTTPError("http://ollama.test/api/chat", 404, "not found", {}, None)
+    monkeypatch.setattr(chat, "_open_ollama_request", missing_model)
+    with pytest.raises(RuntimeError, match="not-installed:4b.*Settings > Models.*install it"):
+        chat._ask_local("Hello")
 
 
 def test_conversation_context_keeps_newest_with_exchange_and_character_bounds(tmp_path, monkeypatch):

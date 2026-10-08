@@ -1,5 +1,6 @@
 """Claims API (docs/contracts/VERIFICATION.md)."""
 from fastapi import APIRouter, HTTPException
+import audit_log
 from pydantic import BaseModel
 import claims, claims_research, runner, store
 
@@ -27,6 +28,7 @@ def file_claim(c: NewClaim):
     except ValueError as e:
         raise HTTPException(400, str(e))
     claims_research.start(r["id"])
+    audit_log.record("claim.filed", what={"claim_id": r.get("id"), "kind": c.kind, "run_id": c.run_id})
     return r
 
 
@@ -46,7 +48,9 @@ def get_claim(cid: str):
 @router.post("/api/claims/{cid}/decision")
 def decide(cid: str, d: Decision):
     try:
-        return claims.decide(cid, d.action, d.option)
+        result = claims.decide(cid, d.action, d.option)
+        audit_log.record("claim.decided", what={"claim_id": cid, "action": d.action, "status": result.get("status")})
+        return result
     except FileNotFoundError:
         raise HTTPException(404, "claim not found")
     except ValueError as e:
@@ -75,6 +79,7 @@ def rerun_claim(cid: str):
 
         run_id = ""
         saved = claims.update_claim(cid, append_rerun, agent="owner")
+        audit_log.record("run.started", what={"env_id": env_id, "run_id": run_id, "source": "claim-rerun", "claim_id": cid})
     except FileNotFoundError:
         raise HTTPException(400, "The flow behind this claim no longer exists.")
     store.broadcaster.publish({"type": "claim", "id": cid, "status": saved["meta"].get("status")})

@@ -104,6 +104,10 @@ fn resource_path(app: &tauri::AppHandle, relative: &str) -> PathBuf {
     app.path().resource_dir().unwrap_or_else(|_| PathBuf::from(".")).join(relative)
 }
 
+fn parse_sidecar_config(contents: &str) -> Result<serde_json::Value, serde_json::Error> {
+    serde_json::from_str(contents.strip_prefix('\u{feff}').unwrap_or(contents))
+}
+
 fn runtime_platform() -> &'static str {
     if cfg!(target_os = "windows") { "x86_64-pc-windows-msvc" }
     else if cfg!(target_os = "macos") { "aarch64-apple-darwin" }
@@ -113,7 +117,7 @@ fn runtime_platform() -> &'static str {
 fn launch_backend(app: &tauri::AppHandle, port: u16) -> Result<(Child, PathBuf), String> {
     let config_path = resource_path(app, "sidecar.json");
     let config: serde_json::Value = fs::read_to_string(config_path).ok()
-        .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+        .and_then(|s| parse_sidecar_config(&s).ok()).unwrap_or_default();
     let relative_python = config.get("runtime_by_platform").and_then(|x| x.get(runtime_platform()))
         .and_then(|x| x.as_str()).ok_or_else(|| "The bundled Python runtime is not configured".to_string())?;
     let python = resource_path(app, relative_python);
@@ -358,6 +362,12 @@ mod tests {
         for required in ["core:window:allow-minimize", "core:window:allow-close"] {
             assert!(permissions.iter().any(|permission| permission.as_str() == Some(required)), "missing permission {required}");
         }
+    }
+
+    #[test]
+    fn sidecar_config_accepts_a_leading_utf8_bom() {
+        let parsed = parse_sidecar_config("\u{feff}{\"low_resource\":true}").unwrap();
+        assert_eq!(parsed["low_resource"], true);
     }
 
     #[test]

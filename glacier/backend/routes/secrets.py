@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 import secrets_store
+import audit_log
 
 
 router = APIRouter()
@@ -28,6 +29,7 @@ def save_secret(name: str, body: SecretValue):
         secrets_store.set(name, body.value)
     except Exception:
         raise HTTPException(500, "Could not save this secret in the operating-system keychain")
+    audit_log.record("secret.set", what={"name": name})
     return {"saved": True}
 
 
@@ -37,4 +39,5 @@ def remove_secret(name: str):
         secrets_store.delete(name)
     except Exception:
         raise HTTPException(500, "Could not remove this secret from the operating-system keychain")
+    audit_log.record("secret.deleted", what={"name": name})
     return {"deleted": True}

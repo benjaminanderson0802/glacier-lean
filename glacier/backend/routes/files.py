@@ -6,6 +6,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 import files_store
+import audit_log
 from bounded_body import read_bounded_body
 
 router = APIRouter()
@@ -45,7 +46,11 @@ async def upload_file(request: Request):
         raise HTTPException(400, str(exc)) from exc
     try:
         try:
-            return await run_in_threadpool(files_store.save_upload, filename, project, file.file)
+            result = await run_in_threadpool(files_store.save_upload, filename, project, file.file)
+            if not result.get("duplicate"):
+                audit_log.record("file.uploaded", what={"path": result.get("path"), "project": result.get("project"),
+                                                        "name": result.get("name"), "size": result.get("size")})
+            return result
         except PermissionError as exc:
             raise HTTPException(400, str(exc)) from exc
         except ValueError as exc:
@@ -71,6 +76,8 @@ def list_projects():
 @router.post("/api/projects")
 def create_project(item: ProjectCreate):
     try:
-        return files_store.create_project(item.name)
+        result = files_store.create_project(item.name)
+        audit_log.record("project.created", what={"name": item.name})
+        return result
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

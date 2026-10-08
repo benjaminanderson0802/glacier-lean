@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
+import audit_log
 from pydantic import BaseModel
 
 import vault
@@ -134,6 +135,7 @@ def put_note(item: NoteWrite):
         import logging
         logging.getLogger(__name__).exception("Saving note %s failed", path)
         raise HTTPException(500, f"The note could not be saved: {exc}") from exc
+    audit_log.record("vault.note_written", what={"path": path, "commit": commit})
     return {"path": path, "commit": commit}
 
 
@@ -201,6 +203,7 @@ def undo(item: Undo):
                     raise HTTPException(409, "That rename can't be undone because the note has moved or been removed since") from exc
                 except FileExistsError as exc:
                     raise HTTPException(409, "That rename can't be undone because a note now uses the old name") from exc
+                audit_log.record("vault.note_undone", what={"path": old_path, "commit": result["commit"]})
                 return {"path": item.path, "commit": result["commit"]}
         if not commits:
             raise HTTPException(404, "No saved version exists for this note")
@@ -220,6 +223,7 @@ def undo(item: Undo):
     except (KeyError, OSError):
         raise HTTPException(404, "The earlier version did not contain this note")
     commit = vault.write_note(path, body, author="owner")
+    audit_log.record("vault.note_undone", what={"path": path, "commit": commit})
     return {"path": path, "commit": commit}
 
 
@@ -229,7 +233,9 @@ def rename_note(item: dict):
     if set(item) != {"from", "to"} or not all(isinstance(item[key], str) for key in ("from", "to")):
         raise HTTPException(400, "Provide the old and new note paths")
     try:
-        return rename(item["from"], item["to"])
+        result = rename(item["from"], item["to"])
+        audit_log.record("vault.note_renamed", what={"from": item["from"], "to": item["to"], "commit": result.get("commit")})
+        return result
     except FileNotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
     except FileExistsError as exc:
