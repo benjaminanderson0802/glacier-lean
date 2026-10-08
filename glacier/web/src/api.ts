@@ -244,6 +244,14 @@ export async function chat(message: string, conversationId: string | null, onEve
     }
   }
 }
+// ---------- Past Ask conversations (GET/POST /api/assistant/conversations*) ----------
+export interface ConversationItem { id: string; title: string; updated: string; messages: number }
+export interface ConversationFull { id: string; title: string; messages: { who: 'you' | 'glacier'; text: string; at: string }[] }
+export const conversationsApi = {
+  list: (q = '') => req<ConversationItem[]>('GET', `/api/assistant/conversations${q.trim() ? `?q=${enc(q.trim())}` : ''}`),
+  get: (id: string) => req<ConversationFull>('GET', `/api/assistant/conversations/${enc(id)}`),
+  rename: (id: string, title: string) => req<{ id: string; title: string; commit: string }>('POST', `/api/assistant/conversations/${enc(id)}/rename`, { title }),
+}
 export const applyProposal = (id: string, approve: boolean) =>
   req<{ discarded?: boolean; flow_id?: string; run_id?: string; commit?: string }>('POST', `/api/assistant/proposals/${enc(id)}/apply`, { approve })
 

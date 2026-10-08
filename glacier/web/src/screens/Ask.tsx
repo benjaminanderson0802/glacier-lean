@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { applyProposal, chat, type ChatProposal, type ProposalCheck } from '../api.ts'
-import { Btn, PageHead, Panel } from '../ui/kit.tsx'
+import { ago, applyProposal, chat, conversationsApi, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
+import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { Icon, Mascot } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { setDraft } from '../draft.ts'
@@ -9,7 +9,7 @@ import type { Environment } from '../api.ts'
 type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean }
 
 // Conversation lives for the app session (module scope), so switching tabs does not lose it.
-let saved: { conv: string | null; msgs: Msg[] } = { conv: null, msgs: [] }
+let saved: { conv: string | null; msgs: Msg[]; title: string } = { conv: null, msgs: [], title: '' }
 
 const time = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
@@ -26,8 +26,33 @@ export function AskScreen() {
   const [conv, setConv] = useState<string | null>(saved.conv)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
+  const [title, setTitle] = useState(saved.title)
+  const [view, setView] = useState<'chat' | 'past'>('chat')
+  const [past, setPast] = useState<ConversationItem[] | null>(null)
+  const [q, setQ] = useState('')
+  const [renaming, setRenaming] = useState<string | null>(null)
+  const [err, setErr] = useState('')
   const end = useRef<HTMLDivElement>(null)
-  useEffect(() => { saved = { conv, msgs }; end.current?.scrollIntoView({ block: 'end' }) }, [msgs, conv])
+  useEffect(() => { saved = { conv, msgs, title }; end.current?.scrollIntoView({ block: 'end' }) }, [msgs, conv, title])
+  useEffect(() => {
+    if (view !== 'past') return
+    const t = setTimeout(() => conversationsApi.list(q).then(setPast).catch(e => setErr(String(e))), q ? 250 : 0)
+    return () => clearTimeout(t)
+  }, [view, q])
+
+  const reopen = async (id: string) => {
+    try {
+      const c = await conversationsApi.get(id)
+      setMsgs(c.messages.map(m => ({ who: m.who, text: m.text, at: new Date(m.at) })))
+      setConv(c.id); setTitle(c.title); setRenaming(null); setErr(''); setView('chat')
+    } catch (e) { setErr(String(e)) }
+  }
+  const fresh = () => { setMsgs([]); setConv(null); setTitle(''); setRenaming(null); setView('chat') }
+  const rename = async () => {
+    if (!conv || renaming === null) return
+    try { const r = await conversationsApi.rename(conv, renaming); setTitle(r.title); setRenaming(null); setErr('') }
+    catch (e) { setErr(String(e)) }
+  }
 
   const send = async () => {
     const m = text.trim()
@@ -35,6 +60,7 @@ export function AskScreen() {
     setText(''); setBusy(true)
     const id = conv ?? crypto.randomUUID()
     setConv(id)
+    if (!title) setTitle(m.replace(/\s+/g, ' ').slice(0, 60))
     setMsgs(x => [...x, { who: 'you', text: m, at: new Date() }, { who: 'glacier', text: '', at: new Date() }])
     const patch = (f: (g: Msg) => Msg) => setMsgs(x => [...x.slice(0, -1), f(x[x.length - 1])])
     try {
@@ -71,8 +97,36 @@ export function AskScreen() {
 
   return (
     <>
-      <PageHead title="Ask" sub="Talk to your assistant." />
+      <PageHead title="Ask" sub="Talk to your assistant." side={
+        <div className="g-seg" data-testid="ask-views">
+          <button className={`g-seg-btn${view === 'chat' ? ' active' : ''}`} onClick={() => setView('chat')} data-testid="askview-chat">Chat</button>
+          <button className={`g-seg-btn${view === 'past' ? ' active' : ''}`} onClick={() => setView('past')} data-testid="askview-past">Past chats</button>
+        </div>} />
+      {err && <div className="g-error">{err}</div>}
+      {view === 'past' ? (
+        <Panel title="Past chats" aside={<input className="g-input" style={{ width: 220 }} placeholder="Search chats…" value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
+          <div className="g-rows">
+            {(past ?? []).map(c => <Row key={c.id} icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} />)}
+            {past && past.length === 0 && <Empty>{q ? 'No chats match.' : 'No past chats yet.'}</Empty>}
+          </div>
+        </Panel>
+      ) : (
       <Panel className="g-chat" testid="chat">
+        {conv && (
+          <div className="g-chat-title" data-testid="chat-title">
+            {renaming === null ? (
+              <><span className="g-lead">{title || 'This chat'}</span>
+                <button className="g-link" onClick={() => setRenaming(title)} data-testid="chat-rename">Rename</button>
+                <button className="g-link" onClick={fresh} data-testid="chat-new">New chat</button></>
+            ) : (
+              <form onSubmit={e => { e.preventDefault(); rename() }} style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
+                <input className="g-input" style={{ flex: 1 }} value={renaming} maxLength={80} onChange={e => setRenaming(e.target.value)} data-testid="chat-rename-input" autoFocus />
+                <Btn primary type="submit" disabled={!renaming.trim()} data-testid="chat-rename-save">Save</Btn>
+                <Btn onClick={() => setRenaming(null)}>Cancel</Btn>
+              </form>
+            )}
+          </div>
+        )}
         <div className="g-chat-log" data-testid="chat-log">
           {msgs.length === 0 && <div className="g-empty">Ask a question, or describe something you want done regularly. Glacier will propose an automation for you to approve.</div>}
           {msgs.map((m, i) => (
@@ -113,6 +167,7 @@ export function AskScreen() {
           <button className="g-btn primary g-send" type="submit" aria-label="Send" disabled={busy || !text.trim()} data-testid="chat-send"><Icon name="send" /></button>
         </form>
       </Panel>
+      )}
     </>
   )
 }
