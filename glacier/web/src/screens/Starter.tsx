@@ -39,14 +39,14 @@ export function StarterPanel() {
     <Panel title={t('starter.title')} testid="starter" aside={<button className="g-link" onClick={hide} data-testid="starter-hide">{t('starter.notNow')}</button>}>
       {done ? (
         <div data-testid="starter-done">
-          <div className="g-saved">All set. {done.length ? t('starter.added', { count: done.length, plural: done.length > 1 ? 's' : '' }) : t('starter.nothingNew')}</div>
+          <div className="g-saved">{t('starter.allSet')} {done.length ? t('starter.added', { count: done.length, plural: done.length > 1 ? 's' : '' }) : t('starter.nothingNew')}</div>
           <div className="g-rows">{done.map(d => <Row key={d.id} icon="automations" lead={d.name} onClick={() => go(`automations/flow/${d.id}`)} />)}</div>
           <Btn onClick={hide} style={{ marginTop: 10 }}>{t('starter.close')}</Btn>
         </div>
       ) : (
         <>
-          <div className="g-detail" data-testid="starter-reason">{p.reason} Local model: {p.local_model}.</div>
-          <div className="g-detail">Coding agents found: {agents.length ? agents.map(a => a.name).join(', ') : 'none yet'}.</div>
+          <div className="g-detail" data-testid="starter-reason">{p.reason} {t('starter.localModel', { name: p.local_model })}</div>
+          <div className="g-detail">{t('starter.agentsFound', { value: agents.length ? agents.map(a => a.name).join(', ') : t('starter.noAgents') })}</div>
           <div className="g-muted" style={{ marginTop: 10 }}>{t('starter.suggested')}</div>
           <div className="g-rows">
             {p.suggested_automations.map((a, i) => (
