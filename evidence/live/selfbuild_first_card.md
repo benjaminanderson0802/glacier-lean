@@ -331,3 +331,13 @@ This continues PH9.2, the real feature flow. PH9 remains owner-authorized for ve
 - Practice checkout `main` remained at `bf3bffcf8a2b78ad5b2febf01cc5bc659a14781a` (the source HEAD); no practice merge commit exists. The unmerged run branch ended at `97f33e2b22bbb8c4ccc3a16187dbd24d0ed2bcac` and remains only in the temporary practice checkout.
 
 The flow's backend gate is already 720 seconds on this source revision, so no timeout adjustment was needed. It completed in 562.66 seconds. I attempted to make the required interpreter path resolve to the installed `/home/glacier/w/glacier-lean/.venv`, but the machine denied creating `/workspaces` (`Permission denied`). That is an environment issue outside this card's lane; no second or third attempt was started with the same missing interpreter, and no changes were made to the tests, feature check, or sandbox rules. This round does not verify PH9.2.
+
+# W66 follow-up round 5: interpreter and worker handoff
+
+## Cause and flow fixes
+
+The saved run/node/check records for `229fab86376e` confirmed the worker stopped because `/workspaces/glacier-lean/.venv/bin/python` did not exist. It added the card's test, then recorded an environment claim and reported that `scan.py` was unchanged. The project `AGENTS.md` told it to use that old fixed path. Independent check 2 rejected the run because the CLI still did not recognize `--list-sources` (`1 failed, 76 passed in 5.00s`). The start approval had been approved; the worker had `workspace-write`, so neither a missing approval nor sandbox refusal caused the stop. The persisted log does not contain a transcript showing a direct question or timeout.
+
+Commit `6a8ed33` updates the flow to replace that legacy interpreter spelling and bare `python` acceptance commands with `GLACIER_PYTHON` or `sys.executable`; the worker prompt now repeats the full card, its acceptance requirements, explicit practice-worktree edit authorization, and the instruction to file a claim before stopping on a question or blocker. Runtime setup scripts and the security bench README no longer require the old path. Regression coverage checks generated flow acceptance commands for both interpreter modes and asserts the handoff prompt includes those instructions.
+
+The required focused self-build tests were queued under `/tmp/glacier-suite.lock`, behind multiple workers' long-running full backend suites. They had not started by the time this record was written. No new practice run was started without the regression check and serialized test capacity. Therefore this round has no new run ID, no VERIFIED result, and no practice merge commit. The previous `229fab86376e` remains rejected; practice main remained at `bf3bffcf8a2b78ad5b2febf01cc5bc659a14781a` at that time.
