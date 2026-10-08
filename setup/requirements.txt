@@ -11,6 +11,7 @@ uvicorn==0.54.0
 websockets==16.1.1
 # tests
 pytest==9.1.1
+pytest-xdist==3.8.0
 httpx==0.28.1
 apprise==2.0.1
 # step plug-ins and memory (wave 1-2), pinned 2026-10-07
