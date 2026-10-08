@@ -200,3 +200,9 @@ def test_approval_wait_does_not_consume_step_limit(server, monkeypatch):
     assert server.wait_run(quick_id, timeout=5)["status"] == "done"
     server.post(f"/api/runs/{waiting_id}/approve", {"node_id": "approve", "approved": True})
     assert server.wait_run(waiting_id, timeout=5)["status"] == "done"
+
+
+def test_local_approval_notifications_use_a_short_poll_interval():
+    import app
+
+    assert app.DBOS_INSTANCE._config["runtimeConfig"]["notification_listener_polling_interval_sec"] == 0.1

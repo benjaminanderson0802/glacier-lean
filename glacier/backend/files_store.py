@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from html.parser import HTMLParser
 import json
 import os
 import re
@@ -25,6 +26,40 @@ _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".tif", ".tiff", 
 _TESSERACT_URL = "https://github.com/tesseract-ocr/tesseract"
 _project_locks: dict[str, threading.Lock] = {}
 _project_locks_guard = threading.Lock()
+
+
+class _HTMLText(HTMLParser):
+    """Extract visible HTML text without starting the document-conversion worker."""
+    _BLOCKS = {"address", "article", "blockquote", "br", "dd", "div", "dl", "dt", "footer", "h1", "h2", "h3",
+               "h4", "h5", "h6", "header", "li", "main", "ol", "p", "section", "table", "td", "th", "tr", "ul"}
+    _HIDDEN = {"head", "script", "style", "template", "noscript"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts = []
+        self.hidden = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self._HIDDEN:
+            self.hidden += 1
+        elif not self.hidden and tag in self._BLOCKS:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in self._HIDDEN:
+            self.hidden = max(0, self.hidden - 1)
+        elif not self.hidden and tag in self._BLOCKS:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if not self.hidden and data.strip():
+            self.parts.append(data)
+
+
+def _convert_html(path: Path) -> str:
+    parser = _HTMLText()
+    parser.feed(path.read_text(encoding="utf-8", errors="replace"))
+    return "\n".join(line.strip() for line in "".join(parser.parts).splitlines() if line.strip())
 
 
 def _project_lock(folder: Path) -> threading.Lock:
@@ -251,7 +286,8 @@ def save_upload(filename: str, project: str | None, source) -> dict:
     message = None
     note_path = f"files/{project}/{destination.name}.md"
     try:
-        text = _convert_in_child(destination).strip()
+        text = (_convert_html(destination) if destination.suffix.lower() in {".html", ".htm"}
+                else _convert_in_child(destination)).strip()
     except Exception:
         text = ""
     if not text:

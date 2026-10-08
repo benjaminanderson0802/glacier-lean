@@ -51,6 +51,7 @@ jobs:
       - run: pip install -r setup/requirements.txt
       - run: git config --global user.email "ci@glacier.local"; git config --global user.name "glacier-ci"
       - name: backend tests (Windows)
+        id: windows-backend
         working-directory: glacier/backend
         run: |
           $bash = @("$env:ProgramFiles\Git\bin\bash.exe", "${env:ProgramFiles(x86)}\Git\bin\bash.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -59,6 +60,15 @@ jobs:
           $testExit = $LASTEXITCODE
           if ($testExit -ne 0) { exit $testExit }
         shell: pwsh
+      - name: show Windows failure diagnostics
+        if: always()
+        shell: pwsh
+        env:
+          BACKEND_OUTCOME: ${{ steps.windows-backend.outcome }}
+        run: |
+          if ($env:BACKEND_OUTCOME -eq 'failure' -and (Test-Path windows-results.txt)) {
+            Get-Content windows-results.txt -Tail 250
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: windows-results, path: glacier/backend/windows-results.txt}

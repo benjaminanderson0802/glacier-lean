@@ -40,6 +40,23 @@ def _append(cid: str, text: str, **updates) -> None:
     store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
 
 
+def _append_resolution(cid: str, text: str, **updates) -> None:
+    c = claims.get_claim(cid)
+    meta, body = c["meta"], c["body"]
+    meta.update(updated=claims._now(), **updates)
+    body = claims.append_resolution(body, text)
+    vault.write_note(claims._path(cid), claims._render(meta, body), agent="glacier-specialist")
+    store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
+
+
+def _resolution_summary(text: str) -> str:
+    """Keep worker prose and echoed prompts out of the durable Resolution log."""
+    line = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if line.startswith("##") or line.startswith("---"):
+        return "Specialist completed an attempt; see the run evidence."
+    return line[:240]
+
+
 @DBOS.step()
 def specialist_attempt(cid: str) -> dict:
     c = claims.get_claim(cid)
@@ -51,7 +68,8 @@ def specialist_attempt(cid: str) -> dict:
     ws = workspaces.base(home, run["env_id"])
     os.makedirs(ws, exist_ok=True)
     code, msg = run_specialist(ws, _prompt(meta, c["body"]))
-    _append(cid, f"\n## Specialist attempt ({meta.get('assigned_to')})\nexit {code}\n{msg[-2000:]}", status="researching")
+    _append_resolution(cid, f"Specialist attempt ({meta.get('assigned_to')}), exit {code}: {_resolution_summary(msg)}",
+                       status="researching")
     return {"ok": code == 0, "env_id": run["env_id"], "note": msg[-300:]}
 
 
@@ -75,7 +93,7 @@ def proof_verified(status: str, acceptance: list, checks: list):
 def close_claim(cid: str, rerun_id: str, status: str, verified) -> dict:
     proven = status == "done" and verified is not False
     if proven:
-        _append(cid, f"\n## Resolution\nFixed and proven: re-run {rerun_id} finished" + (" and passed its checks." if verified else "."),
+        _append_resolution(cid, f"Fixed and proven: re-run {rerun_id} finished" + (" and passed its checks." if verified else "."),
                 status="resolved", resolution=f"fixed; proven by run {rerun_id}", resolution_evidence=f"run:{rerun_id}")
         return {"status": "resolved"}
     _append(cid, f"\n## Escalated\nThe re-run {rerun_id} still ended {status}. This needs your decision.",

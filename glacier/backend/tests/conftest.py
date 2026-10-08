@@ -85,7 +85,9 @@ class Server:
             except httpx.HTTPError:
                 pass
             time.sleep(0.1)
-        raise RuntimeError("server did not start; see " + self.home + "/server.log")
+        log = self.diagnostics()
+        self.stop()
+        raise RuntimeError(f"server did not start; backend log follows:\n{log}")
 
     def kill(self):
         """Simulated power loss: forcibly stop the server and anything it spawned."""
@@ -102,6 +104,19 @@ class Server:
                 self.proc.wait(10)
             except subprocess.TimeoutExpired:
                 self.kill()
+        if not self.log.closed:
+            self.log.flush()
+            self.log.close()
+
+    def diagnostics(self) -> str:
+        """Return the backend's own log, including output flushed just before failure."""
+        if not self.log.closed:
+            self.log.flush()
+        try:
+            with open(os.path.join(self.home, "server.log"), encoding="utf-8", errors="replace") as stream:
+                return stream.read()
+        except OSError as exc:
+            return f"Could not read backend log: {exc}"
 
     # helpers
     def get(self, path, **kw):
@@ -123,18 +138,30 @@ class Server:
         raise AssertionError(f"run {run_id} never reached {statuses}: {run}")
 
 
+def _track_server(request, server):
+    servers = getattr(request.node, "_backend_test_servers", None)
+    if servers is None:
+        servers = request.node._backend_test_servers = []
+    servers.append(server)
+
+
 @pytest.fixture
-def server(tmp_path):
-    s = Server(tmp_path).start()
+def server(tmp_path, request):
+    s = Server(tmp_path)
+    _track_server(request, s)
+    s.start()
     yield s
     s.stop()
 
 
 @pytest.fixture
-def make_server(tmp_path):
+def make_server(tmp_path, request):
     made = []
     def make():
-        s = Server(tmp_path); made.append(s); return s
+        s = Server(tmp_path)
+        made.append(s)
+        _track_server(request, s)
+        return s
     yield make
     for s in made:
         s.stop()
@@ -151,3 +178,21 @@ def pytest_configure(config):
     # Timing and stress tests are run on their own (CI: -m serial without -n) so the
     # parallel batch cannot slow them down; they are checked exactly as before.
     config.addinivalue_line("markers", "serial: run outside the parallel batch")
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    if not report.failed:
+        return
+    servers = list(getattr(item, "_backend_test_servers", ()))
+    fixture_server = getattr(item, "funcargs", {}).get("server")
+    if fixture_server is not None:
+        servers.append(fixture_server)
+    seen = set()
+    for server in servers:
+        if id(server) in seen:
+            continue
+        seen.add(id(server))
+        report.sections.append((f"backend server log (stdout/stderr; {server.home})", server.diagnostics()))

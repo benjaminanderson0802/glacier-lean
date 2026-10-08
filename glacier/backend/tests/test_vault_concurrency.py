@@ -4,6 +4,7 @@ import concurrent.futures
 import os
 from pathlib import Path
 import time
+from contextlib import contextmanager
 
 import git
 import httpx
@@ -11,16 +12,27 @@ import httpx
 from conftest import Server
 
 
+@contextmanager
+def _timed_request(label):
+    started = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f"WINDOWS_STRESS_TIMING {label}: {time.perf_counter() - started:.3f}s", flush=True)
+
+
 def _round(server, round_number):
     base = f"stress-{round_number}"
 
     def write(worker):
         for item in range(25):
-            response = httpx.put(server.url + "/api/memory/note", timeout=10, json={
-                "path": f"{base}/w{worker}-{item}.md",
-                "body": f"# Note {worker}-{item}\n\n concurrencytoken sharedword [[{base}/w{worker}-{(item + 1) % 25}]]",
-                "author": "owner",
-            })
+            label = f"{base} save worker={worker} item={item}"
+            with _timed_request(label):
+                response = httpx.put(server.url + "/api/memory/note", timeout=10, json={
+                    "path": f"{base}/w{worker}-{item}.md",
+                    "body": f"# Note {worker}-{item}\n\n concurrencytoken sharedword [[{base}/w{worker}-{(item + 1) % 25}]]",
+                    "author": "owner",
+                })
             response.raise_for_status()
 
     deadline = time.monotonic() + 120
@@ -48,24 +60,29 @@ def _round(server, round_number):
 
         def read_loop():
             while time.monotonic() < deadline and not all(task.done() for task in writers):
-                history_response = httpx.get(server.url + "/api/memory/history", timeout=10,
-                                             params={"path": f"{base}/w0-0.md"})
+                with _timed_request(f"{base} history"):
+                    history_response = httpx.get(server.url + "/api/memory/history", timeout=10,
+                                                 params={"path": f"{base}/w0-0.md"})
                 history_response.raise_for_status()
                 history = history_response.json()
                 assert isinstance(history, list)
-                search_response = httpx.get(server.url + "/api/memory/search", timeout=10,
-                                            params={"q": "concurrencytoken"})
+                with _timed_request(f"{base} search"):
+                    search_response = httpx.get(server.url + "/api/memory/search", timeout=10,
+                                                params={"q": "concurrencytoken"})
                 search_response.raise_for_status()
                 search = search_response.json()
                 assert isinstance(search, list)
-                graph_response = httpx.get(server.url + "/api/memory/graph", timeout=10)
+                with _timed_request(f"{base} graph"):
+                    graph_response = httpx.get(server.url + "/api/memory/graph", timeout=10)
                 graph_response.raise_for_status()
                 assert isinstance(graph_response.json(), dict)
-                changes_response = httpx.get(server.url + "/api/runs/concurrency-probe/changes", timeout=10)
+                with _timed_request(f"{base} changes"):
+                    changes_response = httpx.get(server.url + "/api/runs/concurrency-probe/changes", timeout=10)
                 changes_response.raise_for_status()
                 assert isinstance(changes_response.json(), list)
-                restore_response = httpx.post(server.url + f"/api/environments/{base}-flow/restore",
-                                              timeout=10, json={"commit": old_commit})
+                with _timed_request(f"{base} restore"):
+                    restore_response = httpx.post(server.url + f"/api/environments/{base}-flow/restore",
+                                                  timeout=10, json={"commit": old_commit})
                 assert restore_response.status_code == 200, restore_response.text  # same check, with the reason shown
 
         readers = [pool.submit(read_loop) for _ in range(4)]

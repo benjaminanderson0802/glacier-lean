@@ -24,6 +24,29 @@ def test_upload_html_is_converted_to_searchable_note(server):
     assert any(row["path"] == "files/Inbox/brief.html.md" for row in result)
 
 
+def test_html_upload_extracts_visible_text_without_converter_child(tmp_path, monkeypatch):
+    import io
+    import files_store
+    import vault
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.setattr(vault, "VAULT", str(tmp_path / "vault"))
+    os.makedirs(vault.VAULT)
+    saved = []
+    monkeypatch.setattr(vault, "write_note", lambda path, body, **kwargs: saved.append((path, body)))
+
+    def unexpected_converter(_path):
+        raise AssertionError("HTML upload should not start the general converter process")
+
+    monkeypatch.setattr(files_store, "_convert_in_child", unexpected_converter)
+    document = b"<html><head><title>Page title</title></head><body><h1>Violet heading</h1><p>Visible words.</p><script>HiddenScriptToken</script></body></html>"
+    result = files_store.save_upload("visible.html", None, io.BytesIO(document))
+    assert result["name"] == "visible.html"
+    assert saved[0][0] == "files/Inbox/visible.html.md"
+    assert "Violet heading" in saved[0][1] and "Visible words." in saved[0][1]
+    assert "HiddenScriptToken" not in saved[0][1]
+
+
 def test_upload_rejects_path_traversal_filename(server):
     response = httpx.post(server.url + "/api/files", files={"file": ("../outside.txt", b"bad", "text/plain")})
     assert response.status_code == 400

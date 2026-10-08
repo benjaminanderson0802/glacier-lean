@@ -39,6 +39,20 @@ def _path(cid: str) -> str:
     return f"claims/{cid}.md"
 
 
+def append_resolution(body: str, text: str) -> str:
+    """Append text inside the claim's single Resolution section."""
+    marker = "## Resolution"
+    before, sep, resolution = body.partition(marker)
+    if not sep:
+        before = body.rstrip()
+        resolution = ""
+        sep = "\n\n" + marker
+    # Older notes may already have duplicate Resolution headings. Keep the
+    # first section and fold their contents into it before appending.
+    resolution = re.sub(r"\n## Resolution\s*", "\n", resolution)
+    return before.rstrip() + sep + resolution.rstrip() + "\n" + text.strip() + "\n"
+
+
 def file_claim(kind: str, summary: str, evidence: str, run_id: str = "", node_id: str = "", attempts_made: int = 0,
                filed_by: str = "glacier", checkpoint: str = "") -> dict:
     if kind not in KINDS:
