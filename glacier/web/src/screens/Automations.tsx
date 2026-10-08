@@ -112,8 +112,8 @@ export function AutomationsScreen() {
               const apiBase = (globalThis as { __GLACIER_API__?: string }).__GLACIER_API__ ?? 'http://127.0.0.1:8000'
               const hook = `${apiBase.replace(/\/$/, '')}/api/hooks/${encodeURIComponent(f.id)}`
               return (
-                <tr key={f.id} data-testid={`flow-${f.id}`}>
-                  <td className="g-lead"><button className="g-link" style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)}>{f.name}</button></td>
+                <tr key={f.id}>
+                  <td className="g-lead"><button className="g-link" style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
                   <td>{f.last ? ago(f.last.started_at) : t('automations.never')}</td>
                   <td>{st ? <span className="g-status-cell"><StatusIcon kind={st.kind} />{st.label}</span> : <span className="g-muted">{t('automations.notRun')}</span>}</td>
                   <td><div style={{ display: 'grid', gap: 8, minWidth: 330 }} data-testid={`trigger-${f.id}`}>
