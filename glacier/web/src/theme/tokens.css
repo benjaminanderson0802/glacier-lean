@@ -1,67 +1,16 @@
-/*
-  Glacier theme tokens. THE ONLY PLACE colours, fonts, radii, borders and glows are defined.
-  Sampled from the owner's retro mockup (docs/ui/mockup.png). Every other stylesheet and
-  component must use these variables; tests/ui/theme_lint.mjs fails the build otherwise.
-  Fonts: Pixelify Sans (headings) and VT323 (body), both SIL Open Font License, bundled locally.
-*/
-@font-face { font-family: 'Glacier Head'; src: url('./fonts/PixelifySans.woff2') format('woff2'); font-weight: 400 700; font-display: block; }
-@font-face { font-family: 'Glacier Body'; src: url('./fonts/VT323.woff2') format('woff2'); font-weight: 400; font-display: block; }
-
+/* Glacier's original pixel-art palette and integer art grid. */
+@font-face { font-family: 'Press Start 2P'; src: url('./fonts/PressStart2P.ttf') format('truetype'); font-weight: 400; font-display: block; }
 :root {
-  /* surfaces */
-  --g-void: #000c1a;          /* outside the window */
-  --g-bg: #011a2c;            /* window body */
-  --g-panel: #001426;         /* panel interior */
-  --g-panel-hi: #04223a;      /* hovered row / input */
-  --g-bar: #00111f;           /* top bar + footer */
-
-  /* lines */
-  --g-line: #2f86ad;          /* bright 1px panel border */
-  --g-line-dim: #12304a;      /* row dividers, inactive borders */
-  --g-glow: 0 0 0 1px #08213a, 0 0 8px rgba(70, 160, 220, .45), inset 0 0 0 1px #08213a;
-  --g-border: 2px;
-
-  /* accent */
-  --g-accent: #86cdf8;        /* active tab, primary button fill, progress fill */
-  --g-accent-ink: #0a2d55;    /* text on accent */
-  --g-accent-dim: #3c7fae;
-
-  /* text */
-  --g-head: #fcfcfc;
-  --g-text: #d6e7f5;
-  --g-sub: #6fb4dc;           /* subtitle cyan */
-  --g-muted: #6090b4;
-
-  /* status */
-  --g-ok: #73e65a;
-  --g-warn: #f0d86c;
-  --g-bad: #e45448;
-  --g-bad-ink: #ffffff;
-
-  /* pixel-art palette (mascot only) */
-  --g-art-hair: #1c1a26;
-  --g-art-hair-hi: #3b3852;
-  --g-art-skin: #f2b48a;
-  --g-art-skin-sh: #c67d58;
-  --g-art-ink: #0d0d16;
-  --g-art-mouth: #9c3c30;
-  --g-art-strap: #8a5a2c;
-  --g-art-pants: #22344c;
-
-  /* type */
-  --g-font-head: 'Glacier Head', monospace;
-  --g-font-body: 'Glacier Body', monospace;
-  --g-size-title: 44px;
-  --g-size-h2: 30px;
-  --g-size-body: 27px;
-  --g-size-small: 23px;
-  --g-size-tab: 25px;
-
-  /* shape: slight pixel rounding only */
-  --g-radius: 3px;
-  --g-radius-btn: 2px;
-  --g-radius-bar: 6px;      /* progress bars only */
-  --g-radius-bar-in: 4px;
-  --g-pad: 12px;
-  --g-gap: 10px;
+  --g-void: #081226; --g-navy: #14284a; --g-navy2: #22406c; --g-navy3: #345c92;
+  --g-ice0: #f4faff; --g-ice1: #deecf9; --g-ice2: #c4dbf1; --g-ice3: #a0c3e5; --g-ice4: #76a0ce;
+  --g-white: #ffffff; --g-shadow: #0c1c34; --g-ink: #162c4e; --g-ink2: #42628a;
+  --g-ok: #38a858; --g-ok2: #78dc82; --g-warn: #ecb228; --g-gold: #fcd66e; --g-bad: #d64848; --g-bad2: #ff8c82;
+  --g-bg: var(--g-ice1); --g-panel: var(--g-ice0); --g-panel-hi: var(--g-ice2); --g-bar: var(--g-navy2);
+  --g-line: var(--g-navy); --g-line-dim: var(--g-ice4); --g-head: var(--g-navy); --g-text: var(--g-ink); --g-sub: var(--g-ink2); --g-muted: var(--g-ink2);
+  --g-accent: var(--g-navy2); --g-accent-ink: var(--g-white); --g-accent-dim: var(--g-navy3);
+  --g-font-head: 'Press Start 2P'; --g-font-body: 'Press Start 2P';
+  --g-size-title: calc(16 * var(--px)); --g-size-h2: calc(8 * var(--px)); --g-size-body: calc(8 * var(--px)); --g-size-small: calc(8 * var(--px)); --g-size-tab: calc(8 * var(--px));
+  --g-border: var(--px); --g-pad: calc(4 * var(--px)); --g-gap: calc(4 * var(--px));
+  --px: 2px;
 }
+@media (min-width: 1500px) { :root { --px: 3px; } }

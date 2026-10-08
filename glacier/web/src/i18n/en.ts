@@ -1,6 +1,7 @@
 export const en: Record<string, string> = {
   'nav.home': 'Home',
-  'nav.ask': 'Ask',
+  'nav.ask': 'Build',
+  'nav.build': 'Build',
   'nav.automations': 'Automations',
   'nav.memory': 'Memory',
   'nav.settings': 'Settings',
