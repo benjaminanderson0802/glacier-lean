@@ -11,7 +11,12 @@ os.makedirs(HOME, exist_ok=True)
 DB_PATH = os.path.join(HOME, "glacier.sqlite")
 vault.init(os.path.join(HOME, "vault"))
 store.init(DB_PATH)
-DBOS(config=DBOSConfig(name="glacier", system_database_url=f"sqlite:///{DB_PATH}"))
+DBOS_NOTIFICATION_POLL_INTERVAL_SECONDS = 0.1
+DBOS_INSTANCE = DBOS(config=DBOSConfig(
+    name="glacier",
+    system_database_url=f"sqlite:///{DB_PATH}",
+    notification_listener_polling_interval_sec=DBOS_NOTIFICATION_POLL_INTERVAL_SECONDS,
+))
 import runner  # noqa: E402  (registers workflows after DBOS is configured)
 
 CATALOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "contract", "node_types.json")
