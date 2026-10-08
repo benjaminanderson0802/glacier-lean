@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 
 const base = fileURLToPath(new URL('../', import.meta.url))
 const roots = ['src/screens', 'src/ui']
@@ -11,26 +12,24 @@ const walk = dir => readdirSync(join(base, dir), { withFileTypes: true }).forEac
   if (entry.isDirectory()) walk(path)
   else if (path.endsWith('.tsx')) scan(path)
 })
-
 function scan(path) {
   const source = readFileSync(join(base, path), 'utf8')
-  // Visible prop literals: only the five user-facing props named in the card.
-  const props = /\b(title|sub|placeholder|aria-label|label)\s*=\s*(["'])(.*?)\2/g
-  for (const match of source.matchAll(props)) {
-    const prefix = source.slice(Math.max(0, match.index - 2), match.index)
-    const value = match[3].trim()
-    if (!prefix.endsWith('{') && /[A-Za-z]/.test(value) && !allow.has(value)) findings.push(`${path}: ${match[1]}=${JSON.stringify(value)}`)
+  const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const report = (node, kind, value) => {
+    const text = value.trim().replace(/\\s+/g, ' ')
+    if (/[A-Za-z]/.test(text) && !allow.has(text)) {
+      const pos = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1
+      findings.push(`${path}:${pos}: ${kind} ${JSON.stringify(text)}`)
+    }
   }
-  // Match direct JSX text nodes between tags. Expression boundaries exclude code fragments.
-  const jsxText = />([^<>\n{}]*[A-Za-z][^<>\n{}]*)</g
-  for (const match of source.matchAll(jsxText)) {
-    const value = match[1].replace(/\s+/g, ' ').trim()
-    if (!value || allow.has(value)) continue
-    if (/^[\w ,.!?…→·‹—'’&:;()\-]+$/.test(value)) findings.push(`${path}: JSX text ${JSON.stringify(value)}`)
+  const visit = node => {
+    if (ts.isJsxText(node)) report(node, 'JSX text', node.text)
+    if (ts.isJsxAttribute(node) && node.initializer && ts.isStringLiteral(node.initializer) && ['title', 'sub', 'placeholder', 'aria-label', 'label'].includes(node.name.getText(file))) report(node, node.name.getText(file), node.initializer.text)
+    ts.forEachChild(node, visit)
   }
+  visit(file)
 }
-
 for (const root of roots) walk(root)
-if (findings.length) console.log(`i18n scanner: ${findings.length} finding(s)\n${findings.join('\n')}`)
+if (findings.length) console.log(`i18n scanner: ${findings.length} finding(s)\\n${findings.join('\\n')}`)
 else console.log('i18n scanner: no findings')
 if (process.argv.includes('--fail') && findings.length) process.exitCode = 1
