@@ -9,6 +9,21 @@ import { readFileSync } from 'node:fs'
 
 // same node-type catalog the real backend serves
 const CATALOG = JSON.parse(readFileSync(new URL('../../contract/node_types.json', import.meta.url), 'utf8')).types
+const HTTP_NODE = {
+  type: 'http_request', label: 'Call a web API',
+  description: 'Send a request to an approved API and pass its response to the next step.',
+  fields: [
+    { key: 'method', label: 'Method', default: 'GET', options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] },
+    { key: 'url', label: 'Web address', placeholder: 'https://api.example.org/items', default: '' },
+    { key: 'allowed_sites', label: 'Allowed sites', placeholder: 'api.example.org', default: '' },
+    { key: 'headers', label: 'Headers', placeholder: 'Authorization: Bearer {secret:API_TOKEN}', default: '', optional: true, multiline: true },
+    { key: 'body', label: 'Request body', placeholder: 'Text or JSON; {prev_output}, {run}, {env} are available', default: '', optional: true, multiline: true },
+    { key: 'body_type', label: 'Body format', default: 'Text', options: ['Text', 'JSON'], optional: true },
+    { key: 'timeout', label: 'Timeout in seconds', default: '20', optional: true },
+    { key: 'expect_status', label: 'Expected status', default: '2xx', placeholder: '2xx or an exact status such as 201', optional: true },
+    { key: 'allow_private_network', label: 'This API runs on this computer or my network', default: 'No', options: ['No', 'Yes'], optional: true },
+  ], branches: null, worker: true, changing_methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
+}
 
 const PORT = Number(process.argv[2] ?? process.env.MOCK_PORT ?? 8787)
 const STEP_MS = Number(process.env.STEP_MS ?? 250)
@@ -193,7 +208,7 @@ const server = http.createServer(async (req, res) => {
         ],
       })
     }
-    if (req.method === 'GET' && p === '/api/node-types') return send(200, CATALOG)
+    if (req.method === 'GET' && p === '/api/node-types') return send(200, [...CATALOG, HTTP_NODE])
     if (p.startsWith('/api/assistant/conversations')) {
       const titleOf = c => c.title || (c.messages.find(x => x.who === 'you')?.text ?? '').split(/\s+/).join(' ').slice(0, 60) || 'Untitled conversation'
       if (req.method === 'GET' && p === '/api/assistant/conversations') {
@@ -550,6 +565,13 @@ async function execute(env, r, depth = 0) {
         summary.push(`${id} codex exit ${code}`)
         setState(r, id, code ? 'failed' : 'done', text)
         if (code && !handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+        break
+      }
+      case 'http_request': {
+        const status = String(c.expect_status ?? '2xx') === '201' || c.method === 'POST' ? 201 : 200
+        const output = `Status: ${status}\n\n${JSON.stringify({ message: 'mock response', saved: true }, null, 2)}\n`
+        result = { exit_code: 0, output }
+        setState(r, id, 'done', output)
         break
       }
       case 'check': {

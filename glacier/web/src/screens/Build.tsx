@@ -4,7 +4,7 @@ import {
   type Connection, type Edge, type EdgeChange, type NodeChange,
 } from '@xyflow/react'
 import {
-  ApiError, ago, api, memory, slugify, splitOptions, subscribeEvents, type MemCommit,
+  ApiError, ago, api, memory, settingsApi, slugify, splitOptions, subscribeEvents, type MemCommit,
   type EnvSummary, type NodeTypeInfo, type Environment, type NodeKind, type RunEvent, type RunState, type RunSummary,
 } from '../api.ts'
 import { GlacierNode, nodeTypes as baseNodeTypes, type GNode } from './GlacierNode.tsx'
@@ -32,6 +32,45 @@ const edgeStyle = (label: string) => ({
   markerEnd: { type: MarkerType.ArrowClosed, color: tok('--g-line') },
   className: label ? `edge-${label}` : undefined,
 })
+
+function httpAddressError(address: string, allowedSites: string): string {
+  const value = address.trim()
+  if (!value) return ''
+  let parsed: URL
+  try { parsed = new URL(value) } catch { return t('http.badAddress') }
+  if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname || parsed.username || parsed.password || parsed.hash || /\{secret:/i.test(value)) return t('http.badAddress')
+  const host = parsed.hostname.toLowerCase().replace(/\.$/, '')
+  const allowed = allowedSites.split(',').map(s => s.trim().toLowerCase().replace(/\.$/, '')).filter(Boolean)
+  if (!allowed.some(site => host === site || host.endsWith(`.${site}`))) return t('http.siteNotAllowed', { host })
+  return ''
+}
+
+const HTTP_LABELS: Record<string, string> = {
+  method: 'http.method', url: 'http.address', allowed_sites: 'http.allowedSites', headers: 'http.headers',
+  body: 'http.body', body_type: 'http.bodyFormat', timeout: 'http.timeout', expect_status: 'http.expectedStatus',
+  allow_private_network: 'http.privateNetwork',
+}
+const HTTP_PLACEHOLDERS: Record<string, string> = {
+  url: 'http.addressPlaceholder', allowed_sites: 'http.allowedSitesPlaceholder',
+  headers: 'http.headersPlaceholder', body: 'http.bodyPlaceholder', expect_status: 'http.expectedStatusPlaceholder',
+}
+const httpOptionLabel = (field: string, value: string) => {
+  const key = field === 'method' ? `http.method.${value.toLowerCase()}`
+    : field === 'body_type' ? `http.bodyFormat.${value.toLowerCase()}`
+      : field === 'allow_private_network' ? `http.privateNetwork.${value.toLowerCase()}` : ''
+  return key ? t(key) : value
+}
+
+function HttpResult({ text, elapsed }: { text: string; elapsed?: number }) {
+  const match = text.match(/^Status: (\d{3})\s*\n\n([\s\S]*)$/)
+  if (!match) return null
+  const body = match[2].slice(0, 2000)
+  return <div className="http-result" data-testid="http-result-summary">
+    <span>{t('http.responseStatus', { status: match[1] })}</span>
+    <span>{t('http.responseTime', { time: elapsed === undefined ? t('http.timeUnavailable') : `${elapsed} ms` })}</span>
+    <pre data-testid="http-result-body">{body}{match[2].length > 2000 ? t('http.responseTrimmed') : ''}</pre>
+  </div>
+}
 
 function toFlow(env: Environment): { nodes: GNode[]; edges: Edge[] } {
   return {
@@ -76,6 +115,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
   const [catalog, setCatalog] = useState<NodeTypeInfo[]>([])
+  const [secretNames, setSecretNames] = useState<string[]>([])
+  const [httpTimings, setHttpTimings] = useState<Record<string, number>>({})
+  const httpStarts = useRef<Record<string, number>>({})
   const typeInfo = useCallback((k: string) => catalog.find(t => t.type === k), [catalog])
   const layout = useLayout()
   const [moreFields, setMoreFields] = useState(false)
@@ -99,6 +141,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const refreshEnvs = useCallback(() => api.listEnvs().then(setEnvs).catch(e => setMsg(String(e))), [])
   useEffect(() => { refreshEnvs() }, [refreshEnvs])
   useEffect(() => { api.nodeTypes().then(setCatalog).catch(e => setMsg(String(e))) }, [])
+  useEffect(() => { settingsApi.secrets().then(setSecretNames).catch(() => setSecretNames([])) }, [])
 
   const refreshRuns = useCallback((id: string) => {
     api.listRuns(id).then(r => { if (envIdRef.current === id) setRuns(r) }).catch(e => setMsg(String(e)))
@@ -166,6 +209,14 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const runsTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   useEffect(() => subscribeEvents((ev: RunEvent) => {
     if (ev.run_id === activeRunIdRef.current) {
+      const timingKey = `${ev.run_id}:${ev.node_id}`
+      if (ev.state === 'running') httpStarts.current[timingKey] = Date.now()
+      else if (['done', 'failed', 'skipped'].includes(ev.state) && httpStarts.current[timingKey]) {
+        const elapsed = Math.max(0, Date.now() - httpStarts.current[timingKey])
+        setHttpTimings(t => ({ ...t, [timingKey]: elapsed }))
+        try { sessionStorage.setItem(`glacier-http-time:${timingKey}`, String(elapsed)) } catch { /* timing remains available in this editor */ }
+        delete httpStarts.current[timingKey]
+      }
       setActiveRun(r => {
         if (!r || r.run_id !== ev.run_id) return r
         return {
@@ -396,8 +447,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           <button className={`tab${tab === 'vault' ? ' active' : ''}`} data-testid="tab-vault" onClick={() => setTab('vault')}>{t('build.notes')}</button>
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
-              {catalog.filter(t => layout !== 'simple' || SIMPLE_STEP_TYPES.has(t.type)).map(t => (
-                <button key={t.type} className={`pal pal-${t.type}`} data-testid={`palette-${t.type}`} title={t.description} onClick={() => addNode(t.type)}>+ {t.label}</button>
+              {catalog.filter(item => layout !== 'simple' || SIMPLE_STEP_TYPES.has(item.type)).map(item => (
+                <button key={item.type} className={`pal pal-${item.type}`} data-testid={`palette-${item.type}`} title={item.type === 'http_request' ? t('http.description') : item.description} onClick={() => addNode(item.type)}>+ {item.type === 'http_request' ? t('http.title') : item.label}</button>
               ))}
             </div>
           )}
@@ -440,6 +491,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                   <span>{t('build.outputStatus', { id: selNode.id, type: selNode.type, status: activeRun.node_states[selNode.id] ?? 'pending' })}</span>
                   <button className="ghost" data-testid="terminal-close" onClick={() => setSelected(null)}>{t('build.close')}</button>
                 </div>
+                {selNode.type === 'http_request' && <HttpResult text={activeRun.outputs[selNode.id] ?? ''} elapsed={httpTimings[`${activeRun.run_id}:${selNode.id}`]} />}
                 <TerminalPanel text={activeRun.outputs[selNode.id] ?? ''} />
               </div>
             )}
@@ -504,7 +556,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                   {layout === 'simple' && <button className="ghost" data-testid="more-fields" onClick={() => setMoreFields(m => !m)}>{moreFields ? t('build.fewerSettings') : t('build.moreSettings')}</button>}</div>
                 {(typeInfo(selNode.type)?.fields ?? []).filter(f => layout !== 'simple' || moreFields || !f.optional || (selNode.data.config[f.key] ?? '') !== '').map(f => (
                   <label className="field" key={f.key}>
-                    <span>{f.label}{f.optional ? ' (optional)' : ''}</span>
+                    <span>{selNode.type === 'http_request' && HTTP_LABELS[f.key] ? t(HTTP_LABELS[f.key]) : f.label}{f.optional ? t('build.optional') : ''}</span>
                     {f.picker === 'environment'
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           <option value="">{t('build.choose')}</option>
@@ -512,11 +564,27 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                         </select>
                       : f.options
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
-                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                          {f.options.map(o => <option key={o} value={o}>{selNode.type === 'http_request' ? httpOptionLabel(f.key, o) : o}</option>)}
                         </select>
                       : f.multiline
-                      ? <textarea rows={f.key === 'prompt' ? 6 : 3} data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
-                      : <input data-testid={`field-${f.key}`} placeholder={f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
+                      ? <textarea rows={f.key === 'prompt' ? 6 : f.key === 'body' ? 5 : 3} data-testid={`field-${f.key}`} placeholder={selNode.type === 'http_request' && HTTP_PLACEHOLDERS[f.key] ? t(HTTP_PLACEHOLDERS[f.key]) : f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />
+                      : <input data-testid={`field-${f.key}`} placeholder={selNode.type === 'http_request' && HTTP_PLACEHOLDERS[f.key] ? t(HTTP_PLACEHOLDERS[f.key]) : f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />}
+                    {selNode.type === 'http_request' && f.key === 'allowed_sites' && <div className="muted small">{t('http.allowedSitesHelp')}</div>}
+                    {selNode.type === 'http_request' && f.key === 'url' && httpAddressError(selNode.data.config.url ?? '', selNode.data.config.allowed_sites ?? '') &&
+                      <div className="http-validation" data-testid="http-url-error">{httpAddressError(selNode.data.config.url ?? '', selNode.data.config.allowed_sites ?? '')}</div>}
+                    {selNode.type === 'http_request' && f.key === 'headers' && <div className="http-secret-row">
+                      <span className="muted small">{t('http.secretPickerHelp')}</span>
+                      <select data-testid="http-secret-picker" value="" aria-label={t('http.secretPicker')} onChange={e => {
+                        const name = e.target.value
+                        if (!name) return
+                        const before = selNode.data.config.headers ?? ''
+                        const addition = `Authorization: Bearer {secret:${name}}`
+                        setConfig(selNode.id, 'headers', before ? `${before.replace(/\s+$/, '')}\n${addition}` : addition)
+                      }}>
+                        <option value="">{t('http.secretPicker')}</option>
+                        {secretNames.map(name => <option key={name} value={name}>{name}</option>)}
+                      </select>
+                    </div>}
                   </label>
                 ))}
                 {layout === 'full' && <pre className="muted small" data-testid="node-raw" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify({ id: selNode.id, type: selNode.type, config: selNode.data.config }, null, 2)}</pre>}

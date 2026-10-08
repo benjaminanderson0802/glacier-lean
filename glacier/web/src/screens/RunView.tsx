@@ -1,5 +1,5 @@
 // Simple Run view of one flow (mockup panels 7 and 8): live steps, output, verification, usage; past runs with undo.
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ago, api, subscribeEvents, type Environment, type NodeState, type NodeTypeInfo, type RunExplanation, type RunState, type RunSummary } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
@@ -12,6 +12,12 @@ const RUN_LABEL: Record<string, { kind: StatusKind; label: string }> = {
   running: { kind: 'run', label: t('run.running') }, waiting: { kind: 'warn', label: t('run.needsYou') },
 }
 const when = (iso: string) => { const d = new Date(iso); return Number.isNaN(+d) ? '' : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` }
+const savedHttpTime = (key: string) => {
+  try {
+    const value = sessionStorage.getItem(`glacier-http-time:${key}`)
+    return value === null ? undefined : Number(value)
+  } catch { return undefined }
+}
 
 function useFlow(envId: string) {
   const [env, setEnv] = useState<Environment | null>(null)
@@ -38,6 +44,8 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
   const [sel, setSel] = useState<string | null>(null)
   const [tab, setTab] = useState<'output' | 'details'>('output')
   const [busy, setBusy] = useState(false)
+  const [httpElapsed, setHttpElapsed] = useState<Record<string, number>>({})
+  const httpStarts = useRef<Record<string, number>>({})
 
   const [why, setWhy] = useState<RunExplanation | null>(null)
   const load = useCallback(() => {
@@ -48,7 +56,15 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
   useEffect(() => { setRun(null); load() }, [load])
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | undefined
-    const off = subscribeEvents(ev => { if (ev.run_id === current) { clearTimeout(t); t = setTimeout(() => { load(); refreshRuns() }, 250) } }, () => {})
+    const off = subscribeEvents(ev => { if (ev.run_id === current) {
+      const key = `${ev.run_id}:${ev.node_id}`
+      if (ev.state === 'running') httpStarts.current[key] = Date.now()
+      else if (['done', 'failed', 'skipped'].includes(ev.state) && httpStarts.current[key]) {
+        setHttpElapsed(x => ({ ...x, [key]: Date.now() - httpStarts.current[key] }))
+        delete httpStarts.current[key]
+      }
+      clearTimeout(t); t = setTimeout(() => { load(); refreshRuns() }, 250)
+    } }, () => {})
     return () => { off(); clearTimeout(t) }
   }, [current, load, refreshRuns])
 
@@ -116,7 +132,9 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
             <button className={`g-seg-btn${tab === 'details' ? ' active' : ''}`} onClick={() => setTab('details')}>{t('run.details')}</button>
           </span>} aside={activeNode ? `${label(activeNode.type)} · ${activeNode.id}` : undefined}>
           {tab === 'output'
-            ? <pre className="g-term" data-testid="run-output-text">{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre>
+            ? active && activeNode?.type === 'http_request' && run?.outputs[active]
+              ? <HttpRunResult text={run.outputs[active]} elapsed={httpElapsed[`${run.run_id}:${active}`] ?? savedHttpTime(`${run.run_id}:${active}`)} />
+              : <pre className="g-term" data-testid="run-output-text">{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre>
             : <dl className="g-kv">{Object.entries(activeNode?.config ?? {}).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v || t('run.dash')}</dd></Fragment>)}</dl>}
         </Panel>
         <Panel className="g-scroll" title={t('run.verification')} aside={run?.verified === true ? t('run.allChecksPassed') : run?.verified === false ? t('run.notVerified') : undefined} testid="run-verification">
@@ -136,6 +154,17 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
       </div>
     </>
   )
+}
+
+function HttpRunResult({ text, elapsed }: { text: string; elapsed?: number }) {
+  const result = text.match(/^Status: (\d{3})\s*\n\n([\s\S]*)$/)
+  if (!result) return <pre className="g-term" data-testid="run-output-text">{text}</pre>
+  const body = result[2].slice(0, 2000)
+  return <div className="http-result" data-testid="run-http-result-summary">
+    <span>{t('http.responseStatus', { status: result[1] })}</span>
+    <span>{t('http.responseTime', { time: elapsed === undefined ? t('http.timeUnavailable') : `${elapsed} ms` })}</span>
+    <pre data-testid="run-http-result-body">{body}{result[2].length > 2000 ? t('http.responseTrimmed') : ''}</pre>
+  </div>
 }
 
 function PastRuns({ envId }: { envId: string }) {
