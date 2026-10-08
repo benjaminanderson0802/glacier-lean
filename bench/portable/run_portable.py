@@ -20,7 +20,7 @@ from acceptance import verify_python_function
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "glacier" / "backend"
-MODEL = os.environ.get("GLACIER_PORTABLE_LOCAL_MODEL", "qwen3:1.7b")
+MODEL = os.environ.get("GLACIER_PORTABLE_LOCAL_MODEL", "qwen2.5-coder:7b")
 CODING_GOAL = (
     "In this tiny Python project, add a function `add(a, b)` in math_ops.py that returns the sum, "
     "and add pytest tests in test_math_ops.py covering positive values and zero. Run the tests. "
@@ -31,7 +31,7 @@ CHECK_CMD = f"{sys.executable} -m pytest -q"
 BACKENDS = {
     "Codex CLI": {"field": {"type": "codex", "config": {"sandbox": "workspace-write"}}, "version_cmd": ["codex", "--version"]},
     "OpenCode ACP (Ollama " + MODEL + ")": {"field": {"type": "acp_agent", "config": {"harness": "opencode", "debug_logs": True}}, "model": MODEL, "version_cmd": ["opencode", "--version"]},
-    "OpenCode ACP second model (granite3.3:2b)": {"field": {"type": "acp_agent", "config": {"harness": "opencode", "debug_logs": True}}, "model": "granite3.3:2b", "version_cmd": ["ollama", "--version"]},
+    "OpenCode ACP (Ollama granite3.3:2b)": {"field": {"type": "acp_agent", "config": {"harness": "opencode", "debug_logs": True}}, "model": "granite3.3:2b", "version_cmd": ["ollama", "--version"]},
 }
 
 
@@ -150,7 +150,8 @@ def run_case(client: httpx.Client, name: str, backend: dict, base: Path, simple:
     try:
         client.put(f"/api/environments/{flow['id']}", json=flow).raise_for_status()
         run_id = client.post(f"/api/environments/{flow['id']}/run").json()["run_id"]
-        deadline = time.monotonic() + 1260
+        # Local models can be slow on the laptop CPU; allow 30 minutes per run.
+        deadline = time.monotonic() + 1800
         run = None
         while time.monotonic() < deadline:
             run = client.get(f"/api/runs/{run_id}").json()
@@ -218,7 +219,7 @@ def main() -> int:
     flow_diff = len({json.dumps(row["flow"], sort_keys=True) for row in results["coding"]}) == 1
     lines = ["# Portable worker backend live bench", "", f"Run date: {time.strftime('%Y-%m-%d')}", "",
              "Drift check: PH2 exit M-PORTABLE; serves P-PORTABLE. PH1 is not at exit yet, so this evidence does not mark PH2 done. Existing two-harness ACP proof did not provide a repeatable three-backend swap. Acceptance: all three runs use the same goal, flow and independent check; only the worker backend field changes; every independent and Glacier check passes.", "",
-             "The runner first tried the coding goal. If any backend failed, it ran a smaller function-plus-test goal through all three. Workspaces and Glacier data were temporary. No credentials or tokens are recorded.", ""]
+             "The runner first tried the coding goal. If any backend failed, it ran a smaller function-plus-test goal through all configured backends. Workspaces and Glacier data were temporary. No credentials or tokens are recorded.", ""]
     for case_name, rows in results.items():
         if not rows:
             continue
