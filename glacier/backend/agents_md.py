@@ -55,6 +55,7 @@ def find_agents_md(folder: str | os.PathLike) -> dict[str, str] | None:
             if os.path.commonpath((str(boundary), str(resolved))) == str(boundary) and resolved.is_file():
                 with resolved.open("rb") as source:
                     text = source.read(MAX_AGENTS_MD_BYTES).decode("utf-8", errors="ignore")
+                text = text.replace("\r\n", "\n")  # same text whether the file was saved on Windows or not
                 return {"path": str(candidate), "text": text}
         except (OSError, RuntimeError, ValueError):
             pass
