@@ -93,7 +93,7 @@ def test_system_check_reports_tesseract(binary, version, found, monkeypatch, tmp
     script = tmp_path / "tesseract"
     script.write_text(f"#!/bin/sh\nprintf '{version}\\n'\n", encoding="utf-8")
     script.chmod(0o755)
-    monkeypatch.setattr(system_check.shutil, "which", lambda name: str(script) if binary and name == "tesseract" else None)
+    monkeypatch.setattr(system_check.shell_commands, "which", lambda name: str(script) if binary and name == "tesseract" else None)
     monkeypatch.setattr(system_check, "_run", lambda command, **kwargs: version if command[0] == str(script) else "")
     result = system_check.check_system()
     assert result["tools"]["tesseract"] == {"found": found, "version": version}

@@ -43,3 +43,80 @@ def executable_invocation(executable: str, *args: str) -> list[str]:
     if os.name == "nt" and executable.lower().endswith(".py"):
         return [sys.executable, executable, *args]
     return [executable, *args]
+
+
+_RUNNABLE_WINDOWS = (".exe", ".cmd", ".bat", ".com")
+
+
+def _startable(path: str) -> bool:
+    """True when Windows can start this file without a blocking error box.
+
+    A broken install can leave a file named ``ollama.exe`` that is really a zip archive
+    (seen on a real PC: a winget link to an unextracted download). Starting it shows an
+    "Unsupported 16-bit application" box and blocks the caller, so a program file must
+    begin with the "MZ" program header.
+    """
+    if not os.path.isfile(path):
+        return False
+    if os.path.splitext(path)[1].lower() not in (".exe", ".com"):
+        return True
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(2) == b"MZ"
+    except OSError:
+        return False
+
+
+def which(name: str) -> str | None:
+    """Find a program the way Windows can actually start it.
+
+    npm puts an extensionless shell script (for example ``codex``) next to ``codex.cmd``.
+    Starting that script on Windows shows an "Unsupported 16-bit application" box and
+    blocks until someone closes it, so on Windows only .exe/.cmd/.bat/.com files count,
+    and a .exe/.com must really be a program (see ``_startable``). When the first match
+    on PATH cannot start, later folders on PATH are tried.
+    """
+    if not name:
+        return None
+    found = shutil.which(name)
+    if os.name != "nt":
+        return found
+    if not found:
+        return None  # shutil.which already tried PATHEXT; nothing runnable here
+    if not os.path.isfile(found):
+        return found
+    # .py helpers are fine too: executable_invocation runs them with the current Python.
+    if os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS + (".py",) and _startable(found):
+        return found
+    exts = [e.lower() for e in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") if e]
+    exts = [e for e in exts if e in _RUNNABLE_WINDOWS] or list(_RUNNABLE_WINDOWS)
+    base, ext = os.path.splitext(name)
+    candidates = [name] if ext.lower() in _RUNNABLE_WINDOWS else [name + e for e in exts]
+    if os.path.dirname(name):
+        return next((c for c in candidates if _startable(c)), None)
+    for folder in [d for d in os.environ.get("PATH", "").split(os.pathsep) if d]:
+        for candidate in candidates:
+            full = os.path.join(folder, candidate)
+            if _startable(full):
+                return full
+    return None
+    found = shutil.which(name)
+    if os.name != "nt":
+        return found
+    if not found:
+        return None  # shutil.which already tried PATHEXT; nothing runnable here
+    # .py helpers are fine too: executable_invocation runs them with the current Python.
+    if os.path.splitext(found)[1].lower() in _RUNNABLE_WINDOWS + (".py",) or not os.path.isfile(found):
+        return found
+    exts = [e.lower() for e in os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") if e]
+    exts = [e for e in exts if e in _RUNNABLE_WINDOWS] or list(_RUNNABLE_WINDOWS)
+    base, ext = os.path.splitext(name)
+    candidates = [name] if ext.lower() in _RUNNABLE_WINDOWS else [name + e for e in exts]
+    if os.path.dirname(name):
+        return next((c for c in candidates if os.path.isfile(c)), None)
+    for folder in [d for d in os.environ.get("PATH", "").split(os.pathsep) if d]:
+        for candidate in candidates:
+            full = os.path.join(folder, candidate)
+            if os.path.isfile(full):
+                return full
+    return None

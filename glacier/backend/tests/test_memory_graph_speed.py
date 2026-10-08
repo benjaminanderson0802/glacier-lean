@@ -1,4 +1,5 @@
 """Memory map output and same-machine performance regression checks."""
+import pytest
 import os
 import statistics
 import time
@@ -102,6 +103,7 @@ def test_graph_output_matches_legacy_for_link_variants_and_folders(server):
     assert "ignored-code" not in {node["id"] for node in actual["nodes"]}
 
 
+@pytest.mark.serial  # timing: compared on a quiet machine, after the parallel batch
 def test_graph_is_at_least_twice_as_fast_as_same_machine_legacy_baseline(server):
     vault.init(os.path.join(server.home, "vault"))
     paths = []

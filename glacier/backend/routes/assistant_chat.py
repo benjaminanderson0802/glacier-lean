@@ -204,7 +204,7 @@ def ask_route() -> tuple[str | None, str]:
         configured = "auto"
     # A configured chat program given as a full path counts as found even when Windows would not
     # treat its file type as runnable on its own (shell_commands handles running it).
-    found = shutil.which(codex) or (os.path.isabs(codex) and os.path.isfile(codex))
+    found = shell_commands.which(codex) or (os.path.isabs(codex) and os.path.isfile(codex))
     if found and _codex_signed_in():
         return "codex", "Codex is installed and signed in."
     if _ollama_answers():

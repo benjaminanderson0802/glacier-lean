@@ -14,6 +14,8 @@ os.environ["GLACIER_OPENCODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".n
 os.environ["GLACIER_CLAUDE_CODE_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-claude-code-in-tests")
 os.environ["GLACIER_GEMINI_DATA"] = os.path.join(os.path.dirname(BACKEND), ".no-gemini-in-tests")
 os.environ["GLACIER_TOKEN"] = TEST_TOKEN
+# Tests never talk to a real Ollama on this machine; a test that needs one starts a fake and sets this itself.
+os.environ["GLACIER_OLLAMA_URL"] = "http://127.0.0.1:9"
 raw_httpx = {name: getattr(httpx, name) for name in ("get", "post", "put", "patch", "delete", "options", "head", "stream", "request")}
 _LOCAL = ("http://127.0.0.1", "http://localhost")
 
