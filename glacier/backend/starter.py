@@ -194,7 +194,7 @@ def apply(template_ids: list[str], mode: str) -> dict:
                             if "embed" not in name.lower() and "minilm" not in name.lower()]
         if selected_model not in installed_models and installed_models:
             selected_model = None
-        if old_settings.get("local_model"):
+        if old_settings.get("local_model") and (not installed_models or old_settings["local_model"] in installed_models):
             selected_model = old_settings["local_model"]
         settings = {"mode": mode, "local_model": selected_model,
                     "max_parallel_runs": 1 if mode == "low" else old_settings.get("max_parallel_runs", 1)}
