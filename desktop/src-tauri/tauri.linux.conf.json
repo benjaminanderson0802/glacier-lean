@@ -1,5 +1,6 @@
 {
   "bundle": {
+    "createUpdaterArtifacts": false,
     "resources": {
       "../runtime/x86_64-unknown-linux-gnu/": "runtime/x86_64-unknown-linux-gnu/"
     }
