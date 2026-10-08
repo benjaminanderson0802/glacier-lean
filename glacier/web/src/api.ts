@@ -13,9 +13,10 @@ export interface EnvNode {
   position: { x: number; y: number }
 }
 export interface EnvEdge { id: string; source: string; target: string; label: string }
-export interface Environment { id: string; name: string; nodes: EnvNode[]; edges: EnvEdge[] }
-export interface EnvSummary { id: string; name: string }
+export interface Environment { id: string; name: string; nodes: EnvNode[]; edges: EnvEdge[]; enabled?: boolean }
+export interface EnvSummary { id: string; name: string; enabled?: boolean }
 export interface RunSummary { run_id: string; env_id: string; status: RunStatus; started_at: string }
+export interface RunTrigger { type: string; node_id?: string; file?: string }
 export interface RunState {
   run_id: string
   env_id: string
@@ -28,6 +29,7 @@ export interface RunState {
   verification?: { check: number; kind: string; passed: boolean; evidence: string }[]
   verified?: boolean | null
   waiting_prompt?: string
+  trigger?: RunTrigger
 }
 /** Plain-language explanation of a run (GET /api/runs/{id}/explain). */
 export interface RunExplanation { summary: string; steps: { node_id: string; label: string; state: NodeState; sentence: string }[]; verified: boolean | null; needs_you: string | null }
