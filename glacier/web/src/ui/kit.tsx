@@ -44,7 +44,7 @@ export function Row({ status, icon, lead, detail, when, onClick, testid, classNa
   const inner = (
     <>
       <span className="g-ico">{status ? <StatusIcon kind={status} /> : icon ? <Icon name={icon} /> : null}</span>
-      <span className="g-mid"><span className="g-lead">{lead}</span>{detail != null && <span className="g-detail">{detail}</span>}</span>
+      <span className="g-mid"><span className="g-lead" title={typeof lead === 'string' ? lead : undefined}>{lead}</span>{detail != null && <span className="g-detail">{detail}</span>}</span>
       <span className="g-when">{when}</span>
     </>
   )
