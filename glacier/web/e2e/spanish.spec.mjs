@@ -76,6 +76,7 @@ try {
     await checkTextFit('Home with Get started')
     await page.getByTestId('starter-hide').click()
     await page.getByTestId('nav-settings').click()
+    await page.locator('button[data-testid="settings-general"]').click()
     await page.locator('section[data-testid="settings-general"] select').selectOption('es')
     const spanishTabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
     const tabIds = await page.locator('[role=tablist] [role=tab]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
