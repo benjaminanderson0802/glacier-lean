@@ -45,6 +45,8 @@ Installed on the owner's PC today: the build from the Windows start-up fixes (20
 - Ask knows Glacier on every engine: what Glacier is, how to use its screens, your previous chats (when enabled), the current system state and your memory, personalised to you, whichever model or API answers.
 - Window buttons (minimise and close) work, or Glacier uses the normal Windows title bar.
 - Ask runs on your subscription command-line tool by default (Codex), with an easy switch to an API (OpenAI-compatible and Anthropic, owner decision) or a local model.
+- Ask becomes Build: an interview that keeps asking until it understands your whole vision, then a Planner designs the team (architects, builders, supervisors, a governor...) and the plan, you approve, and the team runs in Automations until done. The Planner never works on the project; supervisors oversee for it. Local models work one role at a time with a fresh memory per task; subscription/API teams work in parallel. (docs/BUILD_TEAMS.md)
+- New look based on the owner's "Glacier OS" reference: icy light panels, navy title bar, left sidebar, key-hint bar (reference saved in docs/ui/glacier-os-reference.png).
 
 ## Release plan (owner decision 2026-10-08)
 - Auto-update ships with the next big update: that release (v0.2.0) is the first with the updater, so it is installed once by hand.
