@@ -354,6 +354,7 @@ export const en: Record<string, string> = {
   'settings.localModel': 'Local model',
   'settings.runsAtOnce': 'Runs at once',
   'settings.theme': 'Theme',
+  'settings.language': 'Language',
   'settings.retroTheme': 'Glacier (retro)',
   'settings.detailLevel': 'Detail level',
   'settings.simple': 'Simple',

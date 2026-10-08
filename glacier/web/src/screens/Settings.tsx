@@ -4,7 +4,7 @@ import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { go } from '../route.ts'
 import { setLayout, useLayout, type Layout } from '../layout.ts'
 import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
-import { t } from '../i18n/index.ts'
+import { chooseDictionary, getLanguage, subscribeLanguage, t, type Language } from '../i18n/index.ts'
 
 const SECTIONS = [
   { id: 'general', label: t('settings.general') },
@@ -21,8 +21,10 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const layout = useLayout()
   const [check, setCheck] = useState<SystemCheck | null>(null)
   const [err, setErr] = useState('')
+  const [language, setLanguage] = useState<Language>(getLanguage())
   const load = () => { setCheck(null); system.check().then(setCheck).catch(e => setErr(String(e))) }
   useEffect(load, [])
+  useEffect(() => subscribeLanguage(() => setLanguage(getLanguage())), [])
   const cur = SECTIONS.find(s => s.id === section) ?? SECTIONS[0]
 
   return (
@@ -41,6 +43,12 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>{t('settings.localModel')}</dt><dd>{check.recommended.local_model}</dd>
                 <dt>{t('settings.runsAtOnce')}</dt><dd>{check.recommended.max_parallel_runs}</dd>
                 <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme')}</dd>
+                <dt>{t('settings.language')}</dt><dd>
+                  <select className="g-input" value={language} onChange={e => chooseDictionary(e.target.value as Language)} aria-label={t('settings.language')}>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </dd>
                 <dt>{t('settings.detailLevel')}</dt><dd>
                   <div className="g-seg" data-testid="layout-switch">
                     {([['simple', t('settings.simple')], ['standard', t('settings.standard')], ['full', t('settings.full')]] as [Layout, string][]).map(([v, l]) =>
