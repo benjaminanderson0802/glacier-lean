@@ -28,6 +28,8 @@ router = APIRouter()
 _proposals: dict[str, dict] = {}
 _proposals_lock = threading.Lock()
 MAX_PROPOSALS = 100
+MAX_CONTEXT_EXCHANGES = 10
+MAX_CONTEXT_CHARS = 6000
 
 
 class ChatRequest(BaseModel):
@@ -275,6 +277,66 @@ def _match_automation(name: str) -> tuple[list[dict], bool]:
     return [flow for score, flow in ranked if score >= 0.45 and top_score - score < 0.2][:5], True
 
 
+def _conversation_context(conversation_id: str) -> str:
+    """Format a bounded, redacted excerpt of earlier saved conversation turns."""
+    try:
+        _, _, messages = _conversation_note(conversation_id)
+    except HTTPException as error:
+        if error.status_code == 404:
+            return ""
+        raise
+    if not messages:
+        return ""
+
+    # Select complete recent exchanges first. A leading assistant response is retained
+    # when a prior proposal approval was recorded without a matching question.
+    exchanges: list[list[dict]] = []
+    pending: list[dict] = []
+    for item in messages:
+        pending.append(item)
+        if item["who"] == "glacier":
+            exchanges.append(pending)
+            pending = []
+    if pending:
+        exchanges.append(pending)
+    def render(items: list[dict]) -> str:
+        return "\n".join(f"{('You' if item['who'] == 'you' else 'Assistant')}: {secrets_store.redact(item['text'])}" for item in items)
+
+    selected: list[str] = []
+    size = 0
+    for exchange in reversed(exchanges):
+        if len(selected) >= MAX_CONTEXT_EXCHANGES:
+            break
+        rendered = render(exchange)
+        extra = len(rendered) + (2 if selected else 0)
+        if size + extra > MAX_CONTEXT_CHARS:
+            if not selected:
+                question = next((item for item in exchange if item["who"] == "you"), None)
+                answer = next((item for item in reversed(exchange) if item["who"] == "glacier"), None)
+                if question and answer:
+                    question_text = secrets_store.redact(question["text"])
+                    answer_text = secrets_store.redact(answer["text"])
+                    question_prefix = f"You: {question_text[: min(160, len(question_text))]}"
+                    prior_question = next((item for item in reversed(messages[:-len(exchange) or None])
+                                           if item["who"] == "you"), None)
+                    if prior_question:
+                        question_prefix += f"\nPrevious question: {secrets_store.redact(prior_question['text'])[:160]}"
+                    answer_prefix = "\nAssistant: "
+                    available = max(0, MAX_CONTEXT_CHARS - len(question_prefix) - len(answer_prefix))
+                    rendered = question_prefix + answer_prefix + answer_text[-available:]
+                else:
+                    rendered = rendered[-MAX_CONTEXT_CHARS:]
+                selected.append(rendered)
+            break
+        selected.append(rendered)
+        size += extra
+    return "Earlier conversation (newest exchanges first):\n" + "\n\n".join(selected)
+
+
+def _with_conversation_context(message: str, context: str) -> str:
+    return f"{context}\n\nCurrent message:\n{message}" if context else message
+
+
 def _is_automation(message: str, model_answer: dict) -> bool:
     # The schema decision is model-led; common plain-language asks are also routed safely to planning.
     text = message.lower()
@@ -399,13 +461,15 @@ def chat(request: ChatRequest):
                 yield _event("TEXT_MESSAGE_END", messageId=message_id)
                 yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
                 return
-            answer = _ask(request.message, route)
+            context = _conversation_context(conversation_id)
+            prompt = _with_conversation_context(request.message, context)
+            answer = _ask(prompt, route)
             automation = _is_automation(request.message, answer)
             if automation:
                 import app
                 proposal_id = str(uuid.uuid4())
                 flow_id = re.sub(r"[^a-z0-9]+", "-", request.message.lower()).strip("-")[:40] or "new-flow"
-                plan = assistant.plan(request.message, app.NODE_CATALOG, flow_id, engine=route)
+                plan = assistant.plan(prompt, app.NODE_CATALOG, flow_id, engine=route)
                 if plan.get("problems") or not plan.get("flow"):
                     raise ValueError("The assistant could not make a valid plan.")
                 if not isinstance(plan["flow"].get("acceptance"), list) or not plan["flow"]["acceptance"]:

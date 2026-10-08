@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import textwrap
+import asyncio
 
 import httpx
 import keyring
@@ -75,6 +76,10 @@ def _events(response):
     return [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ")]
 
 
+async def _collect(iterator):
+    return [chunk async for chunk in iterator]
+
+
 def _proposal(server):
     events = _events(httpx.post(server.url + "/api/assistant/chat", json={"message": "make me a daily backup"}, timeout=30))
     args = next(event["delta"] for event in events if event["type"] == "TOOL_CALL_ARGS")
@@ -92,6 +97,54 @@ def test_chat_stream_has_ordered_ag_ui_events(tmp_path, monkeypatch):
         assert names.index("TEXT_MESSAGE_START") < names.index("TEXT_MESSAGE_CONTENT") < names.index("TEXT_MESSAGE_END") < names.index("RUN_FINISHED")
     finally:
         server.stop()
+
+
+def test_codex_followup_prompt_contains_redacted_previous_exchange(tmp_path, monkeypatch):
+    """The configured Python stand-in receives prior turns on Windows and Unix."""
+    import uuid
+    import vault
+    from routes import assistant_chat
+
+    conversation_id = str(uuid.uuid4())
+    prompt_log = tmp_path / "prompts.jsonl"
+    script = tmp_path / "chat.py"
+    script.write_text(textwrap.dedent('''
+        import json, os, sys
+        args = sys.argv[1:]
+        prompt = args[-1]
+        with open(os.environ["CHAT_PROMPTS"], "a", encoding="utf-8") as log:
+            log.write(json.dumps(prompt) + "\\n")
+        out = args[args.index("-o") + 1]
+        open(out, "w", encoding="utf-8").write(json.dumps({"reply": "It can be weekly.", "automation": False}))
+    '''))
+    chat = script
+    if os.name != "nt":
+        chat = tmp_path / "chat.sh"
+        chat.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
+        chat.chmod(0o755)
+    monkeypatch.setenv("GLACIER_CHAT_BIN", str(chat))
+    monkeypatch.setenv("CHAT_PROMPTS", str(prompt_log))
+    monkeypatch.setenv("GLACIER_ASK_ROUTE", "codex")
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    vault.init(str(tmp_path / "home" / "vault"))
+    vault.write_note("seed.md", "# Seed", agent="test")
+    import secrets_store
+    keyring.set_keyring(MemoryKeyring())
+    keyring.set_password("Glacier", "chat-secret", "chat-secret-123")
+    secrets_store._write_names(["chat-secret"])
+
+    first = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it daily with chat-secret-123"))
+    asyncio.run(_collect(first.body_iterator))
+    second = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it weekly instead"))
+    asyncio.run(_collect(second.body_iterator))
+
+    prompts = [json.loads(line) for line in prompt_log.read_text(encoding="utf-8").splitlines()]
+    assert len(prompts) == 2
+    assert "Earlier conversation" in prompts[1]
+    assert "Make it daily with [secret chat-secret]" in prompts[1]
+    assert "Proposal " in prompts[1]
+    assert "chat-secret-123" not in prompts[1]
 
 
 def test_automation_chat_proposes_flow_and_does_not_save(tmp_path, monkeypatch):

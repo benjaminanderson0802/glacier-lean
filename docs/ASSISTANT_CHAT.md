@@ -41,6 +41,12 @@ New replies append to the same note and retain its renamed title.
 - When a chat-started run finishes, Glacier adds the plain-language explanation from the run result to the conversation
   once. Secret values are redacted before saving the note.
 
+When a conversation is continued, Ask reads prior exchanges from that saved note and includes a clearly marked
+`Earlier conversation` excerpt with the current message. It redacts known secrets, keeps at most the 10 newest
+exchanges and about 6,000 characters, and drops older exchanges first. The excerpt is sent only to the route chosen for
+the current request. Follow-up automation proposals receive the same context so requests such as “make it weekly
+instead” can revise the existing proposal.
+
 ## Live check
 
 Run `bench/live_ask/run_live.py` to exercise the Ask screen's HTTP request and AG-UI stream against a temporary real backend. It records reply timing, raw proposals, approval/rejection results, and plain-language errors in `evidence/live/ask_assistant.md`. That report predates the route setting below and records a Codex-only run.
