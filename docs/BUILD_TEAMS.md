@@ -1,24 +1,50 @@
-# Build: from your vision to a running team
+# Build: from your vision to a team that finishes it
 
-Owner's design (2026-10-08). The Ask tab becomes **Build**.
+Owner's goal (2026-10-08): Build interviews you until it understands the whole vision, designs the most efficient AI team and plan for that project, and the team runs in Automations without stopping until it is done (except owner approvals). The designer of the team does not take part in the build.
 
-## 1. Interview (Build tab)
-A conversation with the AI until it fully understands the project. The interviewer grills the owner: goal, who it is for, what "done" means, must-haves and must-nots, constraints (money, time, hardware, accounts), examples liked and disliked, risks. It keeps asking until it can state the vision back and the owner confirms it. The confirmed **Vision** is saved as a memory note and becomes the reference every role checks against.
+This design follows what has been shown to work in practice, not role names. Sources are listed at the end; vendor numbers are self-reported.
 
-## 2. Plan (the Planner designs the team, then steps away)
-The **Planner** turns the Vision into:
-- **Roles**: the team needed start to finish (for example architect, builders, tester, reviewer, writer, supervisors, a governor). Each role has a short charter: what it does, what it may change, what it must hand over, which checks prove its work.
-- **Work plan**: tasks with order and dependencies, each with acceptance checks that an independent checker runs. Tasks are small enough to finish in one sitting.
-- **Flow guards**: what to do when work stalls (stuck task becomes a claim, alternate route, re-split), so there are no bottlenecks or rabbit holes; limits on retries and time per task.
-- **Supervisors**: the Planner appoints one or more supervisors to oversee the team on its behalf (review results, unblock, re-assign).
-The owner approves the plan (one approval). **The Planner does not take part in the build.** It is not a member of the team and does not run tasks or supervise; it only returns if the owner asks for a re-plan.
+## 1. Interview -> Spec (Build tab)
+- The interviewer keeps asking until it can state the vision back and the owner confirms it: goal, users, what "done" looks like, must-haves, out of scope, constraints (money, time, hardware, accounts), examples, risks.
+- Output is a **Spec**: requirements written as checkable statements ("WHEN ... THE SYSTEM SHALL ..."), an explicit out-of-scope list, and an end-to-end acceptance check. The owner approves it. Saved to memory; every check refers back to it. [Kiro specs; Claude Code best practices]
 
-## 3. Run (the team lives in Automations)
-Automations hold not only closed loops and pipelines but also **running teams**. A team runs its loop until the work plan is complete, stopping only for approvals the plan marked as needing the owner.
-- **Local models**: one worker at a time. Each turn the next ready task is picked, the worker "puts on the mask" of that task's role (role charter + task + only the relevant memory and files), works with a fresh context, hands over, and its memory is cleared before the next task.
-- **Subscription CLI or API**: several workers in parallel (a limit the owner sets), each in its own isolated workspace.
-- **Supervisors** review each handover against its checks; the **governor** checks every result against the Vision and the plan and stops drift.
-- Progress, costs, and what needs the owner are visible on Home and in the team's view.
+## 2. Designer sets up the project, then leaves
+The **Designer** (owner's rule: it never works on the build itself) produces, from the Spec:
+- **Feature list**: a long list of small, testable features, each marked failing, stored as structured data. Workers can never edit it except through the evaluator's pass (enforced in code). [Anthropic long-running harness]
+- **Harness**: workspace/repo, a startup script, a smoke test, mechanical checks (tests, linters, type checks with fix-oriented error messages), a progress log and a decision log. [Anthropic; OpenAI harness engineering]
+- **Team shape sized to the project**, not a fixed cast. Default is the smallest team that works: a **Lead** (picks the next task each cycle and judges progress), **Builder(s)**, and a separate skeptical **Evaluator**; plus a **Researcher** only for breadth-first work (finding options, reading docs) and a clean-context **Reviewer** for risky changes. More roles only when the Spec needs them; role-play casts fail often. [MAST study arXiv 2503.13657; Cognition]
+- **Supervisors**: the Designer appoints the Lead/Evaluator as its supervisors and hands off. It returns only if the owner asks for a re-plan.
+The owner approves the team and plan once.
 
-## 4. Proof
-A build is done only when every task's checks pass and the governor confirms the Vision's "done" list is met. The same verification rules as the rest of Glacier (no false "done").
+## 3. The loop (lives in Automations, runs until done)
+Each cycle, enforced by Glacier's code, not by prompts:
+1. **Lead** picks the next ready feature, sized like a few hours of junior work, and writes its **contract** with the Evaluator: exact pass criteria.
+2. **Builder** starts with a **fresh context** (Spec excerpt, the feature, its contract, the progress log, git history; nothing else), implements, runs the checks, commits on its own branch/worktree, and updates the progress log.
+3. **Evaluator** (fresh context, tuned to be skeptical, runs real tests and the app) grades against the contract. Only an Evaluator pass marks the feature passing. [Anthropic harness design]
+4. **Final objective check**: before "done", the whole Spec's acceptance check runs; the biggest measured gain in role-based systems came from checking against the original objective. [MAST]
+Code changes stay in one thread per area; extra agents add research and review, not conflicting parallel edits. [Cognition]
+
+## 4. Never stalling (code-enforced)
+- Max 3 build/evaluate attempts per feature -> reset context with a handoff note -> Lead re-plans the feature smaller.
+- After 2 re-plans -> a claim to the owner with evidence (diff, logs, failing check); the rest of the plan keeps going.
+- Retries, checkpoints and resume-after-crash are handled by Glacier's durable workflows; every cycle starts fresh to avoid drift; the Lead checks overall progress each cycle. [Cursor scaling agents; Claude Code best practices]
+
+## 5. Engines
+- **Local models (one at a time)**: strictly sequential; smaller features; more fixed steps and fewer open decisions; rely harder on tests and linters. Each task the worker takes on its role with a fresh context and clears it afterwards. Optional: send planning and final evaluation to a stronger engine if one is available (the main model still sets the quality ceiling). [Cognition; inference: little public evidence on long runs with small models]
+- **Subscription CLI / API (parallel)**: Lead + independent Builders + Evaluator, each Builder in its own git worktree on tasks that do not depend on each other; start with 3-5 workers and add more only while merge conflicts and evaluator failures stay low; strong models for Lead and Evaluator, cheaper for Builders. [Cursor; Claude Code /batch guidance]
+
+## 6. Upkeep
+A periodic clean-up pass against "golden rules" checked by linters; re-check the harness when models change. [OpenAI harness engineering]
+
+## Sources
+- Anthropic, Effective harnesses for long-running agents: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
+- Anthropic, Harness design for long-running apps: https://www.anthropic.com/engineering/harness-design-long-running-apps
+- Anthropic, Multi-agent research system: https://www.anthropic.com/engineering/multi-agent-research-system
+- Cognition, Don't build multi-agents: https://cognition.com/blog/dont-build-multi-agents ; Multi-agents working: https://cognition.com/blog/multi-agents-working
+- Cursor, Scaling agents: https://cursor.com/blog/scaling-agents
+- OpenAI, Harness engineering: https://openai.com/index/harness-engineering/
+- Claude Code best practices: https://code.claude.com/docs/en/best-practices
+- Cognition, Devin annual performance review 2025: https://cognition.com/blog/devin-annual-performance-review-2025 ; GitHub Copilot agent guidance: https://docs.github.com/en/copilot/tutorials/cloud-agent/get-the-best-results
+- Kiro specs: https://kiro.dev/docs/specs/concepts
+- Why do multi-agent LLM systems fail? (MAST): https://arxiv.org/abs/2503.13657
+- Agentless: https://arxiv.org/abs/2407.01489 ; Stripe Minions: https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents
