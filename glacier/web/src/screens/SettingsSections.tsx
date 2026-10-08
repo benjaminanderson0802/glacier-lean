@@ -76,7 +76,7 @@ export function UsageSection() {
   useEffect(() => { settingsApi.costs(days).then(setC).catch(e => setErr(String(e))) }, [days])
   const tokens = (g: { tokens_in: number; tokens_out: number }) => (g.tokens_in + g.tokens_out).toLocaleString()
   return (
-    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} onClick={() => setDays(d)}>{d}d</button>)}</span>} testid="settings-usage">
+    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage">
       {err && <div className="g-error">{err}</div>}
       {c && (
         <>
