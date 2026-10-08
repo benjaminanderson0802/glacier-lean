@@ -1,5 +1,6 @@
 // Shared building blocks. Screens are made ONLY from these + Pixel.tsx, so the theme cannot drift.
-import type { ReactNode } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon, StatusIcon, type IconName, type StatusKind } from './Pixel.tsx'
 
 export function Window({ title, children, className = '', testid }: { title?: ReactNode; children: ReactNode; className?: string; testid?: string }) {
@@ -23,7 +24,7 @@ type MenuItem = { id: string; label: ReactNode; icon?: IconName; testid?: string
 export function KeyboardMenu({ items, selected, onSelect, label, orientation = 'vertical' }: { items: MenuItem[]; selected: string; onSelect: (id: string) => void; label?: string; orientation?: 'horizontal' | 'vertical' }) {
  const list=useRef<HTMLDivElement>(null); const [focused,setFocused]=useState(selected); const firstId=items[0]?.id??'';
  useEffect(()=>setFocused(items.some(item=>item.id===selected)?selected:firstId),[selected,firstId]);
- const move=(event:KeyboardEvent<HTMLDivElement>)=>{const up=orientation==='vertical'?event.key==='ArrowUp':event.key==='ArrowLeft';const down=orientation==='vertical'?event.key==='ArrowDown':event.key==='ArrowRight';if(!up&&!down)return;event.preventDefault();event.stopPropagation();if(!items.length)return;const found=items.findIndex(item=>item.id===focused);const index=found<0?(down?-1:0):found;const next=(index+(down?1:items.length-1))%items.length;setFocused(items[next].id);list.current?.querySelectorAll<HTMLButtonElement>('.g-menu-item')[next]?.focus()};
+ const move=(event:ReactKeyboardEvent<HTMLDivElement>)=>{const up=orientation==='vertical'?event.key==='ArrowUp':event.key==='ArrowLeft';const down=orientation==='vertical'?event.key==='ArrowDown':event.key==='ArrowRight';if(!up&&!down)return;event.preventDefault();event.stopPropagation();if(!items.length)return;const found=items.findIndex(item=>item.id===focused);const index=found<0?(down?-1:0):found;const next=(index+(down?1:items.length-1))%items.length;setFocused(items[next].id);list.current?.querySelectorAll<HTMLButtonElement>('.g-menu-item')[next]?.focus()};
  return <div ref={list} className="g-menu-list" role="listbox" aria-label={label} tabIndex={items.length?-1:undefined} onKeyDown={move} style={orientation==='horizontal'?{flexDirection:'row',flexWrap:'wrap'}:undefined}>{items.map(item=>{const active=focused===item.id||(!focused&&selected===item.id);return <button type="button" role="option" aria-selected={selected===item.id} tabIndex={active?0:-1} key={item.id} data-testid={item.testid} className={`g-menu-item${active?' active':''}`} style={orientation==='horizontal'?{width:'auto'}:undefined} onFocus={()=>setFocused(item.id)} onClick={()=>{setFocused(item.id);onSelect(item.id)}}><span className="g-menu-cursor"/>{item.icon&&<Icon name={item.icon}/ >}{item.label}</button>})}</div>
 }
 
