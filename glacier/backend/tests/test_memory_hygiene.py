@@ -128,6 +128,28 @@ def test_merge_rewrites_links_and_keeps_raw_front_matter(server):
     assert "[[notes/first|the duplicate]]" in (root / "notes" / "ref.md").read_text()
 
 
+def test_merge_link_rewrite_preserves_aliases_fragments_and_ignores_code():
+    raw = (
+        "[[notes/second#Heading|the duplicate]] `[[notes/second]]`\n"
+        "```md\n[[notes/second]]\n```\n"
+    )
+    rewritten = memory_hygiene._rewrite_links(raw, ["notes/second.md"], "notes/first.md")
+    assert rewritten == (
+        "[[notes/first#Heading|the duplicate]] `[[notes/second]]`\n"
+        "```md\n[[notes/second]]\n```\n"
+    )
+
+
+def test_merge_front_matter_parser_preserves_nested_custom_yaml():
+    from memory_meta import split_front_matter
+
+    raw = "---\r\ncustom:\r\n  nested: [one, two]\r\n---\r\nBody\r\n"
+    metadata, body, error = split_front_matter(raw)
+    assert metadata == {"custom": {"nested": ["one", "two"]}}
+    assert body == "Body\r\n"
+    assert error is None
+
+
 def test_commit_failure_restores_changed_and_removed_files(tmp_path, monkeypatch):
     root = tmp_path / "vault"
     root.mkdir()

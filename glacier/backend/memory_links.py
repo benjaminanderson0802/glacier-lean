@@ -11,6 +11,7 @@ from urllib.parse import unquote, urlsplit
 _FENCE = re.compile(r"(?m)^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?^ {0,3}\1[^\n]*(?:\n|$)", re.S)
 _WIKI = re.compile(r"!?\[\[([^\]]+)\]\]")
 _MARKDOWN = re.compile(r"(?<!!)\[([^\]]*)\]\((<[^>]*>|[^\s)]+)(?:\s+[^)]*)?\)")
+_WIKI_TARGET = re.compile(r"\[\[([^\]|#]+)([^\]]*)\]\]")
 
 
 def _mask(match: re.Match) -> str:
@@ -49,6 +50,24 @@ def parse_links(body: str) -> list[tuple[str, bool]]:
         if target:
             found.append((target, False))
     return list(dict.fromkeys(found))
+
+
+def front_matter(text: str) -> tuple[str | None, str | None]:
+    """Return a closed YAML front matter block and the remaining Markdown body."""
+    match = re.match(r"\A---[ \t]*\r?\n(.*?)^---[ \t]*(?:\r?\n|$)", text, re.S | re.M)
+    return (match.group(1), text[match.end():]) if match else (None, None)
+
+
+def rewrite_wikilinks(text: str, replacements: dict[str, str]) -> str:
+    """Rewrite matching wiki-link paths while leaving code and suffixes untouched."""
+    matches = list(_WIKI_TARGET.finditer(_without_code(text)))
+    for match in reversed(matches):
+        original = match.group(1).strip().replace("\\", "/").lstrip("/")
+        replacement = replacements.get(original.casefold())
+        if replacement is not None:
+            start, end = match.span(1)
+            text = text[:start] + replacement + text[end:]
+    return text
 
 
 def _key(path: str) -> str:

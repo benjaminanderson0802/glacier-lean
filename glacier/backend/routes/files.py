@@ -6,6 +6,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 import files_store
+from bounded_body import read_bounded_body
 
 router = APIRouter()
 
@@ -16,22 +17,8 @@ class ProjectCreate(BaseModel):
 
 
 async def _read_bounded_body(request: Request) -> None:
-    limit = files_store.max_upload_bytes() + 64 * 1024
-    try:
-        declared = int(request.headers.get("content-length", "0"))
-    except ValueError:
-        declared = 0
-    if declared > limit:
-        raise HTTPException(413, files_store.too_large_message())
-
-    chunks = []
-    size = 0
-    async for chunk in request.stream():
-        size += len(chunk)
-        if size > limit:
-            raise HTTPException(413, files_store.too_large_message())
-        chunks.append(chunk)
-    request._body = b"".join(chunks)
+    await read_bounded_body(request, files_store.max_upload_bytes() + 64 * 1024,
+                            files_store.too_large_message())
 
 
 @router.post("/api/files")

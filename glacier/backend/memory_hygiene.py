@@ -4,17 +4,19 @@ import datetime as dt
 import hashlib
 import json
 import os
-import re
 
 import vault
+from app_paths import app_data_home, state_file
+from memory_links import front_matter, parse_links, rewrite_wikilinks
+from memory_meta import parse as parse_metadata
 
 
 def _home():
-    return os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    return str(app_data_home())
 
 
 def _state_path():
-    return os.path.join(_home(), "hygiene.json")
+    return str(state_file("hygiene.json"))
 
 
 def _load():
@@ -37,20 +39,12 @@ def _save(data):
 
 def _body(raw):
     """Return note content without YAML front matter."""
-    match = re.match(r"\A---\s*\r?\n.*?\r?\n---\s*(?:\r?\n|$)", raw, re.S)
-    return raw[match.end():] if match else raw
+    _, body = front_matter(raw)
+    return body if body is not None else raw
 
 
 def _metadata(raw):
-    match = re.match(r"\A---\s*\r?\n(.*?)\r?\n---\s*(?:\r?\n|$)", raw, re.S)
-    if not match:
-        return {}
-    result = {}
-    for line in match.group(1).splitlines():
-        key, sep, value = line.partition(":")
-        if sep:
-            result[key.strip()] = value.strip().strip("\"'")
-    return result
+    return parse_metadata(raw)[0]
 
 
 def _date(raw, full_path):
@@ -96,21 +90,18 @@ def _link_path(target):
 
 
 def _rewrite_links(raw, removed_paths, keeper):
-    removed = {_link_path(path) for path in removed_paths}
-
-    def replace(match):
-        target, suffix = match.groups()
-        if _link_path(target) not in removed:
-            return match.group(0)
-        replacement = keeper if target.strip().endswith(".md") else keeper[:-3]
-        return f"[[{replacement}{suffix}]]"
-
-    return re.sub(r"\[\[([^\]|#]+)([^\]]*)\]\]", replace, raw)
+    replacements = {}
+    for path in removed_paths:
+        normalized = _link_path(path)
+        replacements[normalized.casefold()] = keeper
+        replacements[normalized[:-3].casefold()] = keeper[:-3]
+    return rewrite_wikilinks(raw, replacements)
 
 
 def _linked_targets(raw):
     targets = set()
-    for link in re.findall(r"\[\[([^\]|#]+)", raw):
+    _, body = front_matter(raw)
+    for link, _ in parse_links(body if body is not None else raw):
         target = link.strip().replace("\\", "/").lstrip("/")
         if not target.endswith(".md"):
             target += ".md"
@@ -270,8 +261,8 @@ def _commit_changes(changes, removals, agent="glacier-hygiene"):
                 connection.execute("DELETE FROM fts WHERE path=?", (path,))
                 connection.execute("INSERT INTO fts VALUES (?,?)", (path, content))
                 connection.execute("DELETE FROM links WHERE src=?", (path,))
-                for target in re.findall(r"\[\[([^\]|#]+)", content):
-                    connection.execute("INSERT INTO links VALUES (?,?)", (path, target.strip()))
+                for target, _ in parse_links(_body(content)):
+                    connection.execute("INSERT INTO links VALUES (?,?)", (path, target))
                 connection.execute("INSERT INTO events(agent,kind,data) VALUES (?,?,?)",
                                    (agent, "write_note", json.dumps({"path": path, "commit": commit.hexsha[:8]})))
             connection.commit()

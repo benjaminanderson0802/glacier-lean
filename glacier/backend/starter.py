@@ -14,6 +14,7 @@ import system_check
 import template_registry
 import vault
 import shell_commands
+from app_paths import app_data_home
 
 
 AGENTS = {
@@ -133,7 +134,7 @@ def proposal() -> dict:
 
 
 def _home() -> Path:
-    return Path(os.environ.get("GLACIER_HOME", "data")).resolve()
+    return app_data_home()
 
 
 def apply(template_ids: list[str], mode: str) -> dict:

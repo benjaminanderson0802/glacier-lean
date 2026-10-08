@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
+from bounded_body import read_bounded_body
 import import_service
 
 router = APIRouter()
@@ -19,6 +20,10 @@ class ImportRequest(BaseModel):
 
 def _error(exc: ValueError) -> HTTPException:
     return HTTPException(400, str(exc))
+
+
+async def _read_bounded_body(request: Request, limit: int) -> None:
+    await read_bounded_body(request, limit, "This export file is too large")
 
 
 @router.post("/api/imports")
@@ -60,22 +65,3 @@ def refresh_imports():
 @router.get("/api/imports")
 def list_imports():
     return import_service.list_imports()
-
-
-async def _read_bounded_body(request: Request, limit: int) -> None:
-    """Buffer an upload request only when it fits the import request limit."""
-    try:
-        declared = int(request.headers.get("content-length", "0"))
-    except ValueError:
-        declared = 0
-    if declared > limit:
-        raise HTTPException(413, "This export file is too large")
-
-    chunks = []
-    size = 0
-    async for chunk in request.stream():
-        size += len(chunk)
-        if size > limit:
-            raise HTTPException(413, "This export file is too large")
-        chunks.append(chunk)
-    request._body = b"".join(chunks)
