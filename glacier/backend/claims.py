@@ -67,7 +67,8 @@ def file_claim(kind: str, summary: str, evidence: str, run_id: str = "", node_id
             "assigned_to": "researcher", "resolution": "", "resolution_evidence": "", "updated": _now()}
     body = f"## Problem\n{summary.strip()}\n\n## Evidence\n{(evidence or '').strip()}\n\n## Research\n\n## Resolution\n"
     path = _path(cid)
-    vault.write_note(path, _render(meta, body), agent=filed_by)
+    with vault._lock:
+        vault.write_note(path, _render(meta, body), agent=filed_by)
     store.broadcaster.publish({"type": "claim", "id": cid, "status": "filed"})
     return {"id": cid, "path": path}
 
@@ -90,19 +91,31 @@ def get_claim(cid: str) -> dict:
     return {"meta": meta, "body": body}
 
 
+def update_claim(cid: str, fn, *, agent: str = "glacier") -> dict:
+    """Read, modify and save one claim atomically with respect to every claim writer."""
+    with vault._lock:
+        meta, body = _parse(vault.read_note(_path(cid)))
+        result = fn(meta, body)
+        if result is not None:
+            meta, body = result
+        vault.write_note(_path(cid), _render(meta, body), agent=agent)
+        return {"meta": meta, "body": body}
+
+
 def decide(cid: str, action: str, option: str = "", by: str = "owner") -> dict:
     """Owner decision on a claim (usually a proposal): approve | reject | research_more."""
     if action not in ("approve", "reject", "research_more"):
         raise ValueError("action must be approve, reject or research_more")
-    c = get_claim(cid)
-    meta, body = c["meta"], c["body"]
     status = {"approve": "resolved", "reject": "closed", "research_more": "researching"}[action]
     words = {"approve": f"Approved by the owner{': ' + option if option else ''}.", "reject": "Rejected by the owner.",
              "research_more": "Owner asked for more research."}[action]
-    meta.update(status=status, updated=_now(), assigned_to="researcher" if action == "research_more" else meta.get("assigned_to"))
-    if action != "research_more":
-        meta["resolution"] = words
-    body = body.rstrip() + f"\n- {_now()} {words}\n"
-    vault.write_note(_path(cid), _render(meta, body), agent=by)
+    def apply(meta: dict, body: str):
+        meta.update(status=status, updated=_now(), assigned_to="researcher" if action == "research_more" else meta.get("assigned_to"))
+        if action != "research_more":
+            meta["resolution"] = words
+        body = body.rstrip() + f"\n- {_now()} {words}\n"
+        return meta, body
+
+    update_claim(cid, apply, agent=by)
     store.broadcaster.publish({"type": "claim", "id": cid, "status": status})
     return {"status": status}
