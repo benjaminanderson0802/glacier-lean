@@ -42,6 +42,12 @@ def run(ctx: dict) -> dict:
             + instructions["text"]
             + "\n----- END PROJECT INSTRUCTIONS -----"
         )
+    choice_text = config.get("choose_one", "").strip()
+    choices = [choice.strip() for choice in choice_text.split(",") if choice.strip()]
+    if choice_text and (len(choices) < 2 or len(set(choices)) != len(choices) or len(choices) > 12):
+        raise ValueError("Choose one needs at least two distinct options separated by commas")
+    if choices:
+        prompt += "\n\nChoose one of: " + ", ".join(choices) + ". Reply with a JSON object containing a labels array, one label for each item in order."
     import system_check
     model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
     try:
@@ -51,9 +57,7 @@ def run(ctx: dict) -> dict:
     timeout = max(1, min(timeout, 24 * 3600))
     base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/")
     url = base_url + "/api/chat"
-    request = urllib.request.Request(
-        url,
-        data=json.dumps({
+    body = {
             "model": model,
             "messages": ([{"role": "system", "content": ANSWER_ONLY_SYSTEM}]
                          if config.get("answer_style", "Answer only") == "Answer only" else []) +
@@ -62,7 +66,15 @@ def run(ctx: dict) -> dict:
             "think": False,
             **({"options": {"temperature": 0}}
                if config.get("answer_style", "Answer only") == "Answer only" else {}),
-        }).encode(),
+        }
+    if choices:
+        body["format"] = {"type": "object", "properties": {
+            "labels": {"type": "array", "items": {"type": "string", "enum": choices},
+                       "minItems": 1, "maxItems": 100}},
+            "required": ["labels"], "additionalProperties": False}
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"},
     )
     try:
@@ -90,6 +102,15 @@ def run(ctx: dict) -> dict:
     output = message.get("content", "")
     if not isinstance(output, str):
         raise ValueError("Ollama returned an invalid reply")
+    if choices:
+        try:
+            selected = json.loads(output)["labels"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            raise ValueError("Ollama returned an invalid choice") from None
+        if (not isinstance(selected, list) or not selected or len(selected) > 100
+                or any(option not in choices for option in selected)):
+            raise ValueError("Ollama returned a choice outside the allowed options")
+        output = "\n".join(selected)
     if config.get("answer_style", "Answer only") == "Answer only":
         output = _clean_answer(output)
     instructions_detail = project_instructions_detail(config.get("project_folder")) if config.get("project_folder") else ""
@@ -122,6 +143,8 @@ NODE = {
             {"key": "model", "label": "Model", "placeholder": "default local model", "default": "", "optional": True},
             {"key": "answer_style", "label": "Answer style", "placeholder": "Answer only", "default": "Answer only", "optional": True,
              "options": ["Answer only", "Free text"]},
+            {"key": "choose_one", "label": "Allowed choices (optional; comma-separated)",
+             "placeholder": "billing, technical, sales", "default": "", "optional": True},
             {"key": "timeout", "label": "Time limit (seconds)", "placeholder": "600", "default": "600", "optional": True},
         ],
         "branches": None,

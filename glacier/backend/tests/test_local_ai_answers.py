@@ -87,6 +87,29 @@ def test_default_style_is_answer_only(monkeypatch):
     assert fields["answer_style"]["options"] == ["Answer only", "Free text"]
 
 
+def test_choose_one_sends_json_enum_and_returns_selected_option(monkeypatch):
+    calls = _stub_ollama(monkeypatch, '{"labels":["billing","technical"]}')
+    result = local_ai.run(_ctx({"choose_one": "billing, technical, sales"}))
+
+    body = calls[0][1]
+    assert "Choose one of: billing, technical, sales." in body["messages"][-1]["content"]
+    assert body["format"] == {"type": "object", "properties": {"labels": {
+        "type": "array", "items": {"type": "string", "enum": ["billing", "technical", "sales"]},
+        "minItems": 1, "maxItems": 100}}, "required": ["labels"], "additionalProperties": False}
+    assert result["output"] == "billing\ntechnical"
+    assert {field["key"]: field for field in local_ai.NODE["catalog"]["fields"]}["choose_one"]
+
+
+def test_choose_one_rejects_malformed_model_reply(monkeypatch):
+    _stub_ollama(monkeypatch, '{"labels":"technical"}')
+    try:
+        local_ai.run(_ctx({"choose_one": "billing, technical"}))
+    except ValueError as exc:
+        assert str(exc) == "Ollama returned a choice outside the allowed options"
+    else:
+        raise AssertionError("invalid constrained response should be rejected")
+
+
 def test_benchmark_uses_real_local_ai_node_with_fake_ollama(monkeypatch):
     path = Path(__file__).resolve().parents[3] / "bench/local_models/run_eval.py"
     spec = importlib.util.spec_from_file_location("local_models_run_eval", path)
