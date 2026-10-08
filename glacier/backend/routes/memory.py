@@ -179,6 +179,22 @@ def undo(item: Undo):
         raise HTTPException(400, "Enter at least 7 letters or numbers from the saved version ID.")
     with vault._lock:
         commits = list(vault._repo.iter_commits(paths=path))
+        if item.commit:
+            import memory_rename
+            requested = item.commit.lower()
+            renames = [(commit, memory_rename.renamed_paths(commit)) for commit in vault._repo.iter_commits(paths=".")
+                       if commit.hexsha.startswith(requested) and getattr(commit, "message", "").startswith("[owner] rename ")]
+            if len(renames) == 1 and renames[0][1]:
+                old_path, new_path = renames[0][1]
+                # Undo a rename by renaming the note back: links that point at it follow it again,
+                # nothing else in the vault is touched, and the undo is its own saved version.
+                try:
+                    result = memory_rename.rename(new_path, old_path)
+                except FileNotFoundError as exc:
+                    raise HTTPException(409, "That rename can't be undone because the note has moved or been removed since") from exc
+                except FileExistsError as exc:
+                    raise HTTPException(409, "That rename can't be undone because a note now uses the old name") from exc
+                return {"path": item.path, "commit": result["commit"]}
         if not commits:
             raise HTTPException(404, "No saved version exists for this note")
         matching = [c for c in commits if item.commit and c.hexsha.startswith(item.commit.lower())] if item.commit else []
@@ -198,6 +214,21 @@ def undo(item: Undo):
         raise HTTPException(404, "The earlier version did not contain this note")
     commit = vault.write_note(path, body, author="owner")
     return {"path": path, "commit": commit}
+
+
+@router.post("/api/memory/rename")
+def rename_note(item: dict):
+    from memory_rename import rename
+    if set(item) != {"from", "to"} or not all(isinstance(item[key], str) for key in ("from", "to")):
+        raise HTTPException(400, "Provide the old and new note paths")
+    try:
+        return rename(item["from"], item["to"])
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/api/memory/search")
