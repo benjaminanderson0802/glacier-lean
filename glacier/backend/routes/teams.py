@@ -143,21 +143,6 @@ def get_team(team_id: str):
         raise HTTPException(404, str(exc)) from exc
 
 
-@router.post("/api/teams/{team_id}/pause")
-def pause_team(team_id: str):
-    return teams.control(team_id, "pause")
-
-
-@router.post("/api/teams/{team_id}/resume")
-def resume_team(team_id: str):
-    return teams.control(team_id, "resume")
-
-
-@router.post("/api/teams/{team_id}/stop")
-def stop_team(team_id: str):
-    return teams.control(team_id, "stop")
-
-
 @router.delete("/api/teams/{team_id}")
 def delete_team(team_id: str):
     try:

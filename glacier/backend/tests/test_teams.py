@@ -52,17 +52,16 @@ def test_team_plan_rejects_planner_as_task_or_supervisor():
 
 
 def test_planner_schema_is_accepted_by_codex_strict_structured_output(monkeypatch):
-    import assistant
-
     captured = {}
     plan = _plan()
     vision = plan.pop("vision")
 
-    def answer(_prompt, schema):
+    def answer(_prompt, engine, schema=None):
+        assert engine == "codex"
         captured["schema"] = schema
         return plan
 
-    monkeypatch.setattr(assistant, "_ask_codex", answer)
+    monkeypatch.setattr(teams, "ask_engine", answer)
     teams.plan_team(vision, engine="codex")
 
     schema = captured["schema"]
