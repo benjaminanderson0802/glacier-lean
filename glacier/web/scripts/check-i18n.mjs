@@ -17,8 +17,9 @@ function scan(path) {
   // Visible prop literals: only the five user-facing props named in the card.
   const props = /\b(title|sub|placeholder|aria-label|label)\s*=\s*(["'])(.*?)\2/g
   for (const match of source.matchAll(props)) {
+    const prefix = source.slice(Math.max(0, match.index - 2), match.index)
     const value = match[3].trim()
-    if (/[A-Za-z]/.test(value) && !allow.has(value)) findings.push(`${path}: ${match[1]}=${JSON.stringify(value)}`)
+    if (!prefix.endsWith('{') && /[A-Za-z]/.test(value) && !allow.has(value)) findings.push(`${path}: ${match[1]}=${JSON.stringify(value)}`)
   }
   // Match direct JSX text nodes between tags. Expression boundaries exclude code fragments.
   const jsxText = />([^<>\n{}]*[A-Za-z][^<>\n{}]*)</g

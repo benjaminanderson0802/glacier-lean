@@ -4,16 +4,17 @@ import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { go } from '../route.ts'
 import { setLayout, useLayout, type Layout } from '../layout.ts'
 import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
+import { t } from '../i18n/index.ts'
 
 const SECTIONS = [
-  { id: 'general', label: 'General' },
-  { id: 'models', label: 'Models' },
-  { id: 'secrets', label: 'Secrets' },
-  { id: 'usage', label: 'Usage' },
-  { id: 'data', label: 'Data' },
-  { id: 'system', label: 'System check' },
-  { id: 'help', label: 'Help & keys' },
-  { id: 'about', label: 'About' },
+  { id: 'general', label: t('settings.general') },
+  { id: 'models', label: t('settings.models') },
+  { id: 'secrets', label: t('settings.secrets') },
+  { id: 'usage', label: t('settings.usage') },
+  { id: 'data', label: t('settings.data') },
+  { id: 'system', label: t('settings.system') },
+  { id: 'help', label: t('settings.help') },
+  { id: 'about', label: t('settings.about') },
 ] as const
 
 export function SettingsScreen({ section = 'general' }: { section?: string }) {
@@ -26,40 +27,40 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
 
   return (
     <>
-      <PageHead title="Settings" sub={cur.id === 'system' ? 'Make sure everything is working.' : 'How Glacier runs on this computer.'} />
+      <PageHead title={t('settings.title')} sub={cur.id === 'system' ? t('settings.systemSubtitle') : t('settings.subtitle')} />
       <div className="g-settings">
         <Panel className="g-sidenav">
           {SECTIONS.map(s => <button key={s.id} className={`g-navitem${s.id === cur.id ? ' active' : ''}`} onClick={() => go(`settings/${s.id}`)} data-testid={`settings-${s.id}`}><span>{s.label}</span></button>)}
         </Panel>
         {cur.id === 'general' && (
-          <Panel title="General" testid="settings-general">
+          <Panel title={t('settings.general')} testid="settings-general">
             {err && <div className="g-error">{err}</div>}
-            {!check ? <Empty>Checking this computer…</Empty> : (
+            {!check ? <Empty>{t('settings.checkingComputer')}</Empty> : (
               <dl className="g-kv">
-                <dt>Mode</dt><dd>{check.recommended.mode === 'low' ? 'Light (one run at a time)' : 'Standard'}</dd>
-                <dt>Local model</dt><dd>{check.recommended.local_model}</dd>
-                <dt>Runs at once</dt><dd>{check.recommended.max_parallel_runs}</dd>
-                <dt>Theme</dt><dd>Glacier (retro)</dd>
-                <dt>Detail level</dt><dd>
+                <dt>{t('settings.mode')}</dt><dd>{check.recommended.mode === 'low' ? t('settings.light') : t('settings.standard')}</dd>
+                <dt>{t('settings.localModel')}</dt><dd>{check.recommended.local_model}</dd>
+                <dt>{t('settings.runsAtOnce')}</dt><dd>{check.recommended.max_parallel_runs}</dd>
+                <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme')}</dd>
+                <dt>{t('settings.detailLevel')}</dt><dd>
                   <div className="g-seg" data-testid="layout-switch">
-                    {([['simple', 'Simple'], ['standard', 'Standard'], ['full', 'Full']] as [Layout, string][]).map(([v, l]) =>
+                    {([['simple', t('settings.simple')], ['standard', t('settings.standard')], ['full', t('settings.full')]] as [Layout, string][]).map(([v, l]) =>
                       <button key={v} className={`g-seg-btn${v === layout ? ' active' : ''}`} onClick={() => setLayout(v)} data-testid={`layout-${v}`}>{l}</button>)}
                   </div>
-                  <div className="g-muted">{layout === 'simple' ? 'Fewer step types and settings; nothing technical.' : layout === 'full' ? 'Everything, plus each step\'s raw settings in the editor.' : 'The usual view.'}</div>
+                  <div className="g-muted">{layout === 'simple' ? t('settings.fewerSettings') : layout === 'full' ? t('settings.fullSettings') : t('settings.usualView')}</div>
                 </dd>
               </dl>
             )}
           </Panel>
         )}
         {cur.id === 'system' && (
-          <Panel title="System check" aside={<Btn onClick={load} data-testid="system-recheck">Run check again</Btn>} testid="settings-system">
+          <Panel title={t('settings.system')} aside={<Btn onClick={load} data-testid="system-recheck">{t('settings.runCheckAgain')}</Btn>} testid="settings-system">
             {err && <div className="g-error">{err}</div>}
-            {!check ? <Empty>Checking…</Empty> : (
+            {!check ? <Empty>{t('settings.checking')}</Empty> : (
               <div className="g-rows">
-                <Row status={check.ollama_models.length ? 'ok' : 'warn'} lead="Local AI models" detail={check.ollama_models.join(', ') || 'none installed'} when={check.ollama_models.length ? 'Ready' : 'Missing'} />
-                {Object.entries(check.tools).map(([k, t]) => <Row key={k} status={t.found ? 'ok' : 'warn'} lead={k} detail={t.version || 'not found'} when={t.found ? 'Ready' : 'Missing'} />)}
-                <Row status={check.disk_free_gb != null && check.disk_free_gb < 10 ? 'warn' : 'ok'} lead="Storage" detail={check.disk_free_gb != null ? `${check.disk_free_gb} GB free` : 'unknown'} />
-                <Row status="ok" lead="Memory" detail={check.memory_gb != null ? `${check.memory_gb} GB` : 'unknown'} when={check.cpu_cores ? `${check.cpu_cores} cores` : ''} />
+                <Row status={check.ollama_models.length ? 'ok' : 'warn'} lead={t('settings.localModels')} detail={check.ollama_models.join(', ') || t('settings.noneInstalled')} when={check.ollama_models.length ? t('settings.ready') : t('settings.missing')} />
+                {Object.entries(check.tools).map(([k, tool]) => <Row key={k} status={tool.found ? 'ok' : 'warn'} lead={k} detail={tool.version || t('settings.notFound')} when={tool.found ? t('settings.ready') : t('settings.missing')} />)}
+                <Row status={check.disk_free_gb != null && check.disk_free_gb < 10 ? 'warn' : 'ok'} lead={t('settings.storage')} detail={check.disk_free_gb != null ? t('settings.gbFree', { count: check.disk_free_gb }) : t('settings.unknown')} />
+                <Row status="ok" lead={t('settings.memory')} detail={check.memory_gb != null ? t('settings.gb', { count: check.memory_gb }) : t('settings.unknown')} when={check.cpu_cores ? t('settings.cores', { count: check.cpu_cores }) : ''} />
                 {check.messages.map((m, i) => <Row key={i} status="warn" lead={m} />)}
               </div>
             )}
@@ -71,12 +72,12 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
         {cur.id === 'data' && <DataSection />}
         {cur.id === 'about' && <AboutSection version={__APP_VERSION__} />}
         {cur.id === 'help' && (
-          <Panel title="Help & keys" testid="settings-help">
+          <Panel title={t('settings.help')} testid="settings-help">
             <dl className="g-kv">
-              <dt>Ctrl+K</dt><dd>Command palette: jump anywhere, run a flow</dd>
-              <dt>Ctrl+Tab</dt><dd>Next tab (Shift for previous)</dd>
-              <dt>Alt+1 … 5</dt><dd>Home, Ask, Automations, Memory, Settings</dd>
-              <dt>F1</dt><dd>This page</dd>
+              <dt>{t('settings.ctrlKShort')}</dt><dd>{t('settings.ctrlK')}</dd>
+              <dt>{t('settings.ctrlTab')}</dt><dd>{t('settings.nextTab')}</dd>
+              <dt>{t('settings.altTabs')}</dt><dd>{t('settings.tabList')}</dd>
+              <dt>{t('settings.f1')}</dt><dd>{t('settings.thisPage')}</dd>
             </dl>
           </Panel>
         )}
