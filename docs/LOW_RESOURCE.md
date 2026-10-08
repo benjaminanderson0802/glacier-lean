@@ -6,15 +6,14 @@ Ollama models and a recommended mode. The check uses short subprocess timeouts;
 missing tools are reported without preventing setup.
 
 Computers with 8 GB RAM or less, or 4 CPU cores or less, use `low` mode with a
-recommended one parallel run. Other computers use `standard` mode. When no
-model is installed, `low` mode recommends `qwen3:0.6b` (Apache-2.0, about 0.5 GB to
-download, about 1 GiB in use) and `standard` mode recommends `granite3.3:2b` (Apache-2.0,
-about 1.5 GB to download, about 5 GiB in use), the best result in the allowed-model evaluation.
+recommended one parallel run. Other computers use `standard` mode. Both modes
+recommend `granite3.3:2b` (Apache-2.0, about 1.5 GB to download, about 1 GiB peak
+runner memory in the recorded benchmark). Light mode limits concurrency; it
+does not select a different model. `qwen3:0.6b` remains available when chosen
+explicitly, but is no longer recommended.
 Glacier first reuses an evaluated model you already have, then any other chat model you
-installed (smallest first), so nothing is downloaded when you already have one. No evaluated
-model met the target of 8/10 strict, independently checked tasks; the final
-score is recorded in the model evaluation evidence. Treat this as a best-effort
-default, not a model that has passed the low-resource target. See
+installed (smallest first), so nothing is downloaded when you already have one.
+The starter proposes Granite when no evaluated model is already installed. See
 [`evidence/live/model_choice.md`](../evidence/live/model_choice.md) for licenses,
 measurements and raw outputs. If memory cannot be measured, Glacier reports it
 as unknown and does not use that value to select low-resource mode. Set
@@ -30,8 +29,9 @@ and one final period on a single-line answer. Choose **Free text** when an
 explanation is useful. Both styles keep Ollama's `think: false` setting.
 
 The repeatable ten-task run on 2026-10-07 scored qwen3:0.6b 5/10, qwen3:1.7b
-6/10, and granite3.3:2b 8/10 with Answer only. Granite reached the 8/10 target;
-the two Qwen models did not. The 1.7b Qwen run had one 180-second task timeout.
+6/10, and granite3.3:2b 8/10 with Answer only. A rerun using Granite with
+light-mode settings (one run at a time) is appended in
+[`evidence/PH8.5-granite-light-bench.md`](../evidence/PH8.5-granite-light-bench.md).
 These scores improve on the previous strict results (1/10, 2/10 and 4/10), but
 they do not show that small models can reliably handle every task. See [the full
 comparison](../evidence/live/model_choice.md) and [the repeatable
@@ -54,7 +54,8 @@ available before the full run), Glacier's backend and local models were measured
 through complete runs, not just model answers. The host reports 16 logical CPUs;
 the four-core figure is the laptop context provided for this measurement. The
 run used `qwen3:0.6b` with one parallel run for light mode and
-`granite3.3:2b` with standard settings. Results, checks, raw run outputs, and
+`granite3.3:2b` with standard settings. The separate repeatable 10-task
+light-mode Granite run is linked above. Results, checks, raw run outputs, and
 the 0.5-second memory samples are in
 [`evidence/live/modest_hardware.md`](../evidence/live/modest_hardware.md).
 The measurement can be repeated with

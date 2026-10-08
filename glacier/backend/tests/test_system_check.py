@@ -77,7 +77,17 @@ def test_recommend_skips_embedding_models():
 
 
 def test_low_resource_default_fits_a_modest_pc():
-    assert system_check.recommend({"memory_gb": 4, "cpu_cores": 2, "ollama_models": []})["local_model"] == "qwen3:0.6b"
+    assert system_check.recommend({"memory_gb": 4, "cpu_cores": 2, "ollama_models": []})["local_model"] == "granite3.3:2b"  # owner decision 2026-10-08: granite everywhere
+
+
+def test_granite_is_recommended_in_both_modes():
+    for machine in (
+        {"memory_gb": 4, "cpu_cores": 2, "ollama_models": []},
+        {"memory_gb": 16, "cpu_cores": 8, "ollama_models": []},
+    ):
+        settings = system_check.recommend(machine)
+        assert settings["local_model"] == "granite3.3:2b"
+    assert system_check.recommend({"memory_gb": 4, "cpu_cores": 2, "ollama_models": []})["max_parallel_runs"] == 1
 
 
 def test_unknown_memory_is_not_treated_as_low(monkeypatch):

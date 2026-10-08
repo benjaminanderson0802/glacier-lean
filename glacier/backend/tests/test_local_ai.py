@@ -103,6 +103,7 @@ def test_local_ai_uses_environment_model_or_default(monkeypatch):
     assert captured[-1][2] == 4
 
     monkeypatch.delenv("GLACIER_LOCAL_MODEL")
+    monkeypatch.setattr("system_check.effective_settings", lambda: {"local_model": DEFAULT_MODEL})
     assert run(ctx)["usage"]["model"] == DEFAULT_MODEL
     assert captured[-1][1]["model"] == DEFAULT_MODEL
 
