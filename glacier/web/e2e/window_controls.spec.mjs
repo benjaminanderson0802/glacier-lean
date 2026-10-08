@@ -27,21 +27,27 @@ try {
   check(await page.locator('.g-winctl').count() === 0, 'browser build has no window controls')
 
   const desktopPage = await browser.newPage()
+  const windowCommands = []
+  await desktopPage.exposeFunction('__recordWindowCommand', command => windowCommands.push(command))
   await desktopPage.addInitScript(() => {
     window.__windowCommands = []
     window.__TAURI_INTERNALS__ = {
       metadata: { currentWindow: { label: 'main' } },
-      invoke: async (command, args) => { window.__windowCommands.push({ command, args }); return undefined },
+      invoke: async (command, args) => { window.__windowCommands.push(command); void window.__recordWindowCommand(command); return undefined },
     }
   })
   await desktopPage.goto(UI, { waitUntil: 'networkidle' })
+  // The startup splash covers the entire window until the user dismisses it.
+  await desktopPage.getByTestId('splash').waitFor()
+  await desktopPage.keyboard.press('Escape')
   const minimize = desktopPage.getByRole('button', { name: 'Minimise' })
   const close = desktopPage.getByRole('button', { name: 'Close' })
   check(await minimize.count() === 1 && await close.count() === 1, 'desktop build shows minimise and close controls')
   await minimize.click()
+  await desktopPage.waitForFunction(() => window.__windowCommands.includes('plugin:window|minimize'))
+  check(await desktopPage.evaluate(() => window.__windowCommands.includes('plugin:window|minimize')), 'minimise calls the Tauri window bridge')
   await close.click()
-  const commands = await desktopPage.evaluate(() => window.__windowCommands.map(x => x.command))
-  check(commands.includes('plugin:window|minimize'), 'minimise calls the Tauri window bridge')
-  check(commands.includes('plugin:window|close'), 'close calls the Tauri window bridge')
+  await desktopPage.waitForFunction(() => window.__windowCommands.includes('plugin:window|close'))
+  check(await desktopPage.evaluate(() => window.__windowCommands.includes('plugin:window|close')), 'close calls the Tauri window bridge')
 } catch (e) { console.error(e); failures++ } finally { await browser?.close(); cleanup() }
 if (failures) process.exitCode = 1

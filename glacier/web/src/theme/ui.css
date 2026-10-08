@@ -19,7 +19,7 @@ html[lang="es"] .g-tab > span { min-width: 0; overflow: hidden; text-overflow: e
 .g-tab:focus-visible, .g-btn:focus-visible, .g-row:focus-visible { outline: 1px dashed var(--g-accent); outline-offset: -3px; }
 .g-winctl { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
 html[lang="es"] .g-winctl { flex: none; }
-.g-winbtn { width: 32px; height: 30px; display: grid; place-items: center; background: transparent; border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); color: var(--g-head); cursor: pointer; padding: 0; }
+.g-winbtn { position: relative; z-index: 1; flex: 0 0 32px; width: 32px; height: 30px; display: grid; place-items: center; pointer-events: auto; background: transparent; border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); color: var(--g-head); cursor: pointer; padding: 0; }
 .g-winbtn:hover { background: var(--g-panel-hi); }
 
 .g-main { min-height: 0; overflow: auto; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 16px; }
