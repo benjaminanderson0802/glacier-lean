@@ -61,18 +61,18 @@
 .status-failed, .status-rejected { color: var(--g-bad); border-color: var(--g-bad); }
 .list-item.active .badge { color: var(--g-accent-ink); border-color: var(--g-accent-ink); }
 
-.tabs { display: flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
+.tabs { display: flex; flex: 0 0 auto; min-width: 0; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
 .app button.tab { background: transparent; border-color: var(--g-line-dim); }
 .app button.tab.active { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
-.palette { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+
 .canvas-tools { display: flex; gap: 2px; flex: 0 0 auto; }
-.app button.pal { font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
-.palette { display: flex; gap: calc(2 * var(--px)); flex: 0 1 auto; min-width: 0; max-width: 100%; margin-left: auto; flex-wrap: wrap; overflow: visible; }
-.app button.pal { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
+
+.palette { display: flex; gap: calc(2 * var(--px)); flex: 1 1 100%; min-width: 0; max-width: 100%; margin-left: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+.app button.pal { flex: 0 0 auto; min-width: 0; white-space: nowrap; overflow-wrap: normal; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
 
 .empty { margin: auto; color: var(--g-muted); }
-.canvas-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-.canvas { flex: 1; min-height: 0; }
+.canvas-wrap { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; min-height: 220px; position: relative; overflow: hidden; }
+.canvas { flex: 1 1 0; min-width: 0; min-height: 0; }
 .react-flow { --xy-background-color: var(--g-bg); --xy-controls-button-background-color: var(--g-panel); --xy-controls-button-color: var(--g-head); --xy-controls-button-border-color: var(--g-line); --xy-edge-stroke: var(--g-line); }
 .react-flow__background pattern circle { opacity: .35; }
 .react-flow__edge-text { fill: var(--g-text); font-family: var(--g-font-body); font-size: var(--g-size-small); }
