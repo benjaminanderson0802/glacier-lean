@@ -53,12 +53,20 @@ const mockTemplates = [
     template: { id: 'tpl-folder-backup', name: 'Folder backup', nodes: [{ id: 'n1', type: 'command', config: { command: 'echo backup' }, position: { x: 0, y: 0 } }], edges: [] } },
 ]
 const runs = new Map() // run_id -> run record
+const hiddenRuns = new Set()
+const deletedFlows = new Map()
 const vault = new Map() // path -> body
 const memoryMeta = new Map()
 const memoryHistory = new Map()
+const deletedNotes = new Map()
 const renames = new Map()
 const assistantProposals = new Map()
 const conversations = new Map()  // id -> { title, messages: [{ who, text, at }] }
+const deletedConversations = new Map()
+const deletedClaims = new Map()
+const uploadedFiles = new Map()
+const deletedFiles = new Map()
+const deletedTemplates = new Map()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 let starterApplied = false
 const commitId = () => crypto.randomBytes(20).toString('hex').slice(0, 7)
@@ -129,6 +137,26 @@ const server = http.createServer(async (req, res) => {
         history.unshift({ commit, author: item.author, date: now, message: `[${item.author}] write ${path}`, body: item.body }); memoryHistory.set(path, history)
         broadcast({ type: 'memory', path, change, author: item.author, run_id: '' })
         return send(200, { path, commit })
+      }
+      if (req.method === 'DELETE' && p === '/api/memory/note') {
+        const path = url.searchParams.get('path')
+        if (!path || path.includes('..') || !path.endsWith('.md') || path.startsWith('claims/')) return send(400, { detail: 'That note path is not allowed' })
+        if (!vault.has(path)) return send(404, { detail: 'Note not found' })
+        const commit = commitId(), history = memoryHistory.get(path) ?? []
+        deletedNotes.set(commit, { path, body: vault.get(path), meta: memoryMeta.get(path) })
+        history.unshift({ commit, author: 'owner', date: new Date().toISOString(), message: `[owner] delete ${path}`, body: null })
+        memoryHistory.set(path, history); vault.delete(path); memoryMeta.delete(path)
+        broadcast({ type: 'memory', path, change: 'deleted', author: 'owner', run_id: '' })
+        return send(200, { deleted: true, path, commit })
+      }
+      if (req.method === 'POST' && p === '/api/memory/undo-delete') {
+        const item = await readBody(), deleted = deletedNotes.get(item?.commit)
+        if (!deleted || deleted.path !== item.path) return send(404, { detail: 'Removed note not found' })
+        if (vault.has(item.path)) return send(409, { detail: 'A note with that name already exists' })
+        vault.set(item.path, deleted.body); if (deleted.meta) memoryMeta.set(item.path, deleted.meta)
+        deletedNotes.delete(item.commit)
+        broadcast({ type: 'memory', path: item.path, change: 'created', author: 'owner', run_id: '' })
+        return send(200, { restored: true, path: item.path, commit: commitId() })
       }
       if (req.method === 'GET' && p === '/api/memory/graph') {
         const nodes = new Map(), edges = [], knownEdges = new Set()
@@ -216,11 +244,25 @@ const server = http.createServer(async (req, res) => {
         return send(200, [...conversations].map(([id, c]) => ({ id, title: titleOf(c), updated: c.messages.at(-1)?.at ?? '', messages: c.messages.length, text: [titleOf(c), ...c.messages.map(x => x.text)].join(' ').toLowerCase() }))
           .filter(x => words.every(w => x.text.includes(w))).map(({ text, ...x }) => x).sort((a, b) => b.updated.localeCompare(a.updated)))
       }
-      const cm = p.match(/^\/api\/assistant\/conversations\/([^/]+)(\/rename)?$/)
-      const c = cm && conversations.get(decodeURIComponent(cm[1]))
+      const cm = p.match(/^\/api\/assistant\/conversations\/([^/]+)(\/rename|\/undo-delete)?$/)
+      const id = cm && decodeURIComponent(cm[1])
+      const c = id && conversations.get(id)
+      if (cm && req.method === 'DELETE' && !cm[2]) {
+        if (!c) return send(404, { detail: 'Conversation not found' })
+        const path = `conversations/${id}.md`, commit = commitId()
+        deletedConversations.set(id, { conversation: c, body: vault.get(path), commit })
+        conversations.delete(id); vault.delete(path)
+        return send(200, { deleted: true, id, commit })
+      }
+      if (cm && req.method === 'POST' && cm[2] === '/undo-delete') {
+        const body = await readBody(), deleted = deletedConversations.get(id)
+        if (!deleted || !String(body?.commit ?? '').startsWith(deleted.commit)) return send(404, { detail: 'Conversation not found' })
+        conversations.set(id, deleted.conversation); vault.set(`conversations/${id}.md`, deleted.body); deletedConversations.delete(id)
+        return send(200, { restored: true, commit: commitId() })
+      }
       if (!c) return send(404, { detail: 'Conversation not found' })
       if (req.method === 'GET' && !cm[2]) return send(200, { id: cm[1], title: titleOf(c), messages: c.messages })
-      if (req.method === 'POST' && cm[2]) {
+      if (req.method === 'POST' && cm[2] === '/rename') {
         const title = String((await readBody())?.title ?? '').trim()
         if (!title || title.length > 80 || /[\r\n]/.test(title)) return send(400, { detail: 'Title must be 1 to 80 characters with no line breaks' })
         c.title = title; return send(200, { id: cm[1], title, commit: commitId() })
@@ -325,6 +367,19 @@ const server = http.createServer(async (req, res) => {
       return send(200, { id: h.id, status: h.status, ...(body.approve ? { commit: commitId() } : {}) })
     }
     if (p === '/api/imports' && req.method === 'GET') return send(200, [{ source: 'chatgpt', last_import: new Date(Date.now() - 864e5).toISOString(), added: 42, updated: 3, unchanged: 100 }])
+    if (p === '/api/files' && req.method === 'GET') return send(200, [...uploadedFiles.values()])
+    if (p === '/api/files' && req.method === 'DELETE') {
+      const project = url.searchParams.get('project'), name = url.searchParams.get('name'), key = `${project}/${name}`
+      const file = uploadedFiles.get(key); if (!file) return send(404, { detail: 'Uploaded file not found' })
+      const undo_id = crypto.randomBytes(16).toString('hex'); deletedFiles.set(undo_id, file); uploadedFiles.delete(key)
+      return send(200, { deleted: true, undo_id, name, project })
+    }
+    if (p === '/api/files/undo-delete' && req.method === 'POST') {
+      const body = await readBody(), file = deletedFiles.get(body?.undo_id)
+      if (!file) return send(404, { detail: 'Removed file not found' })
+      uploadedFiles.set(`${file.project}/${file.name}`, file); deletedFiles.delete(body.undo_id)
+      return send(200, { restored: true, name: file.name, project: file.project })
+    }
     if (p === '/api/starter' && req.method === 'GET') return send(200, { applied: starterApplied, mode: 'standard', local_model: 'granite3.3:2b',
       reason: 'Your computer has enough memory for Glacier\'s standard mode.',
       coding_agents_found: [{ id: 'codex', name: 'Codex', found: true, version: '0.1', usable_as_step: true }, { id: 'acp-opencode', name: 'OpenCode', found: false, version: '', usable_as_step: false }],
@@ -342,9 +397,25 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/imports/refresh' && req.method === 'POST') return send(200, { chatgpt: { added: 2, updated: 1, unchanged: 145 } })
     if ((p === '/api/files' || p === '/api/imports') && req.method === 'POST') {
       let size = 0; await new Promise(r => { req.on('data', c => (size += c.length)); req.on('end', r) })
-      return send(200, p === '/api/files' ? { name: 'upload', size, duplicate: false } : { conversations: 3, notes: 3 })
+      if (p === '/api/files') {
+        const file = { name: `upload-${uploadedFiles.size + 1}.txt`, project: 'Inbox', size, path: `files/Inbox/upload-${uploadedFiles.size + 1}.txt`, note: null }
+        uploadedFiles.set(`${file.project}/${file.name}`, file)
+        return send(200, { ...file, duplicate: false })
+      }
+      return send(200, { conversations: 3, notes: 3 })
     }
     // ---- claims + templates (screen development only) ----
+    if ((m = p.match(/^\/api\/claims\/([^/]+)\/undo-delete$/)) && req.method === 'POST') {
+      const body = await readBody(), claim = deletedClaims.get(m[1])
+      if (!claim || !String(body?.commit ?? '').startsWith(claim.commit)) return send(404, { detail: 'claim not found' })
+      mockClaims.set(m[1], claim.value); deletedClaims.delete(m[1])
+      return send(200, { restored: true, commit: commitId() })
+    }
+    if ((m = p.match(/^\/api\/claims\/([^/]+)$/)) && req.method === 'DELETE') {
+      const claim = mockClaims.get(m[1]); if (!claim) return send(404, { detail: 'claim not found' })
+      const commit = commitId(); deletedClaims.set(m[1], { value: claim, commit }); mockClaims.delete(m[1])
+      return send(200, { deleted: true, id: m[1], commit })
+    }
     if (p === '/api/claims' && req.method === 'GET') {
       const st = url.searchParams.get('status')
       return send(200, [...mockClaims.values()].map(c => c.summaryRow()).filter(c => !st || c.status === st))
@@ -368,10 +439,35 @@ const server = http.createServer(async (req, res) => {
       return send(200, { run_id, env_id: 'nightly-sync' })
     }
     if (p === '/api/templates' && req.method === 'GET') return send(200, mockTemplates)
+    if (p === '/api/templates/undo-delete' && req.method === 'POST') {
+      const body = await readBody(), item = deletedTemplates.get(body?.undo_id)
+      if (!item) return send(404, { detail: 'Removed template not found' })
+      mockTemplates.push(item); deletedTemplates.delete(body.undo_id)
+      return send(200, { restored: true, id: item.id })
+    }
+    if ((m = p.match(/^\/api\/templates\/([^/]+)$/)) && req.method === 'DELETE') {
+      const index = mockTemplates.findIndex(item => item.id === decodeURIComponent(m[1]) && item.review_status === 'approved')
+      if (index < 0) return send(404, { detail: 'Imported template not found' })
+      const [item] = mockTemplates.splice(index, 1), undo_id = crypto.randomBytes(16).toString('hex')
+      deletedTemplates.set(undo_id, item)
+      return send(200, { deleted: true, id: item.id, undo_id })
+    }
+    if ((m = p.match(/^\/api\/environments\/([^/]+)\/undo-delete$/)) && req.method === 'POST') {
+      const id = decodeURIComponent(m[1]), body = await readBody(), deleted = deletedFlows.get(id)
+      if (!deleted || !String(body?.commit ?? '').startsWith(deleted.commit)) return send(404, { detail: 'Removed flow not found' })
+      envs.set(id, deleted.flow); vault.set(deleted.path, deleted.body); deletedFlows.delete(id)
+      return send(200, { restored: true, commit: commitId() })
+    }
     if (req.method === 'GET' && p === '/api/environments') return send(200, [...envs.values()].map(e => ({ id: e.id, name: e.name, enabled: e.enabled })))
     if ((m = p.match(/^\/api\/environments\/([^/]+)$/))) {
       const id = decodeURIComponent(m[1])
       if (req.method === 'GET') return envs.has(id) ? send(200, envs.get(id)) : send(404, { detail: 'environment not found' })
+      if (req.method === 'DELETE') {
+        const flow = envs.get(id); if (!flow) return send(404, { detail: 'Flow not found' })
+        const epath = `environments/${id}.json`, body = vault.get(epath), commit = commitId()
+        deletedFlows.set(id, { flow, path: epath, body, commit }); envs.delete(id); vault.delete(epath)
+        return send(200, { deleted: true, id, commit })
+      }
       if (req.method === 'PUT') {
         const body = await readBody()
         if (!body || !Array.isArray(body.nodes) || !Array.isArray(body.edges)) return send(422, { detail: 'invalid environment' })
@@ -399,10 +495,19 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && p === '/api/runs') {
       const envId = url.searchParams.get('env_id')
-      const list = [...runs.values()].filter(r => !envId || r.env_id === envId)
+      const list = [...runs.values()].filter(r => !hiddenRuns.has(r.run_id) && (!envId || r.env_id === envId))
         .sort((a, b) => b.started_at.localeCompare(a.started_at))
         .map(r => ({ run_id: r.run_id, env_id: r.env_id, status: r.status, started_at: r.started_at }))
       return send(200, list)
+    }
+    if ((m = p.match(/^\/api\/runs\/([^/]+)\/undo-delete$/)) && req.method === 'POST') {
+      const id = decodeURIComponent(m[1]); if (!hiddenRuns.has(id)) return send(404, { detail: 'Removed run not found' })
+      hiddenRuns.delete(id); return send(200, { restored: true, run_id: id })
+    }
+    if ((m = p.match(/^\/api\/runs\/([^/]+)$/)) && req.method === 'DELETE') {
+      const id = decodeURIComponent(m[1]), run = runs.get(id); if (!run) return send(404, { detail: 'Run not found' })
+      if (['running', 'waiting', 'queued', 'pending'].includes(run.status)) return send(409, { detail: 'A run that is still active cannot be removed from history' })
+      hiddenRuns.add(id); return send(200, { deleted: true, run_id: id })
     }
     if (req.method === 'GET' && p === '/api/costs') {
       const envId = url.searchParams.get('env_id')

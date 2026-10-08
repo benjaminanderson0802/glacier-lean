@@ -257,3 +257,154 @@ Exact final line:
 ```text
 421 passed, 1 skipped, 1 warning in 513.81s (0:08:33)
 ```
+
+# W66 practice run (three attempts; not verified)
+
+This card advances PH9.2 and serves P-VERIFY/P-GOALS and M-VERIFIED/M-INTERVENE. PH3 and PH7 have approved exits; PH5 remains in progress, so this is an owner-authorized verified-merge-only trial. The feature flow is the existing open-source implementation, so no replacement tool was added. Acceptance is all six saved checks passing (protected guard, backend suite, other suites, verification benchmark, security benchmark, and final owner gate), followed by a local merge into the scratch practice checkout. No attempt below merged.
+
+| Run | Outcome | Checks and reason |
+| --- | --- | --- |
+| `96510c89fd81` | Rejected; unmerged | Worker completed the unprotected `tools/scan/` card. Check 0 failed because the guard compared the run tree based on scratch `main` (`fd0a239`) against the newer source worktree. This exposed stale practice checkout/baseline setup. No other checks ran. |
+| `95750a94f1f9` | Rejected; unmerged | Guard passed (`Protected checks modified or deleted: none`). Backend acceptance failed 3 tests: two document-upload/search tests lacked MarkItDown PDF/DOCX extras in the practice checkout requirements (it was still on old `main`), and `test_run_card_posts_card_and_prints_watch_instructions` rejected its scratch source as an unexpected origin. Other suites passed (`60 passed in 6.88s`); verification benchmark passed (false-done `0.00%`, verified `100.00%`); security benchmark passed (`P 400 | blocked |`). Rejected at final gate. |
+| `01a859d43e5c` | Rejected at start; unmerged | Before approving the start gate, inspection showed practice `main` had again been refreshed from source `main`, not the current card-branch HEAD: its requirements still contained `markitdown==0.1.8` with no extras. Rejected to avoid running against the wrong source revision. |
+
+The flow fixes now refresh the clean scratch practice checkout from the exact source HEAD and use that practice checkout as the protected guard baseline. A regression test covers refreshing from a non-main feature branch. The pinned requirements line remains `markitdown[pdf,docx]==0.1.8` (commit `9b551bc`, originally `dbafb88` before rebase).
+
+The final required `bash ~/tools/suite.sh` run completed with:
+
+```text
+1 failed, 553 passed, 1 skipped, 4 warnings in 143.70s (0:02:23)
+```
+
+The remaining failure was `tests/test_starter.py::test_apply_creates_only_chosen_flows_once_and_saves_settings`: expected `granite3.3:2b`, received `qwen3:0.6b`. Current `system_check.recommend()` chooses an available evaluated small model in low mode, while this newly rebased test expects the Granite owner decision. This is outside the self-build flow lane and was not changed. The W66 change therefore has no verified practice merge commit; PH9.2 remains unverified.
+
+# W66 follow-up: local Ollama leak and practice attempt
+
+## Leak diagnosis
+
+The backend test process inherited no `GLACIER_HOME` and no `GLACIER_OLLAMA_URL`. A direct diagnostic against its default local endpoint (`http://localhost:11434/api/tags`) returned `smollm2:1.7b`, `granite3.3:2b`, `qwen3:1.7b`, and `qwen3:0.6b`. At that point `system_check._check_cache` was empty, and `effective_settings()` returned low mode with `qwen3:0.6b`. The starter apply route preserves that effective model choice, so the unchanged assertion expecting Granite failed.
+
+Two attempted fixture-only isolations were ineffective: setting a disposable default `GLACIER_HOME` and clearing `system_check` cache per test; then hiding the Ollama executable from the test process and backend subprocess PATH. Focused starter tests still returned qwen. Those edits were reverted. The exact remaining failing assertion is `tests/test_starter.py::test_apply_creates_only_chosen_flows_once_and_saves_settings`; no assertion was edited. The confirmed leak is host Ollama discovery through fallback to `ollama list` when the API is unavailable. The precise qwen selection appears to come from effective settings/cache initialized before the test-specific home is selected; a robust fix remains unresolved and was not attempted again after the two-attempt escalation limit.
+
+The requested `bash ~/tools/suite.sh` run completed with:
+
+```text
+1 failed, 567 passed, 1 skipped, 4 warnings in 174.19s (0:02:54)
+```
+
+A focused starter run also ended `1 failed, 8 passed, 1 warning in 6.25s`. A second focused attempt waited behind another worker's shared-lock full suite and then ended with the same `qwen3:0.6b` mismatch (`1 failed, 8 passed, 1 warning in 6.25s`).
+
+## Practice attempt 1 of up to 3
+
+- Card: `setup/selfbuild/cards/scan-list-sources.md` (the same small real card used in the earlier W66 runs).
+- Run id: `d7acf3192421`.
+- Backend: local Uvicorn on `127.0.0.1:8765`; temporary home `/tmp/w66-selfbuild-home`; no push.
+- Start approval: approved after confirming the assigned card, isolated worktree, and local-only merge gate.
+- Worker: completed the requested CLI option and test; direct CLI check printed all five sources. The worker-reported pytest command could not run in its sandbox because the project interpreter was unavailable there.
+- Check 0 protected guard: passed; no protected changes.
+- Check 1 backend suite: timed out after 600 seconds.
+- Check 2 other suites: passed, `76 passed in 7.67s`.
+- Check 3 verification benchmark: passed (false-done `0.00%`, verified `100.00%`).
+- Check 4 security benchmark: passed; final line `P 400 | blocked |`.
+- Final gate: rejected because the backend suite timed out. Flow state `rejected`, `verified: false`, `merged: false`.
+
+No second or third practice attempt was started: the required backend acceptance command is known to time out and the suite isolation issue remains unresolved. No practice merge commit exists. This follow-up does not verify PH9.2.
+
+# W66 follow-up round 4: practice run on main with the Ollama shim
+
+## Drift check and acceptance
+
+This continues PH9.2, the real feature flow. PH9 remains owner-authorized for verified-merge-only trials while PH5 is in progress. The flow is the existing open-source feature Environment; no replacement tool was added. It serves P-VERIFY and M-VERIFIED/M-FALSE-DONE. Acceptance is the isolated worker implementing the card, all saved checks passing, and the final owner gate being approved before a local-only merge. No acceptance check or test timeout was changed.
+
+## Attempt 1 of up to 3
+
+- Card: the same small real card, `setup/selfbuild/cards/scan-list-sources.md`.
+- Run ID: `229fab86376e`.
+- Practice home: `/tmp/w66-selfbuild-round4-home`; API on `127.0.0.1:8765`. No push occurred.
+- Start gate: approved. The feature worker exited 0 but parked the work before implementing the requested option. It reported that the required `/workspaces/glacier-lean/.venv/bin/python` was absent and wrote an environment claim in the isolated run branch. It added `tools/scan/test_scan.py::test_list_sources_prints_configured_sources_without_scanning`; `tools/scan/scan.py` was unchanged.
+- Check 0, protected guard: passed, `Protected checks modified or deleted: none`.
+- Check 1, backend suite: passed. Exact final line: `602 passed, 1 skipped, 1 warning in 562.66s (0:09:22)`.
+- Check 2, project suites: failed because the new test confirmed the CLI did not recognize `--list-sources`. Exact final line: `1 failed, 76 passed in 5.00s`.
+- Check 3, verification benchmark: passed; false-done `0.00%` (0/20), verified `100.00%` (30/30).
+- Check 4, security benchmark: passed; exact final line: `P 400 | blocked |`.
+- Final owner gate: rejected because the worker had not implemented the card and check 2 failed. Run state: `verified: false`, `merged: false`.
+- Practice checkout `main` remained at `bf3bffcf8a2b78ad5b2febf01cc5bc659a14781a` (the source HEAD); no practice merge commit exists. The unmerged run branch ended at `97f33e2b22bbb8c4ccc3a16187dbd24d0ed2bcac` and remains only in the temporary practice checkout.
+
+The flow's backend gate is already 720 seconds on this source revision, so no timeout adjustment was needed. It completed in 562.66 seconds. I attempted to make the required interpreter path resolve to the installed `/home/glacier/w/glacier-lean/.venv`, but the machine denied creating `/workspaces` (`Permission denied`). That is an environment issue outside this card's lane; no second or third attempt was started with the same missing interpreter, and no changes were made to the tests, feature check, or sandbox rules. This round does not verify PH9.2.
+
+# W66 follow-up round 5: interpreter and worker handoff
+
+## Cause and flow fixes
+
+The saved run/node/check records for `229fab86376e` confirmed the worker stopped because `/workspaces/glacier-lean/.venv/bin/python` did not exist. It added the card's test, then recorded an environment claim and reported that `scan.py` was unchanged. The project `AGENTS.md` told it to use that old fixed path. Independent check 2 rejected the run because the CLI still did not recognize `--list-sources` (`1 failed, 76 passed in 5.00s`). The start approval had been approved; the worker had `workspace-write`, so neither a missing approval nor sandbox refusal caused the stop. The persisted log does not contain a transcript showing a direct question or timeout.
+
+Commit `6a8ed33` updates the flow to replace that legacy interpreter spelling and bare `python` acceptance commands with `GLACIER_PYTHON` or `sys.executable`; the worker prompt now repeats the full card, its acceptance requirements, explicit practice-worktree edit authorization, and the instruction to file a claim before stopping on a question or blocker. Runtime setup scripts and the security bench README no longer require the old path. Regression coverage checks generated flow acceptance commands for both interpreter modes and asserts the handoff prompt includes those instructions.
+
+The required focused self-build tests were queued under `/tmp/glacier-suite.lock`, behind multiple workers' long-running full backend suites. They had not started by the time this record was written. No new practice run was started without the regression check and serialized test capacity. Therefore this round has no new run ID, no VERIFIED result, and no practice merge commit. The previous `229fab86376e` remains rejected; practice main remained at `bf3bffcf8a2b78ad5b2febf01cc5bc659a14781a` at that time.
+
+# W66 follow-up round 6: three practice attempts, still unverified
+
+## Drift check and acceptance
+
+This continues PH9.2, the real feature flow. It serves P-VERIFY and P-GOALS and PH9's three-consecutive-run metric. PH5 remains in progress; this is the integrator-authorized, verified-merge-only trial. The existing free, open-source feature flow is the tool for this task. Acceptance is all saved checks passing, the final owner gate being approved, and a local practice merge. No attempt met acceptance, and no practice merge occurred.
+
+## Practice setup
+
+- Card: `setup/selfbuild/cards/scan-list-sources.md`, the same small source-list card used in earlier W66 runs.
+- API: `127.0.0.1:8765`; practice home: `/tmp/glacier-w66-round6-home`.
+- `run_card.py` installed `setup/requirements.txt` into the active project interpreter before each attempt. The pinned `markitdown[docx,pdf]==0.1.8` requirement and its PDF/DOCX dependencies were satisfied.
+- Each start gate was approved after checking the isolated worktree and local-only merge gate. Each worker exited 0 and implemented the requested option and test. The protected-path guard passed on all three runs.
+- Other project checks passed on all three runs (`77 passed`); verification benchmark passed (false-done `0.00%` (0/20), verified `100.00%` (30/30)); security benchmark passed (`P 400 | blocked |`).
+
+| Run | Backend gate | Outcome |
+| --- | --- | --- |
+| `617614d66236` | Failed: `test_send_get_completes_with_output_and_author`, `test_codex_prev_output_substitution`, and `test_codex_streams_live_log_while_running`; `3 failed, 602 passed, 1 skipped, 1 warning in 495.84s (0:08:15)`. This first acceptance command did not use the shared suite lock. | Final gate rejected; unverified and unmerged. |
+| `ca0e17832d79` | Same three tests failed under `flock /tmp/glacier-suite.lock`; `3 failed, 602 passed, 1 skipped, 1 warning in 471.09s (0:07:51)`. | Final gate rejected; unverified and unmerged. |
+| `41ff928d74e8` | Same three tests failed under `flock /tmp/glacier-suite.lock`; `3 failed, 602 passed, 1 skipped, 1 warning in 457.42s (0:07:37)`. | Final gate rejected; unverified and unmerged. |
+
+After the first rejection, the backend acceptance command in `flows/self/feature.json` was changed to acquire `/tmp/glacier-suite.lock`. The same backend failures persisted in both serialized runs. A direct focused rerun of those three test cases passed (`3 passed in 8.31s`), so their suite-level failure cause remains unresolved; the acceptance output did not preserve the full assertion details. No test or acceptance criteria were changed. The flow change and focused self-build tests passed (`16 passed in 5.08s`).
+
+The three-attempt limit is reached. No other cards were run because none reached a verified merge. All three runs have `verified: false`, `merged: false`; practice `main` remains at source commit `e527f5a4169170e4e2423ee8c29a2294f88444b1`. That is the flow update used as the practice base, not a feature merge commit. PH9.2 remains unverified.
+
+# W95 follow-up: practice suite diagnosis and three consecutive verified features
+
+## Drift check and acceptance
+
+This continues PH9.2 and serves P-VERIFY/P-GOALS and M-VERIFIED/M-INTERVENE. PH3 and PH7 have approved exits; PH5 remains in progress, so this is an owner-authorized verified-merge-only run. The existing free, open-source feature flow is the tool. Acceptance is all saved checks passing, the final owner gate approving the reviewed guard output, and the flow recording a local practice merge. No NORTHSTAR checkpoint status was changed because PH9.2's exit requires three consecutive real features.
+
+## W66 failure records inspected
+
+The database and saved run notes were present at `/tmp/glacier-w66-round6-home/`. The exact repeated failures were:
+
+- `tests/test_a2a.py::test_send_get_completes_with_output_and_author`
+- `tests/test_core.py::test_codex_prev_output_substitution`
+- `tests/test_core.py::test_codex_streams_live_log_while_running`
+
+All three saved backend gates ended with `3 failed, 602 passed, 1 skipped, 1 warning`; the two locked retries took 471.09s and 457.42s. The persisted check evidence contains only abbreviated traceback summaries (`- As...`, `- AssertionErr...`, `- assert...`), not the failed values or full tracebacks. The saved practice checkout has the same test/fake-Codex sources as this branch; `fake_codex.py` is mode `100755`, and `conftest.py` sets `CODEX_BIN` to that fake and shadows Ollama for backend subprocesses. A focused rerun in a fresh clone passed (`3 passed in 8.83s`). The exact suite command in that clone also passed: `605 passed, 1 skipped, 1 warning in 435.85s (0:07:15)`. No persistent practice-only environment difference was reproduced, so the cause of W66's three assertion failures remains unconfirmed; no tests or acceptance checks were changed.
+
+## Live practice attempts
+
+The API ran locally at `127.0.0.1:8765` with `GLACIER_HOME=/tmp/w95-live-practice-home`; the practice checkout was refreshed from this card branch at `0573b83`. Run setup reads the same `GLACIER_HOME` so it can use the local engine token.
+
+| Run | Result | Evidence |
+| --- | --- | --- |
+| `bafcca9a56d9` | Rejected, unverified, unmerged | Worker completed and protected guard passed. The backend check timed out after 600s while queued for `/tmp/glacier-suite.lock`; the direct practice suite takes about 436s after it starts. Other project checks passed (`77 passed`), verification benchmark passed (false-done `0.00%`, verified `100.00%`), and security benchmark passed (`P 400 | blocked |`). Final gate rejected because the backend check had not passed. |
+| `3de97e6b0756` | **Verified and merged locally** | Worker completed; protected guard reported no modified/deleted protected checks. Backend suite inside the verifier's isolated temporary copy: `605 passed, 1 skipped, 1 warning in 446.19s (0:07:26)`. Other project checks: `77 passed in 3.88s`. Verification benchmark: false-done `0.00%` (0/20), verified `100.00%` (30/30). Security benchmark: `P 400 | blocked |`. Final human check approved after reviewing the guard result. |
+
+The verified worker commit is `85807ac`. The local practice merge commit is `9cdd84d` (`[run:3de97e6b0756] Glacier: merge verified run 3de97e6b0756`); practice `main` is clean and no push occurred. One real feature is verified; PH9.2 still needs two more consecutive verified runs for the phase exit. The first run's timeout was caused by lock queue wait exceeding the verifier's fixed 600-second command timeout, not by the three W66 test assertions.
+
+The requested final `bash ~/tools/suite.sh` completed successfully. Parallel backend suite exact final line: `601 passed, 1 skipped, 4 warnings in 114.25s (0:01:54)`. Serial backend suite exact final line: `4 passed, 602 deselected, 1 warning in 44.86s`.
+
+## Follow-up pair: second and third consecutive verified features
+
+The earlier verified feature remains run `3de97e6b0756`, merged locally as `9cdd84d`. These two additional live runs used the same unchanged self-build flow and verifier checks, with no test or acceptance changes. Each passed the protected-path guard, locked backend suite, other project suite, verification benchmark, security benchmark, and final owner gate. Both were locally merged by the flow; nothing was pushed.
+
+| Consecutive run | Feature | Run ID | Verifier verdict | Practice merge |
+| --- | --- | --- | --- | --- |
+| 1 of 3 | Earlier verified feature (see above) | `3de97e6b0756` | Verified; all checks passed | `9cdd84d` |
+| 2 of 3 | Copy selected run output | `252f2155af49` | Verified; all checks passed | `b6e8095` |
+| 3 of 3 | Remove the pixel character from Ask messages | `12e0a9089744` | Verified; all checks passed | `deea119` |
+
+The Copy run's worker could not initially launch the web build because its isolated checkout lacked `tsc`. After the flow merged it, `npm ci && npm run build` succeeded at merge `b6e8095`. The Ask run had the same missing-dependency issue in its worker report; `npm ci && npm run build` then succeeded at merge `deea119`. These dependency installs were in temporary practice worktrees and did not alter project tests, checks, or acceptance rules.
+
+Both follow-up locked backend gates passed: run `252f2155af49` ended `614 passed, 1 skipped, 1 warning in 503.83s (0:08:23)`; run `12e0a9089744` ended `614 passed, 1 skipped, 1 warning in 448.85s (0:07:28)`. Other project suites passed (`78 passed in 4.90s` and `78 passed in 4.65s`, respectively). For each follow-up verifier benchmark, false-done was `0.00% (0/20 bad runs verified)` and verified was `100.00% (30/30 good runs verified)`. Combined with the initial run's same `0/20` false-done result, the consecutive set is **3 verified features** with **0 false-done cases across 60 bad-run trials (0.00%)**. PH9.2's requested consecutive count is now 3; the checkpoint status is not changed here.

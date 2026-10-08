@@ -21,8 +21,10 @@ const BuildScreen = lazy(() => import('./screens/Build.tsx'))
 
 const LABEL: Record<Tab, string> = { home: 'nav.home', ask: 'nav.build', automations: 'nav.automations', memory: 'nav.memory', settings: 'nav.settings' }
 
+const isDesktop = '__TAURI_INTERNALS__' in window
+
 async function winAction(a: 'minimize' | 'close') {
-  if (!('__TAURI_INTERNALS__' in window)) return
+  if (!isDesktop) return
   const { getCurrentWindow } = await import('@tauri-apps/api/window')
   await getCurrentWindow()[a]()
 }
@@ -72,7 +74,7 @@ export default function App() {
     switch (tab) {
       case 'ask': return <AskScreen />
       case 'automations': return building
-        ? <Suspense fallback={<div className="g-empty">Loading the builder…</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
+        ? <Suspense fallback={<div className="g-empty">{translate('build.loading')}</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
         : rest[0] === 'flow' && rest[1]
           ? <RunView key={rest.join('/')} envId={rest[1]} runId={rest[2] !== 'history' ? rest[2] : undefined} history={rest[2] === 'history'} />
           : rest[0] === 'templates' ? <Templates /> : <AutomationsScreen />
@@ -84,13 +86,13 @@ export default function App() {
 
   return (
     <div className="g-window" data-testid="window">
-      <nav className="g-topbar">
+      <nav className="g-topbar" data-tauri-drag-region>
         <div className="g-brand"><Logo px={3} /><span className="g-brand-name">GLACIER - {translate(LABEL[tab]).toUpperCase()}</span></div>
         <div className="g-tabs" aria-hidden="true" />
-        <div className="g-winctl">
+        {isDesktop && <div className="g-winctl" data-tauri-drag-region="false">
           <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
           <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>
-        </div>
+        </div>}
       </nav>
       <aside className="g-side" data-testid="game-menu">
         <section className="g-panel"><h2 className="g-panel-title">MENU</h2><div className="g-menu-list" role="tablist" aria-orientation="vertical">{TABS.map((item) => <button key={item} role="tab" aria-selected={item === tab} data-testid={`nav-${item}`} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}><span className="g-menu-cursor"/><span className="g-menu-icon" style={{ '--icon': `url('./theme/sprites/icon-${item === 'ask' ? 'build' : item}.png')` } as React.CSSProperties}/>{translate(LABEL[item])}</button>)}</div></section>
