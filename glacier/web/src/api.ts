@@ -112,7 +112,6 @@ export interface TeamPlan {
   features: { id: string; title: string; description?: string; acceptance?: unknown[] }[]
   harness: Record<string, unknown>
   team: { roles: TeamRole[]; engine?: string; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
-  team: { roles: TeamRole[]; worker_mode: 'sequential' | 'parallel'; parallel_limit?: number; supervisor?: string; governor?: string }
   tasks: { id: string; title: string; role: string; feature_id?: string; acceptance: unknown[]; depends_on?: string[]; requires_approval?: boolean }[]
   guards?: Record<string, unknown>
 }
@@ -130,10 +129,6 @@ export const teamsApi = {
   control: (teamId: string, action: 'pause' | 'resume' | 'stop') => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/${action}`, {}),
   delete: (kind: 'interview' | 'team', id: string) => req<{ deleted: boolean; undo_id: string }>('DELETE', kind === 'interview' ? `/api/build/interviews/${enc(id)}` : `/api/teams/${enc(id)}`),
   undoDelete: (undo_id: string) => req<Record<string, unknown>>('POST', '/api/build/undo-delete', { undo_id }),
-  list: () => req<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>('GET', '/api/teams'),
-  get: (teamId: string) => req<BuildTeam>('GET', `/api/teams/${enc(teamId)}`),
-  start: (teamId: string) => req<{ team_id: string; status: string }>('POST', `/api/teams/${enc(teamId)}/run`),
-  approveTask: (teamId: string, taskId: string, approved: boolean) => req<Record<string, unknown>>('POST', `/api/teams/${enc(teamId)}/tasks/${enc(taskId)}/approve`, { approved }),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
@@ -389,6 +384,12 @@ export const settingsApi = {
   deleteSecret: (name: string) => req<{ deleted: boolean }>('DELETE', `/api/secrets/${enc(name)}`),
   costs: (days = 30) => req<Costs>('GET', `/api/costs?days=${days}`),
   compat: () => req<VaultCompat>('GET', '/api/memory/compat'),
+}
+
+export const releasesApi = {
+  notes: () => req<{ version: string; markdown: string }>('GET', '/api/releases/current'),
+  lastSeen: () => req<{ version: string }>('GET', '/api/releases/installed/seen'),
+  markSeen: (version: string) => req<{ version: string }>('PUT', '/api/releases/installed/seen', { version }),
 }
 
 // ---------- First-run starter setup ----------

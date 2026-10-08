@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Glacier",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "org.glacier.desktop",
   "plugins": {
     "updater": {
@@ -44,7 +44,9 @@
       "../../glacier/importers/*.py": "glacier/importers/",
       "../../templates/*.json": "templates/",
       "../../templates/manifest/*.json": "templates/manifest/",
-      "../../glacier/backend/session_readers/*.py": "backend/session_readers/"
+      "../../glacier/backend/session_readers/*.py": "backend/session_readers/",
+      "../../docs/releases/*.md": "docs/releases/",
+      "tauri.conf.json": "desktop/src-tauri/tauri.conf.json"
     }
   }
 }

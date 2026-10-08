@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+const APP_VERSION = JSON.parse((await import('node:fs')).readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repo = path.resolve(root, '../..')
@@ -34,11 +35,15 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
   let installCalls = 0, checkMode = 'update'
   await page.addInitScript(() => {
+    if (!localStorage.getItem('e2e-seen-version')) localStorage.setItem('e2e-seen-version', '0.1.0')
     const nativeFetch = window.fetch.bind(window)
     window.fetch = (input, init) => {
       const url = typeof input === 'string' ? input : input.url
       if (url.endsWith('/api/system/check')) return Promise.resolve(new Response(JSON.stringify({ recommended: { mode: 'standard', local_model: 'granite3.3:2b', max_parallel_runs: 2 }, ollama_models: [], tools: {}, disk_free_gb: 80, memory_gb: 16, cpu_cores: 8, messages: [] }), { headers: { 'Content-Type': 'application/json' } }))
       if (url.endsWith('/api/system/settings')) return Promise.resolve(new Response(JSON.stringify({ mode: 'standard', local_model: 'granite3.3:2b', max_parallel_runs: 2, ask_route: 'unavailable' }), { headers: { 'Content-Type': 'application/json' } }))
+      if (url.endsWith('/api/releases/current')) return Promise.resolve(new Response(JSON.stringify({ version: '0.1.0', markdown: '# Changes\n\n- Improved stability.\n- Fixed startup issue.\n\n<script>alert(1)</script>' }), { headers: { 'Content-Type': 'application/json' } }))
+      if (url.endsWith('/api/releases/installed/seen') && init?.method === 'PUT') { localStorage.setItem('e2e-seen-version', JSON.parse(init.body).version); return Promise.resolve(new Response(JSON.stringify({ version: localStorage.getItem('e2e-seen-version') }), { headers: { 'Content-Type': 'application/json' } })) }
+      if (url.endsWith('/api/releases/installed/seen')) return Promise.resolve(new Response(JSON.stringify({ version: localStorage.getItem('e2e-seen-version') || '' }), { headers: { 'Content-Type': 'application/json' } }))
       return nativeFetch(input, init)
     }
     window.glacierUpdater = {
@@ -56,7 +61,10 @@ try {
   await page.goto(`http://localhost:${uiPort}/#/settings/about`, { waitUntil: 'networkidle' })
   await page.locator('[data-testid="settings-about"].g-panel').waitFor()
   const before = await page.screenshot({ path: path.join(repo, 'evidence/ui/about-before.png'), fullPage: true })
-  check(await page.getByTestId('settings-version').innerText().then(s => s.includes('0.1.0')), 'About shows installed version')
+  check(await page.getByTestId('settings-version').innerText().then(s => s.includes(APP_VERSION)), 'About shows installed version')
+  await page.getByTestId('release-notes').waitFor()
+  check((await page.getByTestId('release-notes').innerText()).includes('Improved stability.'), 'About shows installed release notes')
+  check(await page.locator('[data-testid="release-notes"] script').count() === 0, 'release notes do not create HTML elements')
   await page.getByTestId('update-check').click()
   await page.getByTestId('update-install').waitFor()
   check((await page.getByTestId('update-notes').innerText()).includes('Improved stability.'), 'available version and notes are shown')
@@ -75,12 +83,21 @@ try {
   check(true, 'plain check error is shown')
   await page.evaluate(() => window.__setUpdateError(false))
 
-  await page.evaluate(() => { window.__setUpdateMode('update'); window.dispatchEvent(new CustomEvent('glacier-update-available', { detail: { version: '0.2.0', notes: 'Improved stability.' } })) })
+  await page.evaluate(() => { window.localStorage.setItem('e2e-seen-version', '0.1.0'); window.__setUpdateMode('update'); window.dispatchEvent(new CustomEvent('glacier-update-available', { detail: { version: '0.2.0', notes: 'Improved stability.' } })) })
   await page.getByTestId('nav-home').click()
   await page.getByTestId('home-update-notice').waitFor()
   check(true, 'startup update notice appears on Home')
   await page.getByTestId('home-update-dismiss').click()
   check(await page.getByTestId('home-update-notice').count() === 0, 'Home update notice can be dismissed')
+  await page.evaluate(() => { window.localStorage.setItem('e2e-seen-version', '0.0.9') })
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.getByTestId('nav-home').click()
+  await page.getByTestId('home-installed-update-notice').waitFor()
+  check((await page.getByTestId('home-installed-update-notice').innerText()).includes(APP_VERSION), 'post-update notice identifies updated version after install')
+  await page.getByTestId('home-installed-update-dismiss').click()
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.getByTestId('nav-home').click()
+  check(await page.getByTestId('home-installed-update-notice').count() === 0, 'post-update notice stays dismissed after reload')
   await page.evaluate(() => { delete window.glacierUpdater })
   await page.getByTestId('nav-settings').click()
   await page.locator('button[data-testid="settings-about"]').click()

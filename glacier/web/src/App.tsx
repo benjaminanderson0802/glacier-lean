@@ -14,6 +14,7 @@ import { Templates } from './screens/Templates.tsx'
 import { CommandPalette } from './screens/CommandPalette.tsx'
 import { Splash } from './screens/Splash.tsx'
 import { t as translate } from './i18n/index.ts'
+import { releasesApi } from './api.ts'
 
 // Show the start screen once per launch, only when the app opens without a specific address.
 let splashSeen = location.hash.replace(/^#\/?/, '') !== ''
@@ -37,6 +38,18 @@ export default function App() {
   const [splash, setSplash] = useState(!splashSeen)
   const [updateNotice, setUpdateNotice] = useState<{ version: string; notes: string } | null>(null)
   const [updateDismissed, setUpdateDismissed] = useState(false)
+  const [installedUpdate, setInstalledUpdate] = useState<string | null>(null)
+  const [installedNoticeDismissed, setInstalledNoticeDismissed] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    releasesApi.lastSeen().then(({ version }) => {
+      if (!live) return
+      if (version && version !== __APP_VERSION__) setInstalledUpdate(__APP_VERSION__)
+      else if (!version) void releasesApi.markSeen(__APP_VERSION__)
+    }).catch(() => {})
+    return () => { live = false }
+  }, [])
 
   useEffect(() => { if (location.hash === '#/ask' || location.hash.startsWith('#/ask/')) location.replace(location.hash.replace('#/ask', '#/build')) }, [])
 
@@ -101,6 +114,7 @@ export default function App() {
         <section className="g-panel g-engines"><h2 className="g-panel-title">ENGINES</h2><small>● Codex</small><small>● granite</small></section>
       </aside>
       <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
+      {tab === 'home' && installedUpdate && !installedNoticeDismissed && <aside className="g-notice" data-testid="home-installed-update-notice"><div><strong>{translate('home.updatedTo', { version: installedUpdate })}</strong> <button className="g-link" data-testid="home-whats-new" onClick={() => { setInstalledNoticeDismissed(true); void releasesApi.markSeen(installedUpdate); go('settings/about') }}>{translate('home.seeWhatsNew')}</button></div><button className="g-link" data-testid="home-installed-update-dismiss" onClick={() => { setInstalledNoticeDismissed(true); void releasesApi.markSeen(installedUpdate) }}>{translate('home.dismissUpdate')}</button></aside>}
       {tab === 'home' && updateNotice && !updateDismissed && <aside className="g-notice" data-testid="home-update-notice"><div><strong>{translate('home.updateAvailable', { version: updateNotice.version })}</strong>{updateNotice.notes && <div className="g-detail">{updateNotice.notes}</div>}</div><button className="g-link" data-testid="home-update-dismiss" onClick={() => setUpdateDismissed(true)}>{translate('home.dismissUpdate')}</button></aside>}
       <footer className="g-footer">
         <span><span className="g-key">F1</span> {translate('shell.help')}</span>

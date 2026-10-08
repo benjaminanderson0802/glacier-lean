@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ago, api, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
+import { ago, api, teamsApi, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
-import { teamsApi } from '../api.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
-import { teamsApi } from '../api.ts'
 
 type Flow = EnvSummary & { last?: RunSummary }
 const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
@@ -25,7 +23,6 @@ export function AutomationsScreen() {
   const [details, setDetails] = useState<Record<string, Environment>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
-  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; needs_owner: number }[]>([])
   const [undo, setUndo] = useState<UndoAction | null>(null)
   const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
 
