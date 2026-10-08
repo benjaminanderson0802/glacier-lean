@@ -7,6 +7,7 @@ import re
 from contextlib import ExitStack
 
 import git
+import time
 import workspaces
 
 
@@ -50,7 +51,15 @@ def _vault_change_log() -> list[tuple[str, str, str, set[str]]]:
     and note saves never wait while a long history is scanned.
     """
     import vault
-    output = git.Git(vault.VAULT).log("--format=%x1e%H%x1f%an%x1f%s", "--name-only", "-M", "--root")
+    for attempt in range(5):
+        try:
+            output = git.Git(vault.VAULT).log("--format=%x1e%H%x1f%an%x1f%s", "--name-only", "-M", "--root")
+            break
+        except git.GitCommandError:
+            # A save can be updating refs at that moment (Windows file sharing); try again shortly.
+            if attempt == 4:
+                raise
+            time.sleep(0.05 * (attempt + 1))
     entries = []
     for record in output.split("\x1e"):
         if not record.strip():

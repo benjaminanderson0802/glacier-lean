@@ -4,13 +4,77 @@ Every write is: atomic file write -> git commit -> index update. No AI models.""
 # Git access policy: all operations using the process-wide `_repo` hold `_lock`.
 # The lock serializes GitPython's index and persistent cat-file helpers. Operations
 # that also take a workspace merge lock must acquire `_lock` first, then merge locks.
-import os, re, json, sqlite3, tempfile, threading
+import os, re, json, sqlite3, tempfile, threading, time
 import git
 import memory_meta
 
 VAULT: str = ""
 _repo = None
-_lock = threading.RLock()
+class FairRLock:
+    """A re-entrant lock that serves waiting threads in arrival order.
+
+    threading.RLock lets a busy reader re-take the lock again and again while a
+    save keeps waiting; on slower machines (seen on Windows) saves then waited
+    past 10 s. First come, first served bounds every wait.
+    """
+
+    def __init__(self):
+        self._cond = threading.Condition(threading.Lock())
+        self._owner = None
+        self._depth = 0
+        self._next_ticket = 0
+        self._serving = 0
+        self._abandoned: set[int] = set()
+
+    def acquire(self, blocking: bool = True, timeout: float = -1) -> bool:
+        me = threading.get_ident()
+        with self._cond:
+            if self._owner == me:
+                self._depth += 1
+                return True
+            if not blocking and (self._owner is not None or self._serving != self._next_ticket):
+                return False
+            ticket = self._next_ticket
+            self._next_ticket += 1
+            deadline = None if timeout is None or timeout < 0 else time.monotonic() + timeout
+            while self._owner is not None or self._serving != ticket:
+                remaining = None if deadline is None else deadline - time.monotonic()
+                if remaining is not None and remaining <= 0:
+                    # Give up our place without blocking the threads behind us.
+                    self._abandoned.add(ticket)
+                    self._skip_abandoned()
+                    self._cond.notify_all()
+                    return False
+                self._cond.wait(remaining)
+            self._owner, self._depth = me, 1
+            self._serving += 1
+            self._skip_abandoned()
+            return True
+
+    def _skip_abandoned(self) -> None:
+        while self._serving in self._abandoned:
+            self._abandoned.discard(self._serving)
+            self._serving += 1
+
+    def release(self) -> None:
+        with self._cond:
+            if self._owner != threading.get_ident():
+                raise RuntimeError("cannot release a lock this thread does not hold")
+            self._depth -= 1
+            if self._depth == 0:
+                self._owner = None
+                self._cond.notify_all()
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, *exc):
+        self.release()
+        return False
+
+
+_lock = FairRLock()
 _note_metadata_cache: dict[str, tuple[int, int, dict, str]] = {}
 _note_metadata_cache_lock = threading.Lock()
 
