@@ -1,5 +1,5 @@
 // In-memory mock of the Glacier core v0 backend contract (docs/CONTRACT.md), for UI work and e2e tests.
-// Usage: node mock/mock_server.mjs [port]   (default 8787, or env MOCK_PORT)
+// Usage: node mock/mock_server.mjs [port]   (default: an ephemeral free port, or env MOCK_PORT)
 // Commands are NOT executed: a command's output is "$ <cmd>" plus a fake line; its exit code is 1 when the
 // command text contains "fail" or "exit 1", else 0. A codex node's output is "codex: <prompt>". Each node step takes STEP_MS (default 250ms).
 import http from 'node:http'
@@ -25,7 +25,7 @@ const HTTP_NODE = {
   ], branches: null, worker: true, changing_methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
 }
 
-const PORT = Number(process.argv[2] ?? process.env.MOCK_PORT ?? 8787)
+const PORT = Number(process.argv[2] ?? process.env.MOCK_PORT ?? 0)
 const STEP_MS = Number(process.env.STEP_MS ?? 250)
 const MAX_EXEC = 500
 const MAX_DEPTH = 5
@@ -767,4 +767,4 @@ function markSkipped(r) {
   for (const [id, s] of Object.entries(r.node_states)) if (s === 'pending') setState(r, id, 'skipped')
 }
 
-server.listen(PORT, () => console.log(`glacier mock api on http://localhost:${PORT}`))
+server.listen(PORT, () => console.log(`glacier mock api on http://localhost:${server.address().port}`))

@@ -4,11 +4,12 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { e2ePorts } from './ports.mjs'
 const APP_VERSION = JSON.parse((await import('node:fs')).readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repo = path.resolve(root, '../..')
-const apiPort = 8787, uiPort = 4317
+const { mockPort: apiPort, uiPort, api: API } = await e2ePorts()
 const procs = []
 const start = (cmd, args, cwd, env = {}) => {
   const p = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
@@ -27,8 +28,8 @@ const check = (ok, label) => { console.log(`[updates] ${ok ? 'ok' : 'FAIL'} ${la
 try {
   mkdirSync(path.join(repo, 'evidence/ui'), { recursive: true })
   start('node', ['mock/mock_server.mjs', String(apiPort)], root)
-  await wait(`http://localhost:${apiPort}/api/health`).catch(() => wait(`http://localhost:${apiPort}/api/environments`))
-  start('npx', ['vite', 'preview', '--port', String(uiPort), '--strictPort'], root, { GLACIER_API: `http://localhost:${apiPort}` })
+  await wait(`${API}/api/health`).catch(() => wait(`${API}/api/environments`))
+  start('npx', ['vite', 'preview', '--port', String(uiPort), '--strictPort'], root, { GLACIER_API: API })
   await wait(`http://localhost:${uiPort}`)
   const executable = process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined)
   browser = await chromium.launch(executable ? { executablePath: executable } : {})
