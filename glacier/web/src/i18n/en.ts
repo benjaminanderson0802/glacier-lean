@@ -32,7 +32,7 @@ export const en: Record<string, string> = {
   'ask.defaultQuestion': 'Is it done?',
   'ask.schemaCheck': 'The result must match the expected format',
   'ask.genericCheck': 'A check confirms it is done',
-  'automations.title': 'Automations', 'automations.subtitle': 'Your flows.', 'automations.newName': 'Name the new flow',
+  'automations.all': 'All', 'automations.running': 'Running', 'automations.needsYou': 'Needs you', 'automations.failed': 'Failed', 'automations.success': 'Success', 'automations.rejected': 'Rejected', 'automations.never': 'never', 'automations.noMatches': 'No flows match.', 'automations.empty': 'No flows yet. Press New, or ask the assistant to make one.', 'automations.title': 'Automations', 'automations.subtitle': 'Your flows.', 'automations.newName': 'Name the new flow',
   'automations.create': 'Create', 'automations.cancel': 'Cancel', 'automations.templates': 'Templates', 'automations.new': 'New',
   'automations.search': 'Search flows…', 'automations.name': 'Name', 'automations.lastRun': 'Last run', 'automations.status': 'Status', 'automations.notRun': 'Not run yet',
   'build.allFlows': '‹ All flows', 'build.live': 'live', 'build.offline': 'offline', 'build.liveConnected': 'live events connected', 'build.liveDisconnected': 'live events disconnected',
