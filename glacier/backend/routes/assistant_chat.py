@@ -21,6 +21,7 @@ import assistant
 import vault
 import secrets_store
 import logging
+import audit_log
 import git
 from difflib import SequenceMatcher
 
@@ -407,12 +408,14 @@ def rename_conversation(conversation_id: str, request: RenameRequest):
     else:
         body = "# " + title + "\n\n" + body
     commit = vault.write_note(path, prefix + body, author="owner")
+    audit_log.record("assistant.conversation_renamed", what={"conversation_id": conversation_id, "title": title, "commit": commit})
     return {"id": conversation_id, "title": title, "commit": commit}
 
 
 @router.post("/api/assistant/chat")
 def chat(request: ChatRequest):
     conversation_id = request.conversation_id or str(uuid.uuid4())
+    audit_log.record("assistant.model_call", what={"conversation_id": conversation_id, "route": ask_route()[0] or "unavailable"})
     if not re.fullmatch(r"[0-9a-fA-F-]{36}", conversation_id):
         from fastapi import HTTPException
         raise HTTPException(400, "conversation_id must be a UUID")
@@ -527,6 +530,7 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
         import runner
         flow = proposal["flow"]
         run_id = runner.start_run(flow["id"], {"_author": "assistant", "_assistant_conversation_id": proposal["conversation_id"]})
+        audit_log.record("assistant.proposal_applied", who="assistant", what={"proposal_id": proposal_id, "run_id": run_id, "env_id": flow["id"]})
         with _proposals_lock:
             _proposals.pop(proposal_id, None)
         _append_conversation(proposal["conversation_id"], "Approved run", f"Started {flow['name']}.")
@@ -574,6 +578,7 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
             f"[run:{run_id}] assistant applied proposal {proposal_id} conversation {proposal['conversation_id']}",
             author=actor, committer=actor)
         commit = commit_obj.hexsha[:8]
+        audit_log.record("assistant.proposal_applied", who="assistant", what={"proposal_id": proposal_id, "env_id": flow["id"], "commit": commit})
         db = vault._db()
         try:
             db.execute("DELETE FROM fts WHERE path=?", (path,))
@@ -600,6 +605,7 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
     if request.run_now:
         import runner
         started_run_id = runner.start_run(flow["id"], {"_author": "assistant", "_assistant_conversation_id": proposal["conversation_id"]})
+        audit_log.record("run.started", who="assistant", what={"env_id": flow["id"], "run_id": started_run_id, "source": "assistant-proposal"})
         proposal["run_id"] = started_run_id
         result.update({"run_id": started_run_id, "status": "running"})
     return result
