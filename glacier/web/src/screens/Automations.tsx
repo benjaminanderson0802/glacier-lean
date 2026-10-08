@@ -113,10 +113,10 @@ export function AutomationsScreen() {
               const hook = `${apiBase.replace(/\/$/, '')}/api/hooks/${encodeURIComponent(f.id)}`
               return (
                 <tr key={f.id}>
-                  <td className="g-lead"><button className="g-link" style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
+                  <td className="g-lead"><button className="g-link" title={f.name} style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
                   <td>{f.last ? ago(f.last.started_at) : t('automations.never')}</td>
                   <td>{st ? <span className="g-status-cell"><StatusIcon kind={st.kind} />{st.label}</span> : <span className="g-muted">{t('automations.notRun')}</span>}</td>
-                  <td><div style={{ display: 'grid', gap: 8, minWidth: 330 }} data-testid={`trigger-${f.id}`}>
+                  <td><div className="g-trigger-cell" data-testid={`trigger-${f.id}`}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span>{t('automations.startsWhen')}</span>
                       <select className="g-input" aria-label={t('automations.startsWhen')} value={choice} disabled={!detail || busy === f.id} onChange={e => void setStart(detail!, e.target.value)} data-testid={`trigger-choice-${f.id}`}>

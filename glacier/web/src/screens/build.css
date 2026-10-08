@@ -14,9 +14,8 @@
 .ws-dot.up { background: var(--g-ok); box-shadow: 0 0 6px var(--g-ok); }
 
 .section-head { display: flex; align-items: center; justify-content: space-between; font-family: var(--g-font-head); font-size: var(--g-size-body); color: var(--g-head); margin-top: 8px; gap: 6px; }
-.app button.es-run-refresh { transform: translateX(-10px); }
 .list { display: flex; flex-direction: column; }
-.list-item { text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--g-line-dim); padding: 6px 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.list-item { min-width: 0; text-align: left; background: transparent; border: 0; border-bottom: var(--px) solid var(--g-line-dim); padding: calc(2 * var(--px)) calc(3 * var(--px)); cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: calc(2 * var(--px)); }
 .list-item:hover { background: var(--g-panel-hi); }
 .list-item.active { background: var(--g-accent); color: var(--g-accent-ink); }
 .run-item .run-id { white-space: nowrap; min-width: 0; font-size: var(--g-size-small); overflow: hidden; text-overflow: ellipsis; flex: 1; }
@@ -24,11 +23,11 @@
 .list-item.active .run-time { color: var(--g-accent-ink); }
 .muted { color: var(--g-muted); }
 .small { font-size: var(--g-size-small); }
-.tag { font-size: var(--g-size-small); border: 1px solid var(--g-warn); color: var(--g-warn); border-radius: var(--g-radius-btn); padding: 0 6px; margin-left: auto; }
+.tag { flex: 0 1 auto; min-width: 0; max-width: 100%; font-size: var(--g-size-small); border: 1px solid var(--g-warn); color: var(--g-warn); border-radius: var(--g-radius-btn); padding: 0 calc(2 * var(--px)); margin-left: auto; white-space: normal; overflow-wrap: anywhere; }
 .error, .msg { font-size: var(--g-size-small); padding: 6px 8px; border-radius: var(--g-radius-btn); background: var(--g-bar); border: 1px solid var(--g-line-dim); word-break: break-word; }
 .error { border-color: var(--g-bad); }
 
-.app button { background: var(--g-panel); border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); padding: 3px 12px; cursor: pointer; color: var(--g-head); }
+.app button { max-width: 100%; min-width: 0; background: var(--g-panel); border: var(--px) solid var(--g-text); border-radius: var(--g-radius-btn); padding: calc(2 * var(--px)) calc(3 * var(--px)); cursor: pointer; color: var(--g-head); white-space: normal; overflow-wrap: anywhere; }
 .app button:hover:not(:disabled) { background: var(--g-panel-hi); }
 .app button:disabled { opacity: .5; cursor: default; }
 .app button.primary { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
@@ -36,13 +35,13 @@
 .app button.primary:hover:not(:disabled) { background: var(--g-accent); filter: brightness(1.08); }
 .app button.run, .app button.ok { border-color: var(--g-ok); color: var(--g-ok); }
 .app button.danger { border-color: var(--g-bad); color: var(--g-bad); }
-.app button.ghost { background: transparent; border-color: transparent; color: var(--g-sub); padding: 0 6px; font-size: var(--g-size-small); }
+.app button.ghost { flex: 0 1 auto; background: transparent; border-color: transparent; color: var(--g-sub); padding: 0 calc(2 * var(--px)); font-size: var(--g-size-small); }
 .app button.ghost:hover { color: var(--g-head); background: transparent; }
 .app button.list-item { border: 0; border-bottom: 1px solid var(--g-line-dim); border-radius: 0; background: transparent; color: var(--g-text); }
 .app button.list-item.active { background: var(--g-accent); color: var(--g-accent-ink); }
 .block { width: 100%; }
 .row { display: flex; gap: 6px; }
-.row > button { flex: 1; }
+.row > button { flex: 0 1 auto; }
 .new-env { display: flex; flex-direction: column; gap: 6px; }
 
 .app input, .app select, .app textarea { background: var(--g-bar); border: 1px solid var(--g-line); border-radius: var(--g-radius-btn); padding: 3px 8px; width: 100%; color: var(--g-head); }
@@ -65,8 +64,8 @@
 .tabs { display: flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
 .app button.tab { background: transparent; border-color: var(--g-line-dim); }
 .app button.tab.active { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
-.palette { display: flex; gap: 4px; flex: 1 1 0; min-width: 0; margin-left: auto; flex-wrap: nowrap; overflow-x: auto; }
-.app button.pal { flex-shrink: 0; white-space: nowrap; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
+.palette { display: flex; gap: calc(2 * var(--px)); flex: 0 1 auto; min-width: 0; max-width: 100%; margin-left: auto; flex-wrap: wrap; overflow: visible; }
+.app button.pal { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
 
 .empty { margin: auto; color: var(--g-muted); }
 .canvas-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }

@@ -33,7 +33,7 @@ export function PageHead({ title, sub, crumb, side }: { title: string; sub?: str
 export function Panel({ title, aside, children, testid, className, style }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; testid?: string; className?: string; style?: React.CSSProperties }) {
   return (
     <section className={`g-panel ${className ?? ''}`} data-testid={testid} style={style}>
-      {title && <h2 className="g-panel-title">{title}{aside && <span className="g-aside">{aside}</span>}</h2>}
+      {title && <h2 className="g-panel-title"><span className="g-panel-heading">{title}</span>{aside && <span className="g-aside">{aside}</span>}</h2>}
       {children}
     </section>
   )
@@ -44,7 +44,7 @@ export function Row({ status, icon, lead, detail, when, onClick, testid, classNa
   const inner = (
     <>
       <span className="g-ico">{status ? <StatusIcon kind={status} /> : icon ? <Icon name={icon} /> : null}</span>
-      <span className="g-mid"><span className="g-lead" title={typeof lead === 'string' ? lead : undefined}>{lead}</span>{detail != null && <span className="g-detail">{detail}</span>}</span>
+      <span className="g-mid"><span className="g-lead" title={typeof lead === 'string' ? lead : undefined}>{lead}</span>{detail != null && <span className="g-detail" title={typeof detail === 'string' ? detail : undefined}>{detail}</span>}</span>
       <span className="g-when">{when}</span>
     </>
   )
