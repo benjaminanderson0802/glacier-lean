@@ -51,6 +51,25 @@ def replace_file(source: str, destination: str, attempts: int = 100, delay: floa
             time.sleep(delay)
 
 
+def note_history(path: str) -> list[dict]:
+    """Saved versions of one note, newest first, read by a separate git process.
+
+    This does not use the shared repository object, so it needs no vault lock and
+    never makes note saves wait while a long history is read.
+    """
+    full = safe_path(path)
+    relative = os.path.relpath(full, VAULT).replace(os.sep, "/")
+    output = git.Git(VAULT).log("--format=%H%x1f%an%x1f%cI%x1f%B%x1e", "--", relative)
+    entries = []
+    for record in output.split("\x1e"):
+        record = record.strip("\n")
+        if not record:
+            continue
+        sha, author, date, message = (record.split("\x1f", 3) + ["", "", ""])[:4]
+        entries.append({"sha": sha, "author": author, "date": date, "message": message.strip()})
+    return entries
+
+
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
     if os.name == "nt":

@@ -1,7 +1,7 @@
 """Memory v2 API over the plain-file, git-backed vault."""
 import os
 import re
-from datetime import timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -162,12 +162,11 @@ def graph(limit: int | None = None):
 @router.get("/api/memory/history")
 def history(path: str):
     _path(path)
-    # Commit details load lazily through the shared Git pipe, so read them while holding the lock.
+    # Read by a separate git process (vault.note_history), so saves never wait on a long history.
     try:
-        with vault._lock:
-            return [{"commit": c.hexsha[:8], "author": c.author.name,
-                     "date": c.committed_datetime.astimezone(timezone.utc).isoformat(),
-                     "message": c.message.strip()} for c in vault._repo.iter_commits(paths=path)]
+        return [{"commit": e["sha"][:8], "author": e["author"],
+                 "date": datetime.fromisoformat(e["date"]).astimezone(timezone.utc).isoformat(),
+                 "message": e["message"]} for e in vault.note_history(path)]
     except Exception:
         return []
 
