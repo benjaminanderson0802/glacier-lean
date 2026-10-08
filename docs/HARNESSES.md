@@ -26,3 +26,7 @@ Install the Codex ACP adapter with `setup/harnesses/install_codex_acp.sh`. It pi
 - [Same-goal harness runs](../evidence/live/same_goal.md): the supplied script passed its independent `hello.txt == hi` check for both OpenCode and Codex ACP on the final runs. Codex ACP sandbox namespace failures and a failed Codex worker-node fallback were also observed; the results file records the variation. The script checks are separate from the backend run API, so those script-driven runs have no saved `verified` field.
 
 The backend acceptance tests still exercise two different fake ACP agents: one asks for a straightforward edit, and the other asks for an edit and a forbidden execute request. These live results supplement those tests and do not change their scope.
+
+### OpenCode on modest hardware: current live finding
+
+No working local Ollama model for OpenCode file-tool use has been proven yet. The 2026-10-07 live trial confirmed `qwen3:1.7b` (Apache-2.0) still asks to write `/home/user/hello.txt` outside its project and OpenCode denies the request; it took 59.54 seconds and used 585,852 KiB maximum OpenCode RSS. Earlier direct trials with `qwen3:1.7b` and `granite3.3:2b` also failed. The evidence and raw output are in [the live ACP proof](../evidence/live/acp_two_harnesses.md). Keep the existing `qwen3:0.6b` example as an install option, but it is not a proven OpenCode tool-using choice.
