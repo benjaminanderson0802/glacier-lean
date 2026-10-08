@@ -71,6 +71,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
 let starterApplied = false
 const commitId = () => crypto.randomBytes(20).toString('hex').slice(0, 7)
 
+let mockSeenVersion = '0.2.0'
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x')
   const send = (code, body) => {
@@ -354,6 +355,9 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') { const b = await readBody(); if (!b?.value) return send(422, { detail: 'value required' }); mockSecrets.add(m[1]); return send(200, { saved: true }) }
       if (req.method === 'DELETE') { mockSecrets.delete(m[1]); return send(200, { deleted: true }) }
     }
+    if (p === '/api/releases/current' && req.method === 'GET') return send(200, { version: '0.2.0', markdown: '# Glacier 0.2.0\n\n- Mock release notes.' })
+    if (p === '/api/releases/installed/seen' && req.method === 'GET') return send(200, { version: mockSeenVersion })
+    if (p === '/api/releases/installed/seen' && req.method === 'PUT') { const b = await readBody(); mockSeenVersion = String(b.version || ''); return send(200, { version: mockSeenVersion }) }
     if (p === '/api/costs') return send(200, { total_usd: 0, paid_cap_usd: 0, local_share: 0.8, by_route: [], by_model: [{ model: 'qwen3:0.6b', runs: 12, steps: 40, tokens_in: 52000, tokens_out: 9000, cost_usd: 0 }] })
     if (p === '/api/memory/compat') return send(200, { ok: true, notes_checked: vault.size, problems: [] })
     if (p === '/api/system/settings') return send(200, { mode: 'standard', local_model: 'qwen3:0.6b', max_parallel_runs: 2, ask_route: 'local', ask_route_reason: 'Codex is unavailable or signed out, so Ask will use Ollama on this computer.' })

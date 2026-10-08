@@ -1,18 +1,16 @@
 def test_release_notes_returns_installed_version_markdown(server):
-    from routes import releases
-    releases._installed_version = lambda: "0.2.0"
-    response = server.get("/api/releases/current")
-    assert response.status_code == 200
-    assert response.json() == {
-        "version": "0.2.0",
-        "markdown": "Release notes are added when the release is prepared.",
-    }
+    """The running server reports the bundled app version and that version's notes file."""
+    from pathlib import Path
+    from desktop_version import _version
+    version = _version()
+    notes = Path(__file__).resolve().parents[3] / "docs" / "releases" / f"v{version}.md"
+    assert server.get("/api/releases/current") == {"version": version, "markdown": notes.read_text(encoding="utf-8")}
 
 
 def test_seen_version_is_saved_without_replacing_other_settings(server):
-    assert server.get("/api/releases/installed/seen").json() == {"version": ""}
-    assert server.put("/api/releases/installed/seen", json={"version": "0.2.0"}).json() == {"version": "0.2.0"}
-    assert server.get("/api/releases/installed/seen").json() == {"version": "0.2.0"}
+    assert server.get("/api/releases/installed/seen") == {"version": ""}
+    assert server.put("/api/releases/installed/seen", {"version": "0.2.0"}) == {"version": "0.2.0"}
+    assert server.get("/api/releases/installed/seen") == {"version": "0.2.0"}
     import json
     from pathlib import Path
     settings = json.loads((Path(server.home) / "settings.json").read_text(encoding="utf-8"))
@@ -26,4 +24,4 @@ def test_install_layout_includes_release_notes(tmp_path):
     _install(app_dir)
     notes = app_dir / "docs" / "releases" / "v0.2.0.md"
     assert notes.is_file()
-    assert notes.read_text(encoding="utf-8").strip() == "Release notes are added when the release is prepared."
+    assert notes.read_text(encoding="utf-8").strip()

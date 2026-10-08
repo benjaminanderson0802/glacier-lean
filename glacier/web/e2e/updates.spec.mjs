@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium } from 'playwright'
+const APP_VERSION = JSON.parse((await import('node:fs')).readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repo = path.resolve(root, '../..')
@@ -60,9 +61,9 @@ try {
   await page.goto(`http://localhost:${uiPort}/#/settings/about`, { waitUntil: 'networkidle' })
   await page.locator('[data-testid="settings-about"].g-panel').waitFor()
   const before = await page.screenshot({ path: path.join(repo, 'evidence/ui/about-before.png'), fullPage: true })
-  check(await page.getByTestId('settings-version').innerText().then(s => s.includes('0.1.0')), 'About shows installed version')
+  check(await page.getByTestId('settings-version').innerText().then(s => s.includes(APP_VERSION)), 'About shows installed version')
   await page.getByTestId('release-notes').waitFor()
-  check((await page.getByTestId('release-notes').innerText()).includes('Old version details.'), 'About shows installed release notes')
+  check((await page.getByTestId('release-notes').innerText()).includes('Improved stability.'), 'About shows installed release notes')
   check(await page.locator('[data-testid="release-notes"] script').count() === 0, 'release notes do not create HTML elements')
   await page.getByTestId('update-check').click()
   await page.getByTestId('update-install').waitFor()
@@ -88,12 +89,11 @@ try {
   check(true, 'startup update notice appears on Home')
   await page.getByTestId('home-update-dismiss').click()
   check(await page.getByTestId('home-update-notice').count() === 0, 'Home update notice can be dismissed')
-  await page.evaluate(() => { window.localStorage.setItem('e2e-seen-version', '0.1.0') })
+  await page.evaluate(() => { window.localStorage.setItem('e2e-seen-version', '0.0.9') })
   await page.reload({ waitUntil: 'networkidle' })
-  await page.evaluate(() => { window.localStorage.setItem('e2e-seen-version', '0.1.0') })
   await page.getByTestId('nav-home').click()
   await page.getByTestId('home-installed-update-notice').waitFor()
-  check((await page.getByTestId('home-installed-update-notice').innerText()).includes('0.1.0'), 'post-update notice identifies updated version after install')
+  check((await page.getByTestId('home-installed-update-notice').innerText()).includes(APP_VERSION), 'post-update notice identifies updated version after install')
   await page.getByTestId('home-installed-update-dismiss').click()
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByTestId('nav-home').click()
