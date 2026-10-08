@@ -52,7 +52,7 @@ export function HomeScreen() {
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>{t('home.noItemsNeedAttention')}</Empty>}
             {data?.needs_you.map((it, i) => (
-              <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
+              <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} leadTitle={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
             ))}
           </div>
         </Panel>
@@ -62,7 +62,7 @@ export function HomeScreen() {
             <div className="g-rows">
               {data?.running.length === 0 && <Empty>{t('home.nothingRunning')}</Empty>}
               {data?.running.map(r => (
-                <Row key={r.run_id} status={r.status === 'queued' ? 'warn' : 'run'} lead={r.name}
+                <Row key={r.run_id} status={r.status === 'queued' ? 'warn' : 'run'} lead={r.name} leadTitle={r.name}
                   detail={r.status === 'queued' ? undefined : t('home.step', { step: r.step, steps: r.steps })}
                   when={r.status === 'queued' ? 'queued' : <Progress value={r.step} max={r.steps} />}
                   onClick={() => go(`automations/flow/${r.env_id}/${r.run_id}`)} testid={`running-${r.run_id}`} />

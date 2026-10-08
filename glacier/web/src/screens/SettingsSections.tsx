@@ -12,7 +12,7 @@ export function ModelsSection() {
   const [err, setErr] = useState('')
   useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}) }, [])
   return (
-    <Panel title={t('settingsSections.models')} testid="settings-models" className="g-scroll">
+    <Panel title={t('settingsSections.models')} testid="settings-models" className="settings-scroll-panel"><div className="settings-scroll-body">
       {err && <div className="g-error">{err}</div>}
       {!c ? <Empty>{t('settingsSections.checking')}</Empty> : (
         <>
@@ -30,7 +30,7 @@ export function ModelsSection() {
           </div>
         </>
       )}
-    </Panel>
+    </div></Panel>
   )
 }
 
@@ -77,7 +77,7 @@ export function UsageSection() {
   useEffect(() => { settingsApi.costs(days).then(setC).catch(e => setErr(String(e))) }, [days])
   const tokens = (g: { tokens_in: number; tokens_out: number }) => (g.tokens_in + g.tokens_out).toLocaleString()
   return (
-    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} style={{ minHeight: 'calc(8 * var(--px))', padding: '0 calc(1 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: d === days ? 'var(--g-navy2)' : 'var(--g-ice0)', color: d === days ? 'var(--g-white)' : 'var(--g-ink)', fontSize: 'calc(4 * var(--px))' }} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="g-scroll">
+    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} style={{ minHeight: 'calc(8 * var(--px))', padding: '0 calc(1 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: d === days ? 'var(--g-navy2)' : 'var(--g-ice0)', color: d === days ? 'var(--g-white)' : 'var(--g-ink)', fontSize: 'calc(4 * var(--px))' }} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="settings-scroll-panel"><div className="settings-scroll-body">
       {err && <div className="g-error">{err}</div>}
       {c && (
         <>
@@ -93,7 +93,7 @@ export function UsageSection() {
           {c.by_model.length === 0 && <Empty>{t('settingsSections.noAiSteps')}</Empty>}
         </>
       )}
-    </Panel>
+    </div></Panel>
   )
 }
 
@@ -149,7 +149,7 @@ export function AboutSection({ version }: { version: string }) {
     releasesApi.notes().then(result => setReleaseMarkdown(result.markdown)).catch(() => setReleaseError(t('settingsSections.releaseNotesUnavailable')))
   }, [version])
   return (
-    <Panel title={t('settingsSections.about')} testid="settings-about" className="g-scroll">
+    <Panel title={t('settingsSections.about')} testid="settings-about" className="settings-scroll-panel"><div className="settings-scroll-body">
       <dl className="g-kv">
         <dt>{t('settingsSections.glacier')}</dt><dd data-testid="settings-version">{t('settingsSections.version', { version })}</dd>
         <dt>{t('settingsSections.licence')}</dt><dd>{t('settingsSections.licenceValue')}</dd>
@@ -167,7 +167,7 @@ export function AboutSection({ version }: { version: string }) {
           {state !== 'installing' && <Btn onClick={checkForUpdates} disabled={state === 'checking'} data-testid="update-check">{t('settingsSections.updateCheck')}</Btn>}
         </div>
       )}
-    </Panel>
+    </div></Panel>
   )
 }
 
