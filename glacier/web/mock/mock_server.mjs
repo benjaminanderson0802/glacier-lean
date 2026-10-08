@@ -296,7 +296,7 @@ const server = http.createServer(async (req, res) => {
         return send(200, { saved: false, run_id: startRun(envs.get(flow.id)), status: 'running' })
       }
       if (envs.has(flow.id)) return send(409, { detail: 'A flow with this name already exists' })
-      const bad = flow.nodes.map(node => node.type).filter(type => !CATALOG.some(item => item.type === type))
+      const bad = flow.nodes.map(node => node.type).filter(type => type !== HTTP_NODE.type && !CATALOG.some(item => item.type === type))
       if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
       if (flow.goal && !flow.acceptance?.length) return send(400, { detail: 'This goal has no check yet. Add a way to check it is done before running it.' })
       envs.set(flow.id, flow)
@@ -375,7 +375,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') {
         const body = await readBody()
         if (!body || !Array.isArray(body.nodes) || !Array.isArray(body.edges)) return send(422, { detail: 'invalid environment' })
-        const bad = body.nodes.map(n => n.type).filter(t => !CATALOG.some(c => c.type === t))
+        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !CATALOG.some(c => c.type === t))
         if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
         envs.set(id, { ...body, id })
         const commit = commitId(), epath = `environments/${id}.json`, text = JSON.stringify({ ...body, id }, null, 2)

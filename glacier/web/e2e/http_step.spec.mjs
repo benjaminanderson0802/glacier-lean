@@ -9,7 +9,7 @@ import { chromium } from 'playwright'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const mockPort = 8789, uiPort = 4319, api = `http://localhost:${mockPort}`, ui = `http://localhost:${uiPort}`
 const procs = []
-const start = (cmd, args) => { const p = spawn(cmd, args, { cwd: root, stdio: 'ignore', detached: true }); procs.push(p); return p }
+const start = (cmd, args, env = {}) => { const p = spawn(cmd, args, { cwd: root, env: { ...process.env, ...env }, stdio: 'ignore', detached: true }); procs.push(p); return p }
 const cleanup = () => { for (const p of procs.reverse()) { try { process.kill(-p.pid, 'SIGTERM') } catch { /* already stopped */ } } }
 process.on('exit', cleanup)
 const wait = async url => { for (let i = 0; i < 100; i++) { try { if ((await fetch(url)).status < 500) return } catch { /* starting */ } await new Promise(r => setTimeout(r, 200)) } throw new Error(`Timed out waiting for ${url}`) }
@@ -19,7 +19,7 @@ try {
   if (!existsSync(path.join(root, 'dist/index.html'))) throw new Error('dist/ missing - run `npx vite build` first')
   start('node', ['mock/mock_server.mjs', String(mockPort)])
   await wait(`${api}/api/environments`)
-  start('npx', ['vite', 'preview', '--port', String(uiPort), '--strictPort'])
+  start('npx', ['vite', 'preview', '--port', String(uiPort), '--strictPort'], { GLACIER_API: api })
   await wait(ui)
   const exe = process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined)
   browser = await chromium.launch(exe ? { executablePath: exe } : {})
