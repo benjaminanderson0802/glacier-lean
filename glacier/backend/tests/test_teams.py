@@ -110,16 +110,20 @@ def test_task_context_is_rebuilt_for_each_task():
 
 def test_resume_skips_finished_tasks(tmp_path, monkeypatch):
     calls = []
+    governed = []
     monkeypatch.setattr(teams, "_worker", lambda context, workspace, task: calls.append(task["id"]) or
                         {"output": "ok", "exit_code": 0})
     monkeypatch.setattr(teams, "_review", lambda *a: {"passed": True, "evidence": "reviewed"})
     monkeypatch.setattr(teams, "_check_task", lambda *a: {"passed": True, "evidence": "passed"})
+    # Stand-in governor, like the other team tests: no real model endpoint is reachable in CI.
+    monkeypatch.setattr(teams, "_govern", lambda *a: governed.append(True) or {"passed": True, "evidence": "vision met"})
     monkeypatch.setattr(teams, "_objective_check", lambda *a: {"passed": True, "evidence": "spec passed"})
     plan = _plan()
     state = {"status": "running", "tasks": {"first": {"status": "done", "attempts": 1},
                                                "second": {"status": "pending", "attempts": 0}}}
     result = teams.run_team_local("resume", plan, str(tmp_path), state=state)
     assert calls == ["second"] and result["status"] == "done"
+    assert governed, "the resumed team still reaches the governor's final check"
 
 
 def test_resume_honors_legacy_done_and_requires_evaluator_for_new_work(tmp_path, monkeypatch):
