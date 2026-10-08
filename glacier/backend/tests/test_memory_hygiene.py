@@ -128,6 +128,18 @@ def test_merge_rewrites_links_and_keeps_raw_front_matter(server):
     assert "[[notes/first|the duplicate]]" in (root / "notes" / "ref.md").read_text()
 
 
+def test_merge_link_rewrite_preserves_aliases_fragments_and_ignores_code():
+    raw = (
+        "[[notes/second#Heading|the duplicate]] `[[notes/second]]`\n"
+        "```md\n[[notes/second]]\n```\n"
+    )
+    rewritten = memory_hygiene._rewrite_links(raw, ["notes/second.md"], "notes/first.md")
+    assert rewritten == (
+        "[[notes/first#Heading|the duplicate]] `[[notes/second]]`\n"
+        "```md\n[[notes/second]]\n```\n"
+    )
+
+
 def test_commit_failure_restores_changed_and_removed_files(tmp_path, monkeypatch):
     root = tmp_path / "vault"
     root.mkdir()

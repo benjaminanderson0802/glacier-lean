@@ -90,3 +90,17 @@ def test_relative_markdown_links_resolve_from_the_notes_folder():
     assert resolver.resolve("./plan.md", "projects/a/other.md") == ("projects/a/plan", "resolved")
     assert resolver.resolve("../../top.md", "projects/a/plan.md") == ("top", "resolved")
     assert resolver.resolve("../../../outside.md", "projects/a/plan.md")[1] == "unresolved"
+
+
+def test_link_parser_handles_obsidian_and_markdown_edge_cases():
+    from memory_links import parse_links
+
+    body = (
+        "`[[inline-ghost]]` and ``[[also-ghost]]``\n"
+        "```md\n[[fenced-ghost]]\n```\n"
+        "[[target#Heading|Shown]] ![[image.png#crop]] "
+        "[relative](../folder/note.md) [external](https://example.com/note.md)"
+    )
+    assert parse_links(body) == [
+        ("target", False), ("image.png", True), ("../folder/note", False),
+    ]
