@@ -70,15 +70,29 @@ def note_history(path: str) -> list[dict]:
     return entries
 
 
+def _plain(path: str) -> str:
+    """Drop Windows' extended-length prefix.
+
+    realpath keeps "\\\\?\\" when it cannot confirm the short form, which happens while
+    another save is replacing a file in the same folder; the path is the same place.
+    """
+    if os.name == "nt":
+        if path.startswith("\\\\?\\UNC\\"):
+            return "\\\\" + path[8:]
+        if path.startswith("\\\\?\\"):
+            return path[4:]
+    return path
+
+
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
     if os.name == "nt":
         path = path.replace("\\", "/")
-    full = os.path.realpath(os.path.join(VAULT, path))
+    full = _plain(os.path.realpath(os.path.join(VAULT, path)))
     # Compare without case on Windows/macOS-style paths, and accept the vault's own
     # resolved location too (realpath can report different casing than abspath).
     norm = os.path.normcase(full)
-    for root in {os.path.normcase(VAULT), os.path.normcase(os.path.realpath(VAULT))}:
+    for root in {os.path.normcase(VAULT), os.path.normcase(_plain(os.path.realpath(VAULT)))}:
         if root and norm.startswith(root + os.sep):
             parts = norm[len(root) + 1:].split(os.sep)
             if ".git" in parts:  # works with either slash: parts come from the OS separator
