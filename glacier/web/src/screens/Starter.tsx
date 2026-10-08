@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { starterApi, type StarterProposal } from '../api.ts'
 import { Btn, Panel, Row } from '../ui/kit.tsx'
 import { go } from '../route.ts'
+import { t } from '../i18n/index.ts'
 
 const HIDE_KEY = 'glacier.starter.hidden'
 const hidden = () => { try { return localStorage.getItem(HIDE_KEY) === '1' } catch { return false } }
@@ -35,18 +36,18 @@ export function StarterPanel() {
   const agents = p.coding_agents_found.filter(a => a.found)
 
   return (
-    <Panel title="Get started" testid="starter" aside={<button className="g-link" onClick={hide} data-testid="starter-hide">not now</button>}>
+    <Panel title={t('starter.title')} testid="starter" aside={<button className="g-link" onClick={hide} data-testid="starter-hide">{t('starter.notNow')}</button>}>
       {done ? (
         <div data-testid="starter-done">
-          <div className="g-saved">All set. {done.length ? `Added ${done.length} automation${done.length > 1 ? 's' : ''}.` : 'Nothing new to add.'}</div>
+          <div className="g-saved">All set. {done.length ? t('starter.added', { count: done.length, plural: done.length > 1 ? 's' : '' }) : t('starter.nothingNew')}</div>
           <div className="g-rows">{done.map(d => <Row key={d.id} icon="automations" lead={d.name} onClick={() => go(`automations/flow/${d.id}`)} />)}</div>
-          <Btn onClick={hide} style={{ marginTop: 10 }}>Close</Btn>
+          <Btn onClick={hide} style={{ marginTop: 10 }}>{t('starter.close')}</Btn>
         </div>
       ) : (
         <>
           <div className="g-detail" data-testid="starter-reason">{p.reason} Local model: {p.local_model}.</div>
           <div className="g-detail">Coding agents found: {agents.length ? agents.map(a => a.name).join(', ') : 'none yet'}.</div>
-          <div className="g-muted" style={{ marginTop: 10 }}>Suggested automations (pick any):</div>
+          <div className="g-muted" style={{ marginTop: 10 }}>{t('starter.suggested')}</div>
           <div className="g-rows">
             {p.suggested_automations.map((a, i) => (
               <Row key={a.template_id} status={picked.includes(a.template_id) ? 'ok' : 'idle'} lead={a.name} detail={a.why}
@@ -55,14 +56,14 @@ export function StarterPanel() {
           </div>
           {p.missing_but_useful.length > 0 && (
             <>
-              <div className="g-muted" style={{ marginTop: 10 }}>Free tools that would help (optional):</div>
+              <div className="g-muted" style={{ marginTop: 10 }}>{t('starter.tools')}</div>
               <div className="g-rows">{p.missing_but_useful.map(m => <Row key={m.name} icon="plus" lead={`${m.name} (${m.license})`} detail={`${m.why} ${m.download_page}`} />)}</div>
             </>
           )}
           {err && <div className="g-error">{err}</div>}
           <div className="g-actions" style={{ marginTop: 12 }}>
-            <Btn primary onClick={apply} disabled={busy} data-testid="starter-apply">Set up</Btn>
-            <Btn onClick={hide}>Not now</Btn>
+            <Btn primary onClick={apply} disabled={busy} data-testid="starter-apply">{t('starter.setUp')}</Btn>
+            <Btn onClick={hide}>{t('starter.cancel')}</Btn>
           </div>
         </>
       )}
