@@ -380,9 +380,9 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
 def mark_waiting(env_id: str, run_id: str, node_id: str) -> None:
-    # Node first: anyone who sees the run waiting must also see which step is waiting.
-    store.set_node(run_id, env_id, node_id, "waiting")
-    store.set_run(run_id, "waiting", node_id)
+    # Persist both sides of the gate before publishing the node event, so API
+    # readers cannot observe a waiting node while the run still looks running.
+    store.set_waiting(run_id, env_id, node_id)
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
