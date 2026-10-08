@@ -89,13 +89,13 @@ def audit_client(tmp_path, monkeypatch, isolated_git_home, audit_modules):
     ("delete", "/api/secrets/EXAMPLE_TOKEN", None, "secret.deleted"),
     ("post", "/api/projects", {"name": "Audit project"}, "project.created"),
 ])
-def test_api_effect_records_exactly_one_audit_event(audit_client, method, path, body, event):
+def test_api_effect_records_exactly_one_audit_event(audit_client, monkeypatch, method, path, body, event):
     client, home, audit_log = audit_client
     # Secret store is stubbed at its effect boundary: test behavior, not OS keychain availability.
     if event.startswith("secret."):
         import secrets_store
-        secrets_store.set = lambda *_: None
-        secrets_store.delete = lambda *_: None
+        monkeypatch.setattr(secrets_store, "set", lambda *_: None)
+        monkeypatch.setattr(secrets_store, "delete", lambda *_: None)
     response = getattr(client, method)(path, json=body) if body is not None else getattr(client, method)(path)
     assert response.status_code == 200
     rows = audit_log.events(home=str(home))
