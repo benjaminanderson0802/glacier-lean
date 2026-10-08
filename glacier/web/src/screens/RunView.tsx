@@ -1,13 +1,12 @@
 // Simple Run view of one flow (mockup panels 7 and 8): live steps, output, verification, usage; past runs with undo.
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ago, api, subscribeEvents, type Environment, type NodeState, type NodeTypeInfo, type RunExplanation, type RunState, type RunSummary } from '../api.ts'
-import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
+import { Bar, Btn, Empty, Hint, HintBar, KeyboardMenu, NamedTextBox, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
-const NODE_ICON: Record<NodeState, StatusKind> = { pending: 'idle', running: 'run', done: 'ok', failed: 'bad', waiting: 'warn', skipped: 'idle' }
 const RUN_LABEL: Record<string, { kind: StatusKind; label: string }> = {
   done: { kind: 'ok', label: t('run.success') }, failed: { kind: 'bad', label: t('run.failed') }, rejected: { kind: 'bad', label: t('run.rejected') },
   running: { kind: 'run', label: t('run.running') }, waiting: { kind: 'warn', label: t('run.needsYou') },
@@ -84,10 +83,20 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
   }, [run])
   const done = run ? nodes.filter(n => run.node_states[n.id] === 'done').length : 0
 
-  const start = async () => {
+  const start = useCallback(async () => {
     setBusy(true)
     try { const r = await api.runEnv(envId); go(`automations/flow/${envId}/${r.run_id}`); refreshRuns() } catch (e) { setErr(String(e)) } finally { setBusy(false) }
-  }
+  }, [envId, refreshRuns])
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return
+      if (event.key.toLowerCase() === 'r') { event.preventDefault(); void start() }
+      else if (event.key.toLowerCase() === 'h') go(`automations/flow/${envId}/history`)
+      else if (event.key.toLowerCase() === 'b') go(`automations/build/${envId}`)
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [envId, start])
   const decide = async (ok: boolean) => {
     if (!run?.waiting_on) return
     try { await api.approve(run.run_id, run.waiting_on, ok); load() } catch (e) { setErr(String(e)) }
@@ -102,6 +111,7 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
           <Btn onClick={() => go(`automations/flow/${envId}/history`)} data-testid="run-history">{t('run.pastRuns')}</Btn>
           <Btn onClick={() => go(`automations/build/${envId}`)} data-testid="open-builder">{t('run.editFlow')}</Btn>
           <Btn primary icon="run" onClick={start} disabled={busy || nodes.length === 0} data-testid="run-start">{t('run.run')}</Btn>
+          {run && <Bar value={done} max={nodes.length} tone={run.status === 'failed' ? 'bad' : run.status === 'waiting' ? 'warn' : 'ok'} />}
         </>} />
       {err && <div className="g-error">{err}</div>}
       {why && (
@@ -116,16 +126,12 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
             <Btn primary onClick={() => decide(true)} data-testid="run-approve">{t('run.approve')}</Btn><Btn danger onClick={() => decide(false)} data-testid="run-reject">{t('run.reject')}</Btn></div>
         </Panel>
       )}
-      <div className="g-runview">
+      <div className="g-runview" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)', gridTemplateRows: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'calc(2 * var(--px))', flex: 1 }}>
         <Panel title={t('run.steps')} testid="run-steps" className="g-scroll">
-          <div className="g-rows">
-            {nodes.map((n, i) => {
-              const s = (run?.node_states[n.id] ?? 'pending') as NodeState
-              return <Row key={n.id} status={NODE_ICON[s]} lead={`${i + 1}. ${label(n.type)}`} detail={Object.values(n.config).find(Boolean)?.slice(0, 60)}
-                when={s} onClick={() => setSel(n.id)} className={n.id === active ? 'sel' : ''} testid={`run-step-${n.id}`} />
-            })}
-            {nodes.length === 0 && <Empty>{t('run.thisFlowEmpty')}</Empty>}
-          </div>
+          {nodes.length > 0 ? <KeyboardMenu label={t('run.steps')} items={nodes.map((n, i) => {
+            const s = (run?.node_states[n.id] ?? 'pending') as NodeState
+            return { id: n.id, testid: `run-step-${n.id}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{`${i + 1}. ${label(n.type)}`}</span><span className="g-detail">{[s, Object.values(n.config).find(Boolean)?.slice(0, 60)].filter(Boolean).join(' · ')}</span></span> }
+          })} selected={active ?? ''} onSelect={setSel} /> : <Empty>{t('run.thisFlowEmpty')}</Empty>}
         </Panel>
         <Panel testid="run-output" title={
           <span className="g-seg">
@@ -135,7 +141,7 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
           {tab === 'output'
             ? active && activeNode?.type === 'http_request' && run?.outputs[active]
               ? <HttpRunResult text={run.outputs[active]} elapsed={httpElapsed[`${run.run_id}:${active}`] ?? savedHttpTime(`${run.run_id}:${active}`)} />
-              : <pre className="g-term" data-testid="run-output-text">{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre>
+              : <NamedTextBox className="g-term" testid="run-output-text"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.6 var(--g-font-body)' }}>{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre></NamedTextBox>
             : <dl className="g-kv">{Object.entries(activeNode?.config ?? {}).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v || t('run.dash')}</dd></Fragment>)}</dl>}
         </Panel>
         <Panel className="g-scroll" title={t('run.verification')} aside={run?.verified === true ? t('run.allChecksPassed') : run?.verified === false ? t('run.notVerified') : undefined} testid="run-verification">
@@ -153,18 +159,19 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
           </dl>
         </Panel>
       </div>
+      <HintBar><Hint keyLabel="R">{t('hint.run')}</Hint><Hint keyLabel="H">{t('hint.history')}</Hint><Hint keyLabel="B">{t('hint.edit')}</Hint><Hint keyLabel="↑↓">{t('hint.selectStep')}</Hint><Hint keyLabel="Enter">{t('hint.openStep')}</Hint></HintBar>
     </>
   )
 }
 
 function HttpRunResult({ text, elapsed }: { text: string; elapsed?: number }) {
   const result = text.match(/^Status: (\d{3})\s*\n\n([\s\S]*)$/)
-  if (!result) return <pre className="g-term" data-testid="run-output-text">{text}</pre>
+  if (!result) return <NamedTextBox className="g-term" testid="run-output-text"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.6 var(--g-font-body)' }}>{text}</pre></NamedTextBox>
   const body = result[2].slice(0, 2000)
   return <div className="http-result" data-testid="run-http-result-summary">
     <span>{t('http.responseStatus', { status: result[1] })}</span>
     <span>{t('http.responseTime', { time: elapsed === undefined ? t('http.timeUnavailable') : `${elapsed} ms` })}</span>
-    <pre data-testid="run-http-result-body">{body}{result[2].length > 2000 ? t('http.responseTrimmed') : ''}</pre>
+    <NamedTextBox testid="run-http-result-body"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.6 var(--g-font-body)' }}>{body}{result[2].length > 2000 ? t('http.responseTrimmed') : ''}</pre></NamedTextBox>
   </div>
 }
 
@@ -179,6 +186,20 @@ function PastRuns({ envId }: { envId: string }) {
     runs.slice(0, 15).forEach(r => api.runChanges(r.run_id).then(c => setChanges(x => ({ ...x, [r.run_id]: c.length }))).catch(() => {}))
   }, [runs])
   const chosen = runs.find(r => r.run_id === (sel ?? runs[0]?.run_id))
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLButtonElement) return
+      const index = Math.max(0, runs.findIndex(r => r.run_id === (sel ?? runs[0]?.run_id)))
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        if (runs.length) setSel(runs[(index + (event.key === 'ArrowDown' ? 1 : runs.length - 1)) % runs.length].run_id)
+      } else if (event.key === 'Enter' && chosen) { event.preventDefault(); go(`automations/flow/${envId}/${chosen.run_id}`) }
+      else if (event.key.toLowerCase() === 'u' && chosen && changes[chosen.run_id]) { event.preventDefault(); setConfirm(true) }
+      else if (event.key.toLowerCase() === 'r') { event.preventDefault(); void api.runEnv(envId).then(r => go(`automations/flow/${envId}/${r.run_id}`)).catch(e => setErr(String(e))) }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [runs, sel, chosen, changes, envId, setErr])
   const undo = async () => {
     if (!chosen) return
     try { await api.undoRun(chosen.run_id); setNote(t('run.undone')); setConfirm(false); refreshRuns() } catch (e) { setErr(String(e)); setConfirm(false) }
@@ -196,7 +217,7 @@ function PastRuns({ envId }: { envId: string }) {
             {runs.map(r => {
               const s = RUN_LABEL[r.status]
               return (
-                <tr key={r.run_id} className={chosen?.run_id === r.run_id ? 'sel' : ''} onClick={() => { setSel(r.run_id); setConfirm(false); setNote('') }} data-testid={`past-${r.run_id}`}>
+              <tr key={r.run_id} className={chosen?.run_id === r.run_id ? 'sel' : ''} style={chosen?.run_id === r.run_id ? { background: 'var(--g-gold)', color: 'var(--g-ink)' } : undefined} onClick={() => { setSel(r.run_id); setConfirm(false); setNote('') }} data-testid={`past-${r.run_id}`}>
                   <td>{when(r.started_at)}</td>
                   <td><span className="g-status-cell"><StatusIcon kind={s?.kind ?? 'idle'} />{s?.label ?? r.status}</span></td>
                   <td>{changes[r.run_id] === undefined ? '…' : changes[r.run_id] === 0 ? t('run.zeroChanges') : t('run.changesCount', { count: changes[r.run_id], plural: changes[r.run_id] > 1 ? 's' : '' })}</td>
@@ -226,6 +247,7 @@ function PastRuns({ envId }: { envId: string }) {
           {note && <div className="g-saved">{note}</div>}
         </Panel>
       )}
+      <HintBar><Hint keyLabel="↑↓">{t('hint.selectRun')}</Hint><Hint keyLabel="Enter">{t('hint.viewRun')}</Hint><Hint keyLabel="U">{t('hint.undo')}</Hint><Hint keyLabel="R">{t('hint.rerun')}</Hint></HintBar>
     </>
   )
 }

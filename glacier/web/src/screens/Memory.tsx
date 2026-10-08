@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ago, api, memory, type MemCommit, type MemHit, type MemNote, type MemNoteFull } from '../api.ts'
-import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
+import { Btn, Empty, Hint, HintBar, KeyboardMenu, NamedTextBox, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { NoteEditor } from './NoteEditor.tsx'
 import { MemoryAdd } from './MemoryAdd.tsx'
 import { MemoryCleanup } from './MemoryCleanup.tsx'
@@ -28,17 +28,23 @@ export function MemoryScreen({ path }: { path?: string }) {
       {VIEWS.map(([v, l]) => <button key={v} className={`g-seg-btn${v === view ? ' active' : ''}`} onClick={() => go(v ? `memory/${v}` : 'memory')} data-testid={`memview-${l.toLowerCase()}`}>{l}</button>)}
     </div>
   )
-  if (view) return (
+  const body = view ? (
     <>
       <PageHead title={view === '~map' ? t('memory.title') : view === '~add' ? t('memory.addTitle') : t('memory.cleanupTitle')} crumb={t('memory.title')}
-        sub={view === '~map' ? undefined : view === '~add' ? t('memory.importSubtitle') : t('memory.organizeSubtitle')} side={switcher} />
+        sub={view === '~map' ? t('memory.subtitle') : view === '~add' ? t('memory.importSubtitle') : t('memory.organizeSubtitle')} side={switcher} />
       {view === '~map' ? <Suspense fallback={<div className="g-empty">{t('memory.drawMap')}</div>}><MemoryMap /></Suspense> : view === '~add' ? <MemoryAdd /> : <MemoryCleanup />}
     </>
-  )
-  return <NotesView path={path} switcher={switcher} />
+  ) : <NotesView path={path} switcher={switcher} />
+  return <>{body}<HintBar>
+    {view === '~map' ? <><Hint keyLabel="Click">{t('hint.openNote')}</Hint><Hint keyLabel="Esc">{t('hint.notes')}</Hint></>
+      : view === '~add' ? <><Hint keyLabel="←→">{t('hint.moveTab')}</Hint><Hint keyLabel="Enter">{t('hint.save')}</Hint></>
+        : view === '~cleanup' ? <><Hint keyLabel="Space">{t('hint.select')}</Hint><Hint keyLabel="Enter">{t('hint.cleanUp')}</Hint><Hint keyLabel="U">{t('hint.undo')}</Hint></>
+          : <><Hint keyLabel="N">{t('hint.newNote')}</Hint><Hint keyLabel="/">{t('hint.search')}</Hint><Hint keyLabel="Enter">{t('hint.openNote')}</Hint></>}
+  </HintBar></>
 }
 
 function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNode }) {
+  const searchRef = useRef<HTMLInputElement>(null)
   const [notes, setNotes] = useState<MemNote[] | null>(null)
   const [tag, setTag] = useState<string>(t('memory.all'))
   const [q, setQ] = useState('')
@@ -51,6 +57,16 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renamed, setRenamed] = useState<{ from: string; path: string; commit: string } | null>(null)
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
+
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return
+      if (event.key.toLowerCase() === 'n') { event.preventDefault(); setEditing('new') }
+      else if (event.key === '/') { event.preventDefault(); searchRef.current?.focus() }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [])
 
   const reloadNotes = () => memory.notes().then(setNotes).catch(e => setErr(String(e)))
   useEffect(() => { reloadNotes() }, [])
@@ -77,40 +93,29 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   }, [notes])
   const list = (notes ?? []).filter(n => tag === t('memory.all') || n.tags?.includes(tag)).sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''))
   const open = (p: string) => go(`memory/${encodeURIComponent(p)}`)
-  const deleteNote = async (p: string) => {
-    const result = await memory.delete(p)
-    return { title: t('delete.removed'), run: async () => { await memory.undoDelete(p, result.commit); reloadNotes() } }
-  }
-  const noteDeleted = (p: string, action?: UndoAction) => {
-    setDeleteUndo(action ?? null)
-    reloadNotes()
-    if (note?.path === p) { setNote(null); go('memory') }
-  }
+  const deleteNote = async (p: string) => { const result = await memory.delete(p); return { title: t('delete.removed'), run: async () => { await memory.undoDelete(p, result.commit); reloadNotes() } } }
+  const noteDeleted = (p: string, action?: UndoAction) => { setDeleteUndo(action ?? null); reloadNotes(); if (note?.path === p) { setNote(null); go('memory') } }
 
   return (
     <>
-      <PageHead title={t('memory.title')} side={<>{switcher}<input className="g-input" style={{ width: 240 }} placeholder={t('memory.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
+      <PageHead title={t('memory.title')} sub={t('memory.subtitle')} side={<>{switcher}<input ref={searchRef} className="g-input" style={{ width: 240 }} placeholder={t('memory.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
-      <div className="g-memory">
-        <Panel className="g-sidenav" testid="memory-tags">
-          {[t('memory.all'), ...tags.map(t => t[0])].map(label => (
-            <button key={label} className={`g-navitem${label === tag ? ' active' : ''}`} onClick={() => { setTag(label); setQ('') }}>
-              <span>{label}</span><span className="g-muted">{label === t('memory.all') ? notes?.length ?? '' : tags.find(x => x[0] === label)?.[1]}</span>
-            </button>
-          ))}
+      <div className="g-memory" style={{ display: 'grid', gridTemplateColumns: 'calc(84 * var(--px)) minmax(0, 0.9fr) minmax(0, 1.5fr)', gap: 'calc(2 * var(--px))', flex: 1 }}>
+        <Panel className="g-sidenav" testid="memory-tags" title={t('memory.filters')}>
+          <KeyboardMenu label={t('memory.filters')} items={[t('memory.all'), ...tags.map(x => x[0])].map(value => ({ id: value, label: <><span>{value}</span><span style={{ marginLeft: 'auto', color: 'var(--g-gold)' }}>{value === t('memory.all') ? notes?.length ?? '' : tags.find(x => x[0] === value)?.[1]}</span></> }))} selected={tag} onSelect={value => { setTag(value); setQ('') }} />
         </Panel>
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
           <div className="g-rows">
             {hits
-              ? hits.map(h => <div key={h.path} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1, minWidth: 0 }}><Row icon="note" lead={h.title || h.path} detail={h.snippet} onClick={() => open(h.path)} testid={`mem-hit-${h.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(h.path)}`} onDelete={() => deleteNote(h.path)} onDeleted={action => noteDeleted(h.path, action)} onError={e => setErr(String(e))} /></div>)
-              : list.map(n => <div key={n.path} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1, minWidth: 0 }}><Row icon="note" lead={n.title || n.path} detail={n.author ? `${t('memory.writtenBy')} ${n.author}` : undefined} when={ago(n.updated)} onClick={() => open(n.path)} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={() => deleteNote(n.path)} onDeleted={action => noteDeleted(n.path, action)} onError={e => setErr(String(e))} /></div>)}
+              ? <KeyboardMenu label={t('memory.results', { query: q })} items={hits.map(h => ({ id: h.path, testid: `mem-hit-${h.path}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{h.title || h.path}</span><span className="g-detail">{h.snippet}</span></span> }))} selected={path ?? ''} onSelect={open} />
+              : <KeyboardMenu label={t('memory.viewsNotes')} items={list.map(n => ({ id: n.path, testid: `mem-note-${n.path}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{n.title || n.path}</span><span className="g-detail">{n.author ? t('memory.byAuthor', { name: n.author }) : ''}<span style={{ float: 'right' }}>{ago(n.updated)}</span></span></span> }))} selected={path ?? ''} onSelect={open} />}
             {notes && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
             {hits && hits.length === 0 && <Empty>{t('memory.nothingFound')}</Empty>}
           </div>
         </Panel>
         <Panel title={editing === 'new' ? t('memory.newNote') : note ? String(note.meta?.title ?? note.path) : t('memory.note')}
-          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid="note-delete" onDelete={() => deleteNote(note.path)} onDeleted={action => noteDeleted(note.path, action)} onError={e => setErr(String(e))} />}{note && <Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">{t('memory.rename')}</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">{t('memory.edit')}</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">{t('memory.newNote')}</Btn></span>}
+          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid="note-delete" onDelete={() => deleteNote(note.path)} onDeleted={action => noteDeleted(note.path, action)} onError={e => setErr(String(e))} /><Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">{t('memory.rename')}</Btn><Btn onClick={() => setEditing('edit')} data-testid="note-edit">{t('memory.edit')}</Btn></>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">{t('memory.newNote')}</Btn></span>}
           testid="memory-note" className="g-scroll">
           {saved && !editing && (
             <div className="g-saved" data-testid="note-saved">{t('memory.savedVersion', { commit: saved.commit })}
@@ -150,7 +155,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
                 {note.meta?.run_id ? <button className="g-link" data-testid="note-run" onClick={() => api.getRun(String(note.meta.run_id)).then(r => go(`automations/flow/${r.env_id}/${r.run_id}`)).catch(() => setErr(t('memory.noRun')))}>{t('memory.fromRun')}</button> : null}
                 {hist.length > 1 && <button className="g-link" data-testid="note-undo-last" onClick={async () => { await memory.undo(note.path); loadNote(note.path); reloadNotes() }}>{t('memory.undoLast')}</button>}
               </div>
-              <pre className="g-notebody" data-testid="memory-note-body">{note.body}</pre>
+              <NamedTextBox className="g-notebody" testid="memory-note-body"><pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'var(--g-size-body)/1.7 var(--g-font-body)' }}>{note.body}</pre></NamedTextBox>
               {(note.links_out.length > 0 || note.links_in.length > 0) && (
                 <div className="g-links">
                   {note.links_out.length > 0 && <div><span className="g-muted">{t('memory.linksTo')}</span>{(note.links_out_status ?? note.links_out.map(t => ({ target: t, status: 'resolved', display: t }))).map(l =>

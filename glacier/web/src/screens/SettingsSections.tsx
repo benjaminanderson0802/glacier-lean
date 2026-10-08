@@ -1,6 +1,6 @@
 // Settings sections beyond General / System check / Help: Models, Secrets, Usage, Data, About.
 import { useEffect, useState } from 'react'
-import { askSettingsApi, settingsApi, system, type AskSettings, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
+import { settingsApi, system, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
 import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { t } from '../i18n/index.ts'
@@ -9,21 +9,9 @@ export function ModelsSection() {
   const [c, setC] = useState<SystemCheck | null>(null)
   const [eff, setEff] = useState<EffectiveSettings | null>(null)
   const [err, setErr] = useState('')
-  const [ask, setAsk] = useState<AskSettings | null>(null)
-  const [secretNames, setSecretNames] = useState<string[]>([])
-  const [notice, setNotice] = useState('')
-  useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}); askSettingsApi.get().then(setAsk).catch(() => {}); settingsApi.secrets().then(setSecretNames).catch(() => {}) }, [])
-  const updateAsk = async (partial: Partial<AskSettings>) => {
-    if (!ask) return
-    try { setAsk(await askSettingsApi.save({ ...ask, ...partial })); setNotice('') }
-    catch (e) { setNotice(String(e)) }
-  }
-  const forget = async () => {
-    try { await askSettingsApi.forget(); window.dispatchEvent(new Event('glacier:forget-ask-chats')); setAsk(await askSettingsApi.get()); setNotice(t('settingsSections.chatsForgotten')) }
-    catch (e) { setNotice(String(e)) }
-  }
+  useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}) }, [])
   return (
-    <Panel title={t('settingsSections.models')} testid="settings-models">
+    <Panel title={t('settingsSections.models')} testid="settings-models" className="g-scroll">
       {err && <div className="g-error">{err}</div>}
       {!c ? <Empty>{t('settingsSections.checking')}</Empty> : (
         <>
@@ -31,7 +19,7 @@ export function ModelsSection() {
             <dt>{t('settingsSections.usingNow')}</dt><dd data-testid="model-in-use">{eff?.local_model ?? c.recommended.local_model}</dd>
             <dt>{t('settingsSections.mode')}</dt><dd>{(eff?.mode ?? c.recommended.mode) === 'low' ? t('settingsSections.lightSmall') : t('settingsSections.standard')}</dd>
             <dt>{t('settingsSections.runsAtOnce')}</dt><dd>{eff?.max_parallel_runs ?? c.recommended.max_parallel_runs}</dd>
-            <dt>{t('settingsSections.askUses')}</dt><dd data-testid="ask-route">{eff?.ask_route === 'codex' ? t('settingsSections.codexPlan') : eff?.ask_route === 'local' ? t('settingsSections.localRoute', { name: eff.local_model }) : eff?.ask_route === 'unavailable' ? t('settingsSections.nothingYet') : t('settingsSections.checking')}{eff?.ask_route_reason ? <div className="g-muted">{eff.ask_route_reason}</div> : null}</dd>
+            <dt>{t('settingsSections.askUses')}</dt><dd data-testid="ask-route">{eff?.ask_route === 'codex' ? t('settingsSections.codexPlan') : eff?.ask_route === 'local' ? t('settingsSections.localRoute', { name: eff.local_model }) : eff?.ask_route === 'unavailable' ? 'Nothing yet' : 'Checking…'}{eff?.ask_route_reason ? <div className="g-muted">{eff.ask_route_reason}</div> : null}</dd>
             <dt>{t('settingsSections.paidModels')}</dt><dd>{t('settingsSections.paidDescription')}</dd>
           </dl>
           <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.installed')}</h3>
@@ -39,38 +27,6 @@ export function ModelsSection() {
             {c.ollama_models.map(m => <Row key={m} status="ok" lead={m} when={m === (eff?.local_model ?? c.recommended.local_model) ? t('settingsSections.inUse') : ''} />)}
             {c.ollama_models.length === 0 && <Empty>{t('settingsSections.noLocalModels')}</Empty>}
           </div>
-          {ask && <>
-            <h3 className="g-panel-title" style={{ marginTop: 18 }}>{t('settingsSections.askEngine')}</h3>
-            <div className="g-rows">
-              <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.defaultEngine')}</span><span className="g-detail">{t('settingsSections.chooseEngineHelp')}</span></span>
-                <select className="g-input" value={ask.engine} onChange={e => updateAsk({ engine: e.target.value })} data-testid="settings-ask-engine">
-                  {ask.engines.map(engine => <option key={engine.id} value={engine.id}>{t(`ask.engine${engine.id[0].toUpperCase()}${engine.id.slice(1)}`)}{engine.available ? '' : ` — ${t('settingsSections.unavailable')}`}</option>)}
-                </select>
-              </label>
-              <div className="g-detail" data-testid="ask-engine-reason">{ask.engines.find(x => x.id === ask.engine)?.available ? t('settingsSections.engineReady') : t(`settingsSections.engineUnavailable.${ask.engines.find(x => x.id === ask.engine)?.reason_code ?? 'missing'}`)}</div>
-              {ask.engine === 'openai' && <>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.apiAddress')}</span><input className="g-input" value={ask.openai_base_url} onChange={e => setAsk({ ...ask, openai_base_url: e.target.value })} onBlur={() => updateAsk({ openai_base_url: ask.openai_base_url })} data-testid="openai-base-url" /></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.model')}</span><input className="g-input" value={ask.openai_model} onChange={e => setAsk({ ...ask, openai_model: e.target.value })} onBlur={() => updateAsk({ openai_model: ask.openai_model })} data-testid="openai-model" /></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.secretName')}</span><select className="g-input" value={ask.openai_secret_name} onChange={e => updateAsk({ openai_secret_name: e.target.value })} data-testid="openai-secret">{secretNames.map(n => <option key={n}>{n}</option>)}</select></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.monthlyApiCap')}</span><input type="number" min="0.01" step="0.01" className="g-input" value={ask.openai_monthly_cap_usd} onChange={e => setAsk({ ...ask, openai_monthly_cap_usd: e.target.value })} onBlur={() => updateAsk({ openai_monthly_cap_usd: ask.openai_monthly_cap_usd })} data-testid="openai-monthly-cap" /></label>
-                <div className="g-detail">{t('settingsSections.apiSpendSoFar', { spent: Number(ask.openai_spend_usd).toFixed(4), cap: Number(ask.openai_monthly_cap_usd || 0).toFixed(2) })}</div>
-                <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.inputPrice')}</span><span className="g-detail">{t('settingsSections.priceHelp')}</span></span><input type="number" min="0" step="0.01" className="g-input" value={ask.openai_input_usd_per_million} onChange={e => setAsk({ ...ask, openai_input_usd_per_million: e.target.value })} onBlur={() => updateAsk({ openai_input_usd_per_million: ask.openai_input_usd_per_million })} data-testid="openai-input-price" /></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.outputPrice')}</span><input type="number" min="0" step="0.01" className="g-input" value={ask.openai_output_usd_per_million} onChange={e => setAsk({ ...ask, openai_output_usd_per_million: e.target.value })} onBlur={() => updateAsk({ openai_output_usd_per_million: ask.openai_output_usd_per_million })} data-testid="openai-output-price" /></label>
-              </>}
-              {ask.engine === 'anthropic' && <>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.model')}</span><input className="g-input" value={ask.anthropic_model} onChange={e => setAsk({ ...ask, anthropic_model: e.target.value })} onBlur={() => updateAsk({ anthropic_model: ask.anthropic_model })} data-testid="anthropic-model" /></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.secretName')}</span><select className="g-input" value={ask.anthropic_secret_name} onChange={e => updateAsk({ anthropic_secret_name: e.target.value })} data-testid="anthropic-secret">{secretNames.map(n => <option key={n}>{n}</option>)}</select></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.monthlyApiCap')}</span><input type="number" min="0.01" step="0.01" className="g-input" value={ask.anthropic_monthly_cap_usd} onChange={e => setAsk({ ...ask, anthropic_monthly_cap_usd: e.target.value })} onBlur={() => updateAsk({ anthropic_monthly_cap_usd: ask.anthropic_monthly_cap_usd })} data-testid="anthropic-monthly-cap" /></label>
-                <div className="g-detail">{t('settingsSections.apiSpendSoFar', { spent: Number(ask.anthropic_spend_usd).toFixed(4), cap: Number(ask.anthropic_monthly_cap_usd || 0).toFixed(2) })}</div>
-                <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.inputPrice')}</span><span className="g-detail">{t('settingsSections.priceHelp')}</span></span><input type="number" min="0" step="0.01" className="g-input" value={ask.anthropic_input_usd_per_million} onChange={e => setAsk({ ...ask, anthropic_input_usd_per_million: e.target.value })} onBlur={() => updateAsk({ anthropic_input_usd_per_million: ask.anthropic_input_usd_per_million })} data-testid="anthropic-input-price" /></label>
-                <label className="g-row"><span className="g-lead">{t('settingsSections.outputPrice')}</span><input type="number" min="0" step="0.01" className="g-input" value={ask.anthropic_output_usd_per_million} onChange={e => setAsk({ ...ask, anthropic_output_usd_per_million: e.target.value })} onBlur={() => updateAsk({ anthropic_output_usd_per_million: ask.anthropic_output_usd_per_million })} data-testid="anthropic-output-price" /></label>
-              </>}
-              {ask.engine === 'local' && <label className="g-row"><span className="g-lead">{t('settingsSections.installedModel')}</span><select className="g-input" value={ask.local_model || (c?.ollama_models.includes(c.recommended.local_model) ? c.recommended.local_model : c?.ollama_models[0] ?? '')} onChange={e => updateAsk({ local_model: e.target.value })} data-testid="ask-local-model">{(c?.ollama_models ?? []).map(model => <option key={model}>{model}</option>)}</select></label>}
-              <label className="g-row"><span className="g-mid"><span className="g-lead">{t('settingsSections.rememberChats')}</span><span className="g-detail">{t('settingsSections.rememberChatsHelp')}</span></span><input type="checkbox" checked={ask.remember_previous_chats} onChange={e => updateAsk({ remember_previous_chats: e.target.checked })} data-testid="remember-previous-chats" /></label>
-              <div className="g-row"><span className="g-detail">{t('settingsSections.forgetChatsHelp')}</span><Btn danger onClick={forget} data-testid="forget-previous-chats">{t('settingsSections.forgetChats')}</Btn></div>
-              {notice && <div className="g-detail" role="status">{notice}</div>}
-            </div>
-          </>}
         </>
       )}
     </Panel>
@@ -90,14 +46,14 @@ export function SecretsSection() {
     catch (e) { setMsg(String(e).replace(/^Error: /, '')) }
   }
   return (
-    <Panel title={t('settingsSections.secrets')} testid="settings-secrets">
+    <Panel title={t('settingsSections.secrets')} testid="settings-secrets" className="g-scroll">
       <div className="g-detail" style={{ marginBottom: 8 }}>{t('settingsSections.secretDescription')}</div>
       <div className="g-rows">
         {(names ?? []).map(n => (
           <div key={n} className="g-row" data-testid={`secret-${n}`}>
             <span className="g-ico"><Icon name="lock" /></span><span className="g-mid"><span className="g-lead">{n}</span><span className="g-detail">••••••••</span></span>
             <span className="g-when">{confirm === n
-              ? <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}><span className="g-detail">{t('delete.secretImpact')}</span><Btn danger onClick={async () => { try { await settingsApi.deleteSecret(n); setConfirm(null); setMsg(t('delete.removed')); load() } catch (e) { setMsg(String(e).replace(/^Error: /, '')) } }} data-testid={`secret-del-yes-${n}`}>{t('delete.confirm')}</Btn><Btn onClick={() => setConfirm(null)}>{t('delete.cancel')}</Btn></span>
+              ? <span style={{ display: 'flex', gap: 8 }}><Btn danger onClick={async () => { await settingsApi.deleteSecret(n); setConfirm(null); load() }} data-testid={`secret-del-yes-${n}`}>{t('settingsSections.remove')}</Btn><Btn onClick={() => setConfirm(null)}>{t('settingsSections.keep')}</Btn></span>
               : <Btn onClick={() => setConfirm(n)} data-testid={`secret-del-${n}`}>{t('settingsSections.remove')}</Btn>}</span>
           </div>
         ))}
@@ -120,7 +76,7 @@ export function UsageSection() {
   useEffect(() => { settingsApi.costs(days).then(setC).catch(e => setErr(String(e))) }, [days])
   const tokens = (g: { tokens_in: number; tokens_out: number }) => (g.tokens_in + g.tokens_out).toLocaleString()
   return (
-    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage">
+    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} style={{ minHeight: 'calc(8 * var(--px))', padding: '0 calc(1 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: d === days ? 'var(--g-navy2)' : 'var(--g-ice0)', color: d === days ? 'var(--g-white)' : 'var(--g-ink)', fontSize: 'calc(4 * var(--px))' }} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="g-scroll">
       {err && <div className="g-error">{err}</div>}
       {c && (
         <>
@@ -129,9 +85,9 @@ export function UsageSection() {
             <dt>{t('settingsSections.paidLimit')}</dt><dd>${c.paid_cap_usd.toFixed(2)} {c.paid_cap_usd === 0 ? t('settingsSections.freeOnly') : ''}</dd>
             <dt>{t('settingsSections.doneHere')}</dt><dd>{t('settingsSections.localShare', { count: Math.round(c.local_share * 100) })}</dd>
           </dl>
-          <table className="g-table" style={{ marginTop: 12 }}>
-            <thead><tr><th>{t('settingsSections.model')}</th><th>{t('settingsSections.runs')}</th><th>{t('settingsSections.stepsLabel')}</th><th>{t('settingsSections.tokens')}</th><th>{t('settingsSections.cost')}</th></tr></thead>
-            <tbody>{c.by_model.map(g => <tr key={g.model}><td className="g-lead" title={g.model}>{g.model}</td><td>{g.runs}</td><td>{g.steps}</td><td>{tokens(g)}</td><td>${g.cost_usd.toFixed(2)}</td></tr>)}</tbody>
+          <table className="g-table" style={{ marginTop: 12, width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', font: 'calc(4 * var(--px))/1.5 var(--g-font-body)' }}>
+            <thead><tr>{[t('settingsSections.model'), t('settingsSections.runs'), t('settingsSections.stepsLabel'), t('settingsSections.tokens'), t('settingsSections.cost')].map(label => <th key={label} style={{ background: 'var(--g-ice2)', color: 'var(--g-navy)', borderBottom: 'var(--px) solid var(--g-navy)', padding: 'calc(1 * var(--px))', textAlign: 'left', overflowWrap: 'anywhere' }}>{label}</th>)}</tr></thead>
+            <tbody>{c.by_model.map(g => <tr key={g.model}>{[g.model, String(g.runs), String(g.steps), tokens(g), `$${g.cost_usd.toFixed(2)}`].map((value, i) => <td key={i} className={i === 0 ? 'g-lead' : undefined} style={{ borderBottom: 'var(--px) solid var(--g-ice2)', padding: 'calc(1 * var(--px))', overflowWrap: 'anywhere' }}>{value}</td>)}</tr>)}</tbody>
           </table>
           {c.by_model.length === 0 && <Empty>{t('settingsSections.noAiSteps')}</Empty>}
         </>
@@ -146,7 +102,7 @@ export function DataSection() {
   const load = () => { setC(null); settingsApi.compat().then(setC).catch(e => setErr(String(e))) }
   useEffect(load, [])
   return (
-    <Panel title={t('settingsSections.data')} aside={<Btn onClick={load}>{t('settingsSections.checkAllKeys')}</Btn>} testid="settings-data">
+    <Panel title={t('settingsSections.data')} aside={<Btn onClick={load}>{t('settingsSections.checkAllKeys')}</Btn>} testid="settings-data" className="g-scroll">
       <dl className="g-kv">
         <dt>{t('settingsSections.yourMemory')}</dt><dd>{t('settingsSections.memoryDescription')}</dd>
         <dt>{t('settingsSections.openElsewhere')}</dt><dd>{t('settingsSections.openDescription')}</dd>
@@ -187,7 +143,7 @@ export function AboutSection({ version }: { version: string }) {
     if (desktop) void checkForUpdates()
   }, [desktop])
   return (
-    <Panel title={t('settingsSections.about')} testid="settings-about">
+    <Panel title={t('settingsSections.about')} testid="settings-about" className="g-scroll">
       <dl className="g-kv">
         <dt>{t('settingsSections.glacier')}</dt><dd data-testid="settings-version">{t('settingsSections.version', { version })}</dd>
         <dt>{t('settingsSections.licence')}</dt><dd>{t('settingsSections.licenceValue')}</dd>
