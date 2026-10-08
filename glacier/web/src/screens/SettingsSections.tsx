@@ -131,7 +131,7 @@ export function UsageSection() {
           </dl>
           <table className="g-table" style={{ marginTop: 12 }}>
             <thead><tr><th>{t('settingsSections.model')}</th><th>{t('settingsSections.runs')}</th><th>{t('settingsSections.stepsLabel')}</th><th>{t('settingsSections.tokens')}</th><th>{t('settingsSections.cost')}</th></tr></thead>
-            <tbody>{c.by_model.map(g => <tr key={g.model}><td className="g-lead">{g.model}</td><td>{g.runs}</td><td>{g.steps}</td><td>{tokens(g)}</td><td>${g.cost_usd.toFixed(2)}</td></tr>)}</tbody>
+            <tbody>{c.by_model.map(g => <tr key={g.model}><td className="g-lead" title={g.model}>{g.model}</td><td>{g.runs}</td><td>{g.steps}</td><td>{tokens(g)}</td><td>${g.cost_usd.toFixed(2)}</td></tr>)}</tbody>
           </table>
           {c.by_model.length === 0 && <Empty>{t('settingsSections.noAiSteps')}</Empty>}
         </>

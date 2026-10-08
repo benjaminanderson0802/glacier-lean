@@ -95,7 +95,7 @@ export const es: Record<string, string> = {
   'build.cancel': 'Cancelar',
   'build.newFlow': '+ Nuevo flujo',
   'build.runs': 'Ejecuciones',
-  'build.refresh': 'Cargar',
+  'build.refresh': 'Ver',
   'build.noRuns': 'Todavía no hay ejecuciones.',
   'build.canvas': 'Lienzo',
   'build.notes': 'Notas',
