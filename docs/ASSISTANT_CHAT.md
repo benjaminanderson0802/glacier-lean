@@ -19,6 +19,20 @@ then writes the flow atomically in one git commit authored as `assistant`. The r
 includes the conversation ID for auditing. Proposals live in backend memory until they are applied or discarded, so a
 restart clears unreviewed proposals.
 
+Saved Ask conversations are stored as Markdown notes at `conversations/<uuid>.md` in the vault. The history routes are:
+
+- `GET /api/assistant/conversations?q=words` lists conversations newest first as `{id, title, updated, messages}`. The
+  `messages` field is a message count. Search is case-insensitive and requires each query word to occur in the title or
+  a message. A renamed title is used when present; otherwise the title is the first question on one line, shortened to
+  60 characters.
+- `GET /api/assistant/conversations/{id}` returns `{id, title, messages:[{who, text, at}]}`. The speaker is `you` or
+  `glacier`. Unknown Markdown sections and speaker labels are ignored, so hand edits do not prevent reading the chat.
+- `POST /api/assistant/conversations/{id}/rename` accepts `{"title":"A short title"}`. Titles are trimmed and must
+  contain 1–80 characters with no line breaks. Renaming writes a normal vault version; use `POST /api/memory/undo`
+  with `{"path":"conversations/<uuid>.md"}` to restore its previous version. The conversation file name stays the same.
+
+New replies append to the same note and retain its renamed title.
+
 ## Live check
 
 Run `bench/live_ask/run_live.py` to exercise the Ask screen's HTTP request and AG-UI stream against a temporary real backend. It records reply timing, raw proposals, approval/rejection results, and plain-language errors in `evidence/live/ask_assistant.md`. That report predates the route setting below and records a Codex-only run.

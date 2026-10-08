@@ -42,6 +42,7 @@ const vault = new Map() // path -> body
 const memoryMeta = new Map()
 const memoryHistory = new Map()
 const assistantProposals = new Map()
+const conversations = new Map()  // id -> { title, messages: [{ who, text, at }] }
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 let starterApplied = false
 const commitId = () => crypto.randomBytes(20).toString('hex').slice(0, 7)
@@ -170,6 +171,23 @@ const server = http.createServer(async (req, res) => {
       })
     }
     if (req.method === 'GET' && p === '/api/node-types') return send(200, CATALOG)
+    if (p.startsWith('/api/assistant/conversations')) {
+      const titleOf = c => c.title || (c.messages.find(x => x.who === 'you')?.text ?? '').split(/\s+/).join(' ').slice(0, 60) || 'Untitled conversation'
+      if (req.method === 'GET' && p === '/api/assistant/conversations') {
+        const words = (url.searchParams.get('q') ?? '').toLowerCase().match(/\w+/g) ?? []
+        return send(200, [...conversations].map(([id, c]) => ({ id, title: titleOf(c), updated: c.messages.at(-1)?.at ?? '', messages: c.messages.length, text: [titleOf(c), ...c.messages.map(x => x.text)].join(' ').toLowerCase() }))
+          .filter(x => words.every(w => x.text.includes(w))).map(({ text, ...x }) => x).sort((a, b) => b.updated.localeCompare(a.updated)))
+      }
+      const cm = p.match(/^\/api\/assistant\/conversations\/([^/]+)(\/rename)?$/)
+      const c = cm && conversations.get(decodeURIComponent(cm[1]))
+      if (!c) return send(404, { detail: 'Conversation not found' })
+      if (req.method === 'GET' && !cm[2]) return send(200, { id: cm[1], title: titleOf(c), messages: c.messages })
+      if (req.method === 'POST' && cm[2]) {
+        const title = String((await readBody())?.title ?? '').trim()
+        if (!title || title.length > 80 || /[\r\n]/.test(title)) return send(400, { detail: 'Title must be 1 to 80 characters with no line breaks' })
+        c.title = title; return send(200, { id: cm[1], title, commit: commitId() })
+      }
+    }
     if (req.method === 'POST' && p === '/api/assistant/chat') {
       const body = await readBody()
       if (!body?.message) return send(400, { detail: 'message is required' })
@@ -199,6 +217,9 @@ const server = http.createServer(async (req, res) => {
       if (!automation) emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
       if (reply) emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply })
       emit('TEXT_MESSAGE_END', { messageId })
+      const conv = conversations.get(conversationId) ?? { title: '', messages: [] }
+      const at = new Date().toISOString()
+      conv.messages.push({ who: 'you', text: body.message, at }, { who: 'glacier', text: reply, at }); conversations.set(conversationId, conv)
       const conversationPath = `conversations/${conversationId.replace(/[^a-zA-Z0-9_-]+/g, '-')}.md`
       vault.set(conversationPath, `${vault.get(conversationPath) ?? `# Conversation ${conversationId}\n`}\n\n**You:** ${body.message}\n\n**Assistant:** ${reply}\n`)
       emit('RUN_FINISHED', { threadId: conversationId, runId })
