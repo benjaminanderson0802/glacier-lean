@@ -122,7 +122,7 @@ def test_local_ai_adds_marked_project_instructions_context(monkeypatch, tmp_path
         captured["body"] = json.loads(request.data)
         return io.BytesIO(json.dumps({"message": {"content": "A local reply"}}).encode())
 
-    monkeypatch.setattr(local_ai.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(local_ai, "open_model_request", fake_urlopen)
     result = local_ai.run({
         "config": {"prompt": "Answer this", "model": "test-model", "project_folder": str(project)},
         "env_id": "env", "run_id": "run", "prev": None,

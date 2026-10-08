@@ -143,3 +143,9 @@ def env(env_id, nodes, edges):
     return {"id": env_id, "name": env_id.replace("-", " ").title(),
             "nodes": [{"id": i, "type": t, "config": c, "position": {"x": 0, "y": 0}} for i, t, c in nodes],
             "edges": [{"id": f"e{k}", "source": s, "target": t, "label": l} for k, (s, t, l) in enumerate(edges)]}
+
+
+def pytest_configure(config):
+    # Timing and stress tests are run on their own (CI: -m serial without -n) so the
+    # parallel batch cannot slow them down; they are checked exactly as before.
+    config.addinivalue_line("markers", "serial: run outside the parallel batch")

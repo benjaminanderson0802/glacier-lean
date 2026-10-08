@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 
 import sqlite_vec
+from egress import open_model_request
 
 
 _DB_NAME = "memory_index.sqlite"
@@ -51,7 +52,7 @@ def _embed(texts):
             request = urllib.request.Request(
                 base_url + "/api/embed", data=payload, headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(request, timeout=30) as response:
+            with open_model_request(request, timeout=30) as response:
                 result = json.loads(response.read().decode("utf-8"))
             batch_vectors = result.get("embeddings")
             if batch_vectors is None and len(batch) == 1 and "embedding" in result:

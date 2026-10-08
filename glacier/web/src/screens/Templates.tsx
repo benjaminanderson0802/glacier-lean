@@ -4,16 +4,17 @@ import { api, slugify, templatesApi, type TemplateItem } from '../api.ts'
 import { Btn, Empty, PageHead, Panel } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { t } from '../i18n/index.ts'
 
 export function Templates() {
   const [items, setItems] = useState<TemplateItem[] | null>(null)
-  const [tag, setTag] = useState('All')
+  const [tag, setTag] = useState(t('templates.all'))
   const [pick, setPick] = useState<TemplateItem | null>(null)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   useEffect(() => { templatesApi.list().then(setItems).catch(e => setErr(String(e))) }, [])
-  const tags = ['All', ...new Set((items ?? []).flatMap(t => t.template?.tags ?? []))]
-  const shown = (items ?? []).filter(t => tag === 'All' || t.template?.tags?.includes(tag))
+  const tags = [t('templates.all'), ...new Set((items ?? []).flatMap(t => t.template?.tags ?? []))]
+  const shown = (items ?? []).filter(item => tag === t('templates.all') || item.template?.tags?.includes(tag))
 
   const use = async (t: TemplateItem) => {
     if (!t.template) return
@@ -30,7 +31,7 @@ export function Templates() {
 
   return (
     <>
-      <PageHead title="Templates" crumb="Automations" sub="Start from a template." side={<Btn onClick={() => go('automations')}>Back</Btn>} />
+      <PageHead title={t('templates.title')} crumb={t('templates.crumb')} sub={t('templates.subtitle')} side={<Btn onClick={() => go('automations')}>{t('templates.back')}</Btn>} />
       {err && <div className="g-error">{err}</div>}
       {tags.length > 1 && <div className="g-seg" style={{ alignSelf: 'flex-start' }}>{tags.map(t => <button key={t} className={`g-seg-btn${t === tag ? ' active' : ''}`} onClick={() => setTag(t)}>{t}</button>)}</div>}
       <div className="g-cards" data-testid="template-grid">
@@ -42,12 +43,12 @@ export function Templates() {
           </button>
         ))}
       </div>
-      {items && shown.length === 0 && <Empty>No templates.</Empty>}
+      {items && shown.length === 0 && <Empty>{t('templates.noTemplates')}</Empty>}
       {pick && (
         <Panel title={pick.name} aside={`${pick.author ?? 'Glacier'} · ${pick.license ?? ''} · ${pick.review_status}`} testid="template-detail">
           <div className="g-ask-row">
-            <span className="g-detail" style={{ flex: 1 }}>Steps: {(pick.template?.nodes ?? []).map(n => n.type).join(' → ')}</span>
-            <Btn primary onClick={() => use(pick)} disabled={busy || !pick.installable} data-testid="tpl-use">Use this template</Btn>
+            <span className="g-detail" style={{ flex: 1 }}>{t('templates.steps', { value: (pick.template?.nodes ?? []).map(n => n.type).join(' → ') })}</span>
+            <Btn primary onClick={() => use(pick)} disabled={busy || !pick.installable} data-testid="tpl-use">{t('templates.use')}</Btn>
           </div>
         </Panel>
       )}

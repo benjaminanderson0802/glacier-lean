@@ -5,9 +5,10 @@ import { memoryMore, subscribeEvents, type GraphEdge, type GraphNode, type Memor
 import { Empty, Panel } from '../ui/kit.tsx'
 import { tok } from '../ui/tok.ts'
 import { go } from '../route.ts'
+import { t } from '../i18n/index.ts'
 
 const KIND_TOKEN: Record<string, `--g-${string}`> = { note: '--g-accent', run: '--g-ok', flow: '--g-warn', claim: '--g-bad', author: '--g-head' }
-const KIND_LABEL: Record<string, string> = { note: 'Notes', run: 'Runs', flow: 'Flows', claim: 'Claims', author: 'Writers' }
+const KIND_LABEL: Record<string, string> = { note: t('memory.viewsNotes'), run: t('run.pastRuns'), flow: t('build.flows'), claim: t('claims.title'), author: t('memoryMap.writers') }
 
 export function MemoryMap() {
   const [data, setData] = useState<{ nodes: GraphNode[]; edges: GraphEdge[] } | null>(null)
@@ -59,7 +60,7 @@ export function MemoryMap() {
       <Panel className="g-map-panel" testid="memory-map">
         <div ref={box} className="g-map-box">
           {err && <div className="g-error">{err}</div>}
-          {data && graph.nodes.length === 0 && <Empty>Nothing in memory yet.</Empty>}
+          {data && graph.nodes.length === 0 && <Empty>{t('memoryMap.nothing')}</Empty>}
           {graph.nodes.length > 0 && (
             <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor="transparent" // theme-lint-ignore (library keyword, not a colour)
               nodeRelSize={4} linkColor={() => line} linkWidth={1} cooldownTicks={120}
@@ -79,15 +80,15 @@ export function MemoryMap() {
           )}
         </div>
       </Panel>
-      <Panel title="Memory stats" testid="memory-stats">
+      <Panel title={t('memoryMap.stats')} testid="memory-stats">
         <dl className="g-kv g-kv-tight">
           {Object.entries(KIND_LABEL).filter(([k]) => counts[k]).map(([k, label]) => (
             <Fragment key={k}><dt><i className="g-swatch" style={{ background: `var(${KIND_TOKEN[k]})` }} />{label}</dt><dd>{counts[k]}</dd></Fragment>
           ))}
-          <dt>Links</dt><dd>{graph.links.filter(l => l.kind === 'link').length}</dd>
+          <dt>{t('memoryMap.links')}</dt><dd>{graph.links.filter(l => l.kind === 'link').length}</dd>
         </dl>
-        <div className="g-detail" style={{ marginTop: 10 }}>Click a note square to open it. Scroll to zoom, drag to move. Notes light up while they are being written.</div>
-        {Object.keys(lit).length > 0 && <div className="g-saved" data-testid="memory-live">Writing: {Object.keys(lit).slice(0, 3).join(', ')}</div>}
+        <div className="g-detail" style={{ marginTop: 10 }}>{t('memoryMap.hint')}</div>
+        {Object.keys(lit).length > 0 && <div className="g-saved" data-testid="memory-live">{t('memoryMap.writing', { value: Object.keys(lit).slice(0, 3).join(', ') })}</div>}
       </Panel>
     </div>
   )

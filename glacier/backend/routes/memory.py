@@ -53,12 +53,16 @@ def _meta(text: str, path: str) -> tuple[dict, str]:
     return memory_meta.parse(text, path)
 
 
-def _all() -> list[dict]:
+def _all(include_graph_data: bool = False) -> list[dict]:
     result = []
     for path in vault.list_notes(".md"):
         try:
-            meta, _ = vault.read_note_metadata(path)
-            result.append({"path": path, **{k: meta[k] for k in ("title", "author", "updated", "tags")}})
+            meta, body, stat = vault.read_note_metadata_with_stat(path)
+            item = {"path": path, **{k: meta[k] for k in ("title", "author", "updated", "tags")}}
+            if include_graph_data:
+                item["_body"] = body
+                item["_mtime"] = stat.st_mtime_ns
+            result.append(item)
         except (OSError, ValueError):
             continue
     return result
@@ -77,7 +81,9 @@ def _link_index(items: list[dict]) -> tuple[dict[str, list[dict[str, str]]], Lin
     for item in items:
         path = item["path"].removesuffix(".md")
         try:
-            _, body = vault.read_note_metadata(item["path"])
+            body = item.get("_body")
+            if body is None:
+                _, body = vault.read_note_metadata(item["path"])
             links[path] = resolve_links(body, path, resolver)
         except (OSError, ValueError):
             links[path] = []
@@ -137,13 +143,8 @@ def graph(limit: int | None = None):
         raise HTTPException(400, "Limit must be a positive number")
     nodes, edges = [], []
     known = set()
-    items = _all()
-    def _mtime(item: dict) -> int:
-        try:
-            return os.stat(vault.safe_path(item["path"])).st_mtime_ns
-        except OSError:  # removed since it was listed
-            return 0
-    items.sort(key=_mtime, reverse=True)
+    items = _all(include_graph_data=True)
+    items.sort(key=lambda item: item["_mtime"], reverse=True)
     if limit is not None:
         items = items[:limit]
     links, _ = _link_index(items)

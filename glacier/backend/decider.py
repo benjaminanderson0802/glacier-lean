@@ -6,6 +6,7 @@ and routing. Engines (free first, per the owner's model policy):
 A paid engine (OpenAI Decisions API) is deliberately absent: it needs an owner-approved proposal first."""
 import json, os, subprocess, tempfile, urllib.request
 import shell_commands
+from egress import open_model_request
 
 ENGINES = ("auto", "local", "codex")
 MAX_OPTIONS = 12
@@ -40,7 +41,7 @@ def _local(question, options, context, model):
             "format": _schema(options), "options": {"temperature": 0},
             "messages": [{"role": "user", "content": _prompt(question, options, context)}]}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=int(os.environ.get("GLACIER_DECIDE_TIMEOUT", "120"))) as r:
+    with open_model_request(req, timeout=int(os.environ.get("GLACIER_DECIDE_TIMEOUT", "120"))) as r:
         content = json.loads(r.read())["message"]["content"]
     return json.loads(content)["choice"], f"local model {body['model']}"
 

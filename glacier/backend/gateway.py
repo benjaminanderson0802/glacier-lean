@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import claims
+from egress import open_model_request
 
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ def _post(route: dict, prompt: str, timeout: int) -> dict:
         "stream": False,
     }).encode()
     request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with open_model_request(request, timeout=timeout) as response:
         result = json.loads(response.read())
     content = result["choices"][0]["message"]["content"]
     if not isinstance(content, str):
@@ -104,7 +105,7 @@ def _probe_health(url: str) -> bool:
     """Check a route's health URL briefly; a successful HTTP response means online."""
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=_HEALTH_TIMEOUT) as response:
+        with open_model_request(request, timeout=_HEALTH_TIMEOUT) as response:
             return 200 <= response.status < 400
     except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout, TimeoutError, OSError, ValueError):
         return False

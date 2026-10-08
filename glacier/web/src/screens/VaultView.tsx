@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.ts'
+import { t } from '../i18n/index.ts'
 
 export function VaultView() {
   const [notes, setNotes] = useState<string[]>([])
@@ -13,11 +14,11 @@ export function VaultView() {
     <div className="vault">
       <div className="vault-list">
         <div className="section-head">
-          <span>Notes</span>
-          <button className="ghost" data-testid="vault-refresh" onClick={refresh}>Refresh</button>
+          <span>{t('vault.notes')}</span>
+          <button className="ghost" data-testid="vault-refresh" onClick={refresh}>{t('vault.refresh')}</button>
         </div>
         {err && <div className="error">{err}</div>}
-        {notes.length === 0 && !err && <div className="muted">No notes yet.</div>}
+        {notes.length === 0 && !err && <div className="muted">{t('vault.noNotes')}</div>}
         {notes.map(p => (
           <button
             key={p}
@@ -30,7 +31,7 @@ export function VaultView() {
       <div className="vault-body">
         {open
           ? <><div className="vault-path">{open.path}</div><pre data-testid="vault-note-body">{open.body}</pre></>
-          : <div className="muted">Select a note.</div>}
+          : <div className="muted">{t('vault.selectNote')}</div>}
       </div>
     </div>
   )

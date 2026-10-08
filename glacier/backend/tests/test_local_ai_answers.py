@@ -29,8 +29,8 @@ def _stub_ollama(monkeypatch, content):
         return _Response({"message": {"content": content}, "prompt_eval_count": 4, "eval_count": 3,
                           "eval_duration": 1_000_000_000})
 
-    monkeypatch.setattr(local_ai.urllib.request, "urlopen", urlopen)
-    monkeypatch.setattr(decider.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(local_ai, "open_model_request", urlopen)
+    monkeypatch.setattr(decider, "open_model_request", urlopen)
     monkeypatch.setenv("GLACIER_OLLAMA_URL", "http://ollama.test")
     return calls
 

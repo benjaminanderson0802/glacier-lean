@@ -3,6 +3,7 @@ import { api, type EnvSummary } from '../api.ts'
 import { Panel } from '../ui/kit.tsx'
 import { Icon, type IconName } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { t } from '../i18n/index.ts'
 
 type Cmd = { label: string; icon: IconName; hint?: string; run: () => void }
 
@@ -13,14 +14,14 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   useEffect(() => { api.listEnvs().then(setFlows).catch(() => {}) }, [])
 
   const cmds = useMemo<Cmd[]>(() => [
-    { label: 'Go to Home', icon: 'home', hint: 'Alt+1', run: () => go('home') },
-    { label: 'Ask the assistant', icon: 'ask', hint: 'Alt+2', run: () => go('ask') },
-    { label: 'Automations', icon: 'automations', hint: 'Alt+3', run: () => go('automations') },
-    { label: 'Search memory', icon: 'search', hint: 'Alt+4', run: () => go('memory') },
-    { label: 'Settings', icon: 'settings', hint: 'Alt+5', run: () => go('settings') },
-    { label: 'System check', icon: 'settings', run: () => go('settings/system') },
-    { label: 'Show help', icon: 'note', hint: 'F1', run: () => go('settings/help') },
-    ...flows.map(f => ({ label: `Open flow: ${f.name}`, icon: 'run' as IconName, run: () => go(`automations/flow/${f.id}`) })),
+    { label: t('command.goHome'), icon: 'home', hint: 'Alt+1', run: () => go('home') },
+    { label: t('command.askAssistant'), icon: 'ask', hint: 'Alt+2', run: () => go('ask') },
+    { label: t('command.automations'), icon: 'automations', hint: 'Alt+3', run: () => go('automations') },
+    { label: t('command.searchMemory'), icon: 'search', hint: 'Alt+4', run: () => go('memory') },
+    { label: t('command.settings'), icon: 'settings', hint: 'Alt+5', run: () => go('settings') },
+    { label: t('command.system'), icon: 'settings', run: () => go('settings/system') },
+    { label: t('command.help'), icon: 'note', hint: 'F1', run: () => go('settings/help') },
+    ...flows.map(f => ({ label: t('command.openFlow', { name: f.name }), icon: 'run' as IconName, run: () => go(`automations/flow/${f.id}`) })),
   ], [flows])
   const shown = cmds.filter(c => c.label.toLowerCase().includes(q.toLowerCase())).slice(0, 9)
   const pick = (c?: Cmd) => { if (c) { c.run(); onClose() } }
@@ -29,7 +30,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     <div className="g-scrim" onClick={onClose} data-testid="command-palette">
       <Panel className="g-palette">
         <div onClick={e => e.stopPropagation()}>
-          <input className="g-input" autoFocus placeholder="> Type a command or search…" value={q} data-testid="command-input"
+          <input className="g-input" autoFocus placeholder={t('command.search')} value={q} data-testid="command-input"
             onChange={e => { setQ(e.target.value); setSel(0) }}
             onKeyDown={e => {
               if (e.key === 'Escape') onClose()
