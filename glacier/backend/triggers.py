@@ -7,6 +7,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from pathlib import Path
 
 import runner
 import store
@@ -53,6 +54,21 @@ def _enabled(env: dict) -> bool:
     return env.get("enabled", True) is not False
 
 
+def _native_absolute_path(path: str | os.PathLike) -> str:
+    """Return a stable native absolute spelling for trigger attribution and keys.
+
+    A folder can be supplied through Git Bash as ``/c/Users/...`` even when
+    Python is running on Windows. Convert that spelling before resolving it so
+    the run snapshot and restart de-duplication use the same native path.
+    """
+    value = os.fspath(path)
+    if os.name == "nt":
+        normalized = value.replace("\\", "/")
+        if len(normalized) >= 3 and normalized[0] == "/" and normalized[1].isalpha() and normalized[2] == "/":
+            value = normalized[1].upper() + ":\\" + normalized[3:].replace("/", "\\")
+    return str(Path(value).expanduser().resolve())
+
+
 def scan_once(home: str) -> int:
     """Find unhandled files and start one normal run for each matching file."""
     started = 0
@@ -72,7 +88,7 @@ def scan_once(home: str) -> int:
                     try:
                         if not path.is_file() or not fnmatch.fnmatch(name, pattern):
                             continue
-                        resolved = str(path.resolve(strict=True))
+                        resolved = _native_absolute_path(path.resolve(strict=True))
                     except OSError:
                         continue
                     with _connect(home) as conn:

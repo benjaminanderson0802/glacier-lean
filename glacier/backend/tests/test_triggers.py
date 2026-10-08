@@ -7,6 +7,13 @@ import httpx
 import pytest
 
 from conftest import Server, env, raw_httpx
+import triggers
+
+
+def test_file_trigger_normalizes_path_to_absolute_native_spelling(tmp_path):
+    (tmp_path / "folder").mkdir()
+    relative = tmp_path / "folder" / ".." / "folder" / "file.txt"
+    assert triggers._native_absolute_path(relative) == str(relative.resolve())
 
 
 def _trigger_flow(folder, *, enabled=True, env_id="file-start"):
