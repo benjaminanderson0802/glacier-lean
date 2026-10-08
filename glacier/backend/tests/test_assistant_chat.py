@@ -5,6 +5,10 @@ import subprocess
 import sys
 import textwrap
 import asyncio
+import shutil
+import shlex
+
+import shell_commands
 
 import httpx
 import keyring
@@ -100,7 +104,7 @@ def test_chat_stream_has_ordered_ag_ui_events(tmp_path, monkeypatch):
 
 
 def test_codex_followup_prompt_contains_redacted_previous_exchange(tmp_path, monkeypatch):
-    """The configured Python stand-in receives prior turns on Windows and Unix."""
+    """Both Codex subprocesses use the stand-in when no codex is on PATH."""
     import uuid
     import vault
     from routes import assistant_chat
@@ -112,17 +116,29 @@ def test_codex_followup_prompt_contains_redacted_previous_exchange(tmp_path, mon
         import json, os, sys
         args = sys.argv[1:]
         prompt = args[-1]
+        schema_path = args[args.index("--output-schema") + 1]
+        schema = json.load(open(schema_path, encoding="utf-8"))
         with open(os.environ["CHAT_PROMPTS"], "a", encoding="utf-8") as log:
-            log.write(json.dumps(prompt) + "\\n")
+            log.write(json.dumps({"prompt": prompt, "planner": "name" in schema.get("required", [])}) + "\\n")
         out = args[args.index("-o") + 1]
-        open(out, "w", encoding="utf-8").write(json.dumps({"reply": "It can be weekly.", "automation": False}))
+        if "name" in schema.get("required", []):
+            answer = {"name": "Backup", "explanation": "Backs up files weekly.",
+                "nodes": [{"id": "backup", "type": "command", "config": [{"key": "cmd", "value": "backup weekly"}]}],
+                "edges": [], "acceptance": [{"kind": "human", "question": "Did the backup finish?", "cmd": "", "rubric": ""}]}
+        else:
+            answer = {"reply": "It can be weekly.", "automation": False}
+        open(out, "w", encoding="utf-8").write(json.dumps(answer))
     '''))
     chat = script
     if os.name != "nt":
         chat = tmp_path / "chat.sh"
-        chat.write_text(f"#!/bin/sh\nexec {sys.executable} {script} \"$@\"\n")
+        invocation = shell_commands.executable_invocation(sys.executable, str(script))
+        chat.write_text("#!/bin/sh\nexec " + " ".join(shlex.quote(part) for part in invocation) + ' "$@"\n')
         chat.chmod(0o755)
     monkeypatch.setenv("GLACIER_CHAT_BIN", str(chat))
+    # assistant.plan() launches a separate Codex process. Route it through the same
+    # schema-aware Python stand-in so the test never depends on a host Codex install.
+    monkeypatch.setenv("GLACIER_PLANNER_BIN", str(chat))
     monkeypatch.setenv("CHAT_PROMPTS", str(prompt_log))
     monkeypatch.setenv("GLACIER_ASK_ROUTE", "codex")
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "home"))
@@ -134,17 +150,37 @@ def test_codex_followup_prompt_contains_redacted_previous_exchange(tmp_path, mon
     keyring.set_password("Glacier", "chat-secret", "chat-secret-123")
     secrets_store._write_names(["chat-secret"])
 
-    first = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it daily with chat-secret-123"))
-    asyncio.run(_collect(first.body_iterator))
-    second = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it weekly instead"))
-    asyncio.run(_collect(second.body_iterator))
+    # Keep Python and Git available for subprocesses, but guarantee this test cannot
+    # accidentally find a host Codex binary (some CI machines install it in /usr/bin).
+    isolated_path = tmp_path / "path-without-codex"
+    isolated_path.mkdir()
+    (isolated_path / ("python.exe" if os.name == "nt" else "python")).symlink_to(sys.executable)
+    git_binary = shutil.which("git")
+    if git_binary:
+        (isolated_path / ("git.exe" if os.name == "nt" else "git")).symlink_to(git_binary)
+    monkeypatch.setenv("PATH", str(isolated_path))
+    assert shutil.which("codex") is None
 
-    prompts = [json.loads(line) for line in prompt_log.read_text(encoding="utf-8").splitlines()]
-    assert len(prompts) == 2
-    assert "Earlier conversation" in prompts[1]
-    assert "Make it daily with [secret chat-secret]" in prompts[1]
-    assert "Proposal " in prompts[1]
-    assert "chat-secret-123" not in prompts[1]
+    first = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it daily with chat-secret-123"))
+    first_events = "".join(asyncio.run(_collect(first.body_iterator)))
+    second = assistant_chat.chat(assistant_chat.ChatRequest(conversation_id=conversation_id, message="Make it weekly instead"))
+    second_events = "".join(asyncio.run(_collect(second.body_iterator)))
+    proposal_event = next(json.loads(line[6:]) for line in second_events.splitlines()
+                          if line.startswith("data: ") and json.loads(line[6:])["type"] == "TOOL_CALL_ARGS")
+    proposal = json.loads(proposal_event["delta"])
+    assert "weekly" in proposal["explanation"].lower()
+
+    calls = [json.loads(line) for line in prompt_log.read_text(encoding="utf-8").splitlines()]
+    chat_prompts = [call["prompt"] for call in calls if not call["planner"]]
+    planner_prompts = [call["prompt"] for call in calls if call["planner"]]
+    assert len(chat_prompts) == 2
+    assert "Earlier conversation" in chat_prompts[1]
+    assert "Make it daily with [secret chat-secret]" in chat_prompts[1]
+    assert "Proposal " in chat_prompts[1]
+    assert "chat-secret-123" not in chat_prompts[1]
+    assert len(planner_prompts) == 2
+    assert "Earlier conversation" in planner_prompts[1]
+    assert "Make it weekly instead" in planner_prompts[1]
 
 
 def test_automation_chat_proposes_flow_and_does_not_save(tmp_path, monkeypatch):
