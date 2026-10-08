@@ -62,11 +62,11 @@
 .status-failed, .status-rejected { color: var(--g-bad); border-color: var(--g-bad); }
 .list-item.active .badge { color: var(--g-accent-ink); border-color: var(--g-accent-ink); }
 
-.tabs { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
+.tabs { display: flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 8px 10px; background: var(--g-bar); border-bottom: 1px solid var(--g-line); }
 .app button.tab { background: transparent; border-color: var(--g-line-dim); }
 .app button.tab.active { background: var(--g-accent); border-color: var(--g-accent); color: var(--g-accent-ink); }
-.palette { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
-.app button.pal { font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
+.palette { display: flex; gap: 4px; flex: 1 1 0; min-width: 0; margin-left: auto; flex-wrap: nowrap; overflow-x: auto; }
+.app button.pal { flex-shrink: 0; white-space: nowrap; font-size: var(--g-size-small); border-color: var(--g-line); color: var(--g-text); }
 
 .empty { margin: auto; color: var(--g-muted); }
 .canvas-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
