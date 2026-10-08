@@ -365,3 +365,32 @@ This continues PH9.2, the real feature flow. It serves P-VERIFY and P-GOALS and 
 After the first rejection, the backend acceptance command in `flows/self/feature.json` was changed to acquire `/tmp/glacier-suite.lock`. The same backend failures persisted in both serialized runs. A direct focused rerun of those three test cases passed (`3 passed in 8.31s`), so their suite-level failure cause remains unresolved; the acceptance output did not preserve the full assertion details. No test or acceptance criteria were changed. The flow change and focused self-build tests passed (`16 passed in 5.08s`).
 
 The three-attempt limit is reached. No other cards were run because none reached a verified merge. All three runs have `verified: false`, `merged: false`; practice `main` remains at source commit `e527f5a4169170e4e2423ee8c29a2294f88444b1`. That is the flow update used as the practice base, not a feature merge commit. PH9.2 remains unverified.
+
+# W95 follow-up: practice suite diagnosis and first verified feature
+
+## Drift check and acceptance
+
+This continues PH9.2 and serves P-VERIFY/P-GOALS and M-VERIFIED/M-INTERVENE. PH3 and PH7 have approved exits; PH5 remains in progress, so this is an owner-authorized verified-merge-only run. The existing free, open-source feature flow is the tool. Acceptance is all saved checks passing, the final owner gate approving the reviewed guard output, and the flow recording a local practice merge. No NORTHSTAR checkpoint status was changed because PH9.2's exit requires three consecutive real features.
+
+## W66 failure records inspected
+
+The database and saved run notes were present at `/tmp/glacier-w66-round6-home/`. The exact repeated failures were:
+
+- `tests/test_a2a.py::test_send_get_completes_with_output_and_author`
+- `tests/test_core.py::test_codex_prev_output_substitution`
+- `tests/test_core.py::test_codex_streams_live_log_while_running`
+
+All three saved backend gates ended with `3 failed, 602 passed, 1 skipped, 1 warning`; the two locked retries took 471.09s and 457.42s. The persisted check evidence contains only abbreviated traceback summaries (`- As...`, `- AssertionErr...`, `- assert...`), not the failed values or full tracebacks. The saved practice checkout has the same test/fake-Codex sources as this branch; `fake_codex.py` is mode `100755`, and `conftest.py` sets `CODEX_BIN` to that fake and shadows Ollama for backend subprocesses. A focused rerun in a fresh clone passed (`3 passed in 8.83s`). The exact suite command in that clone also passed: `605 passed, 1 skipped, 1 warning in 435.85s (0:07:15)`. No persistent practice-only environment difference was reproduced, so the cause of W66's three assertion failures remains unconfirmed; no tests or acceptance checks were changed.
+
+## Live practice attempts
+
+The API ran locally at `127.0.0.1:8765` with `GLACIER_HOME=/tmp/w95-live-practice-home`; the practice checkout was refreshed from this card branch at `0573b83`. Run setup reads the same `GLACIER_HOME` so it can use the local engine token.
+
+| Run | Result | Evidence |
+| --- | --- | --- |
+| `bafcca9a56d9` | Rejected, unverified, unmerged | Worker completed and protected guard passed. The backend check timed out after 600s while queued for `/tmp/glacier-suite.lock`; the direct practice suite takes about 436s after it starts. Other project checks passed (`77 passed`), verification benchmark passed (false-done `0.00%`, verified `100.00%`), and security benchmark passed (`P 400 | blocked |`). Final gate rejected because the backend check had not passed. |
+| `3de97e6b0756` | **Verified and merged locally** | Worker completed; protected guard reported no modified/deleted protected checks. Backend suite inside the verifier's isolated temporary copy: `605 passed, 1 skipped, 1 warning in 446.19s (0:07:26)`. Other project checks: `77 passed in 3.88s`. Verification benchmark: false-done `0.00%` (0/20), verified `100.00%` (30/30). Security benchmark: `P 400 | blocked |`. Final human check approved after reviewing the guard result. |
+
+The verified worker commit is `85807ac`. The local practice merge commit is `9cdd84d` (`[run:3de97e6b0756] Glacier: merge verified run 3de97e6b0756`); practice `main` is clean and no push occurred. One real feature is verified; PH9.2 still needs two more consecutive verified runs for the phase exit. The first run's timeout was caused by lock queue wait exceeding the verifier's fixed 600-second command timeout, not by the three W66 test assertions.
+
+The requested final `bash ~/tools/suite.sh` completed successfully. Parallel backend suite exact final line: `601 passed, 1 skipped, 4 warnings in 114.25s (0:01:54)`. Serial backend suite exact final line: `4 passed, 602 deselected, 1 warning in 44.86s`.
