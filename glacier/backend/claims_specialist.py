@@ -49,6 +49,14 @@ def _append_resolution(cid: str, text: str, **updates) -> None:
     store.broadcaster.publish({"type": "claim", "id": cid, "status": meta.get("status")})
 
 
+def _resolution_summary(text: str) -> str:
+    """Keep worker prose and echoed prompts out of the durable Resolution log."""
+    line = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if line.startswith("##") or line.startswith("---"):
+        return "Specialist completed an attempt; see the run evidence."
+    return line[:240]
+
+
 @DBOS.step()
 def specialist_attempt(cid: str) -> dict:
     c = claims.get_claim(cid)
@@ -60,7 +68,7 @@ def specialist_attempt(cid: str) -> dict:
     ws = workspaces.base(home, run["env_id"])
     os.makedirs(ws, exist_ok=True)
     code, msg = run_specialist(ws, _prompt(meta, c["body"]))
-    _append(cid, f"\n## Specialist attempt ({meta.get('assigned_to')})\nexit {code}\n{msg[-2000:]}", status="researching")
+    _append_resolution(cid, _resolution_summary(msg), status="researching")
     return {"ok": code == 0, "env_id": run["env_id"], "note": msg[-300:]}
 
 

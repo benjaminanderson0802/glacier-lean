@@ -79,6 +79,9 @@ def test_rerun_resolution_survives_automatic_workflow_write(monkeypatch):
     saved = []
     monkeypatch.setattr(claims, "get_claim", lambda _cid: claim)
     monkeypatch.setattr(claims, "_now", lambda: "now")
+    monkeypatch.setattr(store, "get_run", lambda _rid: {"env_id": "cr"})
+    monkeypatch.setattr(claims_specialist.workspaces, "base", lambda *_args: "/tmp/cr")
+    monkeypatch.setattr(claims_specialist.os, "makedirs", lambda *_args, **_kwargs: None)
 
     def write_note(_path, rendered, **_kwargs):
         saved.append(rendered)
@@ -99,3 +102,40 @@ def test_rerun_resolution_survives_automatic_workflow_write(monkeypatch):
     assert "Owner ran the flow again to check: run new-run" in body
     assert "Fixed and proven: re-run new-run finished" in body
     assert body.count("## Resolution") == 1
+
+
+def test_specialist_echoed_prompt_does_not_duplicate_claim_sections_or_drop_rerun(monkeypatch):
+    import claims_specialist
+    import claims
+    import store
+    import vault
+
+    original = "## Problem\nStep c needs checking\n\n## Evidence\nx\n\n## Research\nNo similar past fix found.\n\n## Resolution\n"
+    claim = {"meta": {"run_id": "old-run", "assigned_to": "fixer"}, "body": original}
+    monkeypatch.setattr(claims, "get_claim", lambda _cid: claim)
+    monkeypatch.setattr(claims, "_now", lambda: "now")
+    monkeypatch.setattr(store, "get_run", lambda _rid: {"env_id": "cr"})
+    monkeypatch.setattr(claims_specialist.workspaces, "base", lambda *_args: "/tmp/cr")
+    monkeypatch.setattr(claims_specialist.os, "makedirs", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(claims_specialist, "_prompt", lambda _meta, body: "prompt\n" + body)
+    echoed = "The claim was:\n" + original + " [sandbox=workspace-write cwd=cr model=None]"
+    monkeypatch.setattr(claims_specialist, "run_specialist", lambda *_args: (0, echoed))
+
+    def write_note(_path, rendered, **_kwargs):
+        _, claim["body"] = claims._parse(rendered)
+
+    monkeypatch.setattr(vault, "write_note", write_note)
+    monkeypatch.setattr(store.broadcaster, "publish", lambda _event: None)
+    claim["body"] = claims.append_resolution(
+        claim["body"], "- now Owner ran the flow again to check: run new-run."
+    )
+
+    claims_specialist.specialist_attempt("claim-1234")
+    body = claim["body"]
+    assert body.count("## Problem") == 1
+    assert body.count("## Evidence") == 1
+    assert body.count("## Research") == 1
+    assert body.count("## Resolution") == 1
+    assert "Owner ran the flow again to check: run new-run" in body
+    assert "Step c needs checking" not in body.split("## Resolution", 1)[1]
+    assert "[sandbox=workspace-write" not in body
