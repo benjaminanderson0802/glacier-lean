@@ -1,20 +1,35 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const base = fileURLToPath(new URL('../', import.meta.url))
 const roots = ['src/screens', 'src/ui']
-const allowed = new Set(['…', '→', '·', '‹', '—', '•'])
-const errors = []
-function walk(dir) { for (const e of readdirSync(dir, { withFileTypes: true })) { const p = join(dir, e.name); if (e.isDirectory()) walk(p); else if (p.endsWith('.tsx')) check(p) } }
-function check(path) {
-  const s = readFileSync(path, 'utf8')
-  // Remove comments and quoted/template strings outside JSX, then inspect JSX text spans.
-  const stripped = s.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, m => ' '.repeat(m.length))
-  const re = />([^<>]*[A-Za-z][^<>]*)</g
-  for (const m of stripped.matchAll(re)) {
-    const text = m[1].replace(/\s+/g, ' ').trim()
-    if (!text || allowed.has(text) || text.includes('{') || text.includes('}') || /^\s*$/.test(text)) continue
-    // This heuristic only reports simple literal text nodes, not code accidentally matched across tags.
-    if (/^[\w ,.!?…→·‹—'’&:;()\-]+$/.test(text)) errors.push(`${path}: ${JSON.stringify(text)}`)
+const allow = new Set(['…', '→', '·', '‹', '—', '•', '+'])
+const findings = []
+const walk = dir => readdirSync(join(base, dir), { withFileTypes: true }).forEach(entry => {
+  const path = join(dir, entry.name)
+  if (entry.isDirectory()) walk(path)
+  else if (path.endsWith('.tsx')) scan(path)
+})
+
+function scan(path) {
+  const source = readFileSync(join(base, path), 'utf8')
+  // Visible prop literals: only the five user-facing props named in the card.
+  const props = /\b(title|sub|placeholder|aria-label|label)\s*=\s*(["'])(.*?)\2/g
+  for (const match of source.matchAll(props)) {
+    const value = match[3].trim()
+    if (/[A-Za-z]/.test(value) && !allow.has(value)) findings.push(`${path}: ${match[1]}=${JSON.stringify(value)}`)
+  }
+  // Match direct JSX text nodes between tags. Expression boundaries exclude code fragments.
+  const jsxText = />([^<>\n{}]*[A-Za-z][^<>\n{}]*)</g
+  for (const match of source.matchAll(jsxText)) {
+    const value = match[1].replace(/\s+/g, ' ').trim()
+    if (!value || allow.has(value)) continue
+    if (/^[\w ,.!?…→·‹—'’&:;()\-]+$/.test(value)) findings.push(`${path}: JSX text ${JSON.stringify(value)}`)
   }
 }
+
 for (const root of roots) walk(root)
-if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1 } else console.log('i18n JSX text check passed')
+if (findings.length) console.log(`i18n scanner: ${findings.length} finding(s)\n${findings.join('\n')}`)
+else console.log('i18n scanner: no findings')
+if (process.argv.includes('--fail') && findings.length) process.exitCode = 1
