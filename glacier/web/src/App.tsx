@@ -1,6 +1,6 @@
 // Glacier window: top bar with exactly five options, the active screen, and the keyboard footer.
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { Icon, Logo, type IconName } from './ui/Pixel.tsx'
+import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
 import { HomeScreen } from './screens/Home.tsx'
 import { AskScreen } from './screens/Ask.tsx'
@@ -19,12 +19,11 @@ let splashSeen = location.hash.replace(/^#\/?/, '') !== ''
 
 const BuildScreen = lazy(() => import('./screens/Build.tsx'))
 
-const LABEL: Record<Tab, string> = { home: 'nav.home', ask: 'nav.ask', automations: 'nav.automations', memory: 'nav.memory', settings: 'nav.settings' }
-
+const LABEL: Record<Tab, string> = { home: 'nav.home', ask: 'nav.build', automations: 'nav.automations', memory: 'nav.memory', settings: 'nav.settings' }
 const isDesktop = '__TAURI_INTERNALS__' in window
 
 async function winAction(a: 'minimize' | 'close') {
-  if (!isDesktop) return
+  if (!('__TAURI_INTERNALS__' in window)) return
   const { getCurrentWindow } = await import('@tauri-apps/api/window')
   await getCurrentWindow()[a]()
 }
@@ -36,6 +35,8 @@ export default function App() {
   const [splash, setSplash] = useState(!splashSeen)
   const [updateNotice, setUpdateNotice] = useState<{ version: string; notes: string } | null>(null)
   const [updateDismissed, setUpdateDismissed] = useState(false)
+
+  useEffect(() => { if (location.hash === '#/ask' || location.hash.startsWith('#/ask/')) location.replace(location.hash.replace('#/ask', '#/build')) }, [])
 
   useEffect(() => {
     const receive = (event: Event) => {
@@ -49,6 +50,12 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key.startsWith('Arrow') && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        const i = TABS.indexOf(tab)
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); go(TABS[(i + 1) % TABS.length]) }
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); go(TABS[(i + TABS.length - 1) % TABS.length]) }
+      }
+      else if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) { (document.querySelector('.g-menu-item[aria-current="page"]') as HTMLButtonElement | null)?.click() }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette(p => !p) }
       else if (e.key === 'F1') { e.preventDefault(); go('settings/help') }
       else if (e.ctrlKey && e.key === 'Tab') {
@@ -61,12 +68,12 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [tab])
 
-  const building = tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
+  const building = tab === 'ask' || tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
   const screen = useMemo(() => {
     switch (tab) {
       case 'ask': return <AskScreen />
       case 'automations': return building
-        ? <Suspense fallback={<div className="g-empty">{translate('build.loading')}</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
+        ? <Suspense fallback={<div className="g-empty">Loading the builder…</div>}><BuildScreen initialEnv={rest[0] === 'build' ? rest[1] : undefined} initialRun={rest[0] === 'build' ? rest[2] : undefined} newName={rest[0] === 'new' ? rest[1] : undefined} onStatus={setStatus} /></Suspense>
         : rest[0] === 'flow' && rest[1]
           ? <RunView key={rest.join('/')} envId={rest[1]} runId={rest[2] !== 'history' ? rest[2] : undefined} history={rest[2] === 'history'} />
           : rest[0] === 'templates' ? <Templates /> : <AutomationsScreen />
@@ -79,19 +86,17 @@ export default function App() {
   return (
     <div className="g-window" data-testid="window">
       <nav className="g-topbar" data-tauri-drag-region>
-        <div className="g-brand"><Logo px={3} />{translate('pixel.glacier')}</div>
-        <div className="g-tabs" role="tablist">
-          {TABS.map(t => (
-            <button key={t} role="tab" aria-selected={t === tab} className={`g-tab${t === tab ? ' active' : ''}`} data-testid={`nav-${t}`} onClick={() => go(t)}>
-              <Icon name={t as IconName} /><span title={translate(LABEL[t])}>{translate(LABEL[t])}</span>
-            </button>
-          ))}
-        </div>
+        <div className="g-brand" data-tauri-drag-region><Logo px={3} /><span className="g-brand-name">GLACIER - {translate(LABEL[tab]).toUpperCase()}</span></div>
+        <div className="g-tabs" aria-hidden="true" />
         {isDesktop && <div className="g-winctl" data-tauri-drag-region="false">
           <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
           <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>
         </div>}
       </nav>
+      <aside className="g-side" data-testid="game-menu">
+        <section className="g-panel"><h2 className="g-panel-title">MENU</h2><div className="g-menu-list" role="tablist" aria-orientation="vertical">{TABS.map((item) => <button key={item} role="tab" aria-selected={item === tab} data-testid={`nav-${item}`} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}><span className="g-menu-cursor"/><span className="g-menu-icon" style={{ '--icon': `url('./theme/sprites/icon-${item === 'ask' ? 'build' : item}.png')` } as React.CSSProperties}/>{translate(LABEL[item])}</button>)}</div></section>
+        <section className="g-panel g-engines"><h2 className="g-panel-title">ENGINES</h2><small>● Codex</small><small>● granite</small></section>
+      </aside>
       <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
       {tab === 'home' && updateNotice && !updateDismissed && <aside className="g-notice" data-testid="home-update-notice"><div><strong>{translate('home.updateAvailable', { version: updateNotice.version })}</strong>{updateNotice.notes && <div className="g-detail">{updateNotice.notes}</div>}</div><button className="g-link" data-testid="home-update-dismiss" onClick={() => setUpdateDismissed(true)}>{translate('home.dismissUpdate')}</button></aside>}
       <footer className="g-footer">

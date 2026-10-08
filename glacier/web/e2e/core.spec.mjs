@@ -61,6 +61,8 @@ try {
   const tid = id => page.getByTestId(id)
 
   const connect = async (from, to) => {
+    const fit = page.locator('.react-flow__controls-fitview')
+    if (await fit.count()) { await fit.click(); await page.waitForTimeout(250) }
     const a = await tid(`handle-out-${from}`).boundingBox()
     const b = await tid(`handle-in-${to}`).boundingBox()
     await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)

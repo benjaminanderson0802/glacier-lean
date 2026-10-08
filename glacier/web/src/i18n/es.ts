@@ -1,6 +1,7 @@
 export const es: Record<string, string> = {
   'nav.home': 'Inicio',
-  'nav.ask': 'Preguntar',
+  'nav.ask': 'Crear',
+  'nav.build': 'Crear',
   'nav.automations': 'Flujos',
   'nav.memory': 'Memoria',
   'nav.settings': 'Ajustes',
@@ -94,7 +95,7 @@ export const es: Record<string, string> = {
   'build.cancel': 'Cancelar',
   'build.newFlow': '+ Nuevo flujo',
   'build.runs': 'Ejecuciones',
-  'build.refresh': 'Cargar',
+  'build.refresh': 'Ver',
   'build.noRuns': 'Todavía no hay ejecuciones.',
   'build.canvas': 'Lienzo',
   'build.notes': 'Notas',

@@ -136,6 +136,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
 
+  // Refit after the terminal row opens so the reduced canvas still shows every node.
+  useEffect(() => {
+    if (!activeRun || !selected || tab !== 'canvas') return
+    const frame = requestAnimationFrame(() => { void reactFlow.fitView({ padding: 0.2, duration: 0 }) })
+    return () => cancelAnimationFrame(frame)
+  }, [activeRun?.run_id, selected?.id, tab, reactFlow])
+
   /** Fields of the flow the builder does not edit (goal, acceptance checks, isolate, ...): kept on save. */
   const extras = useRef<Record<string, unknown>>({})
   const envIdRef = useRef(envId)
