@@ -184,18 +184,26 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
         code = p.returncode
     except subprocess.TimeoutExpired:
         if os.name == "nt":
-            # Stop the shell immediately. taskkill /T can spend many seconds
-            # walking its descendants; killing the process handle is prompt.
-            # Closing our read end also prevents orphaned children that inherited
-            # stdout from keeping communicate() blocked after the shell exits.
+            # Git Bash can leave child processes holding our pipe open. Kill the
+            # whole process tree, then bound cleanup rather than waiting for EOF.
+            try:
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)],
+                               capture_output=True, timeout=2)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
             try:
                 p.kill()
-                if p.stdout:
+            except OSError:
+                pass
+            if p.stdout:
+                try:
                     p.stdout.close()
-                p.wait(timeout=2)
-            except (OSError, subprocess.TimeoutExpired):
-                subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
-                p.wait()
+                except OSError:
+                    pass
+            try:
+                p.wait(timeout=0.2)
+            except subprocess.TimeoutExpired:
+                pass
             out = ""
         else:
             try:

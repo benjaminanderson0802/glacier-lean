@@ -373,6 +373,44 @@ def test_command_timeout(server):
     assert run["status"] == "failed" and time.time() - t0 < 10 and "timed out after 1s" in run["outputs"]["c"], run
 
 
+def test_command_timeout_kills_windows_process_tree(monkeypatch):
+    import io
+    import runner
+
+    calls = []
+
+    class Process:
+        pid = 4321
+        stdout = io.StringIO()
+        returncode = None
+
+        def communicate(self, timeout):
+            raise subprocess.TimeoutExpired("cmd", timeout)
+
+        def kill(self):
+            calls.append(("kill",))
+
+        def wait(self, timeout=None):
+            calls.append(("wait", timeout))
+            return None
+
+    def fake_run(args, **kwargs):
+        calls.append(("taskkill", args, kwargs))
+
+    monkeypatch.setattr(runner.os, "name", "nt")
+    monkeypatch.setattr(runner.subprocess, "CREATE_NEW_PROCESS_GROUP", 0, raising=False)
+    monkeypatch.setattr(runner.subprocess, "Popen", lambda *args, **kwargs: Process())
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    started = time.monotonic()
+    result = runner.run_command({"cmd": "sleep 20"}, timeout=1)
+
+    assert result["state"] == "failed"
+    assert "timed out after 1s" in result["output"]
+    assert any(call[0] == "taskkill" and call[1] == ["taskkill", "/F", "/T", "/PID", "4321"]
+               and call[2]["timeout"] <= 2 for call in calls)
+    assert time.monotonic() - started < 1
+
+
 def test_failed_run_sends_exactly_one_alert(tmp_path, monkeypatch):
     """A broken run (including a failing sub-flow inside it) sends one plain-language alert; a good run sends none."""
     import http.server, threading
