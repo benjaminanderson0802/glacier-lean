@@ -84,6 +84,17 @@ def _plain(path: str) -> str:
     return path
 
 
+_roots_cache: tuple[str, tuple[str, ...]] = ("", ())
+
+
+def _vault_roots() -> tuple[str, ...]:
+    """The vault folder as given and as resolved, computed once per vault (realpath is slow on Windows)."""
+    global _roots_cache
+    if _roots_cache[0] != VAULT:
+        _roots_cache = (VAULT, tuple({os.path.normcase(VAULT), os.path.normcase(_plain(os.path.realpath(VAULT)))}))
+    return _roots_cache[1]
+
+
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
     if os.name == "nt":
@@ -92,7 +103,7 @@ def safe_path(path: str) -> str:
     # Compare without case on Windows/macOS-style paths, and accept the vault's own
     # resolved location too (realpath can report different casing than abspath).
     norm = os.path.normcase(full)
-    for root in {os.path.normcase(VAULT), os.path.normcase(_plain(os.path.realpath(VAULT)))}:
+    for root in _vault_roots():
         if root and norm.startswith(root + os.sep):
             parts = norm[len(root) + 1:].split(os.sep)
             if ".git" in parts:  # works with either slash: parts come from the OS separator
