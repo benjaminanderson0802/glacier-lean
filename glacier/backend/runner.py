@@ -231,7 +231,12 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     if kind not in ("file_trigger", "webhook_trigger"):
         cfg = _expand_trigger_values(cfg, trigger)
     store.set_node(run_id, env_id, nid, "running")
-    run_record = store.get_run(run_id) or {"author": "owner"}
+    try:
+        run_record = store.get_run(run_id) or {"author": "owner"}
+    except sqlite3.OperationalError:
+        # Direct runner calls can run before app startup has initialized the
+        # run-state database; they still need the default audit identity.
+        run_record = {"author": "owner"}
     res = {"state": "done", "output": ""}
     try:
         if kind in ("command", "codex"):
