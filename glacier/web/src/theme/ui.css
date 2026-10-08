@@ -33,13 +33,8 @@ button { cursor: pointer; }
 .g-side-rail .g-menu-item .g-menu-cursor { position: absolute; left: 0; width: calc(2 * var(--px)); height: calc(5 * var(--px)); }
 .g-side-rail .g-menu-icon { width: calc(8 * var(--px)); height: calc(8 * var(--px)); margin: 0; }
 .g-side-rail .g-menu-item:hover::after,.g-side-rail .g-menu-item:focus-visible::after { content: attr(aria-label); position: absolute; left: calc(18 * var(--px)); z-index: 30; padding: calc(1 * var(--px)) calc(2 * var(--px)); background: var(--g-navy2); color: var(--g-white); font-size: calc(4 * var(--px)); }
-.g-main[data-testid="screen-home"] { display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:calc(24 * var(--px)) minmax(0,1fr) minmax(0,1fr);gap:calc(2 * var(--px)); }
+.g-main[data-testid="screen-home"]:has(> .g-home-grid) { display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:calc(24 * var(--px)) minmax(0,1fr) minmax(0,1fr);gap:calc(2 * var(--px)); }
 .g-main[data-testid="screen-home"] > .g-pagehead { grid-column:1 / -1;grid-row:1; }
-.g-main[data-testid="screen-home"] > .g-grid-2 { display:contents; }
-.g-main[data-testid="screen-home"] > .g-grid-2 > .g-panel { grid-column:1;grid-row:2 / 4; }
-.g-main[data-testid="screen-home"] > .g-grid-2 > .g-stack { grid-column:2;grid-row:2 / 4; }
-.g-main[data-testid="screen-home"] > .g-grid-2 > .g-stack > .g-panel:first-child { flex:0 0 50%; }
-.g-main[data-testid="screen-home"] > .g-grid-2 > .g-stack > .g-panel:last-child { flex:1; }
 .g-main[data-testid="screen-home"] > .g-grid-2.g-home-grid { display:contents; }
 .g-main[data-testid="screen-home"] > .g-grid-2.g-home-grid > .g-panel { grid-column:1;grid-row:2 / 4; }
 .g-main[data-testid="screen-home"] > .g-grid-2.g-home-grid > .g-stack { grid-column:2;grid-row:2 / 4; }
@@ -175,3 +170,4 @@ button { cursor: pointer; }
 .g-delete-confirm { position:relative;display:inline-flex;align-items:center;flex-wrap:wrap;gap:calc(2 * var(--px));padding:calc(2 * var(--px)) calc(2 * var(--px)) calc(7 * var(--px));border:var(--px) solid var(--g-navy);background:var(--g-ice2); }
 .g-delete-confirm .g-more-arrow { display:block; }
 .g-delete-confirm .g-hintbar { flex:1 0 100%; }
+.g-main[data-testid="screen-home"] .g-panel { min-height:0;overflow-y:auto; }

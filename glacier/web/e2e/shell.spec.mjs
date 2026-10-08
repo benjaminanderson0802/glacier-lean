@@ -189,6 +189,7 @@ try {
 
   // Ask > Edit: proposed automation opens in the builder; its goal and checks survive saving
   await page.getByTestId('nav-ask').click()
+  await page.getByTestId('build-open-chat').click()
   await page.getByTestId('chat-input').fill('make me a daily backup')
   await page.getByTestId('chat-send').click()
   await page.getByTestId('proposal-checks').waitFor()
