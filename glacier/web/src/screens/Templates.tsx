@@ -1,8 +1,7 @@
 // Templates gallery (mockup panel 9): start a flow from a reviewed template.
 import { useEffect, useState } from 'react'
 import { api, slugify, templatesApi, type TemplateItem } from '../api.ts'
-import { Btn, Empty, PageHead, Panel } from '../ui/kit.tsx'
-import { Icon } from '../ui/Pixel.tsx'
+import { Btn, Empty, PageHead, Window } from '../ui/kit.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
@@ -37,11 +36,11 @@ export function Templates() {
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       {tags.length > 1 && <div className="g-seg" style={{ alignSelf: 'flex-start' }}>{tags.map(value => <button key={value} className={`g-seg-btn${value === tag ? ' active' : ''}`} onClick={() => setTag(value)}>{value}</button>)}</div>}
-      <div className="g-cards" data-testid="template-grid">
+      <Window title={t('templates.title')} className="template-window" testid="templates-window"><div className="g-cards" data-testid="template-grid">
         {shown.map(item => (
           <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button type="button" className={`g-card${pick?.id === item.id ? ' sel' : ''}`} style={{ flex: 1 }} onClick={() => setPick(item)} data-testid={`tpl-${item.id}`} disabled={!item.installable}>
-              <span className="g-card-ico"><img className="template-thumb" src={`/templates/previews/${item.id}.png`} alt="" loading="lazy" /><Icon name="automations" /></span>
+              <span className="g-card-ico"><img className="template-thumb" src={`/templates/previews/${item.id}.png`} alt="" loading="lazy" /></span>
               <span className="g-card-text"><span className="g-lead">{item.name}</span>
                 <span className="g-detail">{item.description && item.description !== item.name ? item.description : t('templates.stepCount', { count: item.template?.nodes.length ?? 0 })}</span>
                 <span className="template-needs">{t('templates.needs')}: {requires(item.template)}</span>
@@ -53,16 +52,16 @@ export function Templates() {
               onError={e => setErr(String(e))} />}
           </div>
         ))}
-      </div>
+      </div></Window>
       {items && shown.length === 0 && <Empty>{t('templates.noTemplates')}</Empty>}
       {pick && (
-        <Panel title={pick.name} aside={`${pick.author ?? 'Glacier'} · ${pick.license ?? ''} · ${pick.review_status}`} testid="template-detail">
+        <Window title={<>{pick.name}<span className="g-aside">{pick.author ?? 'Glacier'} · {pick.license ?? ''} · {pick.review_status}</span></>} className="template-detail-window" testid="template-detail">
           <img className="template-full-preview" src={`/templates/previews/${pick.id}.png`} alt={`${pick.name} ${t('templates.preview').toLowerCase()}`} />
           <div className="g-ask-row">
             <span className="g-detail" style={{ flex: 1 }}>{t('templates.needs')}: {requires(pick.template)}<br />{t('templates.produces')}: {produces(pick.template)}<br />{t('templates.steps', { value: (pick.template?.nodes ?? []).map(n => n.type).join(' → ') })}</span>
             <Btn primary onClick={() => use(pick)} disabled={busy || !pick.installable} data-testid="tpl-use">{t('templates.use')}</Btn>
           </div>
-        </Panel>
+        </Window>
       )}
     </>
   )

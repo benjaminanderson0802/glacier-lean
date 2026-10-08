@@ -72,6 +72,8 @@ export const en: Record<string, string> = {
   'automations.never': 'never',
   'automations.noMatches': 'No flows match.',
   'automations.empty': 'No flows yet. Press New, or ask the assistant to make one.',
+  'automations.open': 'open',
+  'automations.back': 'back',
   'automations.title': 'Automations',
   'automations.newName': 'Name the new flow',
   'automations.create': 'Create',
