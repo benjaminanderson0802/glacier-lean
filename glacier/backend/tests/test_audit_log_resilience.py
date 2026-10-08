@@ -19,14 +19,14 @@ def test_audit_store_is_created_lazily_under_glacier_home(tmp_path, monkeypatch)
 def test_unavailable_audit_store_does_not_change_runner_result(tmp_path, monkeypatch, caplog):
     home = tmp_path / "home"
     home.mkdir()
-    (home / "glacier.sqlite").mkdir()
+    (home / "audit.sqlite").mkdir()  # the audit store path is a folder, so writes fail
     monkeypatch.setenv("GLACIER_HOME", str(home))
     monkeypatch.setattr(store, "set_node", lambda *args, **kwargs: None)
     monkeypatch.setattr(store, "set_run", lambda *args, **kwargs: None)
     caplog.set_level(logging.WARNING, logger="audit_log")
 
     result = runner.run_node("flow", "audit-unavailable", {
-        "id": "cmd", "type": "command", "config": {"cmd": "true"}
+        "id": "cmd", "type": "command", "config": {"cmd": "echo ok"}
     }, None, str(tmp_path))
 
     assert result["state"] == "done"
