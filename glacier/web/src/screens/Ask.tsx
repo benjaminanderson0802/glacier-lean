@@ -5,6 +5,7 @@ import { Icon, Mascot } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { setDraft } from '../draft.ts'
 import type { Environment } from '../api.ts'
+import { t } from '../i18n/index.ts'
 
 type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean }
 
@@ -15,11 +16,11 @@ const time = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2
 
 // How a proposed automation will be checked, in plain words (shown before anything runs).
 const checkText = (c: ProposalCheck) =>
-  c.kind === 'command' ? `Glacier runs a check: ${c.cmd ?? ''}`
-    : c.kind === 'rubric' ? `An independent reviewer checks: ${c.rubric ?? ''}`
-    : c.kind === 'human' ? `You confirm: ${c.question ?? 'Is it done?'}`
-    : c.kind === 'schema' ? 'The result must match the expected format'
-    : 'A check confirms it is done'
+  c.kind === 'command' ? t('ask.commandCheck', { value: c.cmd ?? '' })
+    : c.kind === 'rubric' ? t('ask.rubricCheck', { value: c.rubric ?? '' })
+    : c.kind === 'human' ? t('ask.humanCheck', { value: c.question ?? t('ask.defaultQuestion') })
+    : c.kind === 'schema' ? t('ask.schemaCheck')
+    : t('ask.genericCheck')
 
 export function AskScreen() {
   const [msgs, setMsgs] = useState<Msg[]>(saved.msgs)
@@ -70,7 +71,7 @@ export function AskScreen() {
         else if (ev.type === 'error') patch(g => ({ ...g, text: ev.message, error: true }))
       })
     } catch (e) {
-      patch(g => ({ ...g, text: `Could not reach the assistant (${String(e)}).`, error: true }))
+      patch(g => ({ ...g, text: t('ask.assistantError', { error: String(e) }), error: true }))
     } finally { setBusy(false) }
   }
 
@@ -88,7 +89,7 @@ export function AskScreen() {
   const edit = async (i: number) => {
     const p = msgs[i].proposal!
     const flow = (p.flow ?? {}) as Environment & Record<string, unknown>
-    const name = String(flow.name ?? flow.id ?? 'New automation')
+    const name = String(flow.name ?? flow.id ?? t('ask.newAutomation'))
     setDraft({ ...flow, id: String(flow.id ?? ''), name, nodes: (flow.nodes ?? []) as Environment['nodes'], edges: (flow.edges ?? []) as Environment['edges'] })
     applyProposal(p.id, false).catch(() => {})  // the edited copy replaces the proposal
     setMsgs(x => x.map((m, j) => j === i ? { ...m, state: 'rejected', text: m.text } : m))
@@ -97,17 +98,17 @@ export function AskScreen() {
 
   return (
     <>
-      <PageHead title="Ask" sub="Talk to your assistant." side={
+      <PageHead title={t('ask.title')} sub={t('ask.subtitle')} side={
         <div className="g-seg" data-testid="ask-views">
-          <button className={`g-seg-btn${view === 'chat' ? ' active' : ''}`} onClick={() => setView('chat')} data-testid="askview-chat">Chat</button>
-          <button className={`g-seg-btn${view === 'past' ? ' active' : ''}`} onClick={() => setView('past')} data-testid="askview-past">Past chats</button>
+          <button className={`g-seg-btn${view === 'chat' ? ' active' : ''}`} onClick={() => setView('chat')} data-testid="askview-chat">{t('ask.chat')}</button>
+          <button className={`g-seg-btn${view === 'past' ? ' active' : ''}`} onClick={() => setView('past')} data-testid="askview-past">{t('ask.pastChats')}</button>
         </div>} />
       {err && <div className="g-error">{err}</div>}
       {view === 'past' ? (
-        <Panel title="Past chats" aside={<input className="g-input" style={{ width: 220 }} placeholder="Search chats…" value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
+        <Panel title={t('ask.pastChats')} aside={<input className="g-input" style={{ width: 220 }} placeholder={t('ask.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
           <div className="g-rows">
             {(past ?? []).map(c => <Row key={c.id} icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} />)}
-            {past && past.length === 0 && <Empty>{q ? 'No chats match.' : 'No past chats yet.'}</Empty>}
+            {past && past.length === 0 && <Empty>{q ? t('ask.noMatches') : t('ask.noPast')}</Empty>}
           </div>
         </Panel>
       ) : (
@@ -115,44 +116,44 @@ export function AskScreen() {
         {conv && (
           <div className="g-chat-title" data-testid="chat-title">
             {renaming === null ? (
-              <><span className="g-lead">{title || 'This chat'}</span>
-                <button className="g-link" onClick={() => setRenaming(title)} data-testid="chat-rename">Rename</button>
-                <button className="g-link" onClick={fresh} data-testid="chat-new">New chat</button></>
+              <><span className="g-lead">{title || t('ask.thisChat')}</span>
+                <button className="g-link" onClick={() => setRenaming(title)} data-testid="chat-rename">{t('ask.rename')}</button>
+                <button className="g-link" onClick={fresh} data-testid="chat-new">{t('ask.newChat')}</button></>
             ) : (
               <form onSubmit={e => { e.preventDefault(); rename() }} style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
                 <input className="g-input" style={{ flex: 1 }} value={renaming} maxLength={80} onChange={e => setRenaming(e.target.value)} data-testid="chat-rename-input" autoFocus />
-                <Btn primary type="submit" disabled={!renaming.trim()} data-testid="chat-rename-save">Save</Btn>
-                <Btn onClick={() => setRenaming(null)}>Cancel</Btn>
+                <Btn primary type="submit" disabled={!renaming.trim()} data-testid="chat-rename-save">{t('ask.save')}</Btn>
+                <Btn onClick={() => setRenaming(null)}>{t('ask.cancel')}</Btn>
               </form>
             )}
           </div>
         )}
         <div className="g-chat-log" data-testid="chat-log">
-          {msgs.length === 0 && <div className="g-empty">Ask a question, or describe something you want done regularly. Glacier will propose an automation for you to approve.</div>}
+          {msgs.length === 0 && <div className="g-empty">{t('ask.empty')}</div>}
           {msgs.map((m, i) => (
             <div key={i} className={`g-msg ${m.who}`} data-testid={`msg-${i}`}>
-              <div className="g-msg-av">{m.who === 'glacier' ? <Mascot px={2} /> : <span className="g-you">You</span>}</div>
+              <div className="g-msg-av">{m.who === 'glacier' ? <Mascot px={2} /> : <span className="g-you">{t('ask.you')}</span>}</div>
               <div className="g-msg-body">
-                <div className="g-msg-head"><span className="g-lead">{m.who === 'you' ? 'You' : 'Glacier'}</span><span className="g-muted">{time(m.at)}</span></div>
+                <div className="g-msg-head"><span className="g-lead">{m.who === 'you' ? t('ask.you') : 'Glacier'}</span><span className="g-muted">{time(m.at)}</span></div>
                 <div className={m.error ? 'g-error' : ''}>{m.text || (busy && i === msgs.length - 1 ? '…' : '')}</div>
                 {m.proposal && (
                   <div className="g-proposal" data-testid="proposal">
-                    <div className="g-proposal-head"><Icon name="automations" /><span className="g-lead">{m.proposal.flow?.name ?? m.proposal.flow?.id ?? 'New automation'}</span>
-                      <span className={`g-chip ${m.state === 'approved' ? 'ok' : m.state === 'rejected' ? 'bad' : ''}`}>{m.state === 'approved' ? 'Approved' : m.state === 'rejected' ? 'Rejected' : 'Proposed'}</span></div>
+                    <div className="g-proposal-head"><Icon name="automations" /><span className="g-lead">{m.proposal.flow?.name ?? m.proposal.flow?.id ?? t('ask.newAutomation')}</span>
+                      <span className={`g-chip ${m.state === 'approved' ? 'ok' : m.state === 'rejected' ? 'bad' : ''}`}>{m.state === 'approved' ? t('ask.approved') : m.state === 'rejected' ? t('ask.rejected') : t('ask.proposed')}</span></div>
                     {m.proposal.explanation && <div className="g-detail">{m.proposal.explanation}</div>}
-                    {m.proposal.flow?.goal && <div className="g-detail" data-testid="proposal-goal">Goal: {m.proposal.flow.goal}</div>}
-                    <div className="g-muted">Steps: {m.proposal.flow?.nodes?.length ?? 0}</div>
+                    {m.proposal.flow?.goal && <div className="g-detail" data-testid="proposal-goal">{t('ask.goal', { goal: m.proposal.flow.goal })}</div>}
+                    <div className="g-muted">{t('ask.steps', { count: m.proposal.flow?.nodes?.length ?? 0 })}</div>
                     {(m.proposal.flow?.acceptance?.length ?? 0) > 0 && (
                       <div data-testid="proposal-checks">
-                        <div className="g-muted">How Glacier will know it is done:</div>
+                        <div className="g-muted">{t('ask.checkHeading')}</div>
                         <ul className="g-bullets">{m.proposal.flow!.acceptance!.map((c, j) => <li key={j}>{checkText(c)}</li>)}</ul>
                       </div>
                     )}
                     {m.state === 'open' && (
                       <div className="g-actions">
-                        <Btn primary onClick={() => decide(i, true)} data-testid="proposal-approve">Approve</Btn>
-                        <Btn onClick={() => edit(i)} data-testid="proposal-edit">Edit</Btn>
-                        <Btn onClick={() => decide(i, false)} data-testid="proposal-reject">Reject</Btn>
+                        <Btn primary onClick={() => decide(i, true)} data-testid="proposal-approve">{t('ask.approve')}</Btn>
+                        <Btn onClick={() => edit(i)} data-testid="proposal-edit">{t('ask.edit')}</Btn>
+                        <Btn onClick={() => decide(i, false)} data-testid="proposal-reject">{t('ask.reject')}</Btn>
                       </div>
                     )}
                   </div>
@@ -163,8 +164,8 @@ export function AskScreen() {
           <div ref={end} />
         </div>
         <form className="g-composer" onSubmit={e => { e.preventDefault(); send() }}>
-          <input className="g-input" placeholder="Type a message…" value={text} onChange={e => setText(e.target.value)} data-testid="chat-input" disabled={busy} />
-          <button className="g-btn primary g-send" type="submit" aria-label="Send" disabled={busy || !text.trim()} data-testid="chat-send"><Icon name="send" /></button>
+          <input className="g-input" placeholder={t('ask.input')} value={text} onChange={e => setText(e.target.value)} data-testid="chat-input" disabled={busy} />
+          <button className="g-btn primary g-send" type="submit" aria-label={t('ask.send')} disabled={busy || !text.trim()} data-testid="chat-send"><Icon name="send" /></button>
         </form>
       </Panel>
       )}
