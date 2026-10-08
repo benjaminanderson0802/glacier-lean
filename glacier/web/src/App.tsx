@@ -101,7 +101,7 @@ export default function App() {
     <div className="g-window" data-testid="window">
       <nav className="g-topbar" data-tauri-drag-region>
         <div className="g-brand" data-tauri-drag-region><Logo px={3} /><span className="g-brand-name">GLACIER - {translate(LABEL[tab]).toUpperCase()}</span></div>
-        <div className="g-tabs" aria-hidden="true" />
+        <div className="g-tabs" role="tablist" aria-hidden="true" />
         {isDesktop && <div className="g-winctl" data-tauri-drag-region="false">
           <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
           <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>

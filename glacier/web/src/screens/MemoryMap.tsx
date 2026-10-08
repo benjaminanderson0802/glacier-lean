@@ -95,18 +95,18 @@ export function MemoryMap() {
           {graph.nodes.length > 0 && (
             <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor="transparent"
               d3AlphaDecay={0.035} d3VelocityDecay={0.38} d3AlphaMin={0.001}
-              nodeRelSize={4} linkColor={(l: { source?: string | number | { id?: string | number }; target?: string | number | { id?: string | number } }) => {
+              nodeRelSize={4} linkColor={(l) => {
                 if (!highlighted) return line
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
                 return source === hovered || target === hovered ? tok('--g-accent') : 'transparent'
-              }} linkWidth={(l: { source?: string | number | { id?: string | number }; target?: string | number | { id?: string | number } }) => {
+              }} linkWidth={(l) => {
                 if (!highlighted) return 1
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
                 return source === hovered || target === hovered ? 2 : 0
-              }} linkCanvasObjectMode={() => 'replace'} cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 0 : Math.min(24, Math.floor(graph.nodes.length / 25))}
-              linkCanvasObject={(link: { source?: string | number | { x?: number; y?: number }; target?: string | number | { x?: number; y?: number } }, ctx: CanvasRenderingContext2D) => {
+              }} linkCanvasObjectMode="replace" cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 0 : Math.min(24, Math.floor(graph.nodes.length / 25))}
+              linkCanvasObject={(link, ctx) => {
                 if (!link.source || !link.target || typeof link.source !== 'object' || typeof link.target !== 'object') return
                 const snap = (v: number) => Math.round(v / pixel) * pixel
                 const x1 = snap(link.source.x ?? 0), y1 = snap(link.source.y ?? 0), x2 = snap(link.target.x ?? 0), y2 = snap(link.target.y ?? 0)

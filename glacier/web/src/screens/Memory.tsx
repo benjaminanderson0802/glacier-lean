@@ -23,11 +23,7 @@ const VIEWS = [['', t('memory.viewsNotes')], ['~map', t('memory.map')], ['~add',
 
 export function MemoryScreen({ path }: { path?: string }) {
   const view = path?.startsWith('~') ? path : ''
-  const switcher = (
-    <div className="g-seg" data-testid="memory-views">
-      {VIEWS.map(([v, l]) => <button key={v} className={`g-seg-btn${v === view ? ' active' : ''}`} onClick={() => go(v ? `memory/${v}` : 'memory')} data-testid={`memview-${l.toLowerCase()}`}>{l}</button>)}
-    </div>
-  )
+  const switcher = <KeyboardMenu orientation="horizontal" label={t('memory.title')} items={VIEWS.map(([v, l]) => ({ id: v, label: l, testid: `memview-${l.toLowerCase()}` }))} selected={view} onSelect={v => go(v ? `memory/${v}` : 'memory')} />
   const body = view ? (
     <>
       <PageHead title={view === '~map' ? t('memory.title') : view === '~add' ? t('memory.addTitle') : t('memory.cleanupTitle')} crumb={t('memory.title')}
@@ -108,14 +104,14 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
           <div className="g-rows">
             {hits
-              ? <KeyboardMenu label={t('memory.results', { query: q })} items={hits.map(h => ({ id: h.path, testid: `mem-hit-${h.path}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{h.title || h.path}</span><span className="g-detail">{h.snippet}</span></span> }))} selected={path ?? ''} onSelect={open} />
-              : <KeyboardMenu label={t('memory.viewsNotes')} items={list.map(n => ({ id: n.path, testid: `mem-note-${n.path}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{n.title || n.path}</span><span className="g-detail">{n.author ? t('memory.byAuthor', { name: n.author }) : ''}<span style={{ float: 'right' }}>{ago(n.updated)}</span></span></span> }))} selected={path ?? ''} onSelect={open} />}
+              ? hits.map(h => <div key={h.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={h.title||h.path} detail={h.snippet} onClick={()=>open(h.path)} testid={`mem-hit-${h.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(h.path)}`} onDelete={()=>deleteNote(h.path)} onDeleted={action=>noteDeleted(h.path,action)} onError={e=>setErr(String(e))} /></div>)
+              : list.map(n => <div key={n.path} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1,minWidth:0}}><Row icon="note" lead={n.title||n.path} detail={n.author?t('memory.byAuthor',{name:n.author}):undefined} when={ago(n.updated)} onClick={()=>open(n.path)} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={()=>deleteNote(n.path)} onDeleted={action=>noteDeleted(n.path,action)} onError={e=>setErr(String(e))} /></div>)}
             {notes && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
             {hits && hits.length === 0 && <Empty>{t('memory.nothingFound')}</Empty>}
           </div>
         </Panel>
         <Panel title={editing === 'new' ? t('memory.newNote') : note ? String(note.meta?.title ?? note.path) : t('memory.note')}
-          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid="note-delete" onDelete={() => deleteNote(note.path)} onDeleted={action => noteDeleted(note.path, action)} onError={e => setErr(String(e))} /><Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">{t('memory.rename')}</Btn><Btn onClick={() => setEditing('edit')} data-testid="note-edit">{t('memory.edit')}</Btn></>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">{t('memory.newNote')}</Btn></span>}
+          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">{t('memory.rename')}</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">{t('memory.edit')}</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">{t('memory.newNote')}</Btn></span>}
           testid="memory-note" className="g-scroll">
           {saved && !editing && (
             <div className="g-saved" data-testid="note-saved">{t('memory.savedVersion', { commit: saved.commit })}

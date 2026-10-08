@@ -1,7 +1,7 @@
 // Claims: problems the AI could not solve alone, waiting for the owner (mockup panel 3).
 import { useEffect, useState } from 'react'
 import { ago, api, claimsApi, sections, type ClaimFull, type ClaimSummary } from '../api.ts'
-import { Btn, Empty, Hint, HintBar, NamedTextBox, PageHead, Panel, Row } from '../ui/kit.tsx'
+import { Btn, Empty, Hint, HintBar, KeyboardMenu, NamedTextBox, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon } from '../ui/Pixel.tsx'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 import { go } from '../route.ts'
@@ -14,21 +14,26 @@ export function ClaimsList() {
   const [items, setItems] = useState<ClaimSummary[] | null>(null)
   const [err, setErr] = useState('')
   const [selected, setSelected] = useState('')
-  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
+  const [deleteUndo,setDeleteUndo]=useState<UndoAction|null>(null)
   useEffect(() => { claimsApi.list().then(setItems).catch(e => setErr(String(e))) }, [])
   const open = (items ?? []).filter(c => OPEN.includes(c.status))
   const done = (items ?? []).filter(c => !OPEN.includes(c.status))
+  const selectedClaim = open.find(c => c.id === selected)
   return (
     <>
       <PageHead title={t('claims.title')} crumb={t('claims.crumb')} sub={t('claims.subtitle')} />
       {err && <div className="g-error">{err}</div>}
-      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
+      <DeleteUndo action={deleteUndo} onDone={()=>setDeleteUndo(null)} onError={e=>setErr(String(e))}/>
       <div className="g-grid-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
         <Panel title={t('claims.waiting')} aside={open.length} testid="claims-open" className="g-scroll" style={{ gridColumn: 'auto', gridRow: 'auto' }}>
-          {open.length ? <div className="g-rows">{open.map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--px)' }}><div style={{ flex: 1, minWidth: 0 }}><button className={`g-row${selected === c.id ? ' sel' : ''}`} data-testid={`claim-${c.id}`} onClick={() => { setSelected(c.id); go(`home/claim/${c.id}`) }}><span className="g-mid"><span className="g-lead">{c.summary}</span><span className="g-detail">{c.kind} · {c.status} · {ago(c.updated)}</span></span></button></div><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid={`claim-delete-${c.id}`} onDelete={async () => { const result = await claimsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await claimsApi.undoDelete(c.id, result.commit); setItems(await claimsApi.list()) } } }} onDeleted={action => { setDeleteUndo(action ?? null); setItems(current => current?.filter(item => item.id !== c.id) ?? null) }} onError={e => setErr(String(e))} /></div>)}</div> : items && <Empty>{t('claims.nothingWaiting')}</Empty>}
+          {open.length ? <>
+            <KeyboardMenu label={t('claims.waiting')} items={open.map(c => ({ id: c.id, testid: `claim-${c.id}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{c.summary}</span><span className="g-detail">{c.kind} · {c.status} · {ago(c.updated)}</span></span> }))} selected={selected} onSelect={setSelected} />
+            {selectedClaim && <div onKeyDown={event => { if (event.key === 'Enter') go(`home/claim/${selectedClaim.id}`) }}><Btn onClick={() => go(`home/claim/${selectedClaim.id}`)}>{t('hint.open')}</Btn></div>}
+            {open.map(c=><div key={c.id} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1}}><Row status={c.status==='proposed'?'bad':'warn'} lead={c.summary} detail={`${c.kind} · ${c.status}`} when={ago(c.updated)} onClick={()=>go(`home/claim/${c.id}`)} testid={`claim-row-${c.id}`}/></div><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid={`claim-delete-${c.id}`} onDelete={async()=>{const r=await claimsApi.delete(c.id);return {title:t('delete.removed'),run:async()=>{await claimsApi.undoDelete(c.id,r.commit);setItems(await claimsApi.list())}}}} onDeleted={action=>{setDeleteUndo(action??null);setItems(current=>current?.filter(x=>x.id!==c.id)??null)}} onError={e=>setErr(String(e))}/></div>)}
+          </> : items && <Empty>{t('claims.nothingWaiting')}</Empty>}
         </Panel>
         <Panel title={t('claims.settled')} aside={done.length} className="g-scroll" style={{ gridColumn: 'auto', gridRow: 'auto' }}>
-          {done.length ? <div className="g-rows">{done.map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--px)' }}><div style={{ flex: 1, minWidth: 0 }}><button className={`g-row${selected === c.id ? ' sel' : ''}`} onClick={() => { setSelected(c.id); go(`home/claim/${c.id}`) }}><span className="g-mid"><span className="g-lead">{c.summary}</span><span className="g-detail">{c.status} · {ago(c.updated)}</span></span></button></div><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid={`claim-delete-${c.id}`} onDelete={async () => { const result = await claimsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await claimsApi.undoDelete(c.id, result.commit); setItems(await claimsApi.list()) } } }} onDeleted={action => { setDeleteUndo(action ?? null); setItems(current => current?.filter(item => item.id !== c.id) ?? null) }} onError={e => setErr(String(e))} /></div>)}</div> : items && <Empty>{t('claims.noneYet')}</Empty>}
+          {done.length ? done.map(c=><div key={c.id} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1}}><Row status={c.status==='resolved'?'ok':'idle'} lead={c.summary} detail={c.status} when={ago(c.updated)} onClick={()=>go(`home/claim/${c.id}`)}/></div><DeleteAction label={t('claims.deleteClaim')} impact={t('delete.claimImpact')} testid={`claim-delete-${c.id}`} onDelete={async()=>{const r=await claimsApi.delete(c.id);return {title:t('delete.removed'),run:async()=>{await claimsApi.undoDelete(c.id,r.commit);setItems(await claimsApi.list())}}}} onDeleted={action=>{setDeleteUndo(action??null);setItems(current=>current?.filter(x=>x.id!==c.id)??null)}} onError={e=>setErr(String(e))}/></div>) : items && <Empty>{t('claims.noneYet')}</Empty>}
         </Panel>
       </div>
       <HintBar><Hint keyLabel="↑↓">{t('hint.selectClaim')}</Hint><Hint keyLabel="Enter">{t('hint.open')}</Hint></HintBar>

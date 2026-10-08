@@ -1,5 +1,6 @@
 // Shared building blocks. Screens are made ONLY from these + Pixel.tsx, so the theme cannot drift.
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { Icon, StatusIcon, type IconName, type StatusKind } from './Pixel.tsx'
 
 export function Window({ title, children, className = '', testid }: { title?: ReactNode; children: ReactNode; className?: string; testid?: string }) {
@@ -16,7 +17,7 @@ export function KeyboardMenu({ items, selected, onSelect, label, orientation = '
   const [focused, setFocused] = useState(selected)
   const firstId = items[0]?.id ?? ''
   useEffect(() => setFocused(items.some(item => item.id === selected) ? selected : firstId), [selected, firstId])
-  const move = (event: KeyboardEvent<HTMLDivElement>) => {
+  const move = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const up = orientation === 'vertical' ? event.key === 'ArrowUp' : event.key === 'ArrowLeft'
     const down = orientation === 'vertical' ? event.key === 'ArrowDown' : event.key === 'ArrowRight'
     if (!up && !down) return

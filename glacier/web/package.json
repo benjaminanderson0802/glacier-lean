@@ -5,11 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run render:templates",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "mock": "node mock/mock_server.mjs",
-    "render:templates": "node scripts/render-template-previews.mjs",
     "e2e": "node e2e/core.spec.mjs",
     "check:ui": "node scripts/check-ui.mjs"
   },

@@ -129,6 +129,8 @@ button { cursor: pointer; }
 .g-why.ok { border-color: var(--g-ok); }
 .g-why.bad { border-color: var(--g-bad); }
 
+.g-notice { display:flex; align-items:center; justify-content:space-between; gap:calc(2 * var(--px)); margin:0 calc(2 * var(--px)); padding:calc(2 * var(--px)); border:var(--px) solid var(--g-navy); background:var(--g-ice0); color:var(--g-ink); }
+.g-notice .g-detail { white-space:pre-wrap; }
 /* W98 automation screens and template gallery. */
 .g-main[data-testid="screen-automations"],.g-main[data-testid="screen-templates"] { gap:calc(2 * var(--px)); }
 .automations-window,.template-window,.template-detail-window { flex:1;min-height:0;gap:calc(2 * var(--px)); }
