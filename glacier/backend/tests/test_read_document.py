@@ -1,6 +1,9 @@
 import http.server
+import json
 import os
 import socketserver
+import subprocess
+import sys
 import threading
 from pathlib import Path
 from urllib.error import HTTPError
@@ -8,6 +11,19 @@ from urllib.error import HTTPError
 import pytest
 
 from nodes.read_document import NODE
+
+
+def test_importing_app_does_not_import_document_conversion_stack(tmp_path):
+    backend = os.path.dirname(os.path.dirname(__file__))
+    env = dict(os.environ, GLACIER_HOME=str(tmp_path / "home"))
+    result = subprocess.run(
+        [sys.executable, "-c",
+         "import app, json, sys; print(json.dumps({name: name in sys.modules for name in "
+         "('markitdown', 'magika', 'onnxruntime')}))"],
+        cwd=backend, env=env, capture_output=True, text=True, check=True,
+    )
+    imports = json.loads(result.stdout.splitlines()[-1])
+    assert imports == {"markitdown": False, "magika": False, "onnxruntime": False}
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "docs"

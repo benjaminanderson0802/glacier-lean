@@ -23,6 +23,13 @@ def test_acceptance_checks_cover_expected_output_shapes():
     assert not run.check_output("list_items", "- Call Lee", "Call Lee|Send draft")
 
 
+def test_classification_task_has_clear_rules_and_constrained_labels():
+    task = next(item for item in run.AUTOMATIONS if item["id"] == "classify_messages")
+    assert "A refund, invoice amount, duplicate charge, or billing date is billing" in task["prompt"]
+    assert task["choose_one"] == "billing, technical, sales"
+    assert task["expected"].split("|")[8] == "billing"
+
+
 def test_report_has_plain_language_summary_and_all_tables():
     report = run.render_markdown({
         "machine": {"cpu_cores_reported": 4, "cpu_cores_detected": 16, "memory_gb": 7},

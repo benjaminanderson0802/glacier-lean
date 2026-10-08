@@ -9,7 +9,6 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from markitdown import MarkItDown
 
 
 _PATH_ERROR = "Only files inside this flow's folder can be read"
@@ -79,6 +78,10 @@ def run(ctx: dict) -> dict:
     if not source:
         return _failed("Choose a file or web address to read")
     try:
+        # Document conversion is an occasional operation and pulls in Magika and
+        # ONNX Runtime. Keep those libraries out of the backend's startup path.
+        from markitdown import MarkItDown
+
         if source.lower().startswith(("http://", "https://")):
             data, content_type = _read_url(source)
             converted = MarkItDown().convert_stream(io.BytesIO(data), file_extension=_extension(source, content_type))
