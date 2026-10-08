@@ -22,6 +22,7 @@ def init(path: str) -> None:
                      evidence TEXT, PRIMARY KEY(run_id, idx))""")
         c.execute("""CREATE TABLE IF NOT EXISTS glacier_usage(run_id TEXT, node_id TEXT, model TEXT, route TEXT,
                      tokens_in INTEGER, tokens_out INTEGER, cost_usd REAL, PRIMARY KEY(run_id, node_id))""")
+        c.execute("CREATE TABLE IF NOT EXISTS glacier_hidden_runs(run_id TEXT PRIMARY KEY, deleted_at TEXT NOT NULL)")
 
 
 SQLITE_BUSY_TIMEOUT_SECONDS = 5
@@ -104,12 +105,33 @@ def skip_pending(run_id: str, env_id: str) -> None:
 
 
 def list_runs(env_id: str | None) -> list[dict]:
-    q, args = "SELECT run_id, env_id, status, started_at FROM glacier_runs", ()
+    q, args = "SELECT run_id, env_id, status, started_at FROM glacier_runs WHERE run_id NOT IN (SELECT run_id FROM glacier_hidden_runs)", ()
     if env_id:
-        q, args = q + " WHERE env_id=?", (env_id,)
+        q, args = q + " AND env_id=?", (env_id,)
     with _conn() as c:
         rows = c.execute(q + " ORDER BY started_at DESC, rowid DESC", args).fetchall()
     return [dict(zip(("run_id", "env_id", "status", "started_at"), r)) for r in rows]
+
+
+def hide_run(run_id: str) -> bool:
+    with _conn() as c:
+        row = c.execute("SELECT status FROM glacier_runs WHERE run_id=?", (run_id,)).fetchone()
+        if not row:
+            return False
+        if row[0] in {"running", "waiting", "queued", "pending"}:
+            raise ValueError("A run that is still active cannot be removed from history")
+        c.execute("INSERT OR IGNORE INTO glacier_hidden_runs VALUES (?,?)",
+                  (run_id, datetime.now(timezone.utc).isoformat(timespec="seconds")))
+    return True
+
+
+def restore_hidden_run(run_id: str) -> bool:
+    with _conn() as c:
+        exists = c.execute("SELECT 1 FROM glacier_hidden_runs WHERE run_id=?", (run_id,)).fetchone()
+        if not exists:
+            return False
+        c.execute("DELETE FROM glacier_hidden_runs WHERE run_id=?", (run_id,))
+    return True
 
 
 def record_usage(run_id: str, node_id: str, u: dict) -> None:

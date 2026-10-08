@@ -213,3 +213,4 @@ html[lang="es"] .g-statusbox > div { min-width: 0; }
 .g-why b { color: var(--g-head); font-weight: 400; }
 .g-why.ok { border-color: var(--g-ok); }
 .g-why.bad { border-color: var(--g-bad); }
+.g-delete-confirm { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }

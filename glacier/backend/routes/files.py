@@ -16,6 +16,11 @@ class ProjectCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class UndoFileDelete(BaseModel):
+    undo_id: str
+    model_config = ConfigDict(extra="forbid")
+
+
 async def _read_bounded_body(request: Request) -> None:
     await read_bounded_body(request, files_store.max_upload_bytes() + 64 * 1024,
                             files_store.too_large_message())
@@ -59,6 +64,28 @@ async def upload_file(request: Request):
 def list_files(project: str | None = None):
     try:
         return files_store.list_files(project)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.delete("/api/files")
+def delete_file(project: str, name: str):
+    try:
+        return files_store.delete_file(project, name)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Uploaded file not found") from exc
+    except (PermissionError, ValueError) as exc:
+        raise HTTPException(400, "That file name or project is not allowed") from exc
+
+
+@router.post("/api/files/undo-delete")
+def undo_delete_file(body: UndoFileDelete):
+    try:
+        return files_store.undo_delete_file(body.undo_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
 

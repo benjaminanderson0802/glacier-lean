@@ -137,6 +137,32 @@ def put_note(item: NoteWrite):
     return {"path": path, "commit": commit}
 
 
+@router.delete("/api/memory/note")
+def delete_note(path: str):
+    relative = _normalised_path(path)
+    try:
+        commit = vault.delete_note(relative, agent="owner", kind="note")
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Note not found") from exc
+    except ValueError as exc:
+        raise HTTPException(400, "That note path is not allowed") from exc
+    return {"deleted": True, "path": relative, "commit": commit}
+
+
+@router.post("/api/memory/undo-delete")
+def undo_delete_note(item: Undo):
+    path = _normalised_path(item.path)
+    try:
+        commit = vault.restore_deleted_note(path, item.commit or "")
+    except FileExistsError as exc:
+        raise HTTPException(409, "A note with that name already exists") from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Removed note not found") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"restored": True, "path": path, "commit": commit}
+
+
 @router.get("/api/memory/graph")
 def graph(limit: int | None = None):
     if limit is not None and limit < 1:
@@ -220,6 +246,7 @@ def undo(item: Undo):
     except (KeyError, OSError):
         raise HTTPException(404, "The earlier version did not contain this note")
     commit = vault.write_note(path, body, author="owner")
+    vault.record_event("owner", "restore", {"kind": "note", "path": path, "commit": commit})
     return {"path": path, "commit": commit}
 
 

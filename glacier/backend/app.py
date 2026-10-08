@@ -108,6 +108,38 @@ def save_environment(env_id: str, env: dict):
     return {"saved": True, "commit": commit}
 
 
+@app.delete("/api/environments/{env_id}")
+def delete_environment(env_id: str):
+    try:
+        path = runner.env_path(env_id)
+        commit = vault.delete_note(path, agent="owner", kind="flow")
+        runner.sync_schedule({"id": env_id, "nodes": [], "edges": []})
+    except FileNotFoundError:
+        raise HTTPException(404, "Flow not found")
+    except ValueError as exc:
+        raise HTTPException(400, "That flow cannot be removed") from exc
+    return {"deleted": True, "id": env_id, "commit": commit}
+
+
+class UndoDelete(BaseModel):
+    commit: str
+
+
+@app.post("/api/environments/{env_id}/undo-delete")
+def undo_delete_environment(env_id: str, body: UndoDelete):
+    try:
+        path = runner.env_path(env_id)
+        commit = vault.restore_deleted_note(path, body.commit)
+        runner.sync_schedule(json.loads(vault.read_note(path)))
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, "That flow already exists") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"restored": True, "commit": commit}
+
+
 def validate_environment(env_id: str, env: dict) -> dict:
     """Apply the shared flow validation and scheduling rules before any save."""
     env["id"] = env_id
@@ -142,6 +174,25 @@ def run_environment(env_id: str):
 @app.get("/api/runs")
 def list_runs(env_id: str | None = None):
     return store.list_runs(env_id)
+
+
+@app.delete("/api/runs/{run_id}")
+def delete_run(run_id: str):
+    try:
+        if not store.hide_run(run_id):
+            raise HTTPException(404, "Run not found")
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    vault.record_event("owner", "delete", {"kind": "run", "id": run_id})
+    return {"deleted": True, "run_id": run_id}
+
+
+@app.post("/api/runs/{run_id}/undo-delete")
+def undo_delete_run(run_id: str):
+    if not store.restore_hidden_run(run_id):
+        raise HTTPException(404, "Removed run not found")
+    vault.record_event("owner", "restore", {"kind": "run", "id": run_id})
+    return {"restored": True, "run_id": run_id}
 
 
 @app.get("/api/runs/{run_id}")

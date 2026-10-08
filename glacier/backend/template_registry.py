@@ -174,6 +174,50 @@ def list_templates() -> list[dict]:
     return result
 
 
+def delete_imported(template_id: str) -> str:
+    """Move an owner-imported approved template into local trash and return its undo id."""
+    approved_dir = _home() / "templates" / "approved"
+    for path in approved_dir.glob("*.json") if approved_dir.is_dir() else ():
+        try:
+            proposal = json.loads(path.read_text(encoding="utf-8"))
+            actual_id = proposal.get("template", {}).get("id")
+        except (OSError, ValueError, AttributeError):
+            continue
+        if actual_id == template_id:
+            undo_id = uuid.uuid4().hex
+            trash = _home() / "templates" / "removed"
+            trash.mkdir(parents=True, exist_ok=True)
+            destination = trash / f"{undo_id}.json"
+            os.replace(path, destination)
+            return undo_id
+    raise FileNotFoundError(template_id)
+
+
+def undo_delete_imported(undo_id: str) -> str:
+    if not re.fullmatch(r"[0-9a-f]{32}", undo_id or ""):
+        raise ValueError("That template cannot be restored")
+    source = _home() / "templates" / "removed" / f"{undo_id}.json"
+    if not source.is_file():
+        raise FileNotFoundError(undo_id)
+    try:
+        proposal = json.loads(source.read_text(encoding="utf-8"))
+        template_id = proposal["template"]["id"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise ValueError("That template cannot be restored") from exc
+    approved = _home() / "templates" / "approved"
+    approved.mkdir(parents=True, exist_ok=True)
+    for path in approved.glob("*.json"):
+        try:
+            if json.loads(path.read_text(encoding="utf-8")).get("template", {}).get("id") == template_id:
+                raise FileExistsError("A template with that name already exists")
+        except FileExistsError:
+            raise
+        except (OSError, ValueError, AttributeError):
+            continue
+    os.replace(source, approved / f"{undo_id}.json")
+    return template_id
+
+
 def _home() -> Path:
     return app_data_home()
 

@@ -5,6 +5,7 @@ import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Tab = 'files' | 'text' | 'chats' | 'sessions'
 type Done = { name: string; ok: boolean; detail: string }
@@ -26,6 +27,11 @@ export function MemoryAdd() {
   const [sessions, setSessions] = useState<CodingSession[] | null>(null)
   const [sel, setSel] = useState<(CodingSession & { events: SessionEvent[] }) | null>(null)
   const [sessErr, setSessErr] = useState('')
+  const [uploaded, setUploaded] = useState<{ name: string; project: string; size: number }[] | null>(null)
+  const [fileUndo, setFileUndo] = useState<UndoAction | null>(null)
+  const [fileErr, setFileErr] = useState('')
+  const loadUploaded = () => addToMemory.files().then(setUploaded).catch(e => setFileErr(String(e)))
+  useEffect(() => { if (tab === 'files') loadUploaded() }, [tab])
   useEffect(() => { if (tab === 'sessions') { setSessErr(''); sessionsApi.list().then(setSessions).catch(e => { setSessions([]); setSessErr(String(e).replace(/^Error: /, '')) }) } }, [tab])
   const openSession = (id: string) => sessionsApi.get(id).then(setSel).catch(e => setSessErr(String(e).replace(/^Error: /, '')))
   const saveSession = async () => {
@@ -61,6 +67,7 @@ export function MemoryAdd() {
             } else {
               const r = await addToMemory.file(f, project.trim() || undefined)
               out.push({ name: f.name, ok: true, detail: r.duplicate ? t('memoryAdd.alreadyInMemory') : t('memoryAdd.added') })
+              loadUploaded()
             }
           } catch (e) { out.push({ name: f.name, ok: false, detail: String(e).replace(/^Error: /, '') }) }
         }
@@ -106,6 +113,21 @@ export function MemoryAdd() {
         <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? t('memoryAdd.sessionInfo') : tab === 'chats' ? t('memoryAdd.chatInfo') : tab === 'files' ? t('memoryAdd.filesInfo') : t('memoryAdd.noteInfo')}</div>
       </Panel>
       <Panel title={tab === 'sessions' ? 'Session' : 'Options'} testid="add-options">
+        {tab === 'files' && <>
+          <h3 className="g-panel-title">{t('memoryAdd.uploadedFiles')}</h3>
+          {fileErr && <div className="g-error">{fileErr}</div>}
+          <DeleteUndo action={fileUndo} onDone={() => setFileUndo(null)} onError={e => setFileErr(String(e))} />
+          <div className="g-rows" data-testid="uploaded-files">
+            {(uploaded ?? []).map(file => <div key={`${file.project}/${file.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ flex: 1 }}><Row icon="note" lead={file.name} detail={file.project} /></div>
+              <DeleteAction label={t('memoryAdd.deleteFile')} impact={t('delete.fileImpact')} testid={`file-delete-${file.project}-${file.name}`}
+                onDelete={async () => { const result = await addToMemory.deleteFile(file.project, file.name); return { title: t('delete.removed'), run: async () => { await addToMemory.undoDeleteFile(result.undo_id); loadUploaded() } } }}
+                onDeleted={action => { setFileUndo(action ?? null); setUploaded(current => current?.filter(item => item.name !== file.name || item.project !== file.project) ?? null) }}
+                onError={e => setFileErr(String(e))} />
+            </div>)}
+            {uploaded && uploaded.length === 0 && <Empty>{t('memoryAdd.noUploadedFiles')}</Empty>}
+          </div>
+        </>}
         {tab === 'files' && <label className="g-field"><span className="g-detail">{t('memoryAdd.project')}</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder={t('memoryAdd.none')} data-testid="add-project" /></label>}
         {tab === 'chats' && imports.length > 0 && (
           <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">

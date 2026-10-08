@@ -8,6 +8,7 @@ import { lazy, Suspense } from 'react'
 const MemoryMap = lazy(() => import('./MemoryMap.tsx').then(m => ({ default: m.MemoryMap })))
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 /** Plain-language writer: owner -> you; run:<id> -> an automation; worker:<model> -> AI (<model>). */
 function whoWrote(author: string): string {
@@ -49,6 +50,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   const [saved, setSaved] = useState<{ path: string; commit: string } | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renamed, setRenamed] = useState<{ from: string; path: string; commit: string } | null>(null)
+  const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
 
   const reloadNotes = () => memory.notes().then(setNotes).catch(e => setErr(String(e)))
   useEffect(() => { reloadNotes() }, [])
@@ -75,11 +77,21 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   }, [notes])
   const list = (notes ?? []).filter(n => tag === t('memory.all') || n.tags?.includes(tag)).sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''))
   const open = (p: string) => go(`memory/${encodeURIComponent(p)}`)
+  const deleteNote = async (p: string) => {
+    const result = await memory.delete(p)
+    return { title: t('delete.removed'), run: async () => { await memory.undoDelete(p, result.commit); reloadNotes() } }
+  }
+  const noteDeleted = (p: string, action?: UndoAction) => {
+    setDeleteUndo(action ?? null)
+    reloadNotes()
+    if (note?.path === p) { setNote(null); go('memory') }
+  }
 
   return (
     <>
       <PageHead title={t('memory.title')} sub={t('memory.subtitle')} side={<>{switcher}<input className="g-input" style={{ width: 240 }} placeholder={t('memory.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="memory-search" /></>} />
       {err && <div className="g-error">{err}</div>}
+      <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       <div className="g-memory">
         <Panel className="g-sidenav" testid="memory-tags">
           {[t('memory.all'), ...tags.map(t => t[0])].map(t => (
@@ -91,14 +103,14 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
           <div className="g-rows">
             {hits
-              ? hits.map(h => <Row key={h.path} icon="note" lead={h.title || h.path} detail={h.snippet} onClick={() => open(h.path)} testid={`mem-hit-${h.path}`} />)
-              : list.map(n => <Row key={n.path} icon="note" lead={n.title || n.path} detail={n.author ? `by ${n.author}` : undefined} when={ago(n.updated)} onClick={() => open(n.path)} testid={`mem-note-${n.path}`} />)}
+              ? hits.map(h => <div key={h.path} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1, minWidth: 0 }}><Row icon="note" lead={h.title || h.path} detail={h.snippet} onClick={() => open(h.path)} testid={`mem-hit-${h.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(h.path)}`} onDelete={() => deleteNote(h.path)} onDeleted={action => noteDeleted(h.path, action)} onError={e => setErr(String(e))} /></div>)
+              : list.map(n => <div key={n.path} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1, minWidth: 0 }}><Row icon="note" lead={n.title || n.path} detail={n.author ? `${t('memory.writtenBy')} ${n.author}` : undefined} when={ago(n.updated)} onClick={() => open(n.path)} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={() => deleteNote(n.path)} onDeleted={action => noteDeleted(n.path, action)} onError={e => setErr(String(e))} /></div>)}
             {notes && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
             {hits && hits.length === 0 && <Empty>{t('memory.nothingFound')}</Empty>}
           </div>
         </Panel>
         <Panel title={editing === 'new' ? t('memory.newNote') : note ? String(note.meta?.title ?? note.path) : t('memory.note')}
-          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">{t('memory.rename')}</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">{t('memory.edit')}</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">{t('memory.newNote')}</Btn></span>}
+          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid="note-delete" onDelete={() => deleteNote(note.path)} onDeleted={action => noteDeleted(note.path, action)} onError={e => setErr(String(e))} />}{note && <Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">{t('memory.rename')}</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">{t('memory.edit')}</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">{t('memory.newNote')}</Btn></span>}
           testid="memory-note" className="g-scroll">
           {saved && !editing && (
             <div className="g-saved" data-testid="note-saved">{t('memory.savedVersion', { commit: saved.commit })}
