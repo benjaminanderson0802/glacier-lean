@@ -22,6 +22,7 @@ import vault
 import secrets_store
 import logging
 import git
+from difflib import SequenceMatcher
 
 router = APIRouter()
 _proposals: dict[str, dict] = {}
@@ -36,6 +37,7 @@ class ChatRequest(BaseModel):
 
 class ApplyRequest(BaseModel):
     approve: bool
+    run_now: bool = False
 
 
 def _conversation_id(value: str) -> str:
@@ -246,6 +248,33 @@ def _ask(message: str, route: str) -> dict:
     return _ask_local(message) if route == "local" else _ask_codex(message)
 
 
+def _existing_run_request(message: str) -> str | None:
+    match = re.fullmatch(r"\s*run\s+my\s+(.+?)\s+now[.!?\s]*", message, re.I)
+    return match.group(1).strip() if match else None
+
+
+def _match_automation(name: str) -> tuple[list[dict], bool]:
+    import vault
+    candidates = []
+    for path in vault.list_notes(".json", "environments"):
+        try:
+            flow = json.loads(vault.read_note(path))
+        except (OSError, ValueError, TypeError):
+            continue
+        if not isinstance(flow, dict) or not flow.get("id") or not flow.get("name"):
+            continue
+        candidates.append(flow)
+    exact = [flow for flow in candidates if str(flow["name"]).casefold() == name.casefold()]
+    if exact:
+        return exact, False
+    ranked = sorted(((SequenceMatcher(None, name.casefold(), str(flow["name"]).casefold()).ratio(), flow)
+                     for flow in candidates), key=lambda item: item[0], reverse=True)
+    if not ranked or ranked[0][0] < 0.55:
+        return [], False
+    top_score = ranked[0][0]
+    return [flow for score, flow in ranked if score >= 0.45 and top_score - score < 0.2][:5], True
+
+
 def _is_automation(message: str, model_answer: dict) -> bool:
     # The schema decision is model-led; common plain-language asks are also routed safely to planning.
     text = message.lower()
@@ -279,6 +308,22 @@ def get_conversation(conversation_id: str):
     conversation_id = _conversation_id(conversation_id)
     _, meta, messages = _conversation_note(conversation_id)
     return {"id": conversation_id, "title": _conversation_title(conversation_id, meta, messages), "messages": messages}
+
+
+@router.get("/api/assistant/conversations/{conversation_id}/runs")
+def conversation_runs(conversation_id: str):
+    conversation_id = _conversation_id(conversation_id)
+    _conversation_note(conversation_id)
+    import store
+    rows = []
+    for item in store.list_runs(None):
+        try:
+            graph = store.graph_of(item["run_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if graph.get("_assistant_conversation_id") == conversation_id:
+            rows.append({**item, "name": graph.get("name") or item["env_id"]})
+    return rows
 
 
 @router.post("/api/assistant/conversations/{conversation_id}/rename")
@@ -315,6 +360,38 @@ def chat(request: ChatRequest):
         yield _event("RUN_STARTED", threadId=conversation_id, runId=run_id)
         route, automation = None, False
         try:
+            existing_name = _existing_run_request(request.message)
+            if existing_name:
+                matches, fuzzy = _match_automation(existing_name)
+                if len(matches) != 1 or fuzzy:
+                    if matches:
+                        choices = ", ".join(flow["name"] for flow in matches)
+                        reply = f"I found a few automations that may match: {choices}. Which one should I run?"
+                    else:
+                        reply = f"I could not find an automation named {existing_name}. Check its name and try again."
+                    _append_conversation(conversation_id, request.message, reply)
+                    yield _event("TEXT_MESSAGE_START", messageId=message_id, role="assistant")
+                    yield _event("TEXT_MESSAGE_CONTENT", messageId=message_id, delta=reply)
+                    yield _event("TEXT_MESSAGE_END", messageId=message_id)
+                    yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
+                    return
+                flow = matches[0]
+                proposal_id = str(uuid.uuid4())
+                proposal = {"id": proposal_id, "conversation_id": conversation_id, "run_existing": True,
+                            "flow": {"id": flow["id"], "name": flow["name"]},
+                            "explanation": f"Run {flow['name']} now?"}
+                with _proposals_lock:
+                    _proposals[proposal_id] = proposal
+                _append_conversation(conversation_id, request.message, proposal["explanation"])
+                tool_id = str(uuid.uuid4())
+                yield _event("TEXT_MESSAGE_START", messageId=message_id, role="assistant")
+                yield _event("TOOL_CALL_START", toolCallId=tool_id, toolCallName="propose_run", parentMessageId=message_id)
+                yield _event("TOOL_CALL_ARGS", toolCallId=tool_id, delta=json.dumps(proposal, ensure_ascii=False))
+                yield _event("TOOL_CALL_END", toolCallId=tool_id)
+                yield _event("TEXT_MESSAGE_CONTENT", messageId=message_id, delta=proposal["explanation"])
+                yield _event("TEXT_MESSAGE_END", messageId=message_id)
+                yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
+                return
             route, reason = ask_route()
             if route is None:
                 yield _event("TEXT_MESSAGE_START", messageId=message_id, role="assistant")
@@ -379,6 +456,17 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
         with _proposals_lock:
             _proposals.pop(proposal_id, None)
         return {"discarded": True}
+    if proposal.get("run_existing"):
+        if not request.run_now:
+            from fastapi import HTTPException
+            raise HTTPException(400, "Confirm that you want to run this automation")
+        import runner
+        flow = proposal["flow"]
+        run_id = runner.start_run(flow["id"], {"_author": "assistant", "_assistant_conversation_id": proposal["conversation_id"]})
+        with _proposals_lock:
+            _proposals.pop(proposal_id, None)
+        _append_conversation(proposal["conversation_id"], "Approved run", f"Started {flow['name']}.")
+        return {"saved": False, "run_id": run_id, "status": "running"}
     import app
     import runner
     flow = proposal["flow"]
@@ -444,6 +532,10 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
     result = {"saved": True, "commit": commit, "undo_id": run_id}
     with _proposals_lock:
         _proposals.pop(proposal_id, None)
-    proposal["run_id"] = run_id
     _append_conversation(proposal["conversation_id"], "Approved proposal", f"Saved flow {proposal['flow']['name']}.")
+    if request.run_now:
+        import runner
+        started_run_id = runner.start_run(flow["id"], {"_author": "assistant", "_assistant_conversation_id": proposal["conversation_id"]})
+        proposal["run_id"] = started_run_id
+        result.update({"run_id": started_run_id, "status": "running"})
     return result

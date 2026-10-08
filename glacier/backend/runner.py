@@ -386,6 +386,24 @@ def file_stuck_claim(env_id: str, run_id: str, node_id: str, attempts: int, outp
 def finish_run(env_id: str, run_id: str, status: str) -> None:
     store.skip_pending(run_id, env_id)
     store.set_run(run_id, status)
+    graph = store.graph_of(run_id)
+    conversation_id = graph.get("_assistant_conversation_id")
+    if conversation_id and status in {"done", "failed", "rejected"} and store.mark_chat_reported(run_id):
+        try:
+            import run_explain
+            import secrets_store
+            import vault
+            explanation = run_explain.explain_run(run_id)
+            if explanation and explanation.get("summary"):
+                path = f"conversations/{conversation_id}.md"
+                previous = vault.read_note(path).rstrip()
+                line = secrets_store.redact(explanation["summary"])
+                stamp = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+                vault.write_note(path, previous + f"\n\n## {stamp}\n\n**Assistant:** {line}\n", agent="assistant")
+        except Exception:
+            # The durable run is already complete; a chat-note write must not fail or retry the workflow.
+            import logging
+            logging.getLogger(__name__).exception("Could not append run result to assistant conversation")
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)

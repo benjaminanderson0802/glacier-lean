@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ago, applyProposal, chat, conversationsApi, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
+import { ago, api, applyProposal, chat, conversationsApi, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { Icon, Mascot } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -7,7 +7,7 @@ import { setDraft } from '../draft.ts'
 import type { Environment } from '../api.ts'
 import { t } from '../i18n/index.ts'
 
-type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean }
+type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean; run?: { id: string; env: string; status: string } }
 
 // Conversation lives for the app session (module scope), so switching tabs does not lose it.
 let saved: { conv: string | null; msgs: Msg[]; title: string } = { conv: null, msgs: [], title: '' }
@@ -75,12 +75,29 @@ export function AskScreen() {
     } finally { setBusy(false) }
   }
 
-  const decide = async (i: number, approve: boolean) => {
+  // Follow a run started from this chat until it finishes, then show its plain-language result.
+  const follow = (i: number, runId: string, env: string) => {
+    const tick = async () => {
+      const r = await api.getRun(runId).catch(() => null)
+      const status = r?.status ?? 'running'
+      setMsgs(x => x.map((m, j) => j === i ? { ...m, run: { id: runId, env, status } } : m))
+      if (['running', 'waiting', 'pending'].includes(status)) { setTimeout(tick, 1500); return }
+      const id = conv
+      if (id) conversationsApi.get(id).then(c => {
+        const last = c.messages[c.messages.length - 1]
+        if (last && last.who === 'glacier') setMsgs(x => x.some(m => m.text === last.text) ? x : [...x, { who: 'glacier', text: last.text, at: new Date(last.at) }])
+      }).catch(() => {})
+    }
+    tick()
+  }
+
+  const decide = async (i: number, approve: boolean, runNow = false) => {
     const p = msgs[i].proposal!
     try {
-      await applyProposal(p.id, approve)
+      const r = await applyProposal(p.id, approve, runNow)
       setMsgs(x => x.map((m, j) => j === i ? { ...m, state: approve ? 'approved' : 'rejected' } : m))
-      if (approve && p.flow?.id) go(`automations/build/${p.flow.id}`)
+      if (approve && r.run_id && p.flow?.id) follow(i, r.run_id, p.flow.id)
+      else if (approve && p.flow?.id && !p.run_existing) go(`automations/build/${p.flow.id}`)
     } catch (e) {
       setMsgs(x => [...x, { who: 'glacier', text: String(e), at: new Date(), error: true }])
     }
@@ -142,18 +159,30 @@ export function AskScreen() {
                       <span className={`g-chip ${m.state === 'approved' ? 'ok' : m.state === 'rejected' ? 'bad' : ''}`}>{m.state === 'approved' ? t('ask.approved') : m.state === 'rejected' ? t('ask.rejected') : t('ask.proposed')}</span></div>
                     {m.proposal.explanation && <div className="g-detail">{m.proposal.explanation}</div>}
                     {m.proposal.flow?.goal && <div className="g-detail" data-testid="proposal-goal">{t('ask.goal', { goal: m.proposal.flow.goal })}</div>}
-                    <div className="g-muted">{t('ask.steps', { count: m.proposal.flow?.nodes?.length ?? 0 })}</div>
+                    {!m.proposal.run_existing && <div className="g-muted">{t('ask.steps', { count: m.proposal.flow?.nodes?.length ?? 0 })}</div>}
                     {(m.proposal.flow?.acceptance?.length ?? 0) > 0 && (
                       <div data-testid="proposal-checks">
                         <div className="g-muted">{t('ask.checkHeading')}</div>
                         <ul className="g-bullets">{m.proposal.flow!.acceptance!.map((c, j) => <li key={j}>{checkText(c)}</li>)}</ul>
                       </div>
                     )}
-                    {m.state === 'open' && (
+                    {m.state === 'open' && (m.proposal.run_existing ? (
+                      <div className="g-actions">
+                        <Btn primary onClick={() => decide(i, true, true)} data-testid="proposal-run">{t('ask.runNow')}</Btn>
+                        <Btn onClick={() => decide(i, false)} data-testid="proposal-reject">{t('ask.notNow')}</Btn>
+                      </div>
+                    ) : (
                       <div className="g-actions">
                         <Btn primary onClick={() => decide(i, true)} data-testid="proposal-approve">{t('ask.approve')}</Btn>
+                        <Btn onClick={() => decide(i, true, true)} data-testid="proposal-approve-run">{t('ask.approveAndRun')}</Btn>
                         <Btn onClick={() => edit(i)} data-testid="proposal-edit">{t('ask.edit')}</Btn>
                         <Btn onClick={() => decide(i, false)} data-testid="proposal-reject">{t('ask.reject')}</Btn>
+                      </div>
+                    ))}
+                    {m.run && (
+                      <div className="g-detail" data-testid="proposal-run-status">
+                        {['running', 'waiting', 'pending'].includes(m.run.status) ? t('ask.runRunning') : t('ask.runFinished', { status: m.run.status })}{' '}
+                        <button className="g-link" onClick={() => go(`automations/flow/${m.run!.env}/${m.run!.id}`)} data-testid="proposal-view-run">{t('ask.viewRun')}</button>
                       </div>
                     )}
                   </div>
