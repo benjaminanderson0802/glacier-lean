@@ -114,6 +114,7 @@ export default function BuildScreen(props: BuildProps) {
 function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: BuildProps) {
   const reactFlow = useReactFlow<GNode, Edge>()
   const { fitView } = reactFlow
+  const connectingRef = useRef(false)
   const [envs, setEnvs] = useState<EnvSummary[]>([])
   const [unsaved, setUnsaved] = useState<EnvSummary[]>([])
   const [envId, setEnvId] = useState<string | null>(null)
@@ -156,7 +157,8 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const flowEdgeTypes = useMemo(() => ({ pixel: PixelEdge }), [])
   const showMinimap = minimapOpen && !canvasShort
   const fitCanvas = useCallback(() => {
-    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, duration: 0 })
+    if (connectingRef.current) return
+    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, duration: 0, minZoom: 0.6 })
   }, [fitView, showMinimap])
 
   useEffect(() => {
@@ -302,6 +304,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   }, [selected])
 
   const onConnect = useCallback((c: Connection) => {
+    connectingRef.current = false
     setEdges(es => {
       const src = nodes.find(n => n.id === c.source)
       let label = ''
@@ -312,6 +315,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     })
     setDirty(true)
   }, [nodes, branchLabels])
+
+  const onConnectStart = useCallback(() => { connectingRef.current = true }, [])
+  const onConnectEnd = useCallback(() => { connectingRef.current = false }, [])
 
   const addNode = (kind: NodeKind) => {
     const id = nextId('n', nodes.map(n => n.id))
@@ -390,7 +396,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       return { ...node, position: { x: Math.round((p.x - 105) / 20) * 20, y: Math.round((p.y - 45) / 20) * 20 } }
     }))
     setDirty(true)
-    requestAnimationFrame(() => { void reactFlow.fitView({ padding: 0.18 }) })
+    requestAnimationFrame(() => { if (!connectingRef.current) void reactFlow.fitView({ padding: 0.18, minZoom: 0.6 }) })
   }, [nodes, edges, reactFlow])
 
   const nudgeOverlaps = useCallback((draggedId: string, position: { x: number; y: number }) => {
@@ -601,6 +607,9 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
+                connectionRadius={24}
                 onNodeClick={(_, n) => setSelected({ kind: 'node', id: n.id })}
                 onEdgeClick={(_, e) => setSelected({ kind: 'edge', id: e.id })}
                 onPaneClick={() => setSelected(null)}
@@ -609,7 +618,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 snapGrid={[20, 20]}
                 onNodeDragStop={(_, node) => { nudgeOverlaps(node.id, node.position); setDirty(true) }}
                 fitView
-                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 } }}
+                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.28, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.18, bottom: 0.16, left: 0.16 }, minZoom: 0.6 }}
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
