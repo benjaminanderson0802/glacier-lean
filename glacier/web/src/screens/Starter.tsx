@@ -45,7 +45,7 @@ export function StarterPanel() {
         </div>
       ) : (
         <>
-          <div className="g-detail" data-testid="starter-reason">{p.reason} {t('starter.localModel', { name: p.local_model })}</div>
+          <div className="g-detail" data-testid="starter-reason">{p.reason} {p.local_model && t('starter.localModel', { name: p.local_model })}</div>
           <div className="g-detail">{t('starter.agentsFound', { value: agents.length ? agents.map(a => a.name).join(', ') : t('starter.noAgents') })}</div>
           <div className="g-muted" style={{ marginTop: 10 }}>{t('starter.suggested')}</div>
           <div className="g-rows">
