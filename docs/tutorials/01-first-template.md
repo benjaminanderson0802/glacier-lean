@@ -2,6 +2,8 @@
 
 Choose a ready-made example, run it, and read its result.
 
+![The Templates gallery with a template selected](images/01-templates.png)
+
 ## Steps
 
 1. Open **Automations**.

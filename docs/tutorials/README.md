@@ -15,8 +15,8 @@ These short guides are for a first visit to Glacier on a Windows computer. The p
 - There is no light or dark appearance switch. In Settings > General, **Light** means one run at a time using a small model; it does not change screen brightness or colors.
 - Glacier can use a local model without an internet connection only when a local model is installed and ready. A missing local model cannot answer Ask offline. Check Settings > Models to see which model Ask uses and whether Glacier lists an installed local model.
 
-## Screenshot status
+## Screenshots
 
-Screenshots were not captured in this worktree: Playwright Chromium cannot start because this environment is missing the system library `libnspr4.so`. The tutorial actions were checked against the screen code and mock backend.
+The pictures were taken from the real screen running with sample data (1280 x 800).
 
 The existing [plain-language guide](../guide/README.md) has a screen tour and more detail about checks, memory, safety, and help.

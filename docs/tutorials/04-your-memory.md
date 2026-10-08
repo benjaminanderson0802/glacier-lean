@@ -2,6 +2,8 @@
 
 Memory keeps notes on this computer. You can link related notes, rename a note, and undo a saved change.
 
+![A note with Rename open; links to it are listed under the note](images/04-memory-rename.png)
+
 ## Steps
 
 1. Open **Memory**, then choose **Notes**.

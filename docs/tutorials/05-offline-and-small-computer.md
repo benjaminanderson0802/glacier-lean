@@ -2,6 +2,8 @@
 
 Check which assistant route and local model Glacier is set to use. A small local model can work on modest hardware, though answers may take longer or be less complete.
 
+![Settings > Models: which assistant Ask uses and the local models found](images/05-settings-models.png)
+
 ## Steps
 
 1. Open **Settings**, then choose **Models**.

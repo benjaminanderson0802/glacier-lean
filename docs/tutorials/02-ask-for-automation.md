@@ -2,6 +2,8 @@
 
 Tell Glacier about a small task and review its suggestion before accepting it.
 
+![Ask showing a proposed automation with its goal and how it will be checked](images/02-ask-proposal.png)
+
 ## Steps
 
 1. Open **Ask**.
