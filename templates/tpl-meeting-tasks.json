@@ -1,0 +1,64 @@
+{
+  "id": "tpl-meeting-tasks",
+  "name": "Turn meeting notes into a task list",
+  "description": "Pulls out decisions and next steps, then saves them as checkboxes in a note.",
+  "when_to_use": "Use it after a meeting when you want action items separated from the discussion.",
+  "goal": "Turn meeting notes into a clear task list with checkboxes.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "find \"$GLACIER_HOME/vault/tasks\" -type f -name 'meeting-list-*.md' -mmin -10 -print0 | xargs -0 grep -q . && (find \"$GLACIER_HOME/vault/tasks\" -type f -name 'meeting-list-*.md' -mmin -10 -print0 | xargs -0 grep -q '\\[ \\]' || find \"$GLACIER_HOME/vault/tasks\" -type f -name 'meeting-list-*.md' -mmin -10 -print0 | xargs -0 grep -qi 'no tasks')"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "read_notes",
+      "type": "read_document",
+      "config": {
+        "source": "Set this to your meeting-notes file, for example $HOME/Documents/meeting-notes.txt"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "make_tasks",
+      "type": "local_ai",
+      "config": {
+        "prompt": "Turn these meeting notes into a short task list. Use one Markdown checkbox per task in the exact form - [ ] task. Include an owner or date only when the notes say one. Do not invent tasks.\n\nMeeting notes:\n{prev_output}",
+        "answer_style": "Free text"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "save_tasks",
+      "type": "note",
+      "config": {
+        "path": "tasks/meeting-list-{run}.md",
+        "template": "# Meeting tasks\n\nRun {run}\n{prev_output}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "read_notes",
+      "target": "make_tasks",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "make_tasks",
+      "target": "save_tasks",
+      "label": ""
+    }
+  ]
+}

@@ -51,14 +51,65 @@ def replace_file(source: str, destination: str, attempts: int = 100, delay: floa
             time.sleep(delay)
 
 
+def note_history(path: str) -> list[dict]:
+    """Saved versions of one note, newest first, read by a separate git process.
+
+    This does not use the shared repository object, so it needs no vault lock and
+    never makes note saves wait while a long history is read.
+    """
+    full = safe_path(path)
+    relative = os.path.relpath(full, VAULT).replace(os.sep, "/")
+    output = git.Git(VAULT).log("--format=%H%x1f%an%x1f%cI%x1f%B%x1e", "--", relative)
+    entries = []
+    for record in output.split("\x1e"):
+        record = record.strip("\n")
+        if not record:
+            continue
+        sha, author, date, message = (record.split("\x1f", 3) + ["", "", ""])[:4]
+        entries.append({"sha": sha, "author": author, "date": date, "message": message.strip()})
+    return entries
+
+
+def _plain(path: str) -> str:
+    """Drop Windows' extended-length prefix.
+
+    realpath keeps "\\\\?\\" when it cannot confirm the short form, which happens while
+    another save is replacing a file in the same folder; the path is the same place.
+    """
+    if os.name == "nt":
+        if path.startswith("\\\\?\\UNC\\"):
+            return "\\\\" + path[8:]
+        if path.startswith("\\\\?\\"):
+            return path[4:]
+    return path
+
+
+_roots_cache: tuple[str, tuple[str, ...]] = ("", ())
+
+
+def _vault_roots() -> tuple[str, ...]:
+    """The vault folder as given and as resolved, computed once per vault (realpath is slow on Windows)."""
+    global _roots_cache
+    if _roots_cache[0] != VAULT:
+        _roots_cache = (VAULT, tuple({os.path.normcase(VAULT), os.path.normcase(_plain(os.path.realpath(VAULT)))}))
+    return _roots_cache[1]
+
+
 def safe_path(path: str) -> str:
     """Absolute path inside the vault; raises ValueError on escapes like ../"""
     if os.name == "nt":
         path = path.replace("\\", "/")
-    full = os.path.realpath(os.path.join(VAULT, path))
-    if not full.startswith(VAULT + os.sep) or "/.git/" in full + "/":
-        raise ValueError(f"bad vault path: {path}")
-    return full
+    full = _plain(os.path.realpath(os.path.join(VAULT, path)))
+    # Compare without case on Windows/macOS-style paths, and accept the vault's own
+    # resolved location too (realpath can report different casing than abspath).
+    norm = os.path.normcase(full)
+    for root in _vault_roots():
+        if root and norm.startswith(root + os.sep):
+            parts = norm[len(root) + 1:].split(os.sep)
+            if ".git" in parts:  # works with either slash: parts come from the OS separator
+                break
+            return full
+    raise ValueError(f"bad vault path: {path}")
 
 
 def write_note(path: str, body: str, agent: str = "unknown", *, author: str | None = None, run_id: str = "") -> str:

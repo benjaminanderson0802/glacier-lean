@@ -46,6 +46,8 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   const [err, setErr] = useState('')
   const [editing, setEditing] = useState<'new' | 'edit' | null>(null)
   const [saved, setSaved] = useState<{ path: string; commit: string } | null>(null)
+  const [renaming, setRenaming] = useState<string | null>(null)
+  const [renamed, setRenamed] = useState<{ from: string; path: string; commit: string } | null>(null)
 
   const reloadNotes = () => memory.notes().then(setNotes).catch(e => setErr(String(e)))
   useEffect(() => { reloadNotes() }, [])
@@ -54,7 +56,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
     memory.history(p).then(setHist).catch(() => setHist([]))
   }
   useEffect(() => {
-    setEditing(null)
+    setEditing(null); setRenaming(null)
     if (!path) { setNote(null); return }
     memory.note(path).then(setNote).catch(e => setErr(String(e)))
     memory.history(path).then(setHist).catch(() => setHist([]))
@@ -95,11 +97,33 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
           </div>
         </Panel>
         <Panel title={editing === 'new' ? 'New note' : note ? String(note.meta?.title ?? note.path) : 'Note'}
-          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">Edit</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">New note</Btn></span>}
+          aside={editing ? undefined : <span style={{ display: 'flex', gap: 8 }}>{note && <Btn onClick={() => setRenaming(note.path.replace(/\.md$/, ''))} data-testid="note-rename">Rename</Btn>}{note && <Btn onClick={() => setEditing('edit')} data-testid="note-edit">Edit</Btn>}<Btn icon="plus" onClick={() => setEditing('new')} data-testid="note-new">New note</Btn></span>}
           testid="memory-note" className="g-scroll">
           {saved && !editing && (
             <div className="g-saved" data-testid="note-saved">Saved (version {saved.commit}).
               <Btn onClick={async () => { await memory.undo(saved.path, saved.commit); setSaved(null); loadNote(saved.path); reloadNotes() }} data-testid="note-undo">Undo</Btn></div>
+          )}
+          {renamed && !editing && (
+            <div className="g-saved" data-testid="note-renamed">Renamed from {renamed.from}. Links to it were updated.
+              <Btn onClick={async () => {
+                try { await memory.undo(renamed.path, renamed.commit); const back = renamed.from; setRenamed(null); reloadNotes(); open(back) }
+                catch (e) { setErr(String(e)) }
+              }} data-testid="note-rename-undo">Undo</Btn></div>
+          )}
+          {renaming !== null && note && !editing && (
+            <form className="g-saved" data-testid="note-rename-form" onSubmit={async e => {
+              e.preventDefault()
+              const to = renaming.trim().endsWith('.md') ? renaming.trim() : `${renaming.trim()}.md`
+              try {
+                const r = await memory.rename(note.path, to)
+                setRenamed({ from: note.path, path: r.path, commit: r.commit }); setRenaming(null); setErr(''); reloadNotes(); open(r.path)
+              } catch (x) { setErr(String(x)) }
+            }}>
+              <span>New name</span>
+              <input className="g-input" value={renaming} onChange={e => setRenaming(e.target.value)} data-testid="note-rename-input" autoFocus />
+              <Btn primary type="submit" data-testid="note-rename-save">Rename</Btn>
+              <Btn onClick={() => setRenaming(null)}>Cancel</Btn>
+            </form>
           )}
           {editing ? (
             <NoteEditor key={editing + (note?.path ?? '')} path={editing === 'edit' ? note?.path : undefined} initial={editing === 'edit' ? note?.body ?? '' : ''} notes={notes ?? []}

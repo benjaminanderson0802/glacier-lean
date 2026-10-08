@@ -4,11 +4,13 @@ Permission checks only protect when the agent asks permission first; this is not
 an operating-system sandbox. OS sandboxing is provided by the sandboxing card.
 """
 import asyncio
+from collections import deque
 import os
 import shlex
 import shutil
 import sys
 from pathlib import Path
+from agents_md import project_instructions_detail
 
 PREV_LIMIT = 8000
 
@@ -120,19 +122,49 @@ def _acp_client(workdir: str, messages: list[str]):
 
 async def _run_acp(acp, command: list[str], prompt: str, workdir: str, timeout: int) -> tuple[str, int]:
     messages: list[str] = []
+    failure: str | None = None
+    stderr_lines: deque[str] = deque(maxlen=40)
     client = _acp_client(workdir, messages)
     async with acp.spawn_agent_process(client, command[0], *command[1:], cwd=workdir) as (connection, process):
-        await connection.initialize(protocol_version=acp.PROTOCOL_VERSION)
-        session = await connection.new_session(cwd=workdir)
+        async def collect_stderr():
+            stream = getattr(process, "stderr", None)
+            if stream is None:
+                return
+            while line := await stream.readline():
+                stderr_lines.append(line.decode("utf-8", errors="replace").rstrip("\r\n"))
+
+        stderr_task = asyncio.create_task(collect_stderr())
+
+        async def interact():
+            await connection.initialize(protocol_version=acp.PROTOCOL_VERSION)
+            session = await connection.new_session(cwd=workdir)
+            await connection.prompt(session_id=session.session_id, prompt=[acp.text_block(prompt)])
+
         try:
-            await asyncio.wait_for(
-                connection.prompt(session_id=session.session_id, prompt=[acp.text_block(prompt)]),
-                timeout=timeout,
-            )
+            await asyncio.wait_for(interact(), timeout=timeout)
         except asyncio.TimeoutError:
-            return f"Coding agent timed out after {timeout} seconds", 1
-        if process.returncode not in (None, 0):
-            return "\n".join(messages) or f"Coding agent exited with code {process.returncode}", 1
+            failure = f"Coding agent timed out after {timeout} seconds"
+        except Exception as exc:
+            failure = f"Coding agent could not complete the task: {exc}"
+        if failure is None and process.returncode not in (None, 0):
+            failure = f"Coding agent exited with status {process.returncode}"
+
+    # The ACP transport closes or reaps the child on context exit, which also
+    # lets the stderr reader finish. Keep diagnostics bounded to the last 40 lines.
+    await stderr_task
+    if failure is None and not messages:
+        failure = "Coding agent finished without returning a message"
+
+    if failure is not None:
+        import secrets_store
+
+        details = [failure]
+        if process.returncode is not None:
+            details.append(f"Process exit status: {process.returncode}")
+        if stderr_lines:
+            details.append("Error output (last 40 lines):\n" + "\n".join(stderr_lines))
+        return secrets_store.redact("\n".join(details)), 1
+
     return "".join(messages), 0
 
 
@@ -181,6 +213,7 @@ def run(ctx):
     home = os.path.abspath(ctx.get("home") or os.environ.get("GLACIER_HOME", "data"))
     workdir = os.path.abspath(config.get("workdir") or os.path.join(home, "workspaces", str(ctx["env_id"])))
     os.makedirs(workdir, exist_ok=True)
+    instructions_detail = project_instructions_detail(workdir)
     try:
         timeout = max(1, int(config.get("timeout") or 1800))
     except (TypeError, ValueError):
@@ -195,6 +228,8 @@ def run(ctx):
 
     if not output:
         output = "The coding agent finished without a message"
+    if instructions_detail:
+        output += f"\n{instructions_detail}"
     return {
         "state": "done" if exit_code == 0 else "failed",
         "output": output,

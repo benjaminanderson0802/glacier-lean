@@ -12,13 +12,67 @@ from typing import Any
 _NODE_TYPES_PATH = Path(__file__).resolve().parents[1] / "contract" / "node_types.json"
 
 
-def export_flow(flow: dict) -> str:
-    """Return a readable, versioned JSON file containing a flow."""
+def _agents_md(flow: dict) -> str:
+    """Describe a flow in plain words for another coding agent."""
+    lines = [f"# {flow.get('name') or flow.get('id') or 'Glacier automation'}", ""]
+    goal = flow.get("goal") or flow.get("description")
+    if goal:
+        lines.extend(["## Goal", "", str(goal), ""])
+    else:
+        lines.extend(["## Goal", "", f"Run the {flow.get('name') or 'automation'} steps below.", ""])
+
+    lines.extend(["## Steps", ""])
+    labels = {
+        "command": "Run a command", "codex": "Ask Codex", "acp_agent": "Ask a coding agent",
+        "local_ai": "Ask a local AI model", "check": "Check a result", "approval": "Wait for approval",
+        "note": "Save a note", "schedule": "Start on a schedule", "decide": "Choose an option",
+        "loop": "Repeat steps", "flow": "Run another automation",
+    }
+    for node in flow.get("nodes", []):
+        if not isinstance(node, dict):
+            continue
+        kind = str(node.get("type") or "step")
+        name = str(node.get("name") or node.get("id") or labels.get(kind, kind.replace("_", " ")))
+        config = node.get("config") if isinstance(node.get("config"), dict) else {}
+        description = node.get("description")
+        if not description:
+            if kind in {"codex", "acp_agent", "local_ai"}:
+                description = config.get("prompt")
+            elif kind == "command":
+                description = config.get("cmd")
+            elif kind == "check":
+                description = config.get("expr")
+            elif kind == "note":
+                description = config.get("path")
+            elif kind == "schedule":
+                description = config.get("cron")
+        lines.append(f"- {name}: {description or labels.get(kind, 'Run this step').rstrip('.')}.")
+
+    checks = []
+    for node in flow.get("nodes", []):
+        if isinstance(node, dict) and node.get("type") == "check":
+            expr = (node.get("config") or {}).get("expr")
+            if expr:
+                checks.append(f"- The step check must pass: `{expr}`.")
+    for check in flow.get("acceptance", []) if isinstance(flow.get("acceptance"), list) else []:
+        if isinstance(check, dict):
+            summary = check.get("description") or check.get("command") or check.get("schema") or check.get("kind")
+            if summary:
+                checks.append(f"- The acceptance check must pass: {summary}.")
+    lines.extend(["", "## Checks", ""])
+    lines.extend(checks or ["- Confirm that each step completed successfully."])
+    return "\n".join(lines) + "\n"
+
+
+def export_flow(flow: dict, *, include_agents_md: bool = False) -> str:
+    """Return a readable, versioned flow file; optionally include AGENTS.md guidance."""
     package = {
         "glacier_flow": 1,
         "exported_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "flow": flow,
     }
+    if include_agents_md:
+        package["agents_md"] = _agents_md(flow)
     return json.dumps(package, indent=2, ensure_ascii=False) + "\n"
 
 

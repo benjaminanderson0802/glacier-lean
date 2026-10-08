@@ -41,6 +41,15 @@ def test_command_check_note_run(server):
     assert [r["run_id"] for r in server.get("/api/runs", params={"env_id": "happy"})] == [run_id]
 
 
+def test_command_expands_run_placeholder(server):
+    e = env("command-run-placeholder", [("c", "command", {"cmd": "printf '%s' '{run}'"})], [])
+    server.put("/api/environments/command-run-placeholder", e)
+    run_id = server.post("/api/environments/command-run-placeholder/run")["run_id"]
+    run = server.wait_run(run_id)
+    assert run["status"] == "done"
+    assert run["outputs"]["c"] == run_id
+
+
 APPROVAL_ENV = env("needs-ok", [("c", "command", {"cmd": "echo boom; exit 3"}), ("k", "check", {"expr": "exit_code == 0"}),
                                 ("a", "approval", {"prompt": "Tests failed. Continue?"}),
                                 ("n", "note", {"path": "runs/{run}.md", "template": "approved {run}"})],

@@ -71,6 +71,7 @@ The local backend serves an A2A 1.0 JSON-RPC interface at `/a2a` and the Agent C
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
 - WS   /api/events  -> run messages {"run_id","env_id","node_id","state","output"?} on every node state change; memory writes through the vault (owner saves, run notes, undo) publish {"type":"memory","path":"<note path>","change":"created"|"updated","author":"<writer>","run_id":"<run id or empty>"} after the vault git commit succeeds, outside the vault lock (run-written notes follow that run's node events by ~0.1 s).
+- POST /api/memory/rename {"from":"path.md","to":"new/path.md"} -> moves one note and rewrites resolved inbound links in one owner Git commit; publishes deleted/created/updated memory events. Undo with POST /api/memory/undo using the new path and rename commit ID.
 - GET  /api/memory/graph?limit=N -> graph of the N most recently updated notes plus their direct links; omit `limit` for the full graph.
 - GET  /api/assistant/conversations?q=words -> [{id,title,updated,messages}] (newest first; `messages` is a count; optional case-insensitive search across titles and message text)
 - GET  /api/assistant/conversations/{id} -> {id,title,messages:[{who:"you"|"glacier",text,at}]}; unknown note sections and speakers are ignored; invalid UUID is 400 and missing note is 404
