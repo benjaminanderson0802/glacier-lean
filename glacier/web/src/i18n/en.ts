@@ -486,4 +486,5 @@ export const en: Record<string, string> = {
   'splash.newAutomation': 'New automation',
   'splash.settings': 'Settings',
   'splash.exit': 'Exit',
+  'run.notRun': 'Not run yet.',
 }
