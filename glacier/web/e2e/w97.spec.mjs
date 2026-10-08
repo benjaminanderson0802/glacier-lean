@@ -13,7 +13,7 @@ const server = createServer((req, res) => {
   res.end(readFileSync(file))
 }).listen(0)
 const port = server.address().port
-const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
+const browser = await chromium.launch((p => p ? { executablePath: p } : {})(process.env.CHROMIUM_PATH || (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : '')))
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 const notes = [
   { path: 'a.md', title: 'Alpha', author: 'owner', updated: new Date().toISOString(), tags: [] },
@@ -52,7 +52,7 @@ try {
   await general.focus()
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')
-  await page.getByTestId('settings-models').waitFor()
+  await page.locator('section[data-testid="settings-models"]').waitFor()
   console.log('PASS Settings menu moves with arrows and opens the focused section with Enter')
 
   await page.goto(`http://localhost:${port}/#/home/claim/c1042`)
