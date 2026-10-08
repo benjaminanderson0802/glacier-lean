@@ -277,3 +277,35 @@ The final required `bash ~/tools/suite.sh` run completed with:
 ```
 
 The remaining failure was `tests/test_starter.py::test_apply_creates_only_chosen_flows_once_and_saves_settings`: expected `granite3.3:2b`, received `qwen3:0.6b`. Current `system_check.recommend()` chooses an available evaluated small model in low mode, while this newly rebased test expects the Granite owner decision. This is outside the self-build flow lane and was not changed. The W66 change therefore has no verified practice merge commit; PH9.2 remains unverified.
+
+# W66 follow-up: local Ollama leak and practice attempt
+
+## Leak diagnosis
+
+The backend test process inherited no `GLACIER_HOME` and no `GLACIER_OLLAMA_URL`. A direct diagnostic against its default local endpoint (`http://localhost:11434/api/tags`) returned `smollm2:1.7b`, `granite3.3:2b`, `qwen3:1.7b`, and `qwen3:0.6b`. At that point `system_check._check_cache` was empty, and `effective_settings()` returned low mode with `qwen3:0.6b`. The starter apply route preserves that effective model choice, so the unchanged assertion expecting Granite failed.
+
+Two attempted fixture-only isolations were ineffective: setting a disposable default `GLACIER_HOME` and clearing `system_check` cache per test; then hiding the Ollama executable from the test process and backend subprocess PATH. Focused starter tests still returned qwen. Those edits were reverted. The exact remaining failing assertion is `tests/test_starter.py::test_apply_creates_only_chosen_flows_once_and_saves_settings`; no assertion was edited. The confirmed leak is host Ollama discovery through fallback to `ollama list` when the API is unavailable. The precise qwen selection appears to come from effective settings/cache initialized before the test-specific home is selected; a robust fix remains unresolved and was not attempted again after the two-attempt escalation limit.
+
+The requested `bash ~/tools/suite.sh` run completed with:
+
+```text
+1 failed, 567 passed, 1 skipped, 4 warnings in 174.19s (0:02:54)
+```
+
+A focused starter run also ended `1 failed, 8 passed, 1 warning in 6.25s`. A second focused attempt waited behind another worker's shared-lock full suite and then ended with the same `qwen3:0.6b` mismatch (`1 failed, 8 passed, 1 warning in 6.25s`).
+
+## Practice attempt 1 of up to 3
+
+- Card: `setup/selfbuild/cards/scan-list-sources.md` (the same small real card used in the earlier W66 runs).
+- Run id: `d7acf3192421`.
+- Backend: local Uvicorn on `127.0.0.1:8765`; temporary home `/tmp/w66-selfbuild-home`; no push.
+- Start approval: approved after confirming the assigned card, isolated worktree, and local-only merge gate.
+- Worker: completed the requested CLI option and test; direct CLI check printed all five sources. The worker-reported pytest command could not run in its sandbox because the project interpreter was unavailable there.
+- Check 0 protected guard: passed; no protected changes.
+- Check 1 backend suite: timed out after 600 seconds.
+- Check 2 other suites: passed, `76 passed in 7.67s`.
+- Check 3 verification benchmark: passed (false-done `0.00%`, verified `100.00%`).
+- Check 4 security benchmark: passed; final line `P 400 | blocked |`.
+- Final gate: rejected because the backend suite timed out. Flow state `rejected`, `verified: false`, `merged: false`.
+
+No second or third practice attempt was started: the required backend acceptance command is known to time out and the suite isolation issue remains unresolved. No practice merge commit exists. This follow-up does not verify PH9.2.
