@@ -36,8 +36,8 @@ export function HomeScreen() {
             return <span className={`g-online${cls}`} title={data?.local_ai.model ?? undefined} data-testid="local-ai"><i className="g-dot" />{label}</span>
           })()}</div>
           <div>
-            <span data-testid="count-running">{data?.counts.running ?? 0} Running</span>
-            <span data-testid="count-need-you">{data?.counts.need_you ?? 0} Need You</span>
+            <span data-testid="count-running">{data?.counts.running ?? 0} {t('home.runningCount')}</span>
+            <span data-testid="count-need-you">{data?.counts.need_you ?? 0} {t('home.needYouCount')}</span>
           </div>
         </div>
       } />
