@@ -223,7 +223,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                 if kind == "codex" and secrets_store.PLACEHOLDER.search(str(cfg.get(field) or "")):
                     raise ValueError("Secrets can't be sent to an AI model. Use the secret in a command step instead.")
                 if kind == "command":
-                    execution_cfg[field] = secrets_store.resolve(str(cfg.get(field) or ""))
+                    command = str(cfg.get(field) or "").replace("{run}", run_id)
+                    execution_cfg[field] = secrets_store.resolve(command)
             except ValueError as exc:
                 match = re.search(r"Unknown secret: (.+)$", str(exc))
                 if not match:

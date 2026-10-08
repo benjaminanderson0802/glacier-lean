@@ -5,7 +5,7 @@
   "nodes": [
     {"id": "weekly", "type": "schedule", "config": {"cron": "0 9 * * 1"}, "position": {"x": 0, "y": 0}},
     {"id": "health", "type": "command", "config": {"cmd": "python setup/health_check.py --quick", "cwd": "{repo}", "timeout": "1800"}, "position": {"x": 300, "y": 0}},
-    {"id": "scan", "type": "command", "config": {"cmd": "python tools/scan/scan.py", "cwd": "{repo}", "timeout": "120"}, "position": {"x": 600, "y": 0}},
+    {"id": "scan", "type": "command", "config": {"cmd": "python tools/scan/scan.py --output-dir \"$GLACIER_HOME/tool-scan\"", "cwd": "{repo}", "timeout": "120"}, "position": {"x": 600, "y": 0}},
     {"id": "maintenance", "type": "command", "config": {"cmd": "python setup/selfbuild/maintenance.py --repo {repo} --run {run}", "cwd": "{repo}", "timeout": "3600"}, "position": {"x": 900, "y": 0}},
     {"id": "status_note", "type": "note", "config": {"path": "proposals/maintenance-{date}.md", "template": "Weekly maintenance results. This is a proposal for the owner to review. Nothing was installed or changed.\n\n{prev_output}\n\nStep results: {summary}"}, "position": {"x": 1200, "y": 0}}
   ],
@@ -14,6 +14,9 @@
     {"id": "e1", "source": "health", "target": "scan", "label": ""},
     {"id": "e2", "source": "scan", "target": "maintenance", "label": ""},
     {"id": "e3", "source": "maintenance", "target": "status_note", "label": ""}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python -c \"import datetime,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'vault'/'proposals'/('maintenance-'+datetime.datetime.now(datetime.timezone.utc).date().isoformat()+'.md'); s=p.read_text(encoding='utf-8'); assert 'Weekly maintenance proposal' in s and 'Nothing was installed or changed' in s\"", "required": true}
   ],
   "max_steps": 10
 }
