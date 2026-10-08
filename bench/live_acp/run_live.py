@@ -18,7 +18,7 @@ import httpx
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "glacier" / "backend"
-PROMPT = "Create hello.txt containing exactly: hello from glacier"
+PROMPT = "Create ./hello.txt in this project folder with exactly this content: hello from glacier. Use the relative path ./hello.txt and do not use an absolute path."
 CHECK_CMD = 'test "$(cat hello.txt)" = "hello from glacier"'
 HARNESS = {
     "opencode": {"command": ["opencode", "acp"], "version": "1.18.35", "license": "MIT"},
@@ -108,7 +108,7 @@ def main() -> int:
                                 "npm": "@ai-sdk/openai-compatible",
                                 "name": "Ollama (local)",
                                 "options": {"baseURL": "http://127.0.0.1:11434/v1"},
-                                "models": {"qwen3:1.7b": {"name": "Qwen3 1.7B (local)"}},
+                                "models": {"qwen3:1.7b": {"name": "Qwen3 1.7B (local)", "tool_call": True}},
                             }},
                         }, indent=2), encoding="utf-8")
                     flow = {

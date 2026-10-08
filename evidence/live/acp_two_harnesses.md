@@ -85,7 +85,7 @@ hello.txt: absent
 
 OpenCode's INFO logs showed provider `ollama` and model `qwen3:1.7b`. The requested `/hello.txt` path was outside the temporary project and OpenCode denied it.
 
-### Granite 3.3 2B
+### Granite 3.3 2B (Apache-2.0)
 
 - Exact command: `cd /tmp/opencode-direct-granite3.3-2b.jEoX3M && timeout 150 opencode run --print-logs --log-level INFO --model ollama/granite3.3:2b "Create hello.txt containing exactly: hello from glacier"`
 - Config substitutions: `MODEL` = `granite3.3:2b`; selected model = `ollama/granite3.3:2b`.
@@ -118,3 +118,52 @@ Granite returned an example of a tool request instead of using a file tool. Neit
 ## Prior W43 qwen3:1.7b direct trial — 2026-10-07
 
 A less precise prompt, `Create hello.txt containing exactly: hello from glacier`, led the model to request `/home/user/hello.txt` outside its project, which OpenCode denied. The command exited 0 without creating the file after 59.54 seconds; maximum OpenCode RSS was 585,852 KiB (about 572 MiB). The initial `free -h` record showed 7.6 GiB total and 4.0 GiB available. Ollama reported the runner using 1.7 GB and `PROCESSOR 100% GPU`; no model was pulled.
+
+## W43 corrected prompt and live two-harness proof — 2026-10-07
+
+At the start, `free -h` showed 7.6 GiB total and 4.5 GiB available. `qwen3:1.7b` was already installed; `ollama show qwen3:1.7b --license` reports Apache-2.0. No model was pulled or removed. The 6 GiB threshold for trying `qwen3:4b` was not met, so it was skipped. The ordered sweep stopped after the first passing model; `qwen2.5-coder:3b` and `llama3.2:3b` were not tried. Ollama reported the loaded Qwen3 runner using 1.7 GB and `100% GPU`, so this host does not establish CPU-only performance.
+
+Both ACP harnesses used the same exact file check, in separate temporary work folders. OpenCode's project config enabled `tool_call: true` for the local model.
+
+### OpenCode ACP
+
+- Version/license: OpenCode 1.18.35, MIT.
+- Goal: `Create ./hello.txt in this project folder with exactly this content: hello from glacier. Use the relative path ./hello.txt and do not use an absolute path.`
+- Glacier status: `done`; Glacier acceptance: `True`; independent check: `True`.
+- Elapsed: 28.38 seconds; model runner memory: 1.7 GB (`ollama ps`).
+- Route: `acp/opencode`; cost: $0.00.
+- Raw output: `The file was written successfully. Is there anything else you need help with?`
+
+### Codex ACP
+
+- Version/license: `@agentclientprotocol/codex-acp` 2.1.1, Apache-2.0.
+- Same goal and exact file check as OpenCode.
+- Glacier status: `done`; Glacier acceptance: `True`; independent check: `True`.
+- Elapsed: 9.66 seconds; cost: $0.00.
+- Raw output: `I’ll create ./hello.txt with the exact requested text.Created ./hello.txt with exactly hello from glacier.`
+
+### Direct OpenCode CLI checks
+
+Each check used OpenCode 1.18.35 in a fresh temporary project folder, with the local Ollama OpenAI-compatible endpoint and `/usr/bin/time -v`. Maximum RSS below is OpenCode's process RSS and excludes the Ollama server/model runner.
+
+First, the prompt `Create the file hello.txt in the current folder, containing exactly: hello from glacier` took 22.47 seconds and peaked at 644,488 KiB RSS. It exited 0 without creating the file:
+
+```text
+permission requested: external_directory (/current/folder/*); auto-rejecting
+✗ Write /current/folder/hello.txt failed
+Error: The user rejected permission to use this specific tool call.
+exit status: 0
+hello.txt: absent
+```
+
+Then the explicit relative-path prompt `Create ./hello.txt in this project folder with exactly this content: hello from glacier. Use the relative path ./hello.txt and do not use an absolute path.` took 29.07 seconds and peaked at 607,892 KiB RSS. It created the file with exact content:
+
+```text
+← Write hello.txt
+Wrote file successfully.
+FILE_CONTENT=hello from glacier
+```
+
+### Result
+
+PH2.4's live test is met: the same goal completed through OpenCode ACP and Codex ACP, and both Glacier checks and independent checks passed. Ollama `qwen3:1.7b` (Apache-2.0) is the tested OpenCode model. Explicitly naming `./hello.txt`, enabling `tool_call: true`, and asking the model not to use an absolute path mattered; the vague “current folder” wording caused a denied out-of-project path. Earlier failed W28 and W43 attempts remain recorded above.
