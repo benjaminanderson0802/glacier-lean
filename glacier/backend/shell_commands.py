@@ -39,9 +39,19 @@ def command_invocation(command: str):
 
 
 def executable_invocation(executable: str, *args: str) -> list[str]:
-    """Run Python helpers through the current interpreter on Windows."""
-    if os.name == "nt" and executable.lower().endswith(".py"):
-        return [sys.executable, executable, *args]
+    """Build an argv that Windows can actually start.
+
+    Python helpers run through the current interpreter. A bare program name ("codex") is resolved
+    to its full path first: npm installs CLIs as ``codex.cmd`` shims, and Windows cannot start a
+    .cmd by bare name without a shell (FileNotFoundError), which made a signed-in Codex look missing.
+    """
+    if os.name == "nt":
+        if not os.path.dirname(executable):
+            found = which(executable)
+            if found:
+                executable = found
+        if executable.lower().endswith(".py"):
+            return [sys.executable, executable, *args]
     return [executable, *args]
 
 
