@@ -23,7 +23,8 @@ def _start(tmp_path, monkeypatch, *, route="auto", codex=True, signed_in=True, o
     calls = []
     original_which = assistant_chat.shell_commands.which
     monkeypatch.setattr(assistant_chat.shell_commands, "which",
-                        lambda name: ("/fake/codex" if codex else None) if name == "codex" else original_which(name))
+                        lambda name: ("/fake/codex" if codex else None) if name == "codex"
+                        else None if name in ("claude", "gemini") else original_which(name))  # host CLIs never leak in
     monkeypatch.setattr(chat, "_codex_signed_in", lambda: signed_in, raising=False)
     monkeypatch.setattr(chat, "_ollama_answers", lambda: ollama, raising=False)
 
@@ -200,6 +201,9 @@ def test_forced_routes_are_respected_and_settings_explain_choice(tmp_path, monke
     _chat_events("Hello")
     assert calls[0][0] == "local"
 
+    # docs/ASK.md: an unavailable selected engine is explained and the next ready engine is used.
     codex_calls = _start(tmp_path / "codex", monkeypatch, route="codex", codex=True, signed_in=False)
+    settings = system_check.effective_settings(include_ask_route=True)
+    assert settings["ask_route"] == "local" and "unavailable" in settings["ask_route_reason"]
     _chat_events("Hello")
-    assert codex_calls[-1][0] == "codex"
+    assert codex_calls[-1][0] == "local"
