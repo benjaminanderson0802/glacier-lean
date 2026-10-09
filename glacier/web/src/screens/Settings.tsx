@@ -38,7 +38,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>{t('settings.mode')}</dt><dd>{check.recommended.mode === 'low' ? t('settings.light') : t('settings.standard')}</dd>
                 <dt>{t('settings.localModel')}</dt><dd>{check.recommended.local_model}</dd>
                 <dt>{t('settings.runsAtOnce')}</dt><dd>{check.recommended.max_parallel_runs}</dd>
-                <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme')}</dd>
+                <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme').replace(/\s*\(retro\)/i, '')}</dd>
                 <dt>{t('settings.language')}</dt><dd>
                   <select className="g-input" value={language} onChange={e => chooseDictionary(e.target.value as Language)} aria-label={t('settings.language')}>
                     <option value="en">{language === 'es' ? 'Inglés' : 'English'}</option>
