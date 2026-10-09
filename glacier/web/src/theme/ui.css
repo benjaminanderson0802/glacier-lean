@@ -234,3 +234,5 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 /* Building a flow needs room: the back-wall panel grows to fill the space between the two side walls. */
 .is-building .l-center { left: 17%; width: 66%; top: 5%; height: 87%; z-index: 7; }
 .is-building .l-status { left: 17%; width: 66%; top: 93%; }
+/* text boxes wrap and grow with their text instead of clipping it (long Spanish prompts at small window sizes) */
+.g-textbox { overflow: visible; white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 0; flex-shrink: 0; }
