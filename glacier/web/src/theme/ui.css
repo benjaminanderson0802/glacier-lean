@@ -236,3 +236,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .is-building .l-status { left: 17%; width: 66%; top: 93%; }
 /* text boxes wrap and grow with their text instead of clipping it (long Spanish prompts at small window sizes) */
 .g-textbox { overflow: visible; white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 0; flex-shrink: 0; }
+/* the run view is tall: inside the window it scrolls instead of squashing its four sections */
+.g-runview { grid-template-rows: minmax(calc(110 * var(--px)), auto) minmax(calc(80 * var(--px)), auto) !important; flex: none !important; }
+.g-main:has(> .g-runview) { overflow-y: auto; }
+.g-main:has(> .g-runview) > * { flex-shrink: 0; }
