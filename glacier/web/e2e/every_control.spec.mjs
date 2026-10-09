@@ -74,26 +74,23 @@ try {
       visited.add(key)
       const label = normalize(info.label) || `${info.tag} ${info.testid}`
       const allow = allowlist.find(item => item.route === route && item.selector === (info.testid ? `[data-testid="${info.testid}"]` : `${info.role || info.tag}:${label}`))
+      const target = info.testid ? page.getByTestId(info.testid).first() : info.tag === 'select' ? page.locator('select[aria-label]').first() : info.role === 'option' ? page.getByRole('option', { name: normalize(info.label), exact: false }).first() : info.label ? page.locator(selector).filter({ visible: true }).filter({ hasText: normalize(info.label) }).first() : page.locator(`[aria-label="${info.label}"]`).first()
       const before = {
         hash: await page.evaluate(() => location.hash),
         text: await page.locator('[data-testid^="screen-"]').innerText().catch(() => ''),
         dialogs: await page.locator('[role="dialog"], [aria-modal="true"], [data-testid$="-confirm"]').count(),
         requests: requests.length,
         focus: await page.evaluate(() => document.activeElement?.getAttribute('data-testid') || document.activeElement?.getAttribute('aria-label') || ''),
+        value: info.tag === 'select' ? await target.inputValue() : null,
+        formValues: await page.locator('input:visible, textarea:visible, select:visible').evaluateAll(nodes => nodes.map(node => [node.getAttribute('data-testid') || node.getAttribute('aria-label') || node.tagName, node.value])),
         errors: errors.length,
       }
-      const target = info.testid ? page.getByTestId(info.testid).first() : info.role === 'option' ? page.getByRole('option', { name: normalize(info.label), exact: false }).first() : info.label ? page.locator(selector).filter({ visible: true }).filter({ hasText: normalize(info.label) }).first() : page.locator(`[aria-label="${info.label}"]`).first()
       try {
         if (info.tag === 'select') {
-          await target.evaluate((element) => {
-            const options = [...element.options].filter(option => !option.disabled)
-            const next = options.find(option => option.value !== element.value)
-            if (next) {
-              element.focus()
-              element.value = next.value
-              element.dispatchEvent(new Event('change', { bubbles: true }))
-            }
-          })
+          const options = await target.locator('option').evaluateAll(nodes => nodes.filter(option => !option.disabled).map(option => option.value))
+          const current = await target.inputValue()
+          const next = options.find(value => value !== current)
+          if (next !== undefined) await target.selectOption(next)
         } else if (info.label === 'Zoom In' || info.label === 'Zoom Out' || info.label === 'Fit View') {
           await page.getByLabel(info.label, { exact: true }).click({ timeout: 1800 })
         } else if (info.testid === 'note-rename') {
@@ -114,14 +111,20 @@ try {
           text: await page.locator('[data-testid^="screen-"]').innerText().catch(() => ''),
           dialogs: await page.locator('[role="dialog"], [aria-modal="true"], [data-testid$="-confirm"]').count(),
           focus: await page.evaluate(() => document.activeElement?.getAttribute('data-testid') || document.activeElement?.getAttribute('aria-label') || ''),
+          value: info.tag === 'select' ? await target.inputValue() : null,
+          formValues: await page.locator('input:visible, textarea:visible, select:visible').evaluateAll(nodes => nodes.map(node => [node.getAttribute('data-testid') || node.getAttribute('aria-label') || node.tagName, node.value])),
         }
-        const changed = after.hash !== before.hash || after.text !== before.text || after.dialogs > before.dialogs || after.focus !== before.focus || requests.length > before.requests
+        const changed = after.hash !== before.hash || after.text !== before.text || after.dialogs > before.dialogs || after.focus !== before.focus || after.value !== before.value || JSON.stringify(after.formValues) !== JSON.stringify(before.formValues) || requests.length > before.requests
         if (after.dialogs > before.dialogs || /are you sure|confirm|delete this|remove this/i.test(after.text.slice(0, 500))) {
           await page.keyboard.press('Escape').catch(() => {})
           await page.getByRole('button', { name: /cancel|keep|no|back/i }).first().click({ timeout: 400 }).catch(() => {})
         }
         if (!changed && !allow) dead.push({ route, role: info.role || info.tag, testid: info.testid, label })
         if (!changed && allow) console.log(`[every-control] allowlisted ${route}: ${label} — ${allow.reason}`)
+        if (info.testid === 'note-rename') {
+          await page.getByTestId('note-rename-undo').click({ timeout: 1800 }).catch(() => {})
+          if (await page.evaluate(() => location.hash) !== hash) await page.goto(url, { waitUntil: 'domcontentloaded' })
+        }
       } catch (error) {
         failures.push(`${route}: could not activate ${label}: ${String(error).split('\n')[0]}`)
       }

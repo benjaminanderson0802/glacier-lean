@@ -1,1 +1,4 @@
-[]
+[
+  { "route": "memory", "selector": "option:All 3", "reason": "All 3 is the already-selected default filter; selecting it again intentionally leaves the note list unchanged." },
+  { "route": "note", "selector": "option:All 3", "reason": "All 3 is the already-selected default filter; selecting it again intentionally leaves the note list unchanged." }
+]
