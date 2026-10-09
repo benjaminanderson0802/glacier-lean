@@ -128,13 +128,16 @@ try {
   await thread.click()
   await page.locator('.messenger-composer textarea').fill('Follow up from the messenger panel')
   await page.locator('.messenger-composer button[type="submit"]').click()
-  await page.getByText('Real backend fake reply', { exact: true }).last().waitFor({ timeout: 20000 })
+  const messengerReply = page.locator('.messenger-bubble').filter({ hasText: 'Real backend fake reply' }).last()
+  await messengerReply.waitFor({ state: 'visible', timeout: 20000 })
   const eventDeadline = Date.now() + 5000
-  while (Date.now() < eventDeadline && !wsEvents.some(event => event.type === 'messages.thread_delta' || event.type === 'messages.thread_message'))
+  const sawMessengerReplyEvent = () => wsEvents.some(event =>
+    event.type === 'messages.thread_message' && event.message?.text === 'Real backend fake reply')
+  while (Date.now() < eventDeadline && !sawMessengerReplyEvent())
     await new Promise(resolve => setTimeout(resolve, 100))
-  const sawMessengerEvent = wsEvents.some(event => event.type === 'messages.thread_delta' || event.type === 'messages.thread_message')
-  check(sawMessengerEvent, 'right-wall messenger received the real backend message over live events')
-  check(await page.locator('.messenger-log').getByText('Follow up from the messenger panel').isVisible(), 'messenger shows the sent Glacier message')
+  check(sawMessengerReplyEvent(), 'right-wall messenger reply arrived in a real backend live event')
+  const sentMessengerMessage = page.locator('.messenger-log .messenger-bubble').filter({ hasText: 'Follow up from the messenger panel' }).last()
+  check(await sentMessengerMessage.isVisible(), 'messenger shows the sent Glacier message')
 
   if (failures) console.error(`\n${failures} live real-backend check(s) failed.`)
   else console.log('\nAll live real-backend checks passed.')
