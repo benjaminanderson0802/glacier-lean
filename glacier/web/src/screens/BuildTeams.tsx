@@ -26,6 +26,9 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [undoId, setUndoId] = useState('')
+  const [readiness, setReadiness] = useState(0)
+  const [draftWarning, setDraftWarning] = useState(false)
+  const [lastMessage, setLastMessage] = useState('')
 
   const refreshTeam = useCallback(() => { if (teamId) teamsApi.get(teamId).then(setTeam).catch(e => setError(String(e))) }, [teamId])
   useEffect(() => { refreshTeam() }, [refreshTeam])
@@ -37,19 +40,16 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
     try {
       const result = await teamsApi.interview(text, conv, engine)
       setLines(v => [...v, { who: 'ai', text: result.reply }])
-      setVision(v => ({ ...v, goal: String(v.goal || text), done: Array.isArray(v.done) && v.done.length ? v.done : [text] }))
-      setSpec(v => ({ ...v, requirements: [...v.requirements, `The project shall ${text.replace(/[.!?]+$/, '')}.`] }))
+      setReadiness(result.readiness || 0)
+      setLastMessage(text)
     } catch (e) { setError(String(e)) } finally { setBusy(false) }
   }
-  const approveSpec = async () => {
+  const draftSpec = async (anyway = false) => {
+    if (!anyway && readiness < 70) return
     setBusy(true); setError('')
     try {
-      const goal = String(vision.goal || lines.find(x => x.who === 'you')?.text || 'New project')
-      const done = Array.isArray(vision.done) ? vision.done as string[] : []
-      const v = await teamsApi.vision({ ...vision, goal, done: done.length ? done : spec.acceptance.map(String) })
-      setVisionPath(v.path)
-      const accepted = await teamsApi.spec({ ...spec, acceptance: spec.acceptance.length ? spec.acceptance : done })
-      setSpec(accepted.spec)
+      const drafted = await teamsApi.draftSpec(conv, lastMessage, engine)
+      setVision(drafted.vision); setSpec(drafted.spec); setVisionPath(drafted.path); setDraftWarning(false)
       setStage('spec')
     } catch (e) { setError(String(e)) } finally { setBusy(false) }
   }
@@ -97,7 +97,22 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
           <h3>{t('team.lockedFeatures')}</h3><ul>{plan.features.map(f => <li key={f.id}>{f.title}</li>)}</ul><h3>{t('team.harness')}</h3><pre>{JSON.stringify(plan.harness, null, 2)}</pre><h3>{t('team.tasks')}</h3><ul>{plan.tasks.map(task => <li key={task.id}>{task.title} · {task.role}</li>)}</ul></>}
         <div className="bt-actions"><Btn onClick={() => { setMessage(t('team.feedbackPrefix')); setStage('interview') }}>{t('team.editFeedback')}</Btn><Btn primary disabled={busy || !plan} onClick={() => void approvePlan()}>{t('team.startTeam')}</Btn></div>
       </Panel>}
-      <Panel title={t('team.understood')} className="bt-understood" testid="build-understood"><p>{t('team.readiness')}</p><Progress value={(message ? 0 : 10) + (lines.some(x => /who|for|audience/i.test(x.text)) ? 20 : 0) + (spec.requirements.length ? 25 : 0) + (spec.acceptance.length || Array.isArray(vision.done) && (vision.done as string[]).length ? 25 : 0) + (spec.out_of_scope.length ? 20 : 0)} max={100} /><h3>{t('team.requirements')}</h3><ol>{spec.requirements.map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={String(line)} onChange={e => setSpec(s => ({ ...s, requirements: s.requirements.map((x, j) => i === j ? e.target.value : x) }))} /></li>)}</ol><h3>{t('team.doneList')}</h3><ol>{(Array.isArray(vision.done) ? vision.done as string[] : []).map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={line} onChange={e => setVision(v => ({ ...v, done: (v.done as string[]).map((x, j) => i === j ? e.target.value : x) }))} /></li>)}</ol><button className="g-link" onClick={() => void approveSpec()}>{t('team.reviewSpec')}</button><button className="g-link" onClick={() => void deleteThing('interview', conv)}>{t('team.deleteInterview')}</button></Panel>
+      <Panel title={t('team.understood')} className="bt-understood" testid="build-understood">
+        <p>{t('team.readiness')} · {readiness}%</p>
+        <Progress value={readiness} max={100} />
+        {visionPath && stage === 'interview' && <>
+          <h3>{t('team.requirements')}</h3>
+          <ol>{spec.requirements.map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={String(line)} onChange={e => setSpec(s => ({ ...s, requirements: s.requirements.map((x, j) => j === i ? e.target.value : x) }))} /></li>)}</ol>
+          <h3>{t('team.doneList')}</h3>
+          <ol>{(Array.isArray(vision.done) ? vision.done as string[] : []).map((line, i) => <li key={i}><input aria-label={t('team.editLine')} value={line} onChange={e => setVision(v => ({ ...v, done: (v.done as string[]).map((x, j) => j === i ? e.target.value : x) }))} /></li>)}</ol>
+        </>}
+        {lastMessage && !visionPath && <>
+          <button className="g-link" disabled={busy || readiness < 70} onClick={() => void draftSpec()}>{t('team.reviewSpec')}</button>
+          {readiness < 70 && <button className="g-link" disabled={busy} onClick={() => setDraftWarning(true)}>{t('team.draftAnyway')}</button>}
+        </>}
+        {draftWarning && <div role="alert">{t('team.draftWarning')} <button className="g-link" disabled={busy} onClick={() => void draftSpec(true)}>{t('team.continueAnyway')}</button></div>}
+        {lines.length > 0 && <button className="g-link" onClick={() => void deleteThing('interview', conv)}>{t('team.deleteInterview')}</button>}
+      </Panel>
     </div>
 
     {error && <div className="g-error" data-testid="team-error">{error}</div>}
