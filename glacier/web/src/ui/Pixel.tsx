@@ -122,44 +122,12 @@ export function Icon({ name, px = 3, className }: { name: IconName; px?: number;
 }
 
 // ---------- status icons (11x11, fixed colours from tokens) ----------
-const DISC = [
-  '...xxxxx...',
-  '..xxxxxxx..',
-  '.xxxxxxxxx.',
-  'xxxxxxxxxxx',
-  'xxxxxxxxxxx',
-  'xxxxxxxxxxx',
-  'xxxxxxxxxxx',
-  'xxxxxxxxxxx',
-  '.xxxxxxxxx.',
-  '..xxxxxxx..',
-  '...xxxxx...',
-]
-const overlay = (base: string[], top: string[]) => base.map((r, y) => r.split('').map((c, x) => (top[y]?.[x] && top[y][x] !== '.' ? top[y][x] : c)).join(''))
-const BANG = ['...........', '...........', '.....o.....', '.....o.....', '.....o.....', '.....o.....', '.....o.....', '...........', '.....o.....', '...........', '...........']
-const TICK = ['...........', '.........o.', '........oo.', '.......oo..', 'o.....oo...', 'oo...oo....', '.oo.oo.....', '..ooo......', '...o.......', '...........', '...........']
-const QUEUE = [
-  'xxxxxxxxxxx',
-  'xooooooooox',
-  'xoxxxxxxxox',
-  'xoxoooooxox',
-  'xoxoxxxoxox',
-  'xoxoxxxoxox',
-  'xoxoxxxoxox',
-  'xoxoooooxox',
-  'xoxxxxxxxox',
-  'xooooooooox',
-  'xxxxxxxxxxx',
-]
-const SPIN = overlay(DISC.map(r => r.replace(/x/g, 'x')), ['...........', '...........', '...........', '...ooooo...', '...o...o...', '...o.o.o...', '...o...o...', '...ooooo...', '...........', '...........', '...........'])
 
 export type StatusKind = 'bad' | 'warn' | 'ok' | 'run' | 'idle'
-export function StatusIcon({ kind, px = 3 }: { kind: StatusKind; px?: number }) {
-  if (kind === 'ok') return <PixelArt rows={TICK} pal={{ o: 'var(--g-ok)' }} px={px} className="g-status" title={t('pixel.done')} />
-  if (kind === 'warn') return <PixelArt rows={QUEUE} pal={{ x: 'var(--g-warn)', o: 'var(--g-bg)' }} px={px} className="g-status" title={t('pixel.queued')} />
-  if (kind === 'run') return <PixelArt rows={SPIN} pal={{ x: 'var(--g-accent)', o: 'var(--g-panel)' }} px={px} className="g-status g-status-run" title={t('pixel.running')} />
-  if (kind === 'idle') return <PixelArt rows={DISC} pal={{ x: 'var(--g-line-dim)' }} px={px} className="g-status" title={t('pixel.waiting')} />
-  return <PixelArt rows={overlay(DISC, BANG)} pal={{ x: 'var(--g-bad)', o: 'var(--g-bad-ink)' }} px={px} className="g-status" title={t('pixel.needsYou')} />
+export function StatusIcon({ kind }: { kind: StatusKind; px?: number }) {
+  // Limbo: a soft status dot instead of pixel art. Title keeps the meaning for screen readers and hover.
+  const title = kind === 'ok' ? t('pixel.done') : kind === 'warn' ? t('pixel.queued') : kind === 'run' ? t('pixel.running') : kind === 'idle' ? t('pixel.waiting') : t('pixel.needsYou')
+  return <span className={`g-status l-dot l-dot-${kind}`} role="img" aria-label={title} title={title} />
 }
 
 // ---------- logo: two snowy peaks ----------
