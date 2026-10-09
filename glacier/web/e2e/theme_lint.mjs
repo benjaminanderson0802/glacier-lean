@@ -34,7 +34,7 @@ const need = [
   [existsSync(path.join(THEME, 'limbo/room.webp')), 'room painting theme/limbo/room.webp is missing'],
   [css.includes("url('./limbo/room.webp')"), 'the stage must paint the room'],
   [css.includes('backdrop-filter'), 'panels must be frosted glass (backdrop-filter)'],
-  [/\.l-left\s*\{[^}]*rotateY\(/.test(css) && /\.l-right\s*\{[^}]*rotateY\(/.test(css), 'side panels must lie on the angled walls (rotateY)'],
+  [existsSync(path.join(src, 'ui/wallQuad.ts')) && css.includes('.l-wall'), 'side panels must be laid on the painted walls (ui/wallQuad.ts)'],
   [existsSync(path.join(THEME, 'fonts/Nunito.woff2')), 'bundled Nunito font is missing'],
 ]
 for (const [ok, why] of need) if (!ok) fails.push(`theme/ui.css: ${why}`)

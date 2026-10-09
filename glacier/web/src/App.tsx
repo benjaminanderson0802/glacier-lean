@@ -1,5 +1,5 @@
 // Limbo window: a painted room with three frosted panels. Left wall = menu, back wall = active screen, right wall = team / needs you / running.
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
 import { HomeScreen } from './screens/Home.tsx'
@@ -14,6 +14,7 @@ import { Templates } from './screens/Templates.tsx'
 import { CommandPalette } from './screens/CommandPalette.tsx'
 import { Splash } from './screens/Splash.tsx'
 import { SideStatus } from './screens/SideStatus.tsx'
+import { LEFT_WALL, RIGHT_WALL, wallStyle } from './ui/wallQuad.ts'
 import { t as translate } from './i18n/index.ts'
 import { releasesApi } from './api.ts'
 
@@ -40,6 +41,13 @@ export default function App() {
   const [updateDismissed, setUpdateDismissed] = useState(false)
   const [installedUpdate, setInstalledUpdate] = useState<string | null>(null)
   const [installedNoticeDismissed, setInstalledNoticeDismissed] = useState(false)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [stage, setStage] = useState({ w: 1672, h: 941 })
+  useEffect(() => {
+    const el = stageRef.current; if (!el) return
+    const ro = new ResizeObserver(() => setStage({ w: el.clientWidth, h: el.clientHeight }))
+    ro.observe(el); return () => ro.disconnect()
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -103,16 +111,16 @@ export default function App() {
   return (
     <div className="l-viewport g-window" data-testid="window">
       <div className="l-backdrop" aria-hidden="true" />
-      <div className="l-stage">
+      <div className="l-stage" ref={stageRef}>
         <div className="l-dragbar" data-tauri-drag-region>
-          <nav className="g-topbar" aria-hidden="true"><div className="g-brand"><Logo px={3} /><span className="g-brand-name">LIMBO - {translate(LABEL[tab]).toUpperCase()}</span></div></nav>
+          <nav className="g-topbar" aria-hidden="true"><div className="g-brand"><Logo px={3} /><span className="g-brand-name">GLACIER - {translate(LABEL[tab]).toUpperCase()}</span></div></nav>
           {isDesktop && <div className="g-winctl" data-tauri-drag-region="false">
             <button className="g-winbtn" aria-label={translate('shell.minimize')} title={translate('shell.minimize')} onClick={() => winAction('minimize')}><Icon name="min" /></button>
             <button className="g-winbtn" aria-label={translate('shell.close')} title={translate('shell.close')} onClick={() => winAction('close')}><Icon name="close" /></button>
           </div>}
         </div>
-        <aside className="l-wall l-left l-glass g-side" data-testid="game-menu">
-          <div className="l-brand">limbo</div>
+        <aside className="l-wall l-left l-glass g-side" data-testid="game-menu" style={wallStyle(stage.w, stage.h, LEFT_WALL)}>
+          <div className="l-brand">glacier</div>
           <button type="button" className="g-menu-item l-new" data-testid="nav-new-task" onClick={() => go('ask')}>{translate('shell.newTask')}</button>
           <div className="g-menu-list" role="tablist" aria-orientation="vertical">{TABS.map((item) => <button key={item} role="tab" aria-selected={item === tab} data-testid={`nav-${item}`} aria-label={translate(LABEL[item])} title={translate(LABEL[item])} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}>{translate(LABEL[item])}</button>)}</div>
           <div className="l-engines g-engines"><small>● Codex</small><small>● granite</small></div>
@@ -120,7 +128,7 @@ export default function App() {
         <div className="l-center l-glass">
           <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
         </div>
-        <aside className="l-wall l-right l-glass" data-testid="side-status"><SideStatus /></aside>
+        <aside className="l-wall l-right l-glass" data-testid="side-status" style={wallStyle(stage.w, stage.h, RIGHT_WALL)}><SideStatus /></aside>
         <footer className="l-status">
           <span><span className="g-key">Ctrl+K</span> {translate('shell.command')} · <span className="g-key">F1</span> {translate('shell.help')}</span>
           <span className="g-ready" data-testid="status-line" title={status}>{status}</span>
