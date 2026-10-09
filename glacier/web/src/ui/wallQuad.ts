@@ -5,9 +5,9 @@ export type Pt = [number, number]
 export type Quad = [Pt, Pt, Pt, Pt] // top-left, top-right, bottom-right, bottom-left, in painting pixels
 
 export const PAINT_W = 1672, PAINT_H = 941
-// Measured on the approved Limbo image (same room as room.webp).
-export const LEFT_WALL: Quad = [[25, 167], [270, 205], [270, 657], [25, 692]]
-export const RIGHT_WALL: Quad = [[1384.5, 205], [1647, 165], [1647, 695], [1384.5, 657]]
+// Measured on the wide-angle room painting (room.webp): the frosted rectangles painted on each side wall.
+export const LEFT_WALL: Quad = [[19, 163], [266, 198.5], [266, 616], [19, 651.5]]
+export const RIGHT_WALL: Quad = [[1407.5, 196], [1656, 160], [1656, 652], [1407.5, 616]]
 
 /** Square-to-quad projective map (Heckbert), returned as a CSS matrix3d for a W x H element with origin 0 0. */
 export function quadTransform(w: number, h: number, q: Quad): string {

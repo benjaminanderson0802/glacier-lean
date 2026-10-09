@@ -65,7 +65,7 @@ export function PageHead({ title, sub, crumb, side }: { title: string; sub?: str
 export function Panel({ title, aside, children, testid, className, style }: { title?: ReactNode; aside?: ReactNode; children: ReactNode; testid?: string; className?: string; style?: React.CSSProperties }) {
   return (
     <section className={`g-panel ${className ?? ''}`} data-testid={testid} style={style}>
-      {title && <h2 className="g-panel-title">{title}{aside && <span className="g-aside">{aside}</span>}</h2>}
+      {title && <h2 className="g-panel-title">{title}{aside != null && aside !== false && <span className="g-aside">{aside}</span>}</h2>}
       {children}
     </section>
   )

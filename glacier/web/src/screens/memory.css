@@ -371,10 +371,10 @@
 /* The build shell normally expands across the room for its canvas. The vault
    is a reading view, so keep it inside the painted back-wall window. */
 .is-building .l-center:has(.vault) {
-  left: 25%;
-  width: 49.04%;
-  top: 25.5%;
-  height: 39.1%;
+  left: 19.32%;
+  width: 61.3%;
+  top: 20.3%;
+  height: 46.44%;
   z-index: 4;
 }
 
