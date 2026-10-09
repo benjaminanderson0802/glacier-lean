@@ -50,5 +50,5 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.1.0') },
   server: { proxy },
   preview: { proxy },
-  build: { chunkSizeWarningLimit: 1500 },
+  build: { chunkSizeWarningLimit: 1500, rollupOptions: { input: { main: path.resolve(import.meta.dirname, 'index.html'), 'ui-gallery-overlays': path.resolve(import.meta.dirname, 'ui-gallery-overlays.html') } } },
 })
