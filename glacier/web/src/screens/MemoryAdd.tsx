@@ -2,10 +2,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { addToMemory, ago, memory, sessionsApi, slugify, type CodingSession, type SessionEvent } from '../api.ts'
 import { Btn, Empty, KeyboardMenu, Panel, Row } from '../ui/kit.tsx'
-import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
-import { Hint, HintBar } from '../ui/kit.tsx'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 
 type Tab = 'files' | 'text' | 'chats' | 'sessions'
@@ -88,7 +86,7 @@ export function MemoryAdd() {
   }
 
   return (
-    <div className="g-memadd" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
+    <div className="g-memadd g-memory-add-layout">
       <Panel title={tab === 'files' ? t('memoryAdd.files') : tab === 'text' ? t('memoryAdd.text') : tab === 'chats' ? t('memoryAdd.chatImport') : t('memoryAdd.sessions')} testid="memory-add" className="g-scroll">
         <KeyboardMenu orientation="horizontal" label={t('memory.title')} items={([['files', t('memoryAdd.files')], ['text', t('memoryAdd.text')], ['chats', t('memoryAdd.chatImport')], ['sessions', t('memoryAdd.sessions')]] as [Tab, string][]).map(([id, label]) => ({ id, label, testid: `add-tab-${id}` }))} selected={tab} onSelect={id => { setTab(id as Tab); setDone([]) }} />
         {tab === 'sessions' ? (
@@ -100,14 +98,14 @@ export function MemoryAdd() {
         ) : tab === 'text' ? (
           <div className="g-editor">
             <input className="g-input" placeholder={t('memoryAdd.title')} value={title} onChange={e => setTitle(e.target.value)} data-testid="add-title" />
-            <textarea className="g-input g-textarea" style={{ minHeight: 220 }} placeholder={t('memoryAdd.textPlaceholder')} value={text} onChange={e => setText(e.target.value)} data-testid="add-text" />
+            <textarea className="g-input g-textarea g-memory-add-text" placeholder={t('memoryAdd.textPlaceholder')} value={text} onChange={e => setText(e.target.value)} data-testid="add-text" />
           </div>
         ) : (
-          <div className={`g-drop${over ? ' over' : ''}`} data-testid="add-drop" role="button" tabIndex={0} style={{ minHeight: 'calc(58 * var(--px))', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'calc(2 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: 'var(--g-ice1)', color: 'var(--g-ink)', cursor: 'pointer' }} onClick={() => pick.current?.click()}
+          <div className={`g-drop${over ? ' over' : ''}`} data-testid="add-drop" role="button" tabIndex={0} onClick={() => pick.current?.click()}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.current?.click() } }}
             onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
             onDrop={e => { e.preventDefault(); setOver(false); const dropped = Array.from(e.dataTransfer.files); setFiles(f => [...f, ...dropped]) }}>
-            <Icon name="note" px={5} />
+            <span className="g-memory-drop-mark" aria-hidden="true" />
             <span className="g-lead">{files.length ? t('memoryAdd.filesReady', { count: files.length, plural: files.length > 1 ? 's' : '' }) : t('memoryAdd.dropFiles')}</span>
             <span className="g-detail">{files.length ? files.map(f => f.name).join(', ') : t('memoryAdd.browse')}</span>
             <input ref={pick} type="file" multiple hidden accept={tab === 'chats' ? '.zip,.json' : undefined} data-testid="add-input"
@@ -117,7 +115,7 @@ export function MemoryAdd() {
         <div className="g-detail" style={{ marginTop: 10 }}>{tab === 'sessions' ? t('memoryAdd.sessionInfo') : tab === 'chats' ? t('memoryAdd.chatInfo') : tab === 'files' ? t('memoryAdd.filesInfo') : t('memoryAdd.noteInfo')}</div>
       </Panel>
       <Panel title={tab === 'sessions' ? t('memoryAdd.session') : t('memoryAdd.options')} testid="add-options" className="g-scroll">
-        {tab === 'files' && <><h3 className="g-panel-title">{t('memoryAdd.uploadedFiles')}</h3>{fileErr&&<div className="g-error">{fileErr}</div>}<DeleteUndo action={fileUndo} onDone={()=>setFileUndo(null)} onError={e=>setFileErr(String(e))}/><div className="g-rows" data-testid="uploaded-files">{(uploaded??[]).map(file=><div key={`${file.project}/${file.name}`} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1}}><Row icon="note" lead={file.name} detail={file.project}/></div><DeleteAction label={t('memoryAdd.deleteFile')} impact={t('delete.fileImpact')} testid={`file-delete-${file.project}-${file.name}`} onDelete={async()=>{const r=await addToMemory.deleteFile(file.project,file.name);return {title:t('delete.removed'),run:async()=>{await addToMemory.undoDeleteFile(r.undo_id);loadUploaded()}}}} onDeleted={action=>{setFileUndo(action??null);setUploaded(current=>current?.filter(x=>x.name!==file.name||x.project!==file.project)??null)}} onError={e=>setFileErr(String(e))}/></div>)}{uploaded&&uploaded.length===0&&<Empty>{t('memoryAdd.noUploadedFiles')}</Empty>}</div></>}
+        {tab === 'files' && <><h3 className="g-panel-title">{t('memoryAdd.uploadedFiles')}</h3>{fileErr&&<div className="g-error">{fileErr}</div>}<DeleteUndo action={fileUndo} onDone={()=>setFileUndo(null)} onError={e=>setFileErr(String(e))}/><div className="g-rows" data-testid="uploaded-files">{(uploaded??[]).map(file=><div key={`${file.project}/${file.name}`} style={{display:'flex',alignItems:'center',gap:6}}><div style={{flex:1}}><Row lead={file.name} detail={file.project}/></div><DeleteAction label={t('memoryAdd.deleteFile')} impact={t('delete.fileImpact')} testid={`file-delete-${file.project}-${file.name}`} onDelete={async()=>{const r=await addToMemory.deleteFile(file.project,file.name);return {title:t('delete.removed'),run:async()=>{await addToMemory.undoDeleteFile(r.undo_id);loadUploaded()}}}} onDeleted={action=>{setFileUndo(action??null);setUploaded(current=>current?.filter(x=>x.name!==file.name||x.project!==file.project)??null)}} onError={e=>setFileErr(String(e))}/></div>)}{uploaded&&uploaded.length===0&&<Empty>{t('memoryAdd.noUploadedFiles')}</Empty>}</div></>}
         {tab === 'files' && <label className="g-field"><span className="g-detail">{t('memoryAdd.project')}</span><input className="g-input" value={project} onChange={e => setProject(e.target.value)} placeholder={t('memoryAdd.none')} data-testid="add-project" /></label>}
         {tab === 'chats' && imports.length > 0 && (
           <div className="g-rows" style={{ marginBottom: 10 }} data-testid="import-history">
@@ -136,7 +134,7 @@ export function MemoryAdd() {
               <div className="g-lead">{sel.title || t('memoryAdd.untitled')}</div>
               <div className="g-detail">{toolName(sel)} · {t('memoryAdd.steps', { count: sel.events.length, plural: sel.events.length === 1 ? '' : 's' })}{sel.started ? ` · started ${ago(sel.started)}` : ''}</div>
               <div className="g-rows g-scroll" style={{ maxHeight: 360, marginTop: 8 }}>
-                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} icon={ev.type === 'user_message' ? 'ask' : ev.type === 'assistant_message' ? 'automations' : ev.type.startsWith('command') ? 'run' : 'note'} lead={ev.type === 'user_message' ? 'You' : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? 'Command' : ev.type === 'command_output' ? 'Output' : 'Step'} detail={ev.text.slice(0, 160)} />)}
+                {sel.events.slice(0, 40).map((ev, i) => <Row key={i} lead={ev.type === 'user_message' ? 'You' : ev.type === 'assistant_message' ? toolName(sel) : ev.type === 'command' ? 'Command' : ev.type === 'command_output' ? 'Output' : 'Step'} detail={ev.text.slice(0, 160)} />)}
               </div>
               <Btn primary onClick={saveSession} disabled={busy} data-testid="session-save" style={{ marginTop: 12 }}>{t('memoryAdd.saveMemory')}</Btn>
             </div>
@@ -147,7 +145,6 @@ export function MemoryAdd() {
         </div>
         {done.some(d => d.ok) && <button className="g-link" onClick={() => go('memory')}>{t('memoryAdd.seeNotes')}</button>}
       </Panel>
-      <HintBar><Hint keyLabel="←→">{t('hint.moveTab')}</Hint><Hint keyLabel="Enter">{t('hint.save')}</Hint></HintBar>
     </div>
   )
 }

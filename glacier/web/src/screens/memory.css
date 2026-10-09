@@ -1,0 +1,365 @@
+/* Limbo presentation for the memory screens. The reading sheet is deliberately
+   separate from the glass chrome so long notes stay comfortable to read. */
+.g-memory {
+  color: var(--g-white);
+  text-shadow: var(--l-text-shadow);
+}
+
+.g-memory-screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(4 * var(--px));
+  min-width: 0;
+  min-height: 0;
+}
+
+.g-memory.g-memory-notes-layout {
+  display: grid;
+  grid-template-columns: calc(66 * var(--px)) minmax(0, 1.1fr) minmax(0, 1.7fr);
+  gap: calc(2 * var(--px));
+  flex: 1;
+}
+
+.g-memory > .g-pagehead .g-input {
+  width: min(100%, calc(120 * var(--px)));
+}
+
+.g-memory .g-memory-count {
+  margin-left: auto;
+  color: var(--g-ink2);
+}
+
+.g-memory-note-row {
+  display: flex;
+  align-items: center;
+  gap: calc(3 * var(--px));
+  min-width: 0;
+}
+
+.g-memory-note-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.g-memory-note-row .g-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.g-memory-note-row .g-row .g-ico {
+  display: none;
+}
+
+.g-memory .g-ico .g-icon {
+  display: none;
+}
+
+.g-memory .g-ico:has(.g-icon)::before {
+  width: calc(3 * var(--px));
+  height: calc(3 * var(--px));
+  border: 1px solid var(--g-white);
+  border-radius: 50%;
+  background: var(--g-ok2);
+  box-shadow: 0 0 calc(2 * var(--px)) var(--g-ok2);
+  content: '';
+}
+
+.g-memory .g-memory > .g-panel,
+.g-memory .g-memory-add-layout > .g-panel,
+.g-memory .g-memory-cleanup-layout > .g-panel,
+.g-memory .g-memmap > .g-panel {
+  background: var(--g-ice2);
+  border-color: var(--g-navy2);
+  border-radius: var(--l-radius);
+  -webkit-backdrop-filter: blur(calc(5 * var(--px)));
+  backdrop-filter: blur(calc(5 * var(--px)));
+}
+
+.g-memory .g-panel-title,
+.g-memory .g-lead,
+.g-memory .g-row,
+.g-memory .g-detail,
+.g-memory .g-muted,
+.g-memory .g-trust,
+.g-memory .g-kv,
+.g-memory .g-empty,
+.g-memory .g-error,
+.g-memory .g-field,
+.g-memory .g-hintbar {
+  text-shadow: var(--l-text-shadow);
+}
+
+.g-memory .g-memadd.g-memory-add-layout,
+.g-memory .g-memadd.g-memory-cleanup-layout {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+  gap: calc(3 * var(--px));
+  flex: 1;
+  min-height: 0;
+}
+
+.g-memory .g-memory-add-text {
+  min-height: calc(96 * var(--px));
+}
+
+.g-memory .g-editor {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(3 * var(--px));
+  min-height: 0;
+}
+
+.g-memory .g-editor-wrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.g-memory .g-editor-wrap .g-textarea {
+  flex: 1;
+  min-height: calc(84 * var(--px));
+}
+
+.g-memory .g-editor .g-textarea {
+  flex: 1;
+  min-height: calc(84 * var(--px));
+}
+
+.g-memory .g-drop {
+  min-height: calc(58 * var(--px));
+  border-style: dashed;
+  border-color: var(--l-edge);
+  background: var(--g-ice2);
+  color: var(--g-white);
+  text-shadow: var(--l-text-shadow);
+}
+
+.g-memory .g-drop:hover,
+.g-memory .g-drop.over {
+  background: var(--g-ice3);
+}
+
+.g-memory-drop-mark {
+  width: calc(14 * var(--px));
+  height: calc(18 * var(--px));
+  border: 1px solid var(--g-ink2);
+  border-radius: calc(2 * var(--px));
+  background:
+    linear-gradient(var(--g-ink2), var(--g-ink2)) calc(3 * var(--px)) calc(5 * var(--px)) / calc(7 * var(--px)) 1px no-repeat,
+    linear-gradient(var(--g-ink2), var(--g-ink2)) calc(3 * var(--px)) calc(9 * var(--px)) / calc(7 * var(--px)) 1px no-repeat,
+    linear-gradient(var(--g-ink2), var(--g-ink2)) calc(3 * var(--px)) calc(13 * var(--px)) / calc(5 * var(--px)) 1px no-repeat;
+}
+
+.g-memory .g-cleanup-row {
+  grid-template-columns: calc(8 * var(--px)) minmax(0, 1fr) auto;
+  border-radius: var(--l-radius-sm);
+  border-bottom-color: var(--g-navy3);
+}
+
+.g-memory .g-cleanup-row.selected {
+  background: var(--g-ice3);
+  box-shadow: inset calc(1 * var(--px)) 0 var(--l-pill-hi);
+}
+
+.g-memory .g-cleanup-row .g-menu-cursor {
+  color: var(--g-white);
+}
+
+.g-memory .g-cleanup-row .g-mid {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.g-memory .g-cleanup-row .g-when {
+  white-space: nowrap;
+}
+
+.g-memory .g-kv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: calc(2 * var(--px)) calc(3 * var(--px));
+  margin: 0;
+}
+
+.g-memory .g-kv dt,
+.g-memory .g-kv dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.g-memory .g-kv dd {
+  color: var(--g-white);
+  text-align: right;
+}
+
+.g-memory .g-kv dt {
+  text-transform: lowercase;
+}
+
+.g-memory .g-notebody {
+  min-height: 0;
+  max-height: min(52vh, calc(250 * var(--px)));
+  overflow: auto;
+  padding: calc(7 * var(--px)) calc(8 * var(--px));
+  border: 1px solid var(--l-edge);
+  border-radius: var(--l-radius-sm);
+  background: var(--l-field);
+  color: var(--l-field-ink);
+  text-shadow: none;
+  box-shadow: inset 0 1px 2px var(--g-shadow), 0 calc(2 * var(--px)) calc(8 * var(--px)) var(--g-shadow);
+}
+
+.g-memory .g-notebody .g-memory-text {
+  color: var(--l-field-ink);
+  font-family: var(--g-font-body);
+  font-size: var(--g-size-small);
+  line-height: 1.7;
+  text-shadow: none;
+}
+
+.g-memory .g-notebody .g-more-arrow {
+  display: none;
+}
+
+.g-memory .g-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(2 * var(--px)) calc(5 * var(--px));
+  padding: calc(3 * var(--px)) 0;
+  color: var(--g-white);
+}
+
+.g-memory .g-links > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(2 * var(--px)) calc(4 * var(--px));
+}
+
+.g-memory .g-memmap {
+  grid-template-columns: minmax(0, 1fr) calc(84 * var(--px));
+  gap: calc(3 * var(--px));
+  flex: 1;
+  min-height: 0;
+}
+
+.g-memory .g-map-panel {
+  padding: calc(4 * var(--px));
+}
+
+.g-memory .g-map-box {
+  min-height: calc(100 * var(--px));
+  overflow: hidden;
+  border: 1px solid var(--g-navy3);
+  border-radius: var(--l-radius-sm);
+  background: var(--l-glass-deep);
+}
+
+.g-memory .g-swatch {
+  display: inline-block;
+  width: calc(4 * var(--px));
+  height: calc(4 * var(--px));
+  margin-right: calc(2 * var(--px));
+  border: 1px solid var(--l-edge);
+  border-radius: 50%;
+  box-shadow: 0 0 calc(3 * var(--px)) currentColor;
+}
+
+.g-memory :is(.g-input, input, textarea, select) {
+  color: var(--l-field-ink);
+  text-shadow: none;
+}
+
+.vault {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: calc(3 * var(--px));
+  min-height: 0;
+  color: var(--g-white);
+  text-shadow: var(--l-text-shadow);
+}
+
+.vault-list,
+.vault-body {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: calc(5 * var(--px));
+  border: 1px solid var(--l-edge);
+  border-radius: var(--l-radius);
+  background: var(--l-glass);
+  -webkit-backdrop-filter: blur(calc(5 * var(--px)));
+  backdrop-filter: blur(calc(5 * var(--px)));
+}
+
+.vault-list .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(3 * var(--px));
+  margin-bottom: calc(3 * var(--px));
+  color: var(--g-white);
+  font-weight: 700;
+}
+
+.vault-list .ghost,
+.vault-list .list-item {
+  border: 1px solid var(--l-edge);
+  border-radius: 999px;
+  background: var(--l-pill);
+  color: var(--l-pill-ink);
+  padding: calc(2 * var(--px)) calc(5 * var(--px));
+  font: var(--g-size-small) var(--g-font-body);
+}
+
+.vault-list .list-item {
+  display: block;
+  width: 100%;
+  margin: calc(1 * var(--px)) 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.vault-list .list-item.active {
+  background: var(--l-pill-hi);
+}
+
+.vault .muted,
+.vault .error {
+  color: var(--g-ink2);
+}
+
+.vault-body pre {
+  min-height: 100%;
+  margin: 0;
+  padding: calc(7 * var(--px));
+  border: 1px solid var(--l-edge);
+  border-radius: var(--l-radius-sm);
+  background: var(--l-field);
+  color: var(--l-field-ink);
+  font: var(--g-size-small)/1.7 var(--g-font-body);
+  text-shadow: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.vault-path {
+  margin-bottom: calc(3 * var(--px));
+  color: var(--g-white);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .g-memory.g-memory-notes-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .g-memory .g-memadd.g-memory-add-layout,
+  .g-memory .g-memadd.g-memory-cleanup-layout,
+  .g-memory .g-memmap,
+  .vault {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
