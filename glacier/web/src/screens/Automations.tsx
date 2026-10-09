@@ -33,13 +33,9 @@ export function AutomationsScreen() {
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
         const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])
-        const startNodes = detail?.nodes.filter(n => ['schedule', 'file_trigger', 'webhook_trigger'].includes(n.type)) ?? []
-        const triggerRuns = startNodes.length ? await Promise.all([...runs].map(async run => ({ run, state: await api.getRun(run.run_id).catch(() => null) }))) : []
-        const last = startNodes.length && startNodes.every(node => node.type === 'schedule')
-          ? [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
-          : startNodes.length
-          ? triggerRuns.filter(item => startNodes.some(node => item.state?.trigger?.node_id === node.id)).sort((a, b) => b.run.started_at.localeCompare(a.run.started_at))[0]?.run
-          : [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
+        const mostRecent = [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
+        // Show the newest run, including manual runs on flows with a trigger.
+        const last = mostRecent
         if (detail) {
           setDetails(prev => ({ ...prev, [e.id]: detail }))
           setExpandedTriggers(prev => ({ ...prev, [e.id]: false }))
@@ -127,12 +123,13 @@ export function AutomationsScreen() {
                 <Fragment key={f.id}>
                 <tr className="automation-summary-row">
                   <td className="g-lead"><button className="g-link" title={f.name} style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
-                  <td>{f.last ? ago(f.last.started_at) : t('automations.never')}</td>
+                  <td>{f.last ? <><span>{ago(f.last.started_at)}</span> · <button className="g-link" onClick={() => go(`automations/flow/${f.id}/${f.last!.run_id}`)} data-testid={`last-trigger-run-${f.id}`}>{t('automations.viewRun')}</button></> : t('automations.never')}</td>
                   <td>{st ? <span className="g-status-cell"><StatusIcon kind={st.kind} />{st.label}</span> : <span className="g-muted">{t('automations.notRun')}</span>}</td>
                   <td><div className="g-trigger-cell automation-trigger-summary" data-testid={`trigger-${f.id}`}>
                       <select className="g-input" aria-label={t('automations.startsWhen')} value={choice} disabled={!detail || busy === f.id} onChange={e => void setStart(detail!, e.target.value)} data-testid={`trigger-choice-${f.id}`}>
                         <option value="manual">{t('automations.byHand')}</option><option value="schedule">{t('automations.onSchedule')}</option><option value="file">{t('automations.whenFile')}</option><option value="webhook">{t('automations.whenRequest')}</option>
                       </select>
+                      {detail && <label className="automation-enabled" title={t('automations.enabled')}><input type="checkbox" aria-label={t('automations.enabled')} checked={active} onChange={e => { setExpandedTriggers(prev => ({ ...prev, [f.id]: true })); void save({ ...detail, enabled: e.target.checked }) }} data-testid={`trigger-enabled-${f.id}`} /></label>}
                       <button type="button" className="g-link automation-trigger-edit" aria-label={t('automations.startsWhen')} title={t('automations.startsWhen')} data-testid={`trigger-edit-${f.id}`} onClick={() => setExpandedTriggers(prev => ({ ...prev, [f.id]: !prev[f.id] }))}>⋯</button>
                   </div></td>
                   <td><DeleteAction label={t('automations.deleteFlow')} impact={t('delete.flowImpact')} testid={`flow-delete-${f.id}`}
@@ -151,8 +148,7 @@ export function AutomationsScreen() {
                     {choice === 'schedule' && <label>{t('automations.schedule')} <input className="g-input" value={cfg.cron ?? ''} placeholder={t('automations.scheduleExample')} onChange={e => { const next = structuredClone(detail!); const node = next.nodes.find(n => n.type === 'schedule')!; node.config.cron = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => detail && void save(details[f.id])} data-testid={`trigger-schedule-${f.id}`} /></label>}
                     {choice === 'file' && <><label>{t('automations.folder')} <input className="g-input" value={cfg.folder ?? ''} placeholder={t('automations.folderExample')} onChange={e => { const next = structuredClone(details[f.id]); next.nodes.find(n => n.type === 'file_trigger')!.config.folder = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => details[f.id] && void save(details[f.id])} data-testid={`trigger-folder-${f.id}`} /></label><label>{t('automations.filePattern')} <input className="g-input" value={cfg.pattern ?? '*'} onChange={e => { const next = structuredClone(details[f.id]); next.nodes.find(n => n.type === 'file_trigger')!.config.pattern = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => details[f.id] && void save(details[f.id])} data-testid={`trigger-pattern-${f.id}`} /></label></>}
                     {choice === 'webhook' && <div style={{ display: 'grid', gap: 6 }}><span>{t('automations.localAddress')}</span><div style={{ display: 'flex', gap: 6 }}><code>{hook}</code><Btn onClick={() => void copyText(hook, `address-${f.id}`)} data-testid={`copy-hook-${f.id}`}>{copied === `address-${f.id}` ? t('automations.copied') : t('automations.copy')}</Btn></div><span>{t('automations.tokenHidden')}</span><Btn onClick={() => void copyText((globalThis as { __GLACIER_TOKEN__?: string }).__GLACIER_TOKEN__ ?? '', `token-${f.id}`)} data-testid={`copy-token-${f.id}`}>{copied === `token-${f.id}` ? t('automations.copied') : t('automations.copyToken')}</Btn></div>}
-                    <div>{t('automations.lastStart')} {f.last ? <><span>{ago(f.last.started_at)}</span> · <button className="g-link" onClick={() => go(`automations/flow/${f.id}/${f.last!.run_id}`)} data-testid={`last-trigger-run-${f.id}`}>{t('automations.viewRun')}</button></> : t('automations.never')}</div>
-                    {detail && <label className="automation-enabled"><input type="checkbox" checked={active} onChange={e => void save({ ...detail, enabled: e.target.checked })} data-testid={`trigger-enabled-${f.id}`} />{t('automations.enabled')}</label>}
+                    <div>{t('automations.lastStart')} {f.last ? ago(f.last.started_at) : t('automations.never')}</div>
                   </div></td>
                 </tr>}
                 </Fragment>

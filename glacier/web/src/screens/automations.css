@@ -7,16 +7,16 @@
 .automation-teams-panel .g-rows { flex: 1; overflow: hidden; }
 .automation-teams-panel .g-empty { padding: 0; justify-content: flex-start; }
 
-.automations-window .g-table th:nth-child(1) { width: 23%; }
-.automations-window .g-table th:nth-child(2) { width: 12%; }
-.automations-window .g-table th:nth-child(3) { width: 16%; }
-.automations-window .g-table th:nth-child(4) { width: 35%; }
-.automations-window .g-table th:nth-child(5) { width: 14%; }
+.automations-window .g-table th:nth-child(1) { width: 19%; }
+.automations-window .g-table th:nth-child(2) { width: 10%; }
+.automations-window .g-table th:nth-child(3) { width: 13%; }
+.automations-window .g-table th:nth-child(4) { width: 42%; }
+.automations-window .g-table th:nth-child(5) { width: 16%; }
 .automations-window .g-table th,
 .automations-window .g-table td { padding: calc(2 * var(--px)); }
 .automation-summary-row td { vertical-align: middle; }
 .automation-trigger-summary { display: flex; align-items: center; gap: calc(2 * var(--px)); overflow: hidden; }
-.automation-trigger-summary .g-input { flex: 1; width: 100%; min-height: calc(15 * var(--px)); }
+.automation-trigger-summary .g-input { flex: 1 1 0; width: 100%; min-width: 0; min-height: calc(15 * var(--px)); }
 .automation-trigger-edit { flex: 0 0 auto; font-size: var(--g-size-small); }
 .automation-summary-row td:last-child .g-btn { white-space: nowrap; padding-inline: calc(3 * var(--px)); font-size: var(--g-size-small); }
 .automation-trigger-edit-row > td { padding-top: 0 !important; }
@@ -25,7 +25,7 @@
 .automation-trigger-editor .g-input { width: min(100%, calc(76 * var(--px))); }
 .automation-trigger-editor code { overflow-wrap: anywhere; }
 .automation-trigger-editor > div { display: flex; align-items: center; flex-wrap: wrap; gap: calc(2 * var(--px)); }
-.automation-enabled { white-space: nowrap; }
+.automation-enabled { display: inline-flex; flex: 0 0 auto; align-items: center; white-space: nowrap; }
 
 .template-window .g-cards { grid-template-columns: repeat(auto-fill, minmax(calc(128 * var(--px)), 1fr)); gap: calc(3 * var(--px)); }
 .template-gallery-summary { display: flex; justify-content: space-between; align-items: center; color: var(--g-ink2); font-size: var(--g-size-small); }
