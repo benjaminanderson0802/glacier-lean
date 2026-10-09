@@ -16,9 +16,14 @@
 
 .g-memory.g-memory-notes-layout {
   display: grid;
-  grid-template-columns: calc(66 * var(--px)) minmax(0, 1.1fr) minmax(0, 1.7fr);
+  grid-template-columns: calc(58 * var(--px)) minmax(0, 1.5fr) minmax(0, 1.5fr);
   gap: calc(2 * var(--px));
   flex: 1;
+}
+
+.g-memory .g-sidenav .g-menu-list {
+  min-height: 0;
+  overflow: auto;
 }
 
 .g-memory > .g-pagehead .g-input {
@@ -349,6 +354,30 @@
   margin-bottom: calc(3 * var(--px));
   color: var(--g-white);
   overflow-wrap: anywhere;
+}
+
+.app:has(.vault) .tab,
+.vault-list .section-head > span,
+.vault-list .ghost {
+  text-transform: lowercase;
+}
+
+/* The build shell normally expands across the room for its canvas. The vault
+   is a reading view, so keep it inside the painted back-wall window. */
+.is-building .l-center:has(.vault) {
+  left: 25%;
+  width: 49.04%;
+  top: 25.5%;
+  height: 39.1%;
+  z-index: 4;
+}
+
+.is-building .app:has(.vault) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.is-building .app:has(.vault) > aside {
+  display: none;
 }
 
 @media (max-width: 720px) {

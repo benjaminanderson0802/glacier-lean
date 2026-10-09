@@ -89,7 +89,9 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
     for (const n of notes ?? []) for (const t of n.tags ?? []) c.set(t, (c.get(t) ?? 0) + 1)
     return [...c.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)
   }, [notes])
-  const list = (notes ?? []).filter(n => tag === t('memory.all') || n.tags?.includes(tag)).sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''))
+  const allLabel = t('memory.all')
+  const filterActive = tag !== allLabel || q.trim().length > 0
+  const list = (notes ?? []).filter(n => tag === allLabel || n.tags?.includes(tag)).sort((a, b) => (b.updated ?? '').localeCompare(a.updated ?? ''))
   useEffect(() => {
     if (list.some(n => n.path === focusedNotePath)) return
     const nextPath = list[0]?.path ?? ''
@@ -118,7 +120,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       <div className="g-memory g-memory-notes-layout">
         <Panel className="g-sidenav" testid="memory-tags" title={t('memory.filters')}>
-          <KeyboardMenu label={t('memory.filters')} items={[t('memory.all'), ...tags.map(x => x[0])].map(value => ({ id: value, label: <><span>{value}</span><span className="g-memory-count">{value === t('memory.all') ? notes?.length ?? '' : tags.find(x => x[0] === value)?.[1]}</span></> }))} selected={tag} onSelect={value => { setTag(value); setQ('') }} />
+          <KeyboardMenu label={t('memory.filters')} items={[...(filterActive ? [allLabel] : []), ...tags.map(x => x[0])].map(value => ({ id: value, label: <><span>{value === allLabel ? value.toLowerCase() : value}</span><span className="g-memory-count">{value === allLabel ? notes?.length ?? '' : tags.find(x => x[0] === value)?.[1]}</span></> }))} selected={tag} onSelect={value => { setTag(value); setQ('') }} />
         </Panel>
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
           <div className="g-rows" onKeyDown={moveNoteFocus}>

@@ -255,12 +255,27 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/e2e/control-fixtures' && req.method === 'POST') {
       const base = new Date().toISOString()
-      vault.set('projects/market-research.md', '# Market research\n\nA note for control audit.')
-      memoryMeta.set('projects/market-research.md', { title: 'Market research', author: 'owner', run_id: '', created: base, updated: base, tags: [] })
-      memoryHistory.set('projects/market-research.md', [
-        { commit: 'fixture-new', author: 'owner', date: base, message: '[owner] write projects/market-research.md', body: '# Market research\n\nA note for control audit.' },
-        { commit: 'fixture-old', author: 'owner', date: base, message: '[owner] write projects/market-research.md', body: '# Market research\n\nFirst version.' },
-      ])
+      const fixtureNotes = [
+        ['projects/market-research.md', '# Market research\n\nThe strongest rise came from short clips with a useful first day. Views rose 35% and saves rose 20% in the first week.\n\nNext: [[decisions/strong-rise-rule]] and [[projects/sponsor-shortlist]]. #research #video', 'owner'],
+        ['projects/sponsor-shortlist.md', '# Sponsor shortlist\n\nStart with the two partners who asked for family travel and outdoor stories. Send the first sample after the next edit review.\n\nUse the backup plan in [[projects/backup-plan]]. #sponsors #video', 'worker:granite3.3:2b'],
+        ['projects/backup-plan.md', '# Backup plan\n\nKeep the original clips on the local drive. Copy finished exports to the external drive every Friday and verify the folder count before clearing camera cards. #backup', 'owner'],
+        ['decisions/strong-rise-rule.md', '# Strong rise rule\n\nA clip counts as a strong rise when first-day views are at least 35% above the channel average and saves are at least 20% higher. Review again after seven days. #decisions', 'owner'],
+        ['ideas/products.md', '# Product ideas\n\nA compact travel journal is promising: several small shops asked for one, and current options are either bulky or hard to personalize.\n\nCompare it with [[ideas/products-2]]. #ideas #research', 'owner'],
+        ['ideas/products-2.md', '# Travel journal notes\n\nA second take on the compact travel journal. Keep the map spread, removable packing list, and space for a few printed photos. #ideas', 'owner'],
+        ['old/chat-log.md', '# Old chat log\n\nThe first brainstorming session is kept for context. The useful decisions were moved into [[decisions/strong-rise-rule]]. #archive', 'owner'],
+        ['runs/daily-backup.md', '# Daily backup\n\nThe latest backup finished successfully. The weekly copy check found all 18 expected folders. #backup', 'run:daily-backup'],
+      ]
+      for (const [path, body, author] of fixtureNotes) {
+        vault.set(path, body)
+        const title = (body.match(/^#\s+(.+)$/m) ?? [])[1]
+        const tags = [...new Set([...body.matchAll(/(?:^|\s)#([\w-]+)/g)].map(x => x[1]))]
+        memoryMeta.set(path, { title, author, run_id: author.startsWith('run:') ? 'run-backup' : '', created: base, updated: base, tags })
+        const id = path.replace(/[^a-z0-9]/gi, '-')
+        memoryHistory.set(path, [
+          { commit: `fixture-${id}`, author, date: base, message: `[${author}] write ${path}`, body },
+          { commit: `fixture-old-${id}`, author, date: base, message: `[${author}] first saved ${path}`, body: `# ${title}\n\nAn earlier draft.` },
+        ])
+      }
       const definitions = [
         ['run-report', 'weekly-report', 'waiting'], ['run-inbox', 'inbox-triage', 'waiting'],
         ['run-tests', 'nightly-tests', 'failed'], ['run-backup', 'daily-backup', 'running'],
