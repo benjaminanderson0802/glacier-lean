@@ -53,6 +53,7 @@ const mockTemplates = [
     template: { id: 'tpl-folder-backup', name: 'Folder backup', nodes: [{ id: 'n1', type: 'command', config: { command: 'echo backup' }, position: { x: 0, y: 0 } }], edges: [] } },
 ]
 const runs = new Map() // run_id -> run record
+const fixedMockRuns = new Map()
 const hiddenRuns = new Set()
 const deletedFlows = new Map()
 const vault = new Map() // path -> body
@@ -251,6 +252,32 @@ const server = http.createServer(async (req, res) => {
         ],
       })
     }
+    if (p === '/api/e2e/control-fixtures' && req.method === 'POST') {
+      const base = new Date().toISOString()
+      vault.set('projects/market-research.md', '# Market research\n\nA note for control audit.')
+      memoryMeta.set('projects/market-research.md', { title: 'Market research', author: 'owner', run_id: '', created: base, updated: base, tags: [] })
+      memoryHistory.set('projects/market-research.md', [
+        { commit: 'fixture-new', author: 'owner', date: base, message: '[owner] write projects/market-research.md', body: '# Market research\n\nA note for control audit.' },
+        { commit: 'fixture-old', author: 'owner', date: base, message: '[owner] write projects/market-research.md', body: '# Market research\n\nFirst version.' },
+      ])
+      const definitions = [
+        ['run-report', 'weekly-report', 'waiting'], ['run-inbox', 'inbox-triage', 'waiting'],
+        ['run-tests', 'nightly-tests', 'failed'], ['run-backup', 'daily-backup', 'running'],
+        ['run-research', 'market-research', 'queued'],
+      ]
+      for (const [run_id, env_id, status] of definitions) {
+        const graph = envs.get(env_id)
+        if (graph) fixedMockRuns.set(run_id, { run_id, env_id, status, started_at: base, graph, node_states: { n1: status === 'failed' ? 'failed' : status === 'waiting' ? 'waiting' : status === 'running' ? 'running' : 'pending' }, outputs: {}, waiting_on: status === 'waiting' ? 'n1' : null, usage: {} })
+      }
+      const claimId = '2026-10-07-calendar-claim-a1b2c3'
+      if (!mockClaims.has(claimId)) mockClaims.set(claimId, { meta: { id: claimId, kind: 'capability_gap', summary: 'Need a calendar connection for this workflow.', status: 'proposed', updated: base, run_id: '' }, body: '## Problem\nNeed a calendar connection for this workflow.\n\n## Evidence\n\n## Research\n\n## Resolution\n', summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, updated: this.meta.updated } } })
+      return send(200, { seeded: true })
+    }
+    if (p === '/api/assistant/settings') {
+      if (req.method === 'GET') return send(200, { enabled: true, model: 'granite3.3:2b' })
+      if (req.method === 'PUT') return send(200, { enabled: true, model: 'granite3.3:2b', ...(await readBody()) })
+    }
+    if ((m = p.match(/^\/api\/build\/interviews\/([^/]+)$/)) && req.method === 'DELETE') return send(200, { deleted: true, undo_id: commitId() })
     if (req.method === 'GET' && p === '/api/node-types') return send(200, [...CATALOG, HTTP_NODE])
     if (p.startsWith('/api/assistant/conversations')) {
       const titleOf = c => c.title || (c.messages.find(x => x.who === 'you')?.text ?? '').split(/\s+/).join(' ').slice(0, 60) || 'Untitled conversation'
@@ -513,7 +540,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && p === '/api/runs') {
       const envId = url.searchParams.get('env_id')
-      const list = [...runs.values()].filter(r => !hiddenRuns.has(r.run_id) && (!envId || r.env_id === envId))
+      const list = [...runs.values(), ...fixedMockRuns.values()].filter(r => !hiddenRuns.has(r.run_id) && (!envId || r.env_id === envId))
         .sort((a, b) => b.started_at.localeCompare(a.started_at))
         .map(r => ({ run_id: r.run_id, env_id: r.env_id, status: r.status, started_at: r.started_at }))
       return send(200, list)
@@ -558,11 +585,11 @@ const server = http.createServer(async (req, res) => {
         paid_cap_usd: Number(process.env.GLACIER_PAID_CAP_USD ?? 0) })
     }
     if (req.method === 'GET' && (m = p.match(/^\/api\/runs\/([^/]+)$/))) {
-      const r = runs.get(decodeURIComponent(m[1]))
+      const id = decodeURIComponent(m[1]), r = runs.get(id) ?? fixedMockRuns.get(id)
       return r ? send(200, publicRun(r)) : send(404, { detail: 'run not found' })
     }
     if (req.method === 'GET' && (m = p.match(/^\/api\/runs\/([^/]+)\/explain$/))) {
-      const r = runs.get(decodeURIComponent(m[1]))
+      const id = decodeURIComponent(m[1]), r = runs.get(id) ?? fixedMockRuns.get(id)
       if (!r) return send(404, { detail: 'run not found' })
       const labels = new Map(CATALOG.map(item => [item.type, item.label]))
       const steps = r.graph.nodes.map((node, index) => {
