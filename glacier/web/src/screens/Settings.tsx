@@ -3,14 +3,20 @@ import { system, type SystemCheck } from '../api.ts'
 import { Btn, Empty, Hint, HintBar, KeyboardMenu, PageHead, Panel, Row, Window } from '../ui/kit.tsx'
 import { go } from '../route.ts'
 import { setLayout, useLayout, type Layout } from '../layout.ts'
-import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
+import { AboutSection, DataSection, HelpSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
 import { chooseDictionary, getLanguage, subscribeLanguage, t, type Language } from '../i18n/index.ts'
 import './Settings.css'
 
-const SECTION_LABELS: Record<string, string> = {
-  general: 'settings.general', models: 'settings.models', secrets: 'settings.navSecrets', usage: 'settings.usage',
-  data: 'settings.data', system: 'settings.navSystem', help: 'settings.navHelp', about: 'settings.about',
-}
+const SECTIONS = [
+  { id: 'general', label: 'settings.general' },
+  { id: 'models', label: 'settings.models' },
+  { id: 'secrets', label: 'settings.navSecrets' },
+  { id: 'usage', label: 'settings.usage' },
+  { id: 'data', label: 'settings.data' },
+  { id: 'system', label: 'settings.navSystem' },
+  { id: 'help', label: 'settings.navHelp' },
+  { id: 'about', label: 'settings.about' },
+]
 
 export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const layout = useLayout()
@@ -20,7 +26,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const load = () => { setCheck(null); system.check().then(setCheck).catch(e => setErr(String(e))) }
   useEffect(load, [])
   useEffect(() => subscribeLanguage(() => setLanguage(getLanguage())), [])
-  const sections = Object.entries(SECTION_LABELS).map(([id, key]) => ({ id, label: t(key) }))
+  const sections = SECTIONS.map(section => ({ ...section, label: t(section.label) }))
   const cur = sections.find(s => s.id === section) ?? sections[0]
 
   return (
@@ -75,16 +81,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
         {cur.id === 'usage' && <UsageSection />}
         {cur.id === 'data' && <DataSection />}
         {cur.id === 'about' && <AboutSection version={__APP_VERSION__} />}
-        {cur.id === 'help' && (
-          <Panel title={t('settings.help')} testid="settings-help">
-            <dl className="g-kv">
-              <dt>{t('settings.ctrlKShort')}</dt><dd>{t('settings.ctrlK')}</dd>
-              <dt>{t('settings.ctrlTab')}</dt><dd>{t('settings.nextTab')}</dd>
-              <dt>{t('settings.altTabs')}</dt><dd>{t('settings.tabList')}</dd>
-              <dt>{t('settings.f1')}</dt><dd>{t('settings.thisPage')}</dd>
-            </dl>
-          </Panel>
-        )}
+        {cur.id === 'help' && <HelpSection />}
       </div>
       <HintBar><Hint keyLabel="↑↓">{t('hint.changeSection')}</Hint><Hint keyLabel="Enter">{t('hint.open')}</Hint></HintBar>
     </>

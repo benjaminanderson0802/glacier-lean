@@ -232,7 +232,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [versions, setVersions] = useState<MemCommit[]>([])
   const [confirmRestore, setConfirmRestore] = useState('')
   const loadVersions = useCallback((id: string) => {
-    memory.history(`environments/${id}.json`).then(v => setVersions(v.slice(0, 8))).catch(() => setVersions([]))
+    memory.environmentHistory(id).then(v => setVersions(v.slice(0, 8))).catch(() => setVersions([]))
   }, [])
   useEffect(() => { setConfirmRestore(''); if (envId) loadVersions(envId); else setVersions([]) }, [envId, lastCommit, loadVersions])
   const restoreVersion = async (commit: string) => {

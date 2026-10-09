@@ -2,17 +2,17 @@
 
 Date: 2026-10-09
 
-Branch: `card/gf-A1`
+Original audit branch: `card/gf-A1`; B5 follow-up: `card/gf-B5`
 
-Scope: audit only. No product code, tests, or checkpoint statuses were changed.
+The original audit below records what was observed before B5. Its follow-up evidence and corrected rows are recorded under E8–E12.
 
 ## Findings
 
-- The real backend and the production-built screen can save flows, run them, stream node state, show run history and terminal output, and handle approval/rejection. The live core browser check still failed its no-console-errors assertion because the builder requests `/api/memory/history?path=environments/<flow>.json`, which returns HTTP 400.
-- The full backend suite ended **2 failed, 718 passed, 1 skipped**. Both failing `test_core.py` cases passed when rerun alone under the shared suite lock; treat them as load-sensitive/flaky until verified on the regular CI topology.
+- The original real-backend screen run could save flows, run them, stream node state, show run history and terminal output, and handle approval/rejection. B5 fixed the flow-history lookup and verified assistant apply → history → undo on a real temporary backend (E8); the backend integration regression also passes (E9).
+- The original full backend suite ended **2 failed, 718 passed, 1 skipped**. The scheduler test now passes with a wider real-scheduler window (E9). The live-log test is still unresolved and has a filed claim; it remains PARTLY (E12).
 - `npm run check:ui` passed all 21 steps, including 16 browser specs. These browser specs use the mock backend; only the separate live core run exercised the screen against the real API.
-- `bench/ph10/run_ph10.py` currently fails the guide/help check because Settings help is not registered/rendered. Its template manifest, all 16 template checks, Spanish screen, flow import/export, A2A, MCP, ACP stand-in, AG-UI, and AGENTS.md checks passed.
-- Live OpenCode ACP evidence in `evidence/live/acp_two_harnesses.md` is explicitly a failure: the OpenCode step failed and the two-harness portability proof is 1/2. Other features that rely only on simulated workers or prior owner-machine evidence are marked partly.
+- The original `bench/ph10/run_ph10.py` failed the guide/help check. B5 registered and rendered Settings help; `check_docs.py`, guide labels, and a browser F1 navigation spec now pass (E10). The prior template, Spanish, flow import/export, A2A, MCP, ACP stand-in, AG-UI, and AGENTS.md results remain in E7.
+- Earlier live OpenCode ACP runs failed, but a B5 live rerun passed through OpenCode and Codex ACP with both backend and independent checks (E11; updated `evidence/live/acp_two_harnesses.md`).
 
 `WORKS` means this audit saw a current real-backend operation or a focused acceptance check pass. `PARTLY` means only isolated tests, a mock screen, historical evidence, or a limited smoke check passed, or the run was load-sensitive. `BROKEN` means a current, reproducible user-visible path failed. The backend test suite starts real server processes with isolated homes, but model/CLI integrations in those tests are often fakes.
 
@@ -255,6 +255,41 @@ AGENTS.md                          PASS
 
 The specific failure was `FAIL: guide/help links - Settings help section is not registered and rendered.` The runner exited 1. Note that current runner output now reports all 16 template rows passing, while the explanatory text in `docs/ACCEPTANCE.md` still describes only six as end-to-end.
 
+### E8 — real assistant flow apply/history/undo
+
+A fresh temporary `GLACIER_HOME` backend used the owner’s logged-in Codex CLI. The assistant proposed a daily automation, owner approval returned `saved: true`, `GET /api/memory/history?path=environments/make-me-a-daily-automation-that-prints-t.json` returned an `assistant` commit (`b982a66b`), and `POST /api/runs/{undo_id}/undo` returned HTTP 200. The flow was absent afterward and its history contained both the apply and undo commits. No persistent Glacier home was used.
+
+### E9 — focused real-backend regressions
+
+Command:
+
+```sh
+cd glacier/backend && ~/w/glacier-lean/.venv/bin/python -m pytest -q \
+  tests/test_assistant_chat.py::test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone \
+  tests/test_memory_api.py::test_undo_of_first_note_version_removes_note_and_can_be_undone \
+  tests/test_core.py::test_schedule_creates_runs
+```
+
+Result: `3 passed in 15.24s`. The assistant test uses a deterministic planner stub but exercises the real backend process, API, Git history, and run undo. The scheduler case uses DBOS’s real scheduler and retains checks for two completed runs and no later runs after schedule removal.
+
+The full touched assistant and memory modules also passed under the shared suite lock: `24 passed in 23.59s` for `tests/test_assistant_chat.py tests/test_memory_api.py`.
+
+### E10 — Settings help checks
+
+Commands: `~/w/glacier-lean/.venv/bin/python bench/ph10/check_docs.py`, `node glacier/web/e2e/guide_links.mjs`, and after `npm run build`, `node glacier/web/e2e/settings_help.spec.mjs`.
+
+Results: `PASS: 16 guide pages and screen help route`; `PASS (45 bold tutorial labels found in glacier/web/src)`; `PASS: F1 opens the registered Settings help panel`.
+
+Web prerequisites also passed: `npx tsc -b`, `node e2e/theme_lint.mjs` (`theme lint ok (49 files)`), `node scripts/check-i18n.mjs --fail` (`2 dictionaries, 809 keys`), and `npm run build`.
+
+### E11 — current live ACP rerun
+
+The B5 run in `evidence/live/acp_two_harnesses.md` used the real backend in a temporary home, OpenCode 1.18.35 with local `qwen3:1.7b`, and Codex ACP 2.1.1. Both harnesses completed the same `./hello.txt` task. Each was `done`; Glacier’s acceptance check and the independent file check both passed. OpenCode took 23.36 s; Codex ACP took 10.11 s.
+
+### E12 — unresolved live-log test claim
+
+The original live-log test is still load-sensitive. Two focused attempts to add a deterministic process gate failed because they paused the fake Codex before its next stdout line, while the backend flushes logs only after reading a line. The experimental test/helper changes were reverted. Claim: `vault/claims/2026-10-09-b5-live-log-flake.md`. The live-log acceptance was not weakened or marked fixed.
+
 ## Done checkpoint audit
 
 The `how checked` column names the current live check where available; otherwise it names the current backend suite/module, PH0/PH10 acceptance runner, or existing evidence. E1 contains the exact full-suite command and final output. A result of PARTLY explicitly means that this card did not establish the checkpoint’s complete real-world acceptance on the current machine.
@@ -266,8 +301,8 @@ The `how checked` column names the current live check where available; otherwise
 | PH0.3 legacy cleanup | PH0 runner checked 51 mapped entries | WORKS | E6 | — |
 | PH0.4 prior systems disabled | PH0 runner scanned tracked paths/config | WORKS | E6 | — |
 | PH1.1 environment format/commit | Live save + `/api/environments` | WORKS | E3 | — |
-| PH1.2 node types, crash-safe runs, schedules, approvals | Live run/approval in E3; `tests/test_core.py`; two full-suite failures passed alone on retry | PARTLY | E1, E3 | Recheck scheduler/live-log tests on CI’s normal parallel topology; `glacier/backend/tests/test_core.py`, `glacier/backend/triggers.py` |
-| PH1.3 canvas, run states, terminal, history, vault | Live core screen; version history gives HTTP 400 | PARTLY | E3 | Fix builder history requests for `environments/*.json`; `glacier/web/src/screens/Build.tsx`, `glacier/backend/routes/memory.py` |
+| PH1.2 node types, crash-safe runs, schedules, approvals | Live run/approval in E3; real scheduler test in E9; live-log flake remains unresolved | PARTLY | E1, E3, E9, E12 | Resolve the live-log test under load; claim `vault/claims/2026-10-09-b5-live-log-flake.md` |
+| PH1.3 canvas, run states, terminal, history, vault | Live core screen in E3; flow history and assistant apply/undo in E8/E9 | WORKS | E3, E8, E9 | — |
 | PH1.4 loops/sub-flows | Live loop and sub-flow runs | WORKS | E3 | — |
 | PH1.5 retries, timeouts, alerts | `tests/test_core.py` and alert/retry cases in E1 | PARTLY | E1 | Full-suite run was load-sensitive; rerun focused retry/alert acceptance in CI; `glacier/backend/tests/test_core.py`, `glacier/backend/runner.py` |
 | PH1.6 graceful shutdown | `test_core.py` suite coverage; not repeated with an open live socket here | PARTLY | E1 | Repeat SIGTERM acceptance under current shared runtime; `glacier/backend/tests/test_core.py`, `glacier/backend/app.py` |
@@ -275,7 +310,7 @@ The `how checked` column names the current live check where available; otherwise
 | PH2.1 Codex worker | Live canvas used configured fake Codex executable | PARTLY | E3 | Run same flow with owner’s installed Codex CLI; `glacier/backend/nodes/codex.py` |
 | PH2.2 local-model worker | `test_local_ai.py`/`test_local_ai_answers.py`; current system check; historical owner-machine run pending | PARTLY | E1, E6, NORTHSTAR PH2.2 evidence | Complete live offline model task on owner machine; `glacier/backend/nodes/local_ai.py`, `bench/local_models/` |
 | PH2.3 gateway/fallback | `test_gateway.py`, `test_gateway_preferred.py`; live settings/check routes | PARTLY | E1, E4, E6 | Run an online/offline route swap on the owner’s second machine; `glacier/backend/gateway.py` |
-| PH2.4 ACP harnesses | Current stand-in passes; live OpenCode ACP evidence fails, Codex ACP passes | BROKEN | E7; `evidence/live/acp_two_harnesses.md` says overall FAIL (1/2) | Fix OpenCode ACP tool-result handling and repeat live swap; `glacier/backend/nodes/acp_agent.py`, `glacier/backend/harnesses/` |
+| PH2.4 ACP harnesses | Stand-in plus current live OpenCode and Codex ACP proof pass | WORKS | E7, E11; `evidence/live/acp_two_harnesses.md` | — |
 | PH2.5 cost/route UI | `/api/costs` returned 200 with empty fresh-home usage; UI board exercises mock | PARTLY | E2, E4 | Verify model/route/cost on a real non-empty run; `glacier/web/src/screens/RunView.tsx`, `glacier/web/src/screens/SettingsSections.tsx` |
 | PH2.6 second-machine provider | Current gateway tests simulate it; physical second-machine check remains historical/pending | PARTLY | E1, NORTHSTAR PH2.6 evidence | Recheck with owner’s second machine; `glacier/backend/gateway.py`, `glacier/backend/tests/test_gateway_preferred.py` |
 | PH3.1 acceptance checks | Verification tests exercise refusal of missing checks | WORKS | E1 (`tests/test_verification.py`) | — |
@@ -293,13 +328,13 @@ The `how checked` column names the current live check where available; otherwise
 | PH4.4 map/live graph | Live graph returned note/link nodes; UI graph checks used mock | PARTLY | E2, E5 | Exercise live map rendering with populated real graph and live note event; `glacier/web/src/screens/MemoryMap.tsx` |
 | PH4.7 focus/links | Link resolver tests; live graph included resolved note and unresolved link | WORKS | E1, E5 (`tests/test_memory_links_exact.py`) | — |
 | PH4.8 editor/plain Markdown | Live API save/read and UI editor tests against mock; front matter normalized into metadata | PARTLY | E2, E5 | Exercise linked-note authoring through real UI; `glacier/web/src/screens/NoteEditor.tsx`, `glacier/backend/routes/memory.py` |
-| PH4.9 note provenance/undo | Live history + second-revision undo passed; first-ever note undo returned 404 | PARTLY | E5 | Decide whether undo of a newly created note should remove it; `glacier/backend/routes/memory.py`, `glacier/web/src/screens/NoteEditor.tsx` |
+| PH4.9 note provenance/undo | Live history + second-revision undo in E5; first-create undo and its delete undo in E9 | WORKS | E5, E9 | — |
 | PH4.10 external Markdown editor compatibility | Historical owner Zettlr check; not available on this Linux audit host | PARTLY | NORTHSTAR PH4.10 evidence | Repeat owner check after current changes; `glacier/backend/vault_compat.py`, `docs/` |
 | PH4.5 event-generated status notes | Status note tests; current backend suite | WORKS | E1 (`tests/test_status_notes.py`) | — |
 | PH4.6 hygiene proposals | Live `/api/memory/hygiene` returned 200 empty; hygiene tests | PARTLY | E1, E4 (`tests/test_memory_hygiene.py`) | Seed a disposable duplicate/expiry case through live UI/API; `glacier/backend/routes/hygiene.py`, `glacier/web/src/screens/MemoryCleanup.tsx` |
 | PH5.1 Ask/chat stream | Prior real Ask evidence: plain reply 5/5, proposal 5/5, approval 5/5; not repeated to avoid a new model call | PARTLY | `evidence/live/ask_assistant.md`; E1 (`tests/test_assistant_chat.py`) | Repeat with current installed assistant route; `glacier/backend/routes/assistant_chat.py`, `glacier/web/src/screens/Ask.tsx` |
 | PH5.2 plan + checks | Prior real Ask proposals included checks; current UI plan flow was mock-backed | PARTLY | `evidence/live/ask_assistant.md`, E2 | Validate one current live goal through proposal/edit/reject; `glacier/backend/routes/assistant.py`, `glacier/web/src/screens/Ask.tsx` |
-| PH5.3 assistant-approved versioned edits | Prior real Ask approvals saved 5/5; current flow version history is broken as noted under PH1.3 | PARTLY | `evidence/live/ask_assistant.md`, E3 | Fix history lookup and repeat live assistant apply/undo; `glacier/backend/routes/assistant_chat.py`, `glacier/web/src/screens/Build.tsx` |
+| PH5.3 assistant-approved versioned edits | Live Codex assistant proposal, apply, history, and undo on temporary backend | WORKS | E8; E9 regression | — |
 | PH5.4 layouts/run explanation | Mock UI board; live run explain tests in backend suite | PARTLY | E1 (`tests/test_run_explain.py`), E2 | Exercise plain-language explanation and detail settings against populated live runs; `glacier/web/src/screens/RunView.tsx`, `glacier/web/src/screens/SettingsSections.tsx` |
 | PH5.5 templates gallery | Live `/api/templates` returned 16; PH10 runner reports all 16 template rows pass; gallery UI is mock-backed | PARTLY | E2, E4, E7 | Use a template through the real UI and verify the created flow; `glacier/web/src/screens/Templates.tsx` |
 | PH6.1 ChatGPT/Claude imports | Import API listing returned 200; parser/import service tests | PARTLY | E1, E4 (`tests/test_import_service.py`) | Upload a disposable export and verify dedup/search end to end; `glacier/backend/routes/imports.py`, `glacier/web/src/screens/MemoryAdd.tsx` |
@@ -317,10 +352,10 @@ The `how checked` column names the current live check where available; otherwise
 | PH9.1 maintenance Environment | Maintenance flow tests; live project-wide maintenance run not repeated | PARTLY | E1 (`tests/test_maintenance_flow.py`), NORTHSTAR PH9.1 evidence | Re-run proposal-only flow on a clean clone and verify unchanged tree; `templates/`, `glacier/backend/tests/test_maintenance_flow.py` |
 | PH9.2 feature/self-build Environment | Self-build flow tests; three successful runs are historical evidence | PARTLY | E1 (`tests/test_selfbuild_flows.py`), NORTHSTAR PH9.2 evidence | Verify another real feature run under current backend; `setup/selfbuild/`, `bench/selfbuild/` |
 | PH9.3 tool discovery | Maintenance/tool discovery tests and prior proposal evidence | PARTLY | E1, NORTHSTAR PH9.3 evidence | Run current scan and inspect proposal provenance; `setup/selfbuild/maintenance.py`, `tools/scan/`, `templates/` |
-| PH10.2 docs/tutorials/templates | PH10 runner: docs/help failure; all 16 template rows now pass | PARTLY | E7 | Register/render Settings help and refresh stale acceptance prose; `glacier/web/src/App.tsx`, `glacier/web/src/screens/SettingsSections.tsx`, `docs/ACCEPTANCE.md` |
+| PH10.2 docs/tutorials/templates | Previous 16 template checks plus help guide checker, guide links, and F1 render spec | WORKS | E7, E10 | — |
 | PH10.3 localization/offline pack | Full Spanish UI board at 1280 and 1024, i18n parity passed | WORKS | E2, E7 | — |
 | PH10.4 reviewed community templates | Manifest/safety checks pass | WORKS | E1, E7 (`tests/test_template_registry.py`, `templates/test_templates.py`) | — |
-| PH10.5 export/import, A2A, MCP, ACP, AG-UI, AGENTS.md | PH10 runner passed export/import, A2A, MCP, ACP stand-in, AG-UI, AGENTS.md; live OpenCode ACP proof fails | PARTLY | E7; `evidence/live/acp_two_harnesses.md` | Resolve the OpenCode live ACP failure before calling multi-harness portability verified; `glacier/backend/nodes/acp_agent.py`, `glacier/backend/harnesses/` |
+| PH10.5 export/import, A2A, MCP, ACP, AG-UI, AGENTS.md | PH10 interop checks and current live two-harness ACP proof pass | WORKS | E7, E11; `evidence/live/acp_two_harnesses.md` | — |
 | PH11.1 health checks/upgrade cadence | Health check components ran partly via suites/acceptance; scheduled weekly health run not observed | PARTLY | E1, E6 | Run the complete health check from a clean environment; `setup/health_check.py`, `setup/` |
 | PH11.2 governance/security disclosure | Files exist in repo; this audit did not test public reporting workflow | PARTLY | NORTHSTAR PH11.2 evidence | Owner should verify current repo disclosure settings; `SECURITY.md`, `GOVERNANCE.md`, `CONTRIBUTING.md` |
 
@@ -331,12 +366,12 @@ The `how checked` column names the current live check where available; otherwise
 | Home | Live `/api/home`; screen booted in E3; broader layout/controls on mock | WORKS | E2, E3, E4 | — |
 | Build interview → spec → plan → team | Live `/api/teams` read only; interview/spec/team screens and transitions in mock; backend `test_teams.py` | PARTLY | E1, E2, E4 | Exercise full current build path with configured engine; `glacier/backend/routes/teams.py`, `glacier/web/src/screens/BuildTeams.tsx` |
 | Ask/chat | Live conversation/settings reads and prior live Ask proof; no new assistant model call | PARTLY | E1, E4, `evidence/live/ask_assistant.md` | Recheck current live assistant with owner’s configured route; `glacier/backend/routes/assistant_chat.py`, `glacier/web/src/screens/Ask.tsx` |
-| Automations canvas | Live browser saved/run flow and streamed events; editor history requests return 400 | PARTLY | E3 | Fix environment history lookup; `glacier/web/src/screens/Build.tsx`, `glacier/backend/routes/memory.py` |
-| Triggers | Trigger UI against mock; trigger/backend tests; full-suite schedule test failed under load then passed alone | PARTLY | E1, E2 | Repeat schedule/webhook trigger acceptance under normal CI load; `glacier/backend/triggers.py`, `glacier/backend/routes/hooks.py`, `glacier/web/src/screens/Automations.tsx` |
+| Automations canvas | Live browser saved/run flow and streamed events; real assistant flow history/undo | WORKS | E3, E8, E9 | — |
+| Triggers | Trigger UI against mock; real schedule test passes; live-log test flake remains | PARTLY | E1, E2, E9, E12 | Resolve the live-log test claim |
 | Templates | Live template catalog returns 16; all template checks pass; gallery UI against mock | PARTLY | E2, E4, E7 | Apply and run a template through the real screen; `glacier/web/src/screens/Templates.tsx`, `glacier/backend/routes/templates.py` |
 | Runs | Live backend command/check run, status, history, terminal output | WORKS | E3 | — |
 | Approvals | Live run reached waiting; approve completed; reject skipped downstream node | WORKS | E3 | — |
-| Undo | Live note revision rollback works; first-create undo returns 404; flow/code undo tests pass | PARTLY | E1, E5 | Clarify/support undo for newly created notes; `glacier/backend/routes/memory.py`, `glacier/web/src/screens/NoteEditor.tsx` |
+| Undo | Live note revision rollback; first-create note undo and restoration; assistant flow undo | WORKS | E5, E8, E9 | — |
 | Memory notes/map/add | Live save/read/history/undo and graph API; UI editor/map checks use mock | PARTLY | E2, E5 | Run editor and populated map through real UI; `glacier/web/src/screens/Memory.tsx`, `MemoryMap.tsx`, `MemoryAdd.tsx` |
 | Memory cleanup | Live hygiene list returns 200 empty; cleanup UI on mock; backend hygiene tests | PARTLY | E1, E2, E4 | Seed and approve a disposable proposal through real UI; `glacier/backend/routes/hygiene.py`, `glacier/web/src/screens/MemoryCleanup.tsx` |
 | Imports | Live imports list returns 200 empty; import parser tests | PARTLY | E1, E4 | Upload a fixture export to the live backend and verify dedup/search; `glacier/backend/routes/imports.py`, `glacier/web/src/screens/MemoryAdd.tsx` |
@@ -344,7 +379,7 @@ The `how checked` column names the current live check where available; otherwise
 | Settings: secrets | Live secret list 200 empty; keychain/redaction tests | PARTLY | E1, E4 | Perform disposable keychain round trip on supported desktop OS; `glacier/backend/routes/secrets.py`, `glacier/backend/secrets_store.py` |
 | Settings: usage | Live cost endpoint 200 with empty home; UI uses mock | PARTLY | E2, E4 | Confirm non-zero real run cost/route displays; `glacier/backend/routes/costs.py`, `glacier/web/src/screens/SettingsSections.tsx` |
 | Settings: updates | Live releases/current 200; update UI lifecycle in mock | PARTLY | E2, E4 | Check/install a real available update only in a disposable packaged install; `glacier/backend/routes/releases.py`, `glacier/web/src/screens/SettingsSections.tsx` |
-| Settings: help | PH10 guide/help check fails: Settings help is not registered/rendered; shell navigation screen check passed against mock | BROKEN | E2, E7 | Register/render help and rerun guide links; `glacier/web/src/App.tsx`, `glacier/web/src/screens/SettingsSections.tsx`, `bench/ph10/check_docs.py` |
+| Settings: help | Docs checker, guide-label check, and browser F1 route/render check | WORKS | E10 | — |
 | Claims | Live claims list 200 empty; claims API/backend tests and mock decisions | PARTLY | E1, E2, E4 | Create a disposable live claim and complete one decision/research action; `glacier/backend/routes/claims.py`, `glacier/web/src/screens/Claims.tsx` |
 | Session mirror | Live route timed out after 5 seconds scanning actual Codex files; fixture reader tests pass | PARTLY | E1, E4 | Improve scan latency and repeat against this session tree; `glacier/backend/session_mirror.py`, `glacier/backend/session_readers/` |
 | A2A | Live agent card HTTP 200; PH10 task interoperability tests pass | PARTLY | E4, E7 | Start and complete an authenticated A2A task against the running backend; `glacier/backend/a2a.py`, `glacier/backend/a2a_routes.py` |
