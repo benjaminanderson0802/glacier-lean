@@ -22,8 +22,8 @@ button { cursor: pointer; }
 
 /* side walls: the panel hinges on its edge nearest the corner post and turns away like the wall */
 .l-wall { position: absolute; left: 0; top: 0; z-index: 5; transform-origin: 0 0; display: flex; flex-direction: column; gap: calc(3 * var(--px)); padding: calc(14 * var(--px)) calc(10 * var(--px)); overflow: hidden; }
-.l-center { position: absolute; left: 25%; width: 49.04%; top: 25.5%; height: 48.5%; z-index: 4; display: flex; flex-direction: column; min-height: 0; }
-.l-status { position: absolute; left: 25%; width: 49.04%; top: 74.6%; z-index: 4; display: flex; justify-content: space-between; gap: calc(4 * var(--px)); padding: 0 calc(6 * var(--px)); font-size: var(--g-size-small); color: #4b3a2a; text-shadow: none; }
+.l-center { position: absolute; left: 25%; width: 49.04%; top: 25.5%; height: 39.1%; z-index: 4; display: flex; flex-direction: column; min-height: 0; }
+.l-status { position: absolute; left: 25%; width: 49.04%; top: 71%; z-index: 4; display: flex; justify-content: space-between; gap: calc(4 * var(--px)); padding: 0 calc(6 * var(--px)); font-size: var(--g-size-small); color: #4b3a2a; text-shadow: none; }
 .l-status .g-key { background: rgba(255,255,255,.55); color: #4b3a2a; border-radius: calc(2 * var(--px)); padding: 0 calc(2 * var(--px)); }
 .l-status .g-ready { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
 

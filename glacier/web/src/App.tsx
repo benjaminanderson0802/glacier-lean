@@ -109,7 +109,7 @@ export default function App() {
   }, [tab, rest, building])
 
   return (
-    <div className={`l-viewport g-window${building ? ' is-building' : ''}`} data-testid="window">
+    <div className={`l-viewport g-window${tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new') ? ' is-building' : ''}`} data-testid="window">
       <div className="l-backdrop" aria-hidden="true" />
       <div className="l-stage" ref={stageRef}>
         <div className="l-dragbar" data-tauri-drag-region>
