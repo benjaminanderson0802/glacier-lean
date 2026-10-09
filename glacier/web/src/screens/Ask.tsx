@@ -156,9 +156,9 @@ export function AskScreen() {
       ) : (
         <Panel className="g-chat" testid="chat" style={{ background: 'none', border: 0, padding: 0 }}>
         {conv && (
-          <div className="g-chat-title" data-testid="chat-title">
+          <div className="g-chat-title" data-testid="chat-title" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'calc(3 * var(--px))', minWidth: 0 }}>
             {renaming === null ? (
-              <><span className="g-lead">{title || t('ask.thisChat')}</span>
+              <><span className="g-lead" style={{ flex: '1 1 calc(44 * var(--px))', minWidth: 0, overflowWrap: 'anywhere' }}>{title || t('ask.thisChat')}</span>
                 <button className="g-link" onClick={() => setRenaming(title)} data-testid="chat-rename">{t('ask.rename')}</button>
                 <button className="g-link" onClick={fresh} data-testid="chat-new">{t('ask.newChat')}</button></>
             ) : (

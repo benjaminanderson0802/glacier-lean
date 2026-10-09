@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { teamsApi, type BuildTeam, type TeamPlan } from '../api.ts'
 
 import { Btn, HintBar, PageHead, Panel, Progress, TextBox } from '../ui/kit.tsx'
@@ -29,10 +29,12 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
   const [readiness, setReadiness] = useState(0)
   const [draftWarning, setDraftWarning] = useState(false)
   const [lastMessage, setLastMessage] = useState('')
+  const chatEnd = useRef<HTMLDivElement>(null)
 
   const refreshTeam = useCallback(() => { if (teamId) teamsApi.get(teamId).then(setTeam).catch(e => setError(String(e))) }, [teamId])
   useEffect(() => { refreshTeam() }, [refreshTeam])
   useEffect(() => { if (!teamId) return; const id = setInterval(refreshTeam, 2200); return () => clearInterval(id) }, [teamId, refreshTeam])
+  useEffect(() => { chatEnd.current?.scrollIntoView({ block: 'end' }) }, [lines, busy])
 
   const send = async () => {
     if (!message.trim() || busy) return
@@ -82,7 +84,7 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
 
       <Panel title={t('team.steps')} className="bt-step-panel"><div className="bt-step-list"><button className={`g-menu-item${stage === 'interview' ? ' active' : ''}`} onClick={() => setStage('interview')}>{t('team.interview')}</button><button className={`g-menu-item${stage === 'spec' ? ' active' : ''}`} onClick={() => setStage('spec')} disabled={!visionPath}>{t('team.specApproval')}</button><button className={`g-menu-item${stage === 'plan' ? ' active' : ''}`} onClick={() => setStage('plan')} disabled={!plan}>{t('team.planTeam')}</button><button className="g-menu-item" data-testid="build-open-chat" onClick={() => go('build/chat')}>{t('team.chat')}</button></div></Panel>
       {stage === 'interview' ? <Panel title={t('team.interview')} className="bt-chat" testid="build-interview">
-        <div className="bt-chat-log" data-testid="build-chat-log">{lines.length === 0 && <TextBox>{t('team.startPrompt')}</TextBox>}{lines.map((line, i) => <div className={`bt-line ${line.who}`} key={i}><b>{line.who === 'you' ? t('team.you') : t('team.interviewer')}</b><p>{line.text}</p></div>)}</div>
+        <div className="bt-chat-log" data-testid="build-chat-log">{lines.length === 0 && <TextBox>{t('team.startPrompt')}</TextBox>}{lines.map((line, i) => <div className={`bt-line ${line.who}`} key={i}><b>{line.who === 'you' ? t('team.you') : t('team.interviewer')}</b><p>{line.text}</p></div>)}<div ref={chatEnd} /></div>
         <form className="bt-composer" onSubmit={e => { e.preventDefault(); void send() }}><textarea data-testid="build-message" value={message} onChange={e => setMessage(e.target.value)} placeholder={t('team.messagePlaceholder')} /><Btn primary type="submit" disabled={busy || !message.trim()} data-testid="build-send">{busy ? '…' : t('team.send')}</Btn></form>
         <HintBar><span><kbd>Enter</kbd> {t('team.send')}</span><span>{t('team.currentEngine')} {engineLabel(engine)}</span>{apiEngine && <span>{t('team.engineSetup')}</span>}</HintBar>
 
