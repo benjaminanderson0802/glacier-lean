@@ -16,6 +16,7 @@ import { getLanguage, t } from '../i18n/index.ts'
 import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import dagre from '@dagrejs/dagre'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { useAskContext } from '../ui/AskGlacier.tsx'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -134,6 +135,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [unsaved, setUnsaved] = useState<EnvSummary[]>([])
   const [envId, setEnvId] = useState<string | null>(null)
   const [envName, setEnvName] = useState('')
+  useAskContext('automations/build', envId ?? initialEnv ?? newNameProp ?? 'new flow')
   const [nodes, setNodes] = useState<GNode[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [dirty, setDirty] = useState(false)

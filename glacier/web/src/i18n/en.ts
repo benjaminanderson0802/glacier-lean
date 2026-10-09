@@ -1,5 +1,16 @@
 export const en: Record<string, string> = {
 
+  'askGlacier.action': 'ask glacier',
+  'askGlacier.close': 'Close Ask Glacier',
+  'askGlacier.context': 'Current screen',
+  'askGlacier.currentScreen': 'this screen',
+  'askGlacier.input': 'Message Glacier',
+  'askGlacier.on': 'on: {context}',
+  'askGlacier.prompt': 'I’m on {screen}, focused on {focus}. Help me with what I’m doing here.',
+  'askGlacier.removeContext': 'Remove screen context',
+  'askGlacier.shortcut': 'Open Ask Glacier (Ctrl+J)',
+  'askGlacier.title': 'ask glacier',
+
 
   'ask.approve': 'Approve',
   'ask.approveAndRun': 'Approve and run',

@@ -3,8 +3,10 @@ import { ago, api, teamsApi, type Environment, type EnvSummary, type RunSummary 
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { useRoute } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { useAskContext } from '../ui/AskGlacier.tsx'
 import './automations.css'
 
 type Flow = EnvSummary & { last?: RunSummary }
@@ -15,6 +17,8 @@ const STATUS: Record<string, { kind: StatusKind; label: string }> = {
 }
 
 export function AutomationsScreen() {
+  const { rest } = useRoute()
+  useAskContext('automations', rest.join('/'))
   const [flows, setFlows] = useState<Flow[] | null>(null)
   const [filter, setFilter] = useState<typeof FILTERS[number]>(t('automations.all'))
   const [q, setQ] = useState('')
