@@ -66,7 +66,7 @@
   color: var(--g-ink);
 }
 
-.g-settings > .g-sidenav { background: none; border: 0; padding-inline: 0; }
+.g-settings > .g-sidenav { background: none; border: 0; padding-inline: 0; overflow: visible; }
 .g-settings > .g-panel { background: none; border: 0; padding: 0 calc(2 * var(--px)); }
 .g-settings .g-usage-table { margin-top: calc(5 * var(--px)); }
 .g-settings .g-usage-table th { color: var(--g-white); background: var(--g-ice2); border-bottom: 1px solid var(--l-edge); }

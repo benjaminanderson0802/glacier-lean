@@ -622,11 +622,17 @@ const server = http.createServer(async (req, res) => {
       return send(200, { summary, steps, verified, needs_you })
     }
     if (req.method === 'POST' && (m = p.match(/^\/api\/runs\/([^/]+)\/approve$/))) {
-      const r = runs.get(decodeURIComponent(m[1]))
+      const id = decodeURIComponent(m[1])
+      const r = runs.get(id) ?? fixedMockRuns.get(id)
       if (!r) return send(404, { detail: 'run not found' })
       const body = await readBody()
-      if (!body || r.waiting_on !== body.node_id || !r.resolve) return send(409, { detail: 'run is not waiting on that node' })
-      r.resolve(body.approved === true)
+      if (!body || r.waiting_on !== body.node_id) return send(409, { detail: 'run is not waiting on that node' })
+      if (r.resolve) r.resolve(body.approved === true)
+      else {
+        r.waiting_on = null
+        r.status = body.approved === true ? 'done' : 'rejected'
+        r.node_states[body.node_id] = body.approved === true ? 'done' : 'skipped'
+      }
       return send(200, { ok: true })
     }
     if (req.method === 'GET' && p === '/api/vault/notes') return send(200, [...vault.keys()].sort())

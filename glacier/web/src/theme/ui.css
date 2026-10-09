@@ -51,7 +51,7 @@ button.l-side-line:hover { color: var(--g-white); text-decoration: underline; }
 
 /* ---------- center screen ---------- */
 .g-main { min-width: 0; min-height: 0; overflow: auto; display: flex; flex: 1; flex-direction: column; gap: calc(4 * var(--px)); padding: calc(10 * var(--px)) calc(12 * var(--px)); }
-.g-main.flush { padding: calc(4 * var(--px)); }
+.g-main.flush { padding: calc(3 * var(--px)); }
 .g-main.flush[data-testid="screen-automations"] { overflow: hidden; }
 
 /* panels inside the center glass are lighter sub-sections, not more glass boxes */
@@ -87,6 +87,7 @@ button.g-row:hover, .g-row.sel { background: rgba(255,255,255,.14); }
 .g-error { color: var(--g-bad2); }
 .g-grid-2 { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: calc(4 * var(--px)); min-height: 0; flex: 1; }
 .g-stack { display: flex; flex-direction: column; gap: calc(4 * var(--px)); min-height: 0; }
+.starter-window { overflow-y: auto; }
 .g-rows > *, .g-cards > *, .g-panel > * { flex-shrink: 0; }
 
 /* buttons: milky pills with dark ink, like the reference */

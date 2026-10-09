@@ -1,4 +1,4 @@
-// Shell test: exactly five top-level options, each screen renders on-theme, keyboard shortcuts work.
+// Shell test: exactly five top-level options, Limbo glass panels fit the room, keyboard shortcuts work.
 // Run after `npx vite build` (check:ui does this). Uses the same mock backend as core.spec.mjs.
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -43,20 +43,43 @@ try {
   await page.getByTestId('starter-hide').click()
   check(await page.getByTestId('starter').count() === 0, 'Get started can be closed')
 
-  const tabIds = await page.locator('.g-menu-item').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
+  const tabIds = await page.locator('[role="tab"]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
   const tabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
   check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && tabs.map(x => x.trim()).join(',') === 'Home,Build,Automations,Memory,Settings', `exactly five English menu options (got ${tabs.join(',')})`)
   for (const t of ['home', 'ask', 'automations', 'memory', 'settings']) {
     await page.getByTestId(`nav-${t}`).click()
     await page.getByTestId(`screen-${t}`).waitFor()
+    await page.waitForFunction(() => {
+      const stage = document.querySelector('.l-stage').getBoundingClientRect()
+      return ['[data-testid="game-menu"]', '.l-center', '[data-testid="side-status"]'].every(selector => {
+        const rect = document.querySelector(selector).getBoundingClientRect()
+        return rect.left >= stage.left && rect.right <= stage.right && rect.top >= stage.top && rect.bottom <= stage.bottom
+      })
+    })
     const active = await page.getByTestId(`nav-${t}`).getAttribute('aria-current')
-    const font = await page.getByTestId('page-title').evaluate(el => getComputedStyle(el).fontFamily)
-    check(active === 'page' && /Press Start 2P/.test(font), `${t}: opens, menu active, title in Press Start 2P`)
+    const room = await page.evaluate(() => {
+      const stage = document.querySelector('.l-stage').getBoundingClientRect()
+      const panels = ['[data-testid="game-menu"]', '.l-center', '[data-testid="side-status"]'].map(selector => {
+        const rect = document.querySelector(selector).getBoundingClientRect()
+        return rect.left >= stage.left && rect.right <= stage.right && rect.top >= stage.top && rect.bottom <= stage.bottom
+      })
+      const title = document.querySelector('.g-title')
+      return {
+        panels,
+        background: getComputedStyle(document.querySelector('.l-stage')).backgroundImage,
+        glass: getComputedStyle(document.querySelector('.l-center')).backdropFilter,
+        font: getComputedStyle(title).fontFamily,
+        titleFits: title.scrollWidth <= title.clientWidth + 2 && title.scrollHeight <= title.clientHeight + 2,
+        chromeCase: getComputedStyle(document.querySelector('.l-brand')).textTransform === 'lowercase',
+      }
+    })
+    check(active === 'page' && room.panels.length === 3 && room.panels.every(Boolean) && /room.*\.webp/.test(room.background), `${t}: active menu item and panels inside room (${JSON.stringify({ active, panels: room.panels, background: room.background })})`)
+    check(/blur\(/.test(room.glass) && /Nunito/i.test(room.font) && room.titleFits && room.chromeCase, `${t}: readable Limbo title (${JSON.stringify({ glass: room.glass, font: room.font, titleFits: room.titleFits, chromeCase: room.chromeCase })})`)
   }
   const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
-  check(/Press Start 2P/.test(bodyFont), 'body text uses Press Start 2P')
-  const fontsOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('16px "Press Start 2P"') })
-  check(fontsOk, 'bundled Press Start 2P font loaded (offline)')
+  check(/Nunito/i.test(bodyFont), 'body text uses Nunito')
+  const fontsOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('16px Nunito') })
+  check(fontsOk, 'bundled Nunito font loaded (offline)')
 
   await page.getByTestId('nav-automations').click()
   await page.getByTestId('flow-new').click()
