@@ -1,4 +1,4 @@
-// Limbo window: a painted room with three frosted panels. Left wall = menu, back wall = active screen, right wall = team / needs you / running.
+// Limbo window: a painted room with three frosted panels. Left wall = menu, back wall = active screen, right wall = messenger.
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
