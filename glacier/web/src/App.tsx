@@ -17,6 +17,7 @@ import { SideStatus } from './screens/SideStatus.tsx'
 import { LEFT_WALL, RIGHT_WALL, wallStyle } from './ui/wallQuad.ts'
 import { t as translate } from './i18n/index.ts'
 import { releasesApi } from './api.ts'
+import { AskGlacier, AskGlacierPanel, AskGlacierProvider, useAskGlacierOpen } from './ui/AskGlacier.tsx'
 
 // Show the start screen once per launch, only when the app opens without a specific address.
 let splashSeen = location.hash.replace(/^#\/?/, '') !== ''
@@ -33,6 +34,11 @@ async function winAction(a: 'minimize' | 'close') {
 }
 
 export default function App() {
+  return <AskGlacierProvider><AppShell /></AskGlacierProvider>
+}
+
+function AppShell() {
+  const openAskGlacier = useAskGlacierOpen()
   const { tab, rest } = useRoute()
   const [palette, setPalette] = useState(false)
   const [status, setStatus] = useState(translate('build.ready'))
@@ -80,6 +86,7 @@ export default function App() {
       }
       else if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) { (document.querySelector('.g-menu-item[aria-current="page"]') as HTMLButtonElement | null)?.click() }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette(p => !p) }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); openAskGlacier(true) }
       else if (e.key === 'F1') { e.preventDefault(); go('settings/help') }
       else if (e.ctrlKey && e.key === 'Tab') {
         e.preventDefault()
@@ -89,7 +96,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tab])
+  }, [tab, openAskGlacier])
 
   const building = tab === 'ask' && rest[0] !== 'chat' || tab === 'automations' && (rest[0] === 'build' || rest[0] === 'new')
   const screen = useMemo(() => {
@@ -128,9 +135,9 @@ export default function App() {
         <div className="l-center l-glass">
           <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
         </div>
-        <aside className="l-wall l-right l-glass" data-testid="side-status" style={wallStyle(stage.w, stage.h, RIGHT_WALL)}><SideStatus /></aside>
+        <aside className="l-wall l-right l-glass" data-testid="side-status" style={{ ...wallStyle(stage.w, stage.h, RIGHT_WALL), position: 'relative' }}><SideStatus /><AskGlacierPanel /></aside>
         <footer className="l-status">
-          <span><span className="g-key">Ctrl+K</span> {translate('shell.command')} · <span className="g-key">F1</span> {translate('shell.help')}</span>
+          <span><AskGlacier /> · <span className="g-key">Ctrl+J</span> · <span className="g-key">Ctrl+K</span> {translate('shell.command')} · <span className="g-key">F1</span> {translate('shell.help')}</span>
           <span className="g-ready" data-testid="status-line" title={status}>{status}</span>
         </footer>
         {tab === 'home' && installedUpdate && !installedNoticeDismissed && <aside className="g-notice" data-testid="home-installed-update-notice"><div><strong>{translate('home.updatedTo', { version: installedUpdate })}</strong> <button className="g-link" data-testid="home-whats-new" onClick={() => { setInstalledNoticeDismissed(true); void releasesApi.markSeen(installedUpdate); go('settings/about') }}>{translate('home.seeWhatsNew')}</button></div><button className="g-link" data-testid="home-installed-update-dismiss" onClick={() => { setInstalledNoticeDismissed(true); void releasesApi.markSeen(installedUpdate) }}>{translate('home.dismissUpdate')}</button></aside>}

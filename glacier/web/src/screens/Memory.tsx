@@ -9,6 +9,7 @@ const MemoryMap = lazy(() => import('./MemoryMap.tsx').then(m => ({ default: m.M
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { useAskContext } from '../ui/AskGlacier.tsx'
 import './memory.css'
 
 /** Plain-language writer: owner -> you; run:<id> -> an automation; worker:<model> -> AI (<model>). */
@@ -23,6 +24,7 @@ function whoWrote(author: string): string {
 const VIEWS = [['', t('memory.viewsNotes')], ['~map', t('memory.map')], ['~add', t('memory.add')], ['~cleanup', t('memory.cleanup')]] as const
 
 export function MemoryScreen({ path }: { path?: string }) {
+  useAskContext('memory', path ?? '')
   const view = path?.startsWith('~') ? path : ''
   const switcher = <KeyboardMenu orientation="horizontal" label={t('memory.title')} items={VIEWS.map(([v, l]) => ({ id: v, label: l, testid: `memview-${l.toLowerCase()}` }))} selected={view} onSelect={v => go(v ? `memory/${v}` : 'memory')} />
   const body = view ? (

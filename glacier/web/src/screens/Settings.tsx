@@ -5,6 +5,7 @@ import { go } from '../route.ts'
 import { setLayout, useLayout, type Layout } from '../layout.ts'
 import { AboutSection, DataSection, ModelsSection, SecretsSection, UsageSection } from './SettingsSections.tsx'
 import { chooseDictionary, getLanguage, subscribeLanguage, t, type Language } from '../i18n/index.ts'
+import { useAskContext } from '../ui/AskGlacier.tsx'
 import './Settings.css'
 
 const SECTION_LABELS: Record<string, string> = {
@@ -13,6 +14,7 @@ const SECTION_LABELS: Record<string, string> = {
 }
 
 export function SettingsScreen({ section = 'general' }: { section?: string }) {
+  useAskContext('settings', section)
   const layout = useLayout()
   const [check, setCheck] = useState<SystemCheck | null>(null)
   const [err, setErr] = useState('')

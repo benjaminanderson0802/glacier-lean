@@ -5,6 +5,7 @@ import { Btn, HintBar, PageHead, Panel, Progress, TextBox } from '../ui/kit.tsx'
 
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { useAskContext } from '../ui/AskGlacier.tsx'
 import './build-teams.css'
 
 type Stage = 'interview' | 'spec' | 'plan'
@@ -14,6 +15,7 @@ const engineLabel = (engine: string) => t(`ask.engine${engine[0].toUpperCase()}$
 
 export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
   const [stage, setStage] = useState<Stage>('interview')
+  useAskContext('build', teamId ? `team ${teamId}` : stage)
   const [engine, setEngine] = useState('codex')
   const [conv] = useState(() => crypto.randomUUID())
   const [lines, setLines] = useState<ChatLine[]>([])
