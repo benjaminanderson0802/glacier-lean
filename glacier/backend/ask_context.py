@@ -162,7 +162,8 @@ def _memory(message: str) -> str:
         return "Relevant memory notes: unavailable."
 
 
-def build(message: str, *, engine: str, model: str | None = None, conversation_id: str | None = None) -> str:
+def build(message: str, *, engine: str, model: str | None = None, conversation_id: str | None = None,
+          screen: str | None = None, focus: str | None = None) -> str:
     """Return the same context sections for all providers, clipped to a model-aware cap."""
     if engine == "local" and not model:
         try:
@@ -171,11 +172,13 @@ def build(message: str, *, engine: str, model: str | None = None, conversation_i
         except Exception:
             model = None
     small = character_limit(model) <= 5_000
-    budgets = (430, 730, 650, 900, 1250, 500) if small else (600, 1800, 1600, 4000, 4200, 2800)
+    budgets = (2300, 500, 450, 500, 850, 350) if small else (5200, 1800, 1400, 2500, 3200, 2400)
     history_instruction = (" Previous chat history is off. Do not claim to remember earlier Ask messages; say that earlier chats are not available."
                           if not remember_chats() else "")
+    import glacier_context
     sections = [
-        "You are Glacier's assistant, helping the owner operate Glacier, a local app for making, running, and checking automations. Keep replies plain and concise. Never claim a flow ran unless the app confirms it. Ask before consequential actions; proposals need owner approval." + history_instruction,
+        "You are Glacier's assistant. Keep replies plain and concise. Never claim a flow ran unless the app confirms it. Ask before consequential actions; proposals need owner approval." + history_instruction
+        + "\n\n" + glacier_context.build(engine=engine, model=model, screen=screen, focus=focus),
         _owner_note(), _system_state(engine, model), _memory(message), _guide(),
     ]
     if conversation_id and remember_chats():

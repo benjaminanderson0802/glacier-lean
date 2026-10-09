@@ -1,6 +1,6 @@
 # Assistant chat API
 
-`POST /api/assistant/chat` accepts `{"conversation_id": "optional-id", "message": "..."}` and returns `text/event-stream`.
+`POST /api/assistant/chat` accepts `{"conversation_id": "optional-id", "message": "...", "screen": "build", "focus": "interview"}` and returns `text/event-stream`. `screen` and `focus` are optional; examples include `build` / `interview`, `automations/build` / a flow ID, and `memory` / a note path. Ask adds the location to its shared product context and opens with an offer of relevant help.
 Each `data:` line is one JSON object with a `type` field. The stream uses AG-UI event names: `RUN_STARTED`,
 `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END`, `TOOL_CALL_START`, `TOOL_CALL_ARGS`,
 `TOOL_CALL_END`, `RUN_FINISHED`, and `RUN_ERROR`. A failed model response ends with `RUN_ERROR` and a plain-language
@@ -9,6 +9,13 @@ Each `data:` line is one JSON object with a `type` field. The stream uses AG-UI 
 When the request describes an automation, the assistant calls the existing planner and emits a `propose_flow` tool call.
 Its arguments include a proposal `id`, proposed `flow`, explanation, and acceptance checks. Proposing never saves or runs
 the flow. Chat history is kept as a plain Markdown note under `conversations/` in the vault.
+
+When the owner asks to change Glacier's own UI, the assistant can emit a `propose_ui_change` tool call with a plain
+explanation, a unified diff limited to `glacier/web/src`, and the related e2e spec. Proposing never edits a file. The
+owner must approve with the same apply endpoint. Approval creates a new `assistant/ui-change/<id>` Git branch in a
+separate worktree under `GLACIER_HOME/worktrees/ui-changes/`, applies and commits the diff there, then runs TypeScript,
+theme lint, a web build, and the related e2e spec. The running install and main checkout are not changed. The response
+reports the branch, worktree, changed files and each check result; a failed check leaves the branch available to inspect.
 
 `POST /api/assistant/proposals/{id}/apply` accepts `{"approve": true}` to save or `{"approve": false}` to discard.
 An approved proposal can also include `"run_now": true` to start its first run immediately; the response includes
@@ -57,3 +64,12 @@ is answering. If neither is ready, Ask explains how to start Ollama and install 
 and `codex` force that route. `GET /api/system/settings` includes `ask_route` and `ask_route_reason` to show the
 current choice. The conversation is sent only to the selected provider; local automation plans use that same Ollama
 model, and must pass the planner's normal validation with at least one acceptance check before a proposal is shown.
+
+## A4 live prompt check
+
+On 2026-10-09, a temporary real backend home was started with Ollama's installed `granite3.3:2b` and the signed-in
+Codex CLI. The check selected each engine in turn and posted the same message with `screen=build`, `focus=interview`.
+Both requests returned HTTP 200 and `RUN_FINISHED`; Ollama offered to review interview questions, draft the project
+specification and guide the team plan, while Codex offered to interview the owner and prepare a spec and team plan.
+Neither stream returned `RUN_ERROR`. The
+temporary backend was stopped after the check.

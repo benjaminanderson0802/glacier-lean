@@ -1,6 +1,8 @@
 # Ask engines and context
 
-Ask uses the same Glacier context for every engine. The context is built from the guide in `docs/guide/`, live tool and flow status, relevant Memory search results, and the owner's `notes/about-me.md` (or a saved preferences note). Memory and chat text are redacted before it is sent. Small local models receive a shorter context. The context is capped at 5,000 characters for small models and 16,000 for other engines.
+Ask uses the same Glacier context for every engine. A repo-derived, cached pack reads the mission in `NORTHSTAR.yaml`, the owner's `notes/about-me.md` (or saved preferences note), the screen guide, API routes in the contracts, and the UI source layout. It explains Home, Build, Automations, Memory and Settings, along with the UI rules for tokens, Nunito, test labels, theme lint and related tests. Source changes invalidate the cache. Small local models such as `granite3.3:2b` receive a compact pack; subscription CLIs, configured APIs and larger models receive the full pack. Ask also includes live tool and flow status, relevant Memory search results, and (when enabled) recent chats. Memory and chat text are redacted before it is sent. The overall context remains capped at 5,000 characters for small models and 16,000 for other engines.
+
+Chat requests may include `screen` and `focus`, for example `{"screen":"build","focus":"interview"}`, `{"screen":"automations/build","focus":"<flow id>"}`, or `{"screen":"memory","focus":"<note>"}`. Ask tells the assistant where the owner is and what they are viewing, and asks it to open with the relevant help.
 
 The saved engine defaults to the signed-in Codex CLI. Ask checks Codex, Claude Code, Gemini CLI, Ollama with installed models, and configured APIs. If the selected engine is unavailable, Ask explains why and uses the next ready engine. Change a ready engine beside the Ask title; Settings → Models contains the full configuration.
 
@@ -16,4 +18,4 @@ API hosts must be listed in `GLACIER_ALLOWED_HOSTS`. Calls use Glacier's pinned,
 
 ## Verification
 
-Backend tests use temporary vaults and stand-ins for the provider calls. They check shared context delivery, context size limits, redaction, disabled history, fallback reporting, and settings persistence without contacting a model service.
+Backend tests use temporary vaults and stand-ins for the provider calls. They check shared context delivery to Codex, Claude, Gemini, OpenAI-compatible, Anthropic and Ollama adapters, compact/full pack generation and cache invalidation, screen/focus prompts, context size limits, redaction, disabled history, fallback reporting, and settings persistence without contacting a model service. The card's live check also sends a screen-aware greeting through the local model and Codex CLI on the configured machine.
