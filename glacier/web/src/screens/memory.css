@@ -254,6 +254,12 @@
   padding: calc(4 * var(--px));
 }
 
+/* Give the graph more of the back-wall window. The standard screen padding
+   leaves the canvas just too short for comfortable pointer interaction. */
+.g-main:has(.g-memmap) {
+  padding: calc(2 * var(--px));
+}
+
 .g-memory .g-map-box {
   min-height: calc(100 * var(--px));
   overflow: hidden;
