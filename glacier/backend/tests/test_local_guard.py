@@ -39,6 +39,34 @@ def test_dev_screen_origins_require_dev_mode(make_server, monkeypatch):
         server.stop()
 
 
+def test_explicit_dev_origin_allow_list_is_loopback_only(make_server, monkeypatch):
+    monkeypatch.setenv("GLACIER_DEV", "1")
+    monkeypatch.setenv("GLACIER_DEV_ORIGINS", "http://localhost:5187, http://127.0.0.1:4187")
+    server = make_server().start()
+    try:
+        for origin in ("http://localhost:5187", "http://127.0.0.1:4187"):
+            response = httpx.put(server.url + "/api/environments/demo",
+                                 headers={"Origin": origin}, json={"nodes": [], "edges": []}, timeout=30)
+            assert response.status_code != 403, origin
+
+        for origin in ("https://evil.example", "http://evil.example:5187", "http://localhost:5188",
+                       "https://localhost:5187", "http://user@localhost:5187"):
+            response = httpx.put(server.url + "/api/environments/foreign",
+                                 headers={"Origin": origin}, json={"nodes": [], "edges": []}, timeout=30)
+            assert response.status_code == 403, origin
+    finally:
+        server.stop()
+
+
+def test_foreign_origin_remains_blocked_with_dev_mode_enabled(server, monkeypatch):
+    monkeypatch.setenv("GLACIER_DEV", "1")
+    monkeypatch.setenv("GLACIER_DEV_ORIGINS", "http://localhost:5187")
+    response = httpx.post(server.url + "/api/environments/demo/run",
+                          headers={"Origin": "https://evil.example"}, timeout=30)
+    assert response.status_code == 403
+    assert response.json()["detail"] == BLOCKED
+
+
 def test_headerless_curl_style_post_is_allowed(server):
     response = httpx.post(server.url + "/api/environments/demo/run", timeout=30)
     assert response.status_code == 404
