@@ -51,13 +51,13 @@ export function MemoryCleanup() {
     return () => window.removeEventListener('keydown', key)
   }, [sel, items, busy])
   return (
-    <div className="g-memadd" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
+    <div className="g-memadd g-memory-cleanup-layout">
       <Panel title={t('memoryCleanup.suggestions')} aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">{t('memoryCleanup.scanAgain')}</Btn>} testid="cleanup-list" className="g-scroll">
         {err && <div className="g-error">{err}</div>}
         {items && items.length === 0 && <Empty>{t('memoryCleanup.tidy')}</Empty>}
         <div className="g-rows">
           {(items ?? []).map(p => (
-            <label key={p.id} className="g-row g-check" data-testid={`cleanup-${p.id}`} style={{ gridTemplateColumns: 'calc(6 * var(--px)) calc(6 * var(--px)) minmax(0, 1fr) auto', background: chosen.has(p.id) ? 'var(--g-gold)' : undefined, color: 'var(--g-ink)' }}>
+            <label key={p.id} className={`g-row g-check g-cleanup-row${chosen.has(p.id) ? ' selected' : ''}`} data-testid={`cleanup-${p.id}`}>
               <span className="g-menu-cursor" style={{ visibility: chosen.has(p.id) ? 'visible' : 'hidden' }} />
               <input type="checkbox" className="g-box" checked={chosen.has(p.id)} onChange={e => setChosen(c => { const n = new Set(c); if (e.target.checked) n.add(p.id); else n.delete(p.id); return n })} />
               <span className="g-mid"><span className="g-lead">{WHAT[p.kind] ?? p.kind}: {p.paths.map(x => x.replace(/\.md$/, '')).join(', ')}</span><span className="g-detail">{p.reason}</span></span>
