@@ -1,0 +1,125 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--void:#03070b;--deep:#0b2133;--ink:#e8f3fa;--ink2:#a9c3d6;--ink3:#6f8ea6;--frost:#d0e4f8;--ice:#89c4e0;--glow:#5fb3e0;--tropic:#468aae;--line:rgba(150,200,235,.12);--line2:rgba(150,200,235,.22);--glass:rgba(120,170,215,.075);--glass2:rgba(140,190,230,.11);--r:16px}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--void);color:var(--ink);font:14px/1.5 Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.bg{position:fixed;inset:0;z-index:0;background:linear-gradient(160deg,#06121d,#03070b 65%)}
+.bg svg{position:absolute;inset:0;width:100%;height:100%;opacity:.9;mix-blend-mode:screen}.bg::after{content:'';position:absolute;inset:0;background:radial-gradient(55% 45% at 74% 14%,rgba(95,179,224,.30),transparent 70%),radial-gradient(120% 90% at 50% 120%,rgba(3,7,11,.85),transparent 60%),linear-gradient(180deg,rgba(3,7,11,.25),rgba(3,7,11,.55))}
+.win{position:relative;z-index:1;height:100%;display:grid;grid-template-columns:268px 1fr 360px;grid-template-rows:40px 1fr;gap:10px;padding:0 10px 10px}
+.title{grid-column:1/-1;background:linear-gradient(180deg,rgba(3,7,11,.55),transparent);display:flex;align-items:center;gap:10px;padding:0 4px;color:var(--ink2);font-size:12.5px}
+.logo{width:22px;height:22px;border-radius:7px;background:linear-gradient(145deg,#bfe6fa,#3c7fae 55%,#0d2e48);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 0 18px rgba(95,179,224,.45)}
+.title b{color:var(--ink);font-weight:600;letter-spacing:.2px}.crumb{opacity:.8}.sp{flex:1}
+.kbd{font:500 11px Geist Mono;padding:2px 6px;border-radius:6px;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--ink2)}
+.search{display:flex;align-items:center;gap:8px;width:380px;padding:6px 10px;border-radius:10px;background:rgba(8,20,32,.72);border:1px solid var(--line);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(200,235,255,.12)}
+.wc{display:flex;gap:2px}.wc span{width:38px;height:28px;display:grid;place-items:center;border-radius:8px;color:var(--ink2)}.wc span:hover{background:rgba(255,255,255,.06)}
+.glass{position:relative;border-radius:var(--r);background:linear-gradient(180deg,rgba(14,34,52,.62),rgba(6,16,26,.70));border:1px solid var(--line);backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);box-shadow:inset 0 1px 0 rgba(200,235,255,.22),inset 1px 0 0 rgba(200,235,255,.06),inset 0 -1px 0 rgba(0,0,0,.4),0 24px 60px -24px rgba(0,0,0,.9)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(118deg,rgba(190,230,255,.09),transparent 22%,transparent 78%,rgba(95,179,224,.06))}
+.side{display:flex;flex-direction:column;padding:12px;gap:4px;overflow:hidden}
+.btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;border:1px solid var(--line2);background:linear-gradient(180deg,rgba(137,196,224,.20),rgba(70,138,174,.10));color:var(--ink);font-weight:500;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 22px -6px rgba(95,179,224,.55)}
+.nav{margin-top:10px;display:flex;flex-direction:column;gap:2px}
+.it{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;color:var(--ink2)}
+.it.on{color:var(--ink);background:rgba(137,196,224,.12);box-shadow:inset 0 0 0 1px rgba(137,196,224,.18)}
+.it .n{margin-left:auto;font:500 11px Geist Mono;color:var(--ice);background:rgba(95,179,224,.14);padding:1px 7px;border-radius:99px}
+.sec{margin:14px 10px 4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.th{padding:7px 10px;border-radius:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:8px;align-items:center}
+.th.on{background:rgba(255,255,255,.05);color:var(--ink)}.dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--ink3)}.dot.run{background:var(--glow);box-shadow:0 0 10px var(--glow);animation:p 1.6s infinite}@keyframes p{50%{opacity:.4}}
+.me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.av{width:28px;height:28px;border-radius:9px;background:linear-gradient(145deg,#4675a3,#0b2133);display:grid;place-items:center;font-weight:600;font-size:12px}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.mhead{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.mhead h1{margin:0;font-size:15px;font-weight:600}.chip{font-size:11.5px;padding:3px 9px;border-radius:99px;border:1px solid var(--line2);color:var(--ink2);background:rgba(255,255,255,.03)}.chip.g{color:var(--ice);border-color:rgba(95,179,224,.35);background:rgba(95,179,224,.10)}
+.tabs{display:flex;gap:4px;margin-left:auto;padding:3px;border-radius:10px;background:rgba(0,0,0,.25);border:1px solid var(--line)}.tabs span{padding:4px 10px;border-radius:7px;color:var(--ink2);font-size:12.5px}.tabs .on{background:rgba(137,196,224,.16);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.log{flex:1;overflow:auto;padding:22px 28px;display:flex;flex-direction:column;gap:18px}
+.msg{max-width:760px}.msg.you{align-self:flex-end;max-width:560px;padding:11px 15px;border-radius:16px 16px 4px 16px;background:linear-gradient(180deg,rgba(137,196,224,.16),rgba(70,138,174,.09));border:1px solid var(--line2)}
+.who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);margin-bottom:6px}.who .logo{width:18px;height:18px;border-radius:6px}
+.msg p{margin:0 0 8px;color:var(--ink)}.msg ul{margin:4px 0 0 18px;padding:0;color:var(--ink)}
+.tool{margin-top:10px;border-radius:12px;border:1px solid var(--line);background:rgba(3,7,11,.35);overflow:hidden}
+.tool .h{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12.5px;color:var(--ink2)}.tool .h b{color:var(--ink);font-weight:500}.ok{color:#7fd6c0}
+.tool pre{margin:0;padding:10px 12px;border-top:1px solid var(--line);font:12px/1.55 Geist Mono;color:#bcd7ea;background:rgba(0,0,0,.25)}
+.q{margin-top:12px;padding:14px 16px;border-radius:14px;border:1px solid rgba(95,179,224,.35);background:linear-gradient(180deg,rgba(95,179,224,.12),rgba(95,179,224,.04));box-shadow:0 0 30px -12px rgba(95,179,224,.6)}
+.q .l{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ice);margin-bottom:6px}.q .opts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.q .opts span{padding:6px 11px;border-radius:9px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-size:13px}
+.comp{margin:0 20px 18px;padding:12px 12px 10px 16px;border-radius:18px}
+.comp .ph{color:var(--ink3);min-height:44px}.crow{display:flex;align-items:center;gap:8px}.ib{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--ink2);border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.pick{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:12.5px;color:var(--ink2)}.pick b{color:var(--ink);font-weight:500}
+.send{margin-left:auto;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#d9f2ff,#5fb3e0 45%,#1d5d8a);box-shadow:0 0 22px rgba(95,179,224,.7),inset 0 1px 0 rgba(255,255,255,.7);color:#03121d}
+.ctx{font:500 11px Geist Mono;color:var(--ink3)}
+.right{display:flex;flex-direction:column;overflow:hidden}
+.rh{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}.rh h2{margin:0;font-size:13.5px;font-weight:600}
+.rb{padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.meter{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}.meter i{display:block;height:100%;width:62%;border-radius:99px;background:linear-gradient(90deg,#4675a3,#89c4e0);box-shadow:0 0 14px rgba(137,196,224,.7)}
+.k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.req{display:flex;gap:9px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:12.5px;color:var(--ink2)}.req code{font:500 10.5px Geist Mono;color:var(--ice);flex:none;padding-top:1px}
+.role{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.025)}.role .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(95,179,224,.12);color:var(--ice);font:600 11px Geist Mono}.role small{display:block;color:var(--ink3);font-size:11.5px}.role .st{margin-left:auto;font-size:11px;color:var(--ink3)}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+</style></head><body>
+<div class="bg"><svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+<filter id="facets" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".0045 .006" numOctaves="4" seed="11" result="n"/>
+<feDiffuseLighting in="n" lighting-color="#5aa9d6" surfaceScale="9" diffuseConstant="1.1" result="d"><feDistantLight azimuth="235" elevation="38"/></feDiffuseLighting>
+<feColorMatrix in="d" values=".18 0 0 0 0  0 .32 0 0 0  0 0 .48 0 0  0 0 0 0 1"/></filter>
+<filter id="cracks"><feTurbulence type="turbulence" baseFrequency=".006 .009" numOctaves="3" seed="4" result="t"/>
+<feSpecularLighting in="t" surfaceScale="14" specularConstant="1.2" specularExponent="40" lighting-color="#cfeeff" result="s"><feDistantLight azimuth="220" elevation="52"/></feSpecularLighting>
+<feColorMatrix in="s" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 3 -1.6"/></filter>
+<rect width="100%" height="100%" filter="url(#facets)"/><rect width="100%" height="100%" filter="url(#cracks)" opacity=".22"/></svg></div>
+<div class="win">
+ <div class="title"><div class="logo"></div><b>Glacier</b><span class="crumb">/ Build / Clip revenue loop</span><span class="sp"></span>
+  <div class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="color:var(--ink3)">Search chats, flows, memory…</span><span class="sp"></span><span class="kbd">Ctrl K</span></div><span class="sp"></span>
+  <div class="wc"><span>—</span><span>▢</span><span>✕</span></div></div>
+ <aside class="glass side">
+  <div class="btn"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New build<span class="sp"></span><span class="kbd">Ctrl N</span></div>
+  <div class="nav">
+   <div class="it"><svg class="i" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z"/></svg>Home</div>
+   <div class="it on"><svg class="i" viewBox="0 0 24 24"><path d="m4 20 6-14 4 8 3-5 3 11z"/></svg>Build<span class="n">2</span></div>
+   <div class="it"><svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H14a4 4 0 0 1 4 4v5.5"/></svg>Automations<span class="n">5</span></div>
+   <div class="it"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="7" r="2"/><circle cx="6" cy="18" r="2"/><path d="M7 7l3 3m4 0 3-2M8 17l2-3"/></svg>Memory</div>
+   <div class="it"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></svg>Settings</div>
+  </div>
+  <div class="sec">Pinned</div>
+  <div class="th on"><span class="dot run"></span>Clip revenue loop</div>
+  <div class="th"><span class="dot"></span>Weekly research digest</div>
+  <div class="sec">Recent</div>
+  <div class="th"><span class="dot"></span>Backup photos to NAS</div>
+  <div class="th"><span class="dot"></span>Explain the failed sync run</div>
+  <div class="th"><span class="dot"></span>Website change watch</div>
+  <div class="th"><span class="dot"></span>Draft the release notes</div>
+  <div class="me"><div class="av">BA</div><div><div style="font-size:13px">Benjamin</div><div style="font-size:11.5px;color:var(--ink3)">Codex · local granite ready</div></div></div>
+ </aside>
+ <main class="glass main">
+  <div class="mhead"><h1>Clip revenue loop</h1><span class="chip g">Interview · 3 of ~6</span><span class="chip">Codex</span>
+   <div class="tabs"><span class="on">Chat</span><span>Spec</span><span>Team</span><span>Runs</span></div></div>
+  <div class="log">
+   <div class="msg you">Build a system that earns from clipping campaigns per 1,000 views and runs as a closed loop once set up. Scout → parse rules → produce → QA → post → track → learn.</div>
+   <div class="msg"><div class="who"><div class="logo"></div>Glacier · Interviewer</div>
+    <p>Clear on the loop, the hard limits and what "done" means. I checked what this PC can already do:</p>
+    <div class="tool"><div class="h"><svg class="i" viewBox="0 0 24 24"><path d="M4 17 10 11 4 5M12 19h8"/></svg><b>Checked connected tools</b><span class="sp"></span><span class="ok">✓ 3 found</span></div>
+     <pre>postiz            scheduling, multi-account     ready
+higgsfield.tiktok publish + status               ready
+whop.api          campaigns, submissions         needs key</pre></div>
+    <div class="q"><div class="l">Biggest open question</div>
+     Where does approved source footage come from — a folder you fill, specific channels with reuse rights, or the campaign's own asset packs?
+     <div class="opts"><span>Campaign asset packs</span><span>A folder I fill</span><span>Licensed channels</span><span>Mix — I'll explain</span></div></div>
+   </div>
+  </div>
+  <div class="glass comp">
+   <div class="ph">Answer, or add details… type / for commands, @ to mention a flow or note</div>
+   <div class="crow"><span class="ib"><svg class="i" viewBox="0 0 24 24"><path d="m21 12-8.5 8.5a5 5 0 0 1-7-7L14 5a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 8"/></svg></span>
+    <span class="pick"><svg class="i" viewBox="0 0 24 24"><path d="M12 3 4 7v10l8 4 8-4V7z"/></svg><b>Codex</b> subscription ▾</span>
+    <span class="pick">Interview mode ▾</span><span class="sp"></span><span class="ctx">18% context</span>
+    <span class="send"><svg class="i" viewBox="0 0 24 24" style="stroke:#03121d;stroke-width:2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
+  </div>
+ </main>
+ <aside class="glass right">
+  <div class="rh"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/></svg><h2>What I understand</h2><span class="sp"></span><span class="chip">Live</span></div>
+  <div class="rb">
+   <div><div class="k">Readiness · 62%</div><div class="meter"><i></i></div></div>
+   <div><div class="k">Goal</div><div style="font-size:13px;color:var(--ink)">An unattended loop that turns approved footage into compliant clips and maximises paid views across campaigns.</div></div>
+   <div><div class="k">Requirements</div><div style="display:flex;flex-direction:column;gap:6px">
+    <div class="req"><code>R1</code>When a sweep runs, the system shall rank live campaigns by rate, budget left and our past earnings.</div>
+    <div class="req"><code>R2</code>If a clip fails the rules check twice, the system shall discard it and record why.</div>
+    <div class="req"><code>R3</code>While an account shows a view drop, the system shall pause it and shift its share.</div></div></div>
+   <div><div class="k">Proposed team</div><div style="display:flex;flex-direction:column;gap:6px">
+    <div class="role"><span class="ic">LD</span><div>Lead<small>owns the plan and contracts</small></div><span class="st">draft</span></div>
+    <div class="role"><span class="ic">BU</span><div>Builders × 3<small>parallel worktrees</small></div><span class="st">draft</span></div>
+    <div class="role"><span class="ic">EV</span><div>Evaluator<small>only one who can mark pass</small></div><span class="st">draft</span></div></div></div>
+  </div>
+ </aside>
+</div></body></html>

@@ -1,0 +1,22 @@
+/* Deep Glacier design tokens (docs/design/DEEP_GLACIER.md). The ONLY place colours, radii, type and motion values are defined. */
+:root {
+  --void: #03070b; --deep: #0b2133; --abyss: #06121d;
+  --ink: #e8f3fa; --ink2: #a9c3d6; --ink3: #6f8ea6;
+  --frost: #d0e4f8; --ice: #89c4e0; --glow: #5fb3e0; --tropic: #468aae; --navy: #194f70;
+  --ok: #7fd6c0; --warn: #e8c27a; --bad: #f08a8a;
+  --line: rgba(150, 200, 235, .12); --line2: rgba(150, 200, 235, .22);
+  --glass: linear-gradient(180deg, rgba(14, 34, 52, .62), rgba(6, 16, 26, .70));
+  --glass-raised: rgba(20, 44, 66, .72); --sunken: rgba(3, 7, 11, .35); --solid: #0a1a28;
+  --tint: rgba(137, 196, 224, .12); --tint-strong: rgba(137, 196, 224, .18);
+  --rim: inset 0 1px 0 rgba(200, 235, 255, .22), inset 1px 0 0 rgba(200, 235, 255, .06), inset 0 -1px 0 rgba(0, 0, 0, .4);
+  --shadow: 0 24px 60px -24px rgba(0, 0, 0, .9); --halo: 0 0 22px -6px rgba(95, 179, 224, .55);
+  --blur: blur(18px) saturate(170%);
+  --r-xs: 6px; --r-sm: 10px; --r-md: 12px; --r-lg: 16px; --r-xl: 18px; --r-pill: 999px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px;
+  --font: Geist, system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+  --t-xs: 11px; --t-sm: 12.5px; --t-md: 14px; --t-lg: 15px; --t-xl: 18px; --t-2xl: 24px;
+  --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-move: cubic-bezier(.77, 0, .175, 1); --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --d-press: 140ms; --d-tip: 150ms; --d-pop: 200ms; --d-dialog: 260ms; --d-toast: 360ms; --d-exit: 140ms;
+}
+@media (prefers-reduced-transparency: reduce) { :root { --glass: var(--solid); --blur: none; } }
+:root[data-transparency="reduce"] { --glass: var(--solid); --blur: none; }
