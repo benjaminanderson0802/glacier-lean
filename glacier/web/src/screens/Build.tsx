@@ -17,6 +17,8 @@ import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import dagre from '@dagrejs/dagre'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 import { useAskContext } from '../ui/AskGlacier.tsx'
+import { applyProposal, chat, type ChatProposal } from '../api.ts'
+import { ProposalOverlay } from './ProposalOverlay.tsx'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -163,6 +165,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const [flowRemoved, setFlowRemoved] = useState(false)
   const [flowsOpen, setFlowsOpen] = useState(true)
+  const [proposal, setProposal] = useState<ChatProposal | null>(null)
+  const [proposalBusy, setProposalBusy] = useState(false)
+  const [proposalError, setProposalError] = useState('')
+  const [proposalSaved, setProposalSaved] = useState(false)
+  const [proposalRunAvailable, setProposalRunAvailable] = useState(false)
+  const [proposalUndoId, setProposalUndoId] = useState('')
+  const proposalConversation = useRef<string | null>(null)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -450,6 +459,111 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     } catch (e) { setMsg(String(e)); return false } finally { setBusy(false) }
   }
 
+  const showProposal = (next: ChatProposal, changedIds: string[] = []) => {
+    const flow = next.flow as Environment | undefined
+    if (!flow?.id) { setProposalError('Glacier could not prepare a flow to review.'); return }
+    const mapped = toFlow(flow)
+    const changed = new Set(changedIds)
+    const ghostNodes = mapped.nodes.map(n => ({ ...n, data: { ...n.data, proposalGhost: true, proposalChanged: changed.has(n.id) } }))
+    const ghostEdges = mapped.edges.map(e => ({ ...e, className: `${e.className ?? ''} proposal-ghost-edge` }))
+    setProposal(next); setProposalError(''); setProposalSaved(false); setProposalRunAvailable(false); setProposalUndoId('')
+    setEnvId(flow.id); setEnvName(flow.name || flow.id); setNodes(ghostNodes); setEdges(ghostEdges)
+    setUnsaved(items => items.some(item => item.id === flow.id) ? items : [...items, { id: flow.id, name: flow.name || flow.id }])
+    extras.current = Object.fromEntries(Object.entries(flow).filter(([key]) => !['id', 'name', 'nodes', 'edges'].includes(key)))
+    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setDirty(false); setTab('canvas')
+    requestAnimationFrame(fitCanvas)
+  }
+
+  const sendProposalMessage = async (message: string, feedback = false) => {
+    setProposalBusy(true); setProposalError('')
+    const id = proposalConversation.current ?? crypto.randomUUID()
+    proposalConversation.current = id
+    const received: ChatProposal[] = []
+    try {
+      await chat(message, id, event => {
+        if (event.type === 'proposal' && event.proposal.flow) received.push(event.proposal)
+        else if (event.type === 'error') setProposalError(event.message)
+      }, { screen: 'automations/build', focus: feedback ? proposal?.flow?.id ?? 'new flow' : 'new flow' })
+      const revised = received.at(-1)
+      if (!revised) { setProposalError('Glacier did not return a flow proposal. Try describing the workflow again.'); return }
+      const before = new Map((proposal?.flow?.nodes ?? []).map((item: any) => [item.id, JSON.stringify(item)]))
+      const changed = (revised.flow?.nodes ?? []).filter((item: any) => !before.has(item.id) || before.get(item.id) !== JSON.stringify(item)).map((item: any) => String(item.id))
+      if (proposal?.id && proposal.id !== revised.id) void applyProposal(proposal.id, false).catch(() => {})
+      showProposal(revised, changed)
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')) }
+    finally { setProposalBusy(false) }
+  }
+
+  const proposeFlow = (prompt: string) => { proposalConversation.current = null; void sendProposalMessage(prompt) }
+  const refineProposal = (feedback: string) => {
+    const goal = proposal?.flow?.goal ?? proposal?.flow?.name ?? 'the proposed workflow'
+    void sendProposalMessage(`Please refine this automation proposal for ${goal}. Keep the existing useful steps and update the plan using this feedback: ${feedback}`, true)
+  }
+
+  const acceptProposal = async () => {
+    if (!proposal?.flow) return
+    setProposalBusy(true); setProposalError('')
+    const flow = proposal.flow as Environment
+    const byId = new Map(nodes.map(node => [node.id, node]))
+    const remaining = new Map(flow.nodes.map((node, index) => [node.id, index]))
+    const order: string[] = []
+    const edgesIn = new Map(flow.nodes.map(node => [node.id, flow.edges.filter(edge => edge.target === node.id).map(edge => edge.source)]))
+    while (remaining.size) {
+      const available = [...remaining.keys()].filter(id => edgesIn.get(id)?.every(source => !remaining.has(source)))
+      const next = available.length ? available : [...remaining.keys()]
+      next.sort((a, b) => (remaining.get(a) ?? 0) - (remaining.get(b) ?? 0))
+      const id = next[0]; order.push(id); remaining.delete(id)
+    }
+    const revealed = new Set<string>()
+    setNodes([]); setEdges([]); setSelected(null)
+    try {
+      for (const id of order) {
+        const node = byId.get(id)
+        if (!node) continue
+        revealed.add(id)
+        setNodes(current => [...current, { ...node, data: { ...node.data, proposalGhost: false, proposalRevealing: true } }])
+        setEdges(current => [...current, ...edges.filter(edge => edge.target === id && revealed.has(edge.source)).map(edge => ({ ...edge, className: `${edge.className ?? ''} proposal-draw` }))])
+        setSelected({ kind: 'node', id })
+        await new Promise(resolve => setTimeout(resolve, 420))
+        setNodes(current => current.map(item => item.id === id ? { ...item, data: { ...item.data, proposalRevealing: false } } : item))
+      }
+      const result = await applyProposal(proposal.id, true) as Awaited<ReturnType<typeof applyProposal>> & { undo_id?: string }
+      await loadEnv(flow.id)
+      setProposalSaved(true); setProposalRunAvailable(true); setProposalUndoId(result.undo_id ?? '')
+      setMsg('Saved. You can undo this change here or from the saved versions.')
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')); setNodes(nodes); setEdges(edges) }
+    finally { setProposalBusy(false) }
+  }
+
+  const discardProposal = async () => {
+    if (proposal?.id) await applyProposal(proposal.id, false).catch(() => {})
+    setProposal(null); setProposalSaved(false); setProposalRunAvailable(false); setProposalError('')
+    setNodes([]); setEdges([]); setEnvId(null); setEnvName(''); setDirty(false)
+  }
+
+  const runAcceptedProposal = async () => {
+    if (!envId) return
+    setProposalBusy(true); setProposalError('')
+    try {
+      const { run_id } = await api.runEnv(envId)
+      setActiveRun({ run_id, env_id: envId, status: 'running', outputs: {}, waiting_on: null, node_states: Object.fromEntries(nodes.map(node => [node.id, 'pending' as const])) })
+      activeRunIdRef.current = run_id; refreshRuns(envId); setProposalRunAvailable(false)
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')) }
+    finally { setProposalBusy(false) }
+  }
+
+  const undoAcceptedProposal = async () => {
+    if (!proposalUndoId) return
+    setProposalBusy(true); setProposalError('')
+    try {
+      await api.undoRun(proposalUndoId)
+      setProposalUndoId(''); setProposalSaved(false); setProposalRunAvailable(false)
+      setProposal(null); setEnvId(null); setEnvName(''); setNodes([]); setEdges([]); setDirty(false)
+      setUnsaved(items => items.filter(item => item.id !== proposal?.flow?.id)); refreshEnvs(); setMsg('The saved proposal was undone.')
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')) }
+    finally { setProposalBusy(false) }
+  }
+
   const run = async () => {
     if (!envId) return
     if (dirty && !(await save())) return
@@ -516,7 +630,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     }
     return edges.map(e => {
       const back = reaches(e.target, e.source)
-      const cls = [typeof e.label === 'string' && e.label ? `edge-${e.label}` : '', back ? 'edge-loopback' : ''].filter(Boolean).join(' ')
+      const cls = [typeof e.label === 'string' && e.label ? `edge-${e.label}` : '', back ? 'edge-loopback' : '', e.className].filter(Boolean).join(' ')
       return { ...e, animated: false, data: { ...e.data, loopback: back }, className: cls || undefined }
     })
   }, [edges])
@@ -603,9 +717,12 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
         </div>
 
         {tab === 'vault' ? <VaultView /> : !envId ? (
-          <div className="empty">{t('build.pickFlow')}</div>
+          <div className="build-proposal-start"><ProposalOverlay proposal={proposal} busy={proposalBusy} error={proposalError} saved={proposalSaved}
+            runAvailable={proposalRunAvailable} undoAvailable={Boolean(proposalUndoId)} onPropose={proposeFlow} onRefine={refineProposal} onAccept={acceptProposal} onDiscard={discardProposal} onRun={runAcceptedProposal} onUndo={undoAcceptedProposal} /></div>
         ) : (
           <div className="canvas-wrap">
+            {proposal && <ProposalOverlay proposal={proposal} busy={proposalBusy} error={proposalError} saved={proposalSaved}
+              runAvailable={proposalRunAvailable} undoAvailable={Boolean(proposalUndoId)} onPropose={proposeFlow} onRefine={refineProposal} onAccept={acceptProposal} onDiscard={discardProposal} onRun={runAcceptedProposal} onUndo={undoAcceptedProposal} />}
             {activeRun && waitingNode && activeRun.status === 'waiting' && (
               <div className="approval-banner" data-testid="approval-banner">
                 <span className="approval-label">{t('build.waitingApproval', { id: waitingNode.id })}</span>

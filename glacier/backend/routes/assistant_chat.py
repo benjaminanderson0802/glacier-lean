@@ -999,13 +999,22 @@ def chat(request: ChatRequest):
             if automation:
                 import app
                 proposal_id = str(uuid.uuid4())
-                flow_id = re.sub(r"[^a-z0-9]+", "-", request.message.lower()).strip("-")[:40] or "new-flow"
+                requested_focus = (request.focus or "").strip().lower()
+                flow_id = (requested_focus if re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", requested_focus)
+                           else re.sub(r"[^a-z0-9]+", "-", request.message.lower()).strip("-")[:40] or "new-flow")
                 plan = assistant.plan(prompt, app.NODE_CATALOG, flow_id, engine=route)
                 if plan.get("problems") or not plan.get("flow"):
                     raise ValueError("The assistant could not make a valid plan.")
                 if not isinstance(plan["flow"].get("acceptance"), list) or not plan["flow"]["acceptance"]:
                     raise ValueError("The assistant returned a plan without an acceptance check.")
+                flow = plan["flow"]
+                # The editor sends the current flow id as focus while refining so revisions
+                # replace the same review-only proposal instead of inventing a second flow.
+                flow["id"] = flow_id
                 proposal = {"id": proposal_id, "conversation_id": conversation_id, **plan}
+                proposal["step_order"] = [node["id"] for node in flow.get("nodes", [])]
+                proposal["step_notes"] = {node["id"]: next((str(value) for value in node.get("config", {}).values() if value), "")
+                                           for node in flow.get("nodes", [])}
                 with _proposals_lock:
                     _proposals[proposal_id] = proposal
                     while len(_proposals) > MAX_PROPOSALS:

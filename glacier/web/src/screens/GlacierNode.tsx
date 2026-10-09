@@ -1,7 +1,7 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import type { NodeKind, NodeState } from '../api.ts'
 
-export type GNodeData = { config: Record<string, string>; state?: NodeState }
+export type GNodeData = { config: Record<string, string>; state?: NodeState; proposalGhost?: boolean; proposalChanged?: boolean; proposalRevealing?: boolean }
 export type GNode = Node<GNodeData, NodeKind>
 
 const ICON: Record<string, string> = { schedule: '◷', command: '⌘', codex: '✦', check: '✓', approval: '!', note: '▤', loop: '↻', flow: '◇', decide: '?' }
@@ -25,7 +25,7 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
   const state = data.state ?? 'none'
   return (
     <div
-      className={`gnode gnode-${type} state-${state}${selected ? ' selected' : ''}`}
+      className={`gnode gnode-${type} state-${state}${selected ? ' selected' : ''}${data.proposalGhost ? ' proposal-ghost' : ''}${data.proposalChanged ? ' proposal-changed' : ''}${data.proposalRevealing ? ' proposal-revealing' : ''}`}
       data-testid={`node-${id}`}
       data-state={state}
       data-type={type}

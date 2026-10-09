@@ -448,7 +448,7 @@ const server = http.createServer(async (req, res) => {
         emit('RUN_FINISHED', { threadId: conversationId, runId })
         return res.end()
       }
-      const automation = /make me|automate|every day|daily/i.test(body.message)
+      const automation = /make me|automate|every day|daily|refine this automation proposal/i.test(body.message)
       const uiChange = /change (?:glacier'?s? )?(?:own )?ui|change this screen|update this screen|update the screen/i.test(body.message)
       let reply = body.screen
         ? `You're on ${body.screen}${body.focus ? `, looking at ${body.focus}` : ''}. I can help with this screen. ${body.message}`
@@ -470,11 +470,20 @@ const server = http.createServer(async (req, res) => {
       }
       if (automation) {
         const id = crypto.randomUUID()
-        const flowId = body.message.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'new-flow'
-        const flow = { id: flowId, name: 'Daily backup', goal: body.message, created_by: 'assistant',
-          nodes: [{ id: 'backup', type: 'command', config: { cmd: 'tar -czf backup.tgz data' }, position: { x: 60, y: 60 } }],
-          edges: [], acceptance: [{ kind: 'human', question: 'Did the backup finish?' }] }
-        const proposal = { id, conversation_id: conversationId, flow, explanation: 'Creates a daily backup flow.', problems: [] }
+        const focusId = String(body.focus || '')
+        const flowId = /^[a-z0-9][a-z0-9-]{0,79}$/.test(focusId) && focusId !== 'new-flow'
+          ? focusId : body.message.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'new-flow'
+        const refined = /refine this automation proposal/i.test(body.message)
+        const flow = { id: flowId, name: 'Inbox summary', goal: 'Make me a daily inbox summary', created_by: 'assistant',
+          nodes: [
+            { id: 'fetch', type: 'command', config: { cmd: 'echo fetch inbox' }, position: { x: 60, y: 60 } },
+            { id: 'summarize', type: 'codex', config: { prompt: 'Summarize the inbox' }, position: { x: 320, y: 60 } },
+            ...(refined ? [{ id: 'review', type: 'approval', config: { prompt: 'Review the summary' }, position: { x: 580, y: 60 } }] : []),
+          ],
+          edges: [ { id: 'e1', source: 'fetch', target: 'summarize', label: '' }, ...(refined ? [{ id: 'e2', source: 'summarize', target: 'review', label: '' }] : []) ],
+          acceptance: [{ kind: 'human', question: 'Is the inbox summary useful?' }] }
+        const proposal = { id, conversation_id: conversationId, flow, explanation: 'A flow for your inbox summary.', problems: [],
+          step_order: flow.nodes.map(node => node.id), step_notes: Object.fromEntries(flow.nodes.map(node => [node.id, Object.values(node.config)[0]])) }
         assistantProposals.set(id, proposal)
         const toolCallId = crypto.randomUUID()
         emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
@@ -524,8 +533,9 @@ const server = http.createServer(async (req, res) => {
       const commit = commitId()
       vault.set(`environments/${flow.id}.json`, JSON.stringify(flow, null, 2))
       assistantProposals.delete(proposal.id)
-      if (body.run_now) return send(200, { saved: true, commit, run_id: startRun(flow), status: 'running' })
-      return send(200, { saved: true, commit })
+      const undo_id = crypto.randomUUID()
+      if (body.run_now) return send(200, { saved: true, commit, undo_id, run_id: startRun(flow), status: 'running' })
+      return send(200, { saved: true, commit, undo_id })
     }
     // ---- settings (screen development only) ----
     if (p === '/api/secrets' && req.method === 'GET') return send(200, [...mockSecrets].sort())
