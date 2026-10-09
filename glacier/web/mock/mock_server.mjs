@@ -354,7 +354,24 @@ const server = http.createServer(async (req, res) => {
         return res.end()
       }
       const automation = /make me|automate|every day|daily/i.test(body.message)
-      let reply = `I can help with: ${body.message}`
+      const uiChange = /change (?:glacier'?s? )?(?:own )?ui|change this screen|update this screen|update the screen/i.test(body.message)
+      let reply = body.screen
+        ? `You're on ${body.screen}${body.focus ? `, looking at ${body.focus}` : ''}. I can help with this screen. ${body.message}`
+        : `I can help with: ${body.message}`
+      if (uiChange) {
+        const id = crypto.randomUUID()
+        const proposal = { id, conversation_id: conversationId, kind: 'ui_change',
+          explanation: 'I prepared a small screen change for your review.',
+          diff: '--- a/glacier/web/src/App.tsx\n+++ b/glacier/web/src/App.tsx\n@@ -1 +1 @@\n-old\n+new\n',
+          related_spec: 'glacier/web/e2e/shell.spec.mjs' }
+        assistantProposals.set(id, proposal)
+        const toolCallId = crypto.randomUUID()
+        emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+        emit('TOOL_CALL_START', { toolCallId, toolCallName: 'propose_ui_change', parentMessageId: messageId })
+        emit('TOOL_CALL_ARGS', { toolCallId, delta: JSON.stringify(proposal) })
+        emit('TOOL_CALL_END', { toolCallId })
+        reply = `${proposal.explanation} It has not been applied.`
+      }
       if (automation) {
         const id = crypto.randomUUID()
         const flowId = body.message.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'new-flow'
@@ -370,7 +387,7 @@ const server = http.createServer(async (req, res) => {
         emit('TOOL_CALL_END', { toolCallId })
         reply = proposal.explanation
       }
-      if (!automation) emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+      if (!automation && !uiChange) emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
       if (reply) emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply })
       emit('TEXT_MESSAGE_END', { messageId })
       const conv = conversations.get(conversationId) ?? { title: '', messages: [] }
@@ -388,6 +405,13 @@ const server = http.createServer(async (req, res) => {
       if (body?.approve !== true) {
         assistantProposals.delete(proposal.id)
         return send(200, { discarded: true })
+      }
+      if (proposal.kind === 'ui_change') {
+        assistantProposals.delete(proposal.id)
+        return send(200, { applied: true, branch: `assistant/ui-change/${proposal.id}`,
+          worktree: `/worktrees/ui-changes/${proposal.id}`, changed_files: ['glacier/web/src/App.tsx'],
+          checks: ['tsc', 'theme lint', 'build', 'e2e'], passed: true,
+          check_results: { tsc: { passed: true }, 'theme lint': { passed: true }, build: { passed: true }, e2e: { passed: true } } })
       }
       const flow = proposal.flow
       if (proposal.run_existing) {

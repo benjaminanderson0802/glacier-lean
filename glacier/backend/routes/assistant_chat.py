@@ -15,12 +15,13 @@ from pathlib import Path
 from datetime import datetime, timezone
 from egress import open_model_request
 import ask_context
+import ui_change
 from egress import allowed_domains, pinned_opener, validate_url
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import shell_commands
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import assistant
 import vault
@@ -79,6 +80,8 @@ def _open_ollama_request(request, timeout=600):
 class ChatRequest(BaseModel):
     conversation_id: str | None = None
     message: str
+    screen: str | None = Field(default=None, max_length=100)
+    focus: str | None = Field(default=None, max_length=300)
 
 
 class ApplyRequest(BaseModel):
@@ -210,6 +213,22 @@ def _event(name: str, **data) -> str:
 def _chat_schema() -> dict:
     return {"type": "object", "additionalProperties": False, "required": ["reply", "automation"],
             "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"}}}
+
+
+def _ui_change_schema() -> dict:
+    return {"type": "object", "additionalProperties": False, "required": ["reply", "automation", "ui_change"],
+            "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"},
+                           "ui_change": {"type": "object", "additionalProperties": False,
+                               "required": ["explanation", "diff", "related_spec"],
+                               "properties": {"explanation": {"type": "string"}, "diff": {"type": "string"},
+                                              "related_spec": {"type": "string"}}}}}
+
+
+def _ui_change_requested(message: str) -> bool:
+    text = message.casefold()
+    return any(phrase in text for phrase in ("change glacier's ui", "change glacier ui", "update glacier's ui",
+               "update the glacier ui", "change the ui", "change this screen", "update this screen",
+               "change the screen", "update the screen"))
 
 
 def _codex_signed_in() -> bool:
@@ -491,7 +510,7 @@ def _ask_codex(message: str, schema: dict | None = None) -> dict:
     return answer
 
 
-def _ask_cli(engine: str, message: str) -> dict:
+def _ask_cli(engine: str, message: str, schema: dict | None = None) -> dict:
     command = engine
     args = ("-p", message, "--output-format", "json") if engine == "claude" else ("-p", message, "--output-format", "json")
     result = subprocess.run(shell_commands.executable_invocation(command, *args), stdin=subprocess.DEVNULL,
@@ -504,6 +523,14 @@ def _ask_cli(engine: str, message: str) -> dict:
         text = parsed.get("result") or parsed.get("response") or parsed.get("content") or raw
     except ValueError:
         text = raw
+    if schema:
+        try:
+            parsed = json.loads(str(text))
+            if not isinstance(parsed, dict):
+                raise ValueError
+            return parsed
+        except ValueError as error:
+            raise ValueError("The assistant returned an invalid structured answer.") from error
     # These CLIs do not share a structured-output schema. Keep the reply safe and let Glacier's
     # existing planner decide whether a goal should become a reviewed proposal.
     return {"reply": str(text)[:12000], "automation": False}
@@ -620,9 +647,7 @@ def _ask_engine(message: str, route: str, model: str | None = None, schema: dict
     if route == "codex":
         return _ask_codex(message, schema=schema) if schema else _ask_codex(message)
     if route in {"claude", "gemini"}:
-        if schema:
-            message += "\n\nReturn only JSON matching this schema:\n" + json.dumps(schema)
-        return _ask_cli(route, message)
+        return _ask_cli(route, message, schema=schema) if schema else _ask_cli(route, message)
     if route in {"openai", "anthropic"}:
         return _ask_api(route, message, model=model, schema=schema)
     raise RuntimeError("The selected Ask engine is not supported.")
@@ -939,9 +964,37 @@ def chat(request: ChatRequest):
                 return
             shared = ask_context.build(request.message, engine=route,
                                        model=_saved_settings().get("local_model") if route == "local" else _saved_settings().get(f"{route}_model"),
-                                       conversation_id=conversation_id)
+                                       conversation_id=conversation_id, screen=request.screen, focus=request.focus)
             prompt = f"Shared context pack:\n{shared}\n\nCurrent message:\n{secrets_store.redact(request.message)}"
-            answer = _ask(prompt, route)
+            if request.screen:
+                prompt += f"\n\nOpening reply: offer the relevant help for the owner's current screen ({request.screen}) and focus ({request.focus or 'the main view'})."
+            ui_request = _ui_change_requested(request.message)
+            if ui_request:
+                prompt += "\n\nThe owner asked to change Glacier's own UI. Create a review-only proposal as a unified diff limited to glacier/web/src. Explain it plainly and choose the most relevant existing e2e spec under glacier/web/e2e. Never apply it."
+                answer = _ask_engine(prompt, route, schema=_ui_change_schema())
+            else:
+                answer = _ask(prompt, route)
+            if ui_request:
+                change = answer.get("ui_change") if isinstance(answer, dict) else None
+                if not isinstance(change, dict):
+                    raise ValueError("The assistant could not prepare a UI change proposal.")
+                proposal = ui_change.propose(change.get("diff"), change.get("explanation"), change.get("related_spec"))
+                proposal["conversation_id"] = conversation_id
+                with _proposals_lock:
+                    _proposals[proposal["id"]] = proposal
+                    while len(_proposals) > MAX_PROPOSALS:
+                        _proposals.pop(next(iter(_proposals)))
+                reply = f"{proposal['explanation']} This change is ready for your approval; it has not been applied."
+                _append_conversation(conversation_id, request.message, reply)
+                tool_id = str(uuid.uuid4())
+                yield _event("TEXT_MESSAGE_START", messageId=message_id, role="assistant")
+                yield _event("TOOL_CALL_START", toolCallId=tool_id, toolCallName="propose_ui_change", parentMessageId=message_id)
+                yield _event("TOOL_CALL_ARGS", toolCallId=tool_id, delta=json.dumps(proposal, ensure_ascii=False))
+                yield _event("TOOL_CALL_END", toolCallId=tool_id)
+                yield _event("TEXT_MESSAGE_CONTENT", messageId=message_id, delta=reply)
+                yield _event("TEXT_MESSAGE_END", messageId=message_id)
+                yield _event("RUN_FINISHED", threadId=conversation_id, runId=run_id)
+                return
             automation = _is_automation(request.message, answer)
             if automation:
                 import app
@@ -998,7 +1051,20 @@ def apply_proposal(proposal_id: str, request: ApplyRequest):
     if not request.approve:
         with _proposals_lock:
             _proposals.pop(proposal_id, None)
+        ui_change.discard(proposal_id)
         return {"discarded": True}
+    if proposal.get("kind") == "ui_change":
+        try:
+            result = ui_change.apply(proposal_id, proposal)
+        except (ValueError, RuntimeError) as error:
+            raise HTTPException(400, str(error)) from error
+        with _proposals_lock:
+            _proposals.pop(proposal_id, None)
+        audit_log.record("assistant.ui_change_applied", who="assistant", what={"proposal_id": proposal_id,
+                         "branch": result.get("branch"), "passed": result.get("passed")})
+        _append_conversation(proposal["conversation_id"], "Approved UI change",
+                             f"Applied on {result.get('branch')}. Checks {'passed' if result.get('passed') else 'did not pass'}.")
+        return result
     if proposal.get("run_existing"):
         if not request.run_now:
             from fastapi import HTTPException
