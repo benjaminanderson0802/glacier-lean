@@ -65,6 +65,13 @@ const assistantProposals = new Map()
 const mockTeams = new Map()
 const deletedItems = new Map()
 const conversations = new Map()  // id -> { title, messages: [{ who, text, at }] }
+const messageSessionRows = [
+  { id: 'codex:mock-codex-session', source: 'codex', title: 'Review the parser', last_text: 'The parser handles empty input.', last_at: '2026-10-08T12:00:00.000Z', unread: false, can_send: true },
+  { id: 'claude-code:mock-claude-session', source: 'claude', title: 'Plan a refactor', last_text: 'I found two small changes.', last_at: '2026-10-08T11:00:00.000Z', unread: false, can_send: true },
+  { id: 'opencode:mock-opencode-session', source: 'opencode', title: 'Local model notes', last_text: 'Read-only mirrored session.', last_at: '2026-10-08T10:00:00.000Z', unread: false, can_send: false },
+  { id: 'gemini:mock-gemini-session', source: 'gemini', title: 'Research notes', last_text: 'Read-only mirrored session.', last_at: '2026-10-08T09:00:00.000Z', unread: false, can_send: false },
+]
+const messageHistory = new Map()
 const deletedConversations = new Map()
 const deletedClaims = new Map()
 const uploadedFiles = new Map()
@@ -295,6 +302,94 @@ const server = http.createServer(async (req, res) => {
     }
     if ((m = p.match(/^\/api\/build\/interviews\/([^/]+)$/)) && req.method === 'DELETE') return send(200, { deleted: true, undo_id: commitId() })
     if (req.method === 'GET' && p === '/api/node-types') return send(200, [...CATALOG, HTTP_NODE])
+    if (p === '/api/messages/threads' && req.method === 'GET') {
+      const words = (url.searchParams.get('q') ?? '').toLowerCase().match(/\w+/g) ?? []
+      const rows = [
+        ...[...conversations].map(([id, c]) => {
+          const last = c.messages.at(-1) ?? {}
+          return { id: `glacier:${id}`, source: 'glacier', title: c.title || String(c.messages.find(x => x.who === 'you')?.text ?? 'Untitled conversation').slice(0, 60), last_text: last.text ?? '', last_at: last.at ?? '', unread: false, can_send: true }
+        }),
+        ...messageSessionRows,
+        ...[...mockTeams.values()].flatMap(team => Object.entries(team.tasks).map(([taskId, task]) => {
+          const title = `${team.plan.tasks.find(x => x.id === taskId)?.title ?? taskId} · ${team.plan.vision.goal}`
+          const notes = task.owner_notes ?? []
+          return { id: `worker:${team.team_id}:${taskId}`, source: 'worker', title, last_text: notes.at(-1)?.text ?? task.output ?? `Task ${task.status}`, last_at: notes.at(-1)?.at ?? '', unread: false, can_send: !['done', 'stopped'].includes(team.status) }
+        })),
+      ].filter(row => words.every(word => `${row.title} ${row.last_text} ${row.source}`.toLowerCase().includes(word)))
+      return send(200, rows.sort((a, b) => b.last_at.localeCompare(a.last_at)))
+    }
+    if ((m = p.match(/^\/api\/messages\/threads\/([^/]+)$/)) && req.method === 'GET') {
+      const id = decodeURIComponent(m[1])
+      let rows = messageHistory.get(id)
+      if (!rows && id.startsWith('glacier:')) {
+        const conversation = conversations.get(id.slice('glacier:'.length))
+        if (!conversation) return send(404, { detail: 'Conversation not found' })
+        rows = conversation.messages.map((item, index) => ({ id: `${id}:${index}`, from: item.who === 'you' || item.who === 'user' ? 'me' : 'them', author: item.who === 'you' || item.who === 'user' ? 'you' : 'Glacier', text: item.text, at: item.at, kind: 'text' }))
+      }
+      if (!rows && id.startsWith('worker:')) {
+        const [, teamId, taskId] = id.split(':')
+        const team = mockTeams.get(teamId), task = team?.tasks?.[taskId]
+        if (!team || !task) return send(404, { detail: 'Conversation not found' })
+        rows = [...(task.owner_notes ?? []).map((note, index) => ({ id: note.id ?? `${id}:owner:${index}`, from: 'me', author: 'you', text: note.text, at: note.at, kind: 'text' })), ...(task.output ? [{ id: `${id}:output`, from: 'them', author: task.role ?? 'worker', text: task.output, at: '', kind: 'text' }] : []), ...String(team.progress_log ?? '').split('\n').filter(line => line.toLowerCase().includes(taskId.toLowerCase())).map((line, index) => ({ id: `${id}:log:${index}`, from: 'system', author: 'Glacier', text: line, at: '', kind: 'status' }))]
+      }
+      if (!rows) {
+        const session = messageSessionRows.find(row => row.id === id)
+        if (!session) return send(404, { detail: 'Conversation not found' })
+        rows = messageHistory.get(id) ?? [{ id: `${id}:0`, from: 'them', author: session.source, text: session.last_text, at: session.last_at, kind: 'text' }]
+      }
+      const before = url.searchParams.get('before')
+      rows = [...rows].sort((a, b) => b.at.localeCompare(a.at))
+      if (before) {
+        const cursor = rows.find(row => row.id === before)
+        rows = cursor ? rows.filter(row => [row.at, row.id].join('|') < [cursor.at, cursor.id].join('|')) : rows.filter(row => row.at && row.at < before)
+      }
+      const messages = rows.slice(0, 50)
+      return send(200, { id, messages, next_before: messages.length === 50 ? messages.at(-1).id : null })
+    }
+    if ((m = p.match(/^\/api\/messages\/threads\/([^/]+)$/)) && req.method === 'POST') {
+      const id = decodeURIComponent(m[1]), body = await readBody()
+      if (!body?.text || body.text.length > 20000) return send(400, { detail: 'text is required (max 20000 characters)' })
+      const at = new Date().toISOString()
+      if (id.startsWith('glacier:')) {
+        const conversationId = id.slice('glacier:'.length), reply = `I can help with: ${body.text}`
+        const conversation = conversations.get(conversationId) ?? { title: '', messages: [] }
+        conversation.messages.push({ who: 'you', text: body.text, at }, { who: 'glacier', text: reply, at })
+        conversations.set(conversationId, conversation)
+        const message = { id: `${id}:${crypto.randomUUID()}`, from: 'them', author: 'Glacier', text: reply, at, kind: 'text' }
+        broadcast({ type: 'messages.thread_message', thread_id: id, message })
+        return send(200, { thread_id: id, message })
+      }
+      if (id.startsWith('worker:')) {
+        const [, teamId, taskId] = id.split(':'), team = mockTeams.get(teamId), task = team?.tasks?.[taskId]
+        if (!task) return send(404, { detail: 'Worker task not found' })
+        const note = { id: crypto.randomUUID(), text: body.text, at }
+        task.owner_notes ??= []; task.owner_notes.push(note)
+        team.progress_log = `${team.progress_log ?? ''}\nOwner instruction for ${taskId}: ${body.text}`.trim()
+        const message = { id: note.id, from: 'me', author: 'you', text: body.text, at, kind: 'text' }
+        broadcast({ type: 'messages.thread_message', thread_id: id, message })
+        return send(200, { thread_id: id, message })
+      }
+      const session = messageSessionRows.find(row => row.id === id)
+      if (!session) return send(404, { detail: 'Conversation not found' })
+      if (!session.can_send) return send(403, { detail: 'This conversation is read-only' })
+      const message = { id: `${id}:${crypto.randomUUID()}`, from: 'them', author: session.source, text: `${session.source} reply: ${body.text}`, at, kind: 'text' }
+      messageHistory.set(id, [message, ...(messageHistory.get(id) ?? [])])
+      session.last_text = message.text; session.last_at = at
+      broadcast({ type: 'messages.thread_message', thread_id: id, message })
+      return send(200, { thread_id: id, message })
+    }
+    if (p === '/api/messages/threads' && req.method === 'POST') {
+      const body = await readBody()
+      if (!body?.text || !['glacier', 'codex', 'claude'].includes(body.source)) return send(400, { detail: 'source must be glacier, codex, or claude' })
+      const id = body.source === 'glacier' ? crypto.randomUUID() : `mock-${crypto.randomUUID()}`
+      const threadId = body.source === 'glacier' ? `glacier:${id}` : body.source === 'claude' ? `claude-code:${id}` : `codex:${id}`
+      const at = new Date().toISOString(), reply = body.source === 'glacier' ? `I can help with: ${body.text}` : `${body.source} reply: ${body.text}`
+      const message = { id: `${threadId}:${crypto.randomUUID()}`, from: 'them', author: body.source === 'glacier' ? 'Glacier' : body.source, text: reply, at, kind: 'text' }
+      if (body.source === 'glacier') conversations.set(id, { title: '', messages: [{ who: 'you', text: body.text, at }, { who: 'glacier', text: reply, at }] })
+      else { const row = { id: threadId, source: body.source, title: body.text.slice(0, 60), last_text: reply, last_at: at, unread: false, can_send: true }; messageSessionRows.unshift(row); messageHistory.set(threadId, [message]) }
+      broadcast({ type: 'messages.thread_message', thread_id: threadId, message })
+      return send(200, { thread: { id: threadId, source: body.source, title: body.text.slice(0, 60), last_text: reply, last_at: at, unread: false, can_send: true }, thread_id: threadId, message })
+    }
     if (p.startsWith('/api/assistant/conversations')) {
       const titleOf = c => c.title || (c.messages.find(x => x.who === 'you')?.text ?? '').split(/\s+/).join(' ').slice(0, 60) || 'Untitled conversation'
       if (req.method === 'GET' && p === '/api/assistant/conversations') {

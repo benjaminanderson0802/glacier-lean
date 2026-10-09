@@ -104,6 +104,27 @@ export const api = {
   undoRun: (runId: string) => req<Record<string, unknown>>('POST', `/api/runs/${enc(runId)}/undo`),
 }
 
+// ---------- Unified messages inbox (docs/MESSAGES.md) ----------
+export type MessageSource = 'glacier' | 'codex' | 'claude' | 'opencode' | 'gemini' | 'worker'
+export interface MessageThread {
+  id: string; source: MessageSource; title: string; last_text: string; last_at: string
+  unread: boolean; can_send: boolean
+}
+export interface ThreadMessage {
+  id: string; from: 'me' | 'them' | 'system'; author: string; text: string; at: string
+  kind: 'text' | 'tool' | 'status'
+}
+export const messagesApi = {
+  threads: (q = '') => req<MessageThread[]>('GET', `/api/messages/threads${q ? `?q=${enc(q)}` : ''}`),
+  messages: (threadId: string, before?: string) => req<{ id: string; messages: ThreadMessage[]; next_before: string | null }>(
+    'GET', `/api/messages/threads/${enc(threadId)}${before ? `?before=${enc(before)}` : ''}`),
+  send: (threadId: string, text: string) => req<{ thread_id: string; message: ThreadMessage }>(
+    'POST', `/api/messages/threads/${enc(threadId)}`, { text }),
+  create: (source: 'glacier' | 'codex' | 'claude', text: string) => req<{
+    thread: MessageThread; thread_id: string; message: ThreadMessage
+  }>('POST', '/api/messages/threads', { source, text }),
+}
+
 // ---------- Build teams (docs/BUILD_TEAMS.md; W93 API) ----------
 export interface TeamRole { id: string; charter: string; supervisor?: string | null; model?: string }
 export interface TeamPlan {
