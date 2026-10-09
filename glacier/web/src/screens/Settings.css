@@ -66,6 +66,26 @@
   color: var(--g-ink);
 }
 
+.g-settings > .g-sidenav { background: none; border: 0; padding-inline: 0; }
+.g-settings > .g-panel { background: none; border: 0; padding: 0 calc(2 * var(--px)); }
+.g-settings .g-usage-table { margin-top: calc(5 * var(--px)); }
+.g-settings .g-usage-table th { color: var(--g-white); background: var(--g-ice2); border-bottom: 1px solid var(--l-edge); }
+.g-settings .g-usage-table td { border-bottom: 1px solid var(--l-edge); padding: calc(2 * var(--px)); color: var(--g-white); }
+.g-settings .settings-day-range { gap: calc(2 * var(--px)); }
+.g-settings .settings-day-range .g-seg-btn { min-height: calc(12 * var(--px)); padding: calc(1 * var(--px)) calc(4 * var(--px)); }
+.g-settings .g-ask-row { display: flex; flex-wrap: wrap; align-items: center; gap: calc(2 * var(--px)); margin-top: calc(4 * var(--px)); }
+.g-settings .g-ask-row input:first-child { flex: 0 1 calc(82 * var(--px)); }
+.g-settings .g-ask-row input:nth-child(2) { flex: 1 1 calc(100 * var(--px)); }
+.g-settings .g-secret-message { margin-top: calc(2 * var(--px)); }
+.g-settings .settings-scroll-body > .g-panel-title { margin-top: calc(5 * var(--px)); }
+.g-settings .settings-update-stack { gap: calc(3 * var(--px)); }
+.g-settings .settings-update-notes { white-space: pre-wrap; }
+.g-settings .settings-section-heading { margin-top: calc(5 * var(--px)); }
+.g-settings .settings-secret-description { margin-bottom: calc(3 * var(--px)); }
+.g-settings .settings-secret-actions { display: flex; flex-wrap: wrap; gap: calc(2 * var(--px)); }
+.g-settings .settings-secret-row { grid-template-columns: minmax(0,1fr) auto; }
+.g-settings .settings-data-rows { margin-top: calc(5 * var(--px)); }
+
 @media (max-width: 760px) {
   .g-settings {
     grid-template-columns: calc(88 * var(--px)) minmax(0, 1fr);
