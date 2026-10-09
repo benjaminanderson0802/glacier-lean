@@ -36,11 +36,11 @@ export function Templates() {
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       {tags.length > 0 && <div className="g-seg" style={{ alignSelf: 'flex-start' }}><button className={`g-seg-btn${tag === 'all' ? ' active' : ''}`} onClick={() => setTag('all')}>{t('templates.all')}</button>{tags.map(value => <button key={value} className={`g-seg-btn${value === tag ? ' active' : ''}`} onClick={() => setTag(value)}>{value}</button>)}</div>}
-      <Window title={t('templates.title')} className="template-window" testid="templates-window"><div className="g-cards" data-testid="template-grid">
+      <Window title={t('templates.title')} className="template-window" testid="templates-window"><div className="template-gallery-summary"><span>{shown.length} {t('templates.title').toLowerCase()}</span><span>{tag === 'all' ? t('templates.all') : tag}</span></div><div className="g-cards" data-testid="template-grid">
         {shown.map(item => (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div key={item.id} className="template-card-row">
             <button type="button" className={`g-card${pick?.id === item.id ? ' sel' : ''}`} style={{ flex: 1 }} onClick={() => setPick(item)} data-testid={`tpl-${item.id}`} disabled={!item.installable}>
-              <span className="g-card-ico"><img className="template-thumb" src={`/templates/previews/${item.id}.png`} alt="" loading="lazy" /></span>
+              <span className="g-card-ico"><img className="template-thumb" src={`/templates/previews/${item.id}.png`} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /></span>
               <span className="g-card-text"><span className="g-lead">{item.name}</span>
                 <span className="g-detail">{item.description && item.description !== item.name ? item.description : t('templates.stepCount', { count: item.template?.nodes.length ?? 0 })}</span>
                 <span className="template-needs">{t('templates.needs')}: {requires(item.template)}</span>
@@ -56,7 +56,7 @@ export function Templates() {
       {items && shown.length === 0 && <Empty>{t('templates.noTemplates')}</Empty>}
       {pick && (
         <Window title={<>{pick.name}<span className="g-aside">{pick.author ?? 'Glacier'} · {pick.license ?? ''} · {pick.review_status}</span></>} className="template-detail-window" testid="template-detail">
-          <img className="template-full-preview" src={`/templates/previews/${pick.id}.png`} alt={`${pick.name} ${t('templates.preview').toLowerCase()}`} />
+          <img className="template-full-preview" src={`/templates/previews/${pick.id}.png`} alt={`${pick.name} ${t('templates.preview').toLowerCase()}`} onError={event => { event.currentTarget.style.display = 'none' }} />
           <div className="g-ask-row">
             <span className="g-detail" style={{ flex: 1 }}>{t('templates.needs')}: {requires(pick.template)}<br />{t('templates.produces')}: {produces(pick.template)}<br />{t('templates.steps', { value: (pick.template?.nodes ?? []).map(n => n.type).join(' → ') })}</span>
             <Btn primary onClick={() => use(pick)} disabled={busy || !pick.installable} data-testid="tpl-use">{t('templates.use')}</Btn>

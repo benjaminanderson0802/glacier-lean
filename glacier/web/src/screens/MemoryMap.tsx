@@ -1,4 +1,4 @@
-// Memory map (mockup panel 10): pixel-square graph of everything Glacier knows. Colours from tokens only.
+// Memory map of everything Glacier knows. Colours come from Limbo theme tokens.
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d'
 import { forceManyBody, forceLink, type SimulationNodeDatum, type SimulationLinkDatum } from 'd3-force'
@@ -8,7 +8,7 @@ import { tok } from '../ui/tok.ts'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
 
-const KIND_TOKEN: Record<string, `--g-${string}`> = { note: '--g-accent', run: '--g-ok', flow: '--g-warn', claim: '--g-bad', author: '--g-head' }
+const KIND_TOKEN: Record<string, `--g-${string}`> = { note: '--g-ok2', run: '--g-ok', flow: '--g-warn', claim: '--g-bad', author: '--g-head' }
 const KIND_LABEL: Record<string, string> = { note: t('memory.viewsNotes'), run: t('run.pastRuns'), flow: t('build.flows'), claim: t('claims.title'), author: t('memoryMap.writers') }
 
 export function MemoryMap() {
@@ -72,6 +72,7 @@ export function MemoryMap() {
   const colours = useMemo(() => Object.fromEntries(Object.entries(KIND_TOKEN).map(([k, t]) => [k, tok(t)])), [])
   const font = useMemo(() => tok('--g-font-body'), [])
   const line = useMemo(() => tok('--g-line-dim'), [])
+  const activeLine = useMemo(() => tok('--g-white'), [])
   const text = useMemo(() => tok('--g-text'), [])
   const highlighted = useMemo(() => {
     if (!hovered) return null
@@ -84,36 +85,39 @@ export function MemoryMap() {
     }
     return ids
   }, [graph.links, hovered])
-  const pixel = useMemo(() => Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--px')) || 2, [])
-
   return (
-    <div className="g-memmap" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) calc(84 * var(--px))', gap: 'calc(2 * var(--px))', flex: 1, minHeight: 0 }}>
+    <div className="g-memmap">
       <Panel title={t('memory.map')} className="g-map-panel" testid="memory-map">
         <div ref={box} className="g-map-box" style={{ flex: 1, minHeight: 0 }}>
           {err && <div className="g-error">{err}</div>}
           {data && graph.nodes.length === 0 && <Empty>{t('memoryMap.nothing')}</Empty>}
           {graph.nodes.length > 0 && (
-            <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor="transparent"
+            <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor={tok('--g-bg')}
               d3AlphaDecay={0.035} d3VelocityDecay={0.38} d3AlphaMin={0.001}
               nodeRelSize={4} linkColor={(l) => {
                 if (!highlighted) return line
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
-                return source === hovered || target === hovered ? tok('--g-accent') : 'transparent'
+                return source === hovered || target === hovered ? tok('--g-accent') : tok('--g-bg')
               }} linkWidth={(l) => {
                 if (!highlighted) return 1
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
-                return source === hovered || target === hovered ? 2 : 0
+                return source === hovered || target === hovered ? 1.5 : 0
               }} linkCanvasObjectMode="replace" cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 0 : Math.min(24, Math.floor(graph.nodes.length / 25))}
               linkCanvasObject={(link, ctx) => {
                 if (!link.source || !link.target || typeof link.source !== 'object' || typeof link.target !== 'object') return
-                const snap = (v: number) => Math.round(v / pixel) * pixel
-                const x1 = snap(link.source.x ?? 0), y1 = snap(link.source.y ?? 0), x2 = snap(link.target.x ?? 0), y2 = snap(link.target.y ?? 0)
-                const dx = x2 - x1, dy = y2 - y1
-                const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / pixel))
-                ctx.fillStyle = line
-                for (let i = 0; i <= steps; i++) ctx.fillRect(snap(x1 + dx * i / steps), snap(y1 + dy * i / steps), pixel, pixel)
+                const source = String(typeof link.source === 'object' ? link.source.id : link.source)
+                const target = String(typeof link.target === 'object' ? link.target.id : link.target)
+                const emphasized = hovered && (source === hovered || target === hovered)
+                ctx.beginPath()
+                ctx.moveTo(link.source.x ?? 0, link.source.y ?? 0)
+                ctx.lineTo(link.target.x ?? 0, link.target.y ?? 0)
+                ctx.strokeStyle = emphasized ? activeLine : line
+                ctx.globalAlpha = highlighted && !emphasized ? 0.12 : emphasized ? 0.95 : 0.72
+                ctx.lineWidth = emphasized ? 1.5 : 0.8
+                ctx.stroke()
+                ctx.globalAlpha = 1
               }}
               enableNodeDrag autoPauseRedraw nodePointerAreaPaint={(n: { x?: number; y?: number }, color: string, ctx: CanvasRenderingContext2D) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(n.x ?? 0, n.y ?? 0, 9, 0, Math.PI * 2); ctx.fill() }}
               onNodeClick={(n: { id?: string | number; kind?: string }, event: MouseEvent) => {
@@ -130,18 +134,31 @@ export function MemoryMap() {
               onNodeDragEnd={(n: { fx?: number; fy?: number; x?: number; y?: number }) => { n.fx = n.x; n.fy = n.y }}
               nodeCanvasObject={(n: { id?: string | number; x?: number; y?: number; kind?: string; title?: string }, ctx: CanvasRenderingContext2D, scale: number) => {
                 const glowing = lit[String(n.id ?? '')]
-                const s = pixel * (glowing ? 5 : n.kind === 'author' ? 4 : 3)
-                const x = Math.round((n.x ?? 0) / pixel) * pixel, y = Math.round((n.y ?? 0) / pixel) * pixel
+                const radius = glowing ? 6 : n.kind === 'author' ? 4.5 : 3.5
+                const x = n.x ?? 0, y = n.y ?? 0
                 const faded = highlighted && !highlighted.has(String(n.id ?? ''))
                 ctx.globalAlpha = faded ? 0.16 : 1
-                if (glowing) { ctx.fillStyle = colours.author; ctx.fillRect(x - s / 2 - pixel, y - s / 2 - pixel, s + pixel * 2, s + pixel * 2) }
+                ctx.beginPath()
+                ctx.arc(x, y, radius + (glowing ? 5 : 2), 0, Math.PI * 2)
                 ctx.fillStyle = colours[n.kind ?? 'note'] ?? colours.note
-                ctx.fillRect(x - s / 2, y - s / 2, s, s)
+                ctx.globalAlpha *= glowing ? 0.26 : 0.14
+                ctx.fill()
+                ctx.globalAlpha = faded ? 0.16 : 1
+                ctx.beginPath()
+                ctx.arc(x, y, radius, 0, Math.PI * 2)
+                ctx.fillStyle = colours[n.kind ?? 'note'] ?? colours.note
+                ctx.shadowColor = colours[n.kind ?? 'note'] ?? colours.note
+                ctx.shadowBlur = glowing ? 18 : 9
+                ctx.fill()
+                ctx.shadowBlur = 0
+                ctx.lineWidth = 1
+                ctx.strokeStyle = line
+                ctx.stroke()
                 if (scale > 1.4 || n.kind === 'author' || glowing) {
-                  const fontSize = Math.max(pixel * 3, Math.round((14 / scale) / pixel) * pixel)
+                  const fontSize = Math.max(8, Math.min(10, 10 / scale))
                   ctx.font = `${fontSize}px ${font}`
                   ctx.fillStyle = text
-                  ctx.fillText(n.title ?? '', x + s, y + pixel)
+                  ctx.fillText(n.title ?? '', x + radius + 3, y + 4)
                 }
                 ctx.globalAlpha = 1
               }} />

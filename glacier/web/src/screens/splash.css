@@ -1,0 +1,112 @@
+.g-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: calc(20 * var(--px));
+  background: url('../theme/limbo/room.webp') center / cover no-repeat;
+  color: var(--g-ink);
+  font-family: var(--g-font-body);
+  text-shadow: var(--l-text-shadow);
+}
+
+.g-splash-panel {
+  width: min(78vw, calc(420 * var(--px)));
+  min-width: min(100%, calc(250 * var(--px)));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  padding: calc(18 * var(--px)) calc(24 * var(--px));
+  border: 1px solid var(--l-edge);
+  border-radius: calc(14 * var(--px));
+  background: linear-gradient(160deg, var(--g-ice3), var(--g-ice2)), var(--l-glass);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow: 0 calc(8 * var(--px)) calc(24 * var(--px)) var(--g-shadow), inset 0 1px 0 var(--g-ice4);
+}
+
+.g-splash .g-splash-title {
+  position: static;
+  width: auto;
+  color: var(--g-white);
+  font: 800 calc(30 * var(--px))/1 var(--g-font-body);
+  letter-spacing: .015em;
+  text-transform: lowercase;
+}
+
+.g-splash .g-splash-menu {
+  position: static;
+  inset: auto;
+  transform: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(7 * var(--px));
+}
+
+.g-splash-item {
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--px));
+  width: 100%;
+  min-height: calc(29 * var(--px));
+  padding: calc(5 * var(--px)) calc(14 * var(--px));
+  border: 1px solid var(--l-edge);
+  border-radius: 999px;
+  background: var(--l-pill);
+  color: var(--l-pill-ink);
+  font: 700 calc(9 * var(--px))/1.2 var(--g-font-body);
+  text-align: left;
+  text-shadow: none;
+  text-transform: lowercase;
+  transition: background-color .15s ease, transform .1s ease;
+}
+
+.g-splash-item:hover,
+.g-splash-item.active {
+  background: var(--l-pill-hi);
+}
+
+.g-splash-item:active {
+  transform: scale(.99);
+}
+
+.g-splash-item:focus-visible {
+  outline: 2px solid var(--g-white);
+  outline-offset: 2px;
+}
+
+.g-splash-item .g-icon {
+  width: calc(12 * var(--px));
+  height: calc(12 * var(--px));
+  flex: none;
+  opacity: 1;
+}
+
+.g-splash .g-splash-foot {
+  position: static;
+  text-transform: lowercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: calc(5 * var(--px));
+  width: 100%;
+  color: var(--g-ink2);
+  font-size: var(--g-size-small);
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .g-splash-panel {
+    width: min(92vw, calc(420 * var(--px)));
+    padding: calc(16 * var(--px)) calc(18 * var(--px));
+  }
+
+  .g-splash-foot {
+    justify-content: center;
+  }
+}

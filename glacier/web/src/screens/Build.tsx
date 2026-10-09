@@ -30,13 +30,13 @@ const nextId = (prefix: string, ids: string[]) => {
 }
 
 const edgeStyle = (label: string) => ({
-  type: 'pixel',
+  type: 'smooth',
   label: label || undefined,
   markerEnd: { type: MarkerType.ArrowClosed, color: tok('--g-line') },
   className: label ? `edge-${label}` : undefined,
 })
 
-function PixelEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, style, selected, label, data }: import('@xyflow/react').EdgeProps) {
+function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, style, selected, label, data }: import('@xyflow/react').EdgeProps) {
   const sourceRight = sourcePosition === 'right'
   const targetLeft = targetPosition === 'left'
   const loopback = Boolean(data?.loopback)
@@ -56,10 +56,10 @@ function PixelEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, tar
     d = `M ${sourceX} ${sourceY} V ${laneY} H ${targetX} V ${targetY}`
     labelX = Math.round((sourceX + targetX) / 2); labelY = laneY
   }
-  return <g className="pixel-edge" shapeRendering="crispEdges">
+  return <g className="flow-edge">
     <path id={`${id}-hit`} d={d} className="react-flow__edge-interaction" />
     <path id={id} d={d} className={`react-flow__edge-path${selected ? ' selected' : ''}`} markerEnd={markerEnd} style={style} />
-    {label && <EdgeLabelRenderer><div data-testid={`rf__edge-${id}`}><div className={`pixel-edge-textwrapper react-flow__edge-textwrapper${selected ? ' selected' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}><div className={`pixel-edge-tag react-flow__edge-text${selected ? ' selected' : ''}`}>{label}</div></div></div></EdgeLabelRenderer>}
+    {label && <EdgeLabelRenderer><div data-testid={`rf__edge-${id}`}><div className={`flow-edge-textwrapper react-flow__edge-textwrapper${selected ? ' selected' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}><div className={`flow-edge-tag react-flow__edge-text${selected ? ' selected' : ''}`}>{label}</div></div></div></EdgeLabelRenderer>}
   </g>
 }
 
@@ -169,7 +169,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     return t.branches_from === 'options' ? splitOptions(n.data.config.options) : null
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
-  const flowEdgeTypes = useMemo(() => ({ pixel: PixelEdge }), [])
+  const flowEdgeTypes = useMemo(() => ({ smooth: FlowEdge }), [])
   const showMinimap = minimapOpen && !canvasShort
   const fitCanvas = useCallback(() => {
     if (connectingRef.current) return
@@ -639,7 +639,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               >
                 <Background gap={16} size={1} color={tok('--g-ice4')} />
                 <Controls showInteractive={false} position="top-left" />
-                {showMinimap && <MiniMap pannable={false} zoomable={false} nodeColor={tok('--g-navy3')} maskColor={tok('--g-shadow')} style={{ backgroundColor: tok('--g-ice1'), borderColor: tok('--g-navy') }} />}
+                {showMinimap && <MiniMap pannable={false} zoomable={false} nodeColor={tok('--g-navy3')} maskColor={tok('--g-shadow')} style={{ backgroundColor: tok('--g-panel'), borderColor: tok('--g-line') }} />}
               </ReactFlow>
             </div>
           </div>

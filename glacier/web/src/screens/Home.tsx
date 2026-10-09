@@ -45,10 +45,10 @@ export function HomeScreen() {
         </div>
       } />
       {err && <div className="g-error">{err}</div>}
-      <div className="g-grid-2 g-home-grid" style={{ flex: 1, minHeight: 0, gridColumn: '1 / -1', gridRow: '2 / 4', display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)', gap: 'calc(2 * var(--px))' }}>
+      <div className="g-grid-2 g-home-grid" style={{ flex: 1, minHeight: 0, gridColumn: '1 / -1', gridRow: '2 / 4', display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)', gap: 'calc(4 * var(--px))' }}>
         <div className="g-stack" style={{ gridColumn: 1, gridRow: 1, minHeight: 0 }}>
         <StarterPanel />
-        <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you" style={{ flex: 1 }}>
+        <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you" style={{ flex: 1, background: 'none', border: 0, padding: 0 }}>
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>{t('home.noItemsNeedAttention')}</Empty>}
             {data?.needs_you.map((it, i) => (
@@ -58,7 +58,7 @@ export function HomeScreen() {
         </Panel>
         </div>
         <div className="g-stack" style={{ gridColumn: 2, gridRow: 1, minHeight: 0 }}>
-          <Panel title={t('home.runningNow')} testid="running-now" style={{ flex: '0 0 30%' }}>
+          <Panel title={t('home.runningNow')} testid="running-now" style={{ flex: '0 0 30%', background: 'none', border: 0, padding: 0 }}>
             <div className="g-rows">
               {data?.running.length === 0 && <Empty>{t('home.nothingRunning')}</Empty>}
               {data?.running.map(r => (
@@ -69,10 +69,10 @@ export function HomeScreen() {
               ))}
             </div>
           </Panel>
-          <Panel title={t('team.homeTeams')} testid="home-teams" style={{ flex: '0 0 30%' }}>
+          <Panel title={t('team.homeTeams')} testid="home-teams" style={{ flex: '0 0 30%', background: 'none', border: 0, padding: 0 }}>
             <div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={team.name || team.team_id} detail={team.needs_owner ? t('team.ownerWaiting', { count: team.needs_owner }) : t('team.homeTeam', { passing: team.passing, total: team.feature_count })} when={<Progress value={team.passing} max={team.feature_count} />} onClick={() => go(`automations/team/${team.team_id}`)} testid={`home-team-${team.team_id}`} />)}</div>
           </Panel>
-          <Panel title={t('home.recentNotes')} testid="recent-notes" style={{ flex: 1 }}>
+          <Panel title={t('home.recentNotes')} testid="recent-notes" style={{ flex: 1, background: 'none', border: 0, padding: 0 }}>
             <div className="g-rows">
               {data?.recent_notes.length === 0 && <Empty>{t('home.noNotes')}</Empty>}
               {data?.recent_notes.map(n => (

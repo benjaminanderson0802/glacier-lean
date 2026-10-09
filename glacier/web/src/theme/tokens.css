@@ -1,16 +1,30 @@
-/* Glacier's original pixel-art palette and integer art grid. */
-@font-face { font-family: 'Press Start 2P'; src: url('./fonts/PressStart2P.ttf') format('truetype'); font-weight: 400; font-display: block; }
+/* Limbo: frosted-glass panels in a hand-painted room. Token names keep the old --g-* prefix so every screen stylesheet keeps working. */
+@font-face { font-family: 'Nunito'; src: url('./fonts/Nunito.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
 :root {
-  --g-void: #081226; --g-navy: #14284a; --g-navy2: #22406c; --g-navy3: #345c92;
-  --g-ice0: #f4faff; --g-ice1: #deecf9; --g-ice2: #c4dbf1; --g-ice3: #a0c3e5; --g-ice4: #76a0ce;
-  --g-white: #ffffff; --g-shadow: #0c1c34; --g-ink: #162c4e; --g-ink2: #42628a;
-  --g-ok: #38a858; --g-ok2: #78dc82; --g-warn: #ecb228; --g-gold: #fcd66e; --g-bad: #d64848; --g-bad2: #ff8c82;
-  --g-bg: var(--g-ice1); --g-panel: var(--g-ice0); --g-panel-hi: var(--g-ice2); --g-bar: var(--g-navy2);
-  --g-line: var(--g-navy); --g-line-dim: var(--g-ice4); --g-head: var(--g-navy); --g-text: var(--g-ink); --g-sub: var(--g-ink2); --g-muted: var(--g-ink2);
-  --g-accent: var(--g-navy2); --g-accent-ink: var(--g-white); --g-accent-dim: var(--g-navy3);
-  --g-font-head: 'Press Start 2P'; --g-font-body: 'Press Start 2P';
-  --g-size-title: calc(16 * var(--px)); --g-size-h2: calc(8 * var(--px)); --g-size-body: calc(8 * var(--px)); --g-size-small: calc(8 * var(--px)); --g-size-tab: calc(8 * var(--px));
-  --g-border: var(--px); --g-pad: calc(4 * var(--px)); --g-gap: calc(4 * var(--px));
+  /* glass whites */
+  --g-white: #ffffff;
+  --g-ice0: rgba(255, 255, 255, .26); --g-ice1: rgba(255, 255, 255, .16); --g-ice2: rgba(255, 255, 255, .12);
+  --g-ice3: rgba(255, 255, 255, .22); --g-ice4: rgba(255, 255, 255, .42);
+  /* lines and highlights on glass */
+  --g-navy: rgba(255, 255, 255, .40); --g-navy2: rgba(255, 255, 255, .30); --g-navy3: rgba(255, 255, 255, .20);
+  --g-void: #22303d; --g-shadow: rgba(14, 32, 56, .28);
+  /* text */
+  --g-ink: #ffffff; --g-ink2: rgba(246, 250, 255, .9);
+  /* states, tuned to read on bright glass */
+  --g-ok: #8ff0b0; --g-ok2: #c4f7d5; --g-warn: #ffd47e; --g-gold: #ffe7a8; --g-bad: #ff9a90; --g-bad2: #ffc6c0;
+  /* pill buttons: milky glass with dark ink, like the reference */
+  --l-pill: rgba(236, 244, 252, .78); --l-pill-ink: #24384e; --l-pill-hi: rgba(255, 255, 255, .92);
+  --l-glass: rgba(104, 136, 176, .40); --l-glass-deep: rgba(20, 40, 70, .30); --l-edge: rgba(255, 255, 255, .62);
+  --l-field: rgba(255, 255, 255, .84); --l-field-ink: #1f3247;
+  --l-text-shadow: 0 1px 2px rgba(12, 30, 52, .55), 0 0 8px rgba(12, 30, 52, .25);
+
+  --g-bg: transparent; --g-panel: var(--l-glass); --g-panel-hi: var(--g-ice3); --g-bar: rgba(24, 48, 78, .30);
+  --g-line: var(--g-navy); --g-line-dim: var(--g-ice4); --g-head: var(--g-white); --g-text: var(--g-ink); --g-sub: var(--g-ink2); --g-muted: var(--g-ink2);
+  --g-accent: var(--l-pill); --g-accent-ink: var(--l-pill-ink); --g-accent-dim: var(--g-navy3);
+  --g-font-head: 'Nunito', 'Segoe UI', system-ui, sans-serif; --g-font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  /* --px is set from the size of the painted stage (see ui.css), so everything scales with the room */
   --px: 2px;
+  --g-size-title: calc(12 * var(--px)); --g-size-h2: calc(8 * var(--px)); --g-size-body: calc(7 * var(--px)); --g-size-small: calc(6.5 * var(--px)); --g-size-tab: calc(7 * var(--px));
+  --g-border: 1px; --g-pad: calc(5 * var(--px)); --g-gap: calc(4 * var(--px));
+  --l-radius: calc(7 * var(--px)); --l-radius-sm: calc(4 * var(--px));
 }
-@media (min-width: 1500px) { :root { --px: 3px; } }

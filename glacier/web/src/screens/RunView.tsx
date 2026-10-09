@@ -218,7 +218,7 @@ function PastRuns({ envId }: { envId: string }) {
             {runs.map(r => {
               const s = RUN_LABEL[r.status]
               return (
-              <tr key={r.run_id} className={chosen?.run_id === r.run_id ? 'sel' : ''} style={chosen?.run_id === r.run_id ? { background: 'var(--g-gold)', color: 'var(--g-ink)' } : undefined} onClick={() => { setSel(r.run_id); setConfirm(false); setNote('') }} data-testid={`past-${r.run_id}`}>
+              <tr key={r.run_id} className={chosen?.run_id === r.run_id ? 'sel' : ''} style={chosen?.run_id === r.run_id ? { background: 'var(--l-pill)', color: 'var(--l-pill-ink)' } : undefined} onClick={() => { setSel(r.run_id); setConfirm(false); setNote('') }} data-testid={`past-${r.run_id}`}>
                   <td>{when(r.started_at)}</td>
                   <td><span className="g-status-cell"><StatusIcon kind={s?.kind ?? 'idle'} />{s?.label ?? r.status}</span></td>
                   <td>{changes[r.run_id] === undefined ? '…' : changes[r.run_id] === 0 ? t('run.zeroChanges') : t('run.changesCount', { count: changes[r.run_id], plural: changes[r.run_id] > 1 ? 's' : '' })}</td>

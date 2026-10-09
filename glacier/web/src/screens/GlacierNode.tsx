@@ -4,7 +4,7 @@ import type { NodeKind, NodeState } from '../api.ts'
 export type GNodeData = { config: Record<string, string>; state?: NodeState }
 export type GNode = Node<GNodeData, NodeKind>
 
-const ICON: Record<string, string> = { schedule: 'schedule', command: 'command', codex: 'codex', check: 'check-step', approval: 'approval', note: 'note-step', loop: 'loop', flow: 'flow', decide: 'decide' }
+const ICON: Record<string, string> = { schedule: '◷', command: '⌘', codex: '✦', check: '✓', approval: '!', note: '▤', loop: '↻', flow: '◇', decide: '?' }
 
 function summary(kind: NodeKind, c: Record<string, string>): string {
   switch (kind) {
@@ -30,15 +30,15 @@ export function GlacierNode({ id, type, data, selected }: NodeProps<GNode>) {
       data-state={state}
       data-type={type}
     >
-      <Handle type="target" position={Position.Left} className="gnode-handle" style={{ top: 12, zIndex: 20 }} data-testid={`handle-in-${id}`} />
+      <Handle type="target" position={Position.Left} className="gnode-handle" style={{ top: 'calc(6 * var(--px))', zIndex: 20 }} data-testid={`handle-in-${id}`} />
       <div className="gnode-head">
-        <span className={`gnode-icon gnode-icon-${ICON[type] ?? 'command'}`} aria-hidden="true" />
+        <span className="gnode-icon" aria-hidden="true">{ICON[type] ?? '•'}</span>
         <span className="gnode-type">{type === 'codex' ? 'codex worker' : type === 'flow' ? 'sub-flow' : type}</span>
         <span className="gnode-id">{id}</span>
       </div>
       <div className="gnode-body" title={summary(type, data.config)}>{summary(type, data.config)}</div>
       {state !== 'none' && <div className="gnode-state">{state}</div>}
-      <Handle type="source" position={Position.Right} className="gnode-handle" style={{ top: 12, zIndex: 20 }} data-testid={`handle-out-${id}`} />
+      <Handle type="source" position={Position.Right} className="gnode-handle" style={{ top: 'calc(6 * var(--px))', zIndex: 20 }} data-testid={`handle-out-${id}`} />
     </div>
   )
 }
