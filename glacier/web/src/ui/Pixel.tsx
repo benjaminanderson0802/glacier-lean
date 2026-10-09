@@ -31,5 +31,5 @@ export function StatusIcon({ kind }: { kind: StatusKind; px?: number }) {
 }
 
 export function Logo({ px: _px = 2 }: { px?: number }) {
-  return <span className="g-logo" role="img" aria-label="limbo">limbo</span>
+  return <span className="g-logo" role="img" aria-label="glacier">glacier</span>
 }

@@ -28,8 +28,8 @@ export function Splash({ onDone, version }: { onDone: (to: string) => void; vers
   return (
     <div className="g-splash" data-testid="splash">
       <div className="g-splash-panel">
-        <div className="g-splash-title">limbo</div>
-        <nav className="g-splash-menu" aria-label="limbo">
+        <div className="g-splash-title">glacier</div>
+        <nav className="g-splash-menu" aria-label="glacier">
           {MENU.map((m, i) => (
             <button key={m.label} className={`g-splash-item${i === sel ? ' active' : ''}`} onMouseEnter={() => setSel(i)} onClick={() => onDone(m.go)} data-testid={`splash-${m.go}`}>
               <Icon name={m.icon} />{m.label}
