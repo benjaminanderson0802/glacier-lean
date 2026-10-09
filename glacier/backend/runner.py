@@ -3,6 +3,7 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, sqlite3, subprocess, tempfile, threading, time
 import shlex
 from collections import defaultdict, deque
+from queue import Empty, Queue
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 import shell_commands
@@ -99,8 +100,25 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     timer = threading.Timer(timeout, terminate_process, args=(p,)); timer.start()
     log, errs, agent_msg, started, tok = [], [], "", time.time(), {}
     flushed = started
+    lines = Queue()
+    def read_stdout():
+        try:
+            for output_line in p.stdout:
+                lines.put(output_line)
+        finally:
+            lines.put(None)
+    reader = threading.Thread(target=read_stdout, daemon=True)
+    reader.start()
     try:
-        for line in p.stdout:
+        while True:
+            try:
+                line = lines.get(timeout=max(0, 2 - (time.time() - flushed)))
+            except Empty:
+                store.set_node(run_id, env_id, nid, "running", "\n".join(log[-40:]))
+                flushed = time.time()
+                continue
+            if line is None:
+                break
             line = line.strip()
             try:
                 ev = json.loads(line)
