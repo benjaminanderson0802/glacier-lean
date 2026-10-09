@@ -458,7 +458,8 @@ const server = http.createServer(async (req, res) => {
         const proposal = { id, conversation_id: conversationId, kind: 'ui_change',
           explanation: 'I prepared a small screen change for your review.',
           diff: '--- a/glacier/web/src/App.tsx\n+++ b/glacier/web/src/App.tsx\n@@ -1 +1 @@\n-old\n+new\n',
-          related_spec: 'glacier/web/e2e/shell.spec.mjs' }
+          files: ['glacier/web/src/App.tsx'], related_spec: 'glacier/web/e2e/shell.spec.mjs',
+          mock_fail: /fail checks/i.test(body.message) }
         assistantProposals.set(id, proposal)
         const toolCallId = crypto.randomUUID()
         emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
@@ -503,10 +504,11 @@ const server = http.createServer(async (req, res) => {
       }
       if (proposal.kind === 'ui_change') {
         assistantProposals.delete(proposal.id)
+        const passed = !proposal.mock_fail
         return send(200, { applied: true, branch: `assistant/ui-change/${proposal.id}`,
-          worktree: `/worktrees/ui-changes/${proposal.id}`, changed_files: ['glacier/web/src/App.tsx'],
-          checks: ['tsc', 'theme lint', 'build', 'e2e'], passed: true,
-          check_results: { tsc: { passed: true }, 'theme lint': { passed: true }, build: { passed: true }, e2e: { passed: true } } })
+          worktree: `/worktrees/ui-changes/${proposal.id}`, changed_files: proposal.files ?? ['glacier/web/src/App.tsx'],
+          checks: ['tsc', 'theme lint', 'build', 'e2e'], passed,
+          check_results: { tsc: { passed }, 'theme lint': { passed: true }, build: { passed: true }, e2e: { passed } } })
       }
       const flow = proposal.flow
       if (proposal.run_existing) {

@@ -1,0 +1,15 @@
+.g-ui-change-card { display: flex; flex-direction: column; gap: calc(3 * var(--px)); min-width: 0; margin-top: calc(3 * var(--px)); padding: calc(4 * var(--px)); border: 1px solid var(--l-edge); border-radius: var(--l-radius-sm); background: var(--l-glass-deep); }
+.g-ui-change-head { display: flex; align-items: center; justify-content: space-between; gap: calc(3 * var(--px)); }
+.g-ui-change-head h3, .g-ui-change-section h4 { margin: 0; font: 700 var(--g-size-body)/1.4 var(--g-font-body); }
+.g-ui-change-explanation, .g-ui-change-spec, .g-ui-change-result p { margin: 0; overflow-wrap: anywhere; }
+.g-ui-change-section { min-width: 0; }
+.g-ui-change-section h4 { margin-bottom: calc(1.5 * var(--px)); }
+.g-ui-change-section ul { margin: 0; padding-left: calc(7 * var(--px)); overflow-wrap: anywhere; }
+.g-ui-change-diff { height: 280px; min-width: 0; overflow: hidden; border: 1px solid var(--l-edge); border-radius: var(--l-radius-sm); }
+.g-ui-change-actions { flex-wrap: wrap; }
+.g-ui-change-feedback { display: flex; flex-direction: column; gap: calc(2 * var(--px)); }
+.g-ui-change-feedback label { font-weight: 700; }
+.g-ui-change-feedback textarea { min-height: calc(18 * var(--px)); resize: vertical; }
+.g-ui-change-result { display: flex; flex-direction: column; gap: calc(1.5 * var(--px)); overflow-wrap: anywhere; }
+.g-ui-check-pass { color: var(--g-ok2); }
+.g-ui-check-fail { color: var(--g-bad2); }
