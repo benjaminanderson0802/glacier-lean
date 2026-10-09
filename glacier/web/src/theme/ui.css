@@ -229,3 +229,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .approval-banner { background: rgba(255, 231, 168, .25); border-color: var(--g-gold); border-radius: var(--l-radius-sm); }
 .term-panel { background: rgba(10, 20, 34, .82); border-radius: var(--l-radius-sm); }
 .ws-dot { border-radius: 50%; }
+
+/* Building a flow needs room: the back-wall panel grows to fill the space between the two side walls. */
+.is-building .l-center { left: 17%; width: 66%; top: 5%; height: 87%; z-index: 7; }
+.is-building .l-status { left: 17%; width: 66%; top: 93%; }
