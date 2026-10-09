@@ -5,6 +5,19 @@ import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
 import { t } from '../i18n/index.ts'
 import './Settings.css'
 
+export function HelpSection() {
+  return (
+    <Panel title={t('settings.help')} testid="settings-help">
+      <dl className="g-kv">
+        <dt>{t('settings.ctrlKShort')}</dt><dd>{t('settings.ctrlK')}</dd>
+        <dt>{t('settings.ctrlTab')}</dt><dd>{t('settings.nextTab')}</dd>
+        <dt>{t('settings.altTabs')}</dt><dd>{t('settings.tabList')}</dd>
+        <dt>{t('settings.f1')}</dt><dd>{t('settings.thisPage')}</dd>
+      </dl>
+    </Panel>
+  )
+}
+
 export function ModelsSection() {
   const [c, setC] = useState<SystemCheck | null>(null)
   const [eff, setEff] = useState<EffectiveSettings | null>(null)

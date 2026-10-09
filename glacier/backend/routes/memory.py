@@ -199,7 +199,20 @@ def graph(limit: int | None = None):
 
 @router.get("/api/memory/history")
 def history(path: str):
-    _path(path)
+    # Flow history shares the git-backed lookup, though environment files are
+    # JSON rather than Markdown. Keep this exception scoped to one file directly
+    # under environments/; all other memory history still requires a note.
+    normalized = path.replace("\\", "/")
+    if normalized.endswith(".md"):
+        _path(path)
+    elif not (normalized.startswith("environments/") and normalized.count("/") == 1
+              and normalized.endswith(".json")):
+        raise HTTPException(400, "History is available for notes and saved flows")
+    else:
+        try:
+            vault.safe_path(normalized)
+        except ValueError as exc:
+            raise HTTPException(400, "That flow path is not allowed") from exc
     # Read by a separate git process (vault.note_history), so saves never wait on a long history.
     try:
         return [{"commit": e["sha"][:8], "author": e["author"],
@@ -243,13 +256,29 @@ def undo(item: Undo):
         selected = matching[0] if item.commit else commits[0]
         target = selected.parents[0] if selected.parents else None
     if target is None:
-        raise HTTPException(400, "There is no earlier version to restore")
+        # The first saved note has no earlier tree entry. Undo its creation by
+        # recording a normal, reversible deletion as the next vault version.
+        try:
+            commit = vault.delete_note(path, agent="owner", kind="note")
+        except FileNotFoundError as exc:
+            raise HTTPException(404, "Note not found") from exc
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        audit_log.record("vault.note_undone", what={"path": path, "commit": commit})
+        return {"path": item.path, "commit": commit}
     try:
         with vault._lock:
             previous = target.tree / path
             body = previous.data_stream.read().decode("utf-8")
     except (KeyError, OSError):
-        raise HTTPException(404, "The earlier version did not contain this note")
+        try:
+            commit = vault.delete_note(path, agent="owner", kind="note")
+        except FileNotFoundError as exc:
+            raise HTTPException(404, "Note not found") from exc
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        audit_log.record("vault.note_undone", what={"path": path, "commit": commit})
+        return {"path": item.path, "commit": commit}
     commit = vault.write_note(path, body, author="owner")
     vault.record_event("owner", "restore", {"kind": "note", "path": path, "commit": commit})
     audit_log.record("vault.note_undone", what={"path": path, "commit": commit})
