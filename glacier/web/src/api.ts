@@ -281,10 +281,10 @@ export type ChatEvent =
   | { type: 'error'; message: string }
   | { type: 'done' }
 
-export async function chat(message: string, conversationId: string | null, onEvent: (e: ChatEvent) => void): Promise<void> {
+export async function chat(message: string, conversationId: string | null, onEvent: (e: ChatEvent) => void, context?: { screen?: string; focus?: string }): Promise<void> {
   const res = await fetch(BASE + '/api/assistant/chat', {
     method: 'POST', headers: auth({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ message, conversation_id: conversationId }),
+    body: JSON.stringify({ message, conversation_id: conversationId, ...context }),
   })
   if (!res.ok || !res.body) throw new ApiError(res.status, `POST /api/assistant/chat -> ${res.status}`)
   const reader = res.body.getReader()

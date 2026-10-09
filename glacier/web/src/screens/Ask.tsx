@@ -7,8 +7,9 @@ import { setDraft } from '../draft.ts'
 import type { Environment } from '../api.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { UiChangeCard, type UiChangeResult } from '../ui/UiChangeCard.tsx'
 
-type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean; run?: { id: string; env: string; status: string } }
+type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected' | 'applying' | 'discarded'; uiResult?: UiChangeResult; proposalError?: string; error?: boolean; run?: { id: string; env: string; status: string } }
 
 // Conversation lives for the app session (module scope), so switching tabs does not lose it.
 let saved: { conv: string | null; msgs: Msg[]; title: string } = { conv: null, msgs: [], title: '' }
@@ -68,10 +69,11 @@ export function AskScreen() {
     catch (e) { setErr(String(e)) }
   }
 
-  const send = async () => {
-    const m = text.trim()
+  const send = async (override?: string) => {
+    const m = (override ?? text).trim()
     if (!m || busy) return
-    setText(''); setBusy(true)
+    if (override === undefined) setText('')
+    setBusy(true)
     const id = conv ?? crypto.randomUUID()
     setConv(id)
     if (!title) setTitle(m.replace(/\s+/g, ' ').slice(0, 60))
@@ -82,7 +84,7 @@ export function AskScreen() {
         if (ev.type === 'text') patch(g => ({ ...g, text: g.text + ev.delta }))
         else if (ev.type === 'proposal') patch(g => ({ ...g, proposal: ev.proposal, state: 'open' }))
         else if (ev.type === 'error') patch(g => ({ ...g, text: ev.message, error: true }))
-      })
+      }, { screen: 'ask', focus: view })
     } catch (e) {
       patch(g => ({ ...g, text: t('ask.assistantError', { error: String(e) }), error: true }))
     } finally { setBusy(false) }
@@ -114,6 +116,27 @@ export function AskScreen() {
     } catch (e) {
       setMsgs(x => [...x, { who: 'glacier', text: String(e), at: new Date(), error: true }])
     }
+  }
+
+  const decideUiChange = async (i: number, approve: boolean) => {
+    const proposal = msgs[i].proposal!
+    setMsgs(current => current.map((message, index) => index === i ? { ...message, state: approve ? 'applying' : 'discarded', proposalError: undefined } : message))
+    try {
+      const result = await applyProposal(proposal.id, approve) as unknown as UiChangeResult & { discarded?: boolean }
+      setMsgs(current => current.map((message, index) => index === i ? {
+        ...message,
+        state: approve ? 'approved' : 'discarded',
+        uiResult: approve ? result : undefined,
+      } : message))
+    } catch (error) {
+      setMsgs(current => current.map((message, index) => index === i ? { ...message, state: 'open', proposalError: String(error) } : message))
+    }
+  }
+
+  const refineUiChange = (i: number, feedback: string) => {
+    const proposal = msgs[i].proposal!
+    setMsgs(current => current.map((message, index) => index === i ? { ...message, state: 'open' } : message))
+    void send(`Please refine this UI change proposal (${proposal.id}): ${feedback}`)
   }
 
   const edit = async (i: number) => {
@@ -177,7 +200,18 @@ export function AskScreen() {
               <div className="g-msg-body">
                 <div className="g-msg-head" style={{ display: 'flex', justifyContent: 'space-between', gap: 'calc(4 * var(--px))' }}><span className="g-lead">{m.who === 'you' ? t('ask.you') : t('pixel.glacier')}</span><span className="g-muted">{time(m.at)}</span></div>
                 <div className={m.error ? 'g-error' : ''}>{m.text || (busy && i === msgs.length - 1 ? '…' : '')}</div>
-                {m.proposal && (
+                {m.proposal?.kind === 'ui_change' && (
+                  <UiChangeCard
+                    proposal={m.proposal}
+                    state={m.state === 'applying' || m.state === 'approved' || m.state === 'discarded' || m.state === 'rejected' ? m.state : 'open'}
+                    result={m.uiResult}
+                    error={m.proposalError}
+                    onApprove={() => decideUiChange(i, true)}
+                    onDiscard={() => decideUiChange(i, false)}
+                    onRefine={feedback => refineUiChange(i, feedback)}
+                  />
+                )}
+                {m.proposal && m.proposal.kind !== 'ui_change' && (
                   <div className="g-proposal" data-testid="proposal" style={{ marginTop: 'calc(3 * var(--px))', background: 'var(--l-glass-deep)', borderColor: 'var(--l-edge)' }}>
                     <div className="g-proposal-head"><Icon name="automations" /><span className="g-lead">{m.proposal.flow?.name ?? m.proposal.flow?.id ?? t('ask.newAutomation')}</span>
                       <span className={`g-chip ${m.state === 'approved' ? 'ok' : m.state === 'rejected' ? 'bad' : ''}`}>{m.state === 'approved' ? t('ask.approved') : m.state === 'rejected' ? t('ask.rejected') : t('ask.proposed')}</span></div>
