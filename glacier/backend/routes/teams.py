@@ -14,6 +14,21 @@ router = APIRouter()
 _delete_undo: dict[str, tuple[float, str, dict]] = {}
 
 
+def _interview_transcript(assistant_chat, conversation_id: str) -> str:
+    """Return every saved interview turn, preserving the full brief and redacting secrets."""
+    try:
+        _, _, messages = assistant_chat._conversation_note(conversation_id)
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            return ""
+        raise
+    return "\n".join(
+        f"{('Owner' if item['who'] == 'you' else 'Interviewer')}: " +
+        assistant_chat.secrets_store.redact(item["text"])
+        for item in messages
+    )
+
+
 class InterviewTurn(BaseModel):
     conversation_id: str | None = None
     message: str
@@ -22,6 +37,12 @@ class InterviewTurn(BaseModel):
 
 class VisionBody(BaseModel):
     vision: dict
+
+
+class DraftSpecBody(BaseModel):
+    conversation_id: str
+    latest_message: str
+    engine: str = "codex"
 
 
 class SpecBody(BaseModel):
@@ -63,20 +84,42 @@ def interview(turn: InterviewTurn):
         conversation_id = assistant_chat._conversation_id(conversation_id)
     except HTTPException:
         raise
-    prompt = ("Interview the owner about a project vision. Ask focused follow-up questions about goal, audience, "
-              "done list, must-haves/must-nots, constraints, examples, and risks. Use the earlier conversation. "
-              "Do not plan a team yet.\n" + assistant_chat._with_conversation_context(
-                  turn.message, assistant_chat._conversation_context(conversation_id)))
+    transcript = _interview_transcript(assistant_chat, conversation_id)
+    prompt = ("You are a thoughtful project interviewer. Acknowledge what is already clear from the brief, "
+              "then ask exactly ONE sharp follow-up question about the biggest remaining gap. Do not ask "
+              "multiple questions or repeat a detail already answered. Do not plan or draft the project yet.\n\n"
+              "Full transcript so far (before the latest message):\n" + (transcript or "(No earlier turns.)") +
+              "\n\nLatest message from the owner:\n" + turn.message +
+              "\n\nReturn a JSON object with reply (one acknowledgement and one question) and readiness "
+              "(integer from 0 to 100 indicating whether the brief is detailed enough to draft a useful spec).")
     try:
         answer = teams.ask_engine(prompt, turn.engine, {
-            "type": "object", "additionalProperties": False, "required": ["reply", "automation"],
-            "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"}}})
+            "type": "object", "additionalProperties": False, "required": ["reply", "automation", "readiness"],
+            "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"},
+                           "readiness": {"type": "integer", "minimum": 0, "maximum": 100}}})
         assistant_chat._append_conversation(conversation_id, turn.message, answer["reply"])
         audit_log.record("build.interview_turn", what={"conversation_id": conversation_id, "engine": turn.engine})
         return {"conversation_id": conversation_id, "reply": answer["reply"],
+                "readiness": answer.get("readiness", 0),
                 "conversation_path": assistant_chat._conversation_path(conversation_id)}
     except Exception as exc:
         raise HTTPException(502, f"the interviewer could not answer: {exc}") from exc
+
+
+@router.post("/api/build/draft-spec")
+def draft_spec(body: DraftSpecBody):
+    if body.engine not in teams.ASK_ENGINES:
+        raise HTTPException(400, "Choose one of the available Ask engines.")
+    from routes import assistant_chat
+    try:
+        conversation_id = assistant_chat._conversation_id(body.conversation_id)
+        transcript = _interview_transcript(assistant_chat, conversation_id)
+        draft = teams.draft_spec(transcript, body.latest_message, body.engine)
+        vision = teams.create_vision(draft["vision"])
+        audit_log.record("build.spec_drafted", what={"conversation_id": conversation_id, "engine": body.engine})
+        return {**draft, "path": vision["path"]}
+    except ValueError as exc:
+        raise HTTPException(502, str(exc)) from exc
 
 
 @router.post("/api/build/vision")

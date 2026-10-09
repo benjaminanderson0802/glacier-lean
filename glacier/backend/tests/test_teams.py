@@ -199,6 +199,65 @@ def test_build_interview_accepts_each_ask_engine(monkeypatch, engine):
     assert seen == [engine]
 
 
+@pytest.mark.parametrize("engine", ["codex", "claude", "gemini", "openai", "anthropic", "local"])
+def test_build_interview_sends_role_transcript_and_latest_message(monkeypatch, engine):
+    import routes.assistant_chat as assistant_chat
+    import routes.teams as team_routes
+    seen = []
+    transcript = "You: Earlier brief sentinel\nAssistant: Who will use this?\nYou: Home gardeners"
+    monkeypatch.setattr(teams, "ask_engine", lambda prompt, route, schema=None: seen.append((prompt, route)) or {
+        "reply": "The users and purpose are clear. What should trigger an alert?", "automation": False})
+    monkeypatch.setattr(assistant_chat, "_conversation_id", lambda value: value)
+    monkeypatch.setattr(assistant_chat, "_conversation_note", lambda value: ("", {}, [
+        {"who": "you", "text": "Earlier brief sentinel"},
+        {"who": "glacier", "text": "Who will use this?"},
+        {"who": "you", "text": "Home gardeners"},
+    ]))
+    monkeypatch.setattr(assistant_chat, "_append_conversation", lambda *args: None)
+    monkeypatch.setattr(assistant_chat, "_conversation_path", lambda value: "interviews/test.md")
+    team_routes.interview(team_routes.InterviewTurn(conversation_id="conv", message="Latest message sentinel", engine=engine))
+    prompt, sent_engine = seen[0]
+    assert sent_engine == engine
+    assert "Latest message sentinel" in prompt and "Earlier brief sentinel" in prompt and "Home gardeners" in prompt
+    assert "exactly one" in prompt.lower() and "acknowledge" in prompt.lower()
+
+
+def test_draft_spec_rejects_raw_message_as_goal(monkeypatch):
+    import routes.teams as team_routes
+    raw = "Long synthetic brief with goals, constraints, users, and acceptance details."
+    monkeypatch.setattr(teams, "ask_engine", lambda prompt, engine, schema=None: {
+        "goal": raw, "requirements": ["The system shall send alerts"],
+        "acceptance": ["An alert is sent when the sensor fails"], "out_of_scope": []})
+    with pytest.raises(ValueError, match="Could not draft the spec"):
+        teams.draft_spec("You: " + raw, raw, "codex")
+
+
+def test_long_brief_interviewer_targets_one_real_gap(monkeypatch):
+    import routes.assistant_chat as assistant_chat
+    import routes.teams as team_routes
+    brief = ("Goal: help a neighborhood garden group coordinate shared tools.\n"
+             "What it does: list tools, show who borrowed them, and record return dates.\n"
+             "Self-maintenance: remind borrowers after the return date and let coordinators mark repairs.\n"
+             "Alert me: notify the coordinator about overdue tools and repair reports.\n"
+             "Hard limits: works on phones, offline in the shed, no paid services, no public member directory.\n"
+             "Done means: members can find a tool, borrow it, and see its due date; coordinator can close returns.")
+    seen = []
+    def fake_engine(prompt, engine, schema=None):
+        seen.append(prompt)
+        return {"reply": "The tool list, borrowing, return reminders, offline use, and privacy limits are clear. "
+                         "Who should receive overdue-tool alerts?", "automation": False, "readiness": 70}
+    monkeypatch.setattr(teams, "ask_engine", fake_engine)
+    monkeypatch.setattr(assistant_chat, "_conversation_id", lambda value: value)
+    monkeypatch.setattr(assistant_chat, "_conversation_note", lambda value: ("", {}, []))
+    monkeypatch.setattr(assistant_chat, "_append_conversation", lambda *args: None)
+    monkeypatch.setattr(assistant_chat, "_conversation_path", lambda value: "interviews/test.md")
+    result = team_routes.interview(team_routes.InterviewTurn(conversation_id="conv", message=brief, engine="codex"))
+    assert brief in seen[0]
+    assert result["reply"].count("?") == 1
+    assert "overdue-tool alerts" in result["reply"]
+    assert "offline use" in result["reply"]
+
+
 def test_team_control_actions_are_audited(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     teams.init(str(tmp_path / "glacier.sqlite"))

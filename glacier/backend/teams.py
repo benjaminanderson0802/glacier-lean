@@ -266,6 +266,61 @@ def create_vision(vision: dict) -> dict:
     return {"path": path, "vision": vision}
 
 
+def draft_spec(transcript: str, latest_message: str, engine: str = "codex") -> dict:
+    """Draft a short, structured vision and spec from the interview transcript."""
+    schema = {
+        "type": "object", "additionalProperties": False,
+        "required": ["goal", "requirements", "acceptance", "out_of_scope"],
+        "properties": {
+            "goal": {"type": "string", "maxLength": 300},
+            "requirements": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "acceptance": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "out_of_scope": {"type": "array", "items": {"type": "string"}},
+        },
+    }
+    prompt = ("Draft a concise project vision and spec from this interview. Do not copy the owner's raw message. "
+              "Write requirements as separate EARS statements (for example 'The system shall ...' or "
+              "'When ..., the system shall ...'). Acceptance items must be separate, observable, testable checks. "
+              "Keep out-of-scope items explicit and concise. Return only the requested JSON object.\n\n"
+              "Full interview transcript:\n" + (transcript or "(No earlier turns.)") +
+              "\n\nLatest owner message:\n" + latest_message)
+    try:
+        answer = ask_engine(prompt, engine, schema)
+        result = _structured_plan(answer)
+        if not isinstance(result, dict):
+            raise ValueError("the engine did not return a JSON object")
+        if set(result) != {"goal", "requirements", "acceptance", "out_of_scope"}:
+            raise ValueError("the engine returned fields outside the spec schema")
+        goal = result.get("goal")
+        requirements, acceptance, out_of_scope = (result.get("requirements"), result.get("acceptance"),
+                                                   result.get("out_of_scope"))
+        if not isinstance(goal, str) or not goal.strip() or len(goal.strip()) > 300:
+            raise ValueError("goal must be a short statement under 300 characters")
+        arrays = (("requirements", requirements), ("acceptance", acceptance), ("out_of_scope", out_of_scope))
+        for label, values in arrays:
+            if not isinstance(values, list) or any(not isinstance(item, str) or not item.strip() for item in values):
+                raise ValueError(f"{label} must be a list of separate, non-empty lines")
+        if not requirements or not acceptance:
+            raise ValueError("include at least one EARS requirement and one acceptance check")
+        if len({item.strip().casefold() for item in acceptance}) != len(acceptance):
+            raise ValueError("acceptance checks must be separate, distinct items")
+        raw = " ".join((transcript or "", latest_message)).casefold().strip()
+        if any(item.casefold().strip() == raw or item.casefold().strip() == latest_message.casefold().strip()
+               for item in [goal, *requirements, *acceptance, *out_of_scope]):
+            raise ValueError("the draft repeats the raw owner message instead of summarizing it")
+        if not all(re.match(r"^(the system shall\b|when\b.+\bthe system shall\b|while\b.+\bthe system shall\b|where\b.+\bthe system shall\b|if\b.+\bthen the system shall\b)", item.strip(), re.I)
+                   for item in requirements):
+            raise ValueError("requirements must use separate EARS statements")
+        vision = {"goal": goal.strip(), "requirements": requirements, "done": acceptance,
+                  "out_of_scope": out_of_scope}
+        spec = {"requirements": requirements, "acceptance": acceptance, "out_of_scope": out_of_scope}
+        return {"vision": vision, "spec": spec}
+    except Exception as exc:
+        if isinstance(exc, ValueError) and str(exc).startswith("Could not draft the spec:"):
+            raise
+        raise ValueError(f"Could not draft the spec: {exc}. Try again or switch engine") from exc
+
+
 def read_vision(path: str) -> dict:
     if not re.fullmatch(r"visions/[A-Za-z0-9._-]+\.md", path or ""):
         raise ValueError("Vision path is not allowed")
@@ -283,7 +338,7 @@ def ask_engine(prompt: str, engine: str, schema: dict | None = None) -> dict:
     from routes import assistant_chat
     if schema:
         prompt += "\n\nReturn one JSON object matching this schema:\n" + json.dumps(schema)
-    answer = assistant_chat._ask_engine(prompt, engine)
+    answer = assistant_chat._ask_engine(prompt, engine, schema=schema)
     if not isinstance(answer, dict):
         raise ValueError("the selected engine returned an invalid answer")
     return answer

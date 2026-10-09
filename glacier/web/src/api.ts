@@ -117,7 +117,8 @@ export interface TeamPlan {
 }
 export interface BuildTeam { team_id: string; status: string; plan: TeamPlan; tasks: Record<string, Record<string, unknown>>; features?: Record<string, { status: string; evaluator_evidence?: string | null }>; progress_log?: string; [key: string]: unknown }
 export const teamsApi = {
-  interview: (message: string, conversation_id: string, engine: string) => req<{ conversation_id: string; reply: string; conversation_path: string }>('POST', '/api/build/interview', { message, conversation_id, engine }),
+  interview: (message: string, conversation_id: string, engine: string) => req<{ conversation_id: string; reply: string; readiness: number; conversation_path: string }>('POST', '/api/build/interview', { message, conversation_id, engine }),
+  draftSpec: (conversation_id: string, latest_message: string, engine: string) => req<{ vision: Record<string, unknown>; spec: TeamPlan['spec']; path: string }>('POST', '/api/build/draft-spec', { conversation_id, latest_message, engine }),
   vision: (vision: Record<string, unknown>) => req<{ path: string; vision: Record<string, unknown> }>('POST', '/api/build/vision', { vision }),
   spec: (spec: TeamPlan['spec']) => req<{ approved: boolean; spec: TeamPlan['spec'] }>('POST', '/api/build/spec', { spec }),
   plan: (vision_path: string, engine: string) => req<{ plan: TeamPlan; approved: false }>('POST', '/api/build/plan', { vision_path, engine }),
