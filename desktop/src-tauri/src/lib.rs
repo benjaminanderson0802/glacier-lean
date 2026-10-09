@@ -189,7 +189,7 @@ pub fn run() {
             fs::create_dir_all(&data_dir)?;
             let token = engine_token(&data_dir).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             let window = WebviewWindowBuilder::new(app.handle(), "main", WebviewUrl::App("first-run/index.html".into()))
-                .title("Welcome to Glacier").inner_size(1280.0, 820.0)
+                .title("Welcome to Glacier").inner_size(1600.0, 900.0).min_inner_size(1280.0, 720.0)
                 .initialization_script(format!("{}{}", api_initialization_script(port, &token), updater_initialization_script()))
                 .on_navigation(move |url| navigation_is_allowed(url, port))
                 .build()?;
