@@ -9,9 +9,9 @@ button { cursor: pointer; }
 
 /* ---------- room ---------- */
 .l-viewport { position: relative; width: 100vw; height: 100vh; overflow: hidden; display: grid; place-items: center; background: var(--g-void); }
-.l-backdrop { position: absolute; inset: -40px; background: url('./limbo/room-blur.webp') center / cover; filter: blur(28px) saturate(1.1) brightness(.9); }
+.l-backdrop { position: absolute; inset: 0; background: var(--g-void); }
 .l-stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; container-type: size; background: url('./limbo/room.webp') center / 100% 100% no-repeat; }
-.l-stage, .l-stage * { --px: calc(100cqw / 820); }
+.l-stage, .l-stage * { --px: clamp(1.75px, calc(100cqw / 820), 2.5px); }
 .l-dragbar { position: absolute; inset: 0 0 auto 0; height: 5%; z-index: 20; display: flex; justify-content: flex-end; align-items: center; padding: 0 1%; user-select: none; }
 
 .l-glass { background: linear-gradient(160deg, rgba(255,255,255,.2), rgba(255,255,255,.05) 55%, var(--l-glass-deep)), var(--l-glass);
