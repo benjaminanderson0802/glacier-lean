@@ -6,12 +6,12 @@ The calculator requires customer-confirmed annual statewide food-sales totals an
 
 Keep source bills and receipts on the customer's machine. The customer or owner should remove incoming records and closed-job drafts within 30 days after the job closes unless the customer asks to retain them. This version does not delete files automatically.
 
-Launch state recommendation: Indiana. **The owner must confirm Indiana before any customer launch.** A share of refunds or first-year savings is in the source spec but needs owner approval before the venture charges that way. This build uses only standard-library Python and local customer-supplied records.
+Launch state recommendation: Indiana. **The owner must confirm Indiana before any customer launch.** Billing is disabled. A share of refunds or first-year savings remains unavailable until the owner records approval of the model and its legal basis. This build uses only standard-library Python and local customer-supplied records.
 
 ## Your steps
 
-1. Confirm Indiana as the launch state before offering the service.
-2. Provide 12 months of monthly receipt records and electricity bills, and confirm the single meter.
-3. Review the prepared fields, complete gaps, sign and submit the application yourself.
+1. Confirm Indiana as the launch state before offering the service. Read the [DOR utility exemption page](https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/), [Bulletin #11](https://www.in.gov/dor/files/sib11.pdf), and [Bulletin #29 Appendix B](https://www.in.gov/dor/files/sib29.pdf).
+2. Provide 12 months of monthly receipt records and electricity bills, and confirm the single meter. Use the official [ST-200R form](https://forms.in.gov/Download.aspx?id=16301).
+3. Review the prepared fields against ST-200R, complete gaps, sign and submit the application yourself. After DOR approval, send the issued ST-109R to the utility.
 
 See PROOF.md for focused checks and the rule sources. Test data is synthetic.

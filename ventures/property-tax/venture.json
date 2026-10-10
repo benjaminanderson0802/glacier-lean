@@ -54,7 +54,7 @@
     },
     {
       "id": "texas-consultant-registration",
-      "title": "Register before Texas property-tax consulting",
+      "title": "Future Texas expansion (not required for Cook County launch)",
       "when": "Before adding any Texas county or providing paid representation there",
       "detail": "Texas consultant registration is an owner action. Review eligibility and current requirements at https://www.tdlr.texas.gov/ptc/, then review the official application at https://www.tdlr.texas.gov/ptc/forms/ptc-lic-001-property-tax-consultant-registration-application.pdf. Pre-filled note: 'Please confirm whether I am eligible for Texas Property Tax Consultant registration, which education/exam and association requirements apply, and the current fee before I add a Texas county.' Do not enable Texas cases until registration and any required association are confirmed. Glacier does not create an account, enter personal information, sign, or pay.",
       "links": [
@@ -65,14 +65,14 @@
       "id": "approve-first-mailing",
       "title": "Review the first postcard and mailing list",
       "when": "Before the first external mailing in each county or with each new card design",
-      "detail": "Review the exact proof and recipient list, confirm a clear business sender and the mail budget, then approve an external test or production send separately. This build only renders local postcard proofs and never sends to real recipients.",
+      "detail": "Review the exact local proof artifact in $GLACIER_HOME/ventures/property-tax/postcards (the approve_proof step in property-tax-postcard-proof), its recipient address, sender, and do-not-mail status. Then approve any external mailing separately with the exact recipient list, design, sender, and spend. This build only renders local proofs and never sends to real recipients.",
       "links": [
         "https://www.cookcountyassessor.com/appeals"
       ]
     }
   ],
   "launch_gates": [
-    "Owner confirms the initial county selection and resolves county representation rules before launch.",
+    "Keep launch disabled until the owner confirms the initial county selection and resolves the spec/Assessor representation-rule discrepancy.",
     "Owner confirms flat packet pricing and approves each first mailing list and new postcard design.",
     "Texas work stays disabled until the owner completes required consultant registration and confirms current requirements.",
     "Every customer reviews, signs, and submits their own county filing; Glacier does not file appeals."

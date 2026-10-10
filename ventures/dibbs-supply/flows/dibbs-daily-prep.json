@@ -50,6 +50,17 @@
       }
     },
     {
+      "id": "parts_spend_approval",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Approve or decline this exact parts commitment before any purchase: verify the supplier, exact part number, quantity, quoted unit cost, total spend, delivery terms, and related solicitation. This approval records your decision only; Glacier does not place an order or spend money. Do not purchase until this step is approved."
+      },
+      "position": {
+        "x": 1200,
+        "y": -120
+      }
+    },
+    {
       "id": "review_note",
       "type": "note",
       "config": {
@@ -70,6 +81,18 @@
       },
       "position": {
         "x": 900,
+        "y": 120
+      }
+    },
+    {
+      "id": "purchase_declined",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/reviews/parts-purchase-declined-{run}.md",
+        "template": "The owner declined the parts commitment in run {run}. No purchase was placed by Glacier. Do not buy these parts for this solicitation.\n\n{summary}"
+      },
+      "position": {
+        "x": 1500,
         "y": 120
       }
     }
@@ -96,8 +119,20 @@
     {
       "id": "e4",
       "source": "owner_review",
+      "target": "parts_spend_approval",
+      "label": "yes"
+    },
+    {
+      "id": "e4a",
+      "source": "parts_spend_approval",
       "target": "review_note",
       "label": "yes"
+    },
+    {
+      "id": "e4b",
+      "source": "parts_spend_approval",
+      "target": "purchase_declined",
+      "label": "no"
     },
     {
       "id": "e5",

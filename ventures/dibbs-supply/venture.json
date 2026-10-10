@@ -37,7 +37,8 @@
       "detail": "Register the business and complete required identity and entity verification yourself. Glacier does not create an account, enter credentials, or verify identity.",
       "links": [
         "https://sam.gov/entity-registration",
-        "https://cage.dla.mil/"
+        "https://cage.dla.mil/",
+        "https://www.dibbs.bsm.dla.mil/rfq/"
       ]
     },
     {
@@ -46,7 +47,9 @@
       "when": "After reviewing a solicitation",
       "detail": "Contact only the original manufacturer or a distributor whose authorization you have verified. Save the exact quote and authorization/traceability records in the venture input folder. Approve every parts purchase yourself; Glacier never contacts suppliers or spends money.",
       "links": [
-        "https://www.dibbs.bsm.dla.mil/"
+        "https://www.dibbs.bsm.dla.mil/rfq/",
+        "https://sam.gov/entity-registration",
+        "https://cage.dla.mil/"
       ]
     },
     {
@@ -55,7 +58,9 @@
       "when": "After reviewing a prepared batch quote file",
       "detail": "Check the solicitation, exact part number, supplier, price, margin, required fields, and certifications. You personally sign and submit every bid in your DIBBS account; Glacier never submits. Keep traceability documents on file before shipping.",
       "links": [
-        "https://www.dibbs.bsm.dla.mil/"
+        "https://www.dibbs.bsm.dla.mil/rfq/",
+        "https://sam.gov/entity-registration",
+        "https://cage.dla.mil/"
       ]
     }
   ],

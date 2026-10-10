@@ -147,8 +147,16 @@ def test_flow_and_manifest_gate_all_external_or_legal_steps(tmp_path):
     command = next(node["config"].get("cmd", "") for node in flow["nodes"] if node["id"] == "prepare")
     assert "GLACIER_PROJECT_ROOT" in command and "dibbs_supply.py" in command
     owner_steps = " ".join(step["title"] + " " + step["detail"] for step in manifest["your_steps"])
+    owner_links = [link for step in manifest["your_steps"] for link in step["links"]]
     assert "SAM.gov" in owner_steps and "CAGE" in owner_steps
+    assert "https://www.dibbs.bsm.dla.mil/rfq/" in owner_links
+    assert "https://sam.gov/entity-registration" in owner_links
+    assert "https://cage.dla.mil/" in owner_links
     assert "dibbs-owner-registration" in manifest["flows"]
+    purchase = next(node for node in flow["nodes"] if node["id"] == "parts_spend_approval")
+    assert purchase["type"] == "approval"
+    assert "before any purchase" in purchase["config"]["prompt"].lower()
+    assert any(edge["source"] == "owner_review" and edge["target"] == "parts_spend_approval" for edge in flow["edges"])
     registration_prompts = " ".join(node["config"].get("prompt", "") for node in registration["nodes"] if node["type"] == "approval")
     assert "Your step:" in registration_prompts and "sam.gov" in registration_prompts.lower() and "cage.dla.mil" in registration_prompts
     assert "manufacturer" in (venture / "README.md").read_text(encoding="utf-8").lower()
