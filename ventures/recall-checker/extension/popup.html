@@ -9,11 +9,25 @@
 <body>
   <main>
     <h1>recall checker</h1>
-    <p class="intro">Check the item in this tab. Page text stays in this browser; only these fields go to your local Glacier API.</p>
+    <p class="intro">Check the item in this tab. Page text stays in this browser; only the fields below are sent to the selected checker.</p>
     <button id="read-page" type="button">read this page</button>
     <label>barcode <input id="barcode" autocomplete="off" inputmode="numeric"></label>
     <label>brand <input id="brand" autocomplete="off"></label>
     <label>model <input id="model" autocomplete="off"></label>
+    <label>model year (vehicles) <input id="year" type="number" min="1900" max="2100" step="1"></label>
+    <label>product name <input id="product-name" autocomplete="off"></label>
+    <label>check with
+      <select id="check-mode">
+        <option value="local">this computer (default)</option>
+        <option value="hosted">hosted Apify Actor</option>
+      </select>
+    </label>
+    <fieldset id="hosted-settings" hidden>
+      <legend>hosted Actor settings</legend>
+      <label>Actor ID <input id="actor-id" autocomplete="off" spellcheck="false"></label>
+      <label>Apify API token <input id="api-token" type="password" autocomplete="off"></label>
+      <p class="small">These fields stay in this browser. Hosted checks send the item details above to Apify.</p>
+    </fieldset>
     <button id="check" type="button">check item</button>
     <section id="result" aria-live="polite" hidden></section>
     <p class="small">This is a lookup aid. Confirm the linked official notice before making a decision.</p>

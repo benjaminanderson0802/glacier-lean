@@ -2,7 +2,7 @@
 
 Recall checker looks up products against the local Glacier feed database for CPSC, NHTSA, FDA and FSIS recall records. It can check an item in the Chrome tab you opened, process a store inventory CSV, or answer a local JSON API request. A result is **match**, **no match found in CPSC, NHTSA, FDA and FSIS as of [date]**, or **uncertain — please check**. A match links to the official source record. An unavailable or stale feed makes the result uncertain.
 
-The extension reads the current tab only after you click **read this page**. It never crawls a marketplace. It extracts a barcode, brand and model in the browser and sends only those fields to the API on `127.0.0.1`; the page text is not sent or saved. Start the local API from the repository root with:
+The extension reads the current tab only after you click **read this page**. It never crawls a marketplace. By default, it extracts a barcode, brand, model and product name in the browser and sends only those fields to the local API on `127.0.0.1`; the page text is not sent or saved. Add a model year for vehicle checks. The popup can optionally use the hosted Product Recall Checker Actor instead. Hosted mode requires your Apify Actor ID and API token, saves those settings in `chrome.storage.local`, and sends only the item fields to Apify's run-sync endpoint. Start the local API from the repository root with:
 
 ```sh
 /home/glacier/w/glacier-lean/.venv/bin/python ventures/recall-checker/scripts/api.py
@@ -28,4 +28,4 @@ Exact barcode/model matches are automatic. Similar brand/model cases return **un
 
 ## Extension package
 
-Load `extension/` through `chrome://extensions` → **Developer mode** → **Load unpacked** for owner review. The directory is Manifest V3 and requests only `activeTab`, `scripting`, and access to the loopback API. The Chrome Web Store listing and submission remain owner steps.
+Load `extension/` through `chrome://extensions` → **Developer mode** → **Load unpacked** for owner review. The directory is Manifest V3 and requests current-tab reading, local storage for the optional Actor settings, and access to the loopback API and Apify API. Hosted mode is optional; local mode remains the default. The Chrome Web Store listing and submission remain owner steps.

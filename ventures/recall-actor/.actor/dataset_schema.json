@@ -1,0 +1,13 @@
+{
+  "actorSpecification": 1,
+  "title": "Product recall checks",
+  "description": "Per-item public recall search results with source status and check time.",
+  "fields": {
+    "outcome": {"type": "string", "description": "match, no_match, or uncertain — please check"},
+    "query": {"type": "object", "description": "The item identifiers submitted for this check"},
+    "matches": {"type": "array", "description": "Source-backed recall records"},
+    "sources_checked": {"type": "object", "description": "Source states and UTC as-of timestamps"},
+    "checked_at": {"type": "string", "description": "UTC time this item was checked"}
+  },
+  "views": {"overview": {"title": "Recall checks", "transformation": {"fields": ["outcome", "checked_at"]}, "display": {"component": "table", "columns": ["outcome", "checked_at"]}}}
+}

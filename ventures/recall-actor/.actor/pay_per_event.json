@@ -1,0 +1,15 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "platformUsageIncluded": true,
+  "actorChargeEvents": {
+    "recall-check": {
+      "eventTitle": "Product recall check",
+      "eventDescription": "One completed query checked against at least one public recall source. Results consisting only of source outages are not charged.",
+      "eventPriceUsd": 0.01,
+      "isPrimaryEvent": true,
+      "isOneTimeEvent": false
+    }
+  },
+  "minimalMaxTotalChargeUsd": 0.01,
+  "pricingNote": "Configure the recall-check event in Apify Console before publishing. Disable apify-default-dataset-item to avoid duplicate charges. Set a maximum total charge appropriate for up to 100 checks; account and payout settings are owner-only."
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Product Recall Checker input",
+  "description": "Check one item or up to 100 items against public CPSC, NHTSA and FDA recall records. Each completed query costs $0.01; source-outage-only results are not charged.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "barcode": {"title": "Barcode / UPC", "type": "string", "description": "UPC, EAN or GTIN digits for one item.", "editor": "textfield", "maxLength": 32},
+    "brand": {"title": "Brand or vehicle make", "type": "string", "description": "Product brand, or vehicle make when checking NHTSA.", "editor": "textfield", "maxLength": 120},
+    "model": {"title": "Model", "type": "string", "description": "Product or vehicle model.", "editor": "textfield", "maxLength": 120},
+    "product_name": {"title": "Product name", "type": "string", "description": "Product name to search public recall listings.", "editor": "textfield", "maxLength": 200},
+    "year": {"title": "Model year", "type": "integer", "description": "Optional vehicle model year. NHTSA vehicle recall search requires a year.", "minimum": 1900, "maximum": 2100},
+    "queries": {"title": "Batch of items", "type": "array", "description": "Optional list of 1 to 100 items. Each item can contain barcode, brand, model, product_name and year.", "editor": "json", "minItems": 1, "maxItems": 100, "items": {"type": "object", "properties": {"barcode": {"type": "string"}, "brand": {"type": "string"}, "model": {"type": "string"}, "product_name": {"type": "string"}, "year": {"type": "integer"}}}}
+  },
+  "required": []
+}

@@ -1,0 +1,16 @@
+{
+  "Count": 1,
+  "results": [
+    {
+      "NHTSACampaignNumber": "24V123000",
+      "ReportReceivedDate": "20240301",
+      "Component": "ELECTRICAL SYSTEM",
+      "Summary": "A wiring defect may cause a fire.",
+      "Consequence": "A fire increases the risk of injury.",
+      "Remedy": "Dealers will replace the wiring harness.",
+      "Make": "Example Motors",
+      "Model": "Model X",
+      "ModelYear": 2024
+    }
+  ]
+}
