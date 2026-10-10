@@ -52,8 +52,13 @@ def _field_record(record: Any) -> dict[str, Any]:
 
 def _feed_rows(feeds: Any, source_id: str) -> list[dict[str, Any]]:
     """Refresh a configured source, then read its current records."""
-    feeds.sync(source_id)
-    rows = feeds.query(source_id)
+    try:
+        feeds.sync(source_id)
+        rows = feeds.query(source_id)
+    except KeyError:
+        # An unregistered source is a release blocker, not a reason to crash or
+        # fall back to stale/hard-coded government data.
+        return []
     return [dict(row) for row in rows if isinstance(row, Mapping)]
 
 
@@ -325,7 +330,7 @@ def load_blocks() -> tuple[Any, Any, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare a customer-reviewable CPSC Product Registry batch")
     parser.add_argument("batch_json", type=Path)
-    parser.add_argument("--ruleset", default="cpsc-current")
+    parser.add_argument("--ruleset", default="cpsc_efiling.json")
     parser.add_argument("--rule-codes-source", default="cpsc_rule_codes")
     parser.add_argument("--flagged-codes-source", default="cpsc_flagged_tariff_codes")
     parser.add_argument("--template-source", default="cpsc_registry_template")

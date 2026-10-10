@@ -21,3 +21,7 @@ Output: both flows validated (`carpenter-prepare-listing`, `carpenter-track-comm
 Output: both flows saved to the live Glacier API (commits `e5ea9dcb` and `df550ab0`). A real run of `carpenter-prepare-listing` did not reach the script: Glacier tried to use `<home>/workspaces/carpenter-prepare-listing/{repo}` as its working directory and failed with `Errno 2`. Claim: [CLM-PH12-20-CWD-REPO](../../vault/claims/2026-10-10-ph12-20-command-cwd-repo-placeholder.md). A screenshot was not captured; the two shared heavy-job slots were occupied while the real backend was running. The failure is recorded in the live run and claim, and does not count as a passing live-flow check.
 
 No account setup or public listing was performed. Do not mark PH12.20 done until the runtime claim is resolved, the flow runs in real Glacier with maker-provided facts and at least three current completed-sale records, and the spec-level checks are independently reviewed.
+
+## I2 integration update (2026-10-10)
+
+The installer now resolves a flow's `{repo}` cwd to the local repository root, converts leading `python` commands to `python3`, and adds the repository to `PYTHONPATH`. The eight-flow installer dry-run passes. The fresh real-runtime test needed to verify the prior cwd failure is still pending; the existing claim remains open until that smoke run succeeds with owner-supplied product/comparable data.

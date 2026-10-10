@@ -381,7 +381,7 @@ phases:
       - {id: PH12.19, item: "Venture: DIBBS government supply", status: todo, evidence: ""}
       - {id: PH12.20, item: "Venture: Carpenter's goods", status: todo, evidence: ""}
       - {id: PH12.21, item: "Venture: Tariff estimator (on hold until the owner's lawyer approves - do not build)", status: blocked, evidence: ""}
-      - {id: PH12.22, item: "Integration + independent audit of each wave (coherence, spec rules, owner steps per venture)", status: todo, evidence: ""}
+      - {id: PH12.22, item: "Integration + independent audit of each wave (coherence, spec rules, owner steps per venture)", status: in_progress, evidence: "I2 merged B1, V-CPSC and final V-COOP with --no-ff; preliminary installer dry-run validates 8 flows and reader/rules tests pass after fix. Full test board/live audit pending under existing claim-ph12-22-heavy-test-lock; see evidence/ventures/wave2-integration.md and ventures/AUDIT-wave2.md"}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. DRIFT CONTROL — run at the start of every task and at every checkpoint

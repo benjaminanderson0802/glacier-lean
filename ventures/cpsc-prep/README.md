@@ -12,6 +12,11 @@ is intentionally unset until the owner selects a flat monthly amount. Checkout
 links use Stripe test mode until the owner provides a live key. No percentage or
 refund-based broker fee is offered.
 
+For the batch flow, place the customer's `batch.json` and its source documents
+under `$GLACIER_HOME/ventures/cpsc-prep/incoming/`. Drafts and results are
+written under that venture's `drafts/` and `results/` folders, where the owner
+can review them across the approval wait.
+
 Customer-facing results use only `match`, `no match found in [sources] as of
 [date]`, or `uncertain — please check`. The checker refreshes the flagged
 tariff-code list, CPSC rule-code list, and registry template from the

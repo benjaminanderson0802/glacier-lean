@@ -393,9 +393,9 @@ def read_document(path: str | os.PathLike[str], schema: Any = None) -> dict[str,
         agrees = bool(second is not None and _normalize(first.get("value")) == _normalize(second.get("value"))
                       and _normalize(first.get("value")) is not None)
         fields[key] = {
-            # Keep the first engine's sourced candidate visible on disagreement;
-            # uncertainty and zero confidence make review mandatory.
-            "value": first.get("value"),
+            # A disputed candidate must not flow into a prepared filing as if
+            # it were usable data. Keep only its source location for review.
+            "value": first.get("value") if agrees or second is None else None,
             "page": first.get("page"),
             "confidence": min(float(first.get("confidence", 0.0)), float(second.get("confidence", 0.0)))
             if agrees else (float(first.get("confidence", 0.0)) * 0.5 if second is None else 0.0),

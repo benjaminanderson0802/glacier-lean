@@ -35,3 +35,7 @@ Earlier runtime failures were corrected before that passing run: the runner imag
 ## Limits
 
 No Jobber account or app UI was connected; no brand portal or customer credentials were used; no claim was filed. No Lob test API request was made. The current mail block renders 6x4 cards, so the USPS EDDM flat size/weight check is unproven. The venture's shared reader, rules and deadline packages are absent, and the local rules adapter refuses filing until the shared rules checker is installed. The real runtime screenshot is pending at `evidence/ventures/coop-postcards/approval-review.png`.
+
+## I2 integration update (2026-10-10)
+
+B1's reader/rules packages and the deadline package are now present in the integration worktree. This venture still does not call the reader or deadline APIs for claim documents and reminders; see `README.md` and `../AUDIT-wave2.md`. The integrated test `test_claim_requires_preapproval_and_shared_rules_pass_before_filing` still expects the pre-merge missing-rules behavior and fails; I2 left the test untouched under I-04. The shared installer now stages venture scripts into each flow workspace, so the prior temporary-symlink smoke is historical; a fresh live rerun and screenshot remain pending the shared heavy-job slot.

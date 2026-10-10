@@ -4,7 +4,7 @@ This venture pairs a dealer-authorized brand co-op claim workflow with neighborh
 
 The postcard half can create a local 6x4 proof and distinct landing pages, check that the sender is clear, check the recipient against the do-not-mail list, and use Lob only with a `test_` key. A live mail order is not available in these flows. The current shared mail block renders 6x4 cards; the spec's USPS EDDM flat-size check still needs a compatible print format before the postcard product can launch.
 
-The claim half is intentionally stopped at `uncertain` until the shared document reader, shared rules checker, and deadline tracker are present. The portal filer is prepared for use, but no real brand account or portal is configured. The Jobber connector can read jobs but does not provide a dealer-facing Jobber app screen yet.
+The shared reader, rules, and deadline packages are now present, but this venture does not yet call the reader or deadline APIs for claim documents and reminders. Do not treat a claim as filing-ready until the venture wires those checks into intake. The portal filer is prepared for use, but no real brand account or portal is configured. The Jobber connector can read jobs but does not provide a dealer-facing Jobber app screen yet.
 
 ## Your steps
 

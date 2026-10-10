@@ -117,10 +117,16 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
         if node.get("type") != "command":
             continue
         config = node.setdefault("config", {})
-        if str(config.get("cwd") or "").strip() == f"ventures/{slug}":
+        requested_cwd = str(config.get("cwd") or "").strip()
+        if requested_cwd == "{repo}":
+            config["cwd"] = str(repo_root)
+        elif requested_cwd == f"ventures/{slug}":
             config["cwd"] = str(venture_cwd)
         command = str(config.get("cmd") or "")
-        if command.startswith("python3 "):
+        if command.startswith("python "):
+            command = "python3 " + command[len("python "):]
+            config["cmd"] = command
+        if command.startswith(("python ", "python3 ")):
             config["cmd"] = f"PYTHONPATH={shlex_quote(str(repo_root))}${{PYTHONPATH:+:$PYTHONPATH}} {command}"
     return result
 

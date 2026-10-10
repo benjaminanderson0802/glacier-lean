@@ -89,3 +89,7 @@ not done. Screenshots in `evidence/ventures/` and the PH12.9 status update are
 deferred to the integrator after the blocks merge and a successful live run.
 
 Exact shared-block functions are listed in `README.md` and `venture.json`.
+
+## I2 integration update (2026-10-10)
+
+B1's reader/rules blocks and B2's feeds/deadlines blocks are now present in the I2 worktree. The original missing-block error above describes the earlier branch state. The integrated installer dry-run validated all four CPSC flows. The current feed registry still lacks the three CPSC list/template IDs, and the flat venture fields do not satisfy the merged `cpsc_efiling.json` ruleset; see `../AUDIT-wave2.md` and claim `CLM-PH12-22-CPSC-INTEGRATION-GAP`. Missing source IDs now stop with an uncertain result instead of an uncaught lookup error. No CPSC batch or public-source release check was run because the shared heavy-job slots exceeded the worker backstop. Do not treat PH12.9 as released.
