@@ -1,0 +1,7 @@
+# Progress — FDA cosmetics listing preparation
+
+PH12.15 implementation is partially built. It reads Shopify catalog records through the existing read-only connector, reads product-label ingredients through the shared document reader, checks FDA Form 5067 fields with the shared rules checker, prepares a local SPL ZIP without signature data, and registers 120-day and annual reminders. A daily flow checks due reminders. The product flow keeps FDA signing and submission as a customer-only approval step.
+
+A synthetic packet passed a one-time validation against the FDA-published SPL XSD 2016 package (`lxml.etree.XMLSchema`); the ZIP uses the root ID as its XML filename. `ventures/install_all.py --only fda-cosmetics --dry-run` validates both flows. The focused venture suite currently has 4 failures / 3 passes because its mocked label path does not exist, so the reader mock is never reached. Claim CLM-2026-10-10-PH12-15-LABEL-TEST-FIXTURE records this blocker; NORTHSTAR's escalation rule requires parking instead of further self-fixes.
+
+The imported reader release test has an independent mismatch: disagreement preserves the first candidate with `uncertain: true`, while its acceptance test expects a null value. Claim CLM-2026-10-10-PH12-15-READER-CONFLICT-CONTRACT is assigned to the B1 block owner. Rules tests (3) and connector tests (11) pass. A real Shopify store, actual product label, FDA Cosmetics Direct acceptance, live Glacier run, and screenshots remain unverified. No shared block or Glacier platform code was changed. PH12.15 remains unverified.
