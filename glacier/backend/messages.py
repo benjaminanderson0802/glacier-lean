@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 
 import audit_log
+import chat_titles
 import shell_commands
 import secrets_store
 import session_mirror
@@ -98,7 +99,10 @@ def _session_rows(query: str) -> list[dict]:
     result = []
     for row in session_mirror.list_sessions():
         source = _source(row)
-        title = _safe(row.get("title") or source.title())
+        title = chat_titles.clean_title(row.get("title"))
+        if chat_titles.is_automated(title, row.get("cwd")):
+            continue
+        title = _safe(title)
         session_id = _session_id(source, str(row.get("id", "")))
         # Session summaries are deliberately metadata-only; opening every transcript here would
         # turn the inbox refresh into a full scan of every large local session file.
