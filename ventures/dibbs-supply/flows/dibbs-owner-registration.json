@@ -1,0 +1,28 @@
+{
+  "id": "dibbs-owner-registration",
+  "name": "Complete DIBBS supplier registration",
+  "goal": "Guide the owner through SAM.gov entity registration and CAGE registration. Glacier does not create accounts, enter credentials, submit forms, or verify identity.",
+  "nodes": [
+    {
+      "id": "registration_step",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Complete the business's SAM.gov entity registration and CAGE registration yourself. Open https://sam.gov/entity-registration and https://cage.dla.mil/. Use your own credentials and complete any identity/entity checks personally. Glacier will not create accounts, enter passwords, submit registrations, or verify identity. After registration, return to Glacier and approve this step to record that you completed it."
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "registration_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/setup/registration-reviewed-{run}.md",
+        "template": "The owner confirmed in run {run} that SAM.gov and CAGE registration steps were completed. Glacier did not create accounts, enter credentials, or submit registrations.\n\n{summary}"
+      },
+      "position": {"x": 300, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "registration_step", "target": "registration_note", "label": "yes"}
+  ],
+  "max_steps": 2
+}

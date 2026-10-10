@@ -1,0 +1,117 @@
+{
+  "id": "dibbs-daily-prep",
+  "name": "Prepare DIBBS quote files",
+  "goal": "Refresh public DIBBS solicitation links, match exact owner-verified solicitation details with manufacturer or authorized-distributor quotes, rank margins, and prepare local quote files. Glacier does not contact suppliers, spend money, sign, or submit bids.",
+  "nodes": [
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "0 6 * * *"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "prepare",
+      "type": "command",
+      "config": {
+        "cmd": "project_root=\"${GLACIER_PROJECT_ROOT:-$HOME/w/glacier-lean}\"; PYTHONPATH=\"$project_root\" \"$project_root/.venv/bin/python\" \"$project_root/ventures/dibbs-supply/scripts/dibbs_supply.py\" daily --solicitations \"$GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json\" --quotes \"$GLACIER_HOME/ventures/dibbs-supply/incoming/quotes.json\" --output \"$GLACIER_HOME/ventures/dibbs-supply/drafts\"",
+        "timeout": "180",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "ready",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "owner_review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review the saved quote-request drafts and DIBBS bid sheet in $GLACIER_HOME/ventures/dibbs-supply/drafts. Confirm each recipient is an original manufacturer or authorized distributor and the exact solicitation/part details. Send quote requests manually only after approval. For any prepared bid, check supplier authorization, price, margin, quantity, due date, required fields and traceability, then personally sign and submit it in DIBBS. Approve parts spending separately before any purchase. Glacier does not contact suppliers, spend money, sign, or submit."
+      },
+      "position": {
+        "x": 900,
+        "y": -120
+      }
+    },
+    {
+      "id": "review_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/reviews/prepared-{run}.md",
+        "template": "The owner reviewed the locally prepared DIBBS bid sheet in run {run}. This note is not a signature or submission receipt. The owner remains responsible for signing and submitting each bid and approving parts spending.\n\n{summary}"
+      },
+      "position": {
+        "x": 1200,
+        "y": -120
+      }
+    },
+    {
+      "id": "uncertain_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/reviews/uncertain-{run}.md",
+        "template": "DIBBS preparation needs review in run {run}. Missing, unmatched or conflicting solicitation, supplier, quote, or traceability facts remain uncertain. No bid was submitted.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": 120
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "prepare",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "prepare",
+      "target": "ready",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "ready",
+      "target": "owner_review",
+      "label": "yes"
+    },
+    {
+      "id": "e4",
+      "source": "owner_review",
+      "target": "review_note",
+      "label": "yes"
+    },
+    {
+      "id": "e5",
+      "source": "ready",
+      "target": "uncertain_note",
+      "label": "no"
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "PYTHONPATH=. .venv/bin/python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'dibbs-supply'/'drafts'/'bid-sheet.json'; d=json.loads(p.read_text()); assert d['submitted'] is False and d['owner_must_sign_and_submit'] is True and d['result'] in ('match','uncertain \u2014 please check','no match found in DLA DIBBS and supplier quotes as of '+d['as_of'])\"",
+      "required": true
+    }
+  ],
+  "max_steps": 6
+}
