@@ -2,6 +2,8 @@
 
 This Apify Actor checks contractor license records published by the Mississippi State Board of Contractors. Enter a license number or business name. Each result includes the board's status, expiration date, source record link, and check time. It repeats the board's wording; it does not decide whether a contractor is legally qualified.
 
+The Actor lifecycle uses the reusable runner in `src/actor_template.py`; a board-specific adapter supplies normalized inputs and public-source lookup behavior. Before adding another board, follow `BOARD_REVIEW.md` and obtain a different-engine code and listing review.
+
 ## Run locally
 
 ```sh
@@ -33,4 +35,4 @@ The [Mississippi State Board of Contractors public search](https://search.msboc.
 
 1. **Your step: Set up the Apify developer and payout account** at [Apify account settings](https://console.apify.com/account/integrations).
 2. **Your step: Log in and deploy the Actor.** After account setup, paste this once from the repository root: `cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify login && npm exec --yes --package=apify-cli@1.10.0 -- apify push`.
-3. **Your step: Publish the first Actor** in [Apify Console](https://console.apify.com/actors) using the listing and $0.02 event price in `.actor/README.md`.
+3. **Your step: Approve each of the first three distinct Actor publications separately.** Have a different engine review each Actor's code and Store listing, then publish it yourself in [Apify Console](https://console.apify.com/actors) using its reviewed event price. The current Mississippi Actor is the only prepared listing.

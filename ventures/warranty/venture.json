@@ -47,16 +47,17 @@
       "id": "jobber-setup",
       "title": "Connect a Jobber test account",
       "when": "Before the first live read",
-      "detail": "Create the Jobber app and test account, then save its OAuth values in Glacier Settings → Secrets. Run the read-only connector check. Glacier currently needs the shared connector to expose completed-install details before full intake can run.",
+      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Save jobber_client_id, jobber_client_secret, jobber_access_token, and jobber_refresh_token under Glacier Settings → Secrets, then run the read-only connector check. Before launch, the connector must return completed status, install date, homeowner name and email, brand, model, serial, region, and job ID. Use five eligible test accounts; intake also requires the shared reader and deadline blocks. Until those prerequisites are met, use local sample JSON only.",
       "links": [
-        "https://developer.getjobber.com/"
+        "https://developer.getjobber.com/",
+        "https://developer.getjobber.com/docs/"
       ]
     },
     {
       "id": "brand-portal-terms",
       "title": "Review each brand's portal terms",
       "when": "Before adding a brand portal",
-      "detail": "Confirm with each brand whether automated browser preparation and submission are allowed, and supply that brand's official serial format. Daikin terms prohibit automated systems; Trane, Goodman, Lennox, and Carrier remain owner checks because the public material reviewed did not clearly authorize automated portal submission.",
+      "detail": "Confirm with each brand whether the exact proposed browser action is allowed and record a source-backed serial format. No serial pattern is verified in this build, so every real brand record remains unavailable to automatic validation and returns uncertain — please check. Human fallback: use that brand's linked official warranty page or contact the brand/dealer, verify the serial manually, and keep registration on owner review. Do not enter a guessed pattern or enable portal automation.",
       "links": [
         "https://www.trane.com/residential/en/resources/warranty-and-registration/",
         "https://www.carrier.com/residential/en/us/products/warranties/"
@@ -66,7 +67,7 @@
       "id": "launch-and-email-review",
       "title": "Review the first listing and homeowner emails",
       "when": "Before marketplace launch and the first 20 homeowner emails",
-      "detail": "Review and submit the first Jobber marketplace listing after five eligible test accounts. Review each of the first 20 email drafts. This build does not send email or publish the listing.",
+      "detail": "Only after five eligible test accounts pass the connector check and the shared reader/deadline blocks are installed: open the generated Jobber marketplace listing for owner review, then inspect the first 20 generated homeowner email drafts one by one. Save corrections before any owner submission. This build does not send email or publish the listing. Email drafts are not generated until the mail block is integrated.",
       "links": [
         "https://developer.getjobber.com/"
       ]

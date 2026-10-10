@@ -18,9 +18,9 @@ The free tier covers single lookups. `plans.json` records the spec's individual 
 
 ## Your steps
 
-1. Review the first 50 generated pages before placing any on a public site.
-2. Review and submit the Chrome Web Store listing and extension package.
-3. Configure test prices and review plan wording before offering paid access.
+1. Review the first 50 generated pages, then choose and configure a public host before placing any page online.
+2. Review and submit the Chrome Web Store listing and extension package at the [Chrome Web Store developer console](https://chrome.google.com/webstore/devconsole).
+3. Configure test prices in [Glacier Settings → Secrets](#/settings/secrets) and review plan wording before offering paid access.
 
 ## Current limits
 

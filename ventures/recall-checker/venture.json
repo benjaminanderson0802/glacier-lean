@@ -40,7 +40,7 @@
       "id": "review-first-pages",
       "title": "Review the first 50 recall pages",
       "when": "Before placing any recall pages on a public site",
-      "detail": "Open the generated local pages, verify the recall number, date and official source link, then approve or correct them. Glacier generates the pages but does not publish them.",
+      "detail": "Open and review the first 50 generated local pages, verify the recall number, date and official source link, then approve or correct them. Choose and configure a public host yourself only after this review; Glacier generates local pages but does not publish them.",
       "links": [
         "https://www.cpsc.gov/Recalls"
       ]
@@ -49,7 +49,7 @@
       "id": "submit-extension",
       "title": "Submit the Chrome extension listing",
       "when": "When the extension package and store listing are ready",
-      "detail": "Review permissions, privacy text and screenshots, then sign in and submit the package to the Chrome Web Store. Glacier does not create an account or submit it.",
+      "detail": "Review permissions, privacy text and screenshots, then sign in at the direct Chrome Web Store developer page and submit the package. Glacier does not create an account or submit it.",
       "links": [
         "https://chrome.google.com/webstore/devconsole"
       ]
@@ -58,9 +58,10 @@
       "id": "configure-plans",
       "title": "Set up test prices and review plan wording",
       "when": "Before offering paid plans or API access",
-      "detail": "Configure Stripe test price IDs in Glacier Secrets, review individual and store plan amounts, and choose a metered API price. Live billing remains disabled until you configure it yourself.",
+      "detail": "Open Glacier Settings → Secrets, configure Stripe test price IDs, review individual and store plan amounts, and choose a metered API price. Live billing remains disabled until you configure it yourself.",
       "links": [
-        "https://dashboard.stripe.com/test/products"
+        "https://dashboard.stripe.com/test/products",
+        "#/settings/secrets"
       ]
     }
   ],

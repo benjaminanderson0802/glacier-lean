@@ -24,7 +24,7 @@ Pay per event: **$0.02 per completed lookup**, including a readable no-match res
 
 1. **Your step: Set up the Apify developer and payout account.** Open [Apify account settings](https://console.apify.com/account/integrations) and complete the account and payout setup in your own name. Identity verification and payout information stay with the owner.
 2. **Your step: Log in and deploy the Actor.** From the repository root, paste `cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify login && npm exec --yes --package=apify-cli@1.10.0 -- apify push`. The pinned Apify CLI prompts the owner to log in, then deploys this Actor.
-3. **Your step: Publish the first Actor.** In the Apify Console, review the listing, enable `license-lookup` at $0.02 per lookup with platform usage included, set the $2.00 run charge limit, then publish. The first publish is owner-only.
+3. **Your step: Approve each of the first three distinct Actor publications.** Run Glacier's publication approval separately for each new Actor. Record its unique name, independently review its code and listing, confirm its event price, included platform usage, run limit and disabled automatic `apify-default-dataset-item` charge, then publish it yourself in the [Apify Console](https://console.apify.com/actors). An earlier approval never covers another Actor. The current Mississippi Actor is the only prepared listing; do not publish a future listing until its code and listing have been independently reviewed.
 
 ## Source and limits
 

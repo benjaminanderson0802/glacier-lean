@@ -36,7 +36,7 @@
       "id": "apify-publish",
       "title": "review and publish the first listing",
       "when": "after the Actor is uploaded",
-      "detail": "Review the listing, set $0.02 per lookup with platform usage included and a $2.00 run limit, then publish it yourself. Later listings stay behind the same review until the first three are approved.",
+      "detail": "For each of the first three distinct Actor publications, use a separate Glacier approval. Have a different engine review that Actor's code and Store listing, confirm its event price, included platform usage and run limit, then publish it yourself. An earlier approval cannot cover another Actor. Later publications are not blocked by this first-three approval gate.",
       "links": [
         "https://console.apify.com/actors"
       ]

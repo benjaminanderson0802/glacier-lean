@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date
+import json
+from pathlib import Path
 
 import pytest
 
@@ -98,6 +100,27 @@ def test_duplicate_units_are_not_prepared_twice():
 
     assert len(result["units"]) == 1
     assert result["duplicates"] == ["1234567890"]
+
+
+def test_manifest_exposes_jobber_and_brand_fallback_prerequisites():
+    root = Path(__file__).resolve().parents[1]
+    manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
+    setup = next(step for step in manifest["your_steps"] if step["id"] == "jobber-setup")
+    terms = next(step for step in manifest["your_steps"] if step["id"] == "brand-portal-terms")
+    launch = next(step for step in manifest["your_steps"] if step["id"] == "launch-and-email-review")
+
+    assert "jobber_client_id" in setup["detail"]
+    assert "five eligible test accounts" in setup["detail"]
+    assert "reader and deadline blocks" in setup["detail"]
+    assert "Human fallback" in terms["detail"]
+    assert "uncertain — please check" in terms["detail"]
+    assert "first 20 generated homeowner email drafts" in launch["detail"]
+
+
+def test_unverified_brand_serial_patterns_remain_disabled():
+    from ventures.warranty.scripts.warranty import BRAND_RULES
+
+    assert all(rule["serial_pattern"] is None for rule in BRAND_RULES.values())
 
 
 def test_missing_photo_yields_a_request_draft_only_if_technician_opted_in():

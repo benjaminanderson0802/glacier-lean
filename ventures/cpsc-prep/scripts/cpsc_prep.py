@@ -379,21 +379,21 @@ def prepare_batch(
 def load_blocks() -> tuple[Any, Any, Any]:
     """Import the shared blocks by their fixed, documented package contract."""
     try:
-        from ventures.blocks.reader import read_document
-        from ventures.blocks.rules import check
-        from ventures.blocks.feeds import query, sync
+        from ventures.blocks.reader import read_document as reader_read_document
+        from ventures.blocks.rules import check as rules_check
+        from ventures.blocks.feeds import query as feeds_query, sync as feeds_sync
     except ImportError as exc:
         raise RuntimeError("CPSC prep requires the reader, rules, and feeds blocks from ventures.blocks") from exc
 
     class Reader:
-        read_document = staticmethod(read_document)
+        read_document = staticmethod(reader_read_document)
 
     class Rules:
-        check = staticmethod(check)
+        check = staticmethod(rules_check)
 
     class Feeds:
-        query = staticmethod(query)
-        sync = staticmethod(sync)
+        query = staticmethod(feeds_query)
+        sync = staticmethod(feeds_sync)
 
     return Reader(), Rules(), Feeds()
 
