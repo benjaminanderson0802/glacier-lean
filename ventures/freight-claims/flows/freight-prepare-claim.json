@@ -1,0 +1,18 @@
+{
+  "id": "freight-prepare-claim",
+  "name": "Prepare a freight claim packet",
+  "goal": "Read the customer-confirmed intake, check required supporting documents and insurance instructions, calculate damaged-item invoice value and cited carrier liability estimate, and prepare a claim draft without sending it.",
+  "nodes": [
+    {"id": "prepare_packet", "type": "command", "config": {"cmd": "python ventures/freight-claims/scripts/claims.py prepare --input \"$GLACIER_HOME/ventures/freight-claims/incoming/claim-intake.json\"", "cwd": "{repo}", "timeout": 900, "retries": 0}, "position": {"x": 100, "y": 100}},
+    {"id": "packet_note", "type": "note", "config": {"path": "ventures/freight-claims/reports/claim-packet-{run}.md", "template": "Review the exact claim draft and attached source files below. Glacier has not sent or submitted anything. Missing or conflicting evidence stays uncertain.\n\n{summary}"}, "position": {"x": 400, "y": 100}},
+    {"id": "approve_customer_submission", "type": "approval", "config": {"prompt": "Your step: review the exact recipient, subject, message, damaged-item values, carrier terms citation, and attachments in the packet above. If correct, the shipper sends this draft through its chosen carrier channel and uploads the carrier receipt date. Glacier will not send or submit it."}, "position": {"x": 700, "y": 100}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "prepare_packet", "target": "packet_note", "label": ""},
+    {"id": "e2", "source": "packet_note", "target": "approve_customer_submission", "label": ""}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/packets'; rows=[json.loads(x.read_text()) for x in p.glob('claim-*.json')]; assert rows and all(r.get('result') in ('match','uncertain — please check') and r.get('side_effects') == [] and r.get('human_review_required') for r in rows); assert all(not (r.get('customer_email_draft') or {}).get('sent',False) for r in rows)\"", "required": true}
+  ],
+  "max_steps": 3
+}
