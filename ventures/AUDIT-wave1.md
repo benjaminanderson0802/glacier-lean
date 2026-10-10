@@ -27,4 +27,6 @@ The merged B4 branch includes an open claim (`vault/claims/2026-10-09-ph12-7-pla
 
 ## Release-check results
 
-Pending serialized execution under `flock /tmp/glacier-heavy.lock`.
+- `flock /tmp/glacier-heavy.lock /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/customer/tests ventures/blocks/connectors/tests` — **21 passed in 1.99s**.
+- `/home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/tests/test_integration.py` — **8 passed in 0.17s** (schema, installer, and package-import checks).
+- The filer, mail, full backend, and `npm run check:ui` release-board runs did not start. I1 waited 15m08s for `/tmp/glacier-heavy.lock`, then canceled only its own queued shell at the project time backstop. PID 4283 held the exclusive lock for a separate backend pytest run; its pytest process had sleeping Git `cat-file` children. The environment claim is `vault/claims/2026-10-10-ph12-22-heavy-test-lock.md`. No results are claimed for those checks.
