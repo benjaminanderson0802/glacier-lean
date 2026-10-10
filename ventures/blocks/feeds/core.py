@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sqlite3
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -21,7 +22,10 @@ from typing import Any
 
 PACKAGE = Path(__file__).parent
 REGISTRY_PATH = PACKAGE / "sources.json"
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Glacier public-data client"
+USER_AGENT = "Glacier public-data client/1.0 (+https://github.com/benjaminanderson0802/glacier-lean)"
+HTTP_CACHE_MAX_AGE = 300
+HTTP_CACHE_MAX_BYTES = 20_000_000
+_LAST_REQUEST_AT: dict[str, float] = {}
 
 
 def registry() -> dict[str, dict[str, Any]]:
@@ -51,6 +55,8 @@ def _connect(path: Path | None = None) -> sqlite3.Connection:
       CREATE TABLE IF NOT EXISTS feed_progress (
         source_id TEXT PRIMARY KEY, tax_year TEXT NOT NULL, source_total INTEGER NOT NULL,
         next_offset INTEGER NOT NULL, row_count INTEGER NOT NULL, fetched_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS feed_watermarks (
+        source_id TEXT PRIMARY KEY, watermark TEXT NOT NULL);
     """)
     return con
 
@@ -103,24 +109,77 @@ def _records_and_total(value: Any) -> tuple[list[dict[str, Any]], int | None]:
     return ([value] if value else []), total
 
 
-def _request(url: str, *, timeout: int = 45, max_bytes: int | None = None) -> bytes:
+def _request(url: str, *, timeout: int = 30, max_bytes: int | None = None) -> bytes:
+    """Fetch a public GET with a descriptive client ID, bounded retries, and a small disk cache."""
     host = urllib.parse.urlparse(url).netloc
-    accept = "application/json" if "fsis.usda.gov" in host else "application/json,text/csv,text/html,*/*"
+    accept = "application/json, application/rss+xml, text/csv, text/html;q=0.9, */*;q=0.8"
     headers = {"User-Agent": USER_AGENT, "Accept": accept}
-    if "osha.gov" in host:
-        headers["Referer"] = "https://www.osha.gov/itadata"
-    elif "fsis.usda.gov" in host:
-        # FSIS's documented public API returns 403 without a same-site referrer.
-        headers["Referer"] = "https://www.fsis.usda.gov/recalls"
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        raw = response.read(max_bytes + 1) if max_bytes is not None else response.read()
+    cache_path: Path | None = None
+    cache_meta: dict[str, Any] = {}
+    if len(url) < 4000:
+        cache_root = Path(os.environ.get("GLACIER_HOME", str(Path.home() / ".glacier"))) / "ventures" / "feed-http-cache"
+        cache_key = hashlib.sha256(url.encode()).hexdigest()
+        cache_path = cache_root / f"{cache_key}.body"
+        meta_path = cache_root / f"{cache_key}.json"
+        try:
+            cache_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            cached_at = float(cache_meta.get("cached_at", 0))
+            if cache_path.is_file() and time.time() - cached_at <= HTTP_CACHE_MAX_AGE:
+                raw = cache_path.read_bytes()
+                if max_bytes is not None and len(raw) > max_bytes:
+                    raise ValueError(f"cached response exceeded the {max_bytes}-byte safety limit")
+                return raw
+            if cache_path.is_file() and cache_meta.get("etag"):
+                headers["If-None-Match"] = cache_meta["etag"]
+            if cache_path.is_file() and cache_meta.get("last_modified"):
+                headers["If-Modified-Since"] = cache_meta["last_modified"]
+        except (OSError, ValueError, TypeError):
+            cache_meta = {}
+    last_error: Exception | None = None
+    for attempt in range(3):
+        if host == "datacatalog.cookcountyil.gov":
+            wait = 1.0 - (time.monotonic() - _LAST_REQUEST_AT.get(host, 0.0))
+            if wait > 0:
+                time.sleep(wait)
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if host == "datacatalog.cookcountyil.gov":
+                    _LAST_REQUEST_AT[host] = time.monotonic()
+                raw = response.read(max_bytes + 1) if max_bytes is not None else response.read()
+                response_headers = getattr(response, "headers", {})
+            if cache_path is not None and len(raw) <= HTTP_CACHE_MAX_BYTES:
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                cache_path.write_bytes(raw)
+                cache_path.with_suffix(".json").write_text(json.dumps({
+                    "cached_at": time.time(),
+                    "etag": response_headers.get("ETag"),
+                    "last_modified": response_headers.get("Last-Modified"),
+                }), encoding="utf-8")
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code == 304 and cache_path is not None and cache_path.is_file():
+                raw = cache_path.read_bytes()
+                cache_meta["cached_at"] = time.time()
+                cache_path.with_suffix(".json").write_text(json.dumps(cache_meta), encoding="utf-8")
+                break
+            last_error = exc
+            if exc.code not in (408, 425, 429, 500, 502, 503, 504) or attempt == 2:
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            last_error = exc
+            if attempt == 2:
+                raise
+        time.sleep(0.5 * (2 ** attempt))
+    else:
+        assert last_error is not None
+        raise last_error
     if max_bytes is not None and len(raw) > max_bytes:
         raise ValueError(f"download exceeded the {max_bytes}-byte safety limit")
     return raw
 
 
-def _json_rows(url: str, *, timeout: int = 45) -> tuple[list[dict[str, Any]], int | None]:
+def _json_rows(url: str, *, timeout: int = 30) -> tuple[list[dict[str, Any]], int | None]:
     raw = _request(url, timeout=timeout)
     return _records_and_total(json.loads(raw.decode("utf-8-sig")))
 
@@ -218,8 +277,15 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
     year = str(max_rows[0].get("max_year", "")).removesuffix(".0")
     if not year:
         raise ValueError("Cook County Assessor dataset did not publish its latest tax year")
-    where = urllib.parse.quote(f"year='{year}'", safe="'=")
-    count_rows, _ = _json_rows(config["url"] + f"?$select=count(*)&$where={where}", timeout=120)
+    clauses = [f"year='{year}'"]
+    township_codes = config.get("target_township_codes", [])
+    property_classes = config.get("target_classes", [])
+    if township_codes:
+        clauses.append("township_code in (" + ",".join("'" + str(code).replace("'", "") + "'" for code in township_codes) + ")")
+    if property_classes:
+        clauses.append("class in (" + ",".join("'" + str(code).replace("'", "") + "'" for code in property_classes) + ")")
+    where = urllib.parse.quote(" AND ".join(clauses), safe="'(),=:")
+    count_rows, _ = _json_rows(config["url"] + f"?$select=count(*)&$where={where}", timeout=45)
     total = int(next(iter(count_rows[0].values()))) if count_rows else None
     if total is None or total <= 0:
         raise ValueError("Cook County Assessor did not publish a positive current-year row total")
@@ -230,19 +296,25 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
     with _connect(target) as con:
         con.execute("CREATE TABLE IF NOT EXISTS feed_stage (source_id TEXT NOT NULL, record_id TEXT NOT NULL, record_date TEXT, fetched_at TEXT NOT NULL, source_url TEXT NOT NULL, payload TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(source_id, record_id))")
         progress = con.execute("SELECT tax_year,source_total,next_offset,row_count,fetched_at FROM feed_progress WHERE source_id=?", (source_id,)).fetchone()
+        watermark_row = con.execute("SELECT watermark FROM feed_watermarks WHERE source_id=?", (source_id,)).fetchone()
         if progress is None or progress[0] != year or progress[1] != total:
-            con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
-            con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
-            offset, staged_count, fetched_at = 0, 0, fetched_at
+            if progress is None and watermark_row is not None:
+                offset, staged_count = 0, 0
+            else:
+                con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+                con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
+                offset, staged_count, fetched_at = 0, 0, fetched_at
         else:
             offset, staged_count, fetched_at = progress[2], progress[3], progress[4]
+    if progress is None and watermark_row is not None:
+        return _sync_socrata_incremental(source_id, config, where, total, watermark_row[0], fetched_at)
     alerts: list[str] = []
     page_size = max(1, min(int(config.get("page_size", 10000)), 50000))
     max_pages = max(1, int(config.get("max_pages_per_sync", 5)))
     pages = 0
     while offset < total and pages < max_pages:
         url = source_url + "&$order=pin&$limit=" + str(page_size) + "&$offset=" + str(offset)
-        chunk, _ = _json_rows(url, timeout=120)
+        chunk, _ = _json_rows(url, timeout=45)
         if not chunk:
             break
         rows, page_alerts = normalize_rows(source_id, chunk, source_url=source_url, fetched_at=fetched_at)
@@ -272,6 +344,10 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
     if not any(row[0] for row in staged):
         alerts.append("Canary alert: Cook County parcel identifiers did not parse")
     digest = hashlib.sha256("\n".join(sorted(row[1] for row in staged)).encode()).hexdigest()
+    watermark_rows, _ = _json_rows(config["url"] + f"?$select=max(:updated_at)&$where={where}", timeout=45)
+    watermark = next(iter(watermark_rows[0].values()), None) if watermark_rows else None
+    if not watermark:
+        raise ValueError("Cook County Socrata :updated_at watermark is unavailable; complete snapshot retained")
     with _connect(target) as con:
         previous = con.execute("SELECT digest FROM feed_syncs WHERE source_id=?", (source_id,)).fetchone()
         changed = previous is None or previous[0] != digest
@@ -279,8 +355,62 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
         con.execute("INSERT INTO feed_rows SELECT source_id,record_id,record_date,fetched_at,source_url,payload,digest FROM feed_stage WHERE source_id=?", (source_id,))
         con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
         con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
+        con.execute("INSERT INTO feed_watermarks(source_id,watermark) VALUES(?,?) ON CONFLICT(source_id) DO UPDATE SET watermark=excluded.watermark", (source_id, str(watermark)))
         con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,digest=excluded.digest,status='ok'", (source_id, fetched_at, total, staged_count, digest))
     return {"rows": staged_count, "changed": bool(changed), "complete": True, "alerts": alerts}
+
+
+def _sync_socrata_incremental(source_id: str, config: dict[str, Any], where: str, source_total: int,
+                              watermark: str, fetched_at: str) -> dict[str, Any]:
+    """Upsert only rows changed since the last complete selected snapshot."""
+    field = config.get("incremental_field", ":updated_at")
+    incremental_where = urllib.parse.quote(
+        urllib.parse.unquote(where) + f" AND {field} > '{watermark}'", safe="'(),=:"
+    )
+    selected = ",".join(config["selected_fields"])
+    source_url = config["url"] + f"?$select={selected}&$where={incremental_where}"
+    page_size = max(1, min(int(config.get("page_size", 10000)), 50000))
+    max_pages = max(1, int(config.get("max_pages_per_sync", 5)))
+    rows_seen = 0
+    pages = 0
+    latest = watermark
+    alerts: list[str] = []
+    exhausted = False
+    while pages < max_pages:
+        url = source_url + "&$order=" + urllib.parse.quote(field, safe=":") + "&$limit=" + str(page_size) + "&$offset=" + str(rows_seen)
+        chunk, _ = _json_rows(url, timeout=45)
+        if not chunk:
+            exhausted = True
+            break
+        normalized, page_alerts = normalize_rows(source_id, chunk, source_url=source_url, fetched_at=fetched_at)
+        alerts.extend(page_alerts)
+        inserts = []
+        for row, original in zip(normalized, chunk):
+            value = _first(original, [field])
+            if value and str(value) > latest:
+                latest = str(value)
+            digest = hashlib.sha256(json.dumps(row["data"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+            inserts.append((row["source_id"], row["record_id"], row["record_date"], row["fetched_at"], row["source_url"], json.dumps(row["data"], ensure_ascii=False), digest))
+        with _connect() as con:
+            con.executemany("INSERT OR REPLACE INTO feed_rows(source_id,record_id,record_date,fetched_at,source_url,payload,digest) VALUES(?,?,?,?,?,?,?)", inserts)
+        rows_seen += len(chunk)
+        pages += 1
+        if len(chunk) < page_size:
+            exhausted = True
+            break
+    complete = exhausted or rows_seen == 0
+    if not complete:
+        alerts.append(f"Incremental sync progress: read {rows_seen} changed Cook County rows in {max_pages} pages; watermark held for next run.")
+        return {"rows": rows_seen, "changed": bool(rows_seen), "complete": False, "alerts": alerts}
+    with _connect() as con:
+        row_count, digest = con.execute("SELECT COUNT(*),COALESCE(group_concat(digest,''),'') FROM feed_rows WHERE source_id=?", (source_id,)).fetchone()
+        rows = con.execute("SELECT digest FROM feed_rows WHERE source_id=? ORDER BY record_id", (source_id,)).fetchall()
+        digest = hashlib.sha256("\n".join(row[0] for row in rows).encode()).hexdigest()
+        con.execute("INSERT INTO feed_watermarks(source_id,watermark) VALUES(?,?) ON CONFLICT(source_id) DO UPDATE SET watermark=excluded.watermark", (source_id, latest))
+        con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,digest=excluded.digest,status='ok'", (source_id, fetched_at, source_total, row_count, digest))
+    if source_total and abs(row_count - source_total) / source_total > 0.01:
+        alerts.append(f"Row-count alert: normalized {row_count} of {source_total} selected Cook County rows (difference exceeds 1%).")
+    return {"rows": rows_seen, "changed": bool(rows_seen), "complete": True, "alerts": alerts}
 
 
 def _nhtsa(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
@@ -298,6 +428,27 @@ def _nhtsa(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
             continue
         result.append({columns[i] if i < len(columns) else f"field_{i + 1}": val.strip() for i, val in enumerate(cells)})
     return result, len(result)
+
+
+def _cpsc_recalls(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int, list[str]]:
+    start_year = int(config.get("history_start_year", 1973))
+    last_year = date.today().year
+    rows: list[dict[str, Any]] = []
+    for first_year in range(start_year, last_year + 1, 5):
+        end_year = min(first_year + 4, last_year)
+        query = urllib.parse.urlencode({
+            "format": "json",
+            "RecallDateStart": f"{first_year}-01-01",
+            "RecallDateEnd": f"{end_year}-12-31",
+        })
+        chunk, _ = _json_rows(config["url"] + "?" + query, timeout=int(config.get("request_timeout_seconds", 30)))
+        rows.extend(chunk)
+    # RecallNumber is the published stable key; de-duplicate inclusive boundary cases.
+    unique: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = str(_first(row, config.get("id_fields", ["RecallNumber"])) or json.dumps(row, sort_keys=True))
+        unique[key] = row
+    return list(unique.values()), None, []
 
 
 def _nhtsa_columns(dictionary: str) -> list[str]:
@@ -388,7 +539,7 @@ def _cpsc_document(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | 
     links.feed(page)
     wanted = str(config["title_match"]).casefold()
     found = next(((label, urllib.parse.urljoin(library_url, href)) for label, href in links.links
-                  if wanted in label.casefold()), None)
+                  if wanted in label.casefold() or wanted in href.casefold()), None)
     if found is None:
         raise ValueError(f"CPSC document library link not found: {config['title_match']}")
     _, document_url = found
@@ -399,11 +550,60 @@ def _cpsc_document(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | 
             text = "\n".join(page.extract_text() or "" for page in pdf.pages)
         codes = sorted(set(re.findall(r"\b(?:\d{4}\.\d{2}\.\d{2}(?:\.\d{2})?|\d{10})\b", text)))
         return [{"tariff_code": code} for code in codes], len(codes), document_url
+    if config.get("document_type") == "xlsx_hts":
+        records = _xlsx_hts_rows(raw)
+        return records, len(records), document_url
     if config.get("document_type") == "xlsx_template":
         headers = _xlsx_headers(raw)
         return [{"columns": headers, "field_map": config.get("field_map", {})}], 1, document_url
     rows = _xlsx_rows(raw, list(config.get("id_fields", [])) + list(config.get("expected_fields", [])))
     return rows, len(rows), document_url
+
+
+def _xlsx_hts_rows(raw: bytes) -> list[dict[str, Any]]:
+    """Read the CP1/CP2 tabs in CPSC's current HTS workbook."""
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        strings: list[str] = []
+        try:
+            root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+            strings = ["".join(text.text or "" for text in item.iter() if text.tag.endswith("}t")) for item in root]
+        except KeyError:
+            pass
+        records: list[dict[str, Any]] = []
+        for name in ("xl/worksheets/sheet2.xml", "xl/worksheets/sheet3.xml"):
+            sheet = ET.fromstring(archive.read(name))
+            matrix: list[list[str]] = []
+            for row in sheet.iter():
+                if not row.tag.endswith("}row"):
+                    continue
+                cells: dict[int, str] = {}
+                for cell in row:
+                    if not cell.tag.endswith("}c"):
+                        continue
+                    ref = cell.attrib.get("r", "")
+                    letters = "".join(ch for ch in ref if ch.isalpha())
+                    col = 0
+                    for char in letters.upper():
+                        col = col * 26 + ord(char) - 64
+                    value_node = next((item for item in cell if item.tag.endswith("}v")), None)
+                    value = value_node.text if value_node is not None and value_node.text else ""
+                    if cell.attrib.get("t") == "s" and value:
+                        value = strings[int(value)]
+                    elif cell.attrib.get("t") == "inlineStr":
+                        value = "".join(item.text or "" for item in cell.iter() if item.tag.endswith("}t"))
+                    cells[max(col - 1, 0)] = value.strip()
+                if cells:
+                    matrix.append([cells.get(i, "") for i in range(max(cells) + 1)])
+            header_idx = next((idx for idx, row in enumerate(matrix) if any(value.strip().casefold() == "hts code" for value in row)), None)
+            if header_idx is None:
+                raise ValueError(f"CPSC HTS workbook tab has no HTS Code column: {name}")
+            headers = [value.strip() for value in matrix[header_idx]]
+            for values in matrix[header_idx + 1:]:
+                record = {header: (values[i] if i < len(values) else "") for i, header in enumerate(headers) if header}
+                code = next((value.strip() for header, value in record.items() if header.strip().casefold() == "hts code"), "")
+                if code:
+                    records.append({"tariff_code": code, **record})
+    return records
 
 
 def _xlsx_headers(raw: bytes) -> list[str]:
@@ -452,6 +652,8 @@ def fetch_source(source_id: str, config: dict[str, Any]) -> tuple[list[dict[str,
         records, total, source_url = _osha(config)
     elif kind == "socrata":
         records, total = _socrata(config)
+    elif kind == "cpsc_recalls_api":
+        records, total, alerts = _cpsc_recalls(config)
     elif kind == "dibbs_html":
         records, total, alerts = _dibbs(config)
     elif kind == "cpsc_document":

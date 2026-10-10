@@ -1,6 +1,7 @@
 import json
 import io
 import sqlite3
+import urllib.parse
 
 from ventures.blocks.feeds import query, sync
 from ventures.blocks.feeds.core import normalize_rows, store_snapshot
@@ -43,22 +44,118 @@ def test_public_registry_has_all_requested_sources():
                 "nhtsa_recalls", "fda_enforcement", "fsis_recalls", "osha_ita", "dla_dibbs", "cook_county_assessor"}
     assert expected <= set(registry())
     assert all(registry()[item].get("url") for item in expected)
-    assert "RecallDateStart=1973-01-01" in registry()["cpsc_recalls"]["url"]
+    assert registry()["cpsc_recalls"]["kind"] == "cpsc_recalls_api"
+    assert registry()["cpsc_recalls"]["history_start_year"] == 1973
     assert all(registry()[item]["kind"] == "cpsc_document" for item in
                ("cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"))
 
 
-def test_fsis_public_api_request_uses_official_same_site_referer(monkeypatch):
+def test_fsis_public_api_request_uses_honest_json_headers(monkeypatch):
     from ventures.blocks.feeds import core
 
     def fake_urlopen(request, timeout):
-        assert request.get_header("Referer") == "https://www.fsis.usda.gov/recalls"
-        assert request.get_header("Accept") == "application/json"
+        assert request.get_header("Referer") is None
+        assert "application/json" in request.get_header("Accept")
         return io.BytesIO(b"[]")
 
     monkeypatch.setattr(core.urllib.request, "urlopen", fake_urlopen)
     records, total = core._json_rows(core.registry()["fsis_recalls"]["url"])
     assert records == [] and total is None
+
+
+def test_request_uses_descriptive_client_and_retries_transient_http_errors(tmp_path, monkeypatch):
+    from ventures.blocks.feeds import core
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    calls = []
+
+    class Response(io.BytesIO):
+        headers = {"Content-Type": "application/json"}
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    def fake_urlopen(request, timeout):
+        calls.append((request, timeout))
+        if len(calls) == 1:
+            raise core.urllib.error.HTTPError(request.full_url, 503, "busy", {}, None)
+        return Response(b'{"ok":true}')
+
+    waits = []
+    monkeypatch.setattr(core.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(core.time, "sleep", waits.append)
+    assert core._request("https://example.test/data", timeout=7) == b'{"ok":true}'
+    assert len(calls) == 2 and waits == [0.5]
+    assert "Glacier" in calls[0][0].get_header("User-agent")
+    assert "github.com/benjaminanderson0802/glacier-lean" in calls[0][0].get_header("User-agent")
+    assert calls[0][1] == 7
+
+
+def test_request_caches_small_public_responses_and_reuses_them(tmp_path, monkeypatch):
+    from ventures.blocks.feeds import core
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    calls = []
+
+    class Response(io.BytesIO):
+        headers = {"ETag": '"feed-v1"', "Content-Type": "application/json"}
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    def fake_urlopen(request, timeout):
+        calls.append(request)
+        return Response(b'{"cached":true}')
+
+    monkeypatch.setattr(core.urllib.request, "urlopen", fake_urlopen)
+    assert core._request("https://example.test/cache") == b'{"cached":true}'
+    assert core._request("https://example.test/cache") == b'{"cached":true}'
+    assert len(calls) == 1
+
+
+def test_cook_county_filter_is_scoped_and_uses_incremental_watermark():
+    from ventures.blocks.feeds import registry
+
+    config = registry()["cook_county_assessor"]
+    assert config["selected_fields"] == ["pin", "year", "class", "township_code", "township_name", "zip_code", ":updated_at"]
+    assert config["target_classes"] == ["211"]
+    assert config["incremental_field"] == ":updated_at"
+
+
+def test_cook_county_incremental_sync_uses_timestamp_watermark_and_upserts(tmp_path, monkeypatch):
+    from ventures.blocks.feeds import core
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    old = [{"source_id": "cook_county_assessor", "record_id": "001", "record_date": "2026-01-01",
+            "fetched_at": "2026-01-01T00:00:00Z", "source_url": "https://example.test/roll",
+            "data": {"pin": "001", "year": "2026", "class": "211", "township_code": "10", "zip_code": "60000", ":updated_at": "2026-01-01T00:00:00.000"}}]
+    core.store_snapshot("cook_county_assessor", old, source_total=1)
+    calls = []
+
+    def fake_json_rows(url, timeout=30):
+        calls.append(url)
+        if "$offset=0" in url:
+            return ([{"pin": "001", "year": "2026", "class": "211", "township_code": "10",
+                      "township_name": "Barrington", "zip_code": "60000",
+                      ":updated_at": "2026-01-02T00:00:00.000"}], None)
+        return ([], None)
+
+    monkeypatch.setattr(core, "_json_rows", fake_json_rows)
+    result = core._sync_socrata_incremental(
+        "cook_county_assessor", core.registry()["cook_county_assessor"],
+        "year%3D'2026'", 1, "2026-01-01T00:00:00.000", "2026-01-03T00:00:00Z")
+    assert result["rows"] == 1 and result["changed"] and result["complete"]
+    assert len(calls) == 1
+    assert ":updated_at%20%3E%20'2026-01-01T00:00:00.000'" in calls[0]
+    assert core.query("cook_county_assessor")[0]["data"]["township_name"] == "Barrington"
 
 
 def test_nhtsa_dictionary_uses_numbered_fields_instead_of_description_tabs():
@@ -103,7 +200,7 @@ def test_sync_uses_adapter_and_canary(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     from ventures.blocks.feeds import core
 
-    monkeypatch.setattr(core, "fetch_source", lambda source_id, config: ([{"id": "canary-1", "date": "2026-01-01", "title": "Recall"}], 1, []))
+    monkeypatch.setattr(core, "fetch_source", lambda source_id, config: ([{"RecallNumber": "canary-1", "RecallDate": "2026-01-01", "RecallTitle": "Recall"}], 1, []))
     result = sync("cpsc_recalls")
     assert result["rows"] == 1
     assert result["changed"] is True
@@ -117,10 +214,10 @@ def test_format_alert_on_schema_change(tmp_path, monkeypatch):
     monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
     from ventures.blocks.feeds import core
 
-    payload = [{"id": "canary-1", "date": "2026-01-01", "title": "Recall"}]
+    payload = [{"RecallNumber": "canary-1", "RecallDate": "2026-01-01", "RecallTitle": "Recall"}]
     monkeypatch.setattr(core, "fetch_source", lambda source_id, config: (payload, None, []))
     sync("cpsc_recalls")
-    payload[:] = [{"id": "canary-2", "date": "2026-01-02", "new_shape": True}]
+    payload[:] = [{"RecallNumber": "canary-2", "RecallDate": "2026-01-02", "new_shape": True}]
     result = sync("cpsc_recalls")
     assert result["alerts"] and any("format" in alert.lower() for alert in result["alerts"])
 
@@ -148,6 +245,8 @@ def test_socrata_sync_resumes_in_bounded_pages_and_keeps_progress_visible(tmp_pa
         calls.append(url)
         if "$select=max(year)" in url:
             return ([{"max_year": "2025"}], None)
+        if "$select=max(:updated_at)" in url:
+            return ([{"max_updated_at": "2025-02-01T00:00:00.000"}], None)
         if "$select=count(*)" in url:
             return ([{"count": "5"}], None)
         offset = int(url.rsplit("$offset=", 1)[1])
@@ -157,7 +256,8 @@ def test_socrata_sync_resumes_in_bounded_pages_and_keeps_progress_visible(tmp_pa
     monkeypatch.setattr(core, "_json_rows", fake_json_rows)
     config = {"url": "https://example.test/roll", "selected_fields": ["pin", "year", "class"],
               "id_fields": ["pin"], "date_fields": ["year"], "expected_fields": ["pin"],
-              "canary": {"field": "pin"}, "page_size": 2, "max_pages_per_sync": 1}
+              "canary": {"field": "pin"}, "target_township_codes": ["11"],
+              "target_classes": ["2-11"], "page_size": 2, "max_pages_per_sync": 1}
 
     first = core._sync_socrata_stream("fixture_roll", config)
     assert first["complete"] is False
@@ -172,6 +272,8 @@ def test_socrata_sync_resumes_in_bounded_pages_and_keeps_progress_visible(tmp_pa
     assert len(core.query("fixture_roll")) == 5
     assert "old" not in [row["record_id"] for row in core.query("fixture_roll")]
     assert len([url for url in calls if "$offset=" in url]) == 3
+    assert all("township_code in ('11')" in urllib.parse.unquote(url) for url in calls if "$select=count(*)" in url)
+    assert all("class in ('2-11')" in urllib.parse.unquote(url) for url in calls if "$offset=" in url)
 
 
 def test_dibbs_warning_redirect_is_reported_with_manual_intake_instructions(tmp_path, monkeypatch):
