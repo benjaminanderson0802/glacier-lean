@@ -113,6 +113,8 @@ async def send_message(thread_id: str, body: SendBody):
         raise HTTPException(403, str(error)) from error
     except subprocess.TimeoutExpired as error:
         raise HTTPException(504, "The coding assistant took too long to reply") from error
+    except service.SessionResumeError as error:
+        raise HTTPException(409, str(error)) from error
     except RuntimeError as error:
         raise HTTPException(502, str(error)) from error
     return {"thread_id": thread_id, "message": message}

@@ -87,6 +87,29 @@ def _require_codex():
     return binary
 
 
+def _template_needs_codex(flow, visited=None):
+    """Include Codex decision nodes and installable child flows in engine checks."""
+    visited = visited or set()
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+    for node in flow.get("nodes", []):
+        node_type, config = node.get("type"), node.get("config", {})
+        if node_type == "codex" or node_type == "decide" and config.get("engine") == "codex":
+            return True
+        if node_type == "flow":
+            template_id = config.get("env")
+            if template_id not in {item["id"] for item in manifest} and str(template_id).endswith("-daily-child"):
+                template_id = "tpl-daily-report"
+            if template_id in visited:
+                continue
+            entry = next((item for item in manifest if item["id"] == template_id), None)
+            if entry:
+                visited.add(template_id)
+                child = json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                if _template_needs_codex(child, visited):
+                    return True
+    return False
+
+
 def test_real_schedule_command_check_note_history_undo_and_explanation(server):
     graph = env("real-schedule-proof", [
         ("schedule", "schedule", {"cron": "*/2 * * * * *"}),
@@ -344,9 +367,6 @@ def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine
     workspace = home / "workspaces" / env_id
     workspace.mkdir(parents=True, exist_ok=True)
 
-    codex_needed = any(node["type"] == "codex" for node in nodes.values())
-    if codex_needed:
-        _require_codex()
     local_needed = any(node["type"] == "local_ai" for node in nodes.values())
     if local_needed:
         _require_ollama()
@@ -434,6 +454,9 @@ def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine
         for node in nodes.values():
             if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
                 node["config"]["cmd"] = f"'{python}' -m pytest -q"
+    codex_needed = _template_needs_codex(flow)
+    if codex_needed:
+        _require_codex()
     server.put(f"/api/environments/{env_id}", flow)
     run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
     deadline = time.time() + 360

@@ -140,8 +140,44 @@ def test_codex_and_claude_resume_use_configured_fake_commands(client, monkeypatc
     codex_response = http.post("/api/messages/threads/codex%3Acodex-1", json={"text": "Continue"})
     claude_response = http.post("/api/messages/threads/claude-code%3Aclaude-1", json={"text": "Continue"})
     assert codex_response.status_code == claude_response.status_code == 200
-    assert "exec resume codex-1" in codex_response.json()["message"]["text"]
+    assert "exec resume --all codex-1" in codex_response.json()["message"]["text"]
     assert "--resume claude-1" in claude_response.json()["message"]["text"]
+
+
+def test_session_threads_explain_when_the_cli_is_missing(client, monkeypatch):
+    http, _ = client
+    monkeypatch.setattr(session_mirror, "list_sessions", lambda: [
+        {"id": "codex-1", "source": "codex", "title": "Codex", "updated": ""},
+        {"id": "claude-code:claude-1", "source": "claude", "title": "Claude", "updated": ""},
+    ])
+    monkeypatch.setenv("GLACIER_CODEX_BIN", "/missing/codex")
+    monkeypatch.setenv("GLACIER_CLAUDE_BIN", "/missing/claude")
+
+    rows = http.get("/api/messages/threads").json()
+    assert all(row["can_send"] is False for row in rows)
+    assert {row["can_send_reason"] for row in rows} == {
+        "Codex CLI is not installed", "Claude CLI is not installed",
+    }
+
+
+def test_a_session_rejected_by_codex_becomes_read_only(client, monkeypatch, tmp_path):
+    http, _ = client
+    codex = tmp_path / "codex-rejecting"
+    codex.write_text("#!/bin/sh\nexit 1\n")
+    codex.chmod(0o755)
+    monkeypatch.setenv("GLACIER_CODEX_BIN", str(codex))
+    monkeypatch.setattr(session_mirror, "list_sessions", lambda: [
+        {"id": "codex-rejected", "tool": "codex", "source": "codex", "title": "Old session", "updated": ""},
+    ])
+    monkeypatch.setattr(session_mirror, "read_session", lambda _sid: (
+        {"id": "codex-rejected", "source": "codex", "tool": "codex"}, [], "digest"))
+
+    sent = http.post("/api/messages/threads/codex%3Acodex-rejected", json={"text": "Continue"})
+    assert sent.status_code == 409
+    assert "cannot be continued" in sent.json()["detail"]
+    thread = http.get("/api/messages/threads").json()[0]
+    assert thread["can_send"] is False
+    assert thread["can_send_reason"] == sent.json()["detail"]
 
 
 def test_new_codex_and_claude_chats_capture_native_session_ids(client, monkeypatch, tmp_path):
