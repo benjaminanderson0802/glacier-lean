@@ -1,59 +1,98 @@
 from __future__ import annotations
 
-import importlib.util
 import json
+import importlib.util
+import os
+import tempfile
+import unittest
+from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
-ROOT = Path(__file__).parents[1]
-SPEC = importlib.util.spec_from_file_location("osha_filing", ROOT / "scripts" / "filing.py")
-filing = importlib.util.module_from_spec(SPEC)
+SCRIPT = Path(__file__).parents[1] / "scripts" / "osha_filing.py"
+SPEC = importlib.util.spec_from_file_location("osha_filing", SCRIPT)
 assert SPEC and SPEC.loader
-SPEC.loader.exec_module(filing)
+OSHA = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(OSHA)
+build_300a_packet = OSHA.build_300a_packet
+eligible_prospects = OSHA.eligible_prospects
+validate_300a = OSHA.validate_300a
+prepare_ita_local_mock = OSHA.prepare_ita_local_mock
 
 
-def valid_intake(**changes):
-    payload = {
-        "establishment": {"name": "Northside Heating", "address": "1 Main St, Sampleville, IL", "industry_code": "238220", "employees": 24},
-        "year": 2025,
-        "injury_log": {"deaths": 0, "days_away": 0, "job_transfer": 0, "other_cases": 0, "days_away_count": 0, "job_transfer_count": 0, "other_days": 0},
-        "hours_worked": 48000,
-        "average_employees": 24,
-        "executive_name": "Alex Example",
-        "executive_title": "Owner",
-        "customer_confirmed": True,
-        "coverage_confirmed": True,
-    }
-    payload.update(changes)
-    return payload
+class OshaFilingAcceptanceTests(unittest.TestCase):
+    def test_300a_totals_and_hours_are_checked_before_packet_creation(self) -> None:
+        valid = {
+            "establishment_name": "Example Metal Works",
+            "establishment_id": "123456789",
+            "year": 2025,
+            "industry_code": "332710",
+            "average_employees": 25,
+            "total_hours_worked": 48000,
+            "total_deaths": 0,
+            "cases_with_days_away": 1,
+            "cases_with_job_transfer_or_restriction": 2,
+            "other_recordable_cases": 3,
+            "total_cases": 6,
+            "days_away": 4,
+            "job_transfer_or_restriction_days": 7,
+            "executive_name": "Jordan Example",
+            "executive_title": "Owner",
+        }
+        self.assertEqual(validate_300a(valid)["verdict"], "pass")
+        packet = build_300a_packet(valid)
+        self.assertIn("CERTIFICATION", packet["html"].upper())
+        self.assertEqual(packet["signature"], "customer_signature_required")
+        self.assertEqual(packet["submission"], "customer_submits_in_osha_ita")
+
+        invalid = {**valid, "total_cases": 2, "total_hours_worked": 300000}
+        result = validate_300a(invalid)
+        self.assertEqual(result["verdict"], "fail")
+        self.assertTrue(any("total_cases" in item["rule"] for item in result["results"]))
+
+    def test_missing_customer_confirmation_is_uncertain(self) -> None:
+        result = validate_300a({"establishment_name": "Example", "year": 2025})
+        self.assertEqual(result["verdict"], "uncertain")
+        self.assertTrue(all(item.get("cite") for item in result["results"]))
+
+    def test_shared_filer_is_guarded_to_local_mock(self) -> None:
+        with self.assertRaisesRegex(ValueError, "local mock"):
+            prepare_ita_local_mock({"year": 2025}, {"base_url": "https://ita.osha.gov", "username": "customer", "password": "not-used"})
+
+    def test_january_window_deadline_uses_shared_tracker_and_fires_once(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"GLACIER_HOME": tmp}):
+            from ventures.blocks.deadlines import add, due
+
+            add("test-establishment", "2027-01-02", "jan2-mar2", "OSHA Form 300A filing")
+            self.assertEqual(due(date(2027, 1, 2))[0]["milestone"], "window_open")
+            self.assertEqual(due(date(2027, 1, 2)), [])
+            self.assertEqual(due(date(2027, 3, 2))[0]["milestone"], "window_close")
+
+    def test_prospect_scoring_uses_public_data_without_classifying_compliance(self) -> None:
+        rows = [
+            {"establishment_id": "1", "establishment_name": "Large Shop", "industry_code": "332710", "employee_count": 250, "address": "1 Main St", "city": "Town", "state": "IL"},
+            {"establishment_id": "2", "establishment_name": "Small Shop", "industry_code": "332710", "employee_count": 19, "address": "2 Main St", "city": "Town", "state": "IL"},
+            {"establishment_id": "3", "establishment_name": "Unknown Shop", "industry_code": "000000", "employee_count": 45, "address": "3 Main St", "city": "Town", "state": "IL"},
+            {"establishment_id": "4", "establishment_name": "High Hazard Shop", "industry_code": "332710", "employee_count": 45, "address": "4 Main St", "city": "Town", "state": "IL"},
+        ]
+        with patch.object(OSHA.feeds, "query", return_value=rows):
+            result = eligible_prospects(as_of=date(2027, 1, 3))
+        self.assertEqual([row["establishment_id"] for row in result["prospects"]], ["1", "4"])
+        self.assertEqual(result["result"], "match")
+        self.assertIn("uncertain", result["excluded"][0]["result"])
+
+    def test_flows_gate_outreach_and_keep_customer_submission_explicit(self) -> None:
+        root = Path(__file__).parents[1]
+        outreach = json.loads((root / "flows" / "january-outreach.json").read_text())
+        filing = json.loads((root / "flows" / "prepare-300a.json").read_text())
+        approval_nodes = [node for node in outreach["nodes"] if node["type"] == "approval"]
+        self.assertTrue(approval_nodes)
+        self.assertTrue(any("postcard" in node["config"]["prompt"].lower() for node in approval_nodes))
+        command_nodes = [node for node in filing["nodes"] if node["type"] == "command"]
+        self.assertTrue(command_nodes)
+        script = " ".join(node["config"]["cmd"] for node in command_nodes)
+        self.assertNotIn("submit", script.lower())
 
 
-def test_generates_reviewable_300a_and_requires_customer_submission(tmp_path):
-    result = filing.prepare_300a(valid_intake(), tmp_path)
-    assert result["result"] == "match"
-    assert result["customer_must_certify_and_submit"] is True
-    assert result["submitted"] is False
-    assert result["signed"] is False
-    assert Path(result["form_path"]).is_file()
-    form = json.loads(Path(result["form_path"]).read_text())
-    assert form["establishment"] == "Northside Heating"
-    assert form["total_cases"] == 0
-    assert form["hours_worked"] == 48000
-
-
-def test_plausibility_and_confirmation_checks_block_incomplete_intake(tmp_path):
-    bad = valid_intake(hours_worked=1, customer_confirmed=False)
-    result = filing.prepare_300a(bad, tmp_path)
-    assert result["result"] == "uncertain — please check"
-    assert result["form_path"] is None
-    assert {"customer confirmation", "plausible hours and headcount"} <= set(result["please_confirm"])
-
-
-def test_deadline_window_and_manifest_keep_filing_customer_controlled():
-    assert filing.filing_window("2027-01-02") == "open"
-    assert filing.filing_window("2027-03-03") == "closed"
-    manifest = json.loads((ROOT / "venture.json").read_text())
-    assert manifest["slug"] == "osha-filing"
-    assert len(manifest["your_steps"]) <= 3
-    flow = json.loads((ROOT / "flows" / "prepare-300a.json").read_text())
-    assert any(node["type"] == "approval" for node in flow["nodes"])
-    assert all("submit" not in node.get("config", {}).get("cmd", "").lower() for node in flow["nodes"])
+if __name__ == "__main__":
+    unittest.main()

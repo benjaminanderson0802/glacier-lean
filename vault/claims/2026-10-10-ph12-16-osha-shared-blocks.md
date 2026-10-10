@@ -8,18 +8,12 @@ kind: capability_gap
 summary: OSHA filing cannot be integrated against its required shared rules, government-data-feed, and deadline-tracker blocks because those packages are absent from this checkout.
 evidence: "`/home/glacier/w/glacier-lean/.venv/bin/python` import probe: ventures.blocks.customer/filer/mail available; ventures.blocks.rules, ventures.blocks.feeds, and ventures.blocks.deadlines each raise ModuleNotFoundError. `ventures/README.md` also marks those three blocks not integrated."
 attempts_made: 0; stopped immediately because the required shared-block outputs are missing from another lane; no substitutes or edits to shared blocks attempted.
-status: filed
+status: closed
 assigned_to: integrator
-resolution: ""
-resolution_evidence: ""
+resolution: "The shared rules, feeds, and deadlines packages were merged into the base before this resumed card. The OSHA venture now imports and uses their public interfaces; no shared block implementation was added here."
+resolution_evidence: "ventures/osha-filing/tests/test_osha_filing.py — 6 passed (includes shared rules/deadlines imports and deadline behavior); ventures/install_all.py --only osha-filing --dry-run validates all four flows; OSHA live feed sync returned rows=400288, changed=false, alerts=[]."
 ---
 
-## Blocker
+## Resolution
 
-PH12.16's spec requires the government data feed (OSHA public ITA data), rules checker (Form 300A validation), and deadline tracker (Jan 2–Mar 2 filing window). Their packages and release checks are not present under `ventures/blocks/`, so the venture cannot import the fixed interfaces or satisfy its acceptance checks on this base branch.
-
-The mail, filer, and customer packages are present. The official OSHA ITA public-data page is reachable at https://www.osha.gov/itadata. No OSHA venture files were added because writing local replacements would duplicate shared-block responsibilities and violate the one-owner rule.
-
-## Next step
-
-Merge the shared rules, feeds, and deadlines blocks (including their `README.md`, `CHECK.md`, and tests), then resume this card and wire the OSHA-specific flow to those interfaces. No accounts, credentials, outreach, signatures, or portal submissions were attempted.
+The shared `rules`, `feeds`, and `deadlines` blocks are now present on this card's base branch. The OSHA venture imports them, passes its focused tests, validates its four flows, and the live OSHA feed reports 400,288 rows with no alerts. The old missing-block condition is resolved. No shared block files were changed by this card. No customer accounts, credentials, real outreach, signatures, or portal submissions were used.
