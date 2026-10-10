@@ -1,0 +1,28 @@
+{
+  "id": "carpenter-track-commissions",
+  "name": "Track agreed furniture commissions",
+  "goal": "Calculate commission due from paid sales in the owner's exported order file using the written rate. This flow does not charge, invoice or transfer money.",
+  "nodes": [
+    {
+      "id": "calculate_commission",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py commissions --sales \"$GLACIER_HOME/ventures/carpenter-goods/incoming/paid-sales.json\" --rate-file \"$GLACIER_HOME/ventures/carpenter-goods/incoming/commission-terms.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/reports/commission-{run}.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "commission_result",
+      "type": "note",
+      "config": {"path": "ventures/carpenter-goods/reports/commission-summary-{run}.md", "template": "Commission tracking for run {run}. This is a calculation from imported paid sales only; compare it with the written agreement and platform settlement before any invoice or payment. No money was moved.\n\n{summary}"},
+      "position": {"x": 300, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "calculate_commission", "target": "commission_result", "label": ""}
+  ],
+  "max_steps": 2
+}
