@@ -37,7 +37,6 @@ try {
     localStorage.setItem('glacier.language', 'es')
   })
   await page.goto(ui + '/#/automations/build', { waitUntil: 'networkidle' })
-  await page.keyboard.press('Enter')
   await page.getByTestId('new-env').click()
   await page.getByTestId('new-env-name').fill('Business data example')
   await page.getByTestId('new-env-create').click()
