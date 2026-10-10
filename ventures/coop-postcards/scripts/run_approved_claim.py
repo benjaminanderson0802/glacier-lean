@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from workflow import check_claim
+from workflow import begin_claim_attempt, check_claim
 
 
 def _secret(name: str) -> str:
@@ -43,21 +43,16 @@ def main() -> int:
     if portal.get("government_agency"):
         raise SystemExit("Government filings must be signed and submitted by the customer; no portal action was taken.")
     home = Path(os.environ.get("GLACIER_HOME", Path.home() / ".glacier"))
-    marker_dir = home / "ventures/coop-postcards/claim-attempts"
-    marker_dir.mkdir(parents=True, exist_ok=True)
-    marker = marker_dir / f"{claim_id}.attempted"
-    try:
-        with marker.open("x", encoding="utf-8") as stream:
-            stream.write("attempted\n")
-    except FileExistsError:
-        raise SystemExit("This claim_id was already attempted; review the brand portal before any retry.") from None
+    state_dir = home / "ventures/coop-postcards/claim-attempts"
     auth = dict(portal)
     auth["username"] = _secret(portal["username_secret"])
     auth["password"] = _secret(portal["password_secret"])
     fields = {**record["fields"], "dealer": record.get("dealer_label", "dealer")}
     draft = prepare(portal["portal_id"], fields, auth)
+    attempt = begin_claim_attempt(claim_id, state_dir)
     confirmation = submit(draft, args.approval)
-    print(json.dumps({"status": "submitted", "confirmation": confirmation}, indent=2))
+    print(json.dumps({"status": "submitted", "attempt": attempt["attempts"], "confirmation": confirmation,
+                      "next_step": f"Record the customer-reported portal outcome with scripts/record_claim_outcome.py --claim-id {claim_id} --outcome accepted|rejected."}, indent=2))
     return 0
 
 

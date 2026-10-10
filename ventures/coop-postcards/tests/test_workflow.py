@@ -3,6 +3,7 @@ from datetime import date
 import unittest
 import sys
 import json
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,6 +13,8 @@ from workflow import (
     claim_reminder_dates,
     check_route_card,
     render_postcard,
+    begin_claim_attempt,
+    record_claim_outcome,
 )
 
 
@@ -49,6 +52,19 @@ class CoOpWorkflowAcceptanceTests(unittest.TestCase):
             claim_reminder_dates("2026-12-31"),
             [date(2026, 11, 1), date(2026, 12, 1)],
         )
+
+    def test_rejected_claim_allows_one_corrected_resubmit_then_drops(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = begin_claim_attempt("brand-claim-1", temp_dir)
+            self.assertEqual(first["attempts"], 1)
+            retry = record_claim_outcome("brand-claim-1", "rejected", temp_dir, reason="missing invoice page")
+            self.assertEqual(retry["status"], "corrected_resubmit_available")
+            second = begin_claim_attempt("brand-claim-1", temp_dir)
+            self.assertEqual(second["attempts"], 2)
+            dropped = record_claim_outcome("brand-claim-1", "rejected", temp_dir, reason="corrected packet rejected")
+            self.assertEqual(dropped["status"], "dropped")
+            with self.assertRaisesRegex(ValueError, "dropped"):
+                begin_claim_attempt("brand-claim-1", temp_dir)
 
     def test_route_card_rejects_duplicate_categories_or_unapproved_ads(self):
         card = {

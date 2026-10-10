@@ -16,7 +16,7 @@ SPEC.loader.exec_module(listing_prep)
 FDA = "https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing"
 
 
-def listing_payload(**updates):
+def listing_payload(label_path: Path, **updates):
     payload = {
         "responsible_person_name": "Example Beauty LLC",
         "responsible_person_phone": "+1-555-0101",
@@ -27,7 +27,7 @@ def listing_payload(**updates):
         "facility_exempt": False,
         "facilities": [{"fei": "1234567890", "exempt_confirmed": False}],
         "ingredients": ["Water", "Glycerin", "Fragrance"],
-        "ingredient_document": "label.pdf",
+        "ingredient_document": str(label_path),
         "exemption_checklist": {"small_business": False, "product_may_be_covered_exception": False, "customer_wants_listing": True},
         "customer_confirmed": True,
         "source": "owner-upload",
@@ -38,8 +38,10 @@ def listing_payload(**updates):
 
 
 def test_valid_customer_confirmed_listing_builds_customer_submit_zip(tmp_path, monkeypatch):
+    label = tmp_path / "label.pdf"
+    label.write_bytes(b"synthetic fixture; reader is mocked below")
     monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {"fields": {"ingredients": {"value": "Water, Glycerin, Fragrance", "page": 1, "confidence": 0.99, "uncertain": False}}, "text": "Ingredients: Water, Glycerin, Fragrance"})
-    result = listing_prep.prepare_listing(listing_payload(), tmp_path, as_of="2026-10-10")
+    result = listing_prep.prepare_listing(listing_payload(label), tmp_path, as_of="2026-10-10")
 
     assert result["result"] == "match"
     assert result["customer_must_submit"] is True
@@ -60,12 +62,14 @@ def test_valid_customer_confirmed_listing_builds_customer_submit_zip(tmp_path, m
 
 
 def test_unconfirmed_or_reader_uncertain_ingredients_stop_spl_generation(tmp_path, monkeypatch):
+    label = tmp_path / "label.pdf"
+    label.write_bytes(b"synthetic fixture; reader is mocked below")
     monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {
         "fields": {"ingredients": {"value": "Water, Glycerin", "page": 1, "confidence": 0.51, "uncertain": True}},
         "text": "Ingredients: Water, Glycerin",
     })
     result = listing_prep.prepare_listing(
-        listing_payload(customer_confirmed=False, ingredient_document="label.pdf"),
+        listing_payload(label, customer_confirmed=False),
         tmp_path,
         as_of="2026-10-10",
     )
@@ -76,8 +80,20 @@ def test_unconfirmed_or_reader_uncertain_ingredients_stop_spl_generation(tmp_pat
     assert not list(tmp_path.glob("*.zip"))
 
 
-def test_missing_required_fields_stays_uncertain_and_never_invents_values(tmp_path):
-    incomplete = listing_payload()
+def test_unreadable_label_stays_uncertain_instead_of_crashing(tmp_path):
+    label = tmp_path / "corrupt-label.pdf"
+    label.write_bytes(b"not a PDF")
+    result = listing_prep.prepare_listing(listing_payload(label), tmp_path / "out", as_of="2026-10-10")
+    assert result["result"] == "uncertain — please check"
+    assert result["spl_zip"] is None
+    assert "ingredient label/source document" in result["please_confirm"]
+
+
+def test_missing_required_fields_stays_uncertain_and_never_invents_values(tmp_path, monkeypatch):
+    label = tmp_path / "label.pdf"
+    label.write_bytes(b"synthetic fixture")
+    monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {"fields": {"ingredients": {"value": "Water, Glycerin, Fragrance", "page": 1, "confidence": 0.99, "uncertain": False}}, "text": "Ingredients: Water, Glycerin, Fragrance"})
+    incomplete = listing_payload(label)
     incomplete.pop("facility_fei")
     incomplete["facility_exempt"] = None
     incomplete.pop("ingredients")
@@ -96,10 +112,12 @@ def test_shopify_connector_products_merge_with_brand_confirmed_details(tmp_path,
     monkeypatch.setattr(ShopifyClient, "get_products", lambda self: [{"id": "gid://shopify/Product/1", "title": "Shopify Catalog Title", "handle": "daily-conditioner"}])
     monkeypatch.setattr(ShopifyClient, "close", lambda self: None)
     details = tmp_path / "brand-details.json"
+    label = tmp_path / "label.pdf"
+    label.write_bytes(b"synthetic fixture; reader is mocked below")
     monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {"fields": {"ingredients": {"value": "Water, Glycerin, Fragrance", "page": 1, "confidence": 0.99, "uncertain": False}}, "text": "Ingredients: Water, Glycerin, Fragrance"})
     details.write_text(json.dumps({
-        "brand": {key: value for key, value in listing_payload().items() if key not in {"product_name", "shopify_title", "shopify_id", "source", "as_of"}},
-        "products": {"gid://shopify/Product/1": {key: value for key, value in listing_payload().items() if key not in {"responsible_person_name", "responsible_person_phone", "facility_fei", "facility_exempt", "facilities", "shopify_id", "source", "as_of"}}},
+        "brand": {key: value for key, value in listing_payload(label).items() if key not in {"product_name", "shopify_title", "shopify_id", "source", "as_of"}},
+        "products": {"gid://shopify/Product/1": {key: value for key, value in listing_payload(label).items() if key not in {"responsible_person_name", "responsible_person_phone", "facility_fei", "facility_exempt", "facilities", "shopify_id", "source", "as_of"}}},
     }), encoding="utf-8")
 
     result = listing_prep._prepare_from_shopify("example.myshopify.com", details, tmp_path / "out", "2026-10-10")
@@ -111,11 +129,13 @@ def test_shopify_connector_products_merge_with_brand_confirmed_details(tmp_path,
 
 
 def test_120_day_and_annual_reminders_are_registered(tmp_path, monkeypatch):
+    label = tmp_path / "label.pdf"
+    label.write_bytes(b"synthetic fixture; reader is mocked below")
     monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {"fields": {"ingredients": {"value": "Water, Glycerin, Fragrance", "page": 1, "confidence": 0.99, "uncertain": False}}, "text": "Ingredients: Water, Glycerin, Fragrance"})
     recorded = []
     monkeypatch.setattr(listing_prep, "add_deadline", lambda *args: recorded.append(args))
     result = listing_prep.prepare_listing(
-        listing_payload(first_market_date="2026-10-01", last_listing_date="2026-10-01", shopify_id="gid://Product/1"),
+        listing_payload(label, first_market_date="2026-10-01", last_listing_date="2026-10-01", shopify_id="gid://Product/1"),
         tmp_path,
         as_of="2026-10-10",
     )

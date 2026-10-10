@@ -1,0 +1,22 @@
+{
+  "slug": "osha-filing",
+  "name": "osha 300a filing preparation",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare a source-linked annual OSHA 300A review worksheet from customer-confirmed injury and hours data.",
+    "channel": "Local Glacier workflow; no public mailing or paid checkout is enabled.",
+    "government_submission": "The establishment executive reviews, certifies, submits through the establishment's OSHA ITA account, and posts the signed summary. Glacier never certifies or submits."
+  },
+  "blocks": ["feeds.osha_ita", "deadlines"],
+  "block_functions": ["sync", "query", "deadlines.add", "deadlines.due"],
+  "flows": ["prepare-300a", "annual-deadline-reminders"],
+  "schedules": [{"flow": "annual-deadline-reminders", "cron": "0 9 * * *", "purpose": "Show locally stored annual OSHA filing reminders."}],
+  "secrets_needed": [],
+  "your_steps": [
+    {"id": "confirm-coverage", "title": "Confirm coverage and establishment details", "when": "Before preparation", "detail": "Check the establishment identity and OSHA coverage rules for its size and industry. Add current employee count, customer-confirmed injury totals, hours, and headcount.", "links": ["https://www.osha.gov/recordkeeping"]},
+    {"id": "certify-submit", "title": "Review, certify, and submit", "when": "January 2 through March 2", "detail": "The executive reviews the worksheet, signs/certifies it, and submits it in the establishment's OSHA ITA account. Glacier does not sign or submit.", "links": ["https://www.osha.gov/injuryreporting/ita"]},
+    {"id": "post-copy", "title": "Post the signed summary", "when": "February 1 through April 30", "detail": "Post the customer-certified 300A summary at the establishment. Save the ITA confirmation and signed posting copy in the local job folder.", "links": ["https://www.osha.gov/recordkeeping"]}
+  ],
+  "launch_gates": ["Owner reviews first five customer-prepared worksheets.", "Executive certification and customer ITA submission remain customer-controlled.", "No postcard campaign, checkout, or delegate access until separately configured and approved."],
+  "dry_run_env_id": "prepare-300a"
+}

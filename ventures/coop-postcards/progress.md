@@ -1,7 +1,3 @@
-# Progress
+# Progress — Co-op claims and street postcards
 
-PH12.13 work is partially implemented and independently exercised by the venture's focused test file. Both flow manifests validate; both installed in the disposable real Glacier runtime. The street-card flow completed end to end after a local approval and produced render-only proofs with no Lob request.
-
-The co-op claim flow is guarded and does not file while the shared rules checker is absent. Shared mail, filer, and connector release tests passed: 4, 3, and 11 checks respectively. No Jobber account, brand portal, Lob test account, customer transaction, printer order, or government filing was used.
-
-PH12.13 is not complete. Missing shared reader/rules/deadline blocks, Jobber's dealer-facing app, installer script staging, resumable filer approval state, EDDM flat output, checkout/refund handling and 30-day upload deletion remain. The capability claim is open at `vault/claims/2026-10-10-ph12-13-coop-postcards-capability-gaps.md`. Live UI screenshot evidence is still pending.
+PH12.13's integrated-rules test now asserts that valid evidence passes and missing required preapproval fails; the assertion was already corrected in the integrated tree. This card added persisted rejected-claim outcome tracking: a first rejection permits one corrected resubmit, and a second rejection drops the claim. The focused suite passes 9 tests; both venture flows validate in installer dry-run. As directed by the card, shared reader/deadline wiring and EDDM size/weight validation remain with the integrator. No real brand portal, dealer records, paid mailing, or government filing was used. PH12.13 remains unverified.
