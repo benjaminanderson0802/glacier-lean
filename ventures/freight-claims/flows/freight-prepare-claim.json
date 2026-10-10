@@ -76,6 +76,17 @@
         "x": 1100,
         "y": 100
       }
+    },
+    {
+      "id": "owner_input_ready",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: save customer-confirmed shipment and claim details at $GLACIER_HOME/ventures/freight-claims/incoming/claim-intake.json, with bill of lading, invoice, delivery receipt, photographs, and carrier terms cited by local path. Return and approve after the available source files are in place. Glacier will prepare a draft only."
+      },
+      "position": {
+        "x": -200,
+        "y": 100
+      }
     }
   ],
   "edges": [
@@ -104,6 +115,11 @@
       "id": "e4",
       "source": "record_owner_review",
       "target": "approve_customer_submission"
+    },
+    {
+      "id": "i5-owner_input_ready-prepare_packet",
+      "source": "owner_input_ready",
+      "target": "prepare_packet"
     }
   ],
   "acceptance": [

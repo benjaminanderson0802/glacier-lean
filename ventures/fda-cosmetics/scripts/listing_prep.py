@@ -251,6 +251,12 @@ def parse_response(path: str | Path) -> dict[str, Any]:
 def _prepare_from_shopify(shop: str, details_path: Path, output: Path, as_of: str | None) -> dict[str, Any]:
     from ventures.blocks.connectors import ConnectorError, ShopifyClient
 
+    if not details_path.is_file():
+        output.mkdir(parents=True, exist_ok=True)
+        summary = {"shop": shop, "products_read": 0, "products": [], "submitted": False, "ready": False,
+                   "setup_required": f"Save brand-confirmed product details at {details_path}; include ingredients, label sources, facility details, and listing dates. No product data was read and no packet was made."}
+        (output / "shopify-listing-summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        return summary
     details = json.loads(details_path.read_text(encoding="utf-8"))
     try:
         client = ShopifyClient(shop)

@@ -11,24 +11,47 @@
         "timeout": "120",
         "retries": "0"
       },
-      "position": {"x": 0, "y": 0}
+      "position": {
+        "x": 0,
+        "y": 0
+      }
     },
     {
       "id": "packet_ready",
       "type": "check",
-      "config": {"expr": "exit_code == 0"},
-      "position": {"x": 300, "y": 0}
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
     },
     {
       "id": "customer_submit",
       "type": "approval",
-      "config": {"prompt": "Your step: Review the packet and every source. If the run says Shopify setup is needed, complete the Shopify step in your steps and run again. Submit only after a packet exists and you have confirmed its ingredients and exemption checklist. You sign and submit the listing to FDA; Glacier has not signed or submitted anything."},
-      "position": {"x": 600, "y": 0}
+      "config": {
+        "prompt": "Your step: connect the Shopify store with read_products access in Glacier Settings → Secrets and save brand-confirmed details at $GLACIER_HOME/ventures/fda-cosmetics/incoming/brand-details.json, including ingredients, label sources, facility information, and listing dates. If the run reports setup required, finish the connection and run again. After a packet exists, review every field; the brand signs and submits the FDA listing through Cosmetics Direct. Glacier has not signed or submitted anything."
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
     }
   ],
   "edges": [
-    {"id": "e1", "source": "prepare_packet", "target": "packet_ready", "label": ""},
-    {"id": "e2", "source": "packet_ready", "target": "customer_submit", "label": "yes"}
+    {
+      "id": "e1",
+      "source": "prepare_packet",
+      "target": "packet_ready",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "packet_ready",
+      "target": "customer_submit",
+      "label": "yes"
+    }
   ],
   "acceptance": [
     {

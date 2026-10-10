@@ -1,12 +1,50 @@
 {
-  "id": "daily-deadlines",
+  "id": "osha-daily-deadlines",
   "name": "OSHA filing window reminders",
   "goal": "Use the shared deadline tracker to remind customers about the Jan 2–Mar 2 filing window and the February 1–April 30 posting period.",
   "nodes": [
-    {"id": "daily", "type": "schedule", "config": {"cron": "0 9 * * *", "missed_run": "run_once", "overlap": "skip"}, "position": {"x": 0, "y": 0}},
-    {"id": "deadline_check", "type": "command", "config": {"cmd": "python ventures/osha-filing/scripts/osha_filing.py deadlines", "timeout": "60", "retries": "0", "cwd": "{repo}"}, "position": {"x": 320, "y": 0}}
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "deadline_check",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/osha-filing/scripts/osha_filing.py deadlines",
+        "timeout": "60",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 320,
+        "y": 0
+      }
+    }
   ],
-  "edges": [{"id": "e1", "source": "daily", "target": "deadline_check", "label": ""}],
-  "acceptance": [{"kind": "command", "cmd": "python -c \"import json,os,pathlib; d=json.loads((pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'osha-filing'/'deadline-status.json').read_text()); assert d['customer_submits'] and not d['certification_by_glacier']\"", "required": true}],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "deadline_check",
+      "label": ""
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python -c \"import json,os,pathlib; d=json.loads((pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'osha-filing'/'deadline-status.json').read_text()); assert d['customer_submits'] and not d['certification_by_glacier']\"",
+      "required": true
+    }
+  ],
   "max_steps": 2
 }

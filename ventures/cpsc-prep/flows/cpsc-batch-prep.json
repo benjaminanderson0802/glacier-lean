@@ -2,15 +2,92 @@
   "id": "cpsc-batch-prep",
   "name": "CPSC batch preparation",
   "nodes": [
-    {"id": "prepare-draft", "type": "command", "config": {"cmd": "python3 scripts/cpsc_prep.py \"$GLACIER_HOME/ventures/cpsc-prep/incoming/batch.json\" --out \"$GLACIER_HOME/ventures/cpsc-prep/drafts/draft-{run}.json\"", "cwd": "ventures/cpsc-prep", "timeout": "300"}, "position": {"x": 0, "y": 0}},
-    {"id": "review-certify", "type": "approval", "config": {"prompt": "Your step: Review every CPSC field beside its source page, resolve all uncertain results, and certify this batch as the importer or licensed customs broker. The generated file contains only these product records and current CPSC template columns. Glacier will prepare the file; it will not submit anything to CPSC."}, "position": {"x": 360, "y": 0}},
-    {"id": "generate-upload", "type": "command", "config": {"cmd": "python3 scripts/cpsc_prep.py \"$GLACIER_HOME/ventures/cpsc-prep/incoming/batch.json\" --customer-certified --out \"$GLACIER_HOME/ventures/cpsc-prep/results/result-{run}.json\" --csv-out \"$GLACIER_HOME/ventures/cpsc-prep/results/registry-upload-{run}.csv\"", "cwd": "ventures/cpsc-prep", "timeout": "300"}, "position": {"x": 720, "y": 0}},
-    {"id": "batch-status", "type": "command", "config": {"cmd": "python3 scripts/status_board.py record --result \"$GLACIER_HOME/ventures/cpsc-prep/results/result-{run}.json\"", "cwd": "ventures/cpsc-prep", "timeout": "60"}, "position": {"x": 1080, "y": 0}}
+    {
+      "id": "prepare-draft",
+      "type": "command",
+      "config": {
+        "cmd": "python3 scripts/cpsc_prep.py \"$GLACIER_HOME/ventures/cpsc-prep/incoming/batch.json\" --out \"$GLACIER_HOME/ventures/cpsc-prep/drafts/draft-{run}.json\"",
+        "cwd": "ventures/cpsc-prep",
+        "timeout": "300"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "review-certify",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review every CPSC field beside its source page, resolve all uncertain results, and certify this batch as the importer or licensed customs broker. The generated file contains only these product records and current CPSC template columns. Glacier will prepare the file; it will not submit anything to CPSC."
+      },
+      "position": {
+        "x": 360,
+        "y": 0
+      }
+    },
+    {
+      "id": "generate-upload",
+      "type": "command",
+      "config": {
+        "cmd": "python3 scripts/cpsc_prep.py \"$GLACIER_HOME/ventures/cpsc-prep/incoming/batch.json\" --customer-certified --out \"$GLACIER_HOME/ventures/cpsc-prep/results/result-{run}.json\" --csv-out \"$GLACIER_HOME/ventures/cpsc-prep/results/registry-upload-{run}.csv\"",
+        "cwd": "ventures/cpsc-prep",
+        "timeout": "300"
+      },
+      "position": {
+        "x": 720,
+        "y": 0
+      }
+    },
+    {
+      "id": "batch-status",
+      "type": "command",
+      "config": {
+        "cmd": "python3 scripts/status_board.py record --result \"$GLACIER_HOME/ventures/cpsc-prep/results/result-{run}.json\"",
+        "cwd": "ventures/cpsc-prep",
+        "timeout": "60"
+      },
+      "position": {
+        "x": 1080,
+        "y": 0
+      }
+    },
+    {
+      "id": "owner_input_ready",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: save the non-empty customer-confirmed product batch at $GLACIER_HOME/ventures/cpsc-prep/incoming/batch.json. Include each product's source documents and required CPSC fields. Leave this step waiting until the file is ready, then return and approve. Glacier will prepare a draft and will not submit it to CPSC."
+      },
+      "position": {
+        "x": -300,
+        "y": 0
+      }
+    }
   ],
   "edges": [
-    {"id": "e1", "source": "prepare-draft", "target": "review-certify", "label": ""},
-    {"id": "e2", "source": "review-certify", "target": "generate-upload", "label": "yes"},
-    {"id": "e3", "source": "generate-upload", "target": "batch-status", "label": ""}
+    {
+      "id": "e1",
+      "source": "prepare-draft",
+      "target": "review-certify",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "review-certify",
+      "target": "generate-upload",
+      "label": "yes"
+    },
+    {
+      "id": "e3",
+      "source": "generate-upload",
+      "target": "batch-status",
+      "label": ""
+    },
+    {
+      "id": "i5-owner_input_ready-prepare-draft",
+      "source": "owner_input_ready",
+      "target": "prepare-draft"
+    }
   ],
   "max_steps": 20
 }

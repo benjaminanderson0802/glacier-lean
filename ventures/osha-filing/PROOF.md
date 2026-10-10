@@ -15,16 +15,16 @@ This file records commands and outputs for the OSHA filing venture. The delivera
 Focused acceptance tests:
 
 ```text
-$ /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/osha-filing/tests/test_osha_filing.py
-......                                                                   [100%]
-6 passed in 0.07s
+$ /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/osha-filing/tests
+........                                                                 [100%]
+8 passed
 ```
 
 Manifest and flow validation:
 
 ```text
 $ /home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only osha-filing --dry-run
-4 flows validated: january-outreach, prepare-300a, daily-deadlines, jobber-channel
+4 flows validated: january-outreach, prepare-300a, osha-daily-deadlines, jobber-channel
 ```
 
 Synthetic zero-injury Form 300A packet:
@@ -45,15 +45,7 @@ The live feed parser loaded 400,288 rows from OSHA's official ITA download page 
 
 The four flow acceptance commands passed against a disposable local `GLACIER_HOME` with synthetic status files.
 
-The real-Glacier attempt used the required wrapper:
-
-```text
-$ heavy npm run live  # from glacier/web
-backend startup: succeeded
-Vite startup: failed; Node could not find glacier/web/node_modules/vite/bin/vite.js (MODULE_NOT_FOUND)
-```
-
-The backend started, then the live runner shut it down when Vite failed. This worktree's `glacier/web/node_modules` is present but lacks Vite. Dependency installation or borrowing another worktree's node_modules is outside this venture's file lane, so I stopped without changing platform or environment files. A real Glacier flow run and screenshot remain unverified; no checkpoint status is changed.
+The first real-Glacier attempt failed to start Vite because this worktree lacked installed web dependencies. After installing the pinned lockfile dependencies with `npm ci`, `heavy npm run live` started both the real backend and UI. On a fresh disposable home, the installer validated 36 flows, saved all 36 on the first run, and reported all 36 unchanged on the second run. The OSHA main flow waited at `Your step: save customer-confirmed Form 300A input .../ventures/osha-filing/incoming/300a.json`; its prepare command remained pending and no node failed. Screenshot: `evidence/ventures/final-osha.png`; run record: `evidence/ventures/i5-final3-live-walkthrough.json` (OSHA run `a90dcaff0937`, repeated as `61affb3483ea`). No customer records, OSHA account, signature, mail, filing, or payment were used. PH12.22 remains in progress.
 
 ## Limitations
 

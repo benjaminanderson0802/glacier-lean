@@ -87,3 +87,41 @@ Auditor: I3 integrator. This records integration evidence and release gaps; inte
 - `evidence/ventures/final2-venture-tests.log`, `final2-block-checks.log`, `final2-backend-tests.log`, `final2-ui-check-ui.log`, `final2-core-board.log`, and `final2-live-codex-check.log` — board outputs.
 - `evidence/ventures/final2-install-dry-run.json`, `final2-install-first.json`, `final2-install-second.json`, and `final2-installer-idempotence.json` — dry-run and idempotence evidence.
 - `evidence/ventures/final2-live-walkthrough.json` and `final2-*.png` — 12 ventures, dry-run outcomes, visible owner steps, cards, and run views.
+
+## I5 final merge and owner-input gates
+
+### Drift check and acceptance
+
+- Checkpoint: PH12.22. PH12 remains in progress because PH5/PH9 have not reached their exits; this integration does not mark the checkpoint done.
+- Defining properties and metrics: P-VERIFY, P-LOOPS, P-CONTROL, P-USABLE; M-AUDIT, M-INTERVENE, M-RECOVER.
+- I-01: compose the existing Glacier runtime and shared venture blocks; no paid or closed-source tool was added.
+- Acceptance: merge OSHA and Windows with no-ff; run the venture tests, full backend suite, and UI board; install every venture twice into a disposable real Glacier home; then start each of the 12 manifest main flows twice with no failed node and capture the OSHA owner step.
+
+### Merge and implementation
+
+- Merged `card/gf-V-OSHA2` and `origin/windows-ventures` with separate `--no-ff` merge commits. OSHA conflicts used the rebuilt shared-block implementation and its tests. Windows fixes and `ventures/WINDOWS-PROOF.md` survived.
+- `card/gf-F2` had no delta from I4 and `~/tools/cards/gf-F2.final.txt` was absent; the already-merged feed block was left untouched.
+- The new OSHA `daily-deadlines` flow ID collided with Warranty's existing flow ID and would overwrite its installed graph. Renamed the OSHA flow `osha-daily-deadlines` and updated its manifest schedule reference.
+- Added owner approval gates before file-dependent main flows so missing intake cannot start a failing command. Prompts name the exact local input path and required content; FDA now creates a truthful `setup_required` summary when its brand-details file is absent and reaches the existing customer owner step. The Recall dry-run points to a clearly synthetic checked-in sample CSV.
+- Updated the OSHA owner step table and venture integration statuses in the README.
+
+### I5 final boards and live run
+
+- `heavy /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/<each tests directory>` — **196 passed, 3 subtests passed, 2 failed across 21 directories**. `ventures/recall-checker/tests/test_recall_checker.py::RecallMatcherAcceptanceTests::test_clean_item_uses_required_source_and_date_vocabulary` expects `no match in ...`, while the shared rules/spec vocabulary returns `no match found in ...`; `ventures/tests/test_install_all.py::InstallAllTests::test_discovery_is_data_driven_and_only_filters_by_slug` expects the repository to contain only Apify flows (2), while the manifests correctly declare 36 installable flows. Neither judging assertion was changed. FDA's nine tests, Windows installer tests, filer tests, and the other venture/block tests pass. Full output: `evidence/ventures/i5-venture-tests.log`.
+- `heavy` full backend board — **824 passed, 1 skipped, 8 failed, 5 warnings in 17m**: `evidence/ventures/i5-backend-tests.log`. Three Home assertions count the intentional I4 setup/approval queue additions as unexpected (36 baseline owner steps, 39 after adding three runs, and a venture queue item before a run-specific item). The three template failures are the email-arrival trigger rejecting manual start, absent `EMAIL_APP_PASSWORD`, and structured-AI output rejected by the schema check. These are preserved as findings; no backend judging test was edited. The three assistant-chat timeout cases, verification case, and paused-schedule resume case passed when rerun alone (`evidence/ventures/i5-isolated-backend.log`). Two additional full-suite timeouts in claims-research server startup and code-undo run finalization also passed individually in 1.66s and 1.80s (`evidence/ventures/i5-isolated-backend-followup.log`), identifying load contention rather than a reproducible product regression.
+- `GLACIER_PYTHON=/home/glacier/w/glacier-lean/.venv/bin/python heavy npm run check:ui` — **30/30 steps passed**, including live-backend and venture-screen checks: `evidence/ventures/i5-ui-check-ui.log`.
+- After `npm ci` restored the pinned web dependencies, `heavy npm run live` started the real backend and UI in `/tmp/glacier-i5-final3-live-20261010`. `ventures/install_all.py --dry-run` validated **36 flows**; the first install saved **36**, the second found **36 unchanged** (`evidence/ventures/i5-final-install-dry-run.json`, `i5-final3-install-first.json`, `i5-final3-install-second.json`).
+- With no owner input files in that fresh home, all **12 main flows ran twice**: Apify completed both runs; the other **22 runs waited at owner steps**; **0 failed runs and 0 failed nodes**. See `evidence/ventures/i5-final3-live-walkthrough.json`. OSHA waited at `owner_input_ready` on runs `a90dcaff0937` and `61affb3483ea`; the screenshot is `evidence/ventures/final-osha.png`.
+- A redundant install attempt made while the full backend board and a live server were competing for resources timed out (`evidence/ventures/i5-final2-install-first.json`). The serialized final3 fresh-home install pair above succeeded, with stable IDs and no further retry under contention.
+
+### I5 remaining issues
+
+- PH12.22 stays `in_progress`; PH5 and PH9 have not reached their exits. No checkpoint was marked done.
+- The two venture assertions and six isolated backend failures listed above remain unresolved or intentionally preserve current behavior; the other two full-suite failures passed individually and are recorded as load contention. The shared feed live-source alerts, missing owner accounts/data, and remaining independent review items from I4 also remain; this audit is not a release or launch claim.
+- The owner's Windows proof is `ventures/WINDOWS-PROOF.md`. Its Windows installer/FDA/shell-command results are retained in this merge.
+
+### I5 evidence
+
+- `evidence/ventures/i5-venture-tests.log`, `i5-backend-tests.log`, `i5-isolated-backend.log`, `i5-isolated-backend-followup.log`, and `i5-ui-check-ui.log` — final test boards and isolated reproductions.
+- `evidence/ventures/i5-final-install-dry-run.json`, `i5-final3-install-first.json`, `i5-final3-install-second.json`, and `i5-final3-live-walkthrough.json` — fresh-home validation, repeat install, and 24 dry-runs.
+- `evidence/ventures/final-osha.png` and `ventures/osha-filing/PROOF.md` — final OSHA approval screen and run evidence.

@@ -3,14 +3,79 @@
   "name": "Prepare and review Form 300A",
   "goal": "Check customer-confirmed annual totals, produce a printable Form 300A review draft, and leave certification and OSHA ITA submission to the customer.",
   "nodes": [
-    {"id": "prepare", "type": "command", "config": {"cmd": "python ventures/osha-filing/scripts/osha_filing.py prepare-300a --input \"$GLACIER_HOME/ventures/osha-filing/incoming/300a.json\" --output \"$GLACIER_HOME/ventures/osha-filing/packets/300a-review.html\"", "timeout": "120", "retries": "0", "cwd": "{repo}"}, "position": {"x": 0, "y": 0}},
-    {"id": "first_five_review", "type": "approval", "config": {"prompt": "Your step: review this prepared Form 300A packet if it is one of the first five submissions for this venture. Confirm the totals and industry-plausibility review; your approval only records that review and does not certify or submit anything. After the first five reviews, this owner review gate is no longer needed."}, "position": {"x": 320, "y": 0}},
-    {"id": "customer_review", "type": "approval", "config": {"prompt": "Your step: review each Form 300A value against your OSHA 300 Log and hours/headcount records. An uncertain or failed check needs correction. Your executive signs and dates the final summary, posts it February 1–April 30, and submits it through your own OSHA ITA account by March 2. Glacier only prepares the review copy; it never certifies or submits."}, "position": {"x": 640, "y": 0}}
+    {
+      "id": "prepare",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/osha-filing/scripts/osha_filing.py prepare-300a --input \"$GLACIER_HOME/ventures/osha-filing/incoming/300a.json\" --output \"$GLACIER_HOME/ventures/osha-filing/packets/300a-review.html\"",
+        "timeout": "120",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "first_five_review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review this prepared Form 300A packet if it is one of the first five submissions for this venture. Confirm the totals and industry-plausibility review; your approval only records that review and does not certify or submit anything. After the first five reviews, this owner review gate is no longer needed."
+      },
+      "position": {
+        "x": 320,
+        "y": 0
+      }
+    },
+    {
+      "id": "customer_review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review each Form 300A value against your OSHA 300 Log and hours/headcount records. An uncertain or failed check needs correction. Your executive signs and dates the final summary, posts it February 1–April 30, and submits it through your own OSHA ITA account by March 2. Glacier only prepares the review copy; it never certifies or submits."
+      },
+      "position": {
+        "x": 640,
+        "y": 0
+      }
+    },
+    {
+      "id": "owner_input_ready",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: save customer-confirmed Form 300A input at $GLACIER_HOME/ventures/osha-filing/incoming/300a.json. Include establishment name/ID, year, industry code, employee count, hours worked, all case/day totals, and executive name/title. The sample ventures/osha-filing/fixtures/300a.zero-injury.example.json is synthetic and must only be used for a dry-run. Return and approve once the file is ready; the executive signs, posts, and submits through OSHA ITA."
+      },
+      "position": {
+        "x": -300,
+        "y": 0
+      }
+    }
   ],
   "edges": [
-    {"id": "e1", "source": "prepare", "target": "first_five_review", "label": "exit_code == 0"},
-    {"id": "e2", "source": "first_five_review", "target": "customer_review", "label": "approved"}
+    {
+      "id": "e1",
+      "source": "prepare",
+      "target": "first_five_review",
+      "label": "exit_code == 0"
+    },
+    {
+      "id": "e2",
+      "source": "first_five_review",
+      "target": "customer_review",
+      "label": "approved"
+    },
+    {
+      "id": "i5-owner_input_ready-prepare",
+      "source": "owner_input_ready",
+      "target": "prepare"
+    }
   ],
-  "acceptance": [{"kind": "command", "cmd": "python -c \"import os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'osha-filing'/'packets'/'300a-review.html'; s=p.read_text(); assert 'customer_signature_required' not in s and 'Glacier does not certify or submit' in s\"", "required": true}],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python -c \"import os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'osha-filing'/'packets'/'300a-review.html'; s=p.read_text(); assert 'customer_signature_required' not in s and 'Glacier does not certify or submit' in s\"",
+      "required": true
+    }
+  ],
   "max_steps": 3
 }

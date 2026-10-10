@@ -98,6 +98,17 @@
         "x": 1500,
         "y": 120
       }
+    },
+    {
+      "id": "owner_input_ready",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: save current solicitation records at $GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json and verified manufacturer or authorized-distributor quotes at $GLACIER_HOME/ventures/dibbs-supply/incoming/quotes.json. Include solicitation IDs, exact part numbers, quantities, due dates, quote prices, and supplier authorization evidence. Return and approve after both files are ready."
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
     }
   ],
   "edges": [
@@ -142,6 +153,11 @@
       "source": "ready",
       "target": "uncertain_note",
       "label": "no"
+    },
+    {
+      "id": "i5-owner_input_ready-prepare",
+      "source": "owner_input_ready",
+      "target": "prepare"
     }
   ],
   "acceptance": [

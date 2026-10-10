@@ -1,6 +1,6 @@
 # Ventures integration index
 
-This index follows [SPEC.md](SPEC.md), the owner-approved source of truth. “Integrated” means a manifest and runnable flow are present; it does not mean the venture is launch-ready. Wave 2 integration includes B1, V-CPSC, V-COOP, and the ventures already present on `origin/glacier-final`.
+This index follows [SPEC.md](SPEC.md), the owner-approved source of truth. “Integrated” means a manifest and runnable flow are present; it does not mean the venture is launch-ready. Wave 6 integration includes all 12 in-scope ventures.
 
 Independent findings for this wave are recorded in [AUDIT-wave2.md](AUDIT-wave2.md); unresolved integration gaps are tracked in `vault/claims/`.
 
@@ -21,23 +21,23 @@ Package imports are rooted at `ventures.blocks`; all eight contract modules are 
 
 ## Ventures
 
-Owner steps below are taken from the approval gates, build queue, and setup requirements in SPEC.md. Any public launch, account signup, identity check, legal decision, spend, or government filing remains an owner/customer action. No venture below has an integrated manifest and runnable flow in this branch.
+Owner steps below are taken from the approval gates, build queue, and setup requirements in SPEC.md. Any public launch, account signup, identity check, legal decision, spend, or government filing remains an owner/customer action.
 
 | Venture | Status | Exact owner steps before/at launch |
 | --- | --- | --- |
-| CPSC data prep | Integrated; local acceptance and install checks available; real feed + second-engine batch proof pending | Obtain the trade lawyer’s written opinion that the broker flat-fee model is permitted; review and sign the first broker contract; review every extracted batch field, resolve uncertain values, and certify the upload as importer or licensed broker. The customer/importer or broker submits to CPSC. |
-| Apify data tools | Not integrated; branch not final | Create/sign in to the Apify account and complete payout setup; create and least-privilege the dedicated token, then save it in Glacier Secrets; choose three terms-permitted public license canaries; review and publish the first three actors. |
-| Warranty registration | Not integrated; branch not final | Create/configure the Jobber developer app and test account; save OAuth credentials in Glacier Secrets and run its read-only connection check; review the marketplace listing and submit it after five eligible test accounts; review the first 20 homeowner emails. |
-| Recall checker | Not integrated | Review and submit the first Chrome Web Store listing; review the first 50 recall pages. The extension must stay limited to the page the user opened. |
-| Co-op claims | Integrated; prior real-runtime approval smoke is recorded, fresh install proof pending; one stale test assumption and shared-block production gaps remain | Review the first claim for each brand; authorize each customer claim and sign/submit any government filing where applicable. |
-| Street postcards | Integrated; local proof and test-mode flow; not launch-ready because EDDM flat-size/weight proof is missing | Choose the first towns/routes; approve the first card before print; complete the Lob account and printer/post-office setup; approve each buyer proof where its checkout terms require approval. |
-| Freight claims | Not integrated | Complete ShipStation partner/app access; review the first ten claims; the shipper decides whether to accept any settlement/full release. |
-| FDA cosmetics listing tool | Not integrated | Create the Shopify Partner app/account and development store; request only `read_products`; complete app review and submit the first listing. The brand confirms product/ingredient data; Glacier does not submit FDA filings. |
-| OSHA filing | Not integrated | Approve the first postcard design; review the first five submissions; the establishment’s executive signs the 300A certification and the customer submits through their own OSHA account (or explicitly authorizes a delegate). |
-| Property tax appeals | Not integrated | Select the initial counties and mail design; obtain Texas consultant registration before Texas filings; the property owner reviews/signs and submits each appeal. |
-| Utility audits | Not integrated | Choose the launch state and utility tariff; approve the first customer-facing offer. The customer confirms account data and approves any utility authorization or external submission. |
-| DIBBS government supply | Not integrated | Complete SAM.gov and CAGE registration; approve each quote/order and sign all government representations. Glacier may prepare bid packets but the owner/customer submits. |
-| Carpenter’s goods | Integrated; fixture tests and manifest install check; real runtime path still needs verification | Agree commission terms with the carpenter in writing; approve the first product listing and any paid production/order. |
+| CPSC data prep | Integrated; local acceptance and install checks available; source feeds and second-engine proof remain | Obtain the trade lawyer’s written opinion that the broker flat-fee model is permitted; review and sign the first broker contract; review every extracted batch field, resolve uncertain values, and certify the upload as importer or licensed broker. The customer/importer or broker submits to CPSC. |
+| Apify data tools | Integrated; local/live canary evidence available; account and publication steps remain | Create/sign in to the Apify account and complete payout setup; create and least-privilege the dedicated token, then save it in Glacier Secrets; choose three terms-permitted public license canaries; review and publish the first three actors. |
+| Warranty registration | Integrated; connector fixture and flow checks available; owner account and real records remain | Create/configure the Jobber developer app and test account; save OAuth credentials in Glacier Secrets and run its read-only connection check; review the marketplace listing and submit it after five eligible test accounts; review the first 20 homeowner emails. |
+| Recall checker | Integrated; local matching and flow checks available; benchmark and publishing gates remain | Review and submit the first Chrome Web Store listing; review the first 50 recall pages. The extension must stay limited to the page the user opened. |
+| Co-op claims | Integrated; local acceptance and shared-block checks available; live account and mail remain | Review the first claim for each brand; authorize each customer claim and sign/submit any government filing where applicable. |
+| Street postcards | Integrated; local proof and test-mode flow; not launch-ready until live EDDM proof | Choose the first towns/routes; approve the first card before print; complete the Lob account and printer/post-office setup; approve each buyer proof where its checkout terms require approval. |
+| Freight claims | Integrated; local acceptance and install checks available; live account and carrier claim remain | Complete ShipStation partner/app access; review the first ten claims; the shipper decides whether to accept any settlement/full release. |
+| FDA cosmetics listing tool | Integrated; local acceptance and install checks available; real Shopify/FDA evidence remains | Create the Shopify Partner app/account and development store; request only `read_products`; complete app review and submit the first listing. The brand confirms product/ingredient data; Glacier does not submit FDA filings. |
+| OSHA filing | Integrated; shared-block implementation and fixture acceptance available; OSHA customer-data run remains | Connect the Jobber test app and review the first postcard; review the first five prepared filings; the executive reviews, signs, posts, and submits Form 300A through the establishment’s own OSHA ITA account. |
+| Property tax appeals | Integrated; local acceptance and install checks available; county rule decision remains | Select the initial counties and mail design; obtain Texas consultant registration before Texas filings; the property owner reviews/signs and submits each appeal. |
+| Utility audits | Integrated; local acceptance and install checks available; customer bill and tariff evidence remain | Choose the launch state and utility tariff; approve the first customer-facing offer. The customer confirms account data and approves any utility authorization or external submission. |
+| DIBBS government supply | Integrated; fixture acceptance and install checks available; live solicitations and quotes remain | Complete SAM.gov and CAGE registration; approve each quote/order and sign all government representations. Glacier may prepare bid packets but the owner/customer submits. |
+| Carpenter’s goods | Integrated; fixture acceptance and install checks available; real runtime proof remains | Agree commission terms with the carpenter in writing; approve the first product listing and any paid production/order. |
 | Tariff estimator | On hold by owner’s instruction; not built | Do not build or launch until the owner’s trade lawyer approves the flat-fee model and confirms open deadlines; importer or licensed broker files. |
 
 ## Out of scope
