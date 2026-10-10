@@ -141,12 +141,17 @@ def home():
             })
         if status == "waiting":
             current = store.get_run(run_id) or {}
-            needs_you.append({
-                "kind": "approval", "title": "approval waiting", "detail": name,
-                "at": _iso(row.get("started_at")),
-                "ref": {"run_id": run_id, **({"node_id": current["waiting_on"]} if current.get("waiting_on") else {}),
-                        "env_id": env_id},
-            })
+            prompt = ""
+            if current.get("waiting_on"):
+                node = next((item for item in graph.get("nodes", []) if item.get("id") == current["waiting_on"]), None)
+                prompt = str(((node or {}).get("config") or {}).get("prompt") or "")
+            if not prompt.startswith("Your step:"):
+                needs_you.append({
+                    "kind": "approval", "title": "approval waiting", "detail": name,
+                    "at": _iso(row.get("started_at")),
+                    "ref": {"run_id": run_id, **({"node_id": current["waiting_on"]} if current.get("waiting_on") else {}),
+                            "env_id": env_id},
+                })
         elif status == "failed":
             try:
                 started = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
@@ -171,6 +176,10 @@ def home():
             ref["node_id"] = full["node_id"]
         needs_you.append({"kind": "claim", "title": item.get("kind") or "claim", "detail": item.get("summary") or "",
                           "at": _iso(full.get("updated")), "ref": ref})
+
+    from routes import ventures
+    needs_you.extend(ventures.approval_steps())
+    needs_you.extend(ventures.setup_items())
 
     needs_you.sort(key=lambda item: item["at"], reverse=True)
     running.sort(key=lambda item: item["started_at"], reverse=True)

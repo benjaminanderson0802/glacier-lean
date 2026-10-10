@@ -42,6 +42,13 @@ const mockClaims = new Map([['c0ffee01', {
   summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
 }]])
 const mockSecrets = new Set(['SMTP_PASSWORD'])
+let mockApprovalDone = false
+const mockVentures = new Map([['truck-dispatch', {
+  slug: 'truck-dispatch', name: 'Truck dispatch', status: 'setting_up',
+  flows: [{ env_id: 'dispatch', dry_run_env_id: 'dispatch-preview' }], schedule: { cron: '0 8 * * *' },
+  next_run: new Date(Date.now() + 3600_000).toISOString(), today: { runs: 4, completed: 3, failed: 0 },
+  your_steps: [{ id: 'fleet-key', title: 'Paste the fleet key', instructions: 'Add it from the fleet portal.', link: 'https://fleet.example.test/settings/api', secret_name: 'FLEET_KEY', done: false }],
+} ]])
 const mockHygiene = [
   { id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.', status: 'pending' },
   { id: 'h2', kind: 'archive', paths: ['old/chat-log.md'], reason: 'Not opened or linked for over 90 days.', status: 'pending' },
@@ -97,6 +104,35 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname
     let m
     try {
+    if (p === '/api/ventures' && req.method === 'GET') return send(200, [...mockVentures.values()])
+    if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/(pause|resume)$/)) && req.method === 'POST') {
+      const venture = mockVentures.get(m[1]); if (!venture) return send(404, { detail: 'venture not found' })
+      venture.status = m[2] === 'pause' ? 'paused' : 'running'
+      return send(200, { paused: m[2] === 'pause', flows: venture.flows.map(flow => flow.env_id) })
+    }
+    if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/run$/)) && req.method === 'POST') {
+      const venture = mockVentures.get(m[1]); if (!venture) return send(404, { detail: 'venture not found' })
+      const body = await readBody()
+      if (body?.dry_run === false) return send(400, { detail: 'Venture runs from this screen must use the dry-run flow' })
+      const flow = venture.flows.find(item => item.dry_run_env_id) ?? venture.flows[0]
+      const env_id = flow.dry_run_env_id
+      if (!env_id) return send(409, { detail: 'dry-run flow not configured' })
+      const graph = envs.get(env_id) ?? { id: env_id, name: `${venture.name} dry run`, nodes: [
+        { id: 'preview', type: 'command', config: { cmd: 'echo preview only' }, position: { x: 80, y: 80 } },
+      ], edges: [] }
+      envs.set(env_id, graph)
+      venture.today.runs += 1
+      const run_id = startRun(graph)
+      return send(200, { run_id, env_id, dry_run: true })
+    }
+    if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/steps\/([A-Za-z0-9_.-]+)\/done$/)) && req.method === 'POST') {
+      const venture = mockVentures.get(m[1]), step = venture?.your_steps.find(item => item.id === m[2])
+      if (!step) return send(404, { detail: 'step not found' })
+      const body = await readBody()
+      if (step.secret_name) { if (!body?.value) return send(400, { detail: 'paste the key first' }); mockSecrets.add(step.secret_name) }
+      step.done = true
+      return send(200, { done: true, secret_name: step.secret_name })
+    }
     if (p === '/api/teams' && req.method === 'GET') return send(200, [...mockTeams.values()].map(team => ({ team_id: team.team_id, name: team.plan.vision.goal, status: team.status, done: Object.values(team.tasks).filter(t => t.status === 'done').length, tasks: Object.keys(team.tasks).length, passing: Object.values(team.features).filter(f => f.status === 'passing').length, feature_count: team.plan.features.length, needs_owner: Object.values(team.tasks).filter(t => t.status === 'awaiting_approval').length })))
     if (p === '/api/build/vision' && req.method === 'POST') { const body = await readBody(); const path = `visions/${crypto.randomUUID()}.md`; vault.set(path, JSON.stringify(body.vision)); return send(200, { confirmed: true, path, vision: body.vision }) }
     if (p === '/api/build/draft-spec' && req.method === 'POST') { const path = `visions/${crypto.randomUUID()}.md`; return send(200, { path, vision: { goal: 'Help freelancers track project deadlines', requirements: ['The system shall list projects and their deadlines', 'When a deadline changes, the system shall save the updated date'], done: ['A freelancer can add a project and see its deadline'], out_of_scope: ['Accounts and subscriptions'] }, spec: { requirements: ['The system shall list projects and their deadlines', 'When a deadline changes, the system shall save the updated date'], acceptance: ['A saved project appears with its deadline after reload'], out_of_scope: ['Accounts and subscriptions'] } }) }
@@ -244,8 +280,10 @@ const server = http.createServer(async (req, res) => {
       const at = minutes => new Date(now - minutes * 60_000).toISOString()
       return send(200, {
         local_ai: { online: true, model: 'qwen3:0.6b' },
-        counts: { running: 2, need_you: 4 },
+        counts: { running: 2, need_you: 6 },
         needs_you: [
+          ...[...mockVentures.values()].flatMap(venture => venture.your_steps.filter(step => !step.done).map(step => ({ kind: 'your_step', title: step.title, detail: step.instructions, instructions: step.instructions, links: [step.link], secret_name: step.secret_name, at: new Date().toISOString(), ref: { venture_slug: venture.slug, step_id: step.id } }))),
+          ...(!mockApprovalDone ? [{ kind: 'your_step', title: 'Your step: review the dispatch list', detail: 'Your step: review the dispatch list', instructions: 'Approve the route before any driver is assigned.', at: at(1), ref: { run_id: 'run-dispatch-waiting', node_id: 'review', env_id: 'dispatch' } }] : []),
           { kind: 'approval', title: 'approval waiting', detail: 'Weekly report', at: at(2), ref: { run_id: 'run-report', node_id: 'approve', env_id: 'weekly-report' } },
           { kind: 'approval', title: 'approval waiting', detail: 'Inbox triage', at: at(9), ref: { run_id: 'run-inbox', node_id: 'confirm', env_id: 'inbox-triage' } },
           { kind: 'claim', title: 'capability_gap', detail: 'Need a calendar connection for this workflow.', at: at(18), ref: { claim_id: '2026-10-07-calendar-claim-a1b2c3' } },
@@ -770,6 +808,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && (m = p.match(/^\/api\/runs\/([^/]+)\/approve$/))) {
       const id = decodeURIComponent(m[1])
+      if (id === 'run-dispatch-waiting') { mockApprovalDone = true; return send(200, { ok: true }) }
       const r = runs.get(id) ?? fixedMockRuns.get(id)
       if (!r) return send(404, { detail: 'run not found' })
       const body = await readBody()

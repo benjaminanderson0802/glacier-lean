@@ -153,8 +153,35 @@ export const teamsApi = {
   undoDelete: (undo_id: string) => req<Record<string, unknown>>('POST', '/api/build/undo-delete', { undo_id }),
 }
 
+// ---------- Installed ventures ----------
+export interface VentureStep {
+  id?: string; title: string; instructions?: string; done?: boolean; secret_name?: string
+  link?: string; links?: string[]; run_id?: string; node_id?: string
+}
+export interface Venture {
+  slug: string; name: string; status: 'setting_up' | 'running' | 'paused' | 'needs_you'
+  flows: { env_id: string; dry_run_env_id?: string | null }[]; schedule?: unknown
+  next_run: string | null; today: { runs: number; completed: number; failed: number; [count: string]: number }; your_steps: VentureStep[]
+}
+export interface YourStepItem {
+  kind: 'your_step'; title: string; detail: string; instructions?: string; links?: string[]; secret_name?: string
+  venture_slug?: string; step_id?: string; at: string
+  ref: { run_id?: string; node_id?: string; env_id?: string; venture_slug?: string; step_id?: string }
+}
+export const venturesApi = {
+  list: () => req<Venture[]>('GET', '/api/ventures'),
+  pause: (slug: string) => req<{ paused: boolean; flows: string[] }>('POST', `/api/ventures/${enc(slug)}/pause`, {}),
+  resume: (slug: string) => req<{ paused: boolean; flows: string[] }>('POST', `/api/ventures/${enc(slug)}/resume`, {}),
+  run: (slug: string, dry_run = true) => req<{ run_id: string; env_id: string; dry_run: boolean }>('POST', `/api/ventures/${enc(slug)}/run`, { dry_run }),
+  completeStep: (slug: string, stepId: string, value?: string) => req<{ done: boolean; secret_name?: string }>(
+    'POST', `/api/ventures/${enc(slug)}/steps/${enc(stepId)}/done`, value === undefined ? {} : { value }),
+}
+
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
-export interface HomeItem { kind: 'approval' | 'claim' | 'failed_run'; title: string; detail: string; at: string; ref: { run_id?: string; node_id?: string; claim_id?: string; env_id?: string } }
+export type HomeItem = Omit<Partial<YourStepItem>, 'kind'> & {
+  kind: 'approval' | 'your_step' | 'claim' | 'failed_run'; title: string; detail: string; at: string
+  ref: { run_id?: string; node_id?: string; claim_id?: string; env_id?: string; venture_slug?: string; step_id?: string }
+}
 export interface HomeRun { run_id: string; env_id: string; name: string; status: 'running' | 'queued' | 'waiting'; step: number; steps: number; started_at: string }
 export interface HomeNote { path: string; summary: string; at: string }
 export interface HomeSummary {

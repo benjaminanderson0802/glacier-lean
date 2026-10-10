@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { ago, api, teamsApi, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
+import { ago, api, teamsApi, venturesApi, type Environment, type EnvSummary, type HomeItem, type RunSummary, type Venture } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
@@ -7,10 +7,11 @@ import { useRoute } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
 import { useAskContext } from '../ui/AskGlacier.tsx'
+import { YourStep } from '../ui/YourStep.tsx'
 import './automations.css'
 
 type Flow = EnvSummary & { last?: RunSummary }
-const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
+const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed'), t('ventures.tab')] as const
 const STATUS: Record<string, { kind: StatusKind; label: string }> = {
   done: { kind: 'ok', label: t('automations.success') }, failed: { kind: 'bad', label: t('automations.failed') }, rejected: { kind: 'bad', label: t('automations.rejected') },
   running: { kind: 'run', label: t('automations.running') }, waiting: { kind: 'warn', label: t('automations.needsYou') },
@@ -31,8 +32,11 @@ export function AutomationsScreen() {
   const [copied, setCopied] = useState('')
   const [undo, setUndo] = useState<UndoAction | null>(null)
   const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
+  const [ventures, setVentures] = useState<Venture[] | null>(null)
 
   useEffect(() => {
+    const refreshVentures = () => venturesApi.list().then(rows => setVentures(Array.isArray(rows) ? rows : [])).catch(e => setErr(String(e)))
+    refreshVentures()
     teamsApi.list().then(list => setTeams(Array.isArray(list) ? list : [])).catch(() => {})
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
@@ -49,6 +53,11 @@ export function AutomationsScreen() {
       setFlows(withRuns)
     }).catch(e => setErr(String(e)))
   }, [])
+
+  const refreshVentures = async () => {
+    const rows = await venturesApi.list()
+    setVentures(Array.isArray(rows) ? rows : [])
+  }
 
   const shown = useMemo(() => (flows ?? []).filter(f => {
     const s = f.last?.status
@@ -106,11 +115,34 @@ export function AutomationsScreen() {
         <section className="g-panel automation-teams-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
-            {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={`filter-${f}`}>{f}</button>)}
+            {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={f === t('ventures.tab') ? 'filter-ventures' : `filter-${f}`}>{f}</button>)}
           </div>
           <input className="g-input" placeholder={t('automations.search')} value={q} onChange={e => setQ(e.target.value)} style={{ maxWidth: 260 }} data-testid="flow-search" />
         </div>
         {err && <div className="g-error">{err}</div>}
+        {filter === t('ventures.tab') ? <div className="venture-list" data-testid="venture-list">
+          {ventures === null && <Empty>{t('home.loading')}</Empty>}
+          {ventures?.map(venture => <article className="venture-card" key={venture.slug} data-testid={`venture-${venture.slug}`}>
+            <header className="venture-card-head"><h2>{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`}>{t(`ventures.status.${venture.status}`)}</span></header>
+            <div className="venture-card-copy"><strong>{t('ventures.today')}</strong> · {t('ventures.todayCounts', venture.today)}</div>
+            {Object.entries(venture.today).filter(([key]) => !['runs', 'completed', 'failed'].includes(key)).map(([key, value]) => <div className="venture-card-copy" key={key}>{key.replaceAll('_', ' ')} · {value}</div>)}
+            <div className="venture-card-copy"><strong>{t('ventures.nextRun')}</strong> · {venture.next_run ? new Date(venture.next_run).toLocaleString() : t('ventures.notScheduled')}</div>
+            <div className="venture-card-actions">
+              <Btn disabled={busy === venture.slug} onClick={async () => { setBusy(venture.slug); setErr(''); try { await (venture.status === 'paused' ? venturesApi.resume(venture.slug) : venturesApi.pause(venture.slug)); await refreshVentures() } catch (error) { setErr(String(error)) } finally { setBusy('') } }} data-testid={`venture-toggle-${venture.slug}`}>
+                {venture.status === 'paused' ? t('ventures.resume') : t('ventures.pause')}
+              </Btn>
+              <Btn primary disabled={busy === venture.slug || !venture.flows.some(flow => flow.dry_run_env_id)} onClick={async () => { setBusy(venture.slug); setErr(''); try { const run = await venturesApi.run(venture.slug, true); go(`automations/flow/${run.env_id}/${run.run_id}`) } catch (error) { setErr(String(error)) } finally { setBusy('') } }} data-testid={`venture-run-${venture.slug}`}>{t('ventures.runDry')}</Btn>
+            </div>
+            <div className="venture-steps"><strong>{t('ventures.yourSteps')} · {t('ventures.stepProgress', { done: venture.your_steps.filter(step => step.done).length, total: venture.your_steps.length })}</strong>
+              {venture.your_steps.map((step, index) => step.done
+                ? <label className="venture-progress" key={step.id ?? index}><input type="checkbox" checked readOnly />{step.title}</label>
+                : <YourStep key={step.id ?? index} item={{ kind: 'your_step', title: step.title, detail: step.instructions ?? '', instructions: step.instructions,
+                  links: step.links ?? (step.link ? [step.link] : []), secret_name: step.secret_name, at: '', ref: { venture_slug: venture.slug, step_id: step.id } } as HomeItem} onDone={() => { void refreshVentures() }} />)}
+              {venture.your_steps.length === 0 && <span className="g-muted">{t('ventures.noSteps')}</span>}
+            </div>
+          </article>)}
+          {ventures?.length === 0 && <Empty>{t('ventures.empty')}</Empty>}
+        </div> : <>
         <table className="g-table" data-testid="flow-table">
           <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th><th>{t('delete.action')}</th></tr></thead>
           <tbody>
@@ -161,6 +193,7 @@ export function AutomationsScreen() {
           </tbody>
         </table>
         {flows && shown.length === 0 && <Empty>{flows.length ? t('automations.noMatches') : t('automations.empty')}</Empty>}
+        </>}
       </Panel>
     </>
   )

@@ -6,8 +6,9 @@ import { go } from '../route.ts'
 import { StarterPanel } from './Starter.tsx'
 import { t } from '../i18n/index.ts'
 import { teamsApi } from '../api.ts'
+import { YourStep } from '../ui/YourStep.tsx'
 
-const KIND_TITLE: Record<HomeItem['kind'], string> = { approval: t('home.kindApproval'), claim: t('home.kindClaim'), failed_run: t('home.kindFailedRun') }
+const KIND_TITLE: Record<HomeItem['kind'], string> = { approval: t('home.kindApproval'), your_step: t('ventures.yourStep'), claim: t('home.kindClaim'), failed_run: t('home.kindFailedRun') }
 
 export function HomeScreen() {
   const [data, setData] = useState<HomeSummary | null>(null)
@@ -52,7 +53,9 @@ export function HomeScreen() {
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>{t('home.noItemsNeedAttention')}</Empty>}
             {data?.needs_you.map((it, i) => (
-              <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} leadTitle={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
+              it.kind === 'your_step'
+                ? <YourStep key={`${it.ref.venture_slug ?? it.ref.run_id}:${it.ref.step_id ?? it.ref.node_id}`} item={it} onDone={refresh} />
+                : <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} leadTitle={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
             ))}
           </div>
         </Panel>
