@@ -1,0 +1,79 @@
+{
+  "title": "Public document reader labeled samples",
+  "schema_version": 1,
+  "documents": [
+    {
+      "id": "cpsc-quick-start",
+      "file": "documents/cpsc-quick-start-guide.pdf",
+      "sha256": "06bc1bb03cced5f2f9d31b65fd1a3a5dd1343f82a1ac35bbd599886aa10ad4db",
+      "kind": "cpsc_certificate_example",
+      "source": "https://www.cpsc.gov/s3fs-public/eFiling_Quick_Start_Guide_V1-1.pdf",
+      "labels": [
+        {"field": "certifier_id", "value": "ABCCo", "page": 9},
+        {"field": "product_id", "value": "A1234567", "page": 9},
+        {"field": "version_id", "value": "V1", "page": 9}
+      ],
+      "schema": {"certifier_id": "Certifier ID", "product_id": "Product ID", "version_id": "Version ID"}
+    },
+    {
+      "id": "cpsc-registry-guide",
+      "file": "documents/cpsc-product-registry-guide.pdf",
+      "sha256": "3ee0f00a7279f612d4f61e40a07573756e3e8c37b5f75e6241df38b6c4a2c966",
+      "kind": "cpsc_certificate_data",
+      "source": "https://www.cpsc.gov/s3fs-public/eFiling_Product_Registry_User_Guide_V3.pdf",
+      "labels": [],
+      "schema": {"primary_product_id": "Primary Product ID"}
+    },
+    {
+      "id": "fda-cosmetic-labeling-guide",
+      "file": "documents/fda-cosmetic-labeling-guide.pdf",
+      "sha256": "dd1a9a676b6900e5e3f538a17d86e33bd7078a5dab791d59bc03551ffc2307b1",
+      "kind": "fda_cosmetic_label_example",
+      "source": "https://www.fda.gov/media/88234/download",
+      "labels": [
+        {"field": "example_ingredient", "value": "castor oil", "page": 21}
+      ],
+      "schema": {"example_ingredient": "castor oil"}
+    },
+    {
+      "id": "fda-form-5067",
+      "file": "documents/fda-form-5067.pdf",
+      "sha256": "b7d48413be069a5c12d7af4ee0cb4e6225b71ea2ad1249a22e01ab1618b6efef",
+      "kind": "fda_mocra_listing_form",
+      "source": "https://www.fda.gov/media/175263/download",
+      "labels": [],
+      "schema": {"responsible_person_name": "RESPONSIBLE PERSON NAME", "product_name": "PRODUCT NAME"}
+    },
+    {
+      "id": "gsa-bill-of-lading",
+      "file": "documents/sample-bill-of-lading.pdf",
+      "sha256": "b9ba2e02a3287ba070d5ec73a1704289042fe9eba86417d5a842620ebce5794c",
+      "kind": "bill_of_lading_form",
+      "source": "https://www.gsa.gov/system/files/SF_1103.pdf",
+      "labels": [],
+      "schema": {"bill_of_lading_number": "B/L NUMBER", "shipper_name": "SHIPPER NAME AND ADDRESS"}
+    },
+    {
+      "id": "epa-energy-bill",
+      "file": "documents/sample-energy-bill.pdf",
+      "sha256": "fa93ad0040856aac866d4fbe09192f21f91ff9f92a25ddc1007c37020cb38b19",
+      "kind": "utility_bill_example",
+      "source": "https://www.epa.gov/sites/default/files/2015-05/documents/sample-elec-bill.pdf",
+      "labels": [],
+      "schema": {"monthly_usage": "Monthly usage in kWh"}
+    },
+    {
+      "id": "wisconsin-property-tax-bill",
+      "file": "documents/sample-property-tax-bill.pdf",
+      "sha256": "47cd9dac82e0724243b07f726327d57cceb8a187bc89f6a135dd27143074bd42",
+      "kind": "property_tax_notice_example",
+      "source": "https://www.revenue.wi.gov/documents/property-tax-bill-sample.pdf",
+      "labels": [
+        {"field": "parcel_number", "value": "12-116-0029-0000", "page": 1},
+        {"field": "owner_name", "value": "BILL AND SUE HOMEOWNER", "page": 1},
+        {"field": "assessed_value", "value": "98,900", "page": 1}
+      ],
+      "schema": {"parcel_number": "PARCEL#", "owner_name": "BILL AND SUE HOMEOWNER", "assessed_value": "Total Assessed Value"}
+    }
+  ]
+}

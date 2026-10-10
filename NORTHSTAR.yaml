@@ -363,7 +363,7 @@ phases:
       - {id: PH12.1, item: "Ventures view + 'your steps' inbox (venture.json manifests, needs-you items, secret paste, pause/resume)", status: todo, evidence: ""}
       - {id: PH12.2, item: "Automation feature parity: email, IMAP/RSS/file triggers, tables, CSV/Excel, transforms, PDF fill, browser step, AI step, retries/error routes", status: todo, evidence: ""}
       - {id: PH12.3, item: "Automations keep running: tray/background, start at logon, missed-run and overlap rules, health report", status: todo, evidence: ""}
-      - {id: PH12.4, item: "Shared block: document reader + rules checker (spec release checks)", status: todo, evidence: ""}
+      - {id: PH12.4, item: "Shared block: document reader + rules checker (spec release checks)", status: in_progress, evidence: "Implementation commit fa6c6ab; release verification pending claims CLM-2026-10-10-B1-READER-BENCHMARK-LOCK and CLM-2026-10-10-B1-READER-IMAGE-OCR"}
       - {id: PH12.5, item: "Shared block: government data feeds + deadline tracker (spec release checks)", status: todo, evidence: ""}
       - {id: PH12.6, item: "Shared block: customer layer (billing test mode, e-sign, status page, support inbox)", status: todo, evidence: ""}
       - {id: PH12.7, item: "Shared block: mail/acquisition engine + portal filer", status: todo, evidence: ""}

@@ -39,3 +39,14 @@ shipstation(**kwargs)
 shopify(**kwargs)
 apify(**kwargs)
 ```
+
+Blocks are importable as `ventures.blocks.<block>`. Reader page numbers are 1-based
+when known and may be null; confidence is a number from 0 to 1. A reader result
+counts as certain only when its independent engines agree. Missing or conflicting
+evidence stays visible for customer confirmation. Rulesets are JSON or YAML files
+under `ventures/blocks/rules/rulesets/`. Rules output is a cited field check, not a
+legal determination or government certification. The filer `prepare` operation
+only fills a form and saves a screenshot; `submit` requires an approval ID, is
+idempotent by key, and saves its confirmation. Customer, mail and connector blocks
+also keep the call shapes above fixed; test mode and owner approval are required
+for any external transaction or send.
