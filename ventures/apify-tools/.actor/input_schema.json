@@ -1,6 +1,6 @@
 {
   "title": "Mississippi Contractor License Status",
-  "description": "Check public contractor license records from the Mississippi State Board of Contractors.",
+  "description": "Check public contractor license records from the Mississippi State Board of Contractors. Provide either one license_number or name, or a non-empty queries batch (maximum 100). Each lookup costs $0.02 after Store publication; source outages are not charged. The board cautions its public results may change after publication; verify directly before relying on a record.",
   "type": "object",
   "schemaVersion": 1,
   "properties": {
@@ -29,18 +29,9 @@
     "queries": {
       "title": "Batch lookups",
       "type": "array",
-      "description": "Optional batch of up to 100 license_number or name search objects. Each source request is rate-limited and billed as one lookup.",
-      "maxItems": 100,
-      "items": {
-        "type": "object",
-        "properties": {
-          "license_number": {"type": "string", "maxLength": 120},
-          "name": {"type": "string", "maxLength": 120},
-          "max_results": {"type": "integer", "default": 1, "minimum": 1, "maximum": 10}
-        }
-      }
+      "description": "Optional batch of up to 100 objects, each with license_number or name (and optional max_results). Each source request is rate-limited and billed as one lookup.",
+      "editor": "json",
+      "maxItems": 100
     }
-  },
-  "description": "Provide either one license_number or name, or a non-empty queries batch (maximum 100). Each lookup costs $0.02 after Store publication; source outages are not charged. The board cautions its public results may change after publication; verify directly before relying on a record.",
-  "editor": "json"
+  }
 }
