@@ -12,6 +12,11 @@
 .messenger-thread-list { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow-y: auto; margin: 0 calc(-2 * var(--px)); }
 .messenger-thread-row { display: flex; align-items: center; gap: calc(4 * var(--px)); flex: none; width: 100%; min-width: 0; padding: calc(4 * var(--px)) calc(2 * var(--px)); border: 0; border-bottom: 1px solid var(--g-ice3); background: transparent; color: var(--g-ink); text-align: left; text-shadow: var(--l-text-shadow); }
 .messenger-thread-row:hover { background: var(--g-ice1); }
+.messenger-pinned { border: 1px solid var(--l-edge); border-radius: var(--l-radius-sm); background: var(--g-ice1); }
+.messenger-pin { flex: none; padding: 0 calc(2 * var(--px)); border: 1px solid var(--g-ice4); border-radius: 999px; color: var(--g-ink2); font-size: calc(4.8 * var(--px)); text-transform: lowercase; }
+.messenger-step-log { gap: calc(3 * var(--px)); }
+.messenger-step-log .venture-step { flex: none; font-size: calc(5.5 * var(--px)); }
+.messenger-step-log .venture-step .g-btn { min-height: calc(14 * var(--px)); font-size: calc(5 * var(--px)); }
 .messenger-avatar { flex: none; display: grid; place-items: center; width: calc(15 * var(--px)); height: calc(15 * var(--px)); border-radius: 50%; border: 1px solid var(--l-edge); background: var(--g-ice3); color: var(--g-white); font: 700 calc(7 * var(--px))/1 var(--g-font-head); text-transform: lowercase; }
 .messenger-avatar.source-glacier { background: var(--g-ok); color: var(--l-pill-ink); }
 .messenger-avatar.source-codex { background: var(--g-ice4); color: var(--l-pill-ink); }

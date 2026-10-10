@@ -193,10 +193,12 @@ def terminate_process(process) -> None:
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
 def snapshot_scheduled_run(env_id: str, run_id: str) -> bool:
-    """Create the run for a schedule tick, unless the flow no longer has a schedule (a tick that was already
-    queued when the owner removed the schedule must not start the flow)."""
+    """Create a run only if its schedule still exists and the flow is enabled.
+
+    A tick already queued before pause/removal must not start a new run.
+    """
     graph = load_env(env_id)
-    if not any(n.get("type") == "schedule" for n in graph.get("nodes", [])):
+    if graph.get("enabled", True) is False or not any(n.get("type") == "schedule" for n in graph.get("nodes", [])):
         return False
     store.create_run(run_id, env_id, graph)
     return True
@@ -693,6 +695,8 @@ def scheduled_run(when, env_id) -> str:
 def sync_schedule(env: dict) -> None:
     """Create/replace the environment's DBOS schedule from its schedule node, or delete it if there is none."""
     DBOS.delete_schedule(schedule_name(env["id"]))
+    if env.get("enabled", True) is False:
+        return
     for n in env.get("nodes", []):
         if n["type"] == "schedule":
             DBOS.create_schedule(schedule_name=schedule_name(env["id"]), workflow_fn=scheduled_run,

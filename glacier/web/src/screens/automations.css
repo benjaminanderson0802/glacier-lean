@@ -27,6 +27,23 @@
 .automation-trigger-editor > div { display: flex; align-items: center; flex-wrap: wrap; gap: calc(2 * var(--px)); }
 .automation-enabled { display: inline-flex; flex: 0 0 auto; align-items: center; white-space: nowrap; }
 
+.venture-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(145 * var(--px))), 1fr)); gap: calc(4 * var(--px)); overflow: auto; padding: calc(2 * var(--px)); }
+.venture-card { display: flex; flex-direction: column; min-width: 0; gap: calc(3 * var(--px)); padding: calc(4 * var(--px)); border: 1px solid var(--l-edge); border-radius: var(--l-radius); background: var(--l-glass); box-shadow: 0 calc(2 * var(--px)) calc(8 * var(--px)) var(--g-shadow); }
+.venture-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: calc(3 * var(--px)); }
+.venture-card h2 { margin: 0; color: var(--g-white); font: 700 var(--g-size-h2)/1.2 var(--g-font-head); text-transform: lowercase; }
+.venture-status { flex: none; padding: calc(1 * var(--px)) calc(3 * var(--px)); border: 1px solid var(--g-ice4); border-radius: 999px; color: var(--g-ink2); font-size: var(--g-size-small); text-transform: lowercase; }
+.venture-card-copy { color: var(--g-ink2); font-size: var(--g-size-small); }
+.venture-card-actions { display: flex; flex-wrap: wrap; gap: calc(2 * var(--px)); }
+.venture-steps { display: grid; gap: calc(2 * var(--px)); padding-top: calc(2 * var(--px)); border-top: 1px solid var(--g-ice3); }
+.venture-step { display: grid; gap: calc(2 * var(--px)); padding: calc(3 * var(--px)); border: 1px solid var(--g-ice3); border-radius: var(--l-radius-sm); background: var(--g-ice1); color: var(--g-white); overflow-wrap: anywhere; }
+.venture-step-copy { display: grid; gap: calc(1 * var(--px)); }
+.venture-step-copy p { margin: 0; color: var(--g-ink2); white-space: pre-wrap; }
+.venture-step-copy a { color: var(--g-white); overflow-wrap: anywhere; }
+.venture-secret-field { display: grid; gap: calc(1 * var(--px)); color: var(--g-ink2); }
+.venture-secret-field .g-input { width: 100%; }
+.venture-progress { display: flex; align-items: center; gap: calc(2 * var(--px)); color: var(--g-ink2); font-size: var(--g-size-small); }
+.venture-progress input { accent-color: var(--g-ok); }
+
 .template-window .g-cards { grid-template-columns: repeat(auto-fill, minmax(calc(128 * var(--px)), 1fr)); gap: calc(3 * var(--px)); }
 .template-gallery-summary { display: flex; justify-content: space-between; align-items: center; color: var(--g-ink2); font-size: var(--g-size-small); }
 .template-window .g-card { min-height: calc(40 * var(--px)); padding: calc(3 * var(--px)); }

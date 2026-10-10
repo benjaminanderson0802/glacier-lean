@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { messagesApi, subscribeEvents, type MessageSource, type MessageThread, type ThreadMessage } from '../api.ts'
+import { api, messagesApi, subscribeEvents, type HomeItem, type MessageSource, type MessageThread, type ThreadMessage } from '../api.ts'
 import { t } from '../i18n/index.ts'
+import { YourStep } from '../ui/YourStep.tsx'
 import './messenger.css'
 
-type View = 'list' | 'thread' | 'new'
+type View = 'list' | 'thread' | 'new' | 'steps'
 const SOURCES: MessageSource[] = ['glacier', 'codex', 'claude', 'opencode', 'gemini', 'worker']
 const initials = (source: MessageSource) => ({ glacier: 'gl', codex: 'co', claude: 'cl', opencode: 'op', gemini: 'ge', worker: 'wk' })[source]
 const formatTime = (value: string) => {
@@ -28,6 +29,7 @@ const eventMessage = (event: unknown): event is { type: string; thread_id?: stri
 export function Messenger() {
   const [view, setView] = useState<View>('list')
   const [threads, setThreads] = useState<MessageThread[]>([])
+  const [yourSteps, setYourSteps] = useState<HomeItem[]>([])
   const [activeId, setActiveId] = useState('')
   const [messages, setMessages] = useState<ThreadMessage[]>([])
   const [nextBefore, setNextBefore] = useState<string | null>(null)
@@ -59,10 +61,20 @@ export function Messenger() {
     catch (e) { setError(String(e)) }
   }, [query])
 
+  const refreshYourSteps = useCallback(() => {
+    api.home().then(home => setYourSteps(home.needs_you.filter(item => item.kind === 'your_step'))).catch(() => {})
+  }, [])
+
   useEffect(() => {
     const timer = setTimeout(() => { void refreshThreads(query) }, query ? 200 : 0)
     return () => clearTimeout(timer)
   }, [query, refreshThreads])
+
+  useEffect(() => {
+    refreshYourSteps()
+    const timer = setInterval(refreshYourSteps, 10000)
+    return () => clearInterval(timer)
+  }, [refreshYourSteps])
 
   const loadThread = useCallback(async (id: string, before?: string) => {
     const result = await messagesApi.messages(id, before)
@@ -166,6 +178,11 @@ export function Messenger() {
       <label className="messenger-search"><span aria-hidden="true">⌕</span><input aria-label={t('messenger.search')} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('messenger.search')} /></label>
       {error && <div className="messenger-error" role="alert">{error}</div>}
       <div className="messenger-thread-list" aria-label={t('messenger.threads')}>
+        <button type="button" className="messenger-thread-row messenger-pinned" data-testid="messenger-your-steps" onClick={() => setView('steps')}>
+          <span className="messenger-avatar source-glacier">gl</span>
+          <span className="messenger-thread-copy"><span className="messenger-thread-top"><b>{t('ventures.yourSteps')}</b><span className="messenger-pin">{t('messenger.pinned')}</span></span><span className="messenger-preview">{yourSteps.length ? t('ventures.stepsWaiting', { count: yourSteps.length }) : t('ventures.noSteps')}</span></span>
+          {!!yourSteps.length && <i className="messenger-unread" aria-label={t('messenger.unread')} />}
+        </button>
         {threads.map(thread => <button type="button" key={thread.id} data-testid={`messenger-thread-${thread.id}`} className="messenger-thread-row" onClick={() => void openThread(thread)}>
           <span className={`messenger-avatar source-${thread.source}`}>{initials(thread.source)}</span>
           <span className="messenger-thread-copy"><span className="messenger-thread-top"><b>{thread.title || thread.source}</b><time>{formatTime(thread.last_at)}</time></span><span className="messenger-preview">{thread.last_text}</span></span>
@@ -174,6 +191,14 @@ export function Messenger() {
         {threads.length === 0 && <div className="messenger-empty">{t('messenger.noThreads')}</div>}
       </div>
       <footer className="messenger-sources">{SOURCES.map(source => <span key={source} className={`messenger-source source-${source}`}>{source}</span>)}</footer>
+    </>}
+
+    {view === 'steps' && <>
+      <header className="messenger-chat-head"><button className="messenger-icon-btn" type="button" data-testid="messenger-steps-back" aria-label={t('messenger.back')} onClick={() => setView('list')}>‹</button><span className="messenger-avatar source-glacier">gl</span><div className="messenger-chat-title"><b>{t('ventures.yourSteps')}</b><span>glacier</span></div></header>
+      <div className="messenger-log messenger-step-log" aria-live="polite">
+        {yourSteps.map(item => <YourStep key={`${item.ref.venture_slug ?? item.ref.run_id}:${item.ref.step_id ?? item.ref.node_id}`} item={item} onDone={() => { refreshYourSteps(); void refreshThreads(query) }} />)}
+        {yourSteps.length === 0 && <div className="messenger-empty">{t('ventures.noSteps')}</div>}
+      </div>
     </>}
 
     {view === 'new' && <>

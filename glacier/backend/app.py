@@ -76,6 +76,8 @@ def health():
 plugins.load_routes(app)  # registers routers in routes/, including the Home summary endpoint
 import a2a_routes  # noqa: E402  A2A lives at /a2a and /.well-known/ (outside /api), token-protected like /api
 app.include_router(a2a_routes.router)
+from routes import ventures as venture_routes  # noqa: E402
+venture_routes.install_manifests(HOME)
 
 
 def _env_or_404(env_id: str) -> dict:
