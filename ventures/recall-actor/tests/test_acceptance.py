@@ -88,7 +88,7 @@ class ResultAndChargingAcceptanceTests(unittest.TestCase):
         outage = {"outcome": "uncertain", "sources_checked": {"CPSC": {"status": "error"}, "FDA": {"status": "error"}}}
         with patch.dict("os.environ", {"ACTOR_TEST_PAY_PER_EVENT": "true", "APIFY_ACTOR_RUN_ID": "test-run"}):
             import asyncio
-            asyncio.run(run_actor_queries(actor, [{}, {}], check_one=lambda q: completed if not q else outage))
+            asyncio.run(run_actor_queries(actor, [{"id": 1}, {"id": 2}], check_one=lambda q: completed if q["id"] == 1 else outage))
         self.assertEqual(len(actor.rows), 2)
         self.assertEqual(len(actor.charges), 1)
         self.assertEqual(actor.charges[0]["event_name"], "recall-check")
