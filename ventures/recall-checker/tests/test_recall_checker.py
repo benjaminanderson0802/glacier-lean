@@ -63,6 +63,14 @@ class RecallMatcherAcceptanceTests(unittest.TestCase):
         self.assertEqual(set(manifest["permissions"]), {"activeTab", "scripting"})
         self.assertEqual(manifest["host_permissions"], ["http://127.0.0.1:8765/*"])
 
+    def test_owner_steps_link_store_secrets_and_require_host_choice(self):
+        root = Path(__file__).resolve().parents[1]
+        manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
+        steps = {step["id"]: step for step in manifest["your_steps"]}
+        self.assertIn("https://chrome.google.com/webstore/devconsole", steps["submit-extension"]["links"])
+        self.assertIn("#/settings/secrets", steps["configure-plans"]["links"])
+        self.assertIn("Choose and configure a public host", steps["review-first-pages"]["detail"])
+
     def test_csv_marks_each_row_and_preserves_original_columns(self):
         with tempfile.TemporaryDirectory() as directory:
             incoming = Path(directory) / "inventory.csv"

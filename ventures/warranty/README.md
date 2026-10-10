@@ -27,6 +27,16 @@ Create a JSON file containing normalized records with `job_id`, `completed`, `br
 
 The default configuration has no verified brand serial formats, so real records stay `uncertain — please check` until an owner provides source-backed format rules. The opt-in missing-photo output is only a draft; this venture does not send texts or emails.
 
+## Serial-format availability and human fallback
+
+No brand has a configured serial pattern. This is deliberate: a brand stays unavailable to automatic serial validation until its official format is documented from a source the owner has reviewed. Records for all five listed brands currently remain `uncertain — please check`; do not infer a pattern from sample numbers. For a real unit, use the brand's official warranty page linked in `venture.json` or contact the brand/dealer, verify the serial manually, and keep registration under owner review. Portal automation remains disabled.
+
+## Jobber launch prerequisites
+
+Create an app in the [Jobber Developer Center](https://developer.getjobber.com/) and use its [API documentation](https://developer.getjobber.com/docs/). Save `jobber_client_id`, `jobber_client_secret`, `jobber_access_token`, and `jobber_refresh_token` in Glacier under **Settings → Secrets**, then run the read-only connector check. Launch intake is still blocked until the shared connector returns completed status, install date, homeowner name and email, brand, model, serial, region, and job ID; five eligible test accounts pass; and the shared reader and deadline blocks are integrated. Use local sample JSON until then.
+
+The first Jobber listing and first 20 generated homeowner email drafts are owner-review gates. Drafts are not currently generated because the shared mail block is not integrated; this venture does not send email.
+
 ## Your steps
 
 1. Create the Jobber developer app/test account and save its values in Glacier Secrets. Run the shared connector check.

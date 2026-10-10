@@ -208,6 +208,43 @@ def test_all_cpsc_reference_source_ids_are_registered():
         "cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"))
 
 
+def test_refresh_block_loader_exposes_reader_rules_and_feeds():
+    from cpsc_prep import load_blocks
+
+    reader, rules, feeds = load_blocks()
+    assert callable(reader.read_document)
+    assert callable(rules.check)
+    assert callable(feeds.sync)
+    assert callable(feeds.query)
+
+
+def test_source_refresh_reports_integrated_feed_row_counts(monkeypatch, capsys):
+    import refresh_cpsc_sources
+
+    class Feeds:
+        def sync(self, source_id):
+            return {"rows": 7, "changed": False, "alerts": []}
+
+    monkeypatch.setattr(refresh_cpsc_sources, "load_blocks", lambda: (None, None, Feeds()))
+    assert refresh_cpsc_sources.main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert set(report["sources"]) == {
+        "cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"
+    }
+    assert all(source["row_count"] == 7 for source in report["sources"].values())
+
+
+def test_owner_gates_link_lawyer_batch_certification_and_contract_steps():
+    manifest = json.loads((Path(__file__).resolve().parents[1] / "venture.json").read_text(encoding="utf-8"))
+    steps = {step["id"]: step for step in manifest["your_steps"]}
+    assert "written confirmation" in steps["trade-lawyer-opinion"]["detail"]
+    assert "https://www.cpsc.gov/efiling/importers" in steps["trade-lawyer-opinion"]["links"]
+    assert "certify as the importer" in steps["customer-certification"]["detail"]
+    assert "https://www.cpsc.gov/eFiling-Document-Library" in steps["first-broker-contract"]["links"]
+    assert "GLACIER_OLLAMA_URL" in steps["first-broker-contract"]["detail"]
+    assert "test-mode key" in steps["first-broker-contract"]["detail"]
+
+
 def test_unknown_cpsc_rule_code_blocks_export_even_after_customer_certification():
     values = good_values() | {"applicable_cpsc_rules": "16 CFR 9999"}
     reader = FakeReader({"lab.pdf": fields(values), "crosscheck.json": fields(values)})

@@ -89,9 +89,10 @@
       "id": "first-broker-contract",
       "title": "Your step: Approve the first broker contract",
       "when": "Before the first broker is onboarded",
-      "detail": "Review and sign the broker's flat-monthly-fee contract yourself.",
+      "detail": "Review and sign the broker's flat-monthly-fee contract yourself. Before offering checkout, save and verify a Stripe test-mode key in Glacier Settings → Secrets; never use a live key in this test setup. The independent second extraction uses GLACIER_OLLAMA_URL and GLACIER_LOCAL_MODEL; without both, extracted fields stay uncertain and the batch cannot be released.",
       "links": [
-        "https://www.cpsc.gov/eFiling-Document-Library"
+        "https://www.cpsc.gov/eFiling-Document-Library",
+        "#/settings/secrets"
       ]
     }
   ],
