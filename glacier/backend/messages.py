@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 
 import audit_log
+import shell_commands
 import secrets_store
 import session_mirror
 import store
@@ -303,8 +304,8 @@ def send_session(thread_id: str, source: str, text: str) -> dict:
         args = [binary, "exec", "resume", "--all", raw_id, text]
     owner_message = _message(f"{thread_id}:{uuid.uuid4()}", "me", "you", text, now())
     store.broadcaster.publish({"type": "messages.thread_message", "thread_id": thread_id, "message": owner_message})
-    completed = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=600, check=False)
+    completed = subprocess.run(shell_commands.executable_invocation(*args), stdin=subprocess.DEVNULL, capture_output=True,
+                               text=True, encoding="utf-8", errors="replace", timeout=600, check=False)
     if completed.returncode:
         reason = f"This {source.title()} session cannot be continued. Start a new chat instead."
         _UNRESUMABLE_SESSIONS[(source, thread_id)] = reason
@@ -328,8 +329,8 @@ def create_session(source: str, text: str) -> tuple[dict, str]:
     if not (shutil.which(binary) or os.path.isfile(binary) and os.access(binary, os.X_OK)):
         raise FileNotFoundError(f"{source.title()} CLI is not installed")
     args = [binary, "exec", "--json", text] if source == "codex" else [binary, "-p", text, "--output-format", "json"]
-    completed = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=600, check=False)
+    completed = subprocess.run(shell_commands.executable_invocation(*args), stdin=subprocess.DEVNULL, capture_output=True,
+                               text=True, encoding="utf-8", errors="replace", timeout=600, check=False)
     if completed.returncode:
         raise RuntimeError("The coding assistant could not start a conversation.")
     native_id, reply = "", ""
