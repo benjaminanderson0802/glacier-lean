@@ -1,0 +1,52 @@
+{
+  "slug": "property-tax",
+  "name": "Property tax appeals",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare evidence packets and customer-reviewed postcard proofs from county public records and customer supplied notices and comparable sales.",
+    "first_county_choice": "Cook County, Illinois; packet preparation only until the owner confirms the launch scope and current representation rules.",
+    "county_scope": ["Cook County, Illinois"],
+    "filing_policy": "The customer reviews, signs, and submits every county filing. Glacier only prepares the packet and instructions.",
+    "billing": "Owner confirms a flat packet fee before any checkout is enabled; no contingency billing is enabled."
+  },
+  "blocks": ["feeds", "reader", "mail", "deadlines", "customer"],
+  "block_functions": [
+    "ventures.blocks.feeds.sync",
+    "ventures.blocks.feeds.query",
+    "ventures.blocks.reader.read_document",
+    "ventures.blocks.mail.postcard",
+    "ventures.blocks.deadlines.add",
+    "ventures.blocks.customer.request_signature"
+  ],
+  "flows": ["property-tax-refresh-roll", "property-tax-prepare-packet", "property-tax-postcard-proof", "property-tax-upload-retention"],
+  "schedules": [
+    {"flow": "property-tax-refresh-roll", "cron": "0 4 * * *", "purpose": "Refresh the public Cook County assessor parcel roll each day and keep source alerts visible."}
+  ],
+  "secrets_needed": ["LOB_API_KEY (optional test key only; rendering local proofs needs no key)"],
+  "your_steps": [
+    {
+      "id": "confirm-first-counties",
+      "title": "Confirm Cook County as the first launch county",
+      "when": "Before enabling customer cases or mailing",
+      "detail": "Confirm Cook County, Illinois, as packet-only launch scope and ask counsel to confirm the current agent rules. The venture spec says Cook County needs an attorney; the Assessor's current appeal rules state that a party may file without an attorney or other agent. Resolve this difference before launch. See https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor and https://www.cookcountyassessoril.gov/residential-appeals."
+    },
+    {
+      "id": "texas-consultant-registration",
+      "title": "Register before Texas property-tax consulting",
+      "when": "Before adding any Texas county or providing paid representation there",
+      "detail": "Texas consultant registration is an owner action. Review eligibility and current requirements at https://www.tdlr.texas.gov/ptc/, then review the official application at https://www.tdlr.texas.gov/ptc/forms/ptc-lic-001-property-tax-consultant-registration-application.pdf. Pre-filled note: 'Please confirm whether I am eligible for Texas Property Tax Consultant registration, which education/exam and association requirements apply, and the current fee before I add a Texas county.' Do not enable Texas cases until registration and any required association are confirmed. Glacier does not create an account, enter personal information, sign, or pay."
+    },
+    {
+      "id": "approve-first-mailing",
+      "title": "Review the first postcard and mailing list",
+      "when": "Before the first external mailing in each county or with each new card design",
+      "detail": "Review the exact proof and recipient list, confirm a clear business sender and the mail budget, then approve an external test or production send separately. This build only renders local postcard proofs and never sends to real recipients."
+    }
+  ],
+  "launch_gates": [
+    "Owner confirms the initial county selection and resolves county representation rules before launch.",
+    "Owner confirms flat packet pricing and approves each first mailing list and new postcard design.",
+    "Texas work stays disabled until the owner completes required consultant registration and confirms current requirements.",
+    "Every customer reviews, signs, and submits their own county filing; Glacier does not file appeals."
+  ]
+}
