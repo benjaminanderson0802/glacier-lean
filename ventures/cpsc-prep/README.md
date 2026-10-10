@@ -18,6 +18,8 @@ tariff-code list, CPSC rule-code list, and registry template from the
 government-feed block. It preserves source pages, leaves absent values blank,
 reports each gap, and will not release a CSV when the independent extraction
 disagrees, a tariff/rule code is unknown, or the customer has not certified.
+Missing required fields stay blank, appear in the gap list, and also block CSV
+release.
 Every public code page identifies its source and says it is an independent
 service, not a government notice.
 

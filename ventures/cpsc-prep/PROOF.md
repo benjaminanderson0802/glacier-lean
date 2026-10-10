@@ -5,26 +5,33 @@
 - Checkpoint: PH12.9. PH12 depends on PH5 and PH9; wave 6 explicitly assigns
   this venture as parallel-safe.
 - Properties/metrics: P-CONTROL and P-USABLE; M-VERIFIED and M-INTERVENE.
-- Existing tool: no existing CPSC venture or prepared CPSC batch workflow was
-  present. The product uses the shared Glacier blocks and local scripts.
+- Existing tools / I-01: CPSC provides a Product Registry, a bulk-upload CSV
+  template and an API for certificate data. Those support registry management
+  and import, but do not cover this card's document extraction, cited source
+  review, gap reporting, two-engine agreement, and local customer certification
+  workflow. The venture uses that official template and the shared OSS blocks;
+  its custom code is glue for this workflow and never replaces the registry or
+  submits data. Sources: [CPSC Product Registry](https://www.cpsc.gov/eFiling-CPSC-Product-Registry)
+  and [eFiling Document Library](https://www.cpsc.gov/eFiling-Document-Library).
 - Acceptance: output follows the current template columns, carries cited source
-  pages, reports blanks as gaps, blocks mismatches/unknown codes/unapproved
-  customer certification, and never submits to CPSC.
+  pages, reports blanks as gaps, blocks missing required fields,
+  mismatches/unknown codes/unapproved customer certification, and never
+  submits to CPSC.
 
 ## Checks run
 
 Command:
 
 ```sh
-~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/cpsc-prep/tests
+/home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/cpsc-prep/tests
 ```
 
-Output: `12 passed`.
+Output: `13 passed in 0.04s`.
 
 Command:
 
 ```sh
-~/w/glacier-lean/.venv/bin/python -m compileall -q ventures/cpsc-prep/scripts ventures/install_all.py
+/home/glacier/w/glacier-lean/.venv/bin/python -m py_compile ventures/cpsc-prep/scripts/cpsc_prep.py ventures/cpsc-prep/tests/test_pipeline.py
 ```
 
 Output: exit 0, no compile errors.
@@ -32,11 +39,11 @@ Output: exit 0, no compile errors.
 Command:
 
 ```sh
-~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only cpsc-prep --dry-run
+/home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only cpsc-prep --dry-run
 ```
 
 Output: all four manifest flows validated: `cpsc-batch-prep`,
-`cpsc-broker-launch`, `cpsc-feed-refresh`, and `cpsc-code-pages`.
+`cpsc-broker-launch`, `cpsc-feed-refresh`, and `cpsc-code-pages`; exit 0.
 
 ## Real Glacier registration/run
 

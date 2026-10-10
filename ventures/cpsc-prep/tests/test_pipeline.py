@@ -78,7 +78,7 @@ def fake_second_engine(reader):
     return lambda product_id, documents: {"fields": reader.records["crosscheck.json"]}
 
 
-def test_agreed_fields_generate_exact_template_and_missing_values_stay_blank():
+def test_missing_required_values_stay_blank_in_review_data_and_block_registry_export():
     values = good_values()
     values["manufacturer"] = ""
     source = fields(values)
@@ -101,11 +101,32 @@ def test_agreed_fields_generate_exact_template_and_missing_values_stay_blank():
     assert result["status"] == "uncertain — please check"
     assert result["submission_performed"] is False
     assert result["csv_columns"] == list(REQUIRED_FIELDS)
-    rows = list(csv.DictReader(io.StringIO(result["csv"])))
-    assert rows == [{**{field: good_values()[field] for field in REQUIRED_FIELDS}, "manufacturer": ""}]
+    assert result["csv"] is None
     assert any(gap["field"] == "manufacturer" for gap in result["gaps"])
     assert result["products"][0]["fields"]["product_id"]["source"]["page"] == 1
     assert feeds.synced == ["cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"]
+
+
+def test_agreed_complete_fields_generate_exact_template_csv():
+    values = good_values()
+    reader = FakeReader({"lab.pdf": fields(values), "crosscheck.json": fields(values)})
+    result = prepare_batch(
+        {"batch_id": "B-8", "products": [{"product_id": "SKU-001", "tariff_code": "9503.00.00", "documents": ["lab.pdf"]}]},
+        reader=reader,
+        rules=FakeRules(),
+        feeds=FakeFeeds(),
+        ruleset="cpsc-current",
+        rule_codes_source="cpsc_rule_codes",
+        template_source="cpsc_registry_template",
+        customer_certified=True,
+        second_engine=fake_second_engine(reader),
+    )
+
+    assert result["status"] == "match"
+    assert result["workflow_state"] == "ready_for_customer_submission"
+    assert result["csv_columns"] == list(REQUIRED_FIELDS)
+    assert list(csv.DictReader(io.StringIO(result["csv"]))) == [values]
+    assert result["submission_performed"] is False
 
 
 def test_disagreement_and_uncited_rule_codes_remain_uncertain_and_do_not_export_as_ready():

@@ -197,6 +197,10 @@ def prepare_batch(
             output_fields[name] = field_result
             if not value:
                 product_gaps.append({"product_id": product_id, "field": name, "reason": "missing value; left blank"})
+                # A blank required certificate element belongs in the gap list,
+                # but it must also keep an incomplete registry file from being
+                # released as ready for customer submission.
+                all_ready = False
             if uncertain:
                 product_gaps.append({"product_id": product_id, "field": name, "reason": "uncertain — please check; independent values do not agree" if other else "uncertain — please check; no independent second-engine result"})
                 all_ready = False
