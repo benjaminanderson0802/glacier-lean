@@ -1,0 +1,47 @@
+{
+  "id": "property-tax-refresh-roll",
+  "name": "Refresh Cook County parcel records",
+  "goal": "Refresh the latest public Cook County Assessor parcel roll through the shared feed block and retain any source alerts for review.",
+  "nodes": [
+    {
+      "id": "daily_refresh",
+      "type": "schedule",
+      "config": {"cron": "0 4 * * *"},
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "sync_roll",
+      "type": "command",
+      "config": {"cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" ventures/property-tax/scripts/property_tax.py refresh-roll", "timeout": "900", "retries": "0"},
+      "position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "sync_ok",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 600, "y": 0}
+    },
+    {
+      "id": "sync_note",
+      "type": "note",
+      "config": {"path": "ventures/property-tax/roll-sync-{run}.md", "template": "Cook County Assessor feed sync completed. Check its row count, changed flag, and alerts in the run output before using parcel records.\n\n{summary}"},
+      "position": {"x": 900, "y": -120}
+    },
+    {
+      "id": "sync_failed",
+      "type": "note",
+      "config": {"path": "ventures/property-tax/roll-sync-failed-{run}.md", "template": "Cook County Assessor feed sync failed. Do not use stale or incomplete records for a packet or mailing.\n\n{summary}"},
+      "position": {"x": 900, "y": 200}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "daily_refresh", "target": "sync_roll", "label": ""},
+    {"id": "e2", "source": "sync_roll", "target": "sync_ok", "label": ""},
+    {"id": "e3", "source": "sync_ok", "target": "sync_note", "label": "yes"},
+    {"id": "e4", "source": "sync_ok", "target": "sync_failed", "label": "no"}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'feeds.db'; assert p.parent.exists()\"", "required": true}
+  ],
+  "max_steps": 4
+}
