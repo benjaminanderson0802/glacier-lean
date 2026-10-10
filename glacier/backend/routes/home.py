@@ -15,6 +15,7 @@ import runner
 import store
 import system_check
 import vault
+import schedule_policy
 
 
 router = APIRouter()
@@ -23,6 +24,8 @@ _local_ai_lock = threading.Lock()
 _local_ai = {"online": None, "model": None}  # None = first probe still running
 _local_ai_at = 0.0
 _local_ai_refreshing = False
+_health_cache = {"at": 0.0, "report": None}
+_health_lock = threading.Lock()
 
 
 def _probe_local_ai() -> None:
@@ -93,7 +96,7 @@ def _recent_notes(max_commits: int = 300) -> list[dict]:
                 diffs = commit.tree.diff(parents[0].tree) if parents else commit.tree.diff(NULL_TREE)
                 at = commit.committed_datetime.astimezone(timezone.utc).isoformat()
                 for path in sorted({(d.b_path or d.a_path or "").replace("\\", "/") for d in diffs}):
-                    if path.endswith(".md") and path not in seen and not path.startswith("claims/"):
+                    if path.endswith(".md") and path not in seen and not path.startswith(("claims/", "health/")):
                         seen.add(path)
                         changed.append((path, at))
                 if len(changed) >= 10:
@@ -184,10 +187,23 @@ def home():
     needs_you.sort(key=lambda item: item["at"], reverse=True)
     running.sort(key=lambda item: item["started_at"], reverse=True)
     import teams
-    return {"local_ai": _local_ai_status(),
+    next_runs = []
+    now_utc = datetime.now(timezone.utc)
+    for path in vault.list_notes(".json", "environments"):
+        try:
+            graph = json.loads(vault.read_note(path))
+            env_id = graph.get("id") or path.rsplit("/", 1)[-1][:-5]
+            node = next((n for n in graph.get("nodes", []) if n.get("type") == "schedule"), None)
+            if node:
+                next_runs.append({"env_id": env_id, "name": graph.get("name") or env_id,
+                                  "next_run": schedule_policy.next_run((node.get("config") or {}).get("cron", ""), now_utc)})
+        except (ValueError, TypeError):
+            continue
+    next_runs.sort(key=lambda row: row["next_run"])
+    return {"local_ai": _local_ai_status(), "health": _health_report(),
             "counts": {"running": len(running), "need_you": len(needs_you)},
             "needs_you": needs_you[:20], "running": running,
-            "teams_running": _teams_running(),
+            "teams_running": _teams_running(), "next_runs": next_runs,
             "recent_notes": _recent_notes()}
 
 
@@ -205,3 +221,64 @@ def _teams_running() -> list[dict]:
     except Exception:
         logging.getLogger(__name__).warning("Could not read Build team status for Home", exc_info=True)
         return []
+
+
+def _health_report() -> dict:
+    """Summarize automation health; write one readable report into Memory each day."""
+    with _health_lock:
+        if _health_cache["report"] and time.monotonic() - _health_cache["at"] < 60:
+            return dict(_health_cache["report"])
+        timed_out = store.timeout_stuck_runs()
+        for run in timed_out:
+            try:
+                runner.DBOS.cancel_workflow(run["run_id"], cancel_children=True)
+            except Exception:
+                logging.getLogger(__name__).warning("Could not stop timed-out workflow %s", run["run_id"], exc_info=True)
+        rows = store.list_runs(None)
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=1)
+        failed = []
+        stuck = []
+        waiting = []
+        stuck_count = 0
+        for row in rows:
+            try:
+                started = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
+                if started.tzinfo is None:
+                    started = started.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            if row.get("status") == "failed":
+                if started >= cutoff:
+                    failed.append(row["run_id"])
+                # Timed-out runs are necessarily at least 24 hours old, so do
+                # not gate this count on the ordinary one-day failure window.
+                if ((store.get_run(row["run_id"]) or {}).get("waiting_on") or "").startswith("timeout:"):
+                    stuck_count += 1
+            elif row.get("status") == "waiting":
+                waiting.append(row["run_id"])
+        data_dir = os.path.dirname(store.DB) if store.DB else ""
+        size = 0
+        for root, _, files in os.walk(data_dir) if data_dir and os.path.isdir(data_dir) else []:
+            for filename in files:
+                try:
+                    size += os.path.getsize(os.path.join(root, filename))
+                except OSError:
+                    pass
+        report = {"date": now.date().isoformat(), "failed_runs": len(failed), "stuck_runs": stuck_count,
+                  "waiting_for_owner": len(waiting), "data_bytes": size,
+                  "note_path": f"health/glacier-health-{now.date().isoformat()}.md"}
+        body = (f"# Glacier health — {report['date']}\n\n"
+                f"- Failed runs in the last day: {report['failed_runs']}\n"
+                f"- Runs timed out after 24 hours: {report['stuck_runs']}\n"
+                f"- Steps waiting on you: {report['waiting_for_owner']}\n"
+                f"- Data folder size: {size / (1024 * 1024):.1f} MB\n")
+        try:
+            vault.read_note(report["note_path"])
+        except (FileNotFoundError, IsADirectoryError, ValueError):
+            try:
+                vault.write_note(report["note_path"], body, agent="glacier-health")
+            except Exception:
+                logging.getLogger(__name__).warning("Could not save the daily Glacier health note", exc_info=True)
+        _health_cache.update(at=time.monotonic(), report=report)
+        return dict(report)

@@ -47,6 +47,7 @@ AUDITED_ROUTES = {
     "POST /api/teams/{team_id}/stop": "team.stop_requested",
     "POST /api/teams/{team_id}/tasks/{task_id}/approve": "team.task_approval",
     "POST /api/teams/{team_id}/features/{feature_id}/grade": "team.feature_graded",
+    "POST /api/scheduler/pause-all": "scheduler.pause_toggled",
 }
 
 # Runtime nodes that can perform an external or local side effect when executed.

@@ -280,6 +280,8 @@ const server = http.createServer(async (req, res) => {
       const at = minutes => new Date(now - minutes * 60_000).toISOString()
       return send(200, {
         local_ai: { online: true, model: 'qwen3:0.6b' },
+        health: { date: new Date(now).toISOString().slice(0, 10), failed_runs: 1, stuck_runs: 0, waiting_for_owner: 2, data_bytes: 5242880, note_path: `health/glacier-health-${new Date(now).toISOString().slice(0, 10)}.md` },
+        next_runs: [{ env_id: 'daily-backup', name: 'Daily backup', next_run: new Date(now + 3600_000).toISOString() }],
         counts: { running: 2, need_you: 6 },
         needs_you: [
           ...[...mockVentures.values()].flatMap(venture => venture.your_steps.filter(step => !step.done).map(step => ({ kind: 'your_step', title: step.title, detail: step.instructions, instructions: step.instructions, links: [step.link], secret_name: step.secret_name, at: new Date().toISOString(), ref: { venture_slug: venture.slug, step_id: step.id } }))),

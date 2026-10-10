@@ -9,7 +9,7 @@
 }
 Node types, their settings fields and branch labels are defined once in glacier/contract/node_types.json and served at GET /api/node-types.
 Node configs:
-- schedule: {"cron": "*/1 * * * *"}   (start node; also creates/updates a DBOS schedule named after the environment)
+- schedule: {"cron": "*/1 * * * *", "missed_run": "run_once|skip", "overlap": "queue|skip"} (start node; DBOS persists the schedule; missed occurrences collapse to the latest one by default)
 - command:  {"cmd": "pytest -q", "cwd": "optional"}   (records exit_code + output)
 - codex:    {"prompt": "Fix {prev_output}", "workdir": "optional", "sandbox": "read-only|workspace-write", "model": "optional"}
             Codex worker: runs `codex exec --json --skip-git-repo-check -s <sandbox> -C <workdir> -o <file> [-m model] -- <prompt>`
@@ -58,16 +58,17 @@ The local backend serves an A2A 1.0 JSON-RPC interface at `/a2a` and the Agent C
                                                   A deterministic, plain-language explanation from the saved run, node catalog labels,
                                                   outputs, checks and waiting approval. Output snippets are redacted and limited to 120 characters.
                                                   Returns 404 when the run does not exist; never calls an AI model.
-- GET  /api/home                             -> {local_ai:{online,model}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
+- GET  /api/home                             -> {local_ai:{online,model}, health:{date,failed_runs,stuck_runs,waiting_for_owner,data_bytes,note_path}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
                                                   needs_you:[{kind,title,detail,at,ref}],
                                                   running:[{run_id,env_id,name,status,step,steps,started_at}],
-                                                  recent_notes:[{path,summary,at}]}; one read-only Home summary.
+                                                  recent_notes:[{path,summary,at}]}; Home also shows the daily report and writes it to memory.
                                                   Needs-you rows are newest first (up to 20): waiting approvals,
                                                   claims proposed for an owner decision, and failures from the last
                                                   seven days. Running includes running, queued and waiting runs;
                                                   step/steps counts completed/total nodes. Recent committed memory
                                                   notes are newest first (up to 10). Local AI discovery is cached
                                                   for 10 seconds and does not block the response on tool probes.
+- POST /api/scheduler/pause-all              -> toggles scheduled starts; active runs keep going
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
 - WS   /api/events  -> run messages {"run_id","env_id","node_id","state","output"?} on every node state change; memory writes through the vault (owner saves, run notes, undo) publish {"type":"memory","path":"<note path>","change":"created"|"updated","author":"<writer>","run_id":"<run id or empty>"} after the vault git commit succeeds, outside the vault lock (run-written notes follow that run's node events by ~0.1 s).

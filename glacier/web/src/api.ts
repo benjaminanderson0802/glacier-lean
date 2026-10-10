@@ -184,6 +184,8 @@ export type HomeItem = Omit<Partial<YourStepItem>, 'kind'> & {
 }
 export interface HomeRun { run_id: string; env_id: string; name: string; status: 'running' | 'queued' | 'waiting'; step: number; steps: number; started_at: string }
 export interface HomeNote { path: string; summary: string; at: string }
+export interface HomeHealth { date: string; failed_runs: number; stuck_runs: number; waiting_for_owner: number; data_bytes: number; note_path: string }
+export interface HomeSchedule { env_id: string; name: string; next_run: string }
 export interface HomeSummary {
   /** online: null = still checking (first seconds after start). */
   local_ai: { online: boolean | null; model: string | null }
@@ -191,6 +193,8 @@ export interface HomeSummary {
   needs_you: HomeItem[]
   running: HomeRun[]
   recent_notes: HomeNote[]
+  health?: HomeHealth
+  next_runs?: HomeSchedule[]
 }
 
 /** Home data. Uses GET /api/home; on an older engine without it, builds the same shape from the core endpoints. */

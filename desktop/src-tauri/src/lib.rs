@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf}, process::{Child, Command, Stdio},
     sync::Mutex, thread, time::{Duration, Instant},
 };
-use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ToolStatus { pub name: String, pub installed: bool }
@@ -98,6 +100,106 @@ async fn install_update(app: tauri::AppHandle, expected_version: String) -> Resu
 #[derive(Default)]
 struct BackendProcess(Mutex<Option<Child>>);
 
+#[derive(Default)]
+struct TrayBackend(Mutex<Option<(u16, String)>>);
+
+fn scheduler_pause_request(port: u16, token: &str) {
+    use std::io::{Read, Write};
+    let Ok(mut stream) = std::net::TcpStream::connect(("127.0.0.1", port)) else { return; };
+    let body = "{}";
+    let request = format!("POST /api/scheduler/pause-all HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\nAuthorization: Bearer {token}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
+    if stream.write_all(request.as_bytes()).is_ok() {
+        let mut response = String::new();
+        let _ = stream.read_to_string(&mut response);
+    }
+}
+
+fn startup_preference_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path().app_data_dir().map(|p| p.join("start-at-logon.json")).map_err(|e| e.to_string())
+}
+
+#[cfg(windows)]
+fn write_startup_setting(enabled: bool, app: &tauri::AppHandle) -> Result<(), String> {
+    let path = startup_preference_path(app)?;
+    let key = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    let result = if enabled {
+        let exe = env::current_exe().map_err(|e| e.to_string())?;
+        Some(Command::new("reg.exe").args(["add", key, "/v", "Glacier", "/t", "REG_SZ", "/d"])
+            .arg(format!("\"{}\"", exe.display())).arg("/f").output())
+    } else {
+        let query = Command::new("reg.exe").args(["query", key, "/v", "Glacier"]).output()
+            .map_err(|e| e.to_string())?;
+        if query.status.success() {
+            Some(Command::new("reg.exe").args(["delete", key, "/v", "Glacier", "/f"]).output())
+        } else { None }
+    };
+    if let Some(result) = result {
+        let result = result.map_err(|e| e.to_string())?;
+        if !result.status.success() { return Err(String::from_utf8_lossy(&result.stderr).trim().to_string()); }
+    }
+    if let Some(parent) = path.parent() { fs::create_dir_all(parent).map_err(|e| e.to_string())?; }
+    fs::write(&path, serde_json::json!({"enabled": enabled}).to_string()).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn write_startup_setting(_enabled: bool, _app: &tauri::AppHandle) -> Result<(), String> { Ok(()) }
+
+#[cfg(windows)]
+fn startup_enabled(app: &tauri::AppHandle) -> Result<bool, String> {
+    if let Ok(contents) = fs::read_to_string(startup_preference_path(app)?) {
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&contents) {
+            return Ok(value["enabled"].as_bool().unwrap_or(false));
+        }
+    }
+    let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let ventures = data_dir.join("vault").join("ventures");
+    fn contains_manifest(path: &Path) -> bool {
+        fs::read_dir(path).map(|entries| entries.filter_map(Result::ok).any(|entry| {
+            if entry.file_name() == "venture.json" { return true; }
+            entry.file_type().map(|kind| kind.is_dir() && contains_manifest(&entry.path())).unwrap_or(false)
+        })).unwrap_or(false)
+    }
+    let has_ventures = contains_manifest(&ventures);
+    if has_ventures { write_startup_setting(true, app)?; }
+    Ok(has_ventures)
+}
+
+#[cfg(not(windows))]
+fn startup_enabled(_app: &tauri::AppHandle) -> Result<bool, String> { Ok(false) }
+
+#[tauri::command]
+fn get_start_at_logon(app: tauri::AppHandle) -> Result<bool, String> { startup_enabled(&app) }
+
+#[tauri::command]
+fn supports_start_at_logon() -> bool { cfg!(windows) }
+
+#[tauri::command]
+fn set_start_at_logon(enabled: bool, app: tauri::AppHandle) -> Result<bool, String> {
+    write_startup_setting(enabled, &app)?;
+    Ok(enabled)
+}
+
+fn install_tray(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let open = MenuItem::with_id(app, "open", "Open Glacier", true, None::<&str>)?;
+    let pause = MenuItem::with_id(app, "pause", "Pause / resume schedules", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Glacier", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&open, &pause, &quit])?;
+    TrayIconBuilder::new().menu(&menu).on_menu_event(|app, event| match event.id().as_ref() {
+        "open" => if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize(); let _ = window.show(); let _ = window.set_focus();
+        },
+        "pause" => if let Some(state) = app.try_state::<TrayBackend>() {
+            if let Ok(guard) = state.0.lock() {
+                if let Some((port, token)) = guard.as_ref() { scheduler_pause_request(*port, token); }
+            }
+        },
+        "quit" => app.exit(0),
+        _ => {}
+    }).build(app)?;
+    Ok(())
+}
+
 fn free_listener() -> TcpListener { TcpListener::bind(("127.0.0.1", 0)).expect("reserve local port") }
 
 fn resource_path(app: &tauri::AppHandle, relative: &str) -> PathBuf {
@@ -182,17 +284,29 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(BackendProcess::default())
-        .invoke_handler(tauri::generate_handler![available_tools, check_update, install_update])
+        .manage(TrayBackend::default())
+        .invoke_handler(tauri::generate_handler![available_tools, check_update, install_update, get_start_at_logon, set_start_at_logon, supports_start_at_logon])
         .setup(|app| {
             let port = free_listener().local_addr()?.port();
             let data_dir = app.path().app_data_dir()?;
             fs::create_dir_all(&data_dir)?;
+            if let Err(error) = startup_enabled(app.handle()) {
+                eprintln!("Could not apply Glacier's sign-in startup setting: {error}");
+            }
             let token = engine_token(&data_dir).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            *app.state::<TrayBackend>().0.lock().expect("tray backend state") = Some((port, token.clone()));
             let window = WebviewWindowBuilder::new(app.handle(), "main", WebviewUrl::App("first-run/index.html".into()))
                 .title("Welcome to Glacier").inner_size(1600.0, 900.0).min_inner_size(1280.0, 720.0)
                 .initialization_script(format!("{}{}", api_initialization_script(port, &token), updater_initialization_script()))
                 .on_navigation(move |url| navigation_is_allowed(url, port))
+                .on_window_event(|window, event| {
+                    if let WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                })
                 .build()?;
+            install_tray(app.handle())?;
             {
                 use tauri_plugin_updater::UpdaterExt;
                 let handle = app.handle().clone();

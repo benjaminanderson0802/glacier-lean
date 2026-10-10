@@ -43,14 +43,22 @@ def _conn():
         c.close()
 
 
-def create_run(run_id: str, env_id: str, graph: dict) -> None:
+def create_run(run_id: str, env_id: str, graph: dict, only_if_idle: bool = False) -> bool | None:
     """Insert the run with its graph snapshot and every node pending. No-op if it already exists."""
     with _conn() as c:
+        if only_if_idle:
+            c.execute("BEGIN IMMEDIATE")
         if c.execute("SELECT 1 FROM glacier_runs WHERE run_id=?", (run_id,)).fetchone():
-            return
+            return True if only_if_idle else None
+        if only_if_idle and c.execute(
+            "SELECT 1 FROM glacier_runs WHERE env_id=? AND status IN ('running','waiting','queued') LIMIT 1",
+            (env_id,),
+        ).fetchone():
+            return False
         c.execute("INSERT INTO glacier_runs VALUES (?,?,?,?,?,NULL)", (run_id, env_id, "running",
                   datetime.now(timezone.utc).isoformat(timespec="seconds"), json.dumps(graph)))
         c.executemany("INSERT INTO glacier_nodes VALUES (?,?,?,NULL)", [(run_id, n["id"], "pending") for n in graph["nodes"]])
+        return True if only_if_idle else None
 
 
 def graph_of(run_id: str) -> dict:
@@ -75,8 +83,39 @@ def mark_chat_reported(run_id: str) -> bool:
 def set_run(run_id: str, status: str, waiting_on: str | None = None) -> None:
     with _conn() as c:
         # A canceled run stays canceled: a step that was still finishing must not bring it back to life.
-        c.execute("UPDATE glacier_runs SET status=?, waiting_on=? WHERE run_id=? AND status != 'canceled'",
+        # A timed-out run is terminal even if its durable workflow later unwinds.
+        c.execute("UPDATE glacier_runs SET status=?, waiting_on=? WHERE run_id=? AND status != 'canceled' AND COALESCE(waiting_on,'') NOT LIKE 'timeout:%'",
                   (status, waiting_on, run_id))
+
+
+def timeout_stuck_runs(max_age_seconds: int = 24 * 3600) -> list[dict]:
+    """Mark stale active runs failed with a readable reason; return the runs changed."""
+    now = datetime.now(timezone.utc)
+    cutoff = now.timestamp() - max_age_seconds
+    changed = []
+    with _conn() as c:
+        rows = c.execute("SELECT run_id, env_id, started_at FROM glacier_runs WHERE status IN ('running','queued')").fetchall()
+        for run_id, env_id, stamp in rows:
+            try:
+                started = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+                if started.tzinfo is None:
+                    started = started.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            if started.timestamp() > cutoff:
+                continue
+            minutes = max(1, round(max_age_seconds / 60))
+            elapsed = f"{minutes // 60} hour{'s' if minutes // 60 != 1 else ''}" if minutes >= 60 and minutes % 60 == 0 else f"{minutes} minute{'s' if minutes != 1 else ''}"
+            reason = f"This run timed out after {elapsed}."
+            c.execute("UPDATE glacier_runs SET status='failed', waiting_on=? WHERE run_id=? AND status IN ('running','queued')",
+                      ("timeout:" + reason, run_id))
+            nodes = c.execute("SELECT node_id FROM glacier_nodes WHERE run_id=? AND state='running'", (run_id,)).fetchall()
+            c.executemany("UPDATE glacier_nodes SET state='failed', output=? WHERE run_id=? AND node_id=?",
+                          [(reason, run_id, node_id) for (node_id,) in nodes])
+            changed.append({"run_id": run_id, "env_id": env_id, "reason": reason})
+    for run in changed:
+        broadcaster.publish({"run_id": run["run_id"], "env_id": run["env_id"], "state": "failed", "output": run["reason"]})
+    return changed
 
 
 def set_waiting(run_id: str, env_id: str, node_id: str) -> None:

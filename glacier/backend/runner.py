@@ -3,11 +3,14 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, sqlite3, subprocess, tempfile, threading, time
 import shlex
 from collections import defaultdict, deque
+from datetime import datetime, timezone
 from queue import Empty, Queue
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 import shell_commands
 import audit_log
+import schedule_policy
+from dbos._croniter import croniter  # DBOS 3.2.0's cron parser; keep cron semantics identical to its scheduler.
 from agents_md import project_instructions_detail
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
@@ -24,6 +27,7 @@ CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
 RUN_WAITING_MESSAGE = "Waiting for another run to finish"
 MAX_PARALLEL_RUNS = max(1, int(system_check.effective_settings().get("max_parallel_runs", 1)))
 _execution_slots = threading.BoundedSemaphore(MAX_PARALLEL_RUNS)
+SCHEDULES_PAUSED = False
 # steps with an exit_code that check nodes branch on: see plugins.is_worker
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
@@ -192,16 +196,16 @@ def terminate_process(process) -> None:
 # ---- steps -------------------------------------------------------------------------------
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
-def snapshot_scheduled_run(env_id: str, run_id: str) -> bool:
-    """Create a run only if its schedule still exists and the flow is enabled.
-
-    A tick already queued before pause/removal must not start a new run.
-    """
+def snapshot_scheduled_run(env_id: str, run_id: str, attempt: int = 0) -> bool:
+    """Create the run for a schedule tick, unless the flow no longer has a schedule (a tick that was already
+    queued when the owner removed the schedule must not start the flow). The database insert also reserves
+    this flow atomically, so multiple queued ticks cannot wake and start together."""
     graph = load_env(env_id)
     if graph.get("enabled", True) is False or not any(n.get("type") == "schedule" for n in graph.get("nodes", [])):
         return False
-    store.create_run(run_id, env_id, graph)
-    return True
+    reserved = store.create_run(run_id, env_id, graph, True)
+    # Older store doubles return None; the real store reports busy vs reserved.
+    return True if reserved is None else reserved
 
 
 def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) -> dict:
@@ -684,9 +688,34 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
 @DBOS.workflow()
 def scheduled_run(when, env_id) -> str:
     """Fired by the environment's DBOS schedule; starts a normal run (id derived from this workflow, so replay-safe)."""
-    run_id = uuid.uuid5(uuid.NAMESPACE_URL, DBOS.workflow_id).hex[:12]
-    if not snapshot_scheduled_run(env_id, run_id):
+    graph = load_env(env_id)
+    if SCHEDULES_PAUSED:
         return ""
+    schedule_node = next((n for n in graph.get("nodes", []) if n.get("type") == "schedule"), {})
+    cfg = schedule_node.get("config") or {}
+    now = datetime.now(timezone.utc)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    if when < now:
+        if cfg.get("missed_run", "run_once") == "skip":
+            return ""
+        # DBOS backfills durably. Collapse its list of overdue ticks to the newest one.
+        next_tick = croniter(cfg.get("cron", ""), when, second_at_beginning=True).get_next(datetime)
+        if next_tick <= now:
+            return ""
+    run_id = uuid.uuid5(uuid.NAMESPACE_URL, DBOS.workflow_id).hex[:12]
+    overlap = cfg.get("overlap", "queue")
+    attempt = 0
+    while True:
+        if snapshot_scheduled_run(env_id, run_id, attempt):
+            break
+        if not any(n.get("type") == "schedule" for n in load_env(env_id).get("nodes", [])):
+            return ""
+        if schedule_policy.overlap_action(overlap, active=True) == "skip":
+            return ""
+        # Queue policy waits durably, then retries an atomic database reservation.
+        DBOS.sleep(1)
+        attempt += 1
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)
     return run_id
@@ -694,11 +723,24 @@ def scheduled_run(when, env_id) -> str:
 
 def sync_schedule(env: dict) -> None:
     """Create/replace the environment's DBOS schedule from its schedule node, or delete it if there is none."""
-    DBOS.delete_schedule(schedule_name(env["id"]))
+    name = schedule_name(env["id"])
+    existing = DBOS.get_schedule(name)
     if env.get("enabled", True) is False:
+        if existing:
+            DBOS.delete_schedule(name)
         return
     for n in env.get("nodes", []):
         if n["type"] == "schedule":
-            DBOS.create_schedule(schedule_name=schedule_name(env["id"]), workflow_fn=scheduled_run,
-                                 schedule=(n.get("config") or {}).get("cron", ""), context=env["id"])
+            cfg = n.get("config") or {}
+            cron = cfg.get("cron", "")
+            if existing and existing.get("schedule") == cron and existing.get("context") == env["id"]:
+                return
+            if existing:
+                DBOS.delete_schedule(name)
+            DBOS.create_schedule(schedule_name=name, workflow_fn=scheduled_run, schedule=cron,
+                                 context=env["id"], automatic_backfill=True)
+            if SCHEDULES_PAUSED:
+                DBOS.pause_schedule(name)
             return
+    if existing:
+        DBOS.delete_schedule(name)
