@@ -5,18 +5,118 @@
   "description": "A reusable example of checked JSON, a local SQLite table, CSV export, and a short delay. It writes only on this computer.",
   "when_to_use": "Start here to learn how data moves between ordinary automation steps.",
   "nodes": [
-    {"id":"ai","type":"structured_ai","config":{"prompt":"Return one sample contact record for a fictional person named Ada Lovelace. Set id to exactly sample-ada. Use the required JSON shape.","schema":"{\"type\":\"object\",\"required\":[\"id\",\"name\",\"email\"],\"properties\":{\"id\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"}},\"additionalProperties\":false}"},"position":{"x":0,"y":0}},
-    {"id":"table","type":"data_table","config":{"table":"example_contacts","operation":"upsert","key":"id"},"position":{"x":260,"y":0}},
-    {"id":"json","type":"json_transform","config":{"operation":"set_fields","fields":"{\"source\":\"Glacier example\"}"},"position":{"x":520,"y":0}},
-    {"id":"csv","type":"csv_file","config":{"operation":"write","path":"example-contacts.csv"},"position":{"x":780,"y":0}},
-    {"id":"wait","type":"delay","config":{"seconds":"1"},"position":{"x":1040,"y":0}},
-    {"id":"email","type":"email_send","config":{"draft_only":"Yes","from":"team@example.test","to":"ada@example.test","subject":"Sample contact","body":"Created by this flow: {prev_output}"},"position":{"x":1300,"y":0}}
+    {
+      "id": "ai",
+      "type": "structured_ai",
+      "config": {
+        "prompt": "Return one sample contact record for a fictional person named Ada Lovelace. Set id to exactly sample-ada. Use the required JSON shape.",
+        "schema": "{\"type\":\"object\",\"required\":[\"id\",\"name\",\"email\"],\"properties\":{\"id\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"email\":{\"type\":\"string\"}},\"additionalProperties\":false}"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "table",
+      "type": "data_table",
+      "config": {
+        "table": "example_contacts",
+        "operation": "upsert",
+        "key": "id"
+      },
+      "position": {
+        "x": 260,
+        "y": 0
+      }
+    },
+    {
+      "id": "json",
+      "type": "json_transform",
+      "config": {
+        "operation": "set_fields",
+        "fields": "{\"source\":\"Glacier example\"}"
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    },
+    {
+      "id": "csv",
+      "type": "csv_file",
+      "config": {
+        "operation": "write",
+        "path": "example-contacts.csv"
+      },
+      "position": {
+        "x": 780,
+        "y": 0
+      }
+    },
+    {
+      "id": "wait",
+      "type": "delay",
+      "config": {
+        "seconds": "1"
+      },
+      "position": {
+        "x": 1040,
+        "y": 0
+      }
+    },
+    {
+      "id": "email",
+      "type": "email_send",
+      "config": {
+        "draft_only": "Yes",
+        "from": "team@example.test",
+        "to": "ada@example.test",
+        "subject": "Sample contact",
+        "body": "Created by this flow: {prev_output}"
+      },
+      "position": {
+        "x": 1300,
+        "y": 0
+      }
+    }
   ],
   "edges": [
-    {"id":"e1","source":"ai","target":"table","label":""},
-    {"id":"e2","source":"table","target":"json","label":""},
-    {"id":"e3","source":"json","target":"csv","label":""},
-    {"id":"e4","source":"csv","target":"wait","label":""},
-    {"id":"e5","source":"wait","target":"email","label":""}
+    {
+      "id": "e1",
+      "source": "ai",
+      "target": "table",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "table",
+      "target": "json",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "json",
+      "target": "csv",
+      "label": ""
+    },
+    {
+      "id": "e4",
+      "source": "csv",
+      "target": "wait",
+      "label": ""
+    },
+    {
+      "id": "e5",
+      "source": "wait",
+      "target": "email",
+      "label": ""
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "test -s example-contacts.csv"
+    }
   ]
 }

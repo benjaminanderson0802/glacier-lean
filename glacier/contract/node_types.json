@@ -227,6 +227,21 @@
    ]
   },
   {
+   "type": "flow",
+   "label": "Sub-flow",
+   "description": "Runs another saved flow and waits for its result.",
+   "fields": [
+    {
+     "key": "env",
+     "label": "Flow to run",
+     "placeholder": "",
+     "default": "",
+     "picker": "environment"
+    }
+   ],
+   "branches": null
+  },
+  {
    "type": "for_each",
    "label": "For each item",
    "description": "Run the steps on the 'each' branch once for every item in a JSON list, then follow 'done'.",
@@ -242,21 +257,6 @@
     "each",
     "done"
    ]
-  },
-  {
-   "type": "flow",
-   "label": "Sub-flow",
-   "description": "Runs another saved flow and waits for its result.",
-   "fields": [
-    {
-     "key": "env",
-     "label": "Flow to run",
-     "placeholder": "",
-     "default": "",
-     "picker": "environment"
-    }
-   ],
-   "branches": null
   }
  ]
 }

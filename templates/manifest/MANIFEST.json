@@ -128,7 +128,7 @@
       "description": "A reusable example of checked JSON, a local SQLite table, CSV export, and a short delay. It writes only on this computer.",
       "author": "Glacier",
       "license": "Apache-2.0",
-      "sha256": "ec209d8be6d185d8044f8d4f940bde20ba32a13afc8e9cac71fbe823b2768f77",
+      "sha256": "cbfbc9ec0251eee0a22de58cbf7de855fbbdf15811ed4f6051dad8a6b73086aa",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },
