@@ -2,7 +2,7 @@
 
 ## Checks run
 
-- `.venv/bin/python -m pytest -q ventures/dibbs-supply/tests/test_dibbs_supply.py` — **7 passed**. Fixtures verify exact solicitation/part/supplier checks, eligibility/electronics filters, margin ranking, CSV output fields, traceability/authorization evidence, prefilled quote-request drafts, and owner gates. Fixture files are synthetic and do not count as real quotes.
+- `.venv/bin/python -m pytest -q ventures/dibbs-supply/tests/test_dibbs_supply.py` — **11 passed**. Fixtures verify exact solicitation/part/supplier checks, eligibility/electronics filters, margin ranking, CSV output fields, traceability/authorization evidence, prefilled quote-request drafts, and owner gates. Fixture files are synthetic and do not count as real quotes.
 - `.venv/bin/python ventures/install_all.py --only dibbs-supply --dry-run` — **validated** `dibbs-supply` / `dibbs-daily-prep`.
 - `.venv/bin/python -m compileall -q ventures/dibbs-supply/scripts ventures/dibbs-supply/tests` — **passed**.
 
