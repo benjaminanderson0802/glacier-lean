@@ -10,7 +10,7 @@ Command:
 ~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/freight-claims/tests/test_claims.py
 ```
 
-Result: `14 passed in 0.37s`.
+Result: `14 passed in 0.12s`.
 
 The tests cover damaged-item invoice totals and customer confirmation, evidence requirements, insurance consent, customer confirmation of carrier terms, one-time 30/120-day reminders, customer-provided carrier receipt confirmation, contingency invoice arithmetic, read-only tracking opt-in and exception classification, loopback-only filer use, and delegation to the shared customer signature block.
 
@@ -19,10 +19,11 @@ The tests cover damaged-item invoice totals and customer confirmation, evidence 
 Command:
 
 ```sh
-GLACIER_HOME=/tmp/glacier-live-Dk68RB GLACIER_READER_MODEL_TIMEOUT=1 ~/w/glacier-lean/.venv/bin/python ventures/freight-claims/scripts/claims.py prepare --input /tmp/glacier-live-Dk68RB/ventures/freight-claims/incoming/claim-intake.json --output-dir /tmp/glacier-live-Dk68RB/ventures/freight-claims/manual-packets
+mkdir -p /tmp/freight-claims-proof
+GLACIER_HOME=/tmp/freight-claims-proof GLACIER_READER_MODEL_TIMEOUT=1 ~/w/glacier-lean/.venv/bin/python ventures/freight-claims/scripts/claims.py prepare --input ventures/freight-claims/tests/fixtures/demo-intake.json --output-dir /tmp/freight-claims-proof/packets
 ```
 
-Result: `match`; claimed damaged-item invoice value `$250.00`; carrier liability estimate `$200.00`; one each of delivery receipt, photo evidence note, commercial invoice, and bill of lading; `email_sent: false`; no side effects. All inputs and the terms URL were synthetic, local-only test values.
+Result: `match`; recipient `claims@carrier.example.test`; claimed damaged-item invoice value `$250.00`; carrier liability estimate `$200.00`; four supporting files; `email_sent: false`; no side effects. Inputs and the carrier terms URL in `tests/fixtures/demo-intake.json` are synthetic, local-only test values.
 
 ## Flow validation and registration
 
