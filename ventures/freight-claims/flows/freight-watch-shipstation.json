@@ -1,7 +1,7 @@
 {
   "id": "freight-watch-shipstation",
-  "name": "Review ShipStation freight exceptions",
-  "goal": "Read shipment records, save possible freight damage or delivery exceptions for a shipper to confirm, and make no external changes.",
+  "name": "Review shipment exceptions",
+  "goal": "Read ShipStation when its API is available; otherwise use the newest shipments CSV in incoming/. Save possible freight exceptions for the shipper to confirm and make no external changes.",
   "nodes": [
     {
       "id": "daily",
@@ -35,7 +35,7 @@
       "type": "note",
       "config": {
         "path": "ventures/freight-claims/reports/shipstation-{run}.md",
-        "template": "ShipStation exception review. Possible matches require customer confirmation; no claim was filed and no carrier was contacted.\n\n{summary}"
+        "template": "Shipment exception review. The report names whether it used ShipStation or a CSV export. Possible matches require customer confirmation; no claim was filed and no carrier was contacted.\n\n{summary}"
       },
       "position": {
         "x": 700,

@@ -19,9 +19,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ventures.blocks.connectors.clients import ShipStationClient
+from ventures.blocks.connectors.common import ConnectorError
 from ventures.blocks.deadlines import add as add_deadline, due as due_deadlines
 from ventures.blocks.filer import prepare as prepare_portal_draft
 from ventures.blocks.reader import read_document
+from csv_intake import parse_shipments_csv
 
 
 SLUG = "freight-claims"
@@ -329,7 +331,8 @@ def classify_shipments(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "shipment_status", "tracking_status", "carrier_status", "exception_description", "status"))
         if re.search(r"damage|damaged|exception|lost|missing|shortage|undeliver", searchable, re.I):
             candidate = {
-                "shipment_id": str(row.get("shipment_id") or row.get("id") or ""),
+                "shipment_id": str(row.get("order_number") if str(row.get("shipment_id") or "").startswith("SS-ORD-")
+                                    and row.get("order_number") else row.get("shipment_id") or row.get("id") or ""),
                 "signal": "possible damage or delivery exception",
                 "customer_confirmation_required": True,
             }
@@ -339,46 +342,108 @@ def classify_shipments(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return candidates
 
 
-def watch_shipments(*, client: Any = None, enabled: bool | None = None) -> dict[str, Any]:
-    """Read a bounded ShipStation shipment page set and save exception candidates locally."""
+def _newest_shipstation_csv(incoming: Path) -> Path | None:
+    files = [path for path in incoming.glob("*.csv") if path.is_file()]
+    return sorted(files, key=lambda path: (-path.stat().st_mtime_ns, path.name.casefold()))[0] if files else None
+
+
+def _shipment_report(rows: list[dict[str, Any]], *, source: str, today: str,
+                     api_error: str | None = None, csv_file: Path | None = None,
+                     skipped_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    candidates = classify_shipments(rows)
+    record: dict[str, Any] = {
+        "result": "match" if candidates else f"no match found in ShipStation as of {today}",
+        "checked_on": today,
+        "candidate_count": len(candidates),
+        "candidates": candidates,
+        "source": source,
+        "side_effects": [],
+    }
+    if api_error:
+        record["api_error"] = api_error
+    if csv_file:
+        record["csv_file"] = str(csv_file)
+    if skipped_rows is not None:
+        record["skipped_rows"] = skipped_rows
+    return record
+
+
+def _read_api_shipments(shipment_client: Any) -> tuple[list[dict[str, Any]], list[dict[str, str]], int]:
+    rows = shipment_client.get_shipments(page_size=100, max_pages=20)
+    enriched = []
+    untracked = []
+    lookups = 0
+    for shipment in rows:
+        labels = shipment.get("labels") if isinstance(shipment.get("labels"), list) else []
+        label_id = shipment.get("label_id") or next((label.get("label_id") or label.get("labelId")
+                                                       for label in labels if isinstance(label, dict)), None)
+        if not label_id:
+            untracked.append({"shipment_id": str(shipment.get("shipment_id") or shipment.get("id") or ""),
+                              "reason": "ShipStation record has no label id for a tracking read"})
+            continue
+        if lookups >= MAX_TRACKING_LOOKUPS:
+            untracked.append({"shipment_id": str(shipment.get("shipment_id") or shipment.get("id") or ""),
+                              "reason": "daily tracking lookup limit reached"})
+            continue
+        tracking = shipment_client.get_tracking_for_label(str(label_id))
+        lookups += 1
+        enriched.append({**shipment, **tracking})
+    return enriched, untracked, lookups
+
+
+def watch_shipments(*, client: Any = None, enabled: bool | None = None,
+                    csv_path: str | Path | None = None) -> dict[str, Any]:
+    """Use a working opted-in API, falling back to an explicit or newest local CSV."""
     home = Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / SLUG
+    incoming = home / "incoming"
     opt_in = home / "shipstation-enabled.json"
     approved = enabled if enabled is not None else (
         opt_in.is_file() and json.loads(opt_in.read_text(encoding="utf-8")).get("approved") is True
     )
     today = date.today().isoformat()
-    if not approved:
-        record = {"result": "uncertain — please check", "checked_on": today,
-                  "reason": "ShipStation reads are disabled until the owner enables them after checking API plan limits.",
-                  "candidate_count": 0, "candidates": [], "side_effects": []}
-    else:
+    selected_csv = Path(csv_path).expanduser() if csv_path is not None else _newest_shipstation_csv(incoming)
+    api_error = None
+    if csv_path is not None:
+        approved = False
+    elif approved:
         shipment_client = client or FreightShipStationReader()
-        rows = shipment_client.get_shipments(page_size=100, max_pages=20)
-        enriched = []
-        untracked = []
-        lookups = 0
-        for shipment in rows:
-            labels = shipment.get("labels") if isinstance(shipment.get("labels"), list) else []
-            label_id = shipment.get("label_id") or next((label.get("label_id") or label.get("labelId")
-                                                           for label in labels if isinstance(label, dict)), None)
-            if not label_id:
-                untracked.append({"shipment_id": str(shipment.get("shipment_id") or shipment.get("id") or ""),
-                                  "reason": "ShipStation record has no label id for a tracking read"})
-                continue
-            if lookups >= MAX_TRACKING_LOOKUPS:
-                untracked.append({"shipment_id": str(shipment.get("shipment_id") or shipment.get("id") or ""),
-                                  "reason": "daily tracking lookup limit reached"})
-                continue
-            tracking = shipment_client.get_tracking_for_label(str(label_id))
-            lookups += 1
-            enriched.append({**shipment, **tracking})
-        candidates = classify_shipments(enriched)
-        uncertain = bool(untracked)
-        record = {"result": "match" if candidates else
-                  "uncertain — please check" if uncertain else
-                  f"no match found in ShipStation as of {today}",
-                  "checked_on": today, "candidate_count": len(candidates), "candidates": candidates,
-                  "untracked_shipments": untracked, "tracking_lookups": lookups, "side_effects": []}
+        try:
+            rows, untracked, lookups = _read_api_shipments(shipment_client)
+            record = _shipment_report(rows, source="api", today=today)
+            record["untracked_shipments"] = untracked
+            record["tracking_lookups"] = lookups
+            if not record["candidates"] and untracked:
+                record["result"] = "uncertain — please check"
+        except ConnectorError as exc:
+            api_error = str(exc)
+        finally:
+            if client is None:
+                shipment_client.close()
+        if api_error is None:
+            output = home / "reports"
+            output.mkdir(parents=True, exist_ok=True)
+            (output / "shipstation-candidates.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+            return record
+
+    if selected_csv is not None:
+        try:
+            rows, skipped = parse_shipments_csv(selected_csv)
+            record = _shipment_report(rows, source="csv", today=today, api_error=api_error,
+                                      csv_file=selected_csv, skipped_rows=skipped)
+        except (OSError, ValueError) as exc:
+            record = {"result": "uncertain — please check", "checked_on": today,
+                      "reason": f"Could not read ShipStation CSV: {exc}", "source": "csv",
+                      "csv_file": str(selected_csv), "api_error": api_error,
+                      "candidate_count": 0, "candidates": [], "skipped_rows": [], "side_effects": []}
+    elif not approved:
+        record = {"result": "uncertain — please check", "checked_on": today,
+                  "reason": "ShipStation reads are disabled until the owner enables them after checking API plan limits; no ShipStation CSV was found in incoming/.",
+                  "candidate_count": 0, "candidates": [], "source": "unavailable", "side_effects": []}
+    else:
+        record = {"result": "uncertain — please check", "checked_on": today,
+                  "reason": api_error or "ShipStation could not be read and no CSV export was found in incoming/.",
+                  "api_error": api_error, "candidate_count": 0, "candidates": [],
+                  "source": "unavailable", "side_effects": []}
     output = home / "reports"
     output.mkdir(parents=True, exist_ok=True)
     (output / "shipstation-candidates.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
@@ -409,7 +474,8 @@ def prepare_file(input_path: str, output_dir: str | None) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("watch", help="read ShipStation and save possible exception candidates")
+    watch = commands.add_parser("watch", help="read ShipStation or the newest shipment CSV and save exception candidates")
+    watch.add_argument("--csv", help="use this ShipStation CSV instead of the API")
     commands.add_parser("remind", help="collect today's carrier deadline reminders")
     prepare = commands.add_parser("prepare", help="prepare claim packet drafts from customer-confirmed intake JSON")
     prepare.add_argument("--input", required=True)
@@ -440,7 +506,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "watch":
-            result = watch_shipments()
+            result = watch_shipments(csv_path=args.csv)
         elif args.command == "remind":
             result = remind()
         elif args.command == "prepare":
