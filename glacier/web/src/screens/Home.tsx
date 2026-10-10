@@ -69,6 +69,15 @@ export function HomeScreen() {
               ))}
             </div>
           </Panel>
+          <Panel title={t('home.health')} testid="daily-health" style={{ flex: '0 0 20%', background: 'none', border: 0, padding: 0 }}>
+            <div className="g-rows" data-testid="health-report">
+              <Row status="run" lead={t('home.healthFailed')} detail={String(data?.health?.failed_runs ?? 0)} when={data?.health?.date ?? ''} testid="health-failed" />
+              <Row status="warn" lead={t('home.healthStuck')} detail={String(data?.health?.stuck_runs ?? 0)} testid="health-stuck" />
+              <Row status="warn" lead={t('home.healthWaiting')} detail={String(data?.health?.waiting_for_owner ?? 0)} testid="health-waiting" />
+              <Row status="run" lead={t('home.healthSize')} detail={data?.health ? `${(data.health.data_bytes / (1024 * 1024)).toFixed(1)} MB` : '—'} onClick={() => data?.health?.note_path && go(`memory/${encodeURIComponent(data.health.note_path)}`)} testid="health-size" />
+              {data?.next_runs?.slice(0, 3).map(item => <Row key={item.env_id} status="run" lead={item.name} detail={new Date(item.next_run).toLocaleString()} when="next" testid={`next-run-${item.env_id}`} />)}
+            </div>
+          </Panel>
           <Panel title={t('team.homeTeams')} testid="home-teams" style={{ flex: '0 0 30%', background: 'none', border: 0, padding: 0 }}>
             <div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={team.name || team.team_id} detail={team.needs_owner ? t('team.ownerWaiting', { count: team.needs_owner }) : t('team.homeTeam', { passing: team.passing, total: team.feature_count })} when={<Progress value={team.passing} max={team.feature_count} />} onClick={() => go(`automations/team/${team.team_id}`)} testid={`home-team-${team.team_id}`} />)}</div>
           </Panel>

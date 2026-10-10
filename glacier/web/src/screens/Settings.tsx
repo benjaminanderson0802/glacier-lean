@@ -25,8 +25,19 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const [check, setCheck] = useState<SystemCheck | null>(null)
   const [err, setErr] = useState('')
   const [language, setLanguage] = useState<Language>(getLanguage())
+  const [startupSupported, setStartupSupported] = useState(false)
+  const [startAtLogon, setStartAtLogon] = useState(false)
+  const [startupError, setStartupError] = useState('')
   const load = () => { setCheck(null); system.check().then(setCheck).catch(e => setErr(String(e))) }
   useEffect(load, [])
+  useEffect(() => {
+    const invoke = (globalThis as { __TAURI__?: { core?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> } } }).__TAURI__?.core?.invoke
+    if (!invoke) return
+    invoke('supports_start_at_logon').then(value => {
+      setStartupSupported(Boolean(value))
+      if (value) invoke('get_start_at_logon').then(enabled => setStartAtLogon(Boolean(enabled))).catch(e => setStartupError(String(e)))
+    }).catch(e => setStartupError(String(e)))
+  }, [])
   useEffect(() => subscribeLanguage(() => setLanguage(getLanguage())), [])
   const sections = SECTIONS.map(section => ({ ...section, label: t(section.label) }))
   const cur = sections.find(s => s.id === section) ?? sections[0]
@@ -46,6 +57,15 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
                 <dt>{t('settings.mode')}</dt><dd>{check.recommended.mode === 'low' ? t('settings.light') : t('settings.standard')}</dd>
                 <dt>{t('settings.localModel')}</dt><dd>{check.recommended.local_model}</dd>
                 <dt>{t('settings.runsAtOnce')}</dt><dd>{check.recommended.max_parallel_runs}</dd>
+                {startupSupported && <><dt>{t('settings.startAtLogon')}</dt><dd>
+                  <label><input type="checkbox" checked={startAtLogon} data-testid="start-at-logon" onChange={e => {
+                    const enabled = e.target.checked
+                    const invoke = (globalThis as { __TAURI__?: { core?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> } } }).__TAURI__?.core?.invoke
+                    if (!invoke) return
+                    invoke('set_start_at_logon', { enabled }).then(value => { setStartAtLogon(Boolean(value)); setStartupError('') }).catch(error => setStartupError(String(error)))
+                  }} /> {t('settings.startAtLogonHelp')}</label>
+                  {startupError && <div className="g-error">{startupError}</div>}
+                </dd></>}
                 <dt>{t('settings.theme')}</dt><dd>{t('settings.retroTheme').replace(/\s*\(retro\)/i, '')}</dd>
                 <dt>{t('settings.language')}</dt><dd>
                   <select className="g-input" value={language} onChange={e => chooseDictionary(e.target.value as Language)} aria-label={t('settings.language')}>

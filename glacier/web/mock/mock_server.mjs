@@ -244,6 +244,8 @@ const server = http.createServer(async (req, res) => {
       const at = minutes => new Date(now - minutes * 60_000).toISOString()
       return send(200, {
         local_ai: { online: true, model: 'qwen3:0.6b' },
+        health: { date: new Date(now).toISOString().slice(0, 10), failed_runs: 1, stuck_runs: 0, waiting_for_owner: 2, data_bytes: 5242880, note_path: `health/glacier-health-${new Date(now).toISOString().slice(0, 10)}.md` },
+        next_runs: [{ env_id: 'daily-backup', name: 'Daily backup', next_run: new Date(now + 3600_000).toISOString() }],
         counts: { running: 2, need_you: 4 },
         needs_you: [
           { kind: 'approval', title: 'approval waiting', detail: 'Weekly report', at: at(2), ref: { run_id: 'run-report', node_id: 'approve', env_id: 'weekly-report' } },
