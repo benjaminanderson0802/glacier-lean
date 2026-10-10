@@ -28,13 +28,15 @@ async function main() {
     ? await browser.newContext({ storageState: input.storageState, acceptDownloads: false })
     : await browser.newContext({ acceptDownloads: false });
   const page = await context.newPage();
-  page.setDefaultTimeout(8000);
+  page.setDefaultTimeout(20000);
   try {
     if (input.operation === 'prepare') {
       await page.goto(input.baseUrl, { waitUntil: 'domcontentloaded' });
       await page.locator('input[name="username"]').fill(input.username);
       await page.locator('input[name="password"]').fill(input.password);
-      await page.getByRole('button', { name: /sign in|log in/i }).click();
+      const loginButton = page.locator('form[action="/login"] button').first();
+      await loginButton.waitFor({ state: 'visible', timeout: 20000 });
+      await loginButton.click({ timeout: 20000 });
       await page.waitForURL(/\/step\/1(?:[?#]|$)/);
       await fillAll(page, input.fields);
       await page.getByRole('button', { name: /continue|next/i }).click();

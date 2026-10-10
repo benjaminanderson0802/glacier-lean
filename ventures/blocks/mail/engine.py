@@ -154,8 +154,9 @@ def _proof_pdf(front: str, back: str, output: Path) -> None:
     output.write_bytes(data)
 
 
-def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, output_dir: str | Path | None = None) -> dict[str, Any]:
-    """Render a proof, and deliver only through the Lob test API with a test key."""
+def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, approval_id: str | None = None,
+             output_dir: str | Path | None = None) -> dict[str, Any]:
+    """Render a proof; deliver through Lob's test API only with an explicit approval ID."""
     key = os.environ.get("LOB_API_KEY", "").strip()
     if key and not key.startswith("test_"):
         raise ValueError("Lob API key must be a test key (test_ prefix); live sending is disabled")
@@ -172,15 +173,15 @@ def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, output_dir
     front_path.write_text(front_html, encoding="utf-8")
     back_path.write_text(back_html, encoding="utf-8")
     _proof_pdf(front_html, back_html, proof_path)
-    result: dict[str, Any] = {"status": "render_only", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": str(proof_path), "address_verification": {"verdict": "uncertain", "detail": "not sent; no Lob test key configured"}, "outreach_check": check}
-    if key.startswith("test_"):
+    result: dict[str, Any] = {"status": "render_only", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": str(proof_path), "address_verification": {"verdict": "uncertain", "detail": "not sent; no Lob test key configured" if not key else "not sent; an approval_id is required"}, "outreach_check": check}
+    if key.startswith("test_") and approval_id and approval_id.strip():
         verification = verify_address(to)
         result["address_verification"] = verification
         if verification["verdict"] != "pass":
             result["status"] = "not_sent_address_unverified"
             return result
-        response = _lob_request("postcards", payload={"to": recipient, "from": sender, "front": front_html, "back": back_html, "size": "6x4", "metadata": {"proof": digest}})
-        result.update({"status": "sent_test", "lob_postcard_id": response.get("id"), "delivery_date": response.get("expected_delivery_date")})
+        response = _lob_request("postcards", payload={"to": recipient, "from": sender, "front": front_html, "back": back_html, "size": "6x4", "metadata": {"proof": digest, "approval_id": approval_id.strip()}})
+        result.update({"status": "sent_test", "lob_postcard_id": response.get("id"), "delivery_date": response.get("expected_delivery_date"), "approval_id": approval_id.strip()})
     return result
 
 
