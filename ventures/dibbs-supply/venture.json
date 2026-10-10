@@ -1,6 +1,6 @@
 {
   "slug": "dibbs-supply",
-  "name": "DIBBS government supply",
+  "name": "dibbs government supply",
   "status": "in_progress",
   "product": {
     "purpose": "Prepare a ranked, source-linked bid sheet and solicitation-specific quote files from public DIBBS solicitations and owner-provided manufacturer or authorized-distributor quotes.",
@@ -34,24 +34,35 @@
       "id": "sam-cage-registration",
       "title": "Your step: Complete SAM.gov and CAGE registration",
       "when": "Before submitting any bid",
-      "detail": "Register the business and complete required identity and entity verification yourself. Glacier does not create an account, enter credentials, or verify identity."
+      "detail": "Register the business and complete required identity and entity verification yourself. Glacier does not create an account, enter credentials, or verify identity.",
+      "links": [
+        "https://sam.gov/entity-registration",
+        "https://cage.dla.mil/"
+      ]
     },
     {
       "id": "request-quotes-and-approve-spending",
       "title": "Your step: Request supplier quotes and approve parts spending",
       "when": "After reviewing a solicitation",
-      "detail": "Contact only the original manufacturer or a distributor whose authorization you have verified. Save the exact quote and authorization/traceability records in the venture input folder. Approve every parts purchase yourself; Glacier never contacts suppliers or spends money."
+      "detail": "Contact only the original manufacturer or a distributor whose authorization you have verified. Save the exact quote and authorization/traceability records in the venture input folder. Approve every parts purchase yourself; Glacier never contacts suppliers or spends money.",
+      "links": [
+        "https://www.dibbs.bsm.dla.mil/"
+      ]
     },
     {
       "id": "sign-and-submit-bids",
       "title": "Your step: Sign and submit each bid",
       "when": "After reviewing a prepared batch quote file",
-      "detail": "Check the solicitation, exact part number, supplier, price, margin, required fields, and certifications. You personally sign and submit every bid in your DIBBS account; Glacier never submits. Keep traceability documents on file before shipping."
+      "detail": "Check the solicitation, exact part number, supplier, price, margin, required fields, and certifications. You personally sign and submit every bid in your DIBBS account; Glacier never submits. Keep traceability documents on file before shipping.",
+      "links": [
+        "https://www.dibbs.bsm.dla.mil/"
+      ]
     }
   ],
   "launch_gates": [
     "Owner completes SAM.gov and CAGE registration.",
     "Owner requests quotes only from the original manufacturer or verified authorized distributors and approves parts spending.",
     "Owner signs and submits each bid after reviewing the prepared file; traceability documents are on file before shipping."
-  ]
+  ],
+  "dry_run_env_id": "dibbs-daily-prep"
 }

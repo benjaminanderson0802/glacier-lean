@@ -188,13 +188,18 @@ def _venture_row(manifest: dict, now: datetime) -> dict:
         if not isinstance(step, dict) or not isinstance(step.get("id"), str):
             continue
         item = dict(step)
+        item["title"] = str(item.get("title") or "your step").lower()
         item["done"] = bool(progress.get(item["id"], item.get("done", False)))
+        if not item.get("instructions"):
+            item["instructions"] = str(item.get("detail") or item.get("instruction") or "")
         if not item.get("secret_name") and isinstance(item.get("secret"), str):
             item["secret_name"] = item["secret"]
         links = item.get("links")
         item["links"] = [link for link in links if isinstance(link, str)] if isinstance(links, list) else []
         if isinstance(item.get("link"), str) and item["link"] not in item["links"]:
             item["links"].append(item["link"])
+        if isinstance(item.get("url"), str) and item["url"] not in item["links"]:
+            item["links"].append(item["url"])
         steps.append(item)
 
     refs = _flows(manifest)
@@ -265,7 +270,7 @@ def _venture_row(manifest: dict, now: datetime) -> dict:
             pass
     return {
         "slug": slug,
-        "name": str(manifest.get("name") or slug),
+        "name": str(manifest.get("name") or slug).lower(),
         "status": status,
         "flows": refs,
         "schedule": manifest.get("schedule"),
@@ -422,7 +427,7 @@ def approval_steps() -> list[dict]:
         prompt = str(((node or {}).get("config") or {}).get("prompt") or "")
         if not prompt.startswith("Your step:"):
             continue
-        needs.append({"kind": "your_step", "title": prompt.splitlines()[0], "detail": prompt,
+        needs.append({"kind": "your_step", "title": prompt.splitlines()[0].lower(), "detail": prompt,
                       "instructions": prompt, "links": re.findall(r"https?://[^\s<>()]+", prompt),
                       "at": row.get("started_at", ""),
                       "ref": {"run_id": run_id, "node_id": node_id, "env_id": row["env_id"]}})

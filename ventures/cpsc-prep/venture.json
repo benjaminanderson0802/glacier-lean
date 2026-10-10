@@ -1,19 +1,42 @@
 {
   "slug": "cpsc-prep",
-  "name": "CPSC data prep",
+  "name": "cpsc data prep",
   "product": {
     "broker_portal": "White-label importer status board and CPSC batch preparation for customs brokers",
     "pricing": {
-      "broker_monthly": {"type": "flat_monthly_fee", "amount": null, "currency": "USD", "requires_lawyer_approval": true},
+      "broker_monthly": {
+        "type": "flat_monthly_fee",
+        "amount": null,
+        "currency": "USD",
+        "requires_lawyer_approval": true
+      },
       "direct_batch": [
-        {"plan": "direct_batch_basic", "amount": 19, "currency": "USD"},
-        {"plan": "direct_batch_standard", "amount": 29, "currency": "USD"},
-        {"plan": "direct_batch_plus", "amount": 49, "currency": "USD"}
+        {
+          "plan": "direct_batch_basic",
+          "amount": 19,
+          "currency": "USD"
+        },
+        {
+          "plan": "direct_batch_standard",
+          "amount": 29,
+          "currency": "USD"
+        },
+        {
+          "plan": "direct_batch_plus",
+          "amount": 49,
+          "currency": "USD"
+        }
       ],
       "payment_mode": "test_until_owner_configures_live_key"
     }
   },
-  "blocks": ["reader", "rules", "feeds", "customer", "mail"],
+  "blocks": [
+    "reader",
+    "rules",
+    "feeds",
+    "customer",
+    "mail"
+  ],
   "block_functions": [
     "reader.read_document(path, schema=None)",
     "rules.check(fields, ruleset)",
@@ -25,15 +48,54 @@
     "customer.support_inbox()",
     "mail.landing_pages(objects, template)"
   ],
-  "flows": ["cpsc-batch-prep", "cpsc-broker-launch", "cpsc-feed-refresh", "cpsc-code-pages"],
+  "flows": [
+    "cpsc-batch-prep",
+    "cpsc-broker-launch",
+    "cpsc-feed-refresh",
+    "cpsc-code-pages"
+  ],
   "schedules": [
-    {"flow": "cpsc-feed-refresh", "cron": "0 6 * * *", "purpose": "Refresh CPSC lists and template daily; the command reports changes and never releases changed rules without tests."}
+    {
+      "flow": "cpsc-feed-refresh",
+      "cron": "0 6 * * *",
+      "purpose": "Refresh CPSC lists and template daily; the command reports changes and never releases changed rules without tests."
+    }
   ],
-  "secrets_needed": ["Stripe test-mode key for checkout link generation; no live key supplied by this venture"],
+  "secrets_needed": [
+    "Stripe test-mode key for checkout link generation; no live key supplied by this venture"
+  ],
   "your_steps": [
-    {"id": "trade-lawyer-opinion", "title": "Your step: Get the trade lawyer's written opinion", "when": "Before any broker contract or broker portal launch", "detail": "Attach the lawyer's written confirmation that the flat-fee broker model is permitted. This approval does not sign a contract or create an account."},
-    {"id": "customer-certification", "title": "Your step: Review and certify this CPSC batch", "when": "Before a registry upload file is released", "detail": "Review every extracted field beside its source page, resolve uncertain fields, and certify as the importer or licensed customs broker. Glacier never submits to CPSC."},
-    {"id": "first-broker-contract", "title": "Your step: Approve the first broker contract", "when": "Before the first broker is onboarded", "detail": "Review and sign the broker's flat-monthly-fee contract yourself."}
+    {
+      "id": "trade-lawyer-opinion",
+      "title": "Your step: Get the trade lawyer's written opinion",
+      "when": "Before any broker contract or broker portal launch",
+      "detail": "Attach the lawyer's written confirmation that the flat-fee broker model is permitted. This approval does not sign a contract or create an account.",
+      "links": [
+        "https://www.cpsc.gov/efiling/importers"
+      ]
+    },
+    {
+      "id": "customer-certification",
+      "title": "Your step: Review and certify this CPSC batch",
+      "when": "Before a registry upload file is released",
+      "detail": "Review every extracted field beside its source page, resolve uncertain fields, and certify as the importer or licensed customs broker. Glacier never submits to CPSC.",
+      "links": [
+        "https://www.cpsc.gov/efiling/importers"
+      ]
+    },
+    {
+      "id": "first-broker-contract",
+      "title": "Your step: Approve the first broker contract",
+      "when": "Before the first broker is onboarded",
+      "detail": "Review and sign the broker's flat-monthly-fee contract yourself.",
+      "links": [
+        "https://www.cpsc.gov/eFiling-Document-Library"
+      ]
+    }
   ],
-  "launch_gates": ["trade-lawyer-opinion", "first-broker-contract"]
+  "launch_gates": [
+    "trade-lawyer-opinion",
+    "first-broker-contract"
+  ],
+  "dry_run_env_id": "cpsc-batch-prep"
 }

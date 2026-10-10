@@ -23,8 +23,18 @@ def main() -> int:
     if marker.exists():
         print(json.dumps({"status": "held", "detail": "This claim was already attempted; review its brand portal status before retrying."}))
         return 1
-    result = check_claim(record.get("fields", {}), record.get("rules", {}))
-    print(json.dumps({"dealer": record.get("dealer_label", "dealer"), "fields": record.get("fields", {}), "rules": record.get("rules", {}), **result}, indent=2))
+    result = check_claim(record.get("fields", {}), record.get("rules", {}),
+                         evidence_documents=record.get("evidence_documents", []), claim_id=claim_id)
+    source_notes = []
+    for source in result.get("sources", []):
+        field_rows = source.get("fields", {})
+        source_notes.append({"document": Path(source["document"]).name,
+                             "fields_read": [f"{name} (page {field.get('page')})" if field.get("page") else str(name)
+                                             for name, field in field_rows.items()]})
+    print(json.dumps({"dealer": record.get("dealer_label", "dealer"), "claim_id": claim_id,
+                      "evidence_sources": source_notes, "readiness": result["verdict"],
+                      "filing_ready": result["filing_ready"], "issues": result["issues"],
+                      "reminders": result.get("reminders", []), "rules_check": result.get("rules_check")}, indent=2))
     return 0 if result["verdict"] == "pass" else 1
 
 

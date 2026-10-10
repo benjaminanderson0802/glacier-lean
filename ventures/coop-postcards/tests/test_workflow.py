@@ -30,9 +30,11 @@ class CoOpWorkflowAcceptanceTests(unittest.TestCase):
             "preapproval_id": "APPROVED-7",
             "dealer_authorized": True,
         }
-        # This workspace has no shared rules block yet, so a complete intake stays uncertain.
-        self.assertEqual(check_claim(fields, rules)["verdict"], "uncertain")
-        self.assertFalse(check_claim(fields, rules)["filing_ready"])
+        # The shared rules block is now merged; valid evidence passes its generated brand checklist.
+        accepted = check_claim(fields, rules)
+        self.assertEqual(accepted["verdict"], "pass")
+        self.assertTrue(accepted["filing_ready"])
+        self.assertEqual(accepted["rules_check"]["verdict"], "pass")
         fields.pop("preapproval_id")
         self.assertEqual(check_claim(fields, rules)["verdict"], "fail")
         self.assertEqual(check_claim({**fields, "preapproval_id": "", "dealer_authorized": True}, rules)["verdict"], "fail")
@@ -74,6 +76,19 @@ class CoOpWorkflowAcceptanceTests(unittest.TestCase):
         })
         self.assertIn("year-end dealer card fill-by date must be in November", result["issues"])
 
+    def test_route_card_checks_usps_eddm_retail_size_and_weight(self):
+        card = {
+            "campaign_id": "campaign-ed-dm", "town": "Sampleville", "route_id": "R-03", "fill_by": "2026-11-15",
+            "from": {"name": "Northside Heating", "address_line1": "1 Business Way"},
+            "to": {"address_line1": "2 Main St"}, "buyers": [], "street_jobs": [],
+            "mailpiece": {"length_inches": 11.5, "height_inches": 6.25, "thickness_inches": 0.01, "weight_ounces": 3.0},
+        }
+        self.assertEqual(check_route_card(card)["verdict"], "pass")
+        card["mailpiece"]["weight_ounces"] = 3.31
+        result = check_route_card(card)
+        self.assertEqual(result["verdict"], "fail")
+        self.assertIn("no more than 3.3 ounces", " ".join(result["issues"]))
+
     def test_flows_gate_each_submission_and_mail_send(self):
         folder = Path(__file__).resolve().parents[1] / "flows"
         for flow_name, action in (("coop-claim-readiness", "run_approved_claim.py"), ("street-postcard-proof", "send_postcard.py")):
@@ -90,6 +105,7 @@ class CoOpWorkflowAcceptanceTests(unittest.TestCase):
         self.assertIn("Northside Heating", front + back)
         self.assertIn("10 Main St", front + back)
         self.assertNotIn("government notice", (front + back).lower())
+        self.assertIn("11.5in", front + back)
 
 
 if __name__ == "__main__":

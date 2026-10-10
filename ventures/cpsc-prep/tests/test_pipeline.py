@@ -4,12 +4,25 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from cpsc_prep import REQUIRED_FIELDS, local_second_engine, prepare_batch
+from cpsc_prep import REQUIRED_FIELDS, _rules_fields, local_second_engine, prepare_batch
+from ventures.blocks.rules.checker import check as check_official_rules
+
+TEMPLATE_MAP = {
+    "product_id": "Primary Product ID", "applicable_cpsc_rules": "Lab 1 Citation Codes",
+    "manufacture_date": "Manufacture Date", "manufacture_place.name": "Manufacturer Name",
+    "manufacture_place.address": "Manufacturer Address Line 1", "manufacture_place.contact": "Manufacturer Email",
+    "last_test_date": "Last Test Date", "testing_lab.name": "Lab 1 Name",
+    "testing_lab.address": "Lab 1 Address Line 1", "testing_lab.contact": "Lab 1 Email",
+    "records_contact.name": "POC Name", "records_contact.address": "POC Address Line 1",
+    "records_contact.contact": "POC Email",
+}
+TEMPLATE_COLUMNS = list(TEMPLATE_MAP.values()) + ["tariff_code"]
 
 
 class FakeReader:
@@ -24,12 +37,7 @@ class FakeReader:
 
 class FakeRules:
     def check(self, fields, ruleset):
-        rule_codes = fields.get("applicable_cpsc_rules", {}).get("value", "")
-        verdict = "pass" if rule_codes == "16 CFR 1501" else "fail"
-        return {
-            "verdict": verdict,
-            "results": [{"rule": "cpsc-rule-codes", "verdict": verdict, "cite": "fixture", "detail": rule_codes}],
-        }
+        return check_official_rules(fields, "cpsc_efiling.json")
 
 
 class FakeFeeds:
@@ -44,7 +52,7 @@ class FakeFeeds:
     def query(self, source_id, **filters):
         self.queried.append((source_id, filters))
         if source_id == "cpsc_registry_template":
-            return [{"columns": list(REQUIRED_FIELDS)}]
+            return [{"columns": TEMPLATE_COLUMNS, "field_map": TEMPLATE_MAP}]
         if source_id == "cpsc_rule_codes":
             return [{"code": "16 CFR 1501"}]
         if source_id == "cpsc_flagged_tariff_codes":
@@ -64,12 +72,10 @@ def good_values():
         "product_id": "SKU-001",
         "applicable_cpsc_rules": "16 CFR 1501",
         "manufacture_date": "2026-01-02",
-        "manufacture_place": "Dayton, OH",
-        "manufacturer": "Example Works",
+        "manufacture_place": {"name": "Example Works", "address": "10 Factory Way, Dayton, OH", "contact": "factory@example.test"},
         "last_test_date": "2026-03-04",
-        "last_test_place": "Dayton, OH",
-        "testing_lab": "Example Lab",
-        "records_contact": "records@example.test",
+        "testing_lab": {"name": "Example Lab", "address": "20 Test Way, Dayton, OH", "contact": "lab@example.test"},
+        "records_contact": {"name": "Records Desk", "address": "10 Factory Way, Dayton, OH", "contact": "records@example.test"},
     }
 
 
@@ -80,7 +86,7 @@ def fake_second_engine(reader):
 
 def test_missing_required_values_stay_blank_in_review_data_and_block_registry_export():
     values = good_values()
-    values["manufacturer"] = ""
+    values["records_contact"] = {"name": "", "address": "10 Factory Way, Dayton, OH", "contact": "records@example.test"}
     source = fields(values)
     second = fields(values)
     reader = FakeReader({"lab.pdf": source, "crosscheck.json": second})
@@ -100,9 +106,9 @@ def test_missing_required_values_stay_blank_in_review_data_and_block_registry_ex
 
     assert result["status"] == "uncertain — please check"
     assert result["submission_performed"] is False
-    assert result["csv_columns"] == list(REQUIRED_FIELDS)
+    assert result["csv_columns"] == TEMPLATE_COLUMNS
     assert result["csv"] is None
-    assert any(gap["field"] == "manufacturer" for gap in result["gaps"])
+    assert any(gap["field"] == "records_contact" for gap in result["gaps"])
     assert result["products"][0]["fields"]["product_id"]["source"]["page"] == 1
     assert feeds.synced == ["cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"]
 
@@ -124,14 +130,19 @@ def test_agreed_complete_fields_generate_exact_template_csv():
 
     assert result["status"] == "match"
     assert result["workflow_state"] == "ready_for_customer_submission"
-    assert result["csv_columns"] == list(REQUIRED_FIELDS)
-    assert list(csv.DictReader(io.StringIO(result["csv"]))) == [values]
+    assert result["csv_columns"] == TEMPLATE_COLUMNS
+    exported = next(csv.DictReader(io.StringIO(result["csv"])))
+    assert exported["Manufacturer Name"] == values["manufacture_place"]["name"]
+    assert exported["Manufacturer Address Line 1"] == values["manufacture_place"]["address"]
+    assert exported["Lab 1 Name"] == values["testing_lab"]["name"]
+    assert exported["POC Email"] == values["records_contact"]["contact"]
+    assert exported["Manufacture Date"] == "01/2026"
     assert result["submission_performed"] is False
 
 
 def test_disagreement_and_uncited_rule_codes_remain_uncertain_and_do_not_export_as_ready():
     first = good_values()
-    second = good_values() | {"manufacturer": "Other Manufacturer"}
+    second = good_values() | {"manufacture_place": {"name": "Other Manufacturer", "address": "10 Factory Way", "contact": "factory@example.test"}}
     reader = FakeReader({"lab.pdf": fields(first), "crosscheck.json": fields(second)})
 
     result = prepare_batch(
@@ -147,7 +158,7 @@ def test_disagreement_and_uncited_rule_codes_remain_uncertain_and_do_not_export_
     )
 
     assert result["status"] == "uncertain — please check"
-    assert result["products"][0]["fields"]["manufacturer"]["verdict"] == "uncertain"
+    assert result["products"][0]["fields"]["manufacture_place"]["verdict"] == "uncertain"
     assert result["csv"] is None
     assert result["submission_performed"] is False
 
@@ -173,6 +184,28 @@ def test_cli_local_second_engine_stays_unavailable_without_local_model(monkeypat
     monkeypatch.delenv("GLACIER_OLLAMA_URL", raising=False)
     monkeypatch.delenv("GLACIER_LOCAL_MODEL", raising=False)
     assert local_second_engine("SKU-001", "certificate source") == {"fields": {}}
+
+
+def test_current_seven_cpsc_elements_map_to_the_merged_ruleset():
+    values = fields(good_values())
+    checked = check_official_rules(_rules_fields(values), "cpsc_efiling.json")
+    assert checked["verdict"] == "pass"
+    assert {item["rule"] for item in checked["results"]} == {
+        "cpsc.product_id", "cpsc.citation_codes", "cpsc.manufacture_date", "cpsc.manufacture_place",
+        "cpsc.product_test_date", "cpsc.testing_laboratory", "cpsc.point_of_contact",
+    }
+    incomplete = fields(good_values())
+    incomplete["testing_lab"]["value"].pop("contact")
+    assert check_official_rules(_rules_fields(incomplete), "cpsc_efiling.json")["verdict"] == "fail"
+
+
+def test_all_cpsc_reference_source_ids_are_registered():
+    from ventures.blocks.feeds import core as feeds
+
+    sources = feeds.registry()
+    assert {"cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"} <= sources.keys()
+    assert all(sources[key]["kind"] == "cpsc_document" for key in (
+        "cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"))
 
 
 def test_unknown_cpsc_rule_code_blocks_export_even_after_customer_certification():

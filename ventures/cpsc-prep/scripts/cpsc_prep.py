@@ -17,16 +17,13 @@ from typing import Any, Callable, Mapping
 from urllib.request import Request, urlopen
 
 
-# The seven spec elements are represented by nine upload fields because both
-# manufacture and test date/place are distinct CPSC data points.
+# These are the seven certificate elements in the current CPSC eFiling guide.
 REQUIRED_FIELDS = (
     "product_id",
     "applicable_cpsc_rules",
     "manufacture_date",
     "manufacture_place",
-    "manufacturer",
     "last_test_date",
-    "last_test_place",
     "testing_lab",
     "records_contact",
 )
@@ -36,7 +33,47 @@ def _value(record: Any) -> str:
     if not isinstance(record, Mapping):
         return "" if record is None else str(record).strip()
     value = record.get("value", "")
-    return "" if value is None else str(value).strip()
+    if value is None:
+        return ""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, sort_keys=True, ensure_ascii=False)
+    return str(value).strip()
+
+
+def _month_date(value: Any) -> str:
+    """Normalize an observed date to CPSC's YYYY-MM certificate date."""
+    text = str(value or "").strip()
+    if len(text) >= 7 and text[4] == "-" and text[:4].isdigit() and text[5:7].isdigit():
+        return text[:7]
+    return text
+
+
+def _rules_fields(fields: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Map venture intake names to the merged ruleset's official CPSC names."""
+    def raw(name: str) -> Any:
+        return fields.get(name, {}).get("value", "")
+
+    citations = [part.strip() for part in str(raw("applicable_cpsc_rules") or "").split(";") if part.strip()]
+    manufacture = fields.get("manufacture_place", {})
+    laboratory = fields.get("testing_lab", {})
+    contact = fields.get("records_contact", {})
+    manufacture = manufacture if isinstance(manufacture, dict) and "value" in manufacture else {"value": manufacture}
+    laboratory = laboratory if isinstance(laboratory, dict) and "value" in laboratory else {"value": laboratory}
+    contact = contact if isinstance(contact, dict) and "value" in contact else {"value": contact}
+    manufacture_date = _month_date(raw("manufacture_date"))
+    return {
+        "product_id": fields.get("product_id", {}),
+        "citation_codes": {"value": citations, "page": fields.get("applicable_cpsc_rules", {}).get("page"),
+                            "confidence": fields.get("applicable_cpsc_rules", {}).get("confidence"),
+                            "uncertain": fields.get("applicable_cpsc_rules", {}).get("uncertain", False)},
+        "manufacture_date": {"value": manufacture_date, "page": fields.get("manufacture_date", {}).get("page"),
+                             "confidence": fields.get("manufacture_date", {}).get("confidence"),
+                             "uncertain": fields.get("manufacture_date", {}).get("uncertain", False)},
+        "manufacture_place": manufacture,
+        "product_test_date": fields.get("last_test_date", {}),
+        "testing_laboratory": laboratory,
+        "point_of_contact": contact,
+    }
 
 
 def _field_record(record: Any) -> dict[str, Any]:
@@ -59,18 +96,32 @@ def _feed_rows(feeds: Any, source_id: str) -> list[dict[str, Any]]:
         # An unregistered source is a release blocker, not a reason to crash or
         # fall back to stale/hard-coded government data.
         return []
-    return [dict(row) for row in rows if isinstance(row, Mapping)]
+    result = []
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        normalized = dict(row)
+        data = row.get("data")
+        if isinstance(data, Mapping):
+            normalized.update(data)
+        result.append(normalized)
+    return result
 
 
 def _codes(rows: list[dict[str, Any]], *keys: str) -> set[str]:
     result: set[str] = set()
     for row in rows:
+        lower = {str(name).casefold(): value for name, value in row.items()}
         for key in keys:
-            value = row.get(key)
+            value = row.get(key, lower.get(key.casefold()))
             if value is not None and str(value).strip():
                 result.add(str(value).strip())
                 break
     return result
+
+
+def _tariff_key(value: Any) -> str:
+    return "".join(character for character in str(value or "") if character.isdigit())
 
 
 def _read_documents(reader: Any, paths: list[str]) -> tuple[dict[str, dict[str, Any]], str]:
@@ -142,8 +193,8 @@ def prepare_batch(
     tariff_rows = _feed_rows(feeds, flagged_codes_source)
     rule_rows = _feed_rows(feeds, rule_codes_source)
     template_rows = _feed_rows(feeds, template_source)
-    flagged_codes = _codes(tariff_rows, "tariff_code", "code", "hts")
-    valid_rule_codes = _codes(rule_rows, "code", "rule_code", "citation")
+    flagged_codes = {_tariff_key(code) for code in _codes(tariff_rows, "tariff_code", "code", "hts")}
+    valid_rule_codes = _codes(rule_rows, "code", "rule_code", "citation", "citation_code", "citation codes", "citation / testing exception code")
     columns = template_rows[0].get("columns") if template_rows else None
     field_map = template_rows[0].get("field_map", {}) if template_rows else {}
     if not isinstance(field_map, Mapping):
@@ -192,7 +243,7 @@ def prepare_batch(
             second_value = _value(other)
             has_agreement = bool(first and other and first_value == second_value)
             uncertain = not has_agreement or bool(first and first.get("uncertain")) or bool(other and other.get("uncertain"))
-            value = first_value if first_value else ""
+            value = first.get("value") if first and first.get("value") is not None else ""
             field_result = {
                 "value": value,
                 "source": {"document": documents[0] if documents else None, "page": first.get("page") if first else None},
@@ -218,7 +269,7 @@ def prepare_batch(
         elif not tariff_code:
             product_gaps.append({"product_id": product_id, "field": "tariff_code", "reason": "missing tariff code; cannot check CPSC flagged-code list"})
             all_ready = False
-        elif tariff_code not in flagged_codes:
+        elif _tariff_key(tariff_code) not in flagged_codes:
             product_gaps.append({"product_id": product_id, "field": "tariff_code", "reason": "tariff code is not on the current CPSC flagged-code list"})
             all_ready = False
         else:
@@ -230,28 +281,48 @@ def prepare_batch(
             product_gaps.append({"product_id": product_id, "field": "applicable_cpsc_rules", "reason": "rule code is missing or absent from current CPSC rule-code list"})
             all_ready = False
 
-        rule_fields = {
-            name: {
-                "value": primary.get(name, {}).get("value", ""),
-                "page": primary.get(name, {}).get("page"),
-                "confidence": primary.get(name, {}).get("confidence"),
-                "uncertain": output_fields[name]["verdict"] == "uncertain",
-            }
-            for name in REQUIRED_FIELDS
-        }
+        rule_fields = _rules_fields(primary)
         rule_result = rules.check(rule_fields, ruleset)
         if not isinstance(rule_result, Mapping) or rule_result.get("verdict") != "pass":
             product_gaps.append({"product_id": product_id, "field": "rules", "reason": "rules checker did not return pass"})
+            field_by_rule = {
+                "cpsc.product_id": "product_id", "cpsc.citation_codes": "applicable_cpsc_rules",
+                "cpsc.manufacture_date": "manufacture_date", "cpsc.manufacture_place": "manufacture_place",
+                "cpsc.product_test_date": "last_test_date", "cpsc.testing_laboratory": "testing_lab",
+                "cpsc.point_of_contact": "records_contact",
+            }
+            for issue in rule_result.get("results", []) if isinstance(rule_result, Mapping) else []:
+                if issue.get("verdict") != "pass":
+                    product_gaps.append({"product_id": product_id,
+                                         "field": field_by_rule.get(str(issue.get("rule")), "rules"),
+                                         "rule": issue.get("rule"), "reason": issue.get("detail", "CPSC field needs review")})
             all_ready = False
 
         row = {column: "" for column in columns}
         for name in REQUIRED_FIELDS:
-            target_column = str(field_map.get(name, name))
-            if target_column in row:
-                row[target_column] = output_fields[name]["value"]
-            else:
+            value = output_fields[name]["value"]
+            targets: dict[str, Any] = {}
+            direct = field_map.get(name)
+            if direct:
+                targets[str(direct)] = value
+            elif isinstance(value, Mapping):
+                for subfield, subvalue in value.items():
+                    column = field_map.get(f"{name}.{subfield}")
+                    if column:
+                        targets[str(column)] = subvalue
+            if not targets:
                 product_gaps.append({"product_id": product_id, "field": name, "reason": "required field has no matching column in the current CPSC template"})
                 all_ready = False
+            for target_column, cell_value in targets.items():
+                if target_column not in row:
+                    product_gaps.append({"product_id": product_id, "field": name, "reason": "required field has no matching column in the current CPSC template"})
+                    all_ready = False
+                else:
+                    if name == "manufacture_date":
+                        cell_value = _month_date(cell_value)
+                        if len(cell_value) == 7 and cell_value[4] == "-":
+                            cell_value = f"{cell_value[5:7]}/{cell_value[:4]}"
+                    row[target_column] = json.dumps(cell_value, ensure_ascii=False) if isinstance(cell_value, (dict, list)) else str(cell_value)
         # Product identifiers that are present in the official template are copied;
         # no value is fabricated to fill other columns.
         tariff_column = str(field_map.get("tariff_code", "tariff_code"))

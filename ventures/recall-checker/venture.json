@@ -1,41 +1,73 @@
 {
   "slug": "recall-checker",
-  "name": "Recall checker",
+  "name": "recall checker",
   "status": "in_progress",
   "product": {
     "purpose": "Check reseller inventory against current public recalls and provide the official notice for review.",
-    "channels": ["Chrome extension", "thrift and consignment store inventory CSV", "local JSON API", "recall reference pages"],
+    "channels": [
+      "Chrome extension",
+      "thrift and consignment store inventory CSV",
+      "local JSON API",
+      "recall reference pages"
+    ],
     "publication": "Recall pages are generated locally. The owner reviews the first 50 and submits any Chrome Web Store listing; no page or extension is published automatically.",
     "billing": "Individual and store plan ranges and a free single-lookup tier are in plans.json. The owner configures Stripe test prices before checkout links are offered; API metering is not activated until the owner sets a price."
   },
-  "blocks": ["feeds", "customer"],
-  "block_functions": ["ventures.blocks.feeds.query", "ventures.blocks.feeds.sync", "ventures.blocks.customer.checkout_link (owner-configured test prices only)"],
-  "flows": ["recall-nightly", "recall-batch-check", "recall-review-first-pages"],
-  "schedules": [{"flow": "recall-nightly", "cron": "30 2 * * *", "purpose": "Refresh recall feeds and rebuild local, source-linked recall pages."}],
+  "blocks": [
+    "feeds",
+    "customer"
+  ],
+  "block_functions": [
+    "ventures.blocks.feeds.query",
+    "ventures.blocks.feeds.sync",
+    "ventures.blocks.customer.checkout_link (owner-configured test prices only)"
+  ],
+  "flows": [
+    "recall-nightly",
+    "recall-batch-check",
+    "recall-review-first-pages"
+  ],
+  "schedules": [
+    {
+      "flow": "recall-nightly",
+      "cron": "30 2 * * *",
+      "purpose": "Refresh recall feeds and rebuild local, source-linked recall pages."
+    }
+  ],
   "secrets_needed": [],
   "your_steps": [
     {
       "id": "review-first-pages",
       "title": "Review the first 50 recall pages",
       "when": "Before placing any recall pages on a public site",
-      "detail": "Open the generated local pages, verify the recall number, date and official source link, then approve or correct them. Glacier generates the pages but does not publish them."
+      "detail": "Open the generated local pages, verify the recall number, date and official source link, then approve or correct them. Glacier generates the pages but does not publish them.",
+      "links": [
+        "https://www.cpsc.gov/Recalls"
+      ]
     },
     {
       "id": "submit-extension",
       "title": "Submit the Chrome extension listing",
       "when": "When the extension package and store listing are ready",
-      "detail": "Review permissions, privacy text and screenshots, then sign in and submit the package to the Chrome Web Store. Glacier does not create an account or submit it."
+      "detail": "Review permissions, privacy text and screenshots, then sign in and submit the package to the Chrome Web Store. Glacier does not create an account or submit it.",
+      "links": [
+        "https://chrome.google.com/webstore/devconsole"
+      ]
     },
     {
       "id": "configure-plans",
       "title": "Set up test prices and review plan wording",
       "when": "Before offering paid plans or API access",
-      "detail": "Configure Stripe test price IDs in Glacier Secrets, review individual and store plan amounts, and choose a metered API price. Live billing remains disabled until you configure it yourself."
+      "detail": "Configure Stripe test price IDs in Glacier Secrets, review individual and store plan amounts, and choose a metered API price. Live billing remains disabled until you configure it yourself.",
+      "links": [
+        "https://dashboard.stripe.com/test/products"
+      ]
     }
   ],
   "launch_gates": [
     "The labeled 500-known-recalled and 500-known-clean benchmark meets the at-most-1% false-no-match gate before an update is released.",
     "The owner reviews the first 50 recall pages before public hosting.",
     "The owner submits the first Chrome Web Store listing."
-  ]
+  ],
+  "dry_run_env_id": "recall-batch-check"
 }

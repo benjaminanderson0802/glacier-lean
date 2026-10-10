@@ -7,6 +7,7 @@
   "properties": {
     "slug": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
     "name": {"type": "string", "minLength": 1},
+    "dry_run_env_id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
     "status": {"type": "string", "enum": ["ready", "in_progress", "blocked", "on_hold"]},
     "product": {"type": "object"},
     "blocks": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
@@ -31,11 +32,15 @@
       "items": {
         "type": "object",
         "required": ["id", "title", "when", "detail"],
-        "properties": {
-          "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
-          "title": {"type": "string", "minLength": 1},
-          "when": {"type": "string", "minLength": 1},
-          "detail": {"type": "string", "minLength": 1}
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+            "title": {"type": "string", "minLength": 1},
+            "when": {"type": "string", "minLength": 1},
+            "detail": {"type": "string", "minLength": 1},
+            "instructions": {"type": "string"},
+            "links": {"type": "array", "items": {"type": "string", "format": "uri"}},
+            "link": {"type": "string", "format": "uri"},
+            "secret_name": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"}
         },
         "additionalProperties": false
       }

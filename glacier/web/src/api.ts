@@ -155,8 +155,8 @@ export const teamsApi = {
 
 // ---------- Installed ventures ----------
 export interface VentureStep {
-  id?: string; title: string; instructions?: string; done?: boolean; secret_name?: string
-  link?: string; links?: string[]; run_id?: string; node_id?: string
+  id?: string; title: string; instructions?: string; detail?: string; done?: boolean; secret_name?: string
+  link?: string; url?: string; links?: string[]; run_id?: string; node_id?: string
 }
 export interface Venture {
   slug: string; name: string; status: 'setting_up' | 'running' | 'paused' | 'needs_you'

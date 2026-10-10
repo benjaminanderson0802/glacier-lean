@@ -31,6 +31,22 @@ def manifests(only: str | None = None) -> list[Path]:
     return found
 
 
+def flow_file(manifest_path: Path, flow_ref: str) -> Path:
+    """Resolve either the stable flow id or a legacy relative flow filename."""
+    flows_dir = manifest_path.parent / "flows"
+    candidates = [flows_dir / f"{flow_ref}.json", manifest_path.parent / flow_ref]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    for candidate in sorted(flows_dir.glob("*.json")):
+        try:
+            if json.loads(candidate.read_text(encoding="utf-8")).get("id") == flow_ref:
+                return candidate
+        except (OSError, json.JSONDecodeError):
+            continue
+    raise FileNotFoundError(f"{manifest_path.parent.name}: manifest flow is missing: {flow_ref}")
+
+
 @lru_cache(maxsize=1)
 def _catalog_types() -> set[str]:
     catalog = json.loads(NODE_TYPES_PATH.read_text(encoding="utf-8"))
@@ -69,12 +85,10 @@ def validate_all(only: str | None = None) -> list[dict]:
         declared_flows = set(manifest["flows"])
         declared_schedules = manifest.get("schedules", [])
         for flow_id in manifest["flows"]:
-            flow_path = manifest_path.parent / "flows" / f"{flow_id}.json"
-            if not flow_path.is_file():
-                raise FileNotFoundError(f"{slug}: manifest flow is missing: {flow_path}")
+            flow_path = flow_file(manifest_path, flow_id)
             flow = json.loads(flow_path.read_text(encoding="utf-8"))
-            if flow.get("id") != flow_id:
-                raise ValueError(f"{flow_path}: id does not match manifest flow {flow_id}")
+            if not isinstance(flow.get("id"), str) or not flow.get("id"):
+                raise ValueError(f"{flow_path}: flow has no id")
             if not isinstance(flow.get("nodes"), list) or not isinstance(flow.get("edges"), list):
                 raise ValueError(f"{flow_path}: flow must contain node and edge lists")
             for node in flow["nodes"]:
@@ -165,7 +179,7 @@ def install(api: str, token: str, only: str | None = None, *, home: Path | None 
         flow_ids = manifest["flows"]
         _stage_scripts(manifest_path.parent, slug, data_home, flow_ids)
         for flow_id in flow_ids:
-            flow_path = manifest_path.parent / "flows" / f"{flow_id}.json"
+            flow_path = flow_file(manifest_path, flow_id)
             flow = json.loads(flow_path.read_text(encoding="utf-8"))
             runtime = _runtime_flow(flow, repo_root=REPO, slug=slug, home=data_home)
             result = register_flow(api, token, runtime)

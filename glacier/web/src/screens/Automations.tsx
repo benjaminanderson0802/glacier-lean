@@ -136,8 +136,8 @@ export function AutomationsScreen() {
             <div className="venture-steps"><strong>{t('ventures.yourSteps')} · {t('ventures.stepProgress', { done: venture.your_steps.filter(step => step.done).length, total: venture.your_steps.length })}</strong>
               {venture.your_steps.map((step, index) => step.done
                 ? <label className="venture-progress" key={step.id ?? index}><input type="checkbox" checked readOnly />{step.title}</label>
-                : <YourStep key={step.id ?? index} item={{ kind: 'your_step', title: step.title, detail: step.instructions ?? '', instructions: step.instructions,
-                  links: step.links ?? (step.link ? [step.link] : []), secret_name: step.secret_name, at: '', ref: { venture_slug: venture.slug, step_id: step.id } } as HomeItem} onDone={() => { void refreshVentures() }} />)}
+                : <YourStep key={step.id ?? index} item={{ kind: 'your_step', title: step.title, detail: step.instructions ?? step.detail ?? '', instructions: step.instructions ?? step.detail,
+                  links: [...(step.links ?? []), ...(step.link || step.url ? [step.link ?? step.url!] : [])], secret_name: step.secret_name, at: '', ref: { venture_slug: venture.slug, step_id: step.id } } as HomeItem} onDone={() => { void refreshVentures() }} />)}
               {venture.your_steps.length === 0 && <span className="g-muted">{t('ventures.noSteps')}</span>}
             </div>
           </article>)}

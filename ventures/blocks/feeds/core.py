@@ -13,6 +13,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -294,6 +295,115 @@ def _dibbs(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, li
     return rows, None, alerts
 
 
+def _xlsx_rows(raw: bytes, header_hints: list[str] | None = None) -> list[dict[str, Any]]:
+    """Read the first worksheet of a public .xlsx file without extra packages."""
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        strings: list[str] = []
+        try:
+            root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+            strings = ["".join(text.text or "" for text in item.iter() if text.tag.endswith("}t")) for item in root]
+        except KeyError:
+            pass
+        sheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+    matrix: list[list[str]] = []
+    for row in sheet.iter():
+        if not row.tag.endswith("}row"):
+            continue
+        cells: dict[int, str] = {}
+        for cell in row:
+            if not cell.tag.endswith("}c"):
+                continue
+            ref = cell.attrib.get("r", "")
+            letters = "".join(ch for ch in ref if ch.isalpha())
+            col = 0
+            for char in letters.upper():
+                col = col * 26 + ord(char) - 64
+            col = max(0, col - 1)
+            value_node = next((item for item in cell if item.tag.endswith("}v")), None)
+            value = value_node.text if value_node is not None and value_node.text else ""
+            if cell.attrib.get("t") == "s" and value:
+                value = strings[int(value)]
+            elif cell.attrib.get("t") == "inlineStr":
+                value = "".join(item.text or "" for item in cell.iter() if item.tag.endswith("}t"))
+            cells[col] = value
+        if cells:
+            matrix.append([cells.get(index, "") for index in range(max(cells) + 1)])
+    hints = {value.casefold().strip() for value in (header_hints or [])}
+    header_index = next((i for i, row in enumerate(matrix)
+                         if any(any(hint in str(value).casefold().strip() for hint in hints)
+                                for value in row if str(value).strip())), None)
+    if header_index is None:
+        header_index = next((i for i, row in enumerate(matrix) if any(str(value).strip() for value in row)), None)
+    if header_index is None:
+        return []
+    headers = [str(value).strip() for value in matrix[header_index]]
+    records = []
+    for values in matrix[header_index + 1:]:
+        record = {header: values[i] if i < len(values) else "" for i, header in enumerate(headers) if header}
+        if any(str(value).strip() for value in record.values()):
+            records.append(record)
+    return records
+
+
+def _cpsc_document(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, str]:
+    library_url = config["url"]
+    page = _request(library_url).decode("utf-8", "replace")
+    links = _Links()
+    links.feed(page)
+    wanted = str(config["title_match"]).casefold()
+    found = next(((label, urllib.parse.urljoin(library_url, href)) for label, href in links.links
+                  if wanted in label.casefold()), None)
+    if found is None:
+        raise ValueError(f"CPSC document library link not found: {config['title_match']}")
+    _, document_url = found
+    raw = _request(document_url, timeout=120)
+    if config.get("document_type") == "pdf_hts":
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(raw)) as pdf:
+            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+        codes = sorted(set(re.findall(r"\b(?:\d{4}\.\d{2}\.\d{2}(?:\.\d{2})?|\d{10})\b", text)))
+        return [{"tariff_code": code} for code in codes], len(codes), document_url
+    if config.get("document_type") == "xlsx_template":
+        headers = _xlsx_headers(raw)
+        return [{"columns": headers, "field_map": config.get("field_map", {})}], 1, document_url
+    rows = _xlsx_rows(raw, list(config.get("id_fields", [])) + list(config.get("expected_fields", [])))
+    return rows, len(rows), document_url
+
+
+def _xlsx_headers(raw: bytes) -> list[str]:
+    """Return the first non-empty row as column names for a blank upload template."""
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        strings: list[str] = []
+        try:
+            root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+            strings = ["".join(text.text or "" for text in item.iter() if text.tag.endswith("}t")) for item in root]
+        except KeyError:
+            pass
+        sheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+    for row in sheet.iter():
+        if not row.tag.endswith("}row"):
+            continue
+        cells: dict[int, str] = {}
+        for cell in row:
+            if not cell.tag.endswith("}c"):
+                continue
+            ref = cell.attrib.get("r", "")
+            letters = "".join(ch for ch in ref if ch.isalpha())
+            col = 0
+            for char in letters.upper():
+                col = col * 26 + ord(char) - 64
+            value_node = next((item for item in cell if item.tag.endswith("}v")), None)
+            value = value_node.text if value_node is not None and value_node.text else ""
+            if cell.attrib.get("t") == "s" and value:
+                value = strings[int(value)]
+            elif cell.attrib.get("t") == "inlineStr":
+                value = "".join(item.text or "" for item in cell.iter() if item.tag.endswith("}t"))
+            cells[max(col - 1, 0)] = value
+        if cells and any(value.strip() for value in cells.values()):
+            return [cells.get(index, "").strip() for index in range(max(cells) + 1)]
+    return []
+
+
 def fetch_source(source_id: str, config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, list[str]]:
     kind = config["kind"]
     alerts: list[str] = []
@@ -308,6 +418,8 @@ def fetch_source(source_id: str, config: dict[str, Any]) -> tuple[list[dict[str,
         records, total = _socrata(config)
     elif kind == "dibbs_html":
         records, total, alerts = _dibbs(config)
+    elif kind == "cpsc_document":
+        records, total, source_url = _cpsc_document(config)
     else:
         records, total = _json_rows(source_url)
     return records, total, alerts

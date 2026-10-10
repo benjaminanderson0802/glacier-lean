@@ -39,10 +39,13 @@ def test_store_query_and_count_metadata(tmp_path, monkeypatch):
 def test_public_registry_has_all_requested_sources():
     from ventures.blocks.feeds import registry
 
-    expected = {"cpsc_recalls", "nhtsa_recalls", "fda_enforcement", "fsis_recalls", "osha_ita", "dla_dibbs", "cook_county_assessor"}
+    expected = {"cpsc_recalls", "cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template",
+                "nhtsa_recalls", "fda_enforcement", "fsis_recalls", "osha_ita", "dla_dibbs", "cook_county_assessor"}
     assert expected <= set(registry())
     assert all(registry()[item].get("url") for item in expected)
     assert "RecallDateStart=1973-01-01" in registry()["cpsc_recalls"]["url"]
+    assert all(registry()[item]["kind"] == "cpsc_document" for item in
+               ("cpsc_flagged_tariff_codes", "cpsc_rule_codes", "cpsc_registry_template"))
 
 
 def test_fsis_public_api_request_uses_official_same_site_referer(monkeypatch):

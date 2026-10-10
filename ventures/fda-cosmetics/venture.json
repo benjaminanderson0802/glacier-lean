@@ -1,6 +1,6 @@
 {
   "slug": "fda-cosmetics",
-  "name": "FDA cosmetics listing preparation",
+  "name": "fda cosmetics listing preparation",
   "status": "in_progress",
   "product": {
     "purpose": "Prepare reader-checked, rules-checked cosmetic product listing packets from Shopify catalog records and brand-confirmed label, ingredient, facility, and exemption data.",
@@ -8,34 +8,68 @@
     "billing": "Monthly subscription by product count; checkout is not enabled until the owner configures the customer layer.",
     "government_submission": "The brand confirms, signs where required, uploads the SPL ZIP to FDA Cosmetics Direct, and submits. Glacier does not submit or sign."
   },
-  "blocks": ["connectors.shopify", "reader", "rules", "deadlines"],
-  "block_functions": ["ShopifyClient.get_products", "read_document", "check", "deadlines.add"],
-  "flows": ["prepare-listing-packet", "daily-deadline-reminders"],
-  "schedules": [{"flow": "daily-deadline-reminders", "cron": "0 9 * * *", "purpose": "Check local FDA listing deadline reminders each morning."}],
-  "secrets_needed": ["shopify_client_id", "shopify_client_secret", "shopify_admin_access_token", "shopify_store_domain"],
+  "blocks": [
+    "connectors.shopify",
+    "reader",
+    "rules",
+    "deadlines"
+  ],
+  "block_functions": [
+    "ShopifyClient.get_products",
+    "read_document",
+    "check",
+    "deadlines.add"
+  ],
+  "flows": [
+    "prepare-listing-packet",
+    "daily-deadline-reminders"
+  ],
+  "schedules": [
+    {
+      "flow": "daily-deadline-reminders",
+      "cron": "0 9 * * *",
+      "purpose": "Check local FDA listing deadline reminders each morning."
+    }
+  ],
+  "secrets_needed": [
+    "shopify_client_id",
+    "shopify_client_secret",
+    "shopify_admin_access_token",
+    "shopify_store_domain"
+  ],
   "your_steps": [
     {
       "id": "connect-shopify",
       "title": "Connect a Shopify store and provide label details",
       "when": "Before the first packet",
-      "detail": "Create the Shopify app and grant the read_products scope, save its credentials in Glacier Secrets, and provide the label name, FDA product category code, ingredients, facility FEI or confirmed exemption checklist, and first-marketed/last-listed dates for each product. Records stay marked uncertain until you confirm them."
+      "detail": "Create the Shopify app and grant the read_products scope, save its credentials in Glacier Secrets, and provide the label name, FDA product category code, ingredients, facility FEI or confirmed exemption checklist, and first-marketed/last-listed dates for each product. Records stay marked uncertain until you confirm them.",
+      "links": [
+        "https://shopify.dev/docs/apps"
+      ]
     },
     {
       "id": "submit-listing",
       "title": "Review and submit the FDA listing",
       "when": "After a packet passes local checks",
-      "detail": "Review every field and source, confirm the exemption checklist and ingredients, then sign where required and upload the ZIP to FDA Cosmetics Direct. You submit it to FDA; Glacier never signs or submits."
+      "detail": "Review every field and source, confirm the exemption checklist and ingredients, then sign where required and upload the ZIP to FDA Cosmetics Direct. You submit it to FDA; Glacier never signs or submits.",
+      "links": [
+        "https://direct.fda.gov/"
+      ]
     },
     {
       "id": "submit-shopify-app",
       "title": "Review and submit the Shopify app",
       "when": "Before marketplace launch",
-      "detail": "Complete Shopify's current app review and listing steps, including the required privacy and support details. Glacier does not create accounts or publish the app."
+      "detail": "Complete Shopify's current app review and listing steps, including the required privacy and support details. Glacier does not create accounts or publish the app.",
+      "links": [
+        "https://shopify.dev/docs/apps/launch"
+      ]
     }
   ],
   "launch_gates": [
     "Owner completes Shopify Partner/App Store review.",
     "Brand confirms the exemption checklist and every extracted ingredient.",
     "Customer reviews, signs where required, and submits every FDA filing."
-  ]
+  ],
+  "dry_run_env_id": "prepare-listing-packet"
 }

@@ -34,7 +34,8 @@ def main() -> int:
     claim_id = str(record.get("claim_id", ""))
     if not claim_id or not claim_id.replace("-", "").replace("_", "").isalnum():
         raise SystemExit("A stable claim_id is required to prevent a duplicate filing.")
-    readiness = check_claim(record.get("fields", {}), record.get("rules", {}))
+    readiness = check_claim(record.get("fields", {}), record.get("rules", {}),
+                            evidence_documents=record.get("evidence_documents", []), claim_id=claim_id)
     if not readiness["filing_ready"]:
         raise SystemExit(json.dumps(readiness, indent=2))
     from ventures.blocks.filer import prepare, submit
