@@ -2,7 +2,7 @@
   "id": "annual-deadline-reminders",
   "name": "OSHA annual filing reminders",
   "nodes": [
-    {"id": "daily", "type": "schedule", "config": {"cron": "0 9 * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "daily", "type": "schedule", "config": {"cron": "0 9 * * *", "missed_run": "run_once", "overlap": "skip"}, "position": {"x": 0, "y": 0}},
     {"id": "due", "type": "command", "config": {"cmd": "python3 ventures/osha-filing/scripts/filing.py due", "cwd": ".", "timeout": "30", "retries": "0"}, "position": {"x": 300, "y": 0}}
   ],
   "edges": [{"id": "e1", "source": "daily", "target": "due"}],

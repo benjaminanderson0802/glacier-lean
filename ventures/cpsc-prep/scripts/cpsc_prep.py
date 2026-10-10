@@ -385,11 +385,6 @@ def load_blocks() -> tuple[Any, Any, Any]:
     except ImportError as exc:
         raise RuntimeError("CPSC prep requires the reader, rules, and feeds blocks from ventures.blocks") from exc
 
-    reader_function = read_document
-    rules_function = check
-    query_function = query
-    sync_function = sync
-
     class Reader:
         read_document = staticmethod(reader_read_document)
 

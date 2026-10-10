@@ -10,7 +10,7 @@
   "blocks": ["feeds.osha_ita", "deadlines"],
   "block_functions": ["sync", "query", "deadlines.add", "deadlines.due"],
   "flows": ["prepare-300a", "annual-deadline-reminders"],
-  "schedules": [{"flow": "annual-deadline-reminders", "cron": "0 9 * * *", "purpose": "Show locally stored annual OSHA filing reminders."}],
+  "schedules": [{"flow": "annual-deadline-reminders", "cron": "0 9 * * *", "purpose": "Show locally stored annual OSHA filing reminders.", "missed_run": "run_once", "overlap": "skip"}],
   "secrets_needed": [],
   "your_steps": [
     {"id": "confirm-coverage", "title": "Confirm coverage and establishment details", "when": "Before preparation", "detail": "Check the establishment identity and OSHA coverage rules for its size and industry. Add current employee count, customer-confirmed injury totals, hours, and headcount.", "links": ["https://www.osha.gov/recordkeeping"]},

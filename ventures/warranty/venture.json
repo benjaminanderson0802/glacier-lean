@@ -51,7 +51,7 @@
       "id": "jobber-setup",
       "title": "Connect a Jobber test account",
       "when": "Before the first live read",
-      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Paste the four Jobber values into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only connector check. Before launch, the connector must return completed status, install date, homeowner name and email, brand, model, serial, region, and job ID. Use five eligible test accounts; intake also requires the shared reader and deadline blocks. Until those prerequisites are met, use local sample JSON only.",
+      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Paste jobber_client_id, jobber_client_secret, jobber_access_token, and jobber_refresh_token into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only connector check. Before launch, the connector must return completed status, install date, homeowner name and email, brand, model, serial, region, and job ID. Use five eligible test accounts; intake also requires the shared reader and deadline blocks. Until those prerequisites are met, use local sample JSON only.",
       "links": [
         "https://developer.getjobber.com/",
         "https://developer.getjobber.com/docs/"

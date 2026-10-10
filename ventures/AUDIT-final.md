@@ -47,3 +47,43 @@ Auditor: I3 integrator. This records integration evidence and release gaps; inte
 - `evidence/ventures/installer-idempotence.json` — stable IDs and schedule policy checks.
 - `evidence/ventures/final-*.png` — owner-facing screens.
 - `evidence/ventures/*-tests.log` — captured command output.
+
+## I4 final2 verification (2026-10-10)
+
+### Integration changes
+
+- Merged `card/gf-X1`, `card/gf-X2`, and `card/gf-X3` into I4 with three merge commits: `0bfd1db`, `49ae4ca`, `081675b`.
+- Kept I3 shared-file integrations and each fixer’s venture changes. In the CPSC merge, removed old shadowed block aliases so `cpsc_prep.py` imports the shared reader, rules, and feeds functions correctly.
+- Set OSHA's installed and manifest schedules to `missed_run: run_once`, `overlap: skip`; made the warranty Jobber setup step name all four required secret fields.
+- Reworked `OWNER-START-HERE.md` into the same 12-venture order, step titles, and link order shown in Glacier. Programmatic comparison of each step and link array against the manifests passed. Added unresolved independent-review items under `known limits`.
+- Did not edit tests.
+
+### Final board results
+
+- **Venture tests:** 189 passed and 3 subtests passed; 2 failed across 21 test directories. `ventures/recall-checker/tests/test_recall_checker.py::RecallMatcherAcceptanceTests::test_clean_item_uses_required_source_and_date_vocabulary` expects `no match in ...`, while the shared output rule requires `no match found in ...`. `ventures/tests/test_install_all.py::InstallAllTests::test_discovery_is_data_driven_and_only_filters_by_slug` still expects all discovered flows to belong to Apify (2), although discovery correctly finds 34 flows across ventures. Both assertions are unchanged.
+- **Local block checks:** 51 passed across connectors (11), customer (10), deadlines (6), feeds (11), filer (3), mail (4), reader (3), and rules (3). Reader benchmark: 100% agreement and 100% labeled-value accuracy across 7 fields.
+- **Live feed CHECK:** both `sync-all` passes exited 1 because source alerts remain. First pass: CPSC flagged codes, rule codes, and registry template each returned HTTP 403; CPSC recalls returned 10,047 rows but timed out; NHTSA returned 245,855; FDA enforcement 87,586; FSIS HTTP 403; OSHA ITA 400,288; DIBBS 0 rows with the DoD warning/consent redirect; Cook County staged 50,000 of 1,864,270 2026 rows. On repeat, unchanged sources reported `changed: false`; CPSC recalls returned 10,047 without an alert; Cook County advanced staging to 100,000 of 1,864,270. The previous complete Cook County snapshot remains active.
+- **Full backend:** 820 passed, 1 skipped, 11 failed, 5 warnings in 24m 29s. Three assistant-chat tests and one verification test timed out waiting on API responses. Three template tests failed because the email-arrival trigger cannot be manually started, `EMAIL_APP_PASSWORD` is not configured, and the local structured-AI output was invalid JSON. Three Home tests found 36 baseline venture needs-you entries where the old empty state expected zero, 39 rather than 3 after adding three runs, and a venture item without the `ref.run_id` field expected at the head of the queue. The paused-schedule test saw no resumed runs within 25 seconds. Full trace and names are in `evidence/ventures/final2-backend-tests.log`.
+- **UI board:** `npm run check:ui` passed all 30/30 steps on the clean rerun, including `every_control.spec.mjs` and the real-backend venture screen checks. See `evidence/ventures/final2-ui-check-ui.log`.
+- **Required shared core wrapper:** TypeScript and Vite build passed. The wrapper's backend rerun reported 825 passed, 1 skipped, 6 failed, and 5 warnings in 12m 51s; its script only retained the last three pytest lines, so the complete failure list is unavailable. The core browser check failed a 10-second selector wait. Its backend log shows unauthenticated API requests returning 401 and the events WebSocket returning 403. The wrapper's `uv` bootstrap also failed because `uv` is absent and system Python rejects user installs under PEP 668; it continued with existing dependencies. See `evidence/ventures/final2-core-board.log` and `/tmp/backend.log`.
+- **Live Codex setup check:** did not create a run; its unauthenticated API calls returned 401 (`This request isn't from your Glacier app.`), followed by missing `run_id`/`status` parse errors. See `evidence/ventures/final2-live-codex-check.log`.
+
+### Real Glacier integration
+
+- `ventures/install_all.py --dry-run` validated 34 flows across 12 ventures. Two real installs into a disposable `GLACIER_HOME` preserved the same 34 IDs; the second install reported 34 unchanged and 0 saved. See the three install JSON evidence files.
+- All 12 ventures appeared in the Glacier ventures view. The captured exact step order and link arrays match the manifests. There are 26 screenshots named `evidence/ventures/final2-*.png`, including the venture list, Your Steps, every card, and every run view.
+- A dry-run of each venture's main flow was started. Results: Apify and Recall completed; Co-op, Utility Audits, and Warranty waited at `mail_approval`, `confirm_state`, and `review_draft`; Carpenter's Goods, CPSC, DIBBS, FDA, Freight, OSHA, and Property Tax failed because their disposable home had no required incoming product, batch, solicitation, brand-details, claim-intake, OSHA intake, or property case file. Recall completed with `check_done=no` because its inventory CSV was absent. No account credentials or customer records were supplied. The per-run output is in `evidence/ventures/final2-live-walkthrough.json`.
+- `npm run live` started the real backend/UI for the walkthrough. Glacier displayed the venture cards and Your Steps in manifest order; screenshots and run histories are the `final2` artifacts above.
+
+### Remaining release issues
+
+- The two venture assertions, 11 full-backend failures, block-feed alerts, and core/live-Codex auth failures above remain unresolved; no judging test was changed. The wrapper's second backend result is the separately captured 6-failure run.
+- Seven main flows need realistic owner-provided intake files before they can produce their draft outputs. Recall needs an inventory CSV; its completed dry-run only reported no match because none was present.
+- The remaining independent review items and launch holds are listed in `OWNER-START-HERE.md` under **known limits**. No external submission, purchase, publication, or email send was performed.
+- PH12.22 remains `in_progress`; this checkpoint's PH12.22 evidence field was updated with the verified `final2` logs, JSON, and screenshot paths. No checkpoint was marked done.
+
+### I4 evidence
+
+- `evidence/ventures/final2-venture-tests.log`, `final2-block-checks.log`, `final2-backend-tests.log`, `final2-ui-check-ui.log`, `final2-core-board.log`, and `final2-live-codex-check.log` — board outputs.
+- `evidence/ventures/final2-install-dry-run.json`, `final2-install-first.json`, `final2-install-second.json`, and `final2-installer-idempotence.json` — dry-run and idempotence evidence.
+- `evidence/ventures/final2-live-walkthrough.json` and `final2-*.png` — 12 ventures, dry-run outcomes, visible owner steps, cards, and run views.
