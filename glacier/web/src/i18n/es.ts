@@ -29,6 +29,7 @@ export const es: Record<string, string> = {
   'ask.engineGemini': 'Gemini CLI',
   'ask.engineLocal': 'Ollama en este equipo',
   'ask.engineOpenai': 'API compatible con OpenAI',
+  'ask.engineOpencode': 'CLI de OpenCode',
   'ask.engineUnavailable.host_not_allowed': 'Esta API no está permitida. Añádela a los sitios permitidos de Glacier.',
   'ask.engineUnavailable.local_not_ready': 'Inicia Ollama con un modelo instalado para usarlo.',
   'ask.engineUnavailable.missing': 'Instala e inicia sesión en ese motor para usarlo.',

@@ -32,6 +32,7 @@ export const en: Record<string, string> = {
   'ask.engineGemini': 'Gemini CLI',
   'ask.engineLocal': 'Ollama on this computer',
   'ask.engineOpenai': 'OpenAI-compatible API',
+  'ask.engineOpencode': 'OpenCode CLI',
   'ask.engineUnavailable.host_not_allowed': 'This API host is not allowed. Add it to Glacier’s allowed sites.',
   'ask.engineUnavailable.local_not_ready': 'Start Ollama with an installed model to use it.',
   'ask.engineUnavailable.missing': 'Install and sign in to that engine to use it.',

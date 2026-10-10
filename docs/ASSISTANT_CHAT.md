@@ -11,11 +11,16 @@ Its arguments include a proposal `id`, proposed `flow`, explanation, and accepta
 the flow. Chat history is kept as a plain Markdown note under `conversations/` in the vault.
 
 When the owner asks to change Glacier's own UI, the assistant can emit a `propose_ui_change` tool call with a plain
-explanation, a unified diff limited to `glacier/web/src`, and the related e2e spec. Proposing never edits a file. The
-owner must approve with the same apply endpoint. Approval creates a new `assistant/ui-change/<id>` Git branch in a
-separate worktree under `GLACIER_HOME/worktrees/ui-changes/`, applies and commits the diff there, then runs TypeScript,
-theme lint, a web build, and the related e2e spec. The running install and main checkout are not changed. The response
-reports the branch, worktree, changed files and each check result; a failed check leaves the branch available to inspect.
+explanation, a unified diff limited to `glacier/web/src`, and the related e2e spec. Coding CLIs work in a disposable
+source worktree under `GLACIER_HOME/worktrees/ui-drafts/`; API and local models receive the relevant current source files
+and return exact search/replace edits. Glacier builds the proposal diff from those edits. Draft worktrees are removed
+before the proposal is shown. If the installed app cannot find the source checkout, set `glacier_source_dir` in
+`GLACIER_HOME/settings.json` to the Git repository containing `glacier/web/src`. Glacier validates that setting before
+using it. Proposing never edits the checkout or runs the apply checks. The owner must approve with the same apply
+endpoint. Approval creates a new `assistant/ui-change/<id>` Git branch in a separate worktree under
+`GLACIER_HOME/worktrees/ui-changes/`, applies and commits the diff there, then runs TypeScript, theme lint, a web build,
+and the related e2e spec. The running install and main checkout are not changed. The response reports the branch,
+worktree, changed files and each check result; a failed check leaves the branch available to inspect.
 
 `POST /api/assistant/proposals/{id}/apply` accepts `{"approve": true}` to save or `{"approve": false}` to discard.
 An approved proposal can also include `"run_now": true` to start its first run immediately; the response includes

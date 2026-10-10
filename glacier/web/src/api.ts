@@ -266,7 +266,7 @@ export const system = {
 }
 
 export interface AskEngine { id: string; label: string; available: boolean; reason: string; reason_code?: string }
-export interface AskSettings { engine: string; active_engine: string; route_reason?: string; fallback_reason_code?: string; engines: AskEngine[]; remember_previous_chats: boolean; openai_base_url: string; openai_model: string; openai_secret_name: string; openai_monthly_cap_usd: number | string; openai_input_usd_per_million: number | string; openai_output_usd_per_million: number | string; openai_spend_usd: number; anthropic_model: string; anthropic_secret_name: string; anthropic_monthly_cap_usd: number | string; anthropic_input_usd_per_million: number | string; anthropic_output_usd_per_million: number | string; anthropic_spend_usd: number; local_model: string }
+export interface AskSettings { engine: string; active_engine: string; route_reason?: string; fallback_reason_code?: string; engines: AskEngine[]; remember_previous_chats: boolean; openai_base_url: string; openai_model: string; openai_secret_name: string; openai_monthly_cap_usd: number | string; openai_input_usd_per_million: number | string; openai_output_usd_per_million: number | string; openai_spend_usd: number; anthropic_model: string; anthropic_secret_name: string; anthropic_monthly_cap_usd: number | string; anthropic_input_usd_per_million: number | string; anthropic_output_usd_per_million: number | string; anthropic_spend_usd: number; local_model: string; glacier_source_dir?: string }
 export const askSettingsApi = {
   get: () => req<AskSettings>('GET', '/api/assistant/settings'),
   save: (settings: Partial<AskSettings>) => req<AskSettings & { available?: boolean; reason?: string }>('PUT', '/api/assistant/settings', settings),
