@@ -70,23 +70,29 @@ def test_ui_change_chat_emits_review_only_tool_and_rejects_without_writing(tmp_p
     _prepare(tmp_path, monkeypatch)
     diff = ("--- a/glacier/web/src/App.tsx\n+++ b/glacier/web/src/App.tsx\n"
             "@@ -1 +1 @@\n-old\n+new\n")
-    captured = {}
-    def fake_engine(prompt, route, schema=None):
-        captured.update(prompt=prompt, route=route, schema=schema)
-        return {"reply": "I prepared a change.", "automation": False,
-                "ui_change": {"diff": diff, "explanation": "Make the welcome easier to scan.",
-                              "related_spec": "glacier/web/e2e/shell.spec.mjs"}}
-    monkeypatch.setattr(assistant_chat, "_ask_engine", fake_engine)
+    monkeypatch.setattr(assistant_chat, "_ui_change_draft", lambda *args: {
+        "diff": diff, "explanation": "Make the welcome easier to scan.",
+        "related_spec": "glacier/web/e2e/shell.spec.mjs"})
     events = assistant_chat.chat(assistant_chat.ChatRequest(message="Change Glacier's UI to simplify the welcome screen"))
     body = "".join(__import__("asyncio").run(_collect(events.body_iterator)))
     assert '"propose_ui_change"' in body
-    assert captured["schema"]["required"] == ["reply", "automation", "ui_change"]
-    assert "Never apply it" in captured["prompt"]
+    assert "preparing a review-only UI change" in body
     proposal = next(value for value in assistant_chat._proposals.values() if value.get("kind") == "ui_change")
     assert not (assistant_chat.ui_change.ROOT / "glacier/web/src/App.tsx").read_text().startswith("new")
     result = assistant_chat.apply_proposal(proposal["id"], assistant_chat.ApplyRequest(approve=False))
     assert result == {"discarded": True}
     assert not (assistant_chat.ui_change.ROOT / "glacier/web/src/App.tsx").read_text().startswith("new")
+
+
+def test_ui_change_chat_without_source_returns_setup_message(tmp_path, monkeypatch):
+    _prepare(tmp_path, monkeypatch)
+    monkeypatch.setattr(assistant_chat.ui_change, "ROOT", tmp_path / "missing-source")
+    events = assistant_chat.chat(assistant_chat.ChatRequest(message="Change Glacier's UI to simplify the home screen"))
+    body = "".join(__import__("asyncio").run(_collect(events.body_iterator)))
+    assert "UI changes need the Glacier source folder" in body
+    assert "glacier_source_dir" in body
+    assert '"type": "RUN_FINISHED"' in body
+    assert '"type": "RUN_ERROR"' not in body
 
 
 def test_ui_proposal_apply_dispatches_only_after_owner_approval(tmp_path, monkeypatch):

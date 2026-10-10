@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import os
 import re
+import json
+import shutil
 import subprocess
 import uuid
 from pathlib import Path
@@ -10,6 +12,80 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MAX_DIFF_CHARS = 80_000
 _proposals: dict[str, dict] = {}
+
+
+def source_root(configured: str | None = None) -> Path:
+    """Return the configured Glacier checkout, or ROOT when running from source."""
+    if configured is None:
+        try:
+            settings = json.loads((Path(os.environ.get("GLACIER_HOME", "data")) / "settings.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            settings = {}
+        configured = settings.get("glacier_source_dir") if isinstance(settings, dict) else None
+    if configured is not None and not isinstance(configured, str):
+        raise ValueError("glacier_source_dir must be a folder path.")
+    root = Path(configured).expanduser().resolve() if configured else ROOT.resolve()
+    if not root.is_dir() or not (root / "glacier/web/src").is_dir():
+        raise ValueError("UI changes need the Glacier source folder. Set glacier_source_dir in GLACIER_HOME/settings.json to a Git repo containing glacier/web/src.")
+    result = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
+    if result.returncode or Path(result.stdout.strip()).resolve() != root:
+        raise ValueError("UI changes need the Glacier source folder. Set glacier_source_dir in GLACIER_HOME/settings.json to a Git repo containing glacier/web/src.")
+    return root
+
+
+def create_draft_worktree(root: Path, draft_id: str) -> Path:
+    home = Path(os.environ.get("GLACIER_HOME", str(Path.home() / ".glacier")))
+    worktree = home / "worktrees" / "ui-drafts" / draft_id
+    worktree.parent.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(["git", "-C", str(root), "worktree", "add", "--detach", str(worktree), "HEAD"],
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    if result.returncode:
+        raise RuntimeError("Could not open the Glacier source for a UI draft.")
+    return worktree
+
+
+def draft_head(worktree: Path) -> str:
+    result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(worktree), capture_output=True,
+                            text=True, encoding="utf-8", errors="replace", timeout=10)
+    if result.returncode:
+        raise RuntimeError("Could not read the UI draft starting point.")
+    return result.stdout.strip()
+
+
+def draft_diff(worktree: Path) -> str:
+    status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all"], cwd=str(worktree),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    if status.returncode:
+        raise RuntimeError("Could not read the UI draft changes.")
+    changed = []
+    for line in status.stdout.splitlines():
+        path = line[3:].split(" -> ")[-1]
+        if path and not path.startswith("glacier/web/src/"):
+            raise ValueError("UI changes may edit files under glacier/web/src only.")
+        changed.append(path)
+    if not changed:
+        raise ValueError("The assistant did not change any Glacier UI source files.")
+    intent = subprocess.run(["git", "add", "-N", "--", "glacier/web/src"], cwd=str(worktree),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    if intent.returncode:
+        raise RuntimeError("Could not collect the UI source changes.")
+    result = subprocess.run(["git", "diff", "--no-ext-diff", "HEAD", "--", "glacier/web/src"], cwd=str(worktree),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    if result.returncode:
+        raise RuntimeError("Could not collect the UI source changes.")
+    validate_diff(result.stdout)
+    return result.stdout
+
+
+def remove_draft_worktree(root: Path, worktree: Path) -> None:
+    try:
+        subprocess.run(["git", "-C", str(root), "worktree", "remove", "--force", str(worktree)],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    if worktree.exists():
+        shutil.rmtree(worktree, ignore_errors=True)
 
 
 def validate_diff(diff: str) -> list[str]:
@@ -34,7 +110,7 @@ def validate_diff(diff: str) -> list[str]:
 def _validate_spec(spec: str) -> str:
     if not isinstance(spec, str) or not re.fullmatch(r"glacier/web/e2e/[A-Za-z0-9_.-]+\.spec\.mjs", spec):
         raise ValueError("Choose a related e2e spec under glacier/web/e2e.")
-    if not (ROOT / spec).is_file():
+    if not (source_root() / spec).is_file():
         raise ValueError("The related e2e spec does not exist in glacier/web/e2e.")
     return spec
 
@@ -89,7 +165,8 @@ def apply(proposal_id: str, proposal: dict | None = None) -> dict:
     worktree_root = Path(os.environ.get("GLACIER_HOME", str(Path.home() / ".glacier")))
     worktree = worktree_root / "worktrees" / "ui-changes" / proposal_id
     worktree.parent.mkdir(parents=True, exist_ok=True)
-    added = _command(["git", "-C", str(ROOT), "worktree", "add", "-b", branch, str(worktree), "HEAD"], ROOT)
+    root = source_root()
+    added = _command(["git", "-C", str(root), "worktree", "add", "-b", branch, str(worktree), "HEAD"], root)
     if not added["passed"]:
         raise RuntimeError("Could not create the isolated UI change worktree: " + added["output"][-1000:])
     if not worktree.is_dir():
@@ -105,7 +182,7 @@ def apply(proposal_id: str, proposal: dict | None = None) -> dict:
         return {"applied": False, "branch": branch, "worktree": str(worktree),
                 "checks": [], "passed": False, "error": (result.stderr or result.stdout)[-2000:]}
     # A worktree can use the already-installed, pinned dependencies without modifying the live checkout.
-    source_modules = ROOT / "glacier/web/node_modules"
+    source_modules = root / "glacier/web/node_modules"
     target_modules = worktree / "glacier/web/node_modules"
     if source_modules.exists() and not target_modules.exists():
         try:
