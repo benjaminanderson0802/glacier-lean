@@ -1,0 +1,1 @@
+{"data":{"products":{"edges":[{"node":{"id":"gid://shopify/Product/2","title":"SEO Boots","handle":"seo-boots"},"cursor":"shopify-cursor-2"}],"pageInfo":{"hasNextPage":false,"endCursor":"shopify-cursor-2"}}},"extensions":{"cost":{"requestedQueryCost":12,"actualQueryCost":6,"throttleStatus":{"maximumAvailable":2000,"currentlyAvailable":1988,"restoreRate":100}}}}
