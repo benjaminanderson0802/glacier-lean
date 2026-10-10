@@ -1,0 +1,1 @@
+"""Shared venture building blocks."""
