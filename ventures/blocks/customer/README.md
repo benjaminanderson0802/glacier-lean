@@ -4,7 +4,7 @@ This local Python package stores customer accounts and workflow records in SQLit
 
 ## Billing
 
-`checkout_link(plan)` creates a Stripe Checkout Session using only an `sk_test_` key. Set a test price as `STRIPE_PRICE_<PLAN>` or pass a plan map to the function. The returned HTTPS link is for the customer to open. This block never accepts a live Stripe key. Refunds require a non-empty owner approval ID, include it in Stripe metadata, and store an audit event locally.
+`checkout_link(plan, approval_id=None)` creates a Stripe Checkout Session using only an `sk_test_` key. Set a test price as `STRIPE_PRICE_<PLAN>` or pass a plan map to the function. In test mode, the approval ID may be omitted; when supplied, it is included in Stripe metadata and the local audit event. The returned HTTPS link is for the customer to open. This block refuses live Stripe keys, so a missing approval can never enable a live session. Refunds require a non-empty owner approval ID, include it in Stripe metadata, and store an audit event locally.
 
 Run the owner-driven live test with one command after saving an `sk_test_` key as `STRIPE_SECRET_KEY` in Glacier Settings > Secrets and preparing a Stripe test price:
 

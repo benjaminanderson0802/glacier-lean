@@ -188,8 +188,11 @@ def _require_test_key(secret_getter: Callable[[str], str | None] | None) -> str:
 
 def checkout_link(plan: str, *, secret_getter: Callable[[str], str | None] | None = None,
                   plans: dict[str, dict[str, str]] | None = None,
+                  approval_id: str | None = None,
                   customer_id: str | None = None,
                   db_path: str | Path | None = None) -> str:
+    if approval_id is not None and not approval_id.strip():
+        raise CustomerError("An approval ID must not be blank.")
     key = _require_test_key(secret_getter)
     plan_config = (plans or {}).get(plan)
     if plan_config is None:
@@ -219,6 +222,8 @@ def checkout_link(plan: str, *, secret_getter: Callable[[str], str | None] | Non
     if customer_id:
         fields["client_reference_id"] = customer_id
         fields["metadata[customer_id]"] = customer_id
+    if approval_id:
+        fields["metadata[approval_id]"] = approval_id.strip()
     response = _stripe_request("/v1/checkout/sessions", fields, key)
     url = response.get("url")
     if not isinstance(url, str) or not url.startswith("https://"):
@@ -226,7 +231,8 @@ def checkout_link(plan: str, *, secret_getter: Callable[[str], str | None] | Non
     with _database(db_path) as db:
         db.execute("INSERT INTO audit_events(event, subject_id, details_json, happened_at) VALUES (?, ?, ?, ?)",
                    ("stripe_checkout_created", str(response.get("id", "unknown")),
-                    json.dumps({"plan": plan, "customer_id": customer_id, "mode": mode}), _now()))
+                    json.dumps({"plan": plan, "customer_id": customer_id, "mode": mode,
+                                "approval_id": approval_id.strip() if approval_id else None}), _now()))
     return url
 
 
