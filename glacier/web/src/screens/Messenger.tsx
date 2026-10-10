@@ -145,11 +145,11 @@ export function Messenger() {
 
   return <div className="messenger" data-testid="messenger">
     {view === 'list' && <>
-      <header className="messenger-head"><div><h2>{t('messenger.title')}</h2><span>{t('messenger.subtitle')}</span></div><button className="messenger-icon-btn" type="button" aria-label={t('messenger.newChat')} title={t('messenger.newChat')} onClick={() => { setView('new'); setDraft(''); setError('') }}>＋</button></header>
+      <header className="messenger-head"><div><h2>{t('messenger.title')}</h2><span>{t('messenger.subtitle')}</span></div><button className="messenger-icon-btn" type="button" data-testid="messenger-new" aria-label={t('messenger.newChat')} title={t('messenger.newChat')} onClick={() => { setView('new'); setDraft(''); setError('') }}>＋</button></header>
       <label className="messenger-search"><span aria-hidden="true">⌕</span><input aria-label={t('messenger.search')} value={query} onChange={event => setQuery(event.target.value)} placeholder={t('messenger.search')} /></label>
       {error && <div className="messenger-error" role="alert">{error}</div>}
       <div className="messenger-thread-list" aria-label={t('messenger.threads')}>
-        {threads.map(thread => <button type="button" key={thread.id} className="messenger-thread-row" onClick={() => void openThread(thread)}>
+        {threads.map(thread => <button type="button" key={thread.id} data-testid={`messenger-thread-${thread.id}`} className="messenger-thread-row" onClick={() => void openThread(thread)}>
           <span className={`messenger-avatar source-${thread.source}`}>{initials(thread.source)}</span>
           <span className="messenger-thread-copy"><span className="messenger-thread-top"><b>{thread.title || thread.source}</b><time>{formatTime(thread.last_at)}</time></span><span className="messenger-preview">{thread.last_text}</span></span>
           {thread.unread && <i className="messenger-unread" aria-label={t('messenger.unread')} />}
@@ -160,16 +160,16 @@ export function Messenger() {
     </>}
 
     {view === 'new' && <>
-      <header className="messenger-head"><button className="messenger-icon-btn" type="button" aria-label={t('messenger.back')} onClick={() => { setView('list'); setError('') }}>‹</button><div><h2>{t('messenger.newChat')}</h2><span>{t('messenger.chooseSource')}</span></div></header>
-      <div className="messenger-new-source">{(['glacier', 'codex', 'claude'] as const).map(source => <button key={source} type="button" className={newSource === source ? 'selected' : ''} onClick={() => setNewSource(source)}><span className={`messenger-avatar source-${source}`}>{initials(source)}</span>{source}</button>)}</div>
+      <header className="messenger-head"><button className="messenger-icon-btn" type="button" data-testid="messenger-new-back" aria-label={t('messenger.back')} onClick={() => { setView('list'); setError('') }}>‹</button><div><h2>{t('messenger.newChat')}</h2><span>{t('messenger.chooseSource')}</span></div></header>
+      <div className="messenger-new-source">{(['glacier', 'codex', 'claude'] as const).map(source => <button key={source} type="button" data-testid={`messenger-source-${source}`} className={newSource === source ? 'selected' : ''} onClick={() => setNewSource(source)}><span className={`messenger-avatar source-${source}`}>{initials(source)}</span>{source}</button>)}</div>
       <label className="messenger-new-label" htmlFor="messenger-new-text">{t('messenger.firstMessage')}</label>
       <textarea id="messenger-new-text" aria-label={t('messenger.startConversation')} value={draft} onChange={event => setDraft(event.target.value)} placeholder={t('messenger.startConversation')} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void start() } }} />
       {error && <div className="messenger-error" role="alert">{error}</div>}
-      <button className="messenger-send" type="button" disabled={!draft.trim() || sending} onClick={() => void start()}>{sending ? t('messenger.starting') : t('messenger.start')}</button>
+      <button className="messenger-send" type="button" data-testid="messenger-start" disabled={!draft.trim() || sending} onClick={() => void start()}>{sending ? t('messenger.starting') : t('messenger.start')}</button>
     </>}
 
     {view === 'thread' && <>
-      <header className="messenger-chat-head"><button className="messenger-icon-btn" type="button" aria-label={t('messenger.back')} onClick={() => { setView('list'); setError(''); void refreshThreads(query) }}>‹</button><span className={`messenger-avatar source-${active?.source ?? 'glacier'}`}>{active ? initials(active.source) : 'gl'}</span><div className="messenger-chat-title"><b>{active?.title ?? ''}</b><span>{active?.source ?? ''}</span></div></header>
+      <header className="messenger-chat-head"><button className="messenger-icon-btn" type="button" data-testid="messenger-chat-back" aria-label={t('messenger.back')} onClick={() => { setView('list'); setError(''); void refreshThreads(query) }}>‹</button><span className={`messenger-avatar source-${active?.source ?? 'glacier'}`}>{active ? initials(active.source) : 'gl'}</span><div className="messenger-chat-title"><b>{active?.title ?? ''}</b><span>{active?.source ?? ''}</span></div></header>
       <div ref={logRef} className="messenger-log" onScroll={handleScroll} aria-live="polite">
         {loadingOlder && <div className="messenger-loading">{t('messenger.loadingOlder')}</div>}
         {loading && <div className="messenger-loading">{t('messenger.loading')}</div>}
