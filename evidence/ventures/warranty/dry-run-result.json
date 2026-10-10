@@ -1,0 +1,15 @@
+{
+  "command": "heavy env PYTHONPATH=<worktree-root> npm run live; ventures/install_all.py --only warranty; POST /api/environments/daily-deadlines/run",
+  "run_id": "2643340aff32",
+  "flow": "daily-deadlines",
+  "status": "waiting",
+  "waiting_on": "review_draft",
+  "synthetic_fixture": true,
+  "step_result": "match",
+  "deadline_alert": true,
+  "registration_deadline": "2026-10-13",
+  "days_remaining": 3,
+  "serial_result": "uncertain \u2014 please check",
+  "portal_automation_allowed": false,
+  "external_action": "none; flow stopped at review approval"
+}
