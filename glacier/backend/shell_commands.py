@@ -16,10 +16,15 @@ def command_invocation(command: str):
         return command, True, ""
 
     bash = shutil.which("bash")
-    if not bash:
-        candidate = r"C:\Program Files\Git\bin\bash.exe"
-        if os.path.isfile(candidate):
-            bash = candidate
+    # Prefer Git for Windows over the Windows Subsystem for Linux bash.exe
+    # alias, which can exist earlier on PATH but cannot run without a distro.
+    candidate = r"C:\Program Files\Git\bin\bash.exe"
+    if os.path.isfile(candidate):
+        bash = candidate
+    elif bash and os.path.normcase(os.path.abspath(bash)) == os.path.normcase(
+        r"C:\Windows\System32\bash.exe"
+    ):
+        bash = None
     if bash:
         def windows_path(match):
             drive = match.group(1).lower()

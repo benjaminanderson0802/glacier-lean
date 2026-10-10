@@ -301,7 +301,9 @@ def main(argv: list[str] | None = None) -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    return 0 if result.get("ready", True) else 1
+    # Missing Shopify access is an expected owner setup step. Keep the
+    # flow healthy so Glacier can present its explicit setup/review prompt.
+    return 0 if result.get("ready", True) or result.get("setup_required") else 1
 
 
 if __name__ == "__main__":

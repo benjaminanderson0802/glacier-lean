@@ -110,6 +110,27 @@ def test_shopify_connector_products_merge_with_brand_confirmed_details(tmp_path,
     assert result["submitted"] is False
 
 
+def test_missing_shopify_connection_is_a_setup_step_not_a_failed_command(tmp_path, monkeypatch, capsys):
+    from ventures.blocks.connectors import ConnectorError, ShopifyClient
+
+    def no_connection(self, _shop):
+        raise ConnectorError("Shopify setup is not configured")
+
+    monkeypatch.setattr(ShopifyClient, "__init__", no_connection)
+    details = tmp_path / "brand-details.json"
+    details.write_text(json.dumps({"brand": {}, "products": {}}), encoding="utf-8")
+
+    result = listing_prep.main([
+        "prepare", "--shop", "example.myshopify.com", "--details", str(details),
+        "--output", str(tmp_path / "out"),
+    ])
+
+    assert result == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["setup_required"]
+    assert output["submitted"] is False
+
+
 def test_120_day_and_annual_reminders_are_registered(tmp_path, monkeypatch):
     monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {"fields": {"ingredients": {"value": "Water, Glycerin, Fragrance", "page": 1, "confidence": 0.99, "uncertain": False}}, "text": "Ingredients: Water, Glycerin, Fragrance"})
     recorded = []
