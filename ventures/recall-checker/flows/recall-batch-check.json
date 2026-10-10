@@ -1,0 +1,16 @@
+{
+  "id": "recall-batch-check",
+  "name": "Check a store inventory file",
+  "nodes": [
+    {"id": "check_inventory", "type": "command", "config": {"cmd": "python ventures/recall-checker/scripts/recall.py batch \"$GLACIER_HOME/ventures/recall-checker/incoming/inventory.csv\"", "cwd": "{repo}", "timeout": "300", "retries": "0"}, "position": {"x": 0, "y": 0}},
+    {"id": "check_done", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 300, "y": 0}},
+    {"id": "review_results", "type": "approval", "config": {"prompt": "Your step: Review the flagged inventory CSV and open each official notice. Confirm uncertain or match results before changing a listing or sale."}, "position": {"x": 600, "y": 0}},
+    {"id": "review_note", "type": "note", "config": {"path": "ventures/recall-checker/reports/inventory-review-{run}.md", "template": "Owner review requested for this inventory result. No listing or inventory was changed.\n\n{prev_output}"}, "position": {"x": 900, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "check_inventory", "target": "check_done", "label": ""},
+    {"id": "e2", "source": "check_done", "target": "review_results", "label": "yes"},
+    {"id": "e3", "source": "review_results", "target": "review_note", "label": "yes"}
+  ],
+  "max_steps": 6
+}

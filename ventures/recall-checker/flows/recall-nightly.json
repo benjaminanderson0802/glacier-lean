@@ -1,0 +1,21 @@
+{
+  "id": "recall-nightly",
+  "name": "Refresh recall data and pages",
+  "nodes": [
+    {"id": "schedule", "type": "schedule", "config": {"cron": "30 2 * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "refresh", "type": "command", "config": {"cmd": "python ventures/recall-checker/scripts/recall.py nightly", "cwd": "{repo}", "timeout": "7200", "retries": "1"}, "position": {"x": 300, "y": 0}},
+    {"id": "refresh_ok", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 600, "y": 0}},
+    {"id": "feed_alert", "type": "approval", "config": {"prompt": "Your step: Review the recall feed update report. One or more required recall sources may be unavailable; do not treat missing data as a clean check."}, "position": {"x": 900, "y": 160}},
+    {"id": "alert_note", "type": "note", "config": {"path": "ventures/recall-checker/reports/feed-alert-{date}.md", "template": "Recall update needs review. The output below includes feed failures and page counts. No public page was published.\n\n{prev_output}"}, "position": {"x": 1200, "y": 160}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "schedule", "target": "refresh", "label": ""},
+    {"id": "e2", "source": "refresh", "target": "refresh_ok", "label": ""},
+    {"id": "e3", "source": "refresh_ok", "target": "feed_alert", "label": "no"},
+    {"id": "e4", "source": "feed_alert", "target": "alert_note", "label": "yes"}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python -c \"import json,pathlib,os; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'recall-checker'/'pages'; assert p.is_dir()\"", "required": true}
+  ],
+  "max_steps": 8
+}

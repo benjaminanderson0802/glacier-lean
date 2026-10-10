@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recall checker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <h1>recall checker</h1>
+    <p class="intro">Check the item in this tab. Page text stays in this browser; only these fields go to your local Glacier API.</p>
+    <button id="read-page" type="button">read this page</button>
+    <label>barcode <input id="barcode" autocomplete="off" inputmode="numeric"></label>
+    <label>brand <input id="brand" autocomplete="off"></label>
+    <label>model <input id="model" autocomplete="off"></label>
+    <button id="check" type="button">check item</button>
+    <section id="result" aria-live="polite" hidden></section>
+    <p class="small">This is a lookup aid. Confirm the linked official notice before making a decision.</p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
