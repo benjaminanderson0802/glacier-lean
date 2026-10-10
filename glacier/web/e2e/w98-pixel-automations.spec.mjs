@@ -27,6 +27,7 @@ await page.route('**/api/**', route => {
   else if (p === '/api/environments/weekly-report') body = env
   else if (p === '/api/runs') body = []
   else if (p === '/api/teams') body = []
+  else if (p === '/api/messages/threads') body = []
   else if (p === '/api/templates') body = templates
   else if (p === '/api/node-types') body = [
     { type: 'schedule', label: 'Schedule', description: 'Start on a timer', fields: [{ key: 'cron', label: 'Schedule', placeholder: '', default: '' }], branches: null },
@@ -44,7 +45,7 @@ try {
   await page.goto(`http://localhost:${port}/#/automations`)
   await page.waitForTimeout(500)
   if (process.env.W98_CAPTURE === '1') await page.screenshot({ path: '../../evidence/ui/W98-automations.png', timeout: 60000 })
-  await page.goto(`http://localhost:${port}/#/automations/templates`)
+  await page.getByTestId('flow-templates').click()
   await page.getByTestId('tpl-tpl-weekly-research').waitFor()
   await page.getByTestId('tpl-tpl-weekly-research').click({ force: true })
   await page.getByTestId('template-detail').waitFor()

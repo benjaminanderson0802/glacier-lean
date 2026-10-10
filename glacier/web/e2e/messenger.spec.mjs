@@ -101,7 +101,7 @@ try {
   check(true, 'new chat starts a Glacier conversation')
   await inbox.getByRole('button', { name: /back/i }).click()
   await inbox.getByText('Local model notes').click()
-  await inbox.getByText(/read-only/i).waitFor({ state: 'visible' })
+  await inbox.locator('.messenger-log').getByText(/read-only/i).waitFor({ state: 'visible' })
   check(await inbox.getByRole('textbox', { name: /message/i }).count() === 0, 'read-only sessions explain why replies are disabled')
   await inbox.getByRole('button', { name: /back/i }).click()
   await inbox.getByText('Weekly report').click()

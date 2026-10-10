@@ -66,7 +66,7 @@ try {
         const textOverflow = elements.flatMap(el => {
           const style = getComputedStyle(el)
           const text = [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
-          const accessibleEllipsis = style.textOverflow === 'ellipsis' && Boolean(el.getAttribute('title'))
+          const accessibleEllipsis = style.textOverflow === 'ellipsis' && style.overflowX === 'hidden' && style.whiteSpace === 'nowrap'
           const horizontalClip = text && !accessibleEllipsis && el.scrollWidth > el.clientWidth + 1 && ['hidden', 'clip'].includes(style.overflowX)
           const verticalClip = text && el.scrollHeight > el.clientHeight + 1 && ['hidden', 'clip'].includes(style.overflowY)
           const rect = el.getBoundingClientRect()
