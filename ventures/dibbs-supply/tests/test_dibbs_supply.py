@@ -21,7 +21,10 @@ def solicitation(**overrides):
         "required_fields": ["solicitation_number", "nsn", "part_number", "quantity", "unit_price", "supplier_name"],
         "quote_file": "quote.csv",
     }
-    return {**row, **overrides}
+    supplied = {**row, **overrides}
+    if "source_url" not in overrides:
+        supplied["source_url"] = f"https://www.dibbs.bsm.dla.mil/rfq/{supplied['solicitation_number']}"
+    return supplied
 
 
 def supplier_quote(**overrides):
@@ -159,13 +162,13 @@ def test_daily_feed_alert_stays_visible_even_when_a_local_quote_matches(tmp_path
     monkeypatch.setattr(feeds, "sync", lambda source: {"rows": 1, "changed": True, "alerts": ["DIBBS discovery feed is incomplete"]})
     monkeypatch.setattr(feeds, "query", lambda source: [{
         "record_id": "SPE7M126T001A",
-        "source_url": "https://www.dibbs.bsm.dla.mil/public/example",
+        "source_url": "https://www.dibbs.bsm.dla.mil/rfq/SPE7M126T001A",
         "data": {"description": "public discovery row"},
     }])
 
     result = prepare_from_feed(tmp_path / "drafts", solicitation_path, quote_path)
 
-    assert result["ranked_bids"][0]["source_url"] == "https://www.dibbs.bsm.dla.mil/public/example"
+    assert result["ranked_bids"][0]["source_url"] == "https://www.dibbs.bsm.dla.mil/rfq/SPE7M126T001A"
     assert result["result"] == "uncertain — please check"
     assert result["feed_alerts"] == ["DIBBS discovery feed is incomplete"]
     assert result["submitted"] is False
@@ -222,3 +225,25 @@ def test_quote_request_draft_requires_open_non_electronic_current_solicitation(t
     assert result["quote_requests"] == []
     assert "eligibility" in " ".join(result["quote_request_uncertain"][0]["reasons"])
     assert "non-electronic" in " ".join(result["quote_request_uncertain"][0]["reasons"])
+
+
+def test_flow_only_opens_owner_approval_when_there_are_draft_actions(tmp_path, monkeypatch, capsys):
+    import dibbs_supply
+
+    paths = ["prepare", "--solicitations", str(tmp_path / "s.json"), "--quotes", str(tmp_path / "q.json"), "--output", str(tmp_path / "out")]
+    monkeypatch.setattr(dibbs_supply, "prepare_bids", lambda *args: {"result": "uncertain — please check", "ranked_bids": [{"solicitation_number": "SPE7M126T001A"}], "quote_requests": []})
+    assert dibbs_supply.main(paths) == 0
+    capsys.readouterr()
+    monkeypatch.setattr(dibbs_supply, "prepare_bids", lambda *args: {"result": "no match found in DLA DIBBS and supplier quotes as of 2026-10-10", "ranked_bids": [], "quote_requests": []})
+    assert dibbs_supply.main(paths) == 2
+
+
+def test_bid_requires_a_source_link_to_the_exact_official_solicitation(tmp_path):
+    solicitation_path, quote_path, output_path = write_inputs(
+        tmp_path, [solicitation(source_url="https://example.test/SPE7M126T001A")], [supplier_quote()]
+    )
+
+    result = prepare_bids(solicitation_path, quote_path, output_path)
+
+    assert result["ranked_bids"] == []
+    assert "official DIBBS solicitation link" in " ".join(result["uncertain"][0]["reasons"])

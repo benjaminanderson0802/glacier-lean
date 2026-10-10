@@ -16,7 +16,7 @@ The result vocabulary is **match**, **no match found in DLA DIBBS and supplier q
 
 ## Local input files
 
-- `incoming/solicitations.json`: JSON array of verified solicitation details. Every `required_fields` entry must be supported by a script mapping (`solicitation_number`, `nsn`, `part_number`, `quantity`, `unit_price`, or `supplier_name`). `quote_file` must be a plain `.csv` filename.
+- `incoming/solicitations.json`: JSON array of verified solicitation details, including the exact official DIBBS detail URL with its solicitation number. Every `required_fields` entry must be supported by a script mapping (`solicitation_number`, `nsn`, `part_number`, `quantity`, `unit_price`, or `supplier_name`). `quote_file` must be a plain `.csv` filename.
 - `incoming/quotes.json`: JSON array with solicitation/part number, supplier name and type (`manufacturer` or `authorized_distributor`), authorization and traceability evidence paths, quoted quantity, unit cost, and unit bid price.
 - Quote requests are saved under `drafts/quote-request-drafts.json` with an exact recipient, subject, and prefilled message. Review the drafts at the approval step and send them manually; Glacier never contacts suppliers. Bid drafts are written under `drafts/`; no outbound action is performed. Keep customer or supplier documents local and delete them 30 days after the job closes unless retention is requested.
 

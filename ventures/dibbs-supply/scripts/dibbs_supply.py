@@ -154,6 +154,10 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
         issues: list[str] = []
         if not number:
             issues.append("solicitation number is missing")
+        source_url = str(solicitation.get("source_url", "")).strip()
+        source_parts = urlparse(source_url)
+        if source_parts.scheme != "https" or source_parts.hostname not in {"dibbs.bsm.dla.mil", "www.dibbs.bsm.dla.mil"} or number.lower() not in source_url.lower():
+            issues.append("official DIBBS solicitation link for this exact number is missing or invalid")
         if solicitation.get("open_to_all_suppliers") is False:
             excluded.append({"solicitation_number": number, "result": f"no match found in DLA DIBBS and supplier quotes as of {today.isoformat()}", "reason": "not open to all suppliers"})
             continue
@@ -319,7 +323,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     result = prepare_bids(args.solicitations, args.quotes, args.output) if args.command == "prepare" else prepare_from_feed(args.output, args.solicitations, args.quotes)
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    return 0 if result["result"] == "match" else 1 if result["result"] == "uncertain — please check" else 0
+    if result.get("ranked_bids") or result.get("quote_requests"):
+        return 0
+    return 1 if result["result"] == "uncertain — please check" else 2
 
 
 if __name__ == "__main__":
