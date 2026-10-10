@@ -61,3 +61,8 @@ Rulesets are JSON or YAML files under `ventures/blocks/rules/rulesets/`.
 Reader and rules outputs are preparation aids: they do not certify, legally
 determine, sign, or submit government filings. Missing or conflicting evidence
 must remain visible for the customer to confirm.
+
+Feed IDs live in `ventures/blocks/feeds/sources.json`; the feed database is a
+rebuildable index under `$GLACIER_HOME/ventures/feeds.db`. Customer integrations
+stay in Stripe test mode until the owner configures a live key. E-sign must be
+free/open-source. Mail uses a test key until the owner configures live delivery.

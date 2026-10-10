@@ -1,0 +1,14 @@
+{
+  "id": "cpsc-broker-launch",
+  "name": "CPSC broker portal launch gate",
+  "nodes": [
+    {"id": "lawyer-opinion", "type": "approval", "config": {"prompt": "Your step: Attach and confirm the trade lawyer's written opinion approving the flat-fee broker model. This gate must pass before any broker contract or broker portal launch. Glacier will not contact a lawyer, sign a contract, create an account, or submit CPSC filings."}, "position": {"x": 0, "y": 0}},
+    {"id": "first-contract", "type": "approval", "config": {"prompt": "Your step: Review and approve the first broker contract. Confirm that it charges only a flat monthly fee and contains no refund commission or attorney fee split. Glacier will not sign or send the contract."}, "position": {"x": 360, "y": 0}},
+    {"id": "ready", "type": "command", "config": {"cmd": "python3 scripts/status_board.py launch-ready", "cwd": "ventures/cpsc-prep", "timeout": "30"}, "position": {"x": 720, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "lawyer-opinion", "target": "first-contract", "label": "yes"},
+    {"id": "e2", "source": "first-contract", "target": "ready", "label": "yes"}
+  ],
+  "max_steps": 10
+}

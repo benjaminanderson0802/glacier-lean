@@ -1,0 +1,10 @@
+{
+  "id": "cpsc-feed-refresh",
+  "name": "Refresh CPSC rules and template",
+  "nodes": [
+    {"id": "daily", "type": "schedule", "config": {"cron": "0 6 * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "refresh", "type": "command", "config": {"cmd": "python3 scripts/refresh_cpsc_sources.py", "cwd": "ventures/cpsc-prep", "timeout": "300"}, "position": {"x": 360, "y": 0}}
+  ],
+  "edges": [{"id": "e1", "source": "daily", "target": "refresh", "label": ""}],
+  "max_steps": 10
+}
