@@ -1,0 +1,30 @@
+{
+  "slug": "coop-postcards",
+  "name": "Co-op claims + street postcards",
+  "status": "in_progress",
+  "product": {
+    "co_op_claims": "Prepare brand-rule checklists and dealer-authorized claim drafts from ad proofs and invoices. A claim is never filed unless the dealer authorizes it and the approval step is completed.",
+    "street_postcards": "Prepare 6x4 neighborhood postcard proofs for local dealers and shared business cards. Mail runs in Lob test mode only until the owner supplies test credentials and approves the campaign.",
+    "budget_timing": "Open dealer outreach and postcard campaigns in November so dealers can use current year-end co-op budgets; calculate brand claim reminders 60 and 30 days before each program expiry."
+  },
+  "blocks": ["connectors.jobber", "filer", "mail", "customer", "reader", "rules", "deadlines"],
+  "block_functions": [],
+  "flows": ["coop-claim-readiness", "street-postcard-proof"],
+  "schedules": [
+    {"flow": "coop-claim-readiness", "cron": "0 9 * * *", "purpose": "Check local claim intake for upcoming program expiries and 60/30-day reminders."},
+    {"flow": "street-postcard-proof", "cron": "0 9 1 11 *", "purpose": "Open the annual dealer year-end postcard preparation cycle in November."}
+  ],
+  "secrets_needed": ["jobber_client_id", "jobber_client_secret", "jobber_access_token", "jobber_refresh_token", "lob_test_api_key", "brand_portal_credentials (customer-owned, per brand)"],
+  "your_steps": [
+    {"id": "jobber-setup", "title": "Connect Jobber for the co-op app", "when": "Before the first dealer intake", "detail": "Create the Glacier app in the Jobber Developer Center, request read-only completed-job access, and save the app credentials in Glacier Settings > Secrets. Keep the callback blank until the real Glacier URL exists."},
+    {"id": "first-brand", "title": "Review the first brand claim", "when": "Before the first claim for each brand", "detail": "Confirm that the brand's program rules are represented correctly, review the evidence checklist, and approve the dealer-authorized claim draft. Any government filing remains for the customer to sign and submit."},
+    {"id": "first-mail", "title": "Choose routes and approve the first postcard", "when": "Before the first November mail run", "detail": "Choose the towns/routes, approve the exact card proof and budget, and configure Lob test mode plus a printer/post-office plan. The flow never sends live mail."}
+  ],
+  "launch_gates": [
+    "First claim per brand is reviewed by the owner; each dealer separately authorizes its claim.",
+    "First postcard design and each list's first send are owner-approved; Lob must use a test_ key.",
+    "No homeowner name is collected or printed on street cards; completed job addresses are street-level only.",
+    "A category can appear once per shared route card, and every ad requires written approval.",
+    "No claim with missing required pre-approval or evidence can proceed to the filer."
+  ]
+}

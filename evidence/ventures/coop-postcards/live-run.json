@@ -1,0 +1,29 @@
+{
+  "test_type": "real Glacier runtime, disposable GLACIER_HOME, synthetic sample route; no Lob test key",
+  "flow": "street-postcard-proof",
+  "result": "done",
+  "node_states": {
+    "november": "done",
+    "proof": "done",
+    "mail_approval": "done",
+    "lob_test": "done"
+  },
+  "approval": "The local sample approval step was accepted to exercise the downstream render-only path. No Lob request was made.",
+  "send_output": {
+    "status": "render_only",
+    "address_verification": {
+      "verdict": "uncertain",
+      "detail": "not sent; no Lob test key configured"
+    },
+    "outreach_check": {
+      "verdict": "pass",
+      "reason": "sender is clear, no agency-style wording, and recipient is not suppressed"
+    }
+  },
+  "limitations": [
+    "The route data is synthetic.",
+    "Lob address verification and test delivery were not run because no test key was configured.",
+    "This 6x4 mail-block proof does not establish USPS EDDM flat size/weight compliance.",
+    "The disposable flow workspace used a temporary symlink to the venture scripts because install_all.py does not stage them."
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Co-op claim or postcard intake",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["claim_id", "dealer_label", "fields", "rules", "portal"],
+      "properties": {
+        "claim_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,100}$"},
+        "dealer_label": {"type": "string", "minLength": 1},
+        "fields": {"type": "object"},
+        "rules": {"type": "object", "required": ["program_year", "expires_on", "required_evidence"]},
+        "portal": {
+          "type": "object",
+          "required": ["portal_id", "base_url", "allowed_domains", "username_secret", "password_secret"],
+          "properties": {
+            "portal_id": {"type": "string"}, "base_url": {"type": "string", "format": "uri"},
+            "allowed_domains": {"type": "array", "items": {"type": "string"}},
+            "username_secret": {"type": "string"}, "password_secret": {"type": "string"},
+            "government_agency": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["campaign_id", "town", "route_id", "fill_by", "from", "to", "buyers", "street_jobs"],
+      "properties": {
+        "campaign_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,100}$"},
+        "town": {"type": "string"}, "route_id": {"type": "string"}, "fill_by": {"type": "string", "format": "date"},
+        "from": {"type": "object", "required": ["name", "address_line1"]},
+        "to": {"type": "object", "required": ["address_line1", "address_city", "address_state", "address_zip"]},
+        "buyers": {"type": "array", "items": {"type": "object", "required": ["category", "written_approval"]}},
+        "street_jobs": {"type": "array", "items": {"type": "object", "required": ["address"]}},
+        "proof_record": {"type": "object"}
+      }
+    }
+  ]
+}
