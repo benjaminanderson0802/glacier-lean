@@ -1,1 +1,1 @@
-"""Venture automations and shared building blocks for Glacier."""
+"""Venture automation building blocks and flows for Glacier."""

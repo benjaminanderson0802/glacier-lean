@@ -27,190 +27,190 @@ These hold for every venture and every agent. Write them into each venture's sys
 **Data handling.** Customer uploads are deleted 30 days after the job closes unless the customer opts to keep them. Portal credentials are stored encrypted and used only for that customer's job.
 Shared building blocks
 Eight blocks serve all fourteen ventures. Each has one owner, its own test set, and a check that must pass before any change goes live.
-| Block |
-Input |
-Output |
-Check before release |
+| Block | 
+Input | 
+Output | 
+Check before release | 
 Used by
-| Document reader |
-PDF, photo or CSV |
-Structured fields, each with its source page and a confidence flag |
-95%+ field agreement between two engines on a labeled sample set; disagreements marked uncertain |
+| Document reader | 
+PDF, photo or CSV | 
+Structured fields, each with its source page and a confidence flag | 
+95%+ field agreement between two engines on a labeled sample set; disagreements marked uncertain | 
 CPSC, FDA, freight, warranty, tariff, utility, property tax, co-op
-| Rules checker |
-Fields plus an official rule set |
-Pass, fail or uncertain, with the rule cited |
-Accepts every known-good sample, rejects every hand-made bad one |
+| Rules checker | 
+Fields plus an official rule set | 
+Pass, fail or uncertain, with the rule cited | 
+Accepts every known-good sample, rejects every hand-made bad one | 
 CPSC, FDA, OSHA, tariff, warranty, recall
-| Portal filer |
-Customer authorization, credentials, fields |
-Submitted form plus saved confirmation (PDF or screenshot) |
-Test submission succeeds; confirmation saved; repeat run doesn't double-file |
+| Portal filer | 
+Customer authorization, credentials, fields | 
+Submitted form plus saved confirmation (PDF or screenshot) | 
+Test submission succeeds; confirmation saved; repeat run doesn't double-file | 
 Warranty, co-op, OSHA, property tax, freight, DIBBS prep
-| Government data feed |
-Source list (CPSC, NHTSA, FDA, FSIS, OSHA, county rolls, DLA, state boards) |
-Clean, dated records in one database |
-Row counts within 1% of each source's totals; known canary records still parse; alert on any format change |
+| Government data feed | 
+Source list (CPSC, NHTSA, FDA, FSIS, OSHA, county rolls, DLA, state boards) | 
+Clean, dated records in one database | 
+Row counts within 1% of each source's totals; known canary records still parse; alert on any format change | 
 Recall, Apify tools, OSHA, property tax, CPSC codes, DIBBS
-| Deadline tracker |
-Start date plus rule (60/90 days, 30/120 days, Jan 2–Mar 2) |
-Reminders and "due soon" flags |
-Test items fire on the right dates, once each |
+| Deadline tracker | 
+Start date plus rule (60/90 days, 30/120 days, Jan 2–Mar 2) | 
+Reminders and "due soon" flags | 
+Test items fire on the right dates, once each | 
 Warranty, freight, OSHA, FDA, tariff, property tax, co-op
-| Customer layer |
-Signup |
-Account, Stripe billing, e-signature, status page, support inbox |
-Test purchase, refund and e-sign complete end to end |
+| Customer layer | 
+Signup | 
+Account, Stripe billing, e-signature, status page, support inbox | 
+Test purchase, refund and e-sign complete end to end | 
 All except DIBBS
-| Acquisition engines |
-Public lists, marketplace listings, unique data |
-Postcards (via Lob), store listings, one page per data object |
-Every page carries real, distinct data; every postcard passes address verification and the outreach rules |
+| Acquisition engines | 
+Public lists, marketplace listings, unique data | 
+Postcards (via Lob), store listings, one page per data object | 
+Every page carries real, distinct data; every postcard passes address verification and the outreach rules | 
 All
-| Platform connectors |
-OAuth or API access |
-Jobs, shipments, products read from Jobber, ShipStation, Shopify, Apify, Chrome extension |
-Connects to a test account; read-only unless the venture needs writes |
+| Platform connectors | 
+OAuth or API access | 
+Jobs, shipments, products read from Jobber, ShipStation, Shopify, Apify, Chrome extension | 
+Connects to a test account; read-only unless the venture needs writes | 
 Warranty, co-op, OSHA, postcards, freight, FDA, CPSC, recall, Apify
 **Model use.** Scripts first, then the local model for short labels and first-pass extraction, then the subscription model for cross-checks, messy documents, code and judging. Computer use only where there is no API or download.
 Build queue
 Work the queue top to bottom. Items marked parallel run alongside the item above them. Start every approval wait in the right-hand column as soon as the item begins, so reviews finish while building continues.
-| Order |
-Venture |
-Blocks it builds or reuses |
-Start early (approval waits) |
+| Order | 
+Venture | 
+Blocks it builds or reuses | 
+Start early (approval waits) | 
 Timing reason
-| 1 |
-CPSC data prep |
-Builds reader, rules checker, data feed, customer layer |
-Trade lawyer opinion on flat-fee broker model |
+| 1 | 
+CPSC data prep | 
+Builds reader, rules checker, data feed, customer layer | 
+Trade lawyer opinion on flat-fee broker model | 
 Mandatory since July 8, 2026; second wave Jan 8, 2027
-| 1 (parallel) |
-Apify data tools |
-Reuses data feed |
-Apify developer account and payout |
+| 1 (parallel) | 
+Apify data tools | 
+Reuses data feed | 
+Apify developer account and payout | 
 Fastest revenue
-| 2 |
-Warranty registration |
-Adds portal filer, deadline tracker, Jobber connector |
-Jobber developer account; app review after 5 accounts |
+| 2 | 
+Warranty registration | 
+Adds portal filer, deadline tracker, Jobber connector | 
+Jobber developer account; app review after 5 accounts | 
 Flagship of bundle 1
-| 3 |
-Recall checker |
-Reuses data feed; adds matching |
-Chrome Web Store review |
+| 3 | 
+Recall checker | 
+Reuses data feed; adds matching | 
+Chrome Web Store review | 
 Long store review
-| 4 |
-Co-op claims + street postcards |
-Reuses portal filer, Jobber; adds mail engine |
-Lob account; printer with post office drop |
+| 4 | 
+Co-op claims + street postcards | 
+Reuses portal filer, Jobber; adds mail engine | 
+Lob account; printer with post office drop | 
 Dealer year-end budgets in November
-| 5 |
-Freight claims |
-Reuses reader, deadlines; adds ShipStation connector |
-ShipStation partner access |
+| 5 | 
+Freight claims | 
+Reuses reader, deadlines; adds ShipStation connector | 
+ShipStation partner access | 
 New LTL shippers arriving now
-| 6 |
-FDA cosmetics tool |
-Reuses reader, rules checker; adds Shopify connector |
-Shopify Partner account and app review |
+| 6 | 
+FDA cosmetics tool | 
+Reuses reader, rules checker; adds Shopify connector | 
+Shopify Partner account and app review | 
 Review takes weeks
-| 7 |
-OSHA filing |
-Reuses mail engine, portal filer |
-None |
+| 7 | 
+OSHA filing | 
+Reuses mail engine, portal filer | 
+None | 
 Hard window Jan 2 – Mar 2
-| 8 |
-Property tax appeals |
-Reuses mail, reader, portal filer |
-Texas consultant registration if filing in Texas |
+| 8 | 
+Property tax appeals | 
+Reuses mail, reader, portal filer | 
+Texas consultant registration if filing in Texas | 
 County notice seasons
-| 9 |
-Utility audits, DIBBS, carpenter's goods |
-Mostly reuse |
-DIBBS: SAM.gov and CAGE registration |
+| 9 | 
+Utility audits, DIBBS, carpenter's goods | 
+Mostly reuse | 
+DIBBS: SAM.gov and CAGE registration | 
 Fill free worker time
-| Hold |
-Tariff estimator |
-Reuses reader, deadlines |
-Lawyer must approve first |
+| Hold | 
+Tariff estimator | 
+Reuses reader, deadlines | 
+Lawyer must approve first | 
 Window closing; build only if approved
 Venture index
 Index of all fourteen ventures. Prices are starting estimates; adjust from real conversion data.
-| Venture |
-Bundle |
-How customers find it |
-Price (est.) |
+| Venture | 
+Bundle | 
+How customers find it | 
+Price (est.) | 
 Status
-| Warranty registration |
-Contractor back office |
-Jobber app |
-$49–149 per shop/mo |
+| Warranty registration | 
+Contractor back office | 
+Jobber app | 
+$49–149 per shop/mo | 
 Flagship
-| Co-op claims |
-Contractor back office |
-Inside the Jobber app |
-15–25% of recovered funds |
+| Co-op claims | 
+Contractor back office | 
+Inside the Jobber app | 
+15–25% of recovered funds | 
 Folded into bundle
-| Street postcards |
-Contractor back office |
-Each card advertises the next |
-~$550 per ad spot |
+| Street postcards | 
+Contractor back office | 
+Each card advertises the next | 
+~$550 per ad spot | 
 Keep
-| OSHA filing |
-Contractor back office |
-January mail + Jobber |
-$49–199 per site/yr |
+| OSHA filing | 
+Contractor back office | 
+January mail + Jobber | 
+$49–199 per site/yr | 
 Folded into bundle
-| CPSC data prep |
-Import compliance desk |
-Customs broker portal |
-Flat monthly fee to brokers; $19–49 per batch direct |
+| CPSC data prep | 
+Import compliance desk | 
+Customs broker portal | 
+Flat monthly fee to brokers; $19–49 per batch direct | 
 Top opening
-| Freight claims |
-Import compliance desk |
-ShipStation app |
-20–30% of recovery |
+| Freight claims | 
+Import compliance desk | 
+ShipStation app | 
+20–30% of recovery | 
 New opening
-| Tariff estimator |
-Import compliance desk |
-Broker and law-firm tool |
-Flat fee |
+| Tariff estimator | 
+Import compliance desk | 
+Broker and law-firm tool | 
+Flat fee | 
 Reshaped, time-boxed
-| Recall checker |
-Government data layer |
-Chrome store + recall pages |
-$5–9/mo individuals, $29–79/mo stores, API usage |
+| Recall checker | 
+Government data layer | 
+Chrome store + recall pages | 
+$5–9/mo individuals, $29–79/mo stores, API usage | 
 Keep
-| Apify data tools |
-Government data layer |
-Apify Store + agent directories |
-Per use |
+| Apify data tools | 
+Government data layer | 
+Apify Store + agent directories | 
+Per use | 
 Keep
-| Property tax appeals |
-Public records to mail |
-Tax-notice postcards |
-Share of savings or flat packet fee |
+| Property tax appeals | 
+Public records to mail | 
+Tax-notice postcards | 
+Share of savings or flat packet fee | 
 Keep
-| FDA cosmetics tool |
-Standalone |
-Shopify App Store |
-Subscription |
+| FDA cosmetics tool | 
+Standalone | 
+Shopify App Store | 
+Subscription | 
 Keep
-| DIBBS supply |
-Standalone |
-Agency posts the orders |
-Margin on parts |
+| DIBBS supply | 
+Standalone | 
+Agency posts the orders | 
+Margin on parts | 
 Keep
-| Utility audits |
-Standalone |
-One-state calculator |
-Share of refunds |
+| Utility audits | 
+Standalone | 
+One-state calculator | 
+Share of refunds | 
 Narrowed
-| Carpenter's goods |
-Standalone |
-Etsy search |
-Commission |
+| Carpenter's goods | 
+Standalone | 
+Etsy search | 
+Commission | 
 Side project
 Spec: Warranty registration
 **Purpose.** HVAC brands only honor their longer parts warranty if each new unit is registered online within a set window: 60 days for Trane, Goodman, Daikin and Lennox, 90 for Carrier. Missing it usually cuts parts coverage from 10 years to 5. We register every install for the contractor, with their authorization, so homeowners keep full coverage.
@@ -413,17 +413,17 @@ Spec: Carpenter's goods
 **Billing.** Commission per sale, agreed in writing with him.
 Out of scope
 These were evaluated and cut. Build nothing for them unless this spec is updated.
-| Venture |
+| Venture | 
 Reason
-| Motel dynamic pricing |
+| Motel dynamic pricing | 
 Target motels have no software to sell through; modern ones already get pricing tools
-| Unclaimed property recovery |
+| Unclaimed property recovery | 
 State fee caps, licensing rules and free state search tools
-| Whop clipping |
+| Whop clipping | 
 About $1 per 1,000 views; account bans forfeit unpaid earnings
-| Truck dispatch |
+| Truck dispatch | 
 Load board terms ban bots; dispatching for many carriers counts as brokering
-| Restaurant delivery refunds |
+| Restaurant delivery refunds | 
 DoorDash forbids third parties filing disputes; market already full of AI tools
 Open questions and caveats
 Trade lawyer opinion on the flat-fee broker model (CPSC portal, tariff estimator)
