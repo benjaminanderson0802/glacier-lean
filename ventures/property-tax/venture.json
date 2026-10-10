@@ -45,9 +45,9 @@
   "your_steps": [
     {
       "id": "confirm-first-counties",
-      "title": "Confirm Cook County as the first launch county",
+      "title": "Keep launch disabled until Cook County rules are confirmed",
       "when": "Before enabling customer cases or mailing",
-      "detail": "Confirm Cook County, Illinois, as packet-only launch scope and ask counsel to confirm the current agent rules. The venture spec says Cook County needs an attorney; the Assessor's current appeal rules state that a party may file without an attorney or other agent. Resolve this difference before launch. See https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor and https://www.cookcountyassessoril.gov/residential-appeals.",
+      "detail": "Keep launch disabled. Confirm Cook County, Illinois, as packet-only launch scope and ask counsel to confirm the current agent rules. The venture spec says Cook County needs an attorney; the Assessor's current appeal rules state that a party may file without an attorney or other agent. Resolve this difference before launch. See https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor and https://www.cookcountyassessoril.gov/residential-appeals.",
       "links": [
         "https://www.cookcountyassessor.com/appeals"
       ]
