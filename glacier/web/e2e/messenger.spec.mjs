@@ -22,10 +22,12 @@ try {
   const stamp = '2026-10-09T15:14:00.000Z'
   const glacierId = 'glacier:conversation-1'
   const workerId = 'worker:team-1:build'
+  let malformedThreads = false
   let rows = [
     { id: glacierId, source: 'glacier', title: 'Weekly report', last_text: 'I can help plan that.', last_at: stamp, unread: true, can_send: true },
     { id: workerId, source: 'worker', title: 'Build the inbox · Team hub', last_text: 'I am checking the search flow.', last_at: stamp, unread: false, can_send: true },
     { id: 'opencode:session-1', source: 'opencode', title: 'Local model notes', last_text: 'Read-only mirrored session.', last_at: stamp, unread: false, can_send: false },
+    { id: 'codex:unavailable-session', source: 'codex', title: 'Unavailable Codex session', last_text: 'Earlier work.', last_at: stamp, unread: false, can_send: false, can_send_reason: 'Codex CLI is not installed' },
   ]
   const data = new Map([
     [glacierId, [
@@ -44,6 +46,7 @@ try {
   await page.route('**/api/messages/threads**', async route => {
     const request = route.request(), url = new URL(request.url())
     if (request.method() === 'GET' && url.pathname === '/api/messages/threads') {
+      if (malformedThreads) return route.fulfill({ json: { detail: 'unexpected response shape' } })
       const q = (url.searchParams.get('q') ?? '').toLowerCase()
       return route.fulfill({ json: rows.filter(row => `${row.title} ${row.last_text} ${row.source}`.toLowerCase().includes(q)) })
     }
@@ -74,6 +77,10 @@ try {
   await inbox.getByText('Weekly report').waitFor({ state: 'detached' })
   check(true, 'search filters threads')
   await inbox.getByLabel(/search/i).fill('')
+  await inbox.getByText('Unavailable Codex session').click()
+  await inbox.getByText('Codex CLI is not installed').waitFor({ state: 'visible' })
+  check(await inbox.getByRole('textbox', { name: /message/i }).count() === 0, 'an unavailable imported session shows its reason and has no composer')
+  await inbox.getByRole('button', { name: /back/i }).click()
   await inbox.getByText('Weekly report').click()
   await inbox.getByText('Can you help with the weekly report?').waitFor({ state: 'visible' })
   check(true, 'opening a thread shows message bubbles')
@@ -104,6 +111,13 @@ try {
   await inbox.locator('.messenger-log').getByText(/read-only/i).waitFor({ state: 'visible' })
   check(await inbox.getByRole('textbox', { name: /message/i }).count() === 0, 'read-only sessions explain why replies are disabled')
   await inbox.getByRole('button', { name: /back/i }).click()
+  malformedThreads = true
+  await inbox.getByLabel(/search/i).fill('malformed response')
+  await inbox.getByText(/could not load conversations/i).waitFor({ state: 'visible' })
+  check(await inbox.locator('.messenger-error').isVisible(), 'a non-list threads response leaves the messenger usable')
+  malformedThreads = false
+  await inbox.getByLabel(/search/i).fill('')
+  await inbox.getByText('Weekly report').waitFor({ state: 'visible' })
   await inbox.getByText('Weekly report').click()
   check(!!liveSocket, 'events WebSocket is connected to the mock')
   await page.waitForTimeout(150)

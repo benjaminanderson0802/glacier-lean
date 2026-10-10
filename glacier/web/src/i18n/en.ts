@@ -742,6 +742,7 @@ export const en: Record<string, string> = {
   'messenger.search': 'Search messages',
   'messenger.threads': 'Conversations',
   'messenger.noThreads': 'No conversations found.',
+  'messenger.invalidThreads': 'Could not load conversations. Try again in a moment.',
   'messenger.unread': 'Unread',
   'messenger.back': 'Back to conversations',
   'messenger.chooseSource': 'Choose who to message',

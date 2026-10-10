@@ -46,7 +46,16 @@ export function Messenger() {
   }, [])
 
   const refreshThreads = useCallback(async (q = query) => {
-    try { setThreads(await messagesApi.threads(q)); setError('') }
+    try {
+      const result = await messagesApi.threads(q)
+      if (!Array.isArray(result)) {
+        setThreads([])
+        setError(t('messenger.invalidThreads'))
+        return
+      }
+      setThreads(result)
+      setError('')
+    }
     catch (e) { setError(String(e)) }
   }, [query])
 
@@ -120,7 +129,15 @@ export function Messenger() {
       if (result.message.from === 'me') setMessages(current => [...current.filter(item => item.id !== optimistic.id && item.id !== result.message.id), result.message].sort((a, b) => a.at.localeCompare(b.at)))
       else mergeMessage(result.message)
       setThreads(rows => rows.map(row => row.id === active.id ? { ...row, last_text: result.message.text, last_at: result.message.at } : row).sort((a, b) => b.last_at.localeCompare(a.last_at)))
-    } catch (e) { setError(String(e)); setDraft(text); setMessages(current => current.filter(item => item.id !== optimistic.id)) }
+    } catch (e) {
+      setError(String(e)); setDraft(text); setMessages(current => current.filter(item => item.id !== optimistic.id))
+      if (active.source === 'codex' || active.source === 'claude') {
+        try {
+          const rows = await messagesApi.threads(query)
+          if (Array.isArray(rows)) { setThreads(rows); setError('') }
+        } catch { /* keep the send error visible if the list also failed */ }
+      }
+    }
     finally { setSending(false) }
   }
 
@@ -188,7 +205,7 @@ export function Messenger() {
       {error && <div className="messenger-error" role="alert">{error}</div>}
       {active?.can_send
         ? <form className="messenger-composer" onSubmit={event => { event.preventDefault(); void send() }}><textarea aria-label={t('messenger.message')} value={draft} onChange={event => setDraft(event.target.value)} placeholder={t('messenger.message')} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() } }} /><button type="submit" className="messenger-send" disabled={!draft.trim() || sending} aria-label={sending ? t('messenger.sending') : t('messenger.send')}>{sending ? '…' : '➤'}</button></form>
-        : <div className="messenger-readonly">{t('messenger.readOnly', { source: active?.source ?? '' })}</div>}
+        : <div className="messenger-readonly">{active?.can_send_reason || t('messenger.readOnly', { source: active?.source ?? '' })}</div>}
     </>}
   </div>
 }

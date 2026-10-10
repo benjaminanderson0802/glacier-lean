@@ -801,6 +801,7 @@ export const es: Record<string, string> = {
   'messenger.search': 'Buscar mensajes',
   'messenger.threads': 'Conversaciones',
   'messenger.noThreads': 'No se encontraron conversaciones.',
+  'messenger.invalidThreads': 'No se pudieron cargar las conversaciones. Inténtalo de nuevo en un momento.',
   'messenger.unread': 'Sin leer',
   'messenger.back': 'Volver a conversaciones',
   'messenger.chooseSource': 'Elige con quién hablar',

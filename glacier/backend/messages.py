@@ -19,6 +19,7 @@ import vault
 PAGE_SIZE = 50
 MAX_TEXT = 20_000
 _SOURCE_PREFIX = {"opencode": "opencode:", "claude": "claude-code:", "gemini": "gemini:"}
+_UNRESUMABLE_SESSIONS: dict[tuple[str, str], str] = {}
 
 
 def now() -> str:
@@ -111,10 +112,15 @@ def _session_rows(query: str) -> list[dict]:
         if terms and not all(term in searchable for term in terms):
             # Detail is read only for a matching title; avoid loading every transcript on search.
             continue
-        can_send = source == "codex" and _codex_available() or source == "claude" and _claude_available()
+        binary_available = ((source == "codex" and _codex_available())
+                            or (source == "claude" and _claude_available()))
+        reason = _UNRESUMABLE_SESSIONS.get((source, session_id))
+        if not binary_available:
+            reason = f"{source.title()} CLI is not installed"
+        can_send = binary_available and reason is None
         result.append({"id": session_id, "source": source, "title": title,
                        "last_text": last_text, "last_at": _timestamp(row.get("updated")),
-                       "unread": False, "can_send": bool(can_send)})
+                       "unread": False, "can_send": bool(can_send), "can_send_reason": reason or ""})
     return result
 
 
@@ -283,25 +289,36 @@ def send_session(thread_id: str, source: str, text: str) -> dict:
     binary = _cli_binary(source)
     if not (shutil.which(binary) or os.path.isfile(binary) and os.access(binary, os.X_OK)):
         raise FileNotFoundError(f"{source.title()} CLI is not installed")
+    reason = _UNRESUMABLE_SESSIONS.get((source, thread_id))
+    if reason:
+        raise PermissionError(reason)
     raw_id = _raw_session_id(thread_id, source)
     if source == "claude":
         # Claude ids in the mirror are prefixed with claude-code:; resume takes the native session id.
         raw_id = raw_id.removeprefix("claude-code:")
         args = [binary, "--resume", raw_id, "-p", text]
     else:
-        args = [binary, "exec", "resume", raw_id, text]
+        # Imported Codex sessions can have a different cwd from the running backend.
+        # --all keeps explicit session resume from depending on the backend's cwd.
+        args = [binary, "exec", "resume", "--all", raw_id, text]
     owner_message = _message(f"{thread_id}:{uuid.uuid4()}", "me", "you", text, now())
     store.broadcaster.publish({"type": "messages.thread_message", "thread_id": thread_id, "message": owner_message})
     completed = subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True,
                                encoding="utf-8", errors="replace", timeout=600, check=False)
     if completed.returncode:
-        raise RuntimeError("The coding assistant could not continue this session.")
+        reason = f"This {source.title()} session cannot be continued. Start a new chat instead."
+        _UNRESUMABLE_SESSIONS[(source, thread_id)] = reason
+        raise SessionResumeError(reason)
     reply = _safe(completed.stdout.strip())
     if not reply:
         reply = "The session continued without a text reply."
     message = _message(f"{thread_id}:{uuid.uuid4()}", "them", source.title(), reply, now())
     store.broadcaster.publish({"type": "messages.thread_message", "thread_id": thread_id, "message": message})
     return message
+
+
+class SessionResumeError(RuntimeError):
+    """A known local session was rejected by its official CLI during resume."""
 
 
 def create_session(source: str, text: str) -> tuple[dict, str]:

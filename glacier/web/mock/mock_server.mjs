@@ -68,6 +68,7 @@ const conversations = new Map()  // id -> { title, messages: [{ who, text, at }]
 const messageSessionRows = [
   { id: 'codex:mock-codex-session', source: 'codex', title: 'Review the parser', last_text: 'The parser handles empty input.', last_at: '2026-10-08T12:00:00.000Z', unread: false, can_send: true },
   { id: 'claude-code:mock-claude-session', source: 'claude', title: 'Plan a refactor', last_text: 'I found two small changes.', last_at: '2026-10-08T11:00:00.000Z', unread: false, can_send: true },
+  { id: 'codex:mock-codex-unavailable', source: 'codex', title: 'Unavailable Codex session', last_text: 'Earlier work.', last_at: '2026-10-08T10:30:00.000Z', unread: false, can_send: false, can_send_reason: 'Codex CLI is not installed' },
   { id: 'opencode:mock-opencode-session', source: 'opencode', title: 'Local model notes', last_text: 'Read-only mirrored session.', last_at: '2026-10-08T10:00:00.000Z', unread: false, can_send: false },
   { id: 'gemini:mock-gemini-session', source: 'gemini', title: 'Research notes', last_text: 'Read-only mirrored session.', last_at: '2026-10-08T09:00:00.000Z', unread: false, can_send: false },
 ]
@@ -371,7 +372,7 @@ const server = http.createServer(async (req, res) => {
       }
       const session = messageSessionRows.find(row => row.id === id)
       if (!session) return send(404, { detail: 'Conversation not found' })
-      if (!session.can_send) return send(403, { detail: 'This conversation is read-only' })
+      if (!session.can_send) return send(403, { detail: session.can_send_reason || 'This conversation is read-only' })
       const message = { id: `${id}:${crypto.randomUUID()}`, from: 'them', author: session.source, text: `${session.source} reply: ${body.text}`, at, kind: 'text' }
       messageHistory.set(id, [message, ...(messageHistory.get(id) ?? [])])
       session.last_text = message.text; session.last_at = at

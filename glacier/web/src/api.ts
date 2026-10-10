@@ -108,7 +108,7 @@ export const api = {
 export type MessageSource = 'glacier' | 'codex' | 'claude' | 'opencode' | 'gemini' | 'worker'
 export interface MessageThread {
   id: string; source: MessageSource; title: string; last_text: string; last_at: string
-  unread: boolean; can_send: boolean
+  unread: boolean; can_send: boolean; can_send_reason?: string
 }
 export interface ThreadMessage {
   id: string; from: 'me' | 'them' | 'system'; author: string; text: string; at: string
