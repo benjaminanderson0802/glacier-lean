@@ -220,7 +220,9 @@ def _ui_change_schema() -> dict:
             "properties": {"reply": {"type": "string"}, "automation": {"type": "boolean"},
                            "ui_change": {"type": "object", "additionalProperties": False,
                                "required": ["explanation", "diff", "related_spec"],
-                               "properties": {"explanation": {"type": "string"}, "diff": {"type": "string"},
+                               "properties": {"explanation": {"type": "string"},
+                                              "diff": {"type": "string", "minLength": 1,
+                                                       "maxLength": ui_change.MAX_DIFF_CHARS},
                                               "related_spec": {"type": "string"}}}}}
 
 
@@ -744,7 +746,7 @@ def _is_automation(message: str, model_answer: dict) -> bool:
     # The schema decision is model-led; common plain-language asks are also routed safely to planning.
     text = message.lower()
     return model_answer["automation"] or any(phrase in text for phrase in
-        ("make me", "create an automation", "automate", "every day", "daily ", "each day", "every week", "weekly "))
+        ("make me", "create an automation", "automate", "every day", "every morning", "daily ", "each day", "every week", "weekly "))
 
 
 def _conversation_path(conversation_id: str) -> str:
@@ -970,7 +972,9 @@ def chat(request: ChatRequest):
                 prompt += f"\n\nOpening reply: offer the relevant help for the owner's current screen ({request.screen}) and focus ({request.focus or 'the main view'})."
             ui_request = _ui_change_requested(request.message)
             if ui_request:
-                prompt += "\n\nThe owner asked to change Glacier's own UI. Create a review-only proposal as a unified diff limited to glacier/web/src. Explain it plainly and choose the most relevant existing e2e spec under glacier/web/e2e. Never apply it."
+                prompt += ("\n\nThe owner asked to change Glacier's own UI. Create a review-only proposal as a minimal, focused unified diff "
+                           "limited to glacier/web/src. Do not include full files or unrelated changes; keep the diff under 20,000 "
+                           "characters. Explain it plainly and choose the most relevant existing e2e spec under glacier/web/e2e. Never apply it.")
                 answer = _ask_engine(prompt, route, schema=_ui_change_schema())
             else:
                 answer = _ask(prompt, route)
@@ -1039,7 +1043,7 @@ def chat(request: ChatRequest):
         except Exception as error:
             logging.getLogger(__name__).exception("Assistant chat failed")
             local_automation = route == "local" and (automation or any(phrase in request.message.lower() for phrase in
-                ("make me", "create an automation", "automate", "every day", "daily ", "each day", "every week", "weekly ")))
+                ("make me", "create an automation", "automate", "every day", "every morning", "daily ", "each day", "every week", "weekly ")))
             message = (str(error) if isinstance(error, RuntimeError) and "is not installed" in str(error) else
                        "I could not turn that into an automation. Try rephrasing your request." if local_automation else
                        "Neither Codex nor a local model is available. Install Ollama with a model or sign in to Codex." if isinstance(error, (FileNotFoundError, ConnectionError, urllib.error.URLError)) else
