@@ -44,6 +44,7 @@ def test_sending_email_requires_an_approval_result_and_uses_saved_secret(tmp_pat
         def __init__(self, host, port, timeout): sent.append(("connect", host, port, timeout))
         def __enter__(self): return self
         def __exit__(self, *args): pass
+        def ehlo(self): sent.append(("ehlo",))
         def starttls(self, context): sent.append(("tls",))
         def login(self, user, password): sent.append(("login", user, password))
         def send_message(self, message): sent.append(("send", message["To"], message["Subject"]))
