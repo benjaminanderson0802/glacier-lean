@@ -5,6 +5,7 @@ import { t } from '../i18n/index.ts'
 
 export function YourStep({ item, onDone }: { item: HomeItem; onDone: () => void }) {
   const [value, setValue] = useState('')
+  const [openedLink, setOpenedLink] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const links = [...new Set([...(item.links ?? []), ...(item.detail.match(/https?:\/\/[^\s<>()]+/g) ?? [])])]
@@ -23,7 +24,8 @@ export function YourStep({ item, onDone }: { item: HomeItem; onDone: () => void 
   }
   return <div className="venture-step" data-testid={`your-step-${item.ref.step_id ?? item.ref.run_id ?? 'setup'}`}>
     <div className="venture-step-copy"><strong>{item.title}</strong><p>{item.instructions || item.detail}</p>
-      {links.map(link => <a key={link} href={link} target="_blank" rel="noopener noreferrer">{link}</a>)}
+      {links.map(link => <a key={link} href={link} target="_blank" rel="noopener noreferrer" onClick={() => setOpenedLink(true)}>{link}</a>)}
+      {openedLink && <span aria-live="polite">{t('ventures.linkOpened')}</span>}
     </div>
     {item.secret_name && <label className="venture-secret-field">{t('ventures.pasteKey')}
       <input className="g-input" type="password" autoComplete="new-password" value={value} onChange={event => setValue(event.target.value)} aria-label={t('ventures.pasteKey')} data-testid={`venture-secret-${item.secret_name}`} />

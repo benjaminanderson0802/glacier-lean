@@ -782,5 +782,6 @@ export const en: Record<string, string> = {
   'ventures.saving': 'saving…',
   'ventures.stepsWaiting': '{count} steps need you',
   'ventures.noSteps': 'no steps need you right now.',
+  'ventures.linkOpened': 'opened in a new tab.',
   'ventures.stepProgress': '{done} of {total} steps done',
 }

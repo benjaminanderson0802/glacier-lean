@@ -841,5 +841,6 @@ export const es: Record<string, string> = {
   'ventures.saving': 'guardando…',
   'ventures.stepsWaiting': '{count} pasos te esperan',
   'ventures.noSteps': 'no hay pasos pendientes ahora.',
+  'ventures.linkOpened': 'abierto en una pestaña nueva.',
   'ventures.stepProgress': '{done} de {total} pasos listos',
 }
