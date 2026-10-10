@@ -1,0 +1,18 @@
+{
+  "actorSpecification": 1,
+  "name": "mississippi-contractor-license-status",
+  "title": "Mississippi Contractor License Status",
+  "description": "Look up public contractor license status and expiration from the Mississippi State Board of Contractors.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "dockerfile": "./Dockerfile",
+  "input": "./input_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "defaultRunOptions": {
+    "memoryMbytes": 256,
+    "timeoutSecs": 300,
+    "build": "latest"
+  }
+}

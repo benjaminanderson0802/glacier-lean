@@ -1,0 +1,46 @@
+{
+  "title": "Mississippi Contractor License Status",
+  "description": "Check public contractor license records from the Mississippi State Board of Contractors.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "license_number": {
+      "title": "License number",
+      "type": "string",
+      "description": "Mississippi contractor license number (digits only). Use this or Business name for one lookup.",
+      "editor": "textfield",
+      "maxLength": 120
+    },
+    "name": {
+      "title": "Business name",
+      "type": "string",
+      "description": "Search for a business-name substring in Mississippi State Board of Contractors records.",
+      "editor": "textfield",
+      "maxLength": 120
+    },
+    "max_results": {
+      "title": "Maximum name matches",
+      "type": "integer",
+      "description": "Maximum records returned for a business-name search; capped at 10.",
+      "default": 1,
+      "minimum": 1,
+      "maximum": 10
+    },
+    "queries": {
+      "title": "Batch lookups",
+      "type": "array",
+      "description": "Optional batch of up to 100 license_number or name search objects. Each source request is rate-limited and billed as one lookup.",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "license_number": {"type": "string", "maxLength": 120},
+          "name": {"type": "string", "maxLength": 120},
+          "max_results": {"type": "integer", "default": 1, "minimum": 1, "maximum": 10}
+        }
+      }
+    }
+  },
+  "description": "Provide either one license_number or name, or a non-empty queries batch (maximum 100). Each lookup costs $0.02 after Store publication; source outages are not charged. The board cautions its public results may change after publication; verify directly before relying on a record.",
+  "editor": "json"
+}

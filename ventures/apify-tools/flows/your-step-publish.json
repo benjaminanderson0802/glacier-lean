@@ -1,0 +1,11 @@
+{
+  "id": "apify-ms-license-your-step-publish",
+  "name": "Your step: Publish the Mississippi license Actor",
+  "description": "Owner-only publication gate. The Actor is prepared; account and payout setup, deployment, and the first Store publication stay with the owner.",
+  "goal": "Show the owner the exact Store listing and price to review before the first Apify Store publication.",
+  "nodes": [
+    {"id": "owner_publish", "type": "approval", "config": {"prompt": "Your step: Review ventures/apify-tools/store_listing.md, set the license-lookup pay-per-event price to $0.02 with platform usage included and a $2.00 run limit, disable Apify's automatic apify-default-dataset-item event, then publish the first Mississippi Contractor License Status Actor in Apify Console. This is the first publish and requires your approval."}, "position": {"x": 0, "y": 0}}
+  ],
+  "edges": [],
+  "max_steps": 3
+}

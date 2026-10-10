@@ -1,0 +1,45 @@
+{
+  "slug": "apify-tools",
+  "name": "Apify data tools — Mississippi Contractor License Status",
+  "purpose": "Sell a source-linked, pay-per-use check of Mississippi contractor license status and expiration using the Mississippi State Board of Contractors public lookup.",
+  "source_id": "ms_msboc_contractor_licenses",
+  "source_url": "https://search.msboc.us/ConsolidatedSearch.cfm",
+  "flows": [
+    "flows/daily-canary.json",
+    "flows/your-step-publish.json"
+  ],
+  "schedules": [
+    {"flow": "apify-ms-license-daily-canary", "cron": "0 9 * * *", "timezone": "UTC"}
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "title": "Your step: Set up Apify developer and payout details",
+      "url": "https://console.apify.com/account/integrations",
+      "instruction": "Complete the developer account, identity, and payout setup in your own account."
+    },
+    {
+      "title": "Your step: Deploy the Actor",
+      "command": "cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify login && npm exec --yes --package=apify-cli@1.10.0 -- apify push",
+      "instruction": "After creating the account and setting up payout details, paste this once from the repository root; the pinned CLI prompts you to log in and then deploys the Actor."
+    },
+    {
+      "title": "Your step: Publish the first Actor",
+      "url": "https://console.apify.com/actors",
+      "instruction": "Use store_listing.md, set $0.02 per lookup with platform usage included and a $2.00 run limit, then publish."
+    }
+  ],
+  "pricing": {
+    "model": "pay_per_event",
+    "event": "license-lookup",
+    "price_usd": 0.02,
+    "run_limit_usd": 2.0,
+    "platform_usage_included": true
+  },
+  "maintenance": {
+    "canary_count": 3,
+    "canary_interval": "daily",
+    "max_repair_attempts": 2,
+    "failure_action": "mark-under-maintenance-and-alert"
+  }
+}
