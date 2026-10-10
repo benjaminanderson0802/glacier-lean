@@ -369,7 +369,7 @@ phases:
       - {id: PH12.7, item: "Shared block: mail/acquisition engine + portal filer", status: todo, evidence: ""}
       - {id: PH12.8, item: "Shared block: platform connectors (Jobber, ShipStation, Shopify, Apify)", status: todo, evidence: ""}
       - {id: PH12.9, item: "Venture: CPSC data prep", status: todo, evidence: ""}
-      - {id: PH12.10, item: "Venture: Apify data tools", status: in_progress, evidence: "evidence/ventures/apify-tools/live-canaries.json"}
+      - {id: PH12.10, item: "Venture: Apify data tools", status: in_progress, evidence: "ventures/apify-tools/PROOF.md; evidence/ventures/apify-tools/glacier-live-run.json; evidence/ventures/apify-tools/glacier-live.png; evidence/ventures/apify-tools/glacier-live-note.md"}
       - {id: PH12.11, item: "Venture: Warranty registration", status: todo, evidence: ""}
       - {id: PH12.12, item: "Venture: Recall checker", status: todo, evidence: ""}
       - {id: PH12.13, item: "Venture: Co-op claims + street postcards", status: todo, evidence: ""}

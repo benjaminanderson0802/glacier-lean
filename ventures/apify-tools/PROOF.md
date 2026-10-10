@@ -41,7 +41,15 @@ Result: exit code `0`; Apify SDK `4.1.0`; output dataset record matched `10TENCO
 
 ## Glacier dry-run
 
-Pending: install the two flows with `ventures/install_all.py --only apify-tools`, run `apify-ms-license-daily-canary` against a real Glacier backend, and save the verified run JSON and screen capture under `evidence/ventures/apify-tools/`.
+The real Glacier session started under `flock /tmp/glacier-heavy.lock bash -lc 'cd glacier/web && npm run live'` printed API `http://127.0.0.1:38841`, UI `http://127.0.0.1:39729`, and disposable home `/tmp/glacier-live-sWSWHp`. Commands:
+
+```sh
+GLACIER_HOME=/tmp/glacier-live-sWSWHp GLACIER_API=http://127.0.0.1:38841/api \
+  /home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only apify-tools
+POST http://127.0.0.1:38841/api/environments/apify-ms-license-daily-canary/run
+```
+
+The POST returned `{"run_id":"26c2afcecb34"}`. The run finished `done`, `verified: true`; nodes `daily`, `canaries`, `canary_result`, and `status_note` all finished. The acceptance command passed; the source canary state was `healthy`, `failed_license_numbers: []`, and all three recorded records matched. Run JSON, live canary JSON, and the note written into the disposable Glacier vault are saved in [glacier-live-run.json](/home/glacier/w/workers/gf-V-APIFY/evidence/ventures/apify-tools/glacier-live-run.json), [glacier-live-canaries.json](/home/glacier/w/workers/gf-V-APIFY/evidence/ventures/apify-tools/glacier-live-canaries.json), and [glacier-live-note.md](/home/glacier/w/workers/gf-V-APIFY/evidence/ventures/apify-tools/glacier-live-note.md). [glacier-live.png](/home/glacier/w/workers/gf-V-APIFY/evidence/ventures/apify-tools/glacier-live.png) captures the real screen showing the completed run and passed checks.
 
 ## Owner steps
 
