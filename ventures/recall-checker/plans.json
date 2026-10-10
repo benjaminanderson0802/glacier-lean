@@ -1,0 +1,10 @@
+{
+  "currency": "USD",
+  "billing_provider": "customer block checkout_link; Stripe test mode only until the owner configures it",
+  "plans": [
+    {"id": "individual-monthly", "audience": "individual reseller", "amount_range": [5, 9], "interval": "month", "status": "owner-configures-test-price"},
+    {"id": "store-monthly", "audience": "thrift or consignment store", "amount_range": [29, 79], "interval": "month", "status": "owner-configures-test-price"},
+    {"id": "api-metered", "audience": "scanner or consignment app", "amount_range": null, "interval": "metered", "status": "owner-sets-price-before-offering"},
+    {"id": "free-single-lookups", "audience": "individual reseller", "amount": 0, "interval": "ongoing", "status": "included"}
+  ]
+}
