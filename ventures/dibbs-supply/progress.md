@@ -1,0 +1,7 @@
+# Progress — DIBBS government supply
+
+PH12.19 has a test-first local preparation path for DLA public solicitation discovery and owner-supplied verified solicitation details and supplier quotes. It filters closed/restricted, expired and electronic solicitations; requires exact solicitation and part matches, manufacturer/authorized-distributor evidence, a solicitation-specific output schema, and on-file traceability evidence; computes and ranks margins, prepares prefilled quote-request messages to verified manufacturer/distributor contacts, and writes local quote drafts. Missing or unsupported inputs remain uncertain. The shared `feeds` block is imported without modification.
+
+Focused acceptance tests pass (11 passed), the installer dry run validates both registered flows, and the Venture Build Spec source was reviewed against the existing repo copy. The real `dla_dibbs` sync returned zero rows because the official landing and RFQ paths redirect to the DIBBS DoD warning/consent page. No consent, login or account access was attempted. Existing blocker `CLM-2026-10-10-B2-DIBBS-PUBLIC-FEED` records the same finding and requests an approved public source/access decision. A heavy-wrapped real Glacier flow run remains pending shared heavy-job capacity.
+
+PH12.19 remains in progress until public solicitation data can be verified and the main flow is installed and run in real Glacier with evidence.
