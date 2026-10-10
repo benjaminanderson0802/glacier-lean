@@ -48,6 +48,9 @@ def _connect(path: Path | None = None) -> sqlite3.Connection:
         row_count INTEGER NOT NULL, digest TEXT NOT NULL, status TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS feed_schemas (
         source_id TEXT PRIMARY KEY, fields TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS feed_progress (
+        source_id TEXT PRIMARY KEY, tax_year TEXT NOT NULL, source_total INTEGER NOT NULL,
+        next_offset INTEGER NOT NULL, row_count INTEGER NOT NULL, fetched_at TEXT NOT NULL);
     """)
     return con
 
@@ -198,7 +201,7 @@ def _socrata(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None]:
 
 
 def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, Any]:
-    """Stream the countywide current-year roll through SQLite without holding it in RAM."""
+    """Resume the latest-year roll in bounded pages; publish only a complete snapshot."""
     max_rows, _ = _json_rows(config["url"] + "?$select=max(year)", timeout=120)
     year = str(max_rows[0].get("max_year", "")).removesuffix(".0")
     if not year:
@@ -214,12 +217,19 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
     target = database_path()
     with _connect(target) as con:
         con.execute("CREATE TABLE IF NOT EXISTS feed_stage (source_id TEXT NOT NULL, record_id TEXT NOT NULL, record_date TEXT, fetched_at TEXT NOT NULL, source_url TEXT NOT NULL, payload TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(source_id, record_id))")
-        con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+        progress = con.execute("SELECT tax_year,source_total,next_offset,row_count,fetched_at FROM feed_progress WHERE source_id=?", (source_id,)).fetchone()
+        if progress is None or progress[0] != year or progress[1] != total:
+            con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+            con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
+            offset, staged_count, fetched_at = 0, 0, fetched_at
+        else:
+            offset, staged_count, fetched_at = progress[2], progress[3], progress[4]
     alerts: list[str] = []
-    count = 0
-    content_hash = hashlib.sha256()
-    while count < total:
-        url = source_url + "&$order=pin&$limit=50000&$offset=" + str(count)
+    page_size = max(1, min(int(config.get("page_size", 10000)), 50000))
+    max_pages = max(1, int(config.get("max_pages_per_sync", 5)))
+    pages = 0
+    while offset < total and pages < max_pages:
+        url = source_url + "&$order=pin&$limit=" + str(page_size) + "&$offset=" + str(offset)
         chunk, _ = _json_rows(url, timeout=120)
         if not chunk:
             break
@@ -228,26 +238,37 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
         inserts = []
         for row in rows:
             digest = hashlib.sha256(json.dumps(row["data"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-            content_hash.update(digest.encode())
             inserts.append((row["source_id"], row["record_id"], row["record_date"], row["fetched_at"], row["source_url"], json.dumps(row["data"], ensure_ascii=False), digest))
         with _connect(target) as con:
             con.executemany("INSERT OR REPLACE INTO feed_stage(source_id,record_id,record_date,fetched_at,source_url,payload,digest) VALUES(?,?,?,?,?,?,?)", inserts)
-        count += len(rows)
-    if abs(count - total) / total > 0.01:
-        alerts.append(f"Row-count alert: downloaded {count} of {total} Cook County rows for tax year {year}")
-    if count == 0:
+            offset += len(chunk)
+            staged_count += len(rows)
+            con.execute("INSERT INTO feed_progress(source_id,tax_year,source_total,next_offset,row_count,fetched_at) VALUES(?,?,?,?,?,?) ON CONFLICT(source_id) DO UPDATE SET tax_year=excluded.tax_year,source_total=excluded.source_total,next_offset=excluded.next_offset,row_count=excluded.row_count,fetched_at=excluded.fetched_at", (source_id, year, total, offset, staged_count, fetched_at))
+            con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'in_progress') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,status='in_progress'", (source_id, fetched_at, total, offset, ""))
+        pages += 1
+    if staged_count == 0:
         raise ValueError("Cook County Assessor download returned no rows; existing snapshot retained")
-    if not any(r for r in rows if r.get("record_id")):
+    complete = offset >= total
+    if not complete:
+        alerts.append(f"Sync progress: staged {offset} of {total} Cook County rows for tax year {year}; the next run will continue from row {offset}. The previous complete snapshot remains active.")
+        return {"rows": staged_count, "changed": False, "complete": False,
+                "progress": {"downloaded": offset, "total": total, "tax_year": year}, "alerts": alerts}
+    if abs(staged_count - total) / total > 0.01:
+        alerts.append(f"Row-count alert: normalized {staged_count} of {total} Cook County rows for tax year {year}")
+    with _connect(target) as con:
+        staged = con.execute("SELECT record_id,digest FROM feed_stage WHERE source_id=? ORDER BY record_id", (source_id,)).fetchall()
+    if not any(row[0] for row in staged):
         alerts.append("Canary alert: Cook County parcel identifiers did not parse")
-    digest = content_hash.hexdigest()
+    digest = hashlib.sha256("\n".join(sorted(row[1] for row in staged)).encode()).hexdigest()
     with _connect(target) as con:
         previous = con.execute("SELECT digest FROM feed_syncs WHERE source_id=?", (source_id,)).fetchone()
         changed = previous is None or previous[0] != digest
         con.execute("DELETE FROM feed_rows WHERE source_id=?", (source_id,))
         con.execute("INSERT INTO feed_rows SELECT source_id,record_id,record_date,fetched_at,source_url,payload,digest FROM feed_stage WHERE source_id=?", (source_id,))
         con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
-        con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,digest=excluded.digest,status='ok'", (source_id, fetched_at, total, count, digest))
-    return {"rows": count, "changed": bool(changed), "alerts": alerts}
+        con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
+        con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,digest=excluded.digest,status='ok'", (source_id, fetched_at, total, staged_count, digest))
+    return {"rows": staged_count, "changed": bool(changed), "complete": True, "alerts": alerts}
 
 
 def _nhtsa(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
@@ -282,6 +303,9 @@ def _nhtsa_columns(dictionary: str) -> list[str]:
 def _dibbs(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, list[str]]:
     # Public browse/search endpoint; do not submit bids or access authenticated data.
     raw = _request(config["url"]).decode("utf-8", "replace")
+    page_text = re.sub(r"\s+", " ", raw).casefold()
+    if "warning" in page_text and ("consent" in page_text or "dod" in page_text):
+        raise ValueError("DIBBS public source redirected to the DoD warning/consent page; no public solicitation feed is available without user acknowledgement. No acknowledgement or login was attempted. An owner must verify the official solicitation at https://www.dibbs.bsm.dla.mil/ and enter its exact link and details in the venture's local solicitations.json intake.")
     parser = _Links()
     parser.feed(raw)
     rows = []

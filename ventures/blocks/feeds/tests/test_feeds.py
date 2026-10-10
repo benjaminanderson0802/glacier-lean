@@ -132,3 +132,55 @@ def test_daily_flow_syncs_every_registered_source():
     assert any(node["type"] == "schedule" and node["config"].get("cron") == "0 2 * * *" for node in flow["nodes"])
     commands = "\n".join(node.get("config", {}).get("cmd", "") for node in flow["nodes"])
     assert "sync-all" in commands
+
+
+def test_socrata_sync_resumes_in_bounded_pages_and_keeps_progress_visible(tmp_path, monkeypatch):
+    from ventures.blocks.feeds import core
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    old_rows = [{"source_id": "fixture_roll", "record_id": "old", "record_date": "2024-01-01",
+                 "fetched_at": "2024-01-01T00:00:00Z", "source_url": "https://example.test/old",
+                 "data": {"pin": "old", "year": "2024", "class": "2-11"}}]
+    core.store_snapshot("fixture_roll", old_rows, source_total=1)
+    calls = []
+
+    def fake_json_rows(url, timeout=45):
+        calls.append(url)
+        if "$select=max(year)" in url:
+            return ([{"max_year": "2025"}], None)
+        if "$select=count(*)" in url:
+            return ([{"count": "5"}], None)
+        offset = int(url.rsplit("$offset=", 1)[1])
+        return ([{"pin": str(i), "year": "2025", "class": "2-11"}
+                 for i in range(offset, min(offset + 2, 5))], None)
+
+    monkeypatch.setattr(core, "_json_rows", fake_json_rows)
+    config = {"url": "https://example.test/roll", "selected_fields": ["pin", "year", "class"],
+              "id_fields": ["pin"], "date_fields": ["year"], "expected_fields": ["pin"],
+              "canary": {"field": "pin"}, "page_size": 2, "max_pages_per_sync": 1}
+
+    first = core._sync_socrata_stream("fixture_roll", config)
+    assert first["complete"] is False
+    assert first["progress"] == {"downloaded": 2, "total": 5, "tax_year": "2025"}
+    assert "progress" in " ".join(first["alerts"]).lower()
+    assert [row["record_id"] for row in core.query("fixture_roll")] == ["old"]
+
+    config["max_pages_per_sync"] = 2
+    second = core._sync_socrata_stream("fixture_roll", config)
+    assert second["complete"] is True
+    assert second["rows"] == 5
+    assert len(core.query("fixture_roll")) == 5
+    assert "old" not in [row["record_id"] for row in core.query("fixture_roll")]
+    assert len([url for url in calls if "$offset=" in url]) == 3
+
+
+def test_dibbs_warning_redirect_is_reported_with_manual_intake_instructions(tmp_path, monkeypatch):
+    from ventures.blocks.feeds import core
+
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.setattr(core, "registry", lambda: {"fixture_dibbs": {"kind": "dibbs_html", "url": "https://www.dibbs.bsm.dla.mil/Solicitations/"}})
+    monkeypatch.setattr(core, "_request", lambda url: b"<html><title>DoD Warning and Consent Banner</title><body>warning consent</body></html>")
+    result = core.sync("fixture_dibbs")
+    message = " ".join(result["alerts"]).lower()
+    assert result["rows"] == 0
+    assert "warning" in message and "owner" in message and "official solicitation" in message
