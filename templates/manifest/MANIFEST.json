@@ -45,6 +45,28 @@
       "reviewed_on": "2026-10-07"
     },
     {
+      "id": "tpl-email-inbox-note",
+      "file": "tpl-email-inbox-note.json",
+      "name": "Save new emails as notes",
+      "description": "Checks an IMAP mailbox for new matching email and saves each message on this computer.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "66abf0cf6041236daadc5b4d30ede01cb24adba9e80f66dc714c4e8d3bf02270",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-email-search-note",
+      "file": "tpl-email-search-note.json",
+      "name": "Search email and save the results",
+      "description": "Searches an IMAP mailbox on demand and saves matching message summaries in local memory.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "ec255721a0d6de3e1a4fb82ca3a21d91094f783eab477a3024e5fce0315a2ec7",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
       "id": "tpl-explain-error",
       "file": "tpl-explain-error.json",
       "name": "Explain an error",
@@ -85,6 +107,28 @@
       "author": "Glacier",
       "license": "Apache-2.0",
       "sha256": "fe3ddd1c392dfff223e4cd92f284860bb6b0a6c23a96fe84ea15b6e098a2ba24",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-item-processor",
+      "file": "tpl-item-processor.json",
+      "name": "Process each item in a list",
+      "description": "Runs the same local table step for each record in a JSON list, with a clear item limit.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "651f09274bc2ccf8293dc040a62625c09fa3e0f72aba69ec033d6f8ca34d7b0e",
+      "reviewed_by": "Glacier maintainers",
+      "reviewed_on": "2026-10-07"
+    },
+    {
+      "id": "tpl-local-data-pipeline",
+      "file": "tpl-local-data-pipeline.json",
+      "name": "Local data pipeline",
+      "description": "A reusable example of checked JSON, a local SQLite table, CSV export, and a short delay. It writes only on this computer.",
+      "author": "Glacier",
+      "license": "Apache-2.0",
+      "sha256": "ec209d8be6d185d8044f8d4f940bde20ba32a13afc8e9cac71fbe823b2768f77",
       "reviewed_by": "Glacier maintainers",
       "reviewed_on": "2026-10-07"
     },

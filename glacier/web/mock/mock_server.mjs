@@ -24,6 +24,79 @@ const HTTP_NODE = {
     { key: 'allow_private_network', label: 'This API runs on this computer or my network', default: 'No', options: ['No', 'Yes'], optional: true },
   ], branches: null, worker: true, changing_methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
 }
+const BUSINESS_NODES = [
+  { type: 'json_transform', label: 'Change JSON', description: 'Set fields, filter, merge, split, or remove duplicate items.', fields: [
+    { key: 'operation', label: 'Operation', default: 'set_fields', options: ['set_fields', 'filter', 'merge', 'split', 'dedupe'] },
+    { key: 'fields', label: 'Fields to set (JSON)', placeholder: '{"status":"ready"}', default: '{}', multiline: true },
+    { key: 'field', label: 'Field to check', placeholder: 'status', default: '', optional: true },
+    { key: 'equals', label: 'Matches', placeholder: 'ready', default: '', optional: true },
+    { key: 'data', label: 'Extra data (JSON)', placeholder: '{}', default: '{}', optional: true, multiline: true },
+    { key: 'key', label: 'Unique field', placeholder: 'id', default: '', optional: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null },
+  { type: 'data_table', label: 'Local table', description: 'Save, update, find, and deduplicate rows on this computer.', fields: [
+    { key: 'table', label: 'Table name', placeholder: 'customers', default: 'customers' },
+    { key: 'operation', label: 'Operation', default: 'upsert', options: ['insert', 'upsert', 'query', 'dedupe'] },
+    { key: 'key', label: 'Unique field', placeholder: 'email', default: 'id', optional: true },
+    { key: 'record', label: 'Row (JSON)', placeholder: '{"id":1,"name":"Ada"}', default: '{}', optional: true, multiline: true },
+    { key: 'match', label: 'Find rows (JSON)', placeholder: '{"status":"new"}', default: '{}', optional: true, multiline: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null },
+  { type: 'csv_file', label: 'Read or write CSV', description: "Read or write a CSV file inside this flow's folder.", fields: [
+    { key: 'operation', label: 'Operation', default: 'read', options: ['read', 'write'] },
+    { key: 'path', label: 'CSV file', placeholder: 'contacts.csv', default: 'contacts.csv' },
+    { key: 'data', label: 'Rows to write (JSON)', placeholder: '[{"name":"Ada"}]', default: '[]', optional: true, multiline: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null },
+  { type: 'delay', label: 'Wait', description: 'Pause this flow for a chosen time.', fields: [
+    { key: 'seconds', label: 'Seconds', placeholder: '30', default: '30' },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null, worker: true },
+  { type: 'structured_ai', label: 'Ask AI for JSON', description: 'Ask an owner-configured model route or the signed-in Codex CLI for checked JSON data.', fields: [
+    { key: 'prompt', label: 'What should AI do?', placeholder: 'Classify this item: {prev_output}', default: '', multiline: true },
+    { key: 'schema', label: 'Required JSON shape', placeholder: '{"type":"object","properties":{"ok":{"type":"boolean"}},"required":["ok"]}', default: '{"type":"object"}', multiline: true },
+    { key: 'engine', label: 'AI engine', default: 'configured', options: ['configured', 'codex'] },
+    { key: 'routes', label: 'Model routes', placeholder: 'all available free routes', default: '', optional: true },
+    { key: 'timeout', label: 'Time limit (seconds)', placeholder: '600', default: '600', optional: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null, worker: true },
+  { type: 'email_send', label: 'Write or send email', description: 'Save a draft on this computer or send through your SMTP account after approval.', fields: [
+    { key: 'draft_only', label: 'Keep as a draft', default: 'Yes', options: ['Yes', 'No'] },
+    { key: 'host', label: 'SMTP server', placeholder: 'smtp.gmail.com', default: '', optional: true },
+    { key: 'port', label: 'SMTP port', default: '587', optional: true },
+    { key: 'user', label: 'Email account', placeholder: 'you@example.com', default: '', optional: true },
+    { key: 'password', label: 'App password from Settings > Secrets', placeholder: '{secret:EMAIL_APP_PASSWORD}', default: '', optional: true },
+    { key: 'from', label: 'From', placeholder: 'you@example.com', default: '' },
+    { key: 'to', label: 'To', placeholder: 'person@example.com', default: '' },
+    { key: 'subject', label: 'Subject', placeholder: 'Hello {env}', default: '' },
+    { key: 'body', label: 'Message', placeholder: 'Write your message here', default: '', multiline: true },
+    { key: 'timeout', label: 'Time limit in seconds', default: '30', optional: true },
+  ], branches: null, worker: true },
+  { type: 'email_read', label: 'Search email', description: 'Find and read recent messages from your IMAP mailbox without marking them as read.', fields: [
+    { key: 'host', label: 'IMAP server', placeholder: 'imap.gmail.com', default: '' },
+    { key: 'port', label: 'IMAP port', default: '993', optional: true },
+    { key: 'user', label: 'Email account', placeholder: 'you@example.com', default: '' },
+    { key: 'password', label: 'App password from Settings > Secrets', placeholder: '{secret:EMAIL_APP_PASSWORD}', default: '' },
+    { key: 'folder', label: 'Mailbox', placeholder: 'INBOX', default: 'INBOX', optional: true },
+    { key: 'search', label: 'Search', placeholder: 'UNSEEN or FROM name@example.com', default: 'UNSEEN' },
+    { key: 'limit', label: 'Maximum messages', default: '10', optional: true },
+    { key: 'timeout', label: 'Time limit in seconds', default: '30', optional: true },
+    { key: 'retries', label: 'Retries if it fails', default: '0', optional: true },
+  ], branches: null, worker: true },
+  { type: 'email_trigger', label: 'When an email arrives', description: 'Poll an IMAP mailbox over TLS and start once for each new matching message.', fields: [
+    { key: 'host', label: 'IMAP server', placeholder: 'imap.gmail.com', default: '' },
+    { key: 'port', label: 'IMAP port', default: '993', optional: true },
+    { key: 'user', label: 'Email account', placeholder: 'you@example.com', default: '' },
+    { key: 'password', label: 'App password from Settings > Secrets', placeholder: '{secret:EMAIL_APP_PASSWORD}', default: '' },
+    { key: 'folder', label: 'Mailbox', placeholder: 'INBOX', default: 'INBOX', optional: true },
+    { key: 'search', label: 'Only match', placeholder: 'UNSEEN or FROM name@example.com', default: 'UNSEEN' },
+    { key: 'limit', label: 'Maximum messages per check', default: '10', optional: true },
+  ], branches: null, worker: true },
+  { type: 'for_each', label: 'For each item', description: 'Run the steps on the each branch once for every item in a JSON list, then follow done.', fields: [
+    { key: 'max_items', label: 'Maximum items', placeholder: '100', default: '100' },
+  ], branches: ['each', 'done'] },
+]
+const NODE_CATALOG = [...CATALOG, ...BUSINESS_NODES]
 
 const PORT = Number(process.argv[2] ?? process.env.MOCK_PORT ?? 0)
 const STEP_MS = Number(process.env.STEP_MS ?? 250)
@@ -302,7 +375,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') return send(200, { enabled: true, model: 'granite3.3:2b', ...(await readBody()) })
     }
     if ((m = p.match(/^\/api\/build\/interviews\/([^/]+)$/)) && req.method === 'DELETE') return send(200, { deleted: true, undo_id: commitId() })
-    if (req.method === 'GET' && p === '/api/node-types') return send(200, [...CATALOG, HTTP_NODE])
+    if (req.method === 'GET' && p === '/api/node-types') return send(200, [...NODE_CATALOG, HTTP_NODE])
     if (p === '/api/messages/threads' && req.method === 'GET') {
       const words = (url.searchParams.get('q') ?? '').toLowerCase().match(/\w+/g) ?? []
       const rows = [
@@ -527,7 +600,7 @@ const server = http.createServer(async (req, res) => {
         return send(200, { saved: false, run_id: startRun(envs.get(flow.id)), status: 'running' })
       }
       if (envs.has(flow.id)) return send(409, { detail: 'A flow with this name already exists' })
-      const bad = flow.nodes.map(node => node.type).filter(type => type !== HTTP_NODE.type && !CATALOG.some(item => item.type === type))
+      const bad = flow.nodes.map(node => node.type).filter(type => type !== HTTP_NODE.type && !NODE_CATALOG.some(item => item.type === type))
       if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
       if (flow.goal && !flow.acceptance?.length) return send(400, { detail: 'This goal has no check yet. Add a way to check it is done before running it.' })
       envs.set(flow.id, flow)
@@ -664,7 +737,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') {
         const body = await readBody()
         if (!body || !Array.isArray(body.nodes) || !Array.isArray(body.edges)) return send(422, { detail: 'invalid environment' })
-        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !CATALOG.some(c => c.type === t) && !['file_trigger', 'webhook_trigger'].includes(t))
+        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !NODE_CATALOG.some(c => c.type === t) && !['file_trigger', 'webhook_trigger'].includes(t))
         if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
         envs.set(id, { ...body, id })
         const commit = commitId(), epath = `environments/${id}.json`, text = JSON.stringify({ ...body, id }, null, 2)
@@ -835,6 +908,8 @@ async function execute(env, r, depth = 0) {
   let execs = 0
   const limit = Number(env.max_steps) || MAX_EXEC
   const loopCounts = new Map()
+  const forEachItems = new Map()
+  const forEachIndex = new Map()
   const handledByCheck = id => out(id).some(e => byId.get(e.target)?.type === 'check')
   let failed = false
   const summary = []
@@ -878,6 +953,93 @@ async function execute(env, r, depth = 0) {
         const output = `Status: ${status}\n\n${JSON.stringify({ message: 'mock response', saved: true }, null, 2)}\n`
         result = { exit_code: 0, output }
         setState(r, id, 'done', output)
+        break
+      }
+      case 'json_transform': {
+        let value
+        try { value = JSON.parse(prev?.output ?? 'null') } catch { value = null }
+        let outValue = value
+        try {
+          const extra = JSON.parse(c.data || '{}')
+          if (c.operation === 'set_fields') outValue = { ...(value && !Array.isArray(value) ? value : {}), ...JSON.parse(c.fields || '{}') }
+          else if (c.operation === 'filter') outValue = (Array.isArray(value) ? value : []).filter(row => String(row?.[c.field]) === String(c.equals))
+          else if (c.operation === 'merge') outValue = value == null ? extra : Array.isArray(value) && Array.isArray(extra) ? [...value, ...extra] : { ...(value || {}), ...(extra || {}) }
+          else if (c.operation === 'split') outValue = Array.isArray(value) ? value : value?.items ?? []
+          else if (c.operation === 'dedupe') { const seen = new Set(); outValue = (Array.isArray(value) ? value : []).filter(row => { const v = JSON.stringify(c.key ? row?.[c.key] : row); if (seen.has(v)) return false; seen.add(v); return true }) }
+        } catch { outValue = value }
+        result = { exit_code: 0, output: JSON.stringify(outValue) }
+        setState(r, id, 'done', result.output)
+        break
+      }
+      case 'data_table':
+        result = { exit_code: 0, output: c.operation === 'query' ? '[]' : 'Saved one row' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'csv_file':
+        result = { exit_code: 0, output: c.operation === 'write' ? 'Wrote CSV file' : '[]' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'delay':
+        result = { exit_code: 0, output: prev?.output ?? 'Wait finished' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'structured_ai': {
+        const output = JSON.stringify({ mock: true, input: prev?.output ?? '' })
+        result = { exit_code: 0, output }
+        setState(r, id, 'done', output)
+        break
+      }
+      case 'email_send': {
+        if ((c.draft_only ?? 'Yes') === 'Yes') result = { exit_code: 0, output: 'Draft saved in this flow folder' }
+        else if (String(prev?.output ?? '').toLowerCase().includes('approved')) result = { exit_code: 0, output: `Email sent to ${c.to ?? ''}` }
+        else result = { exit_code: 1, output: 'Add an approval step before sending.' }
+        setState(r, id, result.exit_code ? 'failed' : 'done', result.output)
+        if (result.exit_code && !handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+        break
+      }
+      case 'email_read':
+        result = { exit_code: 0, output: '[]' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'email_trigger': {
+        const output = JSON.stringify({ message_id: '<mock@example.test>', from: 'person@example.test', subject: 'Mock email', body: 'Example message' })
+        result = { exit_code: 0, output }
+        setState(r, id, 'done', output)
+        break
+      }
+      case 'for_each': {
+        if (!forEachItems.has(id)) {
+          let items
+          try { items = JSON.parse(prev?.output ?? 'null') } catch { items = null }
+          const maxItems = Math.max(1, Math.min(Number(c.max_items) || 100, MAX_LOOP))
+          if (!Array.isArray(items)) {
+            result = { exit_code: 1, output: 'For each item needs a JSON list from the previous step' }
+            setState(r, id, 'failed', result.output)
+            if (!handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+            break
+          }
+          if (items.length > maxItems) {
+            result = { exit_code: 1, output: `This list has ${items.length} items, above the limit of ${maxItems}` }
+            setState(r, id, 'failed', result.output)
+            if (!handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+            break
+          }
+          forEachItems.set(id, items)
+          forEachIndex.set(id, 0)
+        }
+        const items = forEachItems.get(id)
+        const index = forEachIndex.get(id)
+        if (index < items.length) {
+          result = { exit_code: 0, output: JSON.stringify(items[index]) }
+          forEachIndex.set(id, index + 1)
+          setState(r, id, 'running', result.output)
+          next = out(id).filter(e => e.label === 'each')
+        } else {
+          result = { exit_code: 0, output: `Processed ${items.length} items` }
+          setState(r, id, 'done', result.output)
+          forEachItems.delete(id); forEachIndex.delete(id)
+          next = out(id).filter(e => e.label === 'done')
+        }
         break
       }
       case 'check': {
