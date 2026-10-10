@@ -1,0 +1,3 @@
+# Reader direct runtime dependencies (versions verified in the project venv).
+pdfplumber==0.11.10
+Pillow==12.3.0

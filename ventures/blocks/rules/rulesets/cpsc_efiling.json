@@ -1,0 +1,17 @@
+{
+  "id": "cpsc_efiling_certificate_fields",
+  "title": "CPSC Certificate of Compliance data elements",
+  "source": {
+    "title": "CPSC eFiling Quick Start Guide",
+    "url": "https://www.cpsc.gov/s3fs-public/eFiling_Quick_Start_Guide_V1-1.pdf"
+  },
+  "rules": [
+    {"id": "cpsc.product_id", "field": "product_id", "check": "non_empty", "section": "2.4", "failure": "Identify the finished product."},
+    {"id": "cpsc.citation_codes", "field": "citation_codes", "check": "cpsc_citation_codes", "cite_title": "CPSC Citations, Testing Exclusions, and Disclaims guidance", "cite": "https://www.cpsc.gov/s3fs-public/eFiling-Citation-Testing-Exclusion-Disclaim-Guidance-v3.pdf", "section": "Citations", "failure": "Provide each applicable CPSC citation as a 3–14 character code."},
+    {"id": "cpsc.manufacture_date", "field": "manufacture_date", "check": "date_month", "section": "2.4", "failure": "Provide the manufacture date as YYYY-MM."},
+    {"id": "cpsc.manufacture_place", "field": "manufacture_place", "check": "object_fields", "keys": ["name", "address", "contact"], "section": "2.4", "failure": "Manufacture place must include the manufacturing party's name, full address, and contact information."},
+    {"id": "cpsc.product_test_date", "field": "product_test_date", "check": "date", "section": "2.4", "failure": "Provide the most recent product test date as YYYY-MM-DD."},
+    {"id": "cpsc.testing_laboratory", "field": "testing_laboratory", "check": "object_fields", "keys": ["name", "address", "contact"], "section": "2.4", "failure": "Testing laboratory must include the testing entity's name, full address, and contact information."},
+    {"id": "cpsc.point_of_contact", "field": "point_of_contact", "check": "object_fields", "keys": ["name", "address", "contact"], "section": "2.4", "failure": "Point of contact must include the record keeper's name, full address, and contact information."}
+  ]
+}
