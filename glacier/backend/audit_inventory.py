@@ -61,6 +61,14 @@ AUDITED_NODES = {
     "read_document": "outbound.document_fetch",
     "acp_agent": "outbound.agent_call",
     "local_ai": "outbound.model_call",
+    "structured_ai": "outbound.model_call",
+    "data_table": "local.data_step",
+    "json_transform": "local.data_step",
+    "csv_file": "local.data_step",
+    "delay": "local.delay",
+    "email_send": "outbound.email_sent",
+    "email_read": "outbound.email_read",
+    "email_trigger": "outbound.email_read",
     "flow": "run.child_started",
 }
 

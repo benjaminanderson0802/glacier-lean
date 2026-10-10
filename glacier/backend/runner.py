@@ -300,7 +300,7 @@ def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
     return "sent" if ok else "alert failed"
 
 
-def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
+def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "", approved_by_human: bool = False) -> dict:
     """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
     nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
     try:
@@ -308,7 +308,7 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     except (TypeError, KeyError, sqlite3.OperationalError):
         # Direct runner unit calls may have no persisted run snapshot (no row, or no run table yet).
         trigger = {}
-    if kind not in ("file_trigger", "webhook_trigger"):
+    if kind not in ("file_trigger", "webhook_trigger", "email_trigger"):
         cfg = _expand_trigger_values(cfg, trigger)
     store.set_node(run_id, env_id, nid, "running")
     try:
@@ -393,18 +393,37 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
         elif kind in plugins.NODES:
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
             ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home, "workspace": ws,
+                   "approved_by_human": approved_by_human,
                    "memory": lambda task: memory_context.block(task, cfg),
                    "log": lambda text: store.set_node(run_id, env_id, nid, "running", secrets_store.redact(str(text)[-OUTPUT_LIMIT:])),
-                   "trigger": trigger if kind in ("file_trigger", "webhook_trigger") else {}}
-            res = plugins.NODES[kind]["run"](ctx)
-            if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
-                raise ValueError(f"step plug-in {kind!r} returned an invalid result")
-            if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
-                res["exit_code"] = 0 if res["state"] == "done" else 1
-            res["output"] = secrets_store.redact(res.get("output", "")[-OUTPUT_LIMIT:])
+                   "trigger": trigger if kind in ("file_trigger", "webhook_trigger", "email_trigger") else {}}
+            plugin = plugins.NODES[kind]
+            retry_safe = plugin["catalog"].get("retry_safe", False)
+            if kind == "data_table" and str(cfg.get("operation") or "query") == "insert":
+                retry_safe = False  # a crash after commit must not turn replay into a duplicate-insert error
+            retries = max(0, min(int(cfg.get("retries") or 0), MAX_RETRIES)) if retry_safe else 0
+            for attempt in range(1, retries + 2):
+                try:
+                    res = plugin["run"](ctx)
+                    if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
+                        raise ValueError(f"step plug-in {kind!r} returned an invalid result")
+                    if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
+                        res["exit_code"] = 0 if res["state"] == "done" else 1
+                except Exception as exc:
+                    res = {"state": "failed", "output": f"error: {exc}", "exit_code": 1}
+                res["output"] = secrets_store.redact(str(res.get("output") or "")[-OUTPUT_LIMIT:])
+                if retries:
+                    res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
+                if (res["state"] == "done" and res.get("exit_code", 0) == 0) or attempt > retries:
+                    break
+                store.set_node(run_id, env_id, nid, "running", res["output"] + "\n[retrying]")
+                time.sleep(min(attempt, 10))
             event = {"http_request": "outbound.http_request", "fetch_page": "outbound.web_fetch",
                      "web_search": "outbound.web_search", "read_document": "outbound.document_fetch",
-                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call"}.get(kind)
+                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call",
+                     "structured_ai": "outbound.model_call",
+                     "data_table": "local.data_step", "json_transform": "local.data_step",
+                     "csv_file": "local.data_step", "delay": "local.delay"}.get(kind)
             if event:
                 safe = {"env_id": env_id, "run_id": run_id, "node_id": nid, "step_type": kind}
                 if kind == "http_request":
@@ -414,6 +433,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                     safe["destination"] = str(cfg.get("url") or cfg.get("source") or "")
                 elif kind == "web_search":
                     safe["destination"] = str(cfg.get("search_server", ""))
+                elif kind in {"data_table", "json_transform", "csv_file"}:
+                    safe["operation"] = str(cfg.get("operation", ""))
                 audit_log.record(event, who=run_record.get("author", "owner"), what=safe)
         elif kind != "schedule":
             raise ValueError(f"unknown node type {kind!r}")
@@ -447,7 +468,7 @@ def _expand_trigger_values(value, trigger):
 
 
 @DBOS.step()
-def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
+def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "", approved_by_human: bool = False) -> dict:
     """Run one step while respecting the hardware-derived execution limit."""
     acquired = _execution_slots.acquire(blocking=False)
     if not acquired:
@@ -456,7 +477,7 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
         _execution_slots.acquire()
     try:
         store.set_run(run_id, "running")
-        return _run_node_impl(env_id, run_id, node, last, ws)
+        return _run_node_impl(env_id, run_id, node, last, ws, approved_by_human)
     finally:
         _execution_slots.release()
 
@@ -562,6 +583,17 @@ def loop_tick(env_id: str, run_id: str, node_id: str, count: int, times: int) ->
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
+def for_each_tick(env_id: str, run_id: str, node_id: str, items: list, index: int) -> dict:
+    if index < len(items):
+        output = json.dumps(items[index], ensure_ascii=False)
+        res = {"state": "running", "output": output, "branch": "each", "exit_code": 0}
+    else:
+        res = {"state": "done", "output": f"Processed {len(items)} items", "branch": "done", "exit_code": 0}
+    store.set_node(run_id, env_id, node_id, res["state"], res["output"])
+    return res
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
 def start_child(env_id: str, run_id: str, node_id: str, child_env: str, child_run: str, depth: int) -> dict:
     """Snapshot the sub-flow's saved graph into its own run (visible in history like any run)."""
     try:
@@ -606,7 +638,9 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                                 if graph.get("_author") == "a2a" else None), "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
     loop_counts, flow_visits, failures = defaultdict(int), defaultdict(int), defaultdict(list)
+    foreach_items, foreach_indices = {}, defaultdict(int)
     isolate = bool(graph.get("isolate"))
+    approved_by_human = False
     ws = prepare_workspace(env_id, run_id, isolate)
     while queue:
         if executions >= limit:
@@ -625,6 +659,33 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             res = loop_tick(env_id, run_id, nid, loop_counts[nid], times)
             if res["branch"] == "done":
                 loop_counts[nid] = 0  # an outer loop can run this loop again
+        elif node["type"] == "for_each":
+            if nid not in foreach_items:
+                try:
+                    items = json.loads(str((last or {}).get("output") or ""))
+                except (TypeError, json.JSONDecodeError):
+                    items = None
+                try:
+                    limit_items = max(1, min(int(cfg.get("max_items") or 100), MAX_LOOP_TIMES))
+                except (TypeError, ValueError):
+                    limit_items = 100
+                if not isinstance(items, list):
+                    msg = "For each item needs a JSON list from the previous step"
+                    store.set_node(run_id, env_id, nid, "failed", msg)
+                    res = {"state": "failed", "output": msg, "error": True}
+                elif len(items) > limit_items:
+                    msg = f"This list has {len(items)} items, above the limit of {limit_items}"
+                    store.set_node(run_id, env_id, nid, "failed", msg)
+                    res = {"state": "failed", "output": msg, "error": True}
+                else:
+                    foreach_items[nid] = items
+            if nid in foreach_items:
+                res = for_each_tick(env_id, run_id, nid, foreach_items[nid], foreach_indices[nid])
+                if res["branch"] == "each":
+                    foreach_indices[nid] += 1
+                else:
+                    foreach_items.pop(nid, None)
+                    foreach_indices.pop(nid, None)
         elif node["type"] == "flow":
             child_env = str(cfg.get("env") or "")
             flow_visits[nid] += 1
@@ -637,8 +698,9 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
         else:
             if node["type"] == "command" and cfg.get("sandbox") is None and graph.get("sandbox") is not None:
                 node = dict(node, config=dict(cfg, sandbox=graph["sandbox"]))
-            res = run_node(env_id, run_id, node, last, ws)
+            res = run_node(env_id, run_id, node, last, ws, approved_by_human)
         edges = out[nid]
+        approved_by_human = node["type"] == "approval" and res.get("branch") == "yes"
         if res.get("error"):
             status = "failed"
             break

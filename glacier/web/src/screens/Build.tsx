@@ -87,6 +87,41 @@ const HTTP_PLACEHOLDERS: Record<string, string> = {
   url: 'http.addressPlaceholder', allowed_sites: 'http.allowedSitesPlaceholder',
   headers: 'http.headersPlaceholder', body: 'http.bodyPlaceholder', expect_status: 'http.expectedStatusPlaceholder',
 }
+const BUSINESS_FIELD_LABELS: Record<string, string> = {
+  data_table: 'business.table', json_transform: 'business.json', csv_file: 'business.csv',
+  delay: 'business.delay', structured_ai: 'business.structuredAi', email_send: 'business.email', email_read: 'business.emailRead', email_trigger: 'business.emailTrigger', for_each: 'business.forEach',
+}
+const BUSINESS_NODE_LABELS: Record<string, string> = {
+  data_table: 'business.table.label', json_transform: 'business.json.label', csv_file: 'business.csv.label',
+  delay: 'business.delay.label', structured_ai: 'business.structuredAi.label', email_send: 'business.email.label', email_read: 'business.emailRead.label', email_trigger: 'business.emailTrigger.label', for_each: 'business.forEach.label',
+}
+const BUSINESS_NODE_DESCRIPTIONS: Record<string, string> = {
+  data_table: 'business.table.description', json_transform: 'business.json.description', csv_file: 'business.csv.description',
+  delay: 'business.delay.description', structured_ai: 'business.structuredAi.description', email_send: 'business.email.description', email_read: 'business.emailRead.description', email_trigger: 'business.emailTrigger.description', for_each: 'business.forEach.description',
+}
+const BUSINESS_FIELDS: Record<string, Record<string, string>> = {
+  data_table: { table: 'table', operation: 'operation', key: 'key', record: 'record', match: 'match' },
+  json_transform: { operation: 'operation', fields: 'fields', field: 'field', equals: 'equals', data: 'data', key: 'key' },
+  csv_file: { operation: 'operation', path: 'path', data: 'data' },
+  delay: { seconds: 'seconds' },
+  structured_ai: { prompt: 'prompt', schema: 'schema', engine: 'engine', routes: 'routes', timeout: 'timeout' },
+  email_send: { draft_only: 'draft_only', host: 'host', port: 'port', user: 'user', password: 'password', from: 'from', to: 'to', subject: 'subject', body: 'body', timeout: 'timeout' },
+  email_read: { host: 'host', port: 'port', user: 'user', password: 'password', folder: 'folder', search: 'search', limit: 'limit', timeout: 'timeout' },
+  email_trigger: { host: 'host', port: 'port', user: 'user', password: 'password', folder: 'folder', search: 'search', limit: 'limit' },
+  for_each: { max_items: 'max_items' },
+}
+function businessLabel(type: string, field: string): string | undefined {
+  if (field === 'retries' && BUSINESS_FIELD_LABELS[type]) return t('business.retries')
+  const base = BUSINESS_FIELD_LABELS[type]
+  const name = BUSINESS_FIELDS[type]?.[field]
+  return base && name ? t(`${base}.${name}`) : undefined
+}
+function businessOption(type: string, field: string, value: string): string {
+  if ((type === 'email_send' && field === 'draft_only') || (type === 'http_request' && field === 'allow_private_network')) return t(`business.option.${value.toLowerCase()}`)
+  if (field !== 'operation') return value
+  const key = `business.operation.${value}`
+  return t(key)
+}
 const httpOptionLabel = (field: string, value: string) => {
   const key = field === 'method' ? `http.method.${value.toLowerCase()}`
     : field === 'body_type' ? `http.bodyFormat.${value.toLowerCase()}`
@@ -710,7 +745,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
               {catalog.filter(item => layout !== 'simple' || SIMPLE_STEP_TYPES.has(item.type)).map(item => (
-                <button key={item.type} className={`pal pal-${item.type}`} data-testid={`palette-${item.type}`} title={item.type === 'http_request' ? t('http.description') : item.description} onClick={() => addNode(item.type)}>+ {item.type === 'http_request' ? t('http.title') : item.label}</button>
+                <button key={item.type} className={`pal pal-${item.type}`} data-testid={`palette-${item.type}`} title={item.type === 'http_request' ? t('http.description') : BUSINESS_NODE_DESCRIPTIONS[item.type] ? t(BUSINESS_NODE_DESCRIPTIONS[item.type]) : item.description} onClick={() => addNode(item.type)}>+ {item.type === 'http_request' ? t('http.title') : BUSINESS_NODE_LABELS[item.type] ? t(BUSINESS_NODE_LABELS[item.type]) : item.label}</button>
               ))}
             </div>
           )}
@@ -836,11 +871,11 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
 
             {selNode && (
               <div className="inspector" data-testid="inspector">
-                <div className="section-head"><span>{layout === 'simple' ? (typeInfo(selNode.type)?.label ?? selNode.type) : t('build.node', { id: selNode.id, type: selNode.type })}</span>
+                <div className="section-head"><span>{layout === 'simple' ? (BUSINESS_NODE_LABELS[selNode.type] ? t(BUSINESS_NODE_LABELS[selNode.type]) : typeInfo(selNode.type)?.label ?? selNode.type) : t('build.node', { id: selNode.id, type: BUSINESS_NODE_LABELS[selNode.type] ? t(BUSINESS_NODE_LABELS[selNode.type]) : selNode.type })}</span>
                   {layout === 'simple' && <button className="ghost" data-testid="more-fields" onClick={() => setMoreFields(m => !m)}>{moreFields ? t('build.fewerSettings') : t('build.moreSettings')}</button>}</div>
                 {(typeInfo(selNode.type)?.fields ?? []).filter(f => layout !== 'simple' || moreFields || !f.optional || (selNode.data.config[f.key] ?? '') !== '').map(f => (
                   <label className="field" key={f.key}>
-                    <span>{selNode.type === 'http_request' && HTTP_LABELS[f.key] ? t(HTTP_LABELS[f.key]) : f.label}{f.optional ? t('build.optional') : ''}</span>
+                    <span>{selNode.type === 'http_request' && HTTP_LABELS[f.key] ? t(HTTP_LABELS[f.key]) : businessLabel(selNode.type, f.key) ?? f.label}{f.optional ? t('build.optional') : ''}</span>
                     {f.picker === 'environment'
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           <option value="">{t('build.choose')}</option>
@@ -848,7 +883,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                         </select>
                       : f.options
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
-                          {f.options.map(o => <option key={o} value={o}>{selNode.type === 'http_request' ? httpOptionLabel(f.key, o) : o}</option>)}
+                          {f.options.map(o => <option key={o} value={o}>{selNode.type === 'http_request' ? httpOptionLabel(f.key, o) : BUSINESS_FIELD_LABELS[selNode.type] ? businessOption(selNode.type, f.key, o) : o}</option>)}
                         </select>
                       : f.multiline
                       ? <textarea rows={f.key === 'prompt' ? 6 : f.key === 'body' ? 5 : 3} data-testid={`field-${f.key}`} placeholder={selNode.type === 'http_request' && HTTP_PLACEHOLDERS[f.key] ? t(HTTP_PLACEHOLDERS[f.key]) : f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />

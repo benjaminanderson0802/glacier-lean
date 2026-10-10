@@ -1,0 +1,34 @@
+{
+  "id": "tpl-email-search-note",
+  "name": "Search email and save the results",
+  "description": "Searches an IMAP mailbox on demand and saves matching message summaries in local memory.",
+  "when_to_use": "Use this to collect recent messages into a note without marking them as read. Add your IMAP app password in Settings > Secrets first.",
+  "nodes": [
+    {
+      "id": "search",
+      "type": "email_read",
+      "config": {
+        "host": "imap.gmail.com",
+        "port": "993",
+        "user": "you@example.com",
+        "password": "{secret:EMAIL_APP_PASSWORD}",
+        "folder": "INBOX",
+        "search": "UNSEEN",
+        "limit": "10"
+      },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "id": "save",
+      "type": "note",
+      "config": {
+        "path": "inbox/search-{date}-{run}.md",
+        "template": "Matching email messages:\n\n{prev_output}"
+      },
+      "position": { "x": 300, "y": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "search", "target": "save", "label": "" }
+  ]
+}
