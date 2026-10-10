@@ -1,1 +1,1 @@
-"""Reusable venture building blocks."""
+"""Reusable shared venture building blocks."""
