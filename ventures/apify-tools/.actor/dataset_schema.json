@@ -1,0 +1,22 @@
+{
+  "actorSpecification": 1,
+  "title": "Mississippi contractor license lookup results",
+  "description": "Literal public-board status and expiration date, with source and check time.",
+  "fields": {
+    "outcome": {"type": "string", "description": "match, no match found in source as of date, or uncertain — please check"},
+    "verification_state": {"type": "string", "description": "verified, uncertain, or unverifiable when the source is unavailable"},
+    "license_number": {"type": "string", "description": "License identifier from the Mississippi State Board of Contractors"},
+    "business_name": {"type": "string", "description": "Business name as shown in the public source"},
+    "status": {"type": "string", "description": "Literal source status; not a legal conclusion"},
+    "expiration_date": {"type": "string", "description": "License expiration date when present"},
+    "source_url": {"type": "string", "description": "Official Mississippi board lookup or record URL used for this check"},
+    "checked_at": {"type": "string", "description": "UTC time this source was checked"}
+  },
+  "views": {
+    "overview": {
+      "title": "License checks",
+      "transformation": {"fields": ["outcome", "verification_state", "license_number", "business_name", "status", "expiration_date", "source_url", "checked_at"]},
+      "display": {"component": "table", "columns": ["outcome", "verification_state", "license_number", "business_name", "status", "expiration_date", "source_url", "checked_at"]}
+    }
+  }
+}

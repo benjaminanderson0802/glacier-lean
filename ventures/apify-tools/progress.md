@@ -1,0 +1,7 @@
+# Progress: Apify data tools
+
+PH12.10 is prepared as the first Apify Store Actor: Mississippi Contractor License Status. The initial Washington choice was discarded after checking current Apify Store coverage; an uncovered Mississippi board lookup was selected instead. The adapter uses the Apify Python SDK and the board's logged-out search and detail pages.
+
+Drift check: PH12.10 is the wave 6 V-APIFY card. PH12 depends on PH5 and PH9; the card is authorized to start in parallel, but the checkpoint remains in progress until dependencies and the independent PH12 audit are satisfied. This serves P-LOOPS/M-SURVIVE through a scheduled canary and P-CONTROL through the first-publication approval gate. I-01 is met by using Apify's OSS Python SDK; custom code is limited to the Mississippi source adapter and Glacier integration. Acceptance is three live records matching recorded business names, literal statuses and expiration dates; one-second request spacing; outages classified as unverifiable; local Actor output; and a verified real-Glacier daily flow.
+
+The Mississippi board warns that circumstances can change after record publication. Results preserve board wording and link to the source record; customers are told to verify directly before relying on a result. Release checks are still being rerun after the source change. Account creation, payout setup, deployment, and publication remain owner steps; no account was created, credentials or payout details entered, or Actor published.

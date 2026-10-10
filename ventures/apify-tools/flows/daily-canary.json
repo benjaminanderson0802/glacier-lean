@@ -1,0 +1,21 @@
+{
+  "id": "apify-ms-license-daily-canary",
+  "name": "Mississippi contractor license data canary",
+  "description": "Check three saved Mississippi contractor license records daily and flag the Actor for maintenance if the public data no longer matches.",
+  "goal": "Confirm that the Mississippi State Board of Contractors source still returns the expected status and expiration for three public canary records.",
+  "nodes": [
+    {"id": "daily", "type": "schedule", "config": {"cron": "0 9 * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "canaries", "type": "command", "config": {"cmd": "{python} ventures/apify-tools/scripts/daily_canary.py", "cwd": "{repo}", "timeout": "180"}, "position": {"x": 300, "y": 0}},
+    {"id": "canary_result", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 600, "y": 0}},
+    {"id": "status_note", "type": "note", "config": {"path": "ventures/apify-tools/canary-{date}.md", "template": "Mississippi contractor license canary result:\n\n{prev_output}\n\nRun: {run}\n"}, "position": {"x": 900, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "daily", "target": "canaries", "label": ""},
+    {"id": "e2", "source": "canaries", "target": "canary_result", "label": ""},
+    {"id": "e3", "source": "canary_result", "target": "status_note", "label": "yes"}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "{python} -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'apify-tools'/'canary-status.json'; d=json.loads(p.read_text(encoding='utf-8')); assert d['status']=='healthy' and len(d['results'])==3\"", "required": true}
+  ],
+  "max_steps": 10
+}
