@@ -100,7 +100,7 @@ def _records_and_total(value: Any) -> tuple[list[dict[str, Any]], int | None]:
     return ([value] if value else []), total
 
 
-def _request(url: str, *, timeout: int = 45) -> bytes:
+def _request(url: str, *, timeout: int = 45, max_bytes: int | None = None) -> bytes:
     host = urllib.parse.urlparse(url).netloc
     accept = "application/json" if "fsis.usda.gov" in host else "application/json,text/csv,text/html,*/*"
     headers = {"User-Agent": USER_AGENT, "Accept": accept}
@@ -111,7 +111,10 @@ def _request(url: str, *, timeout: int = 45) -> bytes:
         headers["Referer"] = "https://www.fsis.usda.gov/recalls"
     request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.read()
+        raw = response.read(max_bytes + 1) if max_bytes is not None else response.read()
+    if max_bytes is not None and len(raw) > max_bytes:
+        raise ValueError(f"download exceeded the {max_bytes}-byte safety limit")
+    return raw
 
 
 def _json_rows(url: str, *, timeout: int = 45) -> tuple[list[dict[str, Any]], int | None]:
@@ -164,7 +167,7 @@ class _Links(HTMLParser):
 
 
 def _osha(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, str]:
-    page = _request(config["url"]).decode("utf-8", "replace")
+    page = _request(config["url"], timeout=30, max_bytes=5_000_000).decode("utf-8", "replace")
     parser = _Links()
     parser.feed(page)
     found = [(label, urllib.parse.urljoin(config["url"], href)) for label, href in parser.links if "Summary Data" in label and re.search(r"\d{4}", label)]
@@ -172,8 +175,17 @@ def _osha(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, str
         raise ValueError("OSHA current Summary Data download link was not found; page format may have changed")
     # Current summary link is first in the Current ITA Data section on the official page.
     label, url = found[0]
-    raw = _request(url)
-    rows = list(csv.DictReader(io.StringIO(raw.decode("utf-8-sig", "replace"))))
+    # OSHA publishes hundreds of thousands of establishments. Bound both the
+    # transfer and the row loop so a page/schema change cannot run indefinitely.
+    raw = _request(url, timeout=120, max_bytes=150_000_000)
+    reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig", "replace")))
+    rows: list[dict[str, Any]] = []
+    for row in reader:
+        if len(rows) >= 1_000_000:
+            raise ValueError("OSHA summary exceeded the 1,000,000-row safety limit")
+        rows.append(row)
+    if not reader.fieldnames:
+        raise ValueError("OSHA summary CSV has no header row")
     return rows, len(rows), url
 
 

@@ -120,8 +120,11 @@ def _reader_review(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any] |
     source_path = Path(os.path.expandvars(str(path))).expanduser()
     try:
         parsed = read_document(source_path, schema={"ingredients": ["Ingredients", "Ingredient list"]})
-    except (OSError, ValueError):
-        return ["ingredient label/source document"], None
+    except Exception as exc:
+        # Document libraries raise format-specific exceptions (for example,
+        # pdfplumber's PdfminerException) for corrupt uploads. Preserve the
+        # customer review path instead of letting an unreadable label crash a run.
+        return ["ingredient label/source document"], {"error": f"{type(exc).__name__}: {exc}"}
     value = parsed.get("fields", {}).get("ingredients", {})
     if value.get("uncertain") or not value.get("value"):
         return ["ingredients"], parsed

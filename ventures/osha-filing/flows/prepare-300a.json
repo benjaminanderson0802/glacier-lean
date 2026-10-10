@@ -1,0 +1,56 @@
+{
+  "id": "prepare-300a",
+  "name": "Prepare OSHA 300A review worksheet",
+  "nodes": [
+    {
+      "id": "intake",
+      "type": "note",
+      "config": {
+        "path": "$GLACIER_HOME/ventures/osha-filing/incoming/intake.json",
+        "template": "Save the customer-confirmed injury log, hours, headcount, coverage confirmation, and executive name at this local path before running. Glacier does not sign or submit.\n\n{summary}"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "prepare",
+      "type": "command",
+      "config": {
+        "cmd": "python3 ventures/osha-filing/scripts/filing.py prepare --intake $GLACIER_HOME/ventures/osha-filing/incoming/intake.json --output $GLACIER_HOME/ventures/osha-filing/out",
+        "cwd": ".",
+        "timeout": "60",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review the totals, source data, and 300A worksheet. This approval does not sign or submit the OSHA filing; the establishment executive must certify and submit it in the OSHA ITA account."
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "intake",
+      "target": "prepare"
+    },
+    {
+      "id": "e2",
+      "source": "prepare",
+      "target": "review"
+    }
+  ],
+  "checks": []
+}

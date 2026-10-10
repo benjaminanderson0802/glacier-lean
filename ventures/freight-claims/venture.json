@@ -32,7 +32,8 @@
     "freight-request-authorization",
     "freight-prepare-claim",
     "freight-record-carrier-receipt",
-    "freight-invoice-draft"
+    "freight-invoice-draft",
+    "freight-settlement-decision"
   ],
   "schedules": [
     {
@@ -58,9 +59,11 @@
       "id": "connect-shipstation",
       "title": "Connect ShipStation and approve the first listing",
       "when": "Before daily shipment checks",
-      "detail": "Create or authorize the read-only ShipStation app. Paste the API key into the labeled field on this step; Glacier saves it in this computer's keychain. Check the current API quota, explicitly enable polling, run the connector check, and review the first listing. Glacier does not create accounts or publish listings.",
+      "detail": "Create or authorize the read-only ShipStation API V2 app. Paste the API key into the labeled field on this step; Glacier saves it in this computer's keychain. Check the current API quota (one daily run can make up to 20 shipment-page requests plus 100 tracking requests), explicitly enable polling, run the connector check, and review the first listing. Glacier does not create accounts or publish listings.",
       "links": [
-        "https://docs.shipstation.com/"
+        "https://docs.shipstation.com/",
+        "https://docs.shipstation.com/authentication",
+        "https://docs.shipstation.com/rate-limits"
       ],
       "secrets": [
         {
@@ -73,16 +76,16 @@
       "id": "review-first-claims",
       "title": "Review the first ten claim packets",
       "when": "Before routine use",
-      "detail": "Check each packet against its bill of lading, invoice, delivery receipt, photos, insurance status, and the carrier's cited terms. Adjust the agreed 20–30% recovery share before any customer billing.",
+      "detail": "The first ten distinct packets are blocked at an explicit Glacier owner approval. Compare each against its bill of lading, invoice, delivery receipt, photos, insurance status, and cited carrier terms. Later packets still require shipper review before sending.",
       "links": [
         "https://www.shipstation.com/"
       ]
     },
     {
       "id": "customer-submit-and-billing",
-      "title": "Have the shipper authorize and send each claim",
+      "title": "Review and respond to each claim",
       "when": "After the shipper reviews a prepared packet",
-      "detail": "The shipper supplies any owner-approved authorization for e-signature, confirms insurance and damaged items, and sends the prefilled claim through its chosen carrier channel. Record the carrier receipt date and confirmed recovery; approve any invoice draft before it is sent or charged.",
+      "detail": "The shipper supplies owner-approved authorization, confirms claim details, and sends the packet. Record the carrier receipt and recovery. If a full-release settlement arrives, the shipper must explicitly accept or decline; acceptance closes the claim and decline leaves it active. Approve any invoice draft before it is sent or charged.",
       "links": [
         "https://www.shipstation.com/"
       ]

@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
 import sys
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -256,6 +257,56 @@ def build_contingency_invoice(claim_id: str, recovered_amount: Any, share_percen
     }
 
 
+def record_first_ten_review(packet_id: str, approval_id: str, reviewer: str,
+                           state_dir: str | Path) -> dict[str, Any]:
+    """Record the owner gate for the first ten distinct packets in a local ledger."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", packet_id):
+        raise ValueError("packet_id must contain only letters, numbers, hyphens, and underscores")
+    if not reviewer.strip():
+        raise ValueError("reviewer is required")
+    database = Path(state_dir) / "first-ten-reviews.sqlite3"
+    database.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(database, timeout=30, isolation_level=None) as con:
+        con.execute("CREATE TABLE IF NOT EXISTS packet_reviews (packet_id TEXT PRIMARY KEY, approval_id TEXT, reviewer TEXT NOT NULL, reviewed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        con.execute("BEGIN IMMEDIATE")
+        prior = con.execute("SELECT approval_id, reviewer FROM packet_reviews WHERE packet_id=?", (packet_id,)).fetchone()
+        if prior:
+            con.execute("COMMIT")
+            return {"packet_id": packet_id, "owner_approval_id": prior[0], "reviewer": prior[1],
+                    "review_count": min(10, con.execute("SELECT COUNT(*) FROM packet_reviews WHERE approval_id IS NOT NULL").fetchone()[0]),
+                    "first_ten_review_complete": con.execute("SELECT COUNT(*) FROM packet_reviews WHERE approval_id IS NOT NULL").fetchone()[0] >= 10}
+        count = con.execute("SELECT COUNT(*) FROM packet_reviews WHERE approval_id IS NOT NULL").fetchone()[0]
+        if count < 10 and not approval_id.strip():
+            con.execute("ROLLBACK")
+            raise ValueError("a Glacier owner approval ID is required for each of the first ten packets")
+        con.execute("INSERT INTO packet_reviews(packet_id, approval_id, reviewer) VALUES(?,?,?)", (packet_id, approval_id.strip() or None, reviewer.strip()))
+        con.execute("COMMIT")
+        count = con.execute("SELECT COUNT(*) FROM packet_reviews WHERE approval_id IS NOT NULL").fetchone()[0]
+    return {"packet_id": packet_id, "owner_approval_id": approval_id.strip() or None,
+            "reviewer": reviewer.strip(), "review_count": min(10, count), "first_ten_review_complete": count >= 10}
+
+
+def build_settlement_decision(offer: dict[str, Any], customer_decision: str | None) -> dict[str, Any]:
+    """Record an explicit customer choice; accepting a full release closes the claim."""
+    claim_id = str(offer.get("claim_id", "")).strip()
+    if not claim_id:
+        raise ValueError("settlement claim_id is required")
+    amount = _money(offer.get("amount"), "settlement amount")
+    full_release = offer.get("full_release") is True
+    if not full_release:
+        return {"claim_id": claim_id, "amount": f"{amount:.2f}", "result": "uncertain — please check",
+                "status": "not a full-release offer", "claim_closed": False, "side_effects": []}
+    if customer_decision not in {"accept", "decline"}:
+        return {"claim_id": claim_id, "amount": f"{amount:.2f}", "full_release": True,
+                "result": "uncertain — please check", "status": "awaiting customer decision",
+                "claim_closed": False, "side_effects": []}
+    accepted = customer_decision == "accept"
+    return {"claim_id": claim_id, "amount": f"{amount:.2f}", "full_release": True,
+            "customer_decision": customer_decision, "result": "match",
+            "status": "accepted; claim closed" if accepted else "continue claim",
+            "claim_closed": accepted, "side_effects": []}
+
+
 def request_shipper_authorization(doc_path: str, signer: dict[str, Any]) -> dict[str, Any]:
     """Send an owner-provided authorization document to the shared local e-sign layer."""
     from ventures.blocks.customer import request_signature
@@ -376,6 +427,16 @@ def main(argv: list[str] | None = None) -> int:
     deadline = commands.add_parser("deadline", help="record the carrier-confirmed receipt date")
     deadline.add_argument("--claim-id", required=True)
     deadline.add_argument("--received-date", required=True)
+    owner_review = commands.add_parser("owner-review", help="record the Glacier approval for a packet")
+    owner_review.add_argument("--packet-id")
+    owner_review.add_argument("--input")
+    owner_review.add_argument("--approval", default="")
+    owner_review.add_argument("--reviewer", required=True)
+    owner_review.add_argument("--state-dir")
+    settlement = commands.add_parser("settlement", help="record the customer's accept or decline choice for a full-release offer")
+    settlement.add_argument("--input", required=True)
+    settlement.add_argument("--approval", required=True)
+    settlement.add_argument("--output")
     args = parser.parse_args(argv)
     try:
         if args.command == "watch":
@@ -401,12 +462,31 @@ def main(argv: list[str] | None = None) -> int:
             result = record_carrier_receipt(submitted["claim_id"], submitted["carrier_received_date"],
                                             submitted["reference"], submitted["confirmation_document"],
                                             output_dir=args.output_dir)
+        elif args.command == "owner-review":
+            state_dir = args.state_dir or Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / SLUG / "reviews"
+            if args.input:
+                source = json.loads(Path(args.input).read_text(encoding="utf-8"))
+                claims = source if isinstance(source, list) else [source]
+                if len(claims) != 1:
+                    raise ValueError("Run one claim packet per owner approval so the first-ten review is distinct and auditable")
+                result = [record_first_ten_review(str(item["shipment"]["shipment_id"]), args.approval, args.reviewer, state_dir) for item in claims]
+            elif args.packet_id:
+                result = record_first_ten_review(args.packet_id, args.approval, args.reviewer, state_dir)
+            else:
+                raise ValueError("owner-review requires --packet-id or --input")
+        elif args.command == "settlement":
+            offer = json.loads(Path(args.input).read_text(encoding="utf-8"))
+            result = build_settlement_decision(offer, offer.get("customer_decision"))
+            result["glacier_approval_id"] = args.approval
+            output = Path(args.output) if args.output else Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / SLUG / "reports" / "settlement-decision.json"
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         else:
             schedule_claim_deadlines(args.claim_id, args.received_date)
             result = {"claim_id": args.claim_id, "carrier_received_date": args.received_date,
                       "rule": "30d|120d", "result": "match"}
         print(json.dumps(result, indent=2, ensure_ascii=False))
-        return 0
+        return 1 if args.command == "settlement" and result.get("result") != "match" else 0
     except (OSError, ValueError, RuntimeError) as exc:
         print(json.dumps({"result": "uncertain — please check", "error": str(exc)}), file=sys.stderr)
         return 2

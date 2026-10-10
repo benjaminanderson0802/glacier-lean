@@ -11,11 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from claims import (
     build_contingency_invoice,
     build_claim_packet,
+    build_settlement_decision,
     classify_shipments,
     prepare_mock_carrier_form,
     record_carrier_receipt,
     schedule_claim_deadlines,
     watch_shipments,
+    record_first_ten_review,
+    main as claims_main,
 )
 
 
@@ -198,6 +201,38 @@ def test_shipstation_exceptions_are_candidates_not_claims():
     candidates = classify_shipments(rows)
 
     assert candidates == [{"shipment_id": "1", "signal": "possible damage or delivery exception", "customer_confirmation_required": True}]
+
+
+def test_first_ten_packets_require_distinct_glacier_owner_approvals(tmp_path):
+    for number in range(1, 11):
+        result = record_first_ten_review(f"packet-{number}", f"approval-{number}", "Benjamin", tmp_path)
+        assert result["owner_approval_id"] == f"approval-{number}"
+        assert result["review_count"] == number
+        assert result["first_ten_review_complete"] is (number == 10)
+    later = record_first_ten_review("packet-11", "", "Benjamin", tmp_path)
+    assert later["first_ten_review_complete"] is True
+
+
+def test_full_release_settlement_requires_customer_accept_or_decline():
+    offer = {"claim_id": "claim-1", "amount": "500.00", "full_release": True}
+    undecided = build_settlement_decision(offer, None)
+    assert undecided["result"] == "uncertain — please check"
+    assert undecided["claim_closed"] is False
+    accepted = build_settlement_decision(offer, "accept")
+    assert accepted["result"] == "match" and accepted["claim_closed"] is True
+    declined = build_settlement_decision(offer, "decline")
+    assert declined["result"] == "match" and declined["claim_closed"] is False
+    assert declined["status"] == "continue claim"
+
+
+def test_owner_review_cli_rejects_batch_under_one_approval(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "home"))
+    intake = tmp_path / "claims.json"
+    intake.write_text('[{"shipment":{"shipment_id":"s1"}},{"shipment":{"shipment_id":"s2"}}]', encoding="utf-8")
+    assert claims_main(["owner-review", "--input", str(intake), "--approval", "run-1", "--reviewer", "Benjamin"]) == 2
+    assert "one claim packet per owner approval" in capsys.readouterr().err
+    intake.write_text('{"shipment":{"shipment_id":"s1"}}', encoding="utf-8")
+    assert claims_main(["owner-review", "--input", str(intake), "--approval", "run-1", "--reviewer", "Benjamin"]) == 0
 
 
 def test_shipstation_reads_are_opt_in_and_tracking_exceptions_are_customer_confirmed(tmp_path, monkeypatch):

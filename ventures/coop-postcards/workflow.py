@@ -8,6 +8,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
+import re
 
 from ventures.blocks.mail import postcard
 
@@ -19,6 +20,54 @@ def _parse_date(value: str) -> date:
 def claim_reminder_dates(expires_on: str) -> list[date]:
     expiry = _parse_date(expires_on)
     return [expiry - timedelta(days=60), expiry - timedelta(days=30)]
+
+
+def _claim_state_path(claim_id: str, state_dir: str | Path) -> Path:
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", claim_id):
+        raise ValueError("claim_id must contain only letters, numbers, hyphens, and underscores")
+    return Path(state_dir) / f"{claim_id}.json"
+
+
+def _save_claim_state(path: Path, state: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def begin_claim_attempt(claim_id: str, state_dir: str | Path) -> dict[str, Any]:
+    """Start the original filing or the single corrected resubmit after rejection."""
+    path = _claim_state_path(claim_id, state_dir)
+    state = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {"claim_id": claim_id, "attempts": 0, "status": "not_started"}
+    if state["status"] == "not_started" and state["attempts"] == 0:
+        state.update(attempts=1, status="in_progress")
+    elif state["status"] == "corrected_resubmit_available" and state["attempts"] == 1:
+        state.update(attempts=2, status="in_progress")
+    else:
+        raise ValueError(f"claim is {state['status']}; another submission attempt is not allowed")
+    _save_claim_state(path, state)
+    return state
+
+
+def record_claim_outcome(claim_id: str, outcome: str, state_dir: str | Path, *, reason: str = "") -> dict[str, Any]:
+    """Record customer-reported portal outcome and allow at most one correction."""
+    path = _claim_state_path(claim_id, state_dir)
+    if not path.is_file():
+        raise ValueError("claim has no recorded submission attempt")
+    state = json.loads(path.read_text(encoding="utf-8"))
+    if state["status"] != "in_progress":
+        raise ValueError(f"claim is {state['status']}; no outcome can be recorded")
+    if outcome == "accepted":
+        state.update(status="accepted", outcome_reason=reason.strip())
+    elif outcome == "rejected":
+        if not reason.strip():
+            raise ValueError("rejection reason is required")
+        status = "corrected_resubmit_available" if state["attempts"] == 1 else "dropped"
+        state.update(status=status, outcome_reason=reason.strip())
+    else:
+        raise ValueError("outcome must be accepted or rejected")
+    _save_claim_state(path, state)
+    return state
 
 
 def _read_evidence(fields: dict[str, Any], documents: list[str]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
