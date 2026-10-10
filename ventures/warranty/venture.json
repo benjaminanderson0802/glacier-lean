@@ -1,0 +1,46 @@
+{
+  "slug": "warranty",
+  "name": "Warranty registration",
+  "status": "in_progress",
+  "product": {
+    "description": "Prepare and track HVAC warranty registration records for contractor review.",
+    "customer_output_vocabulary": ["match", "no match found in [sources] as of [date]", "uncertain — please check"],
+    "portal_submission": "disabled until an official brand portal policy permits automation and customer authorization is recorded",
+    "email_sending": "not configured; drafts only"
+  },
+  "blocks": ["ventures.blocks.connectors.jobber", "ventures.blocks.filer"],
+  "block_functions": ["prepare_local_mock (warranty-only localhost guard around filer.prepare)"],
+  "flows": ["hourly-intake", "daily-deadlines", "owner-review"],
+  "schedules": [
+    {"flow": "hourly-intake", "cron": "0 * * * *", "purpose": "Read Jobber jobs through its read-only connector; no registration or messages are sent."},
+    {"flow": "daily-deadlines", "cron": "0 8 * * *", "purpose": "Calculate the local registration queue and identify deadlines within ten days."}
+  ],
+  "secrets_needed": ["jobber_client_id", "jobber_client_secret", "jobber_access_token", "jobber_refresh_token"],
+  "your_steps": [
+    {
+      "id": "jobber-setup",
+      "title": "Connect a Jobber test account",
+      "when": "Before the first live read",
+      "detail": "Create the Jobber app and test account, then save its OAuth values in Glacier Settings → Secrets. Run the read-only connector check. Glacier currently needs the shared connector to expose completed-install details before full intake can run."
+    },
+    {
+      "id": "brand-portal-terms",
+      "title": "Review each brand's portal terms",
+      "when": "Before adding a brand portal",
+      "detail": "Confirm with each brand whether automated browser preparation and submission are allowed, and supply that brand's official serial format. Daikin terms prohibit automated systems; Trane, Goodman, Lennox, and Carrier remain owner checks because the public material reviewed did not clearly authorize automated portal submission."
+    },
+    {
+      "id": "launch-and-email-review",
+      "title": "Review the first listing and homeowner emails",
+      "when": "Before marketplace launch and the first 20 homeowner emails",
+      "detail": "Review and submit the first Jobber marketplace listing after five eligible test accounts. Review each of the first 20 email drafts. This build does not send email or publish the listing."
+    }
+  ],
+  "launch_gates": [
+    "Brand-by-brand portal terms allow the proposed automated action.",
+    "Brand-specific serial formats are configured from official sources.",
+    "Jobber shared connector returns completed status, install date, homeowner, and unit fields without writes.",
+    "Shared document reader and deadline tracker are merged and integrated.",
+    "First marketplace listing and first 20 homeowner emails receive owner review."
+  ]
+}

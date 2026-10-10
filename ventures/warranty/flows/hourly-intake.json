@@ -1,0 +1,11 @@
+{
+  "id": "hourly-intake",
+  "name": "Warranty registration intake",
+  "nodes": [
+    {"id": "hourly", "type": "schedule", "config": {"cron": "0 * * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "read_jobber", "type": "command", "config": {"cmd": "$HOME/w/glacier-lean/.venv/bin/python -m ventures.warranty.scripts.warranty jobber-preview", "retries": "0", "timeout": "120"}, "position": {"x": 280, "y": 0}}
+  ],
+  "edges": [
+    {"id": "hourly-read", "source": "hourly", "target": "read_jobber", "label": ""}
+  ]
+}

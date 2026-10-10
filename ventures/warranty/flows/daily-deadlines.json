@@ -1,0 +1,13 @@
+{
+  "id": "daily-deadlines",
+  "name": "Warranty registration deadlines",
+  "nodes": [
+    {"id": "daily", "type": "schedule", "config": {"cron": "0 8 * * *"}, "position": {"x": 0, "y": 0}},
+    {"id": "check_deadlines", "type": "command", "config": {"cmd": "$HOME/w/glacier-lean/.venv/bin/python -m ventures.warranty.scripts.warranty deadlines", "retries": "0", "timeout": "120"}, "position": {"x": 280, "y": 0}},
+    {"id": "review_draft", "type": "approval", "config": {"prompt": "Your step: review the exact warranty deadline queue shown in this run's step output. Approval records this review only; the flow does not send or submit anything. Any future email or portal filing needs a separate approval showing the exact contents."}, "position": {"x": 560, "y": 0}}
+  ],
+  "edges": [
+    {"id": "daily-check", "source": "daily", "target": "check_deadlines", "label": ""},
+    {"id": "check-review", "source": "check_deadlines", "target": "review_draft", "label": ""}
+  ]
+}
