@@ -1,0 +1,30 @@
+{
+  "checkpoint": "PH12.5",
+  "recorded_at_utc": "2026-10-10 05:38:21 UTC",
+  "release_ready": false,
+  "command": "flock /tmp/glacier-heavy.lock sh -c 'GLACIER_HOME=/tmp/glacier-b2-live ~/w/glacier-lean/.venv/bin/python -m ventures.blocks.feeds.cli sync-all'",
+  "exit_code": 1,
+  "purpose": "First all-source live run. This captures the issues that led to the fixes and claims below; it is not a passing release check.",
+  "results": {
+    "cpsc_recalls": {"normalized_rows": 8335, "published_total": null, "canary": "passed", "changed": true, "alerts": [], "source_query_at_run": "RecallDateStart=2000-01-01"},
+    "nhtsa_recalls": {"normalized_rows": 245846, "published_total": 245846, "stored_unique_rows": 244668, "canary": "failed", "changed": true, "alerts": ["Format alert: none of the expected fields were found; the downloaded dictionary was parsed incorrectly.", "Canary alert: no records included expected identifier field NHTSA Campaign Number"]},
+    "fda_enforcement": {"normalized_rows": 87586, "published_total": 87586, "stored_unique_rows": 87585, "canary": "passed", "changed": true, "alerts": []},
+    "fsis_recalls": {"normalized_rows": 0, "published_total": null, "canary": "failed", "changed": false, "alerts": ["HTTPError: HTTP Error 403: Forbidden"]},
+    "osha_ita": {"normalized_rows": 400288, "published_total": 400288, "canary": "passed", "changed": true, "alerts": []},
+    "dla_dibbs": {"normalized_rows": 0, "published_total": null, "canary": "failed", "changed": false, "alerts": ["Only the warning/consent shell was returned; no solicitation records were available."]},
+    "cook_county_assessor": {"normalized_rows": 0, "published_total": null, "canary": "failed", "changed": false, "alerts": ["TimeoutError: The read operation timed out"]}
+  },
+  "post_run_fixes": {
+    "cpsc_recalls": "Expanded the configured date filter back to 1973-01-01; a live recheck is still needed.",
+    "nhtsa_recalls": "Parse the numbered official field table and key rows by RECORD_ID; the parser unit tests pass, but a live recheck is still needed.",
+    "fda_enforcement": "Use dataset plus recall_number as a composite cache key; the regression test passes, but a live recheck is still needed.",
+    "fsis_recalls": "Two adapter request variants still return 403; see vault/claims/2026-10-10-b2-fsis-api-403.md.",
+    "dla_dibbs": "No consent or login was attempted; see vault/claims/2026-10-10-b2-dibbs-public-feed.md.",
+    "cook_county_assessor": "Raised Socrata request timeout to 120 seconds; a live recheck is still needed."
+  },
+  "not_run": [
+    "A repeat sync to prove unchanged snapshots report changed=false.",
+    "End-to-end dry-run of daily_sync.json in a real Glacier backend."
+  ],
+  "focused_tests": "~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/feeds/tests ventures/blocks/deadlines/tests — 15 passed after local fixes."
+}

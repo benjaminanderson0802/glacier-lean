@@ -1,0 +1,18 @@
+{
+  "id": "ventures-feeds-daily-sync",
+  "name": "Daily public data feed sync",
+  "nodes": [
+    {"id": "schedule", "type": "schedule", "config": {"cron": "0 2 * * *"}, "position": {"x": 100, "y": 100}},
+    {"id": "sync", "type": "command", "config": {"cmd": "python -m ventures.blocks.feeds.cli sync-all", "timeout": 7200, "retries": 1}, "position": {"x": 400, "y": 100}},
+    {"id": "check", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 700, "y": 100}},
+    {"id": "approval", "type": "approval", "config": {"prompt": "One or more public data feeds reported an issue. Review the feed alerts before the next sync."}, "position": {"x": 1000, "y": 200}},
+    {"id": "note", "type": "note", "config": {"path": "ventures/feed-alerts/{date}.md", "template": "Daily feed sync alerts on {date}: {prev_output}"}, "position": {"x": 1300, "y": 200}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "schedule", "target": "sync", "label": ""},
+    {"id": "e2", "source": "sync", "target": "check", "label": ""},
+    {"id": "e3", "source": "check", "target": "approval", "label": "no"},
+    {"id": "e4", "source": "approval", "target": "note", "label": "yes"}
+  ],
+  "max_steps": 20
+}
