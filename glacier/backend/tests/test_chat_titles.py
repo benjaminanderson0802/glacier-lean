@@ -26,3 +26,10 @@ def test_background_sessions_are_automated():
     assert chat_titles.is_automated("You are the TROUBLESHOOTER. CAPABILITY FIX JOB", "C:\\work")
     assert chat_titles.is_automated("hello", "C:\\Users\\benja\\AppData\\Local\\Temp\\tmp0sb6k4q6")
     assert not chat_titles.is_automated("make it visible in sites for me", "C:\\Users\\benja\\Documents\\Codex\\x")
+
+
+def test_agents_md_and_role_prompts():
+    agents = "# AGENTS.md instructions for C:\\Users\\benja\\proj\n\n<INSTRUCTIONS>\nbe nice\n</INSTRUCTIONS>"
+    assert chat_titles.first_title([agents, "why did my chats disappear?"]) == "why did my chats disappear?"
+    assert chat_titles.is_automated("You are Glacier's Architect.", "C:\\work")
+    assert chat_titles.is_automated("Glacier V1 basic TALK acceptance probe. Reply with exactly X", "C:\\work")

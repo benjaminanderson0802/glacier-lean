@@ -11,7 +11,10 @@ import re
 import tempfile
 
 _LEADING_BLOCK = re.compile(r"\A\s*<([A-Za-z][\w-]*)\b[^>]*>.*?(?:</\1\s*>|\Z)", re.S)
-_AUTOMATED_TITLE = re.compile(r"^(?:SMOKE TEST\b|Reply with exactly\b|You are the [A-Z][A-Z_ -]{2,}\b|Return ONLY\b)")
+_AUTOMATED_TITLE = re.compile(r"^(?:SMOKE TEST\b|Reply with exactly\b|You are the [A-Z][A-Z_ -]{2,}\b|You are (?:Glacier|Forge)'s\b"
+                              r"|Return ONLY\b|Glacier V\d+ .*\bprobe\b)")
+# Codex records the project's AGENTS.md as its own user message; it is never the owner's request.
+_INJECTED_MESSAGE = re.compile(r"\A\s*# AGENTS\.md instructions for\b")
 
 
 def _from_json_parts(text: str) -> str:
@@ -31,6 +34,8 @@ def _from_json_parts(text: str) -> str:
 def clean_title(text: str | None, limit: int = 160) -> str:
     """The owner's words with injected context blocks removed, on one line; '' when nothing is left."""
     value = _from_json_parts(str(text or ""))
+    if _INJECTED_MESSAGE.match(value):
+        return ""
     for _ in range(20):
         match = _LEADING_BLOCK.match(value)
         if not match:
