@@ -3,6 +3,7 @@ import json
 from datetime import date
 from pathlib import Path
 import sys
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.utility_audit import calculate_audit
@@ -10,7 +11,12 @@ from scripts.utility_audit import calculate_audit
 
 class UtilityAuditAcceptanceTests(unittest.TestCase):
     def test_eligible_indiana_restaurant_gets_half_electricity_tax_estimate_and_unsigned_draft(self):
-        result = calculate_audit({
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.geturl.return_value = "https://utility.example/rates"
+        response.read.return_value = b"published tariff fixture"
+        with patch("scripts.utility_audit.urllib.request.urlopen", return_value=response):
+            result = calculate_audit({
             "state": "IN",
             "customer_confirmed_receipts": True,
             "single_electric_meter": True,
@@ -35,7 +41,7 @@ class UtilityAuditAcceptanceTests(unittest.TestCase):
                 "current_plan": {"name": "Current", "rate_per_kwh": 0.14, "monthly_fixed_charge": 40, "source_url": "https://utility.example/current"},
                 "alternative_plan": {"name": "Alternative", "rate_per_kwh": 0.12, "monthly_fixed_charge": 50, "source_url": "https://utility.example/alternative"},
             },
-        })
+            })
 
         self.assertEqual(result["result"], "match")
         self.assertEqual(result["estimate"]["estimated_annual_savings"], 240.0)
@@ -155,15 +161,70 @@ class UtilityAuditAcceptanceTests(unittest.TestCase):
         self.assertEqual(calculate_audit(gap)["result"], "uncertain — please check")
 
     def test_rate_check_reports_customer_supplied_flat_rate_comparison_without_claiming_availability(self):
+        from scripts import utility_audit
         data = json.loads((Path(__file__).parent / "sample_audit.json").read_text(encoding="utf-8"))
         data["rate_comparison"]["alternative_plan"]["rate_per_kwh"] = 0.15
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.geturl.return_value = "https://utility.example/rates"
+        response.read.return_value = b"rate schedule"
 
-        rate_check = calculate_audit(data)["rate_check"]
+        with patch.object(utility_audit.urllib.request, "urlopen", return_value=response):
+            rate_check = calculate_audit(data)["rate_check"]
 
         self.assertEqual(rate_check["result"], f"no match found in customer-provided Indiana published flat-rate options as of {date.today().isoformat()}")
         self.assertEqual(rate_check["estimated_annual_savings"], -720.0)
         self.assertEqual(rate_check["availability"], "uncertain — please check")
-        self.assertIn("not fetched or validated", rate_check["detail"])
+        self.assertEqual(rate_check["source_status"], "reachable_unverified")
+        self.assertIn("official source identity", rate_check["detail"])
+
+    def test_rate_check_verifies_source_reachability_and_rejects_unavailable_or_nonofficial_url(self):
+        from scripts import utility_audit
+        data = json.loads((Path(__file__).parent / "sample_audit.json").read_text(encoding="utf-8"))
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.geturl.return_value = "https://utility.example/rates"
+        response.read.return_value = b"rate schedule"
+        with patch.object(utility_audit.urllib.request, "urlopen", return_value=response) as urlopen:
+            check = calculate_audit(data)["rate_check"]
+        self.assertEqual(check["source_status"], "reachable_unverified")
+        self.assertEqual(urlopen.call_count, 2)
+        self.assertIn("not independently confirmed", check["detail"])
+
+        data["rate_comparison"]["alternative_plan"]["source_url"] = "http://utility.example/rates"
+        with patch.object(utility_audit.urllib.request, "urlopen", return_value=response):
+            check = calculate_audit(data)["rate_check"]
+        self.assertEqual(check["source_status"], "invalid")
+        self.assertEqual(check["result"], "uncertain — please check")
+
+        data["rate_comparison"]["alternative_plan"]["source_url"] = "https://127.0.0.1/admin"
+        with patch.object(utility_audit.urllib.request, "urlopen", return_value=response) as urlopen:
+            check = calculate_audit(data)["rate_check"]
+        self.assertEqual(check["source_status"], "invalid")
+        urlopen.assert_called_once()
+
+        data["rate_comparison"]["alternative_plan"]["source_url"] = "https://["
+        with patch.object(utility_audit.urllib.request, "urlopen") as urlopen:
+            check = calculate_audit(data)["rate_check"]
+        self.assertEqual(check["source_status"], "invalid")
+        urlopen.assert_called_once()
+
+        with patch.object(utility_audit.urllib.request, "urlopen", side_effect=OSError("not found")):
+            check = calculate_audit(json.loads((Path(__file__).parent / "sample_audit.json").read_text(encoding="utf-8")))["rate_check"]
+        self.assertEqual(check["source_status"], "unavailable")
+        self.assertEqual(check["result"], "uncertain — please check")
+
+    def test_manifest_has_exact_dor_rules_and_st200r_links_and_billing_stays_disabled(self):
+        manifest = json.loads((Path(__file__).parents[1] / "venture.json").read_text(encoding="utf-8"))
+        owner_text = " ".join(step["detail"] for step in manifest["your_steps"])
+        links = [link for step in manifest["your_steps"] for link in step["links"]]
+        self.assertIn("https://forms.in.gov/Download.aspx?id=16301", links)
+        self.assertIn("https://www.in.gov/dor/files/sib11.pdf", links)
+        self.assertIn("https://www.in.gov/dor/files/sib29.pdf", links)
+        self.assertIn("sign as the customer", owner_text.lower())
+        self.assertIn("submit it to indiana dor", owner_text.lower())
+        self.assertIn("disabled", manifest["product"]["billing"].lower())
+        self.assertIn("legal basis", manifest["product"]["billing"].lower())
 
 
 if __name__ == "__main__":

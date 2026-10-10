@@ -3,9 +3,13 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import ipaddress
 import argparse
 import json
 import os
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -68,6 +72,39 @@ def _empty_estimate() -> dict[str, Any]:
     }
 
 
+def _validate_rate_source(source_url: Any) -> str:
+    """Check that a supplied public source is HTTPS, reachable, and does not redirect hosts."""
+    try:
+        parsed = urllib.parse.urlparse(str(source_url or ""))
+        host = (parsed.hostname or "").casefold().rstrip(".")
+    except (TypeError, ValueError):
+        return "invalid"
+    if parsed.scheme != "https" or not host or "." not in host or parsed.username or parsed.password:
+        return "invalid"
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
+        return "invalid"
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and not address.is_global:
+        return "invalid"
+    try:
+        request = urllib.request.Request(str(source_url), headers={"User-Agent": "Glacier utility-audit source check/1.0", "Range": "bytes=0-255"})
+        with urllib.request.urlopen(request, timeout=8) as response:
+            try:
+                final = urllib.parse.urlparse(response.geturl())
+                final_host = (final.hostname or "").casefold().rstrip(".")
+            except (TypeError, ValueError):
+                return "invalid"
+            response.read(256)
+        if final.scheme != "https" or final_host != host:
+            return "invalid"
+        return "reachable_unverified"
+    except (OSError, urllib.error.URLError, ValueError):
+        return "unavailable"
+
+
 def _consecutive_months(periods: list[str]) -> bool:
     ordinals = []
     for period in periods:
@@ -92,12 +129,14 @@ def _rate_check(data: dict[str, Any], today: str) -> dict[str, Any]:
             "as_of": today,
             "estimated_annual_savings": None,
             "availability": "uncertain — please check",
+            "source_status": "unverified",
             "detail": "Enter the utility's published flat rates for both plans, annual kWh, fixed monthly charges, and source links.",
         }
     annual_kwh = _amount(comparison.get("annual_kwh"), "annual_kwh")
     if annual_kwh <= 0:
         raise ValueError("annual_kwh must be greater than zero")
     plans: dict[str, dict[str, Any]] = {}
+    source_statuses: list[str] = []
     for key in ("current_plan", "alternative_plan"):
         plan = comparison.get(key)
         if not isinstance(plan, dict) or not str(plan.get("name", "")).strip():
@@ -109,18 +148,21 @@ def _rate_check(data: dict[str, Any], today: str) -> dict[str, Any]:
                 "detail": "Both named plans and their published rate details are needed for a comparison.",
             }
         source_url = str(plan.get("source_url", ""))
-        if not source_url.startswith("https://"):
+        source_status = _validate_rate_source(source_url)
+        source_statuses.append(source_status)
+        if source_status in {"invalid", "unavailable"}:
             return {
                 "result": "uncertain — please check",
                 "as_of": today,
                 "estimated_annual_savings": None,
                 "availability": "uncertain — please check",
-                "detail": "Provide an HTTPS link to the utility's published rate source for each plan.",
+                "source_status": source_status,
+                "detail": "Both HTTPS rate-source links must be reachable and stay on their supplied host. Confirm each page is the utility's current official tariff before relying on this scenario.",
             }
         rate = _amount(plan.get("rate_per_kwh"), f"{key}.rate_per_kwh")
         fixed = _amount(plan.get("monthly_fixed_charge"), f"{key}.monthly_fixed_charge")
         annual_cost = (annual_kwh * rate + fixed * Decimal(12)).quantize(CENT, rounding=ROUND_HALF_UP)
-        plans[key] = {"name": str(plan["name"]), "source_url": source_url, "estimated_annual_cost": annual_cost}
+        plans[key] = {"name": str(plan["name"]), "source_url": source_url, "source_status": source_status, "estimated_annual_cost": annual_cost}
     savings = plans["current_plan"]["estimated_annual_cost"] - plans["alternative_plan"]["estimated_annual_cost"]
     outcome = "match" if savings > 0 else f"no match found in customer-provided Indiana published flat-rate options as of {today}"
     return {
@@ -131,7 +173,8 @@ def _rate_check(data: dict[str, Any], today: str) -> dict[str, Any]:
         "alternative_plan": {**plans["alternative_plan"], "estimated_annual_cost": float(plans["alternative_plan"]["estimated_annual_cost"])},
         "estimated_annual_savings": float(savings),
         "availability": "uncertain — please check",
-        "detail": "Scenario uses customer-entered flat rates and links; links and tariff terms are not fetched or validated. It excludes demand charges, taxes, riders, and other tariff charges. Confirm availability and the complete tariff with the utility.",
+        "source_status": "reachable_unverified" if all(status == "reachable_unverified" for status in source_statuses) else "unverified",
+        "detail": "Scenario uses customer-entered flat rates. Links were checked for HTTPS reachability on the same host, but official source identity and tariff terms are not independently confirmed. It excludes demand charges, taxes, riders, and other tariff charges; confirm availability and the complete tariff with the utility.",
     }
 
 

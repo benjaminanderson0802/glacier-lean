@@ -14,9 +14,9 @@ The reader, rules, feeds, deadlines, customer, mail and filer block contracts we
 
 ## Your steps
 
-1. Confirm Cook County as the first county and resolve the county representation-rule check before launch.
-2. Complete Texas property-tax consultant registration and any required association before adding Texas counties. Review current requirements at [Texas Department of Licensing and Regulation](https://www.tdlr.texas.gov/).
-3. Review the first postcard design and mailing list, confirm the sender and budget, and approve any external send separately.
+1. Keep launch disabled until the owner confirms Cook County as the first county and resolves the difference between the venture spec and the Assessor's representation rules. See the exact [Assessor appeal rules](https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor) and [residential appeal instructions](https://www.cookcountyassessoril.gov/residential-appeals).
+2. Texas property-tax consultant registration is a future expansion step and is not needed for the Cook County launch. If Texas is added later, the owner must review current requirements at [Texas Department of Licensing and Regulation](https://www.tdlr.texas.gov/).
+3. In the `approve_proof` step of **Review a property-tax postcard proof**, inspect the exact local artifacts under `$GLACIER_HOME/ventures/property-tax/postcards` and the review record under `$GLACIER_HOME/ventures/property-tax/reviews`. Approve any external mailing separately with the exact recipients, design, sender and spend.
 
 Each customer supplies their notice and sale evidence, confirms the requested value, then signs and submits any county filing themselves. If a signer is supplied in the case file, the customer block prepares a local signature request for the evidence packet; the request link must be shared by the owner through an approved channel. The flow does not send the packet or file with a county. Customer uploads are eligible for deletion 30 days after a case closes unless the customer asks to keep them. The retention flow lists the exact files first and requires a Glacier approval before removal; it only accepts paths under the venture's incoming folder.
 

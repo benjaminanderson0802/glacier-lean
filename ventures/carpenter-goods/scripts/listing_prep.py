@@ -5,13 +5,13 @@ import argparse
 import json
 import os
 import statistics
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 
-def prepare_listing(product: dict[str, Any], comparables: list[dict[str, Any]]) -> dict[str, Any]:
+def prepare_listing(product: dict[str, Any], comparables: list[dict[str, Any]], *, as_of: date | None = None) -> dict[str, Any]:
     """Create Etsy and Shopify copy from owner facts and completed-sale evidence."""
     required = ("product_id", "name", "category", "description", "pickup_area", "photos")
     missing = [key for key in required if key not in product or product[key] in (None, "")]
@@ -21,17 +21,60 @@ def prepare_listing(product: dict[str, Any], comparables: list[dict[str, Any]]) 
         raise ValueError("photos must be a list of local photo paths")
 
     category = str(product["category"]).strip().casefold()
-    eligible: list[dict[str, Any]] = []
+    today = as_of or date.today()
+    source_counts: dict[str, int] = {}
     for row in comparables:
+        if not isinstance(row, dict):
+            continue
+        try:
+            parsed = urlparse(str(row.get("source_url", "")))
+        except ValueError:
+            continue
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            canonical = f"{parsed.scheme.casefold()}://{parsed.netloc.casefold()}{parsed.path.rstrip('/')}{('?' + parsed.query) if parsed.query else ''}"
+            source_counts[canonical] = source_counts.get(canonical, 0) + 1
+    eligible: list[dict[str, Any]] = []
+    rejected: list[dict[str, str]] = []
+    for index, row in enumerate(comparables):
+        if not isinstance(row, dict):
+            rejected.append({"row": str(index), "reason": "row must be an object"})
+            continue
         try:
             price = float(row["sold_price"])
             parsed = urlparse(str(row["source_url"]))
         except (KeyError, TypeError, ValueError):
+            rejected.append({"row": str(index), "reason": "missing or invalid price/source URL"})
             continue
-        if (row.get("completed") is True and
-                str(row.get("category", "")).strip().casefold() == category and
-                price > 0 and parsed.scheme in {"http", "https"} and parsed.netloc):
-            eligible.append({"source_url": row["source_url"], "sold_price": price})
+        canonical = f"{parsed.scheme.casefold()}://{parsed.netloc.casefold()}{parsed.path.rstrip('/')}{('?' + parsed.query) if parsed.query else ''}"
+        if source_counts.get(canonical, 0) > 1:
+            reason = "duplicate sale source URL"
+        elif not parsed.netloc or parsed.scheme not in {"http", "https"}:
+            reason = "source URL must be HTTP or HTTPS"
+        elif not isinstance(row.get("sold_date"), str):
+            reason = "completed sale date is required"
+        else:
+            try:
+                sold_on = date.fromisoformat(row["sold_date"])
+            except ValueError:
+                sold_on = None
+            if sold_on is None:
+                reason = "completed sale date must use YYYY-MM-DD"
+            elif sold_on > today:
+                reason = "sale date is in the future"
+            elif sold_on < today - timedelta(days=365):
+                reason = "sale evidence is older than 365 days"
+            elif not isinstance(row.get("sold_price"), (int, float)) or isinstance(row.get("sold_price"), bool) or price <= 0:
+                reason = "sold price must be a positive number"
+            elif row.get("completed") is not True:
+                reason = "sale must be confirmed completed"
+            elif str(row.get("category", "")).strip().casefold() != category:
+                reason = "sale category does not match the product"
+            else:
+                reason = ""
+        if reason:
+            rejected.append({"row": str(index), "reason": reason})
+        else:
+            eligible.append({"source_url": row["source_url"], "sold_price": price, "sold_date": row["sold_date"]})
 
     enough_comparables = len(eligible) >= 3
     median_price = round(float(statistics.median(row["sold_price"] for row in eligible)), 2) if enough_comparables else None
@@ -47,7 +90,7 @@ def prepare_listing(product: dict[str, Any], comparables: list[dict[str, Any]]) 
     return {
         "product_id": str(product["product_id"]),
         "result": result,
-        "checked_on": date.today().isoformat(),
+        "checked_on": today.isoformat(),
         "etsy": {"title": str(product["name"]).strip(), "description": description,
                  "price": median_price, "pickup_area": str(product["pickup_area"]).strip(),
                  "photos": list(product["photos"])},
@@ -58,6 +101,7 @@ def prepare_listing(product: dict[str, Any], comparables: list[dict[str, Any]]) 
         "price_method": "median of owner-supplied completed sales in the same category",
         "price_sources": [row["source_url"] for row in eligible],
         "comparable_count": len(eligible),
+        "rejected_comparables": rejected,
         "publish_status": "not published; owner approval and manual publication required",
         "published": False,
     }

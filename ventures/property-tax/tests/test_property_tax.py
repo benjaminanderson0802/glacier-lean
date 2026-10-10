@@ -133,7 +133,11 @@ def test_manifest_and_flows_gate_outbound_actions_and_keep_owner_steps_bounded()
     assert manifest["slug"] == "property-tax"
     assert len(manifest["your_steps"]) <= 3
     assert manifest["your_steps"][0]["id"] == "confirm-first-counties"
-    assert manifest["your_steps"][1]["id"] == "texas-consultant-registration"
+    assert "keep launch disabled" in manifest["your_steps"][0]["detail"].lower()
+    assert any("keep launch disabled" in gate.lower() for gate in manifest["launch_gates"])
+    assert "Future Texas expansion" in manifest["your_steps"][1]["title"]
+    assert "$GLACIER_HOME/ventures/property-tax/postcards" in manifest["your_steps"][2]["detail"]
+    assert manifest["your_steps"][2]["links"] == ["https://www.cookcountyassessor.com/appeals"]
     for flow_name in manifest["flows"]:
         flow = json.loads((base / "flows" / f"{flow_name}.json").read_text())
         assert flow["nodes"] and flow["edges"]

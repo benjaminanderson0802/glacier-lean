@@ -2,7 +2,7 @@
 
 This venture prepares a source-linked bid sheet and quote files from public DLA DIBBS solicitation links and quotes you provide from an original manufacturer or its verified authorized distributor. It does not create accounts, contact suppliers, buy parts, sign certifications, or submit bids.
 
-DIBBS's public page currently provides discovery links rather than a documented complete feed. A link alone does not establish that a solicitation is open to all suppliers, that a part is not electronic, or what fields the quote must contain. Check each linked solicitation and add its exact number, NSN, part number, due date, quantity, eligibility, required CSV fields and output filename to `$GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json`. Add verified `quote_sources` (manufacturer/distributor type, email or HTTPS contact URL, on-file authorization document, and a supplier quote due date) to the solicitation record to prepare request drafts. Add returned supplier quotes and their authorization and traceability document paths to `quotes.json`. Missing or conflicting facts remain **uncertain — please check**. Closed, restricted, expired or electronic solicitations are excluded.
+DIBBS currently redirects its public landing page to a DoD warning/consent page, so the scheduled feed reports that source as unavailable and retains any previous snapshot. Glacier does not acknowledge the banner or log in. Continue only with owner-verified official links: open the [DIBBS solicitation search](https://www.dibbs.bsm.dla.mil/rfq/), inspect each solicitation, and enter its exact official detail URL, number, NSN, part number, due date, quantity, eligibility, required CSV fields and output filename in `$GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json`. Add verified `quote_sources` (manufacturer/distributor type, email or HTTPS contact URL, on-file authorization document, and a supplier quote due date) to the solicitation record to prepare request drafts. Add returned supplier quotes and their authorization and traceability document paths to `quotes.json`. Missing or conflicting facts remain **uncertain — please check**. Closed, restricted, expired or electronic solicitations are excluded.
 
 Run **Prepare DIBBS quote files** each day in Glacier. The command reads code from `$GLACIER_PROJECT_ROOT` when set, or the project at `$HOME/w/glacier-lean` by default; set the variable to your Glacier project directory if it is elsewhere. It refreshes the shared public feed, checks exact part and supplier matches, ranks supported quotes by gross margin, then prepares exact quote-request drafts for verified manufacturer/distributor contacts you supplied, and writes a bid sheet plus a separate CSV using each solicitation's required field order. The margin is `(unit bid price - unit cost) / unit bid price`; it does not include costs not present in the supplier quote. Quote files are drafts for your review. Traceability records must be on file before shipping.
 
@@ -10,8 +10,8 @@ The result vocabulary is **match**, **no match found in DLA DIBBS and supplier q
 
 ## Your steps
 
-1. Complete SAM.gov and CAGE registration yourself.
-2. Review solicitations, request quotes only from original manufacturers or verified authorized distributors, provide quote evidence, and approve any parts spending.
+1. Complete [SAM.gov](https://sam.gov/entity-registration) and [CAGE](https://cage.dla.mil/) registration yourself, then use the [DIBBS solicitation search](https://www.dibbs.bsm.dla.mil/rfq/).
+2. Review solicitations, request quotes only from original manufacturers or verified authorized distributors, provide quote evidence, and approve each exact parts commitment in the separate Glacier approval step before purchase.
 3. Review each prepared bid, then personally sign and submit it in DIBBS. Keep traceability documents before shipping.
 
 ## Local input files
