@@ -352,6 +352,37 @@ phases:
       - {id: PH11.1, item: "Automated integration health checks (M-SURVIVE) and pinned-upgrade cadence", status: done, evidence: "PR #33 setup/health_check.py (fresh venv, all suites, 3 benchmarks, upgrade proposals); weekly run is local (Task Scheduler/cron) while GitHub Actions is paused"}
       - {id: PH11.2, item: "Governance: amendment process, maintainers, security disclosure policy", status: done, evidence: "PR #38 merged: GOVERNANCE.md, CONTRIBUTING.md, SECURITY.md, amendment process; private vulnerability reporting enabled on the public repo; PR #76: SECURITY.md (private reporting, no email, scope, 7/30-day targets), GOVERNANCE.md, CONTRIBUTING.md (theme tokens + lint), Code of Conduct, issue/PR templates, tests"}
 
+  - id: PH12
+    name: "Ventures on Glacier"
+    depends_on: [PH5, PH9]
+    goal: "The owner's ventures (docs: ventures/SPEC.md, the Venture Build Spec) run as Glacier automations; for each one the owner only does 1-2 human-only steps."
+    exit: "Every in-scope venture in ventures/SPEC.md is installed in Glacier with its flows, passes its spec checks on real public data or sandbox modes, and lists at most ~3 owner steps; an independent audit confirms it."
+    status: in_progress
+    approved: "Owner instruction 2026-10-10: build the venture systems tonight with Codex workers in waves, change Glacier as needed, audit for coherence."
+    checkpoints:
+      - {id: PH12.1, item: "Ventures view + 'your steps' inbox (venture.json manifests, needs-you items, secret paste, pause/resume)", status: todo, evidence: ""}
+      - {id: PH12.2, item: "Automation feature parity: email, IMAP/RSS/file triggers, tables, CSV/Excel, transforms, PDF fill, browser step, AI step, retries/error routes", status: todo, evidence: ""}
+      - {id: PH12.3, item: "Automations keep running: tray/background, start at logon, missed-run and overlap rules, health report", status: todo, evidence: ""}
+      - {id: PH12.4, item: "Shared block: document reader + rules checker (spec release checks)", status: todo, evidence: ""}
+      - {id: PH12.5, item: "Shared block: government data feeds + deadline tracker (spec release checks)", status: todo, evidence: ""}
+      - {id: PH12.6, item: "Shared block: customer layer (billing test mode, e-sign, status page, support inbox)", status: todo, evidence: ""}
+      - {id: PH12.7, item: "Shared block: mail/acquisition engine + portal filer", status: todo, evidence: ""}
+      - {id: PH12.8, item: "Shared block: platform connectors (Jobber, ShipStation, Shopify, Apify)", status: todo, evidence: ""}
+      - {id: PH12.9, item: "Venture: CPSC data prep", status: todo, evidence: ""}
+      - {id: PH12.10, item: "Venture: Apify data tools", status: todo, evidence: ""}
+      - {id: PH12.11, item: "Venture: Warranty registration", status: todo, evidence: ""}
+      - {id: PH12.12, item: "Venture: Recall checker", status: todo, evidence: ""}
+      - {id: PH12.13, item: "Venture: Co-op claims + street postcards", status: todo, evidence: ""}
+      - {id: PH12.14, item: "Venture: Freight claims", status: todo, evidence: ""}
+      - {id: PH12.15, item: "Venture: FDA cosmetics listing tool", status: todo, evidence: ""}
+      - {id: PH12.16, item: "Venture: OSHA filing", status: todo, evidence: ""}
+      - {id: PH12.17, item: "Venture: Property tax appeals", status: todo, evidence: ""}
+      - {id: PH12.18, item: "Venture: Utility audits", status: todo, evidence: ""}
+      - {id: PH12.19, item: "Venture: DIBBS government supply", status: todo, evidence: ""}
+      - {id: PH12.20, item: "Venture: Carpenter's goods", status: todo, evidence: ""}
+      - {id: PH12.21, item: "Venture: Tariff estimator (on hold until the owner's lawyer approves - do not build)", status: blocked, evidence: ""}
+      - {id: PH12.22, item: "Integration + independent audit of each wave (coherence, spec rules, owner steps per venture)", status: todo, evidence: ""}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. DRIFT CONTROL — run at the start of every task and at every checkpoint
 # ─────────────────────────────────────────────────────────────────────────────

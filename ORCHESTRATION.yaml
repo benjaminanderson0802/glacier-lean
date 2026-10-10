@@ -88,4 +88,13 @@ waves:
       integrator: [PH11.1, PH11.2, PH11.4]
       owner: [PH11.3]
 
+  - wave: 6
+    name: "Ventures on Glacier (PH12, owner-approved 2026-10-10)"
+    note: "Each card file names its checkpoint; the card is the authorization. Paths: ventures/** for blocks and ventures; platform cards may touch glacier/** for their feature."
+    lanes:
+      platform: {P1: PH12.1, P2: PH12.2, P3: PH12.3}
+      blocks: {B1: PH12.4, B2: PH12.5, B3: PH12.6, B4: PH12.7, B5: PH12.8}
+      ventures: {V-CPSC: PH12.9, V-APIFY: PH12.10, V-WARRANTY: PH12.11, V-RECALL: PH12.12, V-COOP: PH12.13, V-FREIGHT: PH12.14, V-FDA: PH12.15, V-OSHA: PH12.16, V-PROPTAX: PH12.17, V-UTILITY: PH12.18, V-DIBBS: PH12.19, V-CARPENTER: PH12.20}
+      integrator: {I1: PH12.22, I2: PH12.22, I3: PH12.22}
+
 needs_owner_hardware_or_judgment: [PH2.6 laptop as model provider, PH4.10 open the folder in Obsidian/Zettlr, PH8.2 signing application, usability sessions, PC installs, design direction]
