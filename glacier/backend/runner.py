@@ -48,6 +48,12 @@ def env_path(env_id: str) -> str:
     return f"environments/{env_id}.json"
 
 
+def _codex_model_args(config: dict) -> list[str]:
+    """An empty/default model means use the model configured in the Codex CLI."""
+    model = str(config.get("model") or "").strip()
+    return ["-m", model] if model and model.casefold() != "default" else []
+
+
 def load_env(env_id: str) -> dict:
     return json.loads(vault.read_note(env_path(env_id)))
 
@@ -87,7 +93,7 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     fd, last_file = tempfile.mkstemp(prefix="codex-last-", suffix=".txt"); os.close(fd)
     executable = os.environ.get("CODEX_BIN", "codex")
     args = shell_commands.executable_invocation(executable, "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
-            "-C", workdir, "-o", last_file) + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
+            "-C", workdir, "-o", last_file) + _codex_model_args(cfg) + ["--", prompt]
     try:
         process_options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
         p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -218,7 +224,13 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
     warning = ""
     if not sandbox:
         command, shell, warning = shell_commands.command_invocation(command)
-    cwd = ws if sandbox else cfg.get("cwd") or ws or None
+    requested_cwd = str(cfg.get("cwd") or "").strip()
+    if sandbox:
+        cwd = ws
+    elif ws and not os.path.isabs(requested_cwd):
+        cwd = os.path.join(ws, requested_cwd) if requested_cwd and requested_cwd != "." else ws
+    else:
+        cwd = requested_cwd or None
     if os.name == "nt" and cwd and not sandbox:
         cwd = os.path.abspath(cwd)
     p = subprocess.Popen(command, shell=shell, cwd=cwd, env=env, stdout=subprocess.PIPE,
