@@ -1,0 +1,12 @@
+{
+  "id": "jobber-channel",
+  "name": "Review Jobber shops for OSHA preparation",
+  "goal": "Read Jobber through the shared read-only connector and prepare a private candidate list for shops with 20 or more staff; do not message shops or change records.",
+  "nodes": [
+    {"id": "connect_jobber", "type": "approval", "config": {"prompt": "Your step: connect the owner's Jobber test account using the shared connector setup instructions. Create no account or app from this flow; the connector reads only."}, "position": {"x": 0, "y": 0}},
+    {"id": "preview_jobs", "type": "command", "config": {"cmd": "python ventures/osha-filing/scripts/osha_filing.py jobber-preview", "timeout": "120", "retries": "0", "cwd": "{repo}"}, "position": {"x": 320, "y": 0}}
+  ],
+  "edges": [{"id": "e1", "source": "connect_jobber", "target": "preview_jobs", "label": "approved"}],
+  "acceptance": [{"kind": "command", "cmd": "python -c \"from ventures.blocks.connectors import JobberClient; assert callable(JobberClient.get_jobs)\"", "required": true}],
+  "max_steps": 2
+}

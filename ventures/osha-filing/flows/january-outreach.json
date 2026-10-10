@@ -1,0 +1,20 @@
+{
+  "id": "january-outreach",
+  "name": "Prepare January OSHA filing outreach",
+  "goal": "Refresh OSHA's public submission data, prepare a postcard proof and distinct landing page for repeat-filer candidates, and keep every real mailing behind the required owner approval.",
+  "nodes": [
+    {"id": "jan_2", "type": "schedule", "config": {"cron": "0 10 2 1 *", "missed_run": "run_once", "overlap": "skip"}, "position": {"x": 0, "y": 0}},
+    {"id": "refresh_feed", "type": "command", "config": {"cmd": "python ventures/osha-filing/scripts/osha_filing.py sync", "timeout": "300", "retries": "0", "cwd": "{repo}"}, "position": {"x": 280, "y": 0}},
+    {"id": "find_prospects", "type": "command", "config": {"cmd": "python ventures/osha-filing/scripts/osha_filing.py prospects", "timeout": "120", "retries": "0", "cwd": "{repo}"}, "position": {"x": 560, "y": 0}},
+    {"id": "render_proof", "type": "command", "config": {"cmd": "python ventures/osha-filing/scripts/osha_filing.py postcard-preview --input \"$GLACIER_HOME/ventures/osha-filing/selected-prospect.json\"", "timeout": "120", "retries": "0", "cwd": "{repo}"}, "position": {"x": 840, "y": 0}},
+    {"id": "approve_postcard", "type": "approval", "config": {"prompt": "Your step: review the rendered postcard proof, prefilled landing page, sender, public-data source, recipient address, and do-not-mail/address checks. Approve the first postcard design before any mailing. This flow renders proofs only; Glacier does not send mail or pose as OSHA."}, "position": {"x": 1120, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "jan_2", "target": "refresh_feed", "label": ""},
+    {"id": "e2", "source": "refresh_feed", "target": "find_prospects", "label": ""},
+    {"id": "e3", "source": "find_prospects", "target": "render_proof", "label": ""},
+    {"id": "e4", "source": "render_proof", "target": "approve_postcard", "label": ""}
+  ],
+  "acceptance": [{"kind": "command", "cmd": "python -c \"import json,os,pathlib; d=json.loads((pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'osha-filing'/'prospect-status.json').read_text()); assert d['result']=='match' or d['result']=='uncertain — please check' or d['result'].startswith('no match found'); assert not d['selected_prospect_path'] or pathlib.Path(d['selected_prospect_path']).is_file()\"", "required": true}],
+  "max_steps": 5
+}
