@@ -92,9 +92,6 @@ const BUSINESS_NODES = [
     { key: 'search', label: 'Only match', placeholder: 'UNSEEN or FROM name@example.com', default: 'UNSEEN' },
     { key: 'limit', label: 'Maximum messages per check', default: '10', optional: true },
   ], branches: null, worker: true },
-  { type: 'for_each', label: 'For each item', description: 'Run the steps on the each branch once for every item in a JSON list, then follow done.', fields: [
-    { key: 'max_items', label: 'Maximum items', placeholder: '100', default: '100' },
-  ], branches: ['each', 'done'] },
 ]
 const NODE_CATALOG = [...CATALOG, ...BUSINESS_NODES]
 
