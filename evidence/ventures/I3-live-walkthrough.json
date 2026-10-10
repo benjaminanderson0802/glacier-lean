@@ -1,0 +1,129 @@
+{
+  "engine": "npm run live real backend",
+  "screenshots_per_venture": 3,
+  "ventures": [
+    {
+      "venture": "cpsc-prep",
+      "flow": "cpsc-batch-prep",
+      "run_id": "bb6a65a6dfe8",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-cpsc-prep.png",
+      "history_screenshot": "evidence/ventures/final-history-cpsc-prep.png",
+      "card_screenshot": "evidence/ventures/final-card-cpsc-prep.png"
+    },
+    {
+      "venture": "apify-tools",
+      "flow": "apify-ms-license-daily-canary",
+      "run_id": "896d794e853a",
+      "status": "done",
+      "verified": true,
+      "screenshot": "evidence/ventures/final-run-apify-tools.png",
+      "history_screenshot": "evidence/ventures/final-history-apify-tools.png",
+      "card_screenshot": "evidence/ventures/final-card-apify-tools.png"
+    },
+    {
+      "venture": "warranty",
+      "flow": "daily-deadlines",
+      "run_id": "38eb741fb1b9",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-warranty.png",
+      "history_screenshot": "evidence/ventures/final-history-warranty.png",
+      "card_screenshot": "evidence/ventures/final-card-warranty.png"
+    },
+    {
+      "venture": "recall-checker",
+      "flow": "recall-batch-check",
+      "run_id": "121f08995d44",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-recall-checker.png",
+      "history_screenshot": "evidence/ventures/final-history-recall-checker.png",
+      "card_screenshot": "evidence/ventures/final-card-recall-checker.png"
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "street-postcard-proof",
+      "run_id": "a41bd27cd0fd",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-coop-postcards.png",
+      "history_screenshot": "evidence/ventures/final-history-coop-postcards.png",
+      "card_screenshot": "evidence/ventures/final-card-coop-postcards.png"
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-prepare-claim",
+      "run_id": "674a9ef168ae",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-freight-claims.png",
+      "history_screenshot": "evidence/ventures/final-history-freight-claims.png",
+      "card_screenshot": "evidence/ventures/final-card-freight-claims.png"
+    },
+    {
+      "venture": "fda-cosmetics",
+      "flow": "prepare-listing-packet",
+      "run_id": "846c0f79beb8",
+      "status": "done",
+      "verified": true,
+      "screenshot": "evidence/ventures/final-run-fda-cosmetics.png",
+      "history_screenshot": "evidence/ventures/final-history-fda-cosmetics.png",
+      "card_screenshot": "evidence/ventures/final-card-fda-cosmetics.png"
+    },
+    {
+      "venture": "property-tax",
+      "flow": "property-tax-prepare-packet",
+      "run_id": "2ed516788db3",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-property-tax.png",
+      "history_screenshot": "evidence/ventures/final-history-property-tax.png",
+      "card_screenshot": "evidence/ventures/final-card-property-tax.png"
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "utility-audit-calculator",
+      "run_id": "4cc43b87abdc",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-utility-audits.png",
+      "history_screenshot": "evidence/ventures/final-history-utility-audits.png",
+      "card_screenshot": "evidence/ventures/final-card-utility-audits.png"
+    },
+    {
+      "venture": "dibbs-supply",
+      "flow": "dibbs-daily-prep",
+      "run_id": "742d6eaed653",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-dibbs-supply.png",
+      "history_screenshot": "evidence/ventures/final-history-dibbs-supply.png",
+      "card_screenshot": "evidence/ventures/final-card-dibbs-supply.png"
+    },
+    {
+      "venture": "carpenter-goods",
+      "flow": "carpenter-prepare-listing",
+      "run_id": "a7476e6a03e6",
+      "status": "waiting",
+      "verified": null,
+      "screenshot": "evidence/ventures/final-run-carpenter-goods.png",
+      "history_screenshot": "evidence/ventures/final-history-carpenter-goods.png",
+      "card_screenshot": "evidence/ventures/final-card-carpenter-goods.png"
+    }
+  ],
+  "owner_setup_only_run": "fda-cosmetics: reports zero products read and no packet made until Shopify setup",
+  "home_screenshots": [
+    "evidence/ventures/final-home.png",
+    "evidence/ventures/final-needs-you.png",
+    "evidence/ventures/final-your-steps-inbox.png"
+  ],
+  "screenshots_total": 36,
+  "run_counts": {
+    "total": 11,
+    "done": 2,
+    "waiting": 9,
+    "failed": 0
+  }
+}

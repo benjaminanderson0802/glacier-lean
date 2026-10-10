@@ -118,8 +118,6 @@ def _reader_review(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any] |
     if not path:
         return ["ingredient label/source document"], None
     source_path = Path(os.path.expandvars(str(path))).expanduser()
-    if not source_path.is_file():
-        return ["ingredient label/source document"], None
     try:
         parsed = read_document(source_path, schema={"ingredients": ["Ingredients", "Ingredient list"]})
     except (OSError, ValueError):
@@ -248,14 +246,21 @@ def parse_response(path: str | Path) -> dict[str, Any]:
 
 
 def _prepare_from_shopify(shop: str, details_path: Path, output: Path, as_of: str | None) -> dict[str, Any]:
-    from ventures.blocks.connectors import ShopifyClient
+    from ventures.blocks.connectors import ConnectorError, ShopifyClient
 
     details = json.loads(details_path.read_text(encoding="utf-8"))
-    client = ShopifyClient(shop)
     try:
-        products = client.get_products()
-    finally:
-        client.close()
+        client = ShopifyClient(shop)
+        try:
+            products = client.get_products()
+        finally:
+            client.close()
+    except (ConnectorError, ValueError):
+        output.mkdir(parents=True, exist_ok=True)
+        summary = {"shop": shop, "products_read": 0, "products": [], "submitted": False, "ready": False,
+                   "setup_required": "Complete the Shopify connection step in your steps, then run again. No product data was read and no packet was made."}
+        (output / "shopify-listing-summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        return summary
     details_by_id = details.get("products", {})
     results = []
     for product in products:

@@ -31,7 +31,9 @@
     {
       "flow": "recall-nightly",
       "cron": "30 2 * * *",
-      "purpose": "Refresh recall feeds and rebuild local, source-linked recall pages."
+      "purpose": "Refresh recall feeds and rebuild local, source-linked recall pages.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [],
@@ -58,9 +60,15 @@
       "id": "configure-plans",
       "title": "Set up test prices and review plan wording",
       "when": "Before offering paid plans or API access",
-      "detail": "Configure Stripe test price IDs in Glacier Secrets, review individual and store plan amounts, and choose a metered API price. Live billing remains disabled until you configure it yourself.",
+      "detail": "Create Stripe test-mode prices. Paste the Stripe test secret key into the labeled field on this step; Glacier saves it in this computer's keychain. Review the individual and store plan amounts and choose a metered API price. Use a test key only. Live billing stays off until you configure it yourself.",
       "links": [
         "https://dashboard.stripe.com/test/products"
+      ],
+      "secrets": [
+        {
+          "name": "STRIPE_SECRET_KEY",
+          "label": "Stripe test secret key"
+        }
       ]
     }
   ],

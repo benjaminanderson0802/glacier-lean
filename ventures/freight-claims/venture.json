@@ -38,12 +38,16 @@
     {
       "flow": "freight-watch-shipstation",
       "cron": "0 8 * * *",
-      "purpose": "Read ShipStation shipment records daily and save possible exceptions for customer confirmation."
+      "purpose": "Read ShipStation shipment records daily and save possible exceptions for customer confirmation.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     },
     {
       "flow": "freight-check-deadlines",
       "cron": "15 8 * * *",
-      "purpose": "Collect due 30-day acknowledgment and 120-day resolution reminders."
+      "purpose": "Collect due 30-day acknowledgment and 120-day resolution reminders.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [
@@ -54,9 +58,15 @@
       "id": "connect-shipstation",
       "title": "Connect ShipStation and approve the first listing",
       "when": "Before daily shipment checks",
-      "detail": "Create or authorize the ShipStation read-only app, add shipstation_api_key in Glacier Settings > Secrets, check the current API quota, explicitly enable polling, run the connector check, and review the first marketplace listing. Glacier does not create accounts or publish it.",
+      "detail": "Create or authorize the read-only ShipStation app. Paste the API key into the labeled field on this step; Glacier saves it in this computer's keychain. Check the current API quota, explicitly enable polling, run the connector check, and review the first listing. Glacier does not create accounts or publish listings.",
       "links": [
         "https://docs.shipstation.com/"
+      ],
+      "secrets": [
+        {
+          "name": "shipstation_api_key",
+          "label": "ShipStation API key"
+        }
       ]
     },
     {

@@ -5,6 +5,13 @@ import { YourStep } from '../ui/YourStep.tsx'
 import './messenger.css'
 
 type View = 'list' | 'thread' | 'new' | 'steps'
+const ownerThread = (thread: MessageThread) => !/^checkpoint:\s*ph\d/i.test(thread.title.trim())
+  && !/^#?\s*card\b/i.test(thread.title.trim())
+  && !/^for this resume\b/i.test(thread.title.trim())
+  && !/^new session\b/i.test(thread.title.trim())
+  && !/^glacier introduction\b/i.test(thread.title.trim())
+  && !/^follow[- ]up\b/i.test(thread.title.trim())
+  && !(thread.source === 'codex' && /^summarize\b/i.test(thread.title.trim()))
 const SOURCES: MessageSource[] = ['glacier', 'codex', 'claude', 'opencode', 'gemini', 'worker']
 const initials = (source: MessageSource) => ({ glacier: 'gl', codex: 'co', claude: 'cl', opencode: 'op', gemini: 'ge', worker: 'wk' })[source]
 const formatTime = (value: string) => {
@@ -55,14 +62,14 @@ export function Messenger() {
         setError(t('messenger.invalidThreads'))
         return
       }
-      setThreads(result)
+      setThreads(result.filter(ownerThread))
       setError('')
     }
     catch (e) { setError(String(e)) }
   }, [query])
 
   const refreshYourSteps = useCallback(() => {
-    api.home().then(home => setYourSteps(home.needs_you.filter(item => item.kind === 'your_step'))).catch(() => {})
+    api.home().then(home => setYourSteps((home.venture_steps ?? []).filter(item => item.kind === 'your_step'))).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -146,7 +153,7 @@ export function Messenger() {
       if (active.source === 'codex' || active.source === 'claude') {
         try {
           const rows = await messagesApi.threads(query)
-          if (Array.isArray(rows)) { setThreads(rows); setError('') }
+          if (Array.isArray(rows)) { setThreads(rows.filter(ownerThread)); setError('') }
         } catch { /* keep the send error visible if the list also failed */ }
       }
     }
@@ -188,7 +195,7 @@ export function Messenger() {
           <span className="messenger-thread-copy"><span className="messenger-thread-top"><b>{thread.title || thread.source}</b><time>{formatTime(thread.last_at)}</time></span><span className="messenger-preview">{thread.last_text}</span></span>
           {thread.unread && <i className="messenger-unread" aria-label={t('messenger.unread')} />}
         </button>)}
-        {threads.length === 0 && <div className="messenger-empty">{t('messenger.noThreads')}</div>}
+          {threads.length === 0 && <div className="messenger-empty">{t('messenger.noThreads')}</div>}
       </div>
       <footer className="messenger-sources">{SOURCES.map(source => <span key={source} className={`messenger-source source-${source}`}>{source}</span>)}</footer>
     </>}

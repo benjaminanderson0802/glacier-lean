@@ -45,14 +45,18 @@ def test_ventures_reads_installed_manifest_and_today_run_state(server):
 
     rows = server.get("/api/ventures")
 
-    assert len(rows) == 1
-    venture = rows[0]
+    # A fresh Glacier home now contains the bundled venture portfolio as well
+    # as this test fixture, so locate the venture under test by its slug.
+    venture = next(row for row in rows if row["slug"] == "truck-dispatch")
     assert venture["slug"] == "truck-dispatch"
     assert venture["status"] == "setting_up"
     assert venture["today"]["runs"] == 1 and venture["today"]["completed"] == 1
     assert venture["today"]["loads_dispatched"] == 3
     assert venture["next_run"]
     assert venture["your_steps"][0]["done"] is False
+    digest = server.get("/api/home")["venture_digest"]
+    assert digest["ventures"] >= 1 and digest["runs"] == 1 and digest["completed"] == 1
+    assert digest["failed"] == 0 and digest["waiting_for_you"] >= 1
 
 
 def test_venture_your_steps_appear_in_home_and_approval_wait_can_resume(server):
@@ -66,9 +70,9 @@ def test_venture_your_steps_appear_in_home_and_approval_wait_can_resume(server):
     waiting = server.wait_run(run_id, ("waiting",))
     home = server.get("/api/home")
     assert any(item["kind"] == "your_step" and item["ref"].get("step_id") == "fleet-key"
-               for item in home["needs_you"])
-    assert any(item["kind"] == "your_step" and item.get("title", "").startswith("Your step:")
-               for item in home["needs_you"])
+               for item in home["venture_steps"])
+    assert any(item["kind"] == "your_step" and item.get("title", "").lower().startswith("your step:")
+               for item in home["venture_steps"]), home["venture_steps"]
 
     assert server.post(f"/api/runs/{run_id}/approve", {"node_id": waiting["waiting_on"], "approved": True}) == {"ok": True}
     assert server.wait_run(run_id)["status"] == "done"
@@ -136,6 +140,35 @@ def test_venture_setup_secret_is_saved_and_done_is_persisted(tmp_path, monkeypat
     steps = client.get("/api/ventures").json()[0]["your_steps"]
     assert steps[0]["done"] is True
     assert steps[0].get("secret_name") == "FLEET_KEY"
+
+
+def test_venture_setup_secret_bundle_is_saved_once_and_never_echoed(tmp_path, monkeypatch):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    manifest = _manifest(tmp_path)
+    manifest["your_steps"][0]["secrets"] = [
+        {"name": "CLIENT_ID", "label": "App ID"},
+        {"name": "CLIENT_SECRET", "label": "App secret"},
+    ]
+    path = Path(tmp_path) / "ventures" / "truck-dispatch" / "venture.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    import secrets_store
+    from routes import ventures
+    saved = []
+    monkeypatch.setattr(secrets_store, "set", lambda name, value: saved.append((name, value)))
+    app = FastAPI(); app.include_router(ventures.router)
+    client = TestClient(app)
+    values = {"CLIENT_ID": "private-id", "CLIENT_SECRET": "private-secret"}
+
+    response = client.post("/api/ventures/truck-dispatch/steps/fleet-key/done", json={"values": values})
+    assert response.status_code == 200
+    assert response.json()["secret_names"] == ["CLIENT_ID", "CLIENT_SECRET"]
+    assert "private-id" not in response.text and "private-secret" not in response.text
+    assert saved == list(values.items())
+    assert "private-secret" not in path.with_name("progress.json").read_text()
+
+    again = client.post("/api/ventures/truck-dispatch/steps/fleet-key/done", json={"values": {"CLIENT_ID": "changed", "CLIENT_SECRET": "changed"}})
+    assert again.status_code == 200
+    assert saved == list(values.items())
 
 
 def test_install_manifests_copies_new_bundled_ventures_without_overwriting(tmp_path):

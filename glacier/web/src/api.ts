@@ -156,7 +156,7 @@ export const teamsApi = {
 // ---------- Installed ventures ----------
 export interface VentureStep {
   id?: string; title: string; instructions?: string; detail?: string; done?: boolean; secret_name?: string
-  link?: string; url?: string; links?: string[]; run_id?: string; node_id?: string
+  secrets?: { name: string; label: string }[]; link?: string; url?: string; links?: string[]; run_id?: string; node_id?: string
 }
 export interface Venture {
   slug: string; name: string; status: 'setting_up' | 'running' | 'paused' | 'needs_you'
@@ -165,6 +165,7 @@ export interface Venture {
 }
 export interface YourStepItem {
   kind: 'your_step'; title: string; detail: string; instructions?: string; links?: string[]; secret_name?: string
+  secrets?: { name: string; label: string }[]
   venture_slug?: string; step_id?: string; at: string
   ref: { run_id?: string; node_id?: string; env_id?: string; venture_slug?: string; step_id?: string }
 }
@@ -173,8 +174,8 @@ export const venturesApi = {
   pause: (slug: string) => req<{ paused: boolean; flows: string[] }>('POST', `/api/ventures/${enc(slug)}/pause`, {}),
   resume: (slug: string) => req<{ paused: boolean; flows: string[] }>('POST', `/api/ventures/${enc(slug)}/resume`, {}),
   run: (slug: string, dry_run = true) => req<{ run_id: string; env_id: string; dry_run: boolean }>('POST', `/api/ventures/${enc(slug)}/run`, { dry_run }),
-  completeStep: (slug: string, stepId: string, value?: string) => req<{ done: boolean; secret_name?: string }>(
-    'POST', `/api/ventures/${enc(slug)}/steps/${enc(stepId)}/done`, value === undefined ? {} : { value }),
+  completeStep: (slug: string, stepId: string, value?: string, values?: Record<string, string>) => req<{ done: boolean; secret_name?: string; secret_names?: string[] }>(
+    'POST', `/api/ventures/${enc(slug)}/steps/${enc(stepId)}/done`, value === undefined && values === undefined ? {} : value === undefined ? { values } : { value }),
 }
 
 // ---------- Home summary (GET /api/home, docs/CONTRACT.md) ----------
@@ -186,15 +187,18 @@ export interface HomeRun { run_id: string; env_id: string; name: string; status:
 export interface HomeNote { path: string; summary: string; at: string }
 export interface HomeHealth { date: string; failed_runs: number; stuck_runs: number; waiting_for_owner: number; data_bytes: number; note_path: string }
 export interface HomeSchedule { env_id: string; name: string; next_run: string }
+export interface HomeVentureDigest { date: string; ventures: number; runs: number; completed: number; failed: number; waiting_for_you: number }
 export interface HomeSummary {
   /** online: null = still checking (first seconds after start). */
   local_ai: { online: boolean | null; model: string | null }
   counts: { running: number; need_you: number }
   needs_you: HomeItem[]
+  venture_steps?: HomeItem[]
   running: HomeRun[]
   recent_notes: HomeNote[]
   health?: HomeHealth
   next_runs?: HomeSchedule[]
+  venture_digest?: HomeVentureDigest
 }
 
 /** Home data. Uses GET /api/home; on an older engine without it, builds the same shape from the core endpoints. */
@@ -220,6 +224,7 @@ export async function loadHome(): Promise<HomeSummary> {
     local_ai: { online: null, model: null },
     counts: { running: running.length, need_you: needs.length },
     needs_you: needs.sort(byNew).slice(0, 20),
+    venture_steps: [],
     running,
     recent_notes: notes.slice(0, 10).map(p => ({ path: p, summary: p.replace(/\.md$/, ''), at: '' })),
   }

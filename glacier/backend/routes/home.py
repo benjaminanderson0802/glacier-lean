@@ -181,12 +181,25 @@ def home():
                           "at": _iso(full.get("updated")), "ref": ref})
 
     from routes import ventures
-    needs_you.extend(ventures.approval_steps())
-    needs_you.extend(ventures.setup_items())
+    venture_rows = ventures.list_ventures()
+    venture_steps = ventures.approval_steps() + ventures.setup_items(venture_rows)
 
+    # Keep venture setup and venture run approvals visible in the Home queue as
+    # well as the pinned Your Steps inbox. They are the owner's actionable
+    # items, and the inbox remains the focused place to complete them.
+    needs_you.extend(venture_steps)
     needs_you.sort(key=lambda item: item["at"], reverse=True)
+    venture_steps.sort(key=lambda item: item["at"], reverse=True)
     running.sort(key=lambda item: item["started_at"], reverse=True)
     import teams
+    venture_digest = {
+        "date": now.date().isoformat(),
+        "ventures": len(venture_rows),
+        "runs": sum(row.get("today", {}).get("runs", 0) for row in venture_rows),
+        "completed": sum(row.get("today", {}).get("completed", 0) for row in venture_rows),
+        "failed": sum(row.get("today", {}).get("failed", 0) for row in venture_rows),
+        "waiting_for_you": len(venture_steps),
+    }
     next_runs = []
     now_utc = datetime.now(timezone.utc)
     for path in vault.list_notes(".json", "environments"):
@@ -200,9 +213,9 @@ def home():
         except (ValueError, TypeError):
             continue
     next_runs.sort(key=lambda row: row["next_run"])
-    return {"local_ai": _local_ai_status(), "health": _health_report(),
+    return {"local_ai": _local_ai_status(), "health": _health_report(), "venture_digest": venture_digest,
             "counts": {"running": len(running), "need_you": len(needs_you)},
-            "needs_you": needs_you[:20], "running": running,
+            "needs_you": needs_you[:20], "venture_steps": venture_steps, "running": running,
             "teams_running": _teams_running(), "next_runs": next_runs,
             "recent_notes": _recent_notes()}
 

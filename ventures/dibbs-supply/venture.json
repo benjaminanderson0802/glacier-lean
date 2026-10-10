@@ -25,7 +25,9 @@
     {
       "flow": "dibbs-daily-prep",
       "cron": "0 6 * * *",
-      "purpose": "Refresh public DIBBS solicitation links and prepare a local, owner-reviewed bid sheet from available supplier quotes."
+      "purpose": "Refresh public DIBBS solicitation links and prepare a local, owner-reviewed bid sheet from available supplier quotes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [],

@@ -36,7 +36,9 @@
     {
       "flow": "property-tax-refresh-roll",
       "cron": "0 4 * * *",
-      "purpose": "Refresh the public Cook County assessor parcel roll each day and keep source alerts visible."
+      "purpose": "Refresh the public Cook County assessor parcel roll each day and keep source alerts visible.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [

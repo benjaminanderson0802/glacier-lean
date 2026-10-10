@@ -28,7 +28,9 @@
     {
       "flow": "daily-deadline-reminders",
       "cron": "0 9 * * *",
-      "purpose": "Check local FDA listing deadline reminders each morning."
+      "purpose": "Check local FDA listing deadline reminders each morning.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [
@@ -42,9 +44,27 @@
       "id": "connect-shopify",
       "title": "Connect a Shopify store and provide label details",
       "when": "Before the first packet",
-      "detail": "Create the Shopify app and grant the read_products scope, save its credentials in Glacier Secrets, and provide the label name, FDA product category code, ingredients, facility FEI or confirmed exemption checklist, and first-marketed/last-listed dates for each product. Records stay marked uncertain until you confirm them.",
+      "detail": "Create the Shopify app and grant the read_products scope. Paste the four Shopify values into the labeled fields on this step; Glacier saves them in this computer's keychain. Provide the label name, FDA product category code, ingredients, facility FEI or confirmed exemption checklist, and first-marketed and last-listed dates for each product. Records stay marked uncertain until you confirm them.",
       "links": [
         "https://shopify.dev/docs/apps"
+      ],
+      "secrets": [
+        {
+          "name": "shopify_client_id",
+          "label": "Shopify app ID"
+        },
+        {
+          "name": "shopify_client_secret",
+          "label": "Shopify app secret"
+        },
+        {
+          "name": "shopify_admin_access_token",
+          "label": "Shopify admin access token"
+        },
+        {
+          "name": "shopify_store_domain",
+          "label": "Shopify store domain"
+        }
       ]
     },
     {

@@ -25,12 +25,16 @@
     {
       "flow": "coop-claim-readiness",
       "cron": "0 9 * * *",
-      "purpose": "Check local claim intake for upcoming program expiries and 60/30-day reminders."
+      "purpose": "Check local claim intake for upcoming program expiries and 60/30-day reminders.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     },
     {
       "flow": "street-postcard-proof",
       "cron": "0 9 1 11 *",
-      "purpose": "Open the annual dealer year-end postcard preparation cycle in November."
+      "purpose": "Open the annual dealer year-end postcard preparation cycle in November.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [
@@ -46,9 +50,31 @@
       "id": "jobber-setup",
       "title": "Connect Jobber for the co-op app",
       "when": "Before the first dealer intake",
-      "detail": "Create the Glacier app in the Jobber Developer Center, request read-only completed-job access, and save the app credentials in Glacier Settings > Secrets. Keep the callback blank until the real Glacier URL exists.",
+      "detail": "Create the Glacier app in the Jobber Developer Center and request read-only completed-job access. Paste the Jobber values and optional Lob test key into the labeled fields on this step. Glacier saves them in this computer's keychain. Keep brand portal credentials separate for each brand, and add them only after confirming that brand permits portal use. Leave the callback blank until Glacier has its real URL.",
       "links": [
         "https://developer.getjobber.com/"
+      ],
+      "secrets": [
+        {
+          "name": "jobber_client_id",
+          "label": "Jobber app ID"
+        },
+        {
+          "name": "jobber_client_secret",
+          "label": "Jobber app secret"
+        },
+        {
+          "name": "jobber_access_token",
+          "label": "Jobber access token"
+        },
+        {
+          "name": "jobber_refresh_token",
+          "label": "Jobber refresh token"
+        },
+        {
+          "name": "lob_test_api_key",
+          "label": "Lob test key"
+        }
       ]
     },
     {

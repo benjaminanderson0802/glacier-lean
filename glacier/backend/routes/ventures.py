@@ -26,6 +26,7 @@ _STEP_ID = re.compile(r"^[A-Za-z0-9_.-]{1,120}$")
 
 class CompleteStep(BaseModel):
     value: str | None = None
+    values: dict[str, str] | None = None
     model_config = ConfigDict(extra="forbid")
 
 
@@ -296,10 +297,10 @@ def list_ventures() -> list[dict]:
     return rows
 
 
-def setup_items() -> list[dict]:
+def setup_items(rows: list[dict] | None = None) -> list[dict]:
     items = []
     at = datetime.now(timezone.utc).isoformat()
-    for venture in list_ventures():
+    for venture in list_ventures() if rows is None else rows:
         for step in venture["your_steps"]:
             if step.get("done"):
                 continue
@@ -309,6 +310,7 @@ def setup_items() -> list[dict]:
                 "instructions": str(step.get("instructions") or ""),
                 "links": step.get("links", []),
                 "secret_name": step.get("secret_name"),
+                "secrets": step.get("secrets", []),
                 "venture_slug": venture["slug"], "step_id": step["id"],
                 "ref": {"venture_slug": venture["slug"], "step_id": step["id"]},
             })
@@ -328,8 +330,38 @@ def complete_step(slug: str, step_id: str, body: CompleteStep):
     step = next((item for item in manifest.get("your_steps", []) if isinstance(item, dict) and item.get("id") == step_id), None)
     if step is None:
         raise HTTPException(404, "Step not found")
+    progress = _progress(slug)
+    if progress.get(step_id):
+        return {"done": True, "secret_name": step.get("secret_name"),
+                "secret_names": [item.get("name") for item in step.get("secrets", []) if isinstance(item, dict)]}
+
+    secret_fields = step.get("secrets") if isinstance(step.get("secrets"), list) else []
     secret_name = step.get("secret_name") or step.get("secret")
-    if secret_name:
+    saved_names = []
+    if secret_fields:
+        if body.value is not None or not isinstance(body.values, dict):
+            raise HTTPException(400, "Enter each key in this step before continuing")
+        names = [item.get("name") if isinstance(item, dict) else None for item in secret_fields]
+        if (not names or any(not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", name) for name in names)
+                or len(set(names)) != len(names)):
+            raise HTTPException(422, "This step has an invalid set of secret fields")
+        expected = set(names)
+        if set(body.values) != expected:
+            raise HTTPException(422, "This step has an invalid set of secret fields")
+        for item in secret_fields:
+            name = item.get("name")
+            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
+                raise HTTPException(422, "This step has an invalid secret name")
+            value = body.values.get(name, "")
+            if not value.strip():
+                raise HTTPException(400, "Enter each key in this step before continuing")
+            try:
+                secrets_store.set(name, value)
+            except Exception as error:
+                raise HTTPException(500, "Could not save these keys in the operating-system keychain") from error
+            audit_log.record("secret.set", what={"name": name, "venture": slug})
+            saved_names.append(name)
+    elif secret_name:
         if not isinstance(secret_name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", secret_name):
             raise HTTPException(422, "This step has an invalid secret name")
         if body.value is None or not body.value:
@@ -339,10 +371,10 @@ def complete_step(slug: str, step_id: str, body: CompleteStep):
         except Exception as error:
             raise HTTPException(500, "Could not save this key in the operating-system keychain") from error
         audit_log.record("secret.set", what={"name": secret_name, "venture": slug})
-    elif body.value is not None:
+        saved_names.append(secret_name)
+    elif body.value is not None or body.values is not None:
         raise HTTPException(400, "This step does not accept a key")
 
-    progress = _progress(slug)
     progress[step_id] = True
     _save_progress(slug, progress)
     run_id, node_id = step.get("run_id"), step.get("node_id")
@@ -355,7 +387,7 @@ def complete_step(slug: str, step_id: str, body: CompleteStep):
         audit_log.record("run.approved", what={"run_id": str(run_id), "node_id": str(node_id), "approved": True})
     elif body.value is None and step.get("approval"):
         raise HTTPException(409, "This approval step is missing its run reference")
-    return {"done": True, "secret_name": secret_name}
+    return {"done": True, "secret_name": secret_name, "secret_names": saved_names}
 
 
 def _set_venture_paused(slug: str, paused: bool) -> dict:

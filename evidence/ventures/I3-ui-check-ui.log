@@ -1,0 +1,367 @@
+
+> glacier-web@0.2.0 check:ui
+> node scripts/check-ui.mjs
+
+[check-ui] step 1/30 theme_lint.mjs
+theme lint ok (52 files)
+[check-ui] step 2/30 sprite_identity.mjs
+sprite identity ok (37 PNGs)
+[check-ui] step 3/30 check-i18n.mjs --fail
+i18n parity: 2 dictionaries, 938 keys; keys and placeholders match
+[check-ui] step 4/30 tsc -b
+[check-ui] step 5/30 vite build
+vite v8.3.3 building client environment for production...
+transforming...
+✓ 1181 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                      0.58 kB │ gzip:   0.39 kB
+dist/assets/Nunito-BzFMHfZw.woff2   39.12 kB
+dist/assets/room-z25ywC4x.webp     177.08 kB
+dist/assets/Build-DhyYLglK.css      15.97 kB │ gzip:   3.20 kB
+dist/assets/index-BcABL4OX.css      73.02 kB │ gzip:  12.90 kB
+dist/assets/window-DzyTaDEe.js      15.31 kB │ gzip:   3.84 kB
+dist/assets/tok-D9egIuRC.js         50.03 kB │ gzip:  16.69 kB
+dist/assets/MemoryMap-D1jRpB_D.js  141.01 kB │ gzip:  46.68 kB
+dist/assets/index-CmDuUT6Y.js      486.01 kB │ gzip: 141.61 kB
+dist/assets/Build-B5LIX4fF.js      539.19 kB │ gzip: 149.07 kB
+
+✓ built in 216ms
+[check-ui] step 6/30 core.spec.mjs
+[e2e] ok   screen loaded, live events socket connected
+[e2e] ok   new environment appears in list
+[e2e] ok   drag created one edge n1 -> n2
+[e2e] ok   saved, commit ef76523
+[e2e] ok   backend received environment with 2 nodes, 1 edge, command config
+[e2e] ok   nodes n1, n2 turned done via live events
+[e2e] ok   run status shows done
+[e2e] ok   run history lists the run as done
+[e2e] ok   clicking n1 shows its output in the xterm terminal
+[e2e] ok   vault lists runs/e2e-flow-run-cbadf63d.md and shows its body
+[e2e] ok   approval out-edges auto-labelled yes/no (got yes,no)
+[e2e] ok   label picker changes yes/no
+[e2e] ok   delete node removes it and its edge
+[e2e] ok   approval prompt shown
+[e2e] ok   run status waiting
+[e2e] ok   approved: banner gone, n3 done, run done
+[e2e] ok   rejected run: n3 skipped, status rejected
+[e2e] ok   selecting an older run from history loads its node states
+[e2e] ok   palette shows "Codex worker"
+[e2e] ok   codex prompt is a multi-line textarea
+[e2e] ok   sandbox select defaults to workspace-write
+[e2e] ok   backend saved codex node with prompt + sandbox
+[e2e] ok   codex node done with prompt filled (got "codex exit 0\ncodex: Review codex-flow: $ echo build-ok\nmock output of: echo build-ok\nexit code 0\n\n")
+[e2e] ok   codex output shown in the terminal panel
+[e2e] ok   palette shows Loop and Sub-flow
+[e2e] ok   throttled 1280x720 loop canvas creates four edges
+[e2e] ok   loop out-edges auto-labelled again/done (got again,done)
+[e2e] ok   loop-back edges drawn as a cycle
+[e2e] ok   loop ran twice then exited (got "finished 2 of 2")
+[e2e] ok   sub-flow node opens the child run with its node states
+[e2e] ok   adding a step with n1 selected creates exactly one auto-wire edge
+[e2e] ok   adding a step after a loop creates its branch edge (got again)
+[e2e] ok   decide engine defaults to auto (free engines first)
+[e2e] ok   decide arrows auto-labelled from its options (got Billing,Tech support)
+[e2e] ok   arrow label picker offers the decide options (got Billing,Tech support,Other)
+[e2e] ok   no page errors
+PASS
+[check-ui] step 7/30 ask_context.spec.mjs
+ok build interview sends screen=build, focus=interview; got build/interview
+ok open flow sends screen=automations/build, focus=sample-flow; got automations/build/sample-flow
+ok open note sends screen=memory, focus=notes/project.md; got memory/notes/project.md
+ok settings section sends screen=settings, focus=models; got settings/models
+ok automations list sends screen=automations, focus=; got automations/
+ok Ctrl+J opens Ask Glacier with current context
+ok removing the context chip omits screen and focus
+ok six chat requests captured
+[check-ui] step 8/30 build-interview.spec.mjs
+[build-interview] PASS question, readiness, and separate EARS spec
+[check-ui] step 9/30 build.spec.mjs
+[build] ok   plan includes an evaluator role
+[build] ok   running team shows current approval contract
+[build] ok   feature passes after evaluator completion
+[build] ok   Home lists the finished team and progress
+[build] ok   no browser errors ()
+[check-ui] step 10/30 business_nodes.spec.mjs
+PASS: business data nodes are discoverable and configurable in Simple layout
+[check-ui] step 11/30 delete.spec.mjs
+[delete] ok   flow explains what will happen before confirming
+[delete] ok   flow disappears from the list after one inline confirmation
+[delete] ok   Undo restores the flow to the list
+[delete] ok   builder also asks inline before removing a flow
+[delete] ok   builder Undo restores the saved flow
+[delete] ok   delete confirmation never opens a browser popup
+[delete] ok   note deletion offers Undo
+[check-ui] step 12/30 every_control.spec.mjs
+[every-control] home: checked 28 enabled controls
+[every-control] build: checked 17 enabled controls
+[every-control] build/chat: checked 16 enabled controls
+[every-control] automations: checked 71 enabled controls
+[every-control] flow editor: checked 37 enabled controls
+[every-control] templates: checked 18 enabled controls
+[every-control] run view: checked 20 enabled controls
+[every-control] memory: checked 31 enabled controls
+[every-control] note: checked 37 enabled controls
+[every-control] memory map: checked 18 enabled controls
+[every-control] settings/general: checked 27 enabled controls
+[every-control] settings/models: checked 22 enabled controls
+[every-control] settings/secrets: checked 24 enabled controls
+[every-control] settings/usage: checked 25 enabled controls
+[every-control] settings/data: checked 23 enabled controls
+[every-control] settings/system: checked 23 enabled controls
+[every-control] settings/help: checked 22 enabled controls
+[every-control] settings/about: checked 22 enabled controls
+[every-control] claims: checked 24 enabled controls
+[every-control] PASS
+[check-ui] step 13/30 home_polish.spec.mjs
+[home] ok   1280px: menu, screen, and status glass panels stay inside the room
+[home] ok   1280px: Home uses readable Nunito text on frosted glass
+[home] ok   1280px: Home title remains visible
+[home] ok   1280px: Home row icon and text do not overlap
+[home] ok   1280px: empty states stay readable without clipping
+[home] ok   760px: menu, screen, and status glass panels stay inside the room
+[home] ok   760px: Home uses readable Nunito text on frosted glass
+[home] ok   760px: Home title remains visible
+[home] ok   760px: Home row icon and text do not overlap
+[home] ok   760px: empty states stay readable without clipping
+PASS
+[check-ui] step 14/30 http_step.spec.mjs
+[http-step] ok   new step starts with GET selected
+[http-step] ok   invalid address gets a plain validation message
+[http-step] ok   address outside the allowed sites gets a reason
+[http-step] ok   secret picker inserts its saved name without exposing a value
+[http-step] ok   run view shows the response status and elapsed time
+[http-step] ok   run view shows a trimmed response
+[http-step] ok   secret values never appear in the screen
+[http-step] ok   saved flow contains only the secret name placeholder
+[http-step] ok   Run view shows the HTTP status code and response time
+[http-step] ok   Run view shows the response body
+[http-step] all acceptance checks passed
+[check-ui] step 15/30 layout_overlap.spec.mjs
+[layout] ok   1280x800: canvas meets 600x420 minimum ({"width":639.859375,"height":464.640625})
+[layout] ok   1280px: minimap starts collapsed on a short canvas
+[layout] ok   1280px: four palette nodes have no intersecting boxes ({"geometry":[{"id":"node-n1","x":333.84375,"y":387.588623046875,"right":457.01702880859375,"bottom":433.1091613769531},{"id":"node-n2","x":532.757080078125,"y":387.588623046875,"right":655.930419921875,"bottom":433.1091613769531},{"id":"node-n3","x":731.6705322265625,"y":387.588623046875,"right":854.84375,"bottom":433.1091613769531},{"id":"node-n4","x":731.6705322265625,"y":494.69580078125,"right":854.84375,"bottom":540.2163696289062}],"intersections":[]})
+[layout] ok   1280px: all four loop/sub-flow connections are created
+[layout] ok   1280px after fit-view with 1 node: zoom controls and minimap do not cover node centers ([{"id":"node-n1","hit":"node-n1","controlsCover":false},{"id":"node-n2","hit":"node-n2","controlsCover":false},{"id":"node-n3","hit":"node-n3","controlsCover":false},{"id":"node-n4","hit":"node-n4","controlsCover":false}])
+[layout] ok   1280px after 4 nodes and fit-view: zoom controls and minimap do not cover node centers ([{"id":"node-n1","hit":"node-n1","controlsCover":false},{"id":"node-n2","hit":"node-n2","controlsCover":false},{"id":"node-n3","hit":"node-n3","controlsCover":false},{"id":"node-n4","hit":"node-n4","controlsCover":false}])
+[layout] ok   1280px after 5 nodes and fit-view: zoom controls and minimap do not cover node centers ([{"id":"node-n1","hit":"node-n1","controlsCover":false},{"id":"node-n2","hit":"node-n2","controlsCover":false},{"id":"node-n3","hit":"node-n3","controlsCover":false},{"id":"node-n4","hit":"node-n4","controlsCover":false},{"id":"node-n5","hit":"node-n5","controlsCover":false}])
+[layout] ok   1280x800: canvas stays at least 200px tall above the terminal row ({"canvasHeight":284.640625,"canvasBottom":516.234375,"terminalTop":519.734375})
+[layout] ok   1280x800: after run, node centers hit their own nodes ([{"id":"node-n1","hit":"node-n1","center":{"x":388,"y":314}},{"id":"node-n2","hit":"node-n2","center":{"x":609,"y":314}},{"id":"node-n3","hit":"node-n3","center":{"x":831,"y":314}},{"id":"node-n4","hit":"node-n4","center":{"x":831,"y":433}},{"id":"node-n5","hit":"node-n5","center":{"x":609,"y":433}}])
+[layout] ok   1024x700: canvas meets 480x360 minimum ({"width":529.265625,"height":386.171875})
+[layout] ok   1024px: minimap starts collapsed on a short canvas
+[layout] ok   1024px: four palette nodes have no intersecting boxes ({"geometry":[{"id":"node-n1","x":223.9375,"y":345.8513488769531,"right":325.833251953125,"bottom":383.50848388671875},{"id":"node-n2","x":388.4896240234375,"y":345.8513488769531,"right":490.3853454589844,"bottom":383.50848388671875},{"id":"node-n3","x":553.041748046875,"y":345.8513488769531,"right":654.9375,"bottom":383.50848388671875},{"id":"node-n4","x":553.041748046875,"y":434.4563293457031,"right":654.9375,"bottom":472.11346435546875}],"intersections":[]})
+[layout] ok   1024px: all four loop/sub-flow connections are created
+[layout] ok   1024px after fit-view with 1 node: zoom controls and minimap do not cover node centers ([{"id":"node-n1","hit":"node-n1","controlsCover":false},{"id":"node-n2","hit":"node-n2","controlsCover":false},{"id":"node-n3","hit":"node-n3","controlsCover":false},{"id":"node-n4","hit":"node-n4","controlsCover":false}])
+[layout] ok   1024px after 4 nodes and fit-view: zoom controls and minimap do not cover node centers ([{"id":"node-n1","hit":"node-n1","controlsCover":false},{"id":"node-n2","hit":"node-n2","controlsCover":false},{"id":"node-n3","hit":"node-n3","controlsCover":false},{"id":"node-n4","hit":"node-n4","controlsCover":false}])
+[layout] ok   1024px after 5 nodes and fit-view: zoom controls and minimap do not cover node centers ([{"id":"node-n1","hit":"node-n1","controlsCover":false},{"id":"node-n2","hit":"node-n2","controlsCover":false},{"id":"node-n3","hit":"node-n3","controlsCover":false},{"id":"node-n4","hit":"node-n4","controlsCover":false},{"id":"node-n5","hit":"node-n5","controlsCover":false}])
+[layout] ok   1024x700: canvas stays at least 200px tall above the terminal row ({"canvasHeight":213,"canvasBottom":429.140625,"terminalTop":432.640625})
+[layout] ok   1024x700: after run, node centers hit their own nodes ([{"id":"node-n1","hit":"node-n1","center":{"x":268,"y":273}},{"id":"node-n2","hit":"node-n2","center":{"x":451,"y":273}},{"id":"node-n3","hit":"node-n3","center":{"x":635,"y":273}},{"id":"node-n4","hit":"node-n4","center":{"x":635,"y":372}},{"id":"node-n5","hit":"node-n5","center":{"x":451,"y":372}}])
+PASS
+[check-ui] step 16/30 live_real_backend.spec.mjs
+ok   real backend events socket connected through the Vite proxy
+ok   canvas flow saved to the real engine
+ok   run state reached done and command output appeared in the terminal
+ok   Ask chat write completed against the real backend fake engine
+ok   right-wall messenger reply arrived in a real backend live event
+ok   messenger shows the sent Glacier message
+
+All live real-backend checks passed.
+[check-ui] step 17/30 memory_map_physics.spec.mjs
+[memory-map] ok   map renders through the existing canvas
+[memory-map] ok   wheel zoom keeps the graph canvas sized to its panel
+[memory-map] ok   map interactions run without browser errors
+[memory-map] ok   graph keeps its linked-note count visible
+[memory-map] ok   reduced motion still shows the memory map
+[memory-map] all checks passed
+[check-ui] step 18/30 messenger.spec.mjs
+[messenger] ok   messenger stays visible on the right wall
+[messenger] ok   thread list shows Glacier and worker conversations
+[messenger] ok   search and new chat controls are available
+[messenger] ok   search filters threads
+[messenger] ok   an unavailable imported session shows its reason and has no composer
+[messenger] ok   opening a thread shows message bubbles
+[messenger] ok   tool events render as centred system rows
+[messenger] ok   Shift+Enter keeps a newline in the composer
+[messenger] ok   Enter sends a message to Glacier
+[messenger] ok   sending to a worker task shows the owner note
+[messenger] ok   new chat starts a Glacier conversation
+[messenger] ok   read-only sessions explain why replies are disabled
+[messenger] ok   a non-list threads response leaves the messenger usable
+[messenger] ok   events WebSocket is connected to the mock
+[messenger] ok   live message updates appear in the open thread
+PASS
+[check-ui] step 19/30 scheduler_health.spec.mjs
+[scheduler-health] ok daily health report is shown on Home
+[scheduler-health] ok failed run count is visible
+[scheduler-health] ok stuck run count is visible
+[scheduler-health] ok next run time is visible
+[scheduler-health] ok startup setting reflects the enabled preference
+[scheduler-health] ok startup setting sends a per-user preference change to the desktop shell
+PASS
+[check-ui] step 20/30 settings_help.spec.mjs
+PASS: F1 opens the registered Settings help panel
+[check-ui] step 21/30 shell.spec.mjs
+[shell] ok   start screen shows on launch
+[shell] ok   Enter on the start screen continues to Home
+[shell] ok   Home: Get started explains the suggested setup in plain words
+[shell] ok   Get started sets up only the picked automations
+[shell] ok   Get started can be closed
+[shell] ok   exactly five English menu options (got Home,Build,Automations,Memory,Settings)
+[shell] ok   home: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:42509/assets/room-z25ywC4x.webp\")"})
+[shell] ok   home: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   ask: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:42509/assets/room-z25ywC4x.webp\")"})
+[shell] ok   ask: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   automations: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:42509/assets/room-z25ywC4x.webp\")"})
+[shell] ok   automations: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   memory: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:42509/assets/room-z25ywC4x.webp\")"})
+[shell] ok   memory: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   settings: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:42509/assets/room-z25ywC4x.webp\")"})
+[shell] ok   settings: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   body text uses Nunito
+[shell] ok   bundled Nunito font loaded (offline)
+[shell] ok   New opens the builder with the flow named
+[shell] ok   saved flow appears in the Automations list
+[shell] ok   clicking a flow opens its Run view
+[shell] ok   Run view opens
+[shell] ok   Past runs view opens
+[shell] ok   Edit flow opens the builder
+[shell] ok   new note saved and shown
+[shell] ok   note shows who wrote it
+[shell] ok   typing [[ suggests notes and inserts a link
+[shell] ok   saved note shows its outgoing link
+[shell] ok   a link to a missing note says "not written yet"
+[shell] ok   Undo restores the previous version
+[shell] ok   Rename moves the note and says links were updated
+[shell] ok   notes that linked to the old name now link to the new one
+[shell] ok   Undo puts the old name and its links back
+[shell] ok   memory map draws the graph
+[shell] ok   memory map lights up a note the moment it is written
+[shell] ok   Add > Text saves a note
+[shell] ok   Add > Files uploads a file
+[shell] ok   Chat import: Check for new chats refreshes
+[shell] ok   Coding sessions: an OpenCode session opens read-only
+[shell] ok   Coding sessions: Save to memory saves a note
+[shell] ok   cleanup applies a suggestion and offers Undo
+[shell] ok   Settings > Models says which assistant Ask uses and why
+[shell] ok   Settings > Models shows the model in use
+[shell] ok   Settings > Usage, Data and About open
+[shell] ok   Settings > Secrets saves a secret and never shows its value
+[shell] ok   Settings > Secrets removes a secret after confirming
+[shell] ok   Ask shows how a proposed automation will be checked before it runs
+[shell] ok   a new chat is titled from the first question
+[shell] ok   Rename changes the chat title
+[shell] ok   Past chats: search finds a chat and reopening it shows its messages
+[shell] ok   New chat starts empty
+[shell] ok   Ask: "run my ... now" asks first, then starts the run and links to it
+[shell] ok   Ask > Edit opens the proposed flow in the builder
+[shell] ok   saving keeps the goal and checks the builder does not show
+[shell] ok   Saved versions: Restore brings back an earlier version of a flow
+[shell] ok   Simple detail level hides advanced steps and technical fields
+[shell] ok   Run view explains a run in plain words
+[shell] ok   claim detail shows problem and research
+[shell] ok   Ask for more research updates the claim
+[shell] ok   after approving, "Run it again to check" re-runs the flow and opens the run
+[shell] ok   Use this template creates the flow and opens it
+[shell] ok   Ctrl+K palette jumps to Memory
+[shell] ok   Ctrl+Tab moves to the next option
+[shell] ok   no page errors
+PASS
+[check-ui] step 22/30 spanish.spec.mjs
+[spanish] ok   1280x800 Home with Get started: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 exactly five Spanish menu options (Inicio,Crear,Flujos,Memoria,Ajustes)
+[spanish] ok   1280x800 home: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 ask: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 automations: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 memory: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 settings: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings general: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings models: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings secrets: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings usage: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings data: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings system: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings help: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 Settings about: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 flow editor: glass panels stay in the room and text fits ( )
+[spanish] ok   1280x800 run view: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Home with Get started: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 exactly five Spanish menu options (Inicio,Crear,Flujos,Memoria,Ajustes)
+[spanish] ok   1024x700 home: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 ask: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 automations: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 memory: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 settings: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings general: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings models: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings secrets: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings usage: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings data: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings system: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings help: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 Settings about: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 flow editor: glass panels stay in the room and text fits ( )
+[spanish] ok   1024x700 run view: glass panels stay in the room and text fits ( )
+PASS
+[check-ui] step 23/30 triggers.spec.mjs
+[triggers] ok   flow starts by hand by default
+[triggers] ok   schedule choice and time are saved
+[triggers] ok   folder and file pattern are saved
+[triggers] ok   web address copy button copies the local address
+[triggers] ok   token copy button copies the install token
+[triggers] ok   token value never appears on screen
+[triggers] ok   last start links to the run it created
+[triggers] ok   paused flow says it will not start
+[triggers] ok   trigger settings stay inside the existing five tabs
+[triggers] ok   opening a flow from Automations still shows its run steps
+PASS
+[check-ui] step 24/30 ui_change.spec.mjs
+[ui-change] PASS proposal review, Monaco diff, apply checks, refine context, and discard
+[check-ui] step 25/30 updates.spec.mjs
+[updates] ok About shows installed version
+[updates] ok About shows installed release notes
+[updates] ok release notes do not create HTML elements
+[updates] ok available version and notes are shown
+[updates] ok checking does not install
+[updates] ok install runs only after button click and asks to restart
+[updates] ok up-to-date state is shown
+[updates] ok plain check error is shown
+[updates] ok startup update notice appears on Home
+[updates] ok Home update notice can be dismissed
+[updates] ok post-update notice identifies updated version after install
+[updates] ok post-update notice stays dismissed after reload
+[updates] ok browser explains updates are available in the desktop app
+[updates] screenshots: evidence/ui/about-before.png, evidence/ui/about-after.png; bytes 876839
+PASS
+[check-ui] step 26/30 ventures.spec.mjs
+[ventures] ok   setup steps appear in Home needs you
+[ventures] ok   Home shows one daily digest across installed ventures
+[ventures] ok   approval steps appear in Home needs you
+[ventures] ok   the pinned Glacier inbox shows the inline secret field
+[ventures] ok   the same inbox step requests every connection key together
+[ventures] ok   setup links open in a browser tab
+[ventures] ok   Done approves and removes a waiting Your step
+[ventures] ok   venture status is shown
+[ventures] ok   today counts are shown
+[ventures] ok   the next scheduled run is shown
+[ventures] ok   run now starts the manifest dry-run flow
+[ventures] ok   pause and resume update the venture status
+[ventures] ok   Done stores every key by name and clears the setup step
+[ventures] ok   completed setup items clear from Home needs you
+[ventures] ok   key values are never shown again
+PASS
+[check-ui] step 27/30 w97.spec.mjs
+PASS Memory list moves its gold cursor with arrows and opens the focused note with Enter
+PASS Settings menu moves with arrows and opens the focused section with Enter
+PASS Claim detail shows separate titled Research and Proof windows
+PASS Waiting and settled claim windows stay side by side
+[check-ui] step 28/30 w98-pixel-automations.spec.mjs
+W98 pixel automation screens ok
+[check-ui] step 29/30 watch_build.spec.mjs
+[watch-build] PASS mock: propose, refine, ordered reveal, save, and run once
+[watch-build] PASS real backend: propose, refine, ordered reveal, apply save, undo offer, and live run status
+[check-ui] step 30/30 window_controls.spec.mjs
+[window-controls] ok   browser build has no window controls
+[window-controls] ok   desktop build shows minimise and close controls
+[window-controls] ok   minimise calls the Tauri window bridge
+[window-controls] ok   close calls the Tauri window bridge
+[check-ui] PASS

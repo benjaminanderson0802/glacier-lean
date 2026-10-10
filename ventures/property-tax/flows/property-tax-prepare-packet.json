@@ -6,49 +6,114 @@
     {
       "id": "prepare_packet",
       "type": "command",
-      "config": {"cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" ventures/property-tax/scripts/property_tax.py prepare-case --case \"$GLACIER_HOME/ventures/property-tax/incoming/case.json\" --output \"$GLACIER_HOME/ventures/property-tax/packets/case.json\"", "timeout": "300", "retries": "0"},
-      "position": {"x": 0, "y": 0}
+      "config": {
+        "cmd": "python ventures/property-tax/scripts/property_tax.py prepare-case --case \"$GLACIER_HOME/ventures/property-tax/incoming/case.json\" --output \"$GLACIER_HOME/ventures/property-tax/packets/case.json\"",
+        "timeout": "300",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
     },
     {
       "id": "packet_ready",
       "type": "check",
-      "config": {"expr": "exit_code == 0"},
-      "position": {"x": 300, "y": 0}
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
     },
     {
       "id": "review_packet",
       "type": "approval",
-      "config": {"prompt": "Your step: Review the exact packet at $GLACIER_HOME/ventures/property-tax/packets/case.json and its .md instructions. Approve only its delivery to the customer for confirmation. This does not authorize Glacier to certify, sign, or submit anything to a county."},
-      "position": {"x": 600, "y": -120}
+      "config": {
+        "prompt": "Your step: Review the exact packet at $GLACIER_HOME/ventures/property-tax/packets/case.json and its .md instructions. Approve only its delivery to the customer for confirmation. This does not authorize Glacier to certify, sign, or submit anything to a county."
+      },
+      "position": {
+        "x": 600,
+        "y": -120
+      }
     },
     {
       "id": "packet_handoff",
       "type": "note",
-      "config": {"path": "ventures/property-tax/reviews/customer-handoff-{run}.md", "template": "Packet prepared for customer review. The customer confirms the requested value, confirms sale evidence, signs the county form, and submits it using current county instructions. Glacier did not file anything.\n\n{summary}"},
-      "position": {"x": 900, "y": -220}
+      "config": {
+        "path": "ventures/property-tax/reviews/customer-handoff-{run}.md",
+        "template": "Packet prepared for customer review. The customer confirms the requested value, confirms sale evidence, signs the county form, and submits it using current county instructions. Glacier did not file anything.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": -220
+      }
     },
     {
       "id": "packet_not_approved",
       "type": "note",
-      "config": {"path": "ventures/property-tax/reviews/handoff-declined-{run}.md", "template": "Packet delivery was not approved. No customer or county action occurred.\n\n{summary}"},
-      "position": {"x": 900, "y": 0}
+      "config": {
+        "path": "ventures/property-tax/reviews/handoff-declined-{run}.md",
+        "template": "Packet delivery was not approved. No customer or county action occurred.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
     },
     {
       "id": "packet_failed",
       "type": "note",
-      "config": {"path": "ventures/property-tax/reviews/packet-failed-{run}.md", "template": "Packet preparation failed. Check the reader output, roll snapshot, and supplied case files before retrying.\n\n{summary}"},
-      "position": {"x": 600, "y": 200}
+      "config": {
+        "path": "ventures/property-tax/reviews/packet-failed-{run}.md",
+        "template": "Packet preparation failed. Check the reader output, roll snapshot, and supplied case files before retrying.\n\n{summary}"
+      },
+      "position": {
+        "x": 600,
+        "y": 200
+      }
     }
   ],
   "edges": [
-    {"id": "e1", "source": "prepare_packet", "target": "packet_ready", "label": ""},
-    {"id": "e2", "source": "packet_ready", "target": "review_packet", "label": "yes"},
-    {"id": "e3", "source": "review_packet", "target": "packet_handoff", "label": "yes"},
-    {"id": "e4", "source": "review_packet", "target": "packet_not_approved", "label": "no"},
-    {"id": "e5", "source": "packet_ready", "target": "packet_failed", "label": "no"}
+    {
+      "id": "e1",
+      "source": "prepare_packet",
+      "target": "packet_ready",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "packet_ready",
+      "target": "review_packet",
+      "label": "yes"
+    },
+    {
+      "id": "e3",
+      "source": "review_packet",
+      "target": "packet_handoff",
+      "label": "yes"
+    },
+    {
+      "id": "e4",
+      "source": "review_packet",
+      "target": "packet_not_approved",
+      "label": "no"
+    },
+    {
+      "id": "e5",
+      "source": "packet_ready",
+      "target": "packet_failed",
+      "label": "no"
+    }
   ],
   "acceptance": [
-    {"kind": "command", "cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'packets'/'case.json'; d=json.loads(p.read_text()); assert d['result'] in ('match', 'no match found in Cook County Assessor parcel roll as of '+d['as_of'], 'uncertain — please check') and d['filing_submitted'] is False\"", "required": true}
+    {
+      "kind": "command",
+      "cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'packets'/'case.json'; d=json.loads(p.read_text()); assert d['result'] in ('match', 'no match found in Cook County Assessor parcel roll as of '+d['as_of'], 'uncertain — please check') and d['filing_submitted'] is False\"",
+      "required": true
+    }
   ],
   "max_steps": 7
 }

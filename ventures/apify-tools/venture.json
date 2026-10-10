@@ -9,7 +9,9 @@
     {
       "flow": "apify-ms-license-daily-canary",
       "cron": "0 9 * * *",
-      "purpose": "Check three saved Mississippi license records each morning and alert if a source changes."
+      "purpose": "Check three saved Mississippi license records each morning and alert if a source changes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [],
@@ -27,7 +29,7 @@
       "id": "apify-deploy",
       "title": "deploy the Mississippi license checker",
       "when": "after account setup",
-      "detail": "From the repository root, paste: cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify login && npm exec --yes --package=apify-cli@1.10.0 -- apify push. The pinned command signs in through Apify and uploads the prepared Actor.",
+      "detail": "Open Apify's setup guide and follow its steps to install the upload tool, sign in to your account, and upload the prepared Mississippi checker from Glacier's project folder. Return when Apify confirms the upload. Keep sign-in details inside Apify; do not paste them into Glacier.",
       "links": [
         "https://docs.apify.com/cli/docs/installation"
       ]

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 from functools import lru_cache
@@ -66,8 +67,11 @@ def validate_schedules(manifest: dict, flow: dict) -> None:
     if len(declared) != len(schedule_nodes):
         raise ValueError(f"{flow_id}: manifest schedule entries do not match schedule nodes")
     for row, node in zip(declared, schedule_nodes):
-        if row["cron"] != node.get("config", {}).get("cron"):
+        config = node.get("config", {})
+        if row["cron"] != config.get("cron"):
             raise ValueError(f"{flow_id}: manifest cron does not match schedule node")
+        if row["missed_run"] != config.get("missed_run") or row["overlap"] != config.get("overlap"):
+            raise ValueError(f"{flow_id}: manifest missed-run or overlap policy does not match schedule node")
 
 
 def validate_all(only: str | None = None) -> list[dict]:
@@ -123,26 +127,70 @@ def shlex_quote(value: str) -> str:
 
 
 def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict:
-    """Point commands at a staged copy and make shared venture packages importable."""
+    """Bind source commands to this checkout and its interpreter for the installed flow."""
     result = json.loads(json.dumps(flow))
-    workspace = home / "workspaces" / str(flow["id"])
-    venture_cwd = workspace / "ventures" / slug
+    venture_cwd = repo_root / "ventures" / slug
+    python = shlex_quote(sys.executable)
+    import_path = f"{repo_root}:{venture_cwd}"
+
+    def bind_command(command: str) -> str:
+        command = command.replace("{python}", python)
+        command = command.replace("PYTHONPATH=. .venv/bin/python", f"PYTHONPATH={shlex_quote(import_path)} {python}")
+        command = re.sub(r"(?<![A-Za-z0-9_./-])python3?(?=\s)", python, command)
+        command = command.replace("${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}", python)
+        return command.replace("$HOME/w/glacier-lean/.venv/bin/python", python)
+
     for node in result.get("nodes", []):
         if node.get("type") != "command":
             continue
         config = node.setdefault("config", {})
         requested_cwd = str(config.get("cwd") or "").strip()
-        if requested_cwd == "{repo}":
+        if requested_cwd in ("", ".", "{repo}"):
             config["cwd"] = str(repo_root)
         elif requested_cwd == f"ventures/{slug}":
+            staged = home / "workspaces" / str(flow.get("id")) / "ventures" / slug
+            config["cwd"] = str(staged if staged.is_dir() else venture_cwd)
+        elif requested_cwd.startswith("/home/") and f"/ventures/{slug}" in requested_cwd:
             config["cwd"] = str(venture_cwd)
         command = str(config.get("cmd") or "")
-        if command.startswith("python "):
-            command = "python3 " + command[len("python "):]
-            config["cmd"] = command
-        if command.startswith(("python ", "python3 ")):
-            config["cmd"] = f"PYTHONPATH={shlex_quote(str(repo_root))}${{PYTHONPATH:+:$PYTHONPATH}} {command}"
+        if command:
+            config["cmd"] = f"PYTHONPATH={shlex_quote(import_path)}${{PYTHONPATH:+:$PYTHONPATH}} {bind_command(command)}"
+    for key in ("acceptance", "checks"):
+        rows = result.get(key)
+        if isinstance(rows, list):
+            for row in rows:
+                if isinstance(row, dict) and isinstance(row.get("cmd"), str):
+                    row["cmd"] = bind_command(row["cmd"])
     return result
+
+
+def python_command() -> str:
+    """Compatibility helper returning the interpreter used for installed flows."""
+    return shlex_quote(sys.executable)
+
+
+def discover_flows(only: str | None = None) -> list[tuple[Path, dict]]:
+    """Compatibility view of manifest flows with checkout-bound commands."""
+    if only and not any(json.loads(path.read_text(encoding="utf-8")).get("slug") == only for path in ROOT.glob("*/venture.json")):
+        raise ValueError(f"No venture flows found for {only}")
+    rows: list[tuple[Path, dict]] = []
+    for manifest_path in manifests(only):
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for flow_id in manifest["flows"]:
+            flow = json.loads(flow_file(manifest_path, flow_id).read_text(encoding="utf-8"))
+            runtime = json.loads(json.dumps(flow))
+            for node in runtime.get("nodes", []):
+                if node.get("type") != "command":
+                    continue
+                config = node.setdefault("config", {})
+                if config.get("cwd") in ("{repo}", "", None):
+                    config["cwd"] = str(REPO)
+                command = str(config.get("cmd") or "")
+                command = command.replace("{python}", python_command())
+                command = re.sub(r"(?<![A-Za-z0-9_./-])python3?(?=\s)", python_command(), command)
+                config["cmd"] = command
+            rows.append((manifest_path, runtime))
+    return rows
 
 
 def _stage_scripts(venture_dir: Path, slug: str, home: Path, flow_ids: list[str]) -> None:
@@ -169,6 +217,31 @@ def register_flow(api: str, token: str, flow: dict) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+def register_flow_if_changed(api: str, token: str, flow: dict) -> dict:
+    """Skip unchanged environments so repeated installs do not create extra revisions."""
+    flow_id = flow.get("id")
+    if not flow_id:
+        raise ValueError("flow file must include an id")
+    url = f"{api.rstrip('/')}/api/environments/{quote(str(flow_id), safe='')}"
+    request = Request(url, headers={"Authorization": f"Bearer {token}"})
+    try:
+        with urlopen(request, timeout=30) as response:
+            current = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        if exc.code != 404:
+            raise
+    else:
+        if current == flow:
+            return {"saved": False, "unchanged": True}
+    return register_flow(api, token, flow)
+
+
+def install_flow(flow: dict, *, base: str, token: str) -> dict:
+    """Compatibility helper for registering a single flow through idempotent PUT."""
+    api = base[:-4] if base.endswith("/api") else base
+    return register_flow(api, token, flow)
+
+
 def install(api: str, token: str, only: str | None = None, *, home: Path | None = None) -> list[dict]:
     validate_all(only)
     data_home = home or Path(os.environ.get("GLACIER_HOME", "data"))
@@ -182,7 +255,7 @@ def install(api: str, token: str, only: str | None = None, *, home: Path | None 
             flow_path = flow_file(manifest_path, flow_id)
             flow = json.loads(flow_path.read_text(encoding="utf-8"))
             runtime = _runtime_flow(flow, repo_root=REPO, slug=slug, home=data_home)
-            result = register_flow(api, token, runtime)
+            result = register_flow_if_changed(api, token, runtime)
             registered.append({"venture": slug, "flow": flow_id, "result": result})
     return registered
 

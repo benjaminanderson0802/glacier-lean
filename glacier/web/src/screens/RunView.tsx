@@ -20,6 +20,50 @@ const savedHttpTime = (key: string) => {
   } catch { return undefined }
 }
 
+function ownerOutput(text: string): string {
+  let value: unknown
+  let prefix = ''
+  let suffix = ''
+  try {
+    value = JSON.parse(text)
+  } catch {
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start < 0) return text
+    if (end <= start) {
+      const pairs = [...text.slice(start).matchAll(/"([^"]+)"\s*:\s*("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?|true|false|null)/g)]
+      if (!pairs.length) return text
+      const label = (key: string) => key.replaceAll('_', ' ').replaceAll('-', ' ').toLowerCase()
+      const lines = pairs.map(pair => {
+        let value = pair[2]
+        try { value = JSON.stringify(JSON.parse(value)) } catch { /* keep scalar text */ }
+        return `${label(pair[1])}: ${String(value).replace(/^"|"$/g, '')}`
+      })
+      return [text.slice(0, start).trim(), ...lines].filter(Boolean).join('\n')
+    }
+    try {
+      value = JSON.parse(text.slice(start, end + 1))
+      prefix = text.slice(0, start).trim()
+      suffix = text.slice(end + 1).trim()
+    } catch { return text }
+  }
+  const lines: string[] = []
+  const label = (key: string) => key.replaceAll('_', ' ').replaceAll('-', ' ').toLowerCase()
+  const visit = (item: unknown, path: string) => {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      for (const [key, child] of Object.entries(item)) visit(child, path ? `${path} · ${label(key)}` : label(key))
+    } else if (Array.isArray(item)) {
+      item.forEach((child, index) => visit(child, `${path} · item ${index + 1}`))
+      if (!item.length) lines.push(`${path}: none`)
+    } else {
+      const valueText = item === null || item === undefined ? '—' : String(item)
+      lines.push(path ? `${path}: ${valueText}` : valueText)
+    }
+  }
+  visit(value, '')
+  return lines.length ? [prefix, ...lines, suffix].filter(Boolean).join('\n') : text
+}
+
 function useFlow(envId: string) {
   const [env, setEnv] = useState<Environment | null>(null)
   const [runs, setRuns] = useState<RunSummary[]>([])
@@ -70,7 +114,20 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
   }, [current, load, refreshRuns])
 
   const nodes = env?.nodes ?? []
-  const label = (type: string) => types.find(t => t.type === type)?.label ?? type
+  const label = (type: string) => {
+    const ownerLabels: Record<string, string> = {
+      command: t('run.labelCommand'), approval: t('run.labelApproval'), check: t('run.labelCheck'),
+      note: t('run.labelNote'), schedule: t('run.labelSchedule'),
+    }
+    return ownerLabels[type] ?? types.find(item => item.type === type)?.label ?? type
+  }
+  const stepState = (id: string) => {
+    const value = run?.node_states[id] ?? 'pending'
+    if (value === 'failed' && run?.outputs[id]) {
+      try { if (JSON.parse(run.outputs[id]).setup_required) return t('run.setupNeeded') } catch { /* keep the plain failure state */ }
+    }
+    return value
+  }
   const active = sel ?? (run && (run.waiting_on ?? nodes.find(n => run.node_states[n.id] === 'running')?.id)) ?? nodes[0]?.id
   const activeNode = nodes.find(n => n.id === active)
   const usage = useMemo(() => {
@@ -118,7 +175,7 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
       {why && (
         <div className={`g-why${why.verified === false ? ' bad' : why.verified ? ' ok' : ''}`} data-testid="run-why">
           <StatusIcon kind={why.verified ? 'ok' : why.verified === false ? 'bad' : run?.status === 'waiting' ? 'warn' : run?.status === 'running' ? 'run' : 'idle'} />
-          <span><b>{t('run.whatHappened')}</b> {why.summary}{why.needs_you ? ` ${why.needs_you}` : ''}</span>
+          <span><b>{t('run.whatHappened')}</b> {ownerOutput(why.summary)}{why.needs_you ? ` ${ownerOutput(why.needs_you)}` : ''}</span>
         </div>
       )}
       {run?.status === 'waiting' && (
@@ -130,24 +187,24 @@ function LiveRun({ envId, runId }: { envId: string; runId?: string }) {
       <div className="g-runview" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)', gridTemplateRows: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'calc(2 * var(--px))', flex: 1 }}>
         <Panel title={t('run.steps')} testid="run-steps" className="g-scroll">
           {nodes.length > 0 ? <KeyboardMenu label={t('run.steps')} items={nodes.map((n, i) => {
-            const s = (run?.node_states[n.id] ?? 'pending') as NodeState
-            return { id: n.id, testid: `run-step-${n.id}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{`${i + 1}. ${label(n.type)}`}</span><span className="g-detail">{[s, Object.values(n.config).find(Boolean)?.slice(0, 60)].filter(Boolean).join(' · ')}</span></span> }
+            const s = stepState(n.id) as NodeState | string
+            return { id: n.id, testid: `run-step-${n.id}`, label: <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}><span className="g-lead">{`${i + 1}. ${label(n.type)}`}</span><span className="g-detail">{s}</span></span> }
           })} selected={active ?? ''} onSelect={setSel} /> : <Empty>{t('run.thisFlowEmpty')}</Empty>}
         </Panel>
         <Panel testid="run-output" title={
           <span className="g-seg">
             <button className={`g-seg-btn${tab === 'output' ? ' active' : ''}`} onClick={() => setTab('output')}>{t('run.output')}</button>
             <button className={`g-seg-btn${tab === 'details' ? ' active' : ''}`} onClick={() => setTab('details')}>{t('run.details')}</button>
-          </span>} aside={activeNode ? `${label(activeNode.type)} · ${activeNode.id}` : undefined}>
+          </span>} aside={activeNode ? label(activeNode.type) : undefined}>
           {tab === 'output'
             ? active && activeNode?.type === 'http_request' && run?.outputs[active]
               ? <HttpRunResult text={run.outputs[active]} elapsed={httpElapsed[`${run.run_id}:${active}`] ?? savedHttpTime(`${run.run_id}:${active}`)} />
-              : <NamedTextBox className="g-term" testid="run-output-text"><pre className="g-run-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{(active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun'))}</pre></NamedTextBox>
+              : <NamedTextBox className="g-term" testid="run-output-text"><pre className="g-run-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{ownerOutput((active && run?.outputs[active]) || (run ? t('run.noOutput') : t('run.pressRun')))}</pre></NamedTextBox>
             : <dl className="g-kv">{Object.entries(activeNode?.config ?? {}).map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v || t('run.dash')}</dd></Fragment>)}</dl>}
         </Panel>
         <Panel className="g-scroll" title={t('run.verification')} aside={run?.verified === true ? t('run.allChecksPassed') : run?.verified === false ? t('run.notVerified') : undefined} testid="run-verification">
           <div className="g-rows">
-            {(run?.verification ?? []).map(c => <Row key={c.check} status={c.passed ? 'ok' : 'bad'} lead={c.kind} detail={c.evidence?.slice(0, 120)} />)}
+            {(run?.verification ?? []).map(c => <Row key={c.check} status={c.passed ? 'ok' : 'bad'} lead={c.passed ? t('run.checkPassed') : t('run.checkNeedsReview')} />)}
             {run && !(run.verification ?? []).length && <Empty>{run.verified === null ? t('run.noChecks') : t('run.checksWhenFinished')}</Empty>}
           </div>
         </Panel>

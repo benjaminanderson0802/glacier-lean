@@ -28,12 +28,16 @@
     {
       "flow": "hourly-intake",
       "cron": "0 * * * *",
-      "purpose": "Read Jobber jobs through its read-only connector; no registration or messages are sent."
+      "purpose": "Read Jobber jobs through its read-only connector; no registration or messages are sent.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     },
     {
       "flow": "daily-deadlines",
       "cron": "0 8 * * *",
-      "purpose": "Calculate the local registration queue and identify deadlines within ten days."
+      "purpose": "Calculate the local registration queue and identify deadlines within ten days.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [
@@ -47,9 +51,27 @@
       "id": "jobber-setup",
       "title": "Connect a Jobber test account",
       "when": "Before the first live read",
-      "detail": "Create the Jobber app and test account, then save its OAuth values in Glacier Settings → Secrets. Run the read-only connector check. Glacier currently needs the shared connector to expose completed-install details before full intake can run.",
+      "detail": "Create the Jobber app and test account. Paste the four Jobber values into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only connector check. Completed-install details are not available yet, so full intake stays off.",
       "links": [
         "https://developer.getjobber.com/"
+      ],
+      "secrets": [
+        {
+          "name": "jobber_client_id",
+          "label": "Jobber app ID"
+        },
+        {
+          "name": "jobber_client_secret",
+          "label": "Jobber app secret"
+        },
+        {
+          "name": "jobber_access_token",
+          "label": "Jobber access token"
+        },
+        {
+          "name": "jobber_refresh_token",
+          "label": "Jobber refresh token"
+        }
       ]
     },
     {

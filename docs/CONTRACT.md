@@ -82,7 +82,7 @@ Webhook trigger URLs are local and require Glacier's install token. A remote ser
                                                   outputs, checks and waiting approval. Output snippets are redacted and limited to 120 characters.
                                                   Returns 404 when the run does not exist; never calls an AI model.
 - GET  /api/home                             -> {local_ai:{online,model}, health:{date,failed_runs,stuck_runs,waiting_for_owner,data_bytes,note_path}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
-                                                  needs_you:[{kind,title,detail,at,ref}],
+                                                  needs_you:[{kind,title,detail,at,ref}], venture_steps:[{kind,title,detail,instructions,links,at,ref}],
                                                   running:[{run_id,env_id,name,status,step,steps,started_at}],
                                                   recent_notes:[{path,summary,at}]}; Home also shows the daily report and writes it to memory.
                                                   Needs-you rows are newest first (up to 20): waiting approvals,

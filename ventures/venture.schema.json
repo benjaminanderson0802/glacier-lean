@@ -17,11 +17,13 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["flow", "cron", "purpose"],
+        "required": ["flow", "cron", "purpose", "missed_run", "overlap"],
         "properties": {
           "flow": {"type": "string"},
           "cron": {"type": "string", "minLength": 1},
-          "purpose": {"type": "string", "minLength": 1}
+          "purpose": {"type": "string", "minLength": 1},
+          "missed_run": {"type": "string", "enum": ["run_once", "skip"]},
+          "overlap": {"type": "string", "enum": ["queue", "skip"]}
         },
         "additionalProperties": false
       }
@@ -40,7 +42,18 @@
             "instructions": {"type": "string"},
             "links": {"type": "array", "items": {"type": "string", "format": "uri"}},
             "link": {"type": "string", "format": "uri"},
-            "secret_name": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"}
+            "secret_name": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+            "secrets": {
+              "type": "array", "minItems": 1, "uniqueItems": true,
+              "items": {
+                "type": "object", "required": ["name", "label"],
+                "properties": {
+                  "name": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+                  "label": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+              }
+            }
         },
         "additionalProperties": false
       }

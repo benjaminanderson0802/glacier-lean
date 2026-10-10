@@ -7,7 +7,9 @@
       "id": "daily",
       "type": "schedule",
       "config": {
-        "cron": "0 6 * * *"
+        "cron": "0 6 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
       },
       "position": {
         "x": 0,
@@ -18,9 +20,10 @@
       "id": "prepare",
       "type": "command",
       "config": {
-        "cmd": "project_root=\"${GLACIER_PROJECT_ROOT:-$HOME/w/glacier-lean}\"; PYTHONPATH=\"$project_root\" \"$project_root/.venv/bin/python\" \"$project_root/ventures/dibbs-supply/scripts/dibbs_supply.py\" daily --solicitations \"$GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json\" --quotes \"$GLACIER_HOME/ventures/dibbs-supply/incoming/quotes.json\" --output \"$GLACIER_HOME/ventures/dibbs-supply/drafts\"",
+        "cmd": "GLACIER_PROJECT_ROOT=\"$PWD\" python ventures/dibbs-supply/scripts/dibbs_supply.py daily --solicitations \"$GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json\" --quotes \"$GLACIER_HOME/ventures/dibbs-supply/incoming/quotes.json\" --output \"$GLACIER_HOME/ventures/dibbs-supply/drafts\"",
         "timeout": "180",
-        "retries": "0"
+        "retries": "0",
+        "cwd": "{repo}"
       },
       "position": {
         "x": 300,
@@ -109,7 +112,7 @@
   "acceptance": [
     {
       "kind": "command",
-      "cmd": "PYTHONPATH=. .venv/bin/python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'dibbs-supply'/'drafts'/'bid-sheet.json'; d=json.loads(p.read_text()); assert d['submitted'] is False and d['owner_must_sign_and_submit'] is True and d['result'] in ('match','uncertain \u2014 please check','no match found in DLA DIBBS and supplier quotes as of '+d['as_of'])\"",
+      "cmd": "PYTHONPATH=. .venv/bin/python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'dibbs-supply'/'drafts'/'bid-sheet.json'; d=json.loads(p.read_text()); assert d['submitted'] is False and d['owner_must_sign_and_submit'] is True and d['result'] in ('match','uncertain — please check','no match found in DLA DIBBS and supplier quotes as of '+d['as_of'])\"",
       "required": true
     }
   ],

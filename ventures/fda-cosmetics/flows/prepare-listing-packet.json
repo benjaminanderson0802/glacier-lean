@@ -22,7 +22,7 @@
     {
       "id": "customer_submit",
       "type": "approval",
-      "config": {"prompt": "Your step: Review every field and source in the prepared packet. Confirm the ingredients and exemption checklist, then sign where required and upload the named SPL ZIP to FDA Cosmetics Direct. You submit the listing to FDA; Glacier has not signed or submitted anything."},
+      "config": {"prompt": "Your step: Review the packet and every source. If the run says Shopify setup is needed, complete the Shopify step in your steps and run again. Submit only after a packet exists and you have confirmed its ingredients and exemption checklist. You sign and submit the listing to FDA; Glacier has not signed or submitted anything."},
       "position": {"x": 600, "y": 0}
     }
   ],

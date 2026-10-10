@@ -76,6 +76,7 @@ button.l-side-line:hover { color: var(--g-white); text-decoration: underline; }
 
 /* rows and lists */
 .g-rows { display: flex; flex-direction: column; min-height: 0; overflow: auto; }
+.g-panel > .g-rows { flex: 1 1 auto; }
 .g-row { display: grid; grid-template-columns: calc(10 * var(--px)) minmax(0,1fr) auto; align-items: center; gap: calc(4 * var(--px)); width: 100%; padding: calc(3 * var(--px)) calc(2 * var(--px)); border: 0; border-bottom: 1px solid rgba(255,255,255,.22); background: transparent; color: var(--g-ink); text-align: left; font: var(--g-size-body)/1.45 var(--g-font-body); text-shadow: var(--l-text-shadow); border-radius: 0; }
 .g-row:last-child { border-bottom: 0; }
 button.g-row:hover, .g-row.sel { background: rgba(255,255,255,.14); }
@@ -88,6 +89,7 @@ button.g-row:hover, .g-row.sel { background: rgba(255,255,255,.14); }
 .g-grid-2 { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: calc(4 * var(--px)); min-height: 0; flex: 1; }
 .g-stack { display: flex; flex-direction: column; gap: calc(4 * var(--px)); min-height: 0; }
 .starter-window { overflow-y: auto; }
+.starter-window > .g-rows { flex: none; overflow: visible; }
 .g-rows > *, .g-cards > *, .g-panel > * { flex-shrink: 0; }
 
 /* buttons: milky pills with dark ink, like the reference */
@@ -233,11 +235,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 
 /* Building a flow needs room: the back-wall panel grows to fill the space between the two side walls. */
 /* the flow editor grows over most of the room but stops short of the right wall, so the chat stays visible */
-.is-building .l-center { left: 12%; width: 71.2%; top: 3%; height: 89.5%; z-index: 7; }
+.is-building .l-center { left: 12%; width: 71.2%; top: 3%; height: 89.5%; z-index: 6; }
 .is-building .l-status { left: 12%; width: 71.2%; top: 93%; }
 /* on small windows the canvas needs the room: cover the left menu ("all flows" goes back), keep the chat */
 @container (max-width: 1100px) {
-  .is-building .l-center, .is-building .l-status { left: 5%; width: 78.2%; }
+  .is-building .l-center { left: 5%; width: 78.2%; top: 2.5%; height: 93%; }
+  .is-building .l-status { left: 5%; width: 78.2%; top: 96%; }
+  .is-building .palette { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-content: start; }
+  .is-building .palette > .pal { width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 /* text boxes wrap and grow with their text instead of clipping it (long Spanish prompts at small window sizes) */
 .g-textbox { overflow: visible; white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 0; flex-shrink: 0; }

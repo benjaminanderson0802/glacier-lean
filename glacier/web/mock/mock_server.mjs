@@ -117,7 +117,7 @@ const mockVentures = new Map([['truck-dispatch', {
   slug: 'truck-dispatch', name: 'Truck dispatch', status: 'setting_up',
   flows: [{ env_id: 'dispatch', dry_run_env_id: 'dispatch-preview' }], schedule: { cron: '0 8 * * *' },
   next_run: new Date(Date.now() + 3600_000).toISOString(), today: { runs: 4, completed: 3, failed: 0 },
-  your_steps: [{ id: 'fleet-key', title: 'Paste the fleet key', instructions: 'Add it from the fleet portal.', link: 'https://fleet.example.test/settings/api', secret_name: 'FLEET_KEY', done: false }],
+  your_steps: [{ id: 'fleet-key', title: 'connect the fleet account', instructions: 'Paste both keys into the fields on this step. Glacier saves them in this computer’s keychain.', link: 'https://fleet.example.test/settings/api', secrets: [{ name: 'FLEET_KEY', label: 'Fleet API key' }, { name: 'FLEET_REGION', label: 'Fleet region key' }], done: false }],
 } ]])
 const mockHygiene = [
   { id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.', status: 'pending' },
@@ -199,9 +199,12 @@ const server = http.createServer(async (req, res) => {
       const venture = mockVentures.get(m[1]), step = venture?.your_steps.find(item => item.id === m[2])
       if (!step) return send(404, { detail: 'step not found' })
       const body = await readBody()
-      if (step.secret_name) { if (!body?.value) return send(400, { detail: 'paste the key first' }); mockSecrets.add(step.secret_name) }
+      if (step.secrets?.length) {
+        if (!step.secrets.every(field => body?.values?.[field.name]?.trim())) return send(400, { detail: 'enter each key first' })
+        step.secrets.forEach(field => mockSecrets.add(field.name))
+      } else if (step.secret_name) { if (!body?.value) return send(400, { detail: 'paste the key first' }); mockSecrets.add(step.secret_name) }
       step.done = true
-      return send(200, { done: true, secret_name: step.secret_name })
+      return send(200, { done: true, secret_name: step.secret_name, secret_names: (step.secrets ?? []).map(field => field.name) })
     }
     if (p === '/api/teams' && req.method === 'GET') return send(200, [...mockTeams.values()].map(team => ({ team_id: team.team_id, name: team.plan.vision.goal, status: team.status, done: Object.values(team.tasks).filter(t => t.status === 'done').length, tasks: Object.keys(team.tasks).length, passing: Object.values(team.features).filter(f => f.status === 'passing').length, feature_count: team.plan.features.length, needs_owner: Object.values(team.tasks).filter(t => t.status === 'awaiting_approval').length })))
     if (p === '/api/build/vision' && req.method === 'POST') { const body = await readBody(); const path = `visions/${crypto.randomUUID()}.md`; vault.set(path, JSON.stringify(body.vision)); return send(200, { confirmed: true, path, vision: body.vision }) }
@@ -348,18 +351,26 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/home') {
       const now = Date.now()
       const at = minutes => new Date(now - minutes * 60_000).toISOString()
+      const healthDate = new Date(now).toISOString().slice(0, 10)
+      const ventureSteps = [
+        ...[...mockVentures.values()].flatMap(venture => venture.your_steps.filter(step => !step.done).map(step => ({ kind: 'your_step', title: step.title, detail: step.instructions, instructions: step.instructions, links: [step.link], secret_name: step.secret_name, secrets: step.secrets, at: new Date().toISOString(), ref: { venture_slug: venture.slug, step_id: step.id } }))),
+        ...(!mockApprovalDone ? [{ kind: 'your_step', title: 'Your step: review the dispatch list', detail: 'Your step: review the dispatch list', instructions: 'Approve the route before any driver is assigned.', at: at(1), ref: { run_id: 'run-dispatch-waiting', node_id: 'review', env_id: 'dispatch' } }] : []),
+      ]
+      const healthNotePath = `health/glacier-health-${healthDate}.md`
+      if (!vault.has(healthNotePath)) vault.set(healthNotePath, `# Glacier health — ${healthDate}\n\n- Failed runs in the last day: 1\n- Runs timed out after 24 hours: 0\n- Steps waiting on you: 2\n- Data folder size: 5.0 MB\n`)
       return send(200, {
         local_ai: { online: true, model: 'qwen3:0.6b' },
-        health: { date: new Date(now).toISOString().slice(0, 10), failed_runs: 1, stuck_runs: 0, waiting_for_owner: 2, data_bytes: 5242880, note_path: `health/glacier-health-${new Date(now).toISOString().slice(0, 10)}.md` },
+        health: { date: healthDate, failed_runs: 1, stuck_runs: 0, waiting_for_owner: 2, data_bytes: 5242880, note_path: healthNotePath },
         next_runs: [{ env_id: 'daily-backup', name: 'Daily backup', next_run: new Date(now + 3600_000).toISOString() }],
-        counts: { running: 2, need_you: 6 },
+        venture_digest: { date: new Date(now).toISOString().slice(0, 10), ventures: mockVentures.size, runs: [...mockVentures.values()].reduce((sum, venture) => sum + venture.today.runs, 0), completed: [...mockVentures.values()].reduce((sum, venture) => sum + venture.today.completed, 0), failed: [...mockVentures.values()].reduce((sum, venture) => sum + venture.today.failed, 0), waiting_for_you: [...mockVentures.values()].reduce((sum, venture) => sum + venture.your_steps.filter(step => !step.done).length, 0) + (mockApprovalDone ? 0 : 1) },
+        venture_steps: ventureSteps,
+        counts: { running: 2, need_you: 6 + ventureSteps.length },
         needs_you: [
-          ...[...mockVentures.values()].flatMap(venture => venture.your_steps.filter(step => !step.done).map(step => ({ kind: 'your_step', title: step.title, detail: step.instructions, instructions: step.instructions, links: [step.link], secret_name: step.secret_name, at: new Date().toISOString(), ref: { venture_slug: venture.slug, step_id: step.id } }))),
-          ...(!mockApprovalDone ? [{ kind: 'your_step', title: 'Your step: review the dispatch list', detail: 'Your step: review the dispatch list', instructions: 'Approve the route before any driver is assigned.', at: at(1), ref: { run_id: 'run-dispatch-waiting', node_id: 'review', env_id: 'dispatch' } }] : []),
           { kind: 'approval', title: 'approval waiting', detail: 'Weekly report', at: at(2), ref: { run_id: 'run-report', node_id: 'approve', env_id: 'weekly-report' } },
           { kind: 'approval', title: 'approval waiting', detail: 'Inbox triage', at: at(9), ref: { run_id: 'run-inbox', node_id: 'confirm', env_id: 'inbox-triage' } },
           { kind: 'claim', title: 'capability_gap', detail: 'Need a calendar connection for this workflow.', at: at(18), ref: { claim_id: '2026-10-07-calendar-claim-a1b2c3' } },
           { kind: 'failed_run', title: 'run failed', detail: 'Nightly checks', at: at(46), ref: { run_id: 'run-tests', env_id: 'nightly-tests' } },
+          ...ventureSteps,
         ],
         running: [
           { run_id: 'run-backup', env_id: 'daily-backup', name: 'Daily backup', status: 'running', step: 2, steps: 4, started_at: at(3) },
