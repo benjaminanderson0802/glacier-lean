@@ -130,13 +130,22 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
     """Bind source commands to this checkout and its interpreter for the installed flow."""
     result = json.loads(json.dumps(flow))
     venture_cwd = repo_root / "ventures" / slug
-    python = shlex_quote(sys.executable)
-    import_path = f"{repo_root}:{venture_cwd}"
+    python = python_command()
+    # Windows Python expects drive paths and semicolon separators even when its
+    # command is launched through Git Bash. Forward slashes keep Git Bash's path
+    # converter from rewriting the PYTHONPATH value to /c/... for native Python.
+    import_path = os.pathsep.join(
+        path.replace("\\", "/") for path in (str(repo_root), str(venture_cwd))
+    )
 
     def bind_command(command: str) -> str:
         command = command.replace("{python}", python)
         command = command.replace("PYTHONPATH=. .venv/bin/python", f"PYTHONPATH={shlex_quote(import_path)} {python}")
-        command = re.sub(r"(?<![A-Za-z0-9_./-])python3?(?=\s)", python, command)
+        command = re.sub(
+            r"(?<![A-Za-z0-9_./-])python3?(?=\s)",
+            lambda _match: python,
+            command,
+        )
         command = command.replace("${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}", python)
         return command.replace("$HOME/w/glacier-lean/.venv/bin/python", python)
 
@@ -154,7 +163,8 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
             config["cwd"] = str(venture_cwd)
         command = str(config.get("cmd") or "")
         if command:
-            config["cmd"] = f"PYTHONPATH={shlex_quote(import_path)}${{PYTHONPATH:+:$PYTHONPATH}} {bind_command(command)}"
+            path_append = f"${{PYTHONPATH:+{shlex_quote(os.pathsep)}$PYTHONPATH}}"
+            config["cmd"] = f"PYTHONPATH={shlex_quote(import_path)}{path_append} {bind_command(command)}"
     for key in ("acceptance", "checks"):
         rows = result.get(key)
         if isinstance(rows, list):
@@ -166,7 +176,9 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
 
 def python_command() -> str:
     """Compatibility helper returning the interpreter used for installed flows."""
-    return shlex_quote(sys.executable)
+    # Git Bash can execute a drive-letter path with forward slashes directly;
+    # keeping it quoted handles spaces in the interpreter's installation path.
+    return shlex_quote(sys.executable.replace("\\", "/"))
 
 
 def discover_flows(only: str | None = None) -> list[tuple[Path, dict]]:
