@@ -1,0 +1,51 @@
+{
+  "slug": "freight-claims",
+  "name": "Freight claims",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare source-linked claim packets for customer-confirmed freight loss, damage, or shortage, and track carrier response windows.",
+    "channels": ["ShipStation app listing", "customer-uploaded claim documents"],
+    "publication": "The first ShipStation app listing is owner-reviewed. Glacier reads ShipStation only and never submits or sends a carrier claim.",
+    "billing": "Prepare a 20–30% contingency invoice draft only after recovery is confirmed; customer agreement and owner approval are required before billing."
+  },
+  "blocks": ["connectors", "reader", "deadlines", "filer", "customer"],
+  "block_functions": [
+    "ventures.blocks.connectors.ShipStationClient.get_shipments",
+    "ventures.blocks.reader.read_document",
+    "ventures.blocks.deadlines.add",
+    "ventures.blocks.deadlines.due",
+    "ventures.blocks.filer.prepare (loopback mock only)",
+    "ventures.blocks.customer.request_signature (owner-provided authorization only)"
+  ],
+  "flows": ["freight-watch-shipstation", "freight-check-deadlines", "freight-request-authorization", "freight-prepare-claim", "freight-record-carrier-receipt", "freight-invoice-draft"],
+  "schedules": [
+    {"flow": "freight-watch-shipstation", "cron": "0 8 * * *", "purpose": "Read ShipStation shipment records daily and save possible exceptions for customer confirmation."},
+    {"flow": "freight-check-deadlines", "cron": "15 8 * * *", "purpose": "Collect due 30-day acknowledgment and 120-day resolution reminders."}
+  ],
+  "secrets_needed": ["shipstation_api_key"],
+  "your_steps": [
+    {
+      "id": "connect-shipstation",
+      "title": "Connect ShipStation and approve the first listing",
+      "when": "Before daily shipment checks",
+      "detail": "Create or authorize the ShipStation read-only app, add shipstation_api_key in Glacier Settings > Secrets, check the current API quota, explicitly enable polling, run the connector check, and review the first marketplace listing. Glacier does not create accounts or publish it."
+    },
+    {
+      "id": "review-first-claims",
+      "title": "Review the first ten claim packets",
+      "when": "Before routine use",
+      "detail": "Check each packet against its bill of lading, invoice, delivery receipt, photos, insurance status, and the carrier's cited terms. Adjust the agreed 20–30% recovery share before any customer billing."
+    },
+    {
+      "id": "customer-submit-and-billing",
+      "title": "Have the shipper authorize and send each claim",
+      "when": "After the shipper reviews a prepared packet",
+      "detail": "The shipper supplies any owner-approved authorization for e-signature, confirms insurance and damaged items, and sends the prefilled claim through its chosen carrier channel. Record the carrier receipt date and confirmed recovery; approve any invoice draft before it is sent or charged."
+    }
+  ],
+  "launch_gates": [
+    "Owner reviews the first ShipStation app listing.",
+    "Owner reviews the first ten claim packets.",
+    "No carrier message, filing, signature, invoice, or payment is sent by Glacier without an exact approval step; real carrier submission remains with the shipper."
+  ]
+}

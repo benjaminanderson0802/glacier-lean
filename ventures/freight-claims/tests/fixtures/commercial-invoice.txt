@@ -1,0 +1,3 @@
+Invoice Number: INV-DEMO-001
+Invoice Total: 330.00
+Damaged widget A quantity 2 unit price 125.00

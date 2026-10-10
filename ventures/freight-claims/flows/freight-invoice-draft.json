@@ -1,0 +1,18 @@
+{
+  "id": "freight-invoice-draft",
+  "name": "Prepare a recovered-freight-claim invoice",
+  "goal": "After recovery is confirmed, calculate the agreed 20–30% contingency amount and prepare an invoice draft for owner review.",
+  "nodes": [
+    {"id": "calculate_invoice", "type": "command", "config": {"cmd": "python ventures/freight-claims/scripts/claims.py invoice --input \"$GLACIER_HOME/ventures/freight-claims/incoming/recovery.json\" --output \"$GLACIER_HOME/ventures/freight-claims/reports/invoice-draft.json\"", "cwd": "{repo}", "timeout": 30, "retries": 0}, "position": {"x": 100, "y": 100}},
+    {"id": "invoice_note", "type": "note", "config": {"path": "ventures/freight-claims/reports/invoice-draft-{run}.md", "template": "Contingency invoice draft only. Check the recovered amount and agreed share. Glacier has not sent an invoice or charged a payment method.\n\n{summary}"}, "position": {"x": 400, "y": 100}},
+    {"id": "approve_billing", "type": "approval", "config": {"prompt": "Your step: review the exact recovery, agreed percentage, and invoice amount in the draft above. Approve and send the invoice yourself only if the signed customer agreement supports it. Glacier has not invoiced or charged the customer."}, "position": {"x": 700, "y": 100}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "calculate_invoice", "target": "invoice_note", "label": ""},
+    {"id": "e2", "source": "invoice_note", "target": "approve_billing", "label": ""}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/invoice-draft.json'; d=json.loads(p.read_text()); assert d.get('status') == 'pending approval' and d.get('sent') is False and d.get('charged') is False\"", "required": true}
+  ],
+  "max_steps": 3
+}
