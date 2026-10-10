@@ -1,0 +1,56 @@
+{
+  "id": "carpenter-prepare-listing",
+  "name": "Prepare a handmade furniture listing",
+  "goal": "Prepare Etsy and Shopify drafts from maker-supplied facts and completed-sale comparisons. A draft is not published until the owner reviews it and manually publishes it.",
+  "nodes": [
+    {
+      "id": "prepare_draft",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py prepare --product \"$GLACIER_HOME/ventures/carpenter-goods/incoming/product.json\" --comparables \"$GLACIER_HOME/ventures/carpenter-goods/incoming/comparables.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/drafts/listing.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "draft_ready",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "approve_listing",
+      "type": "approval",
+      "config": {"prompt": "Your step: Review the Etsy and Shopify listing drafts, source-linked completed sales, price and photos. Approve only if the details are correct. Approval authorizes you to publish manually; Glacier will not publish or contact either platform."},
+      "position": {"x": 600, "y": 0}
+    },
+    {
+      "id": "approval_note",
+      "type": "note",
+      "config": {"path": "ventures/carpenter-goods/reviews/listing-{run}.md", "template": "The owner approved review of the prepared draft in run {run}. The listing remains unpublished; copy the reviewed content to Etsy and Shopify manually.\n\n{summary}"},
+      "position": {"x": 900, "y": -120}
+    },
+    {
+      "id": "declined_note",
+      "type": "note",
+      "config": {"path": "ventures/carpenter-goods/reviews/listing-declined-{run}.md", "template": "The listing draft was not approved in run {run}. No listing was published.\n\n{summary}"},
+      "position": {"x": 900, "y": 120}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "prepare_draft", "target": "draft_ready", "label": ""},
+    {"id": "e2", "source": "draft_ready", "target": "approve_listing", "label": "yes"},
+    {"id": "e3", "source": "approve_listing", "target": "approval_note", "label": "yes"},
+    {"id": "e4", "source": "approve_listing", "target": "declined_note", "label": "no"}
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'carpenter-goods'/'drafts'/'listing.json'; d=json.loads(p.read_text()); assert d['published'] is False and d['etsy']['title'] and d['shopify']['title'] and d['result'] in ('match', 'uncertain — please check')\"",
+      "required": true
+    }
+  ],
+  "max_steps": 5
+}
