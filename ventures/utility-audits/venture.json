@@ -1,0 +1,26 @@
+{
+  "slug": "utility-audits",
+  "name": "Utility audits",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare a customer-reviewed estimate and unsigned Indiana restaurant electricity exemption application data.",
+    "launch_state": "Indiana (recommended; owner confirmation required before launch)",
+    "scope": "Indiana restaurant electricity sales tax and customer-entered flat-rate scenarios. No utility data service or automated tariff lookup is used.",
+    "billing": "Potential share of refunds and first-year savings; owner must approve the model and legal basis before customer launch."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": ["utility-audit-calculator"],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {"id": "confirm-indiana-launch", "title": "Confirm Indiana as the launch state", "when": "Before offering this venture to customers", "detail": "Indiana is recommended because its restaurant electricity rule uses a 75% prepared-food receipts threshold and a fixed 50% electricity sales-tax election through one meter. Confirm Indiana before any customer work or filing support."},
+    {"id": "provide-records", "title": "Provide seller-level and meter records", "when": "When running an audit", "detail": "Enter DOR-formula annual prepared-food and total-food sales for all of the seller's Indiana establishments, confirm the scope, then enter 12 consecutive months of selected-meter form figures and electricity bills. Optional rate scenarios need customer-supplied published flat rates and links. Do not upload tax IDs or other sensitive data into the sample fixture."},
+    {"id": "review-sign-submit", "title": "Review, sign, and submit the application", "when": "After a draft is prepared", "detail": "Review every field against the official ST-200R, complete missing fields, attach bills, sign as the customer, and submit it to Indiana DOR. Glacier never signs or submits it. The customer sends the resulting ST-109R to the utility after DOR approval."}
+  ],
+  "launch_gates": [
+    "Owner confirms Indiana as the launch state.",
+    "Owner approves any model that charges a share of refunds or savings.",
+    "Customer reviews, signs, and submits all state applications and sends any issued certificate to the utility."
+  ]
+}
