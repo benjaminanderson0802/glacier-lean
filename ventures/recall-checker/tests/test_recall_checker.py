@@ -39,7 +39,7 @@ class RecallMatcherAcceptanceTests(unittest.TestCase):
 
     def test_clean_item_uses_required_source_and_date_vocabulary(self):
         result = match_item({"brand": "Unrelated", "model": "SAFE-1"}, [self.recall], as_of="2026-10-10")
-        self.assertEqual(result["result"], "no match in CPSC, NHTSA, FDA and FSIS as of 2026-10-10")
+        self.assertEqual(result["result"], "no match found in CPSC, NHTSA, FDA and FSIS as of 2026-10-10")
 
     def test_empty_or_stale_data_never_claims_no_match(self):
         result = match_item({"barcode": "999"}, [], as_of="2026-10-10")

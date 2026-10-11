@@ -327,7 +327,7 @@ Spec: Recall checker
 **Purpose.** Selling a recalled consumer product is illegal under federal law (15 U.S.C. 2068), including secondhand, and CPSC says resellers are required to know recall status. Thrift flippers, consignment shops and online resellers rarely check. We flag recalled items while they browse, scan or upload inventory.
 **Customers and channel.** Individual resellers (Chrome Web Store), thrift and consignment stores (batch upload), and scanner or consignment apps (API). One public page per recall number and product name brings search traffic.
 **Inputs.** Nightly recall data from CPSC, NHTSA, FDA and FSIS; the listing page the user is viewing (read in their own browser only); scanned barcodes; uploaded inventory CSVs; API queries.
-**Outputs.** Per item: "match" with a link to the official recall notice, "no match in CPSC, NHTSA, FDA and FSIS as of [date]", or "uncertain — please check". Flagged CSV for batch uploads. JSON for the API.
+**Outputs.** Per item: "match" with a link to the official recall notice, "no match found in CPSC, NHTSA, FDA and FSIS as of [date]", or "uncertain — please check". Flagged CSV for batch uploads. JSON for the API.
 **Blocks used.** Government data feed, rules checker (matching thresholds), acquisition engine (recall pages), platform connector (Chrome extension), customer layer.
 **Running loop.**
 Refresh all recall sources nightly.
