@@ -50,13 +50,13 @@ def request_json(url: str, params: Mapping[str, Any] | None = None) -> Any:
         try:
             _polite_wait()
             response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT_SECONDS)
-            # openFDA uses HTTP 404 with NO_RECORDS_FOUND for a valid empty search.
+            # openFDA uses HTTP 404 with a source-specific code for valid empty searches.
             if response.status_code == 404 and "api.fda.gov" in url:
                 try:
                     payload = response.json()
                 except ValueError:
                     response.raise_for_status()
-                if payload.get("error", {}).get("code") == "NO_RECORDS_FOUND":
+                if payload.get("error", {}).get("code") in {"NO_RECORDS_FOUND", "NOT_FOUND"}:
                     return {"results": [], "meta": {"no_records": True}}
             response.raise_for_status()
             return response.json()
@@ -204,25 +204,80 @@ def _fda_search(query: Mapping[str, Any], kind: str) -> str | None:
     return f'{field}:"{safe}"'
 
 
+_CPSC_GENERIC_TRAILING_WORDS = {"seat", "sleeper", "toy"}
+
+
+def _cpsc_searches(query: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Build no more than six independent CPSC searches without ANDing fields."""
+    if query.get("barcode"):
+        return [{"format": "json", "UPC": str(query["barcode"])}]
+
+    phrase = str(query.get("product_name") or query.get("model") or "").strip()
+    if not phrase:
+        return []
+
+    words = phrase.split()
+    phrases = [phrase]
+    shortened = words[:]
+    while len(shortened) > 2 and shortened[-1].strip(".,;:()[]{}").casefold() in _CPSC_GENERIC_TRAILING_WORDS:
+        shortened.pop()
+        candidate = " ".join(shortened)
+        if candidate not in phrases:
+            phrases.append(candidate)
+
+    # CPSC's text search is literal about apostrophes. Spend the remaining
+    # budget on a punctuation-free variant of the shortest useful phrase.
+    shortest = phrases[-1]
+    without_apostrophes = shortest.replace("'", "").replace("’", "")
+    if without_apostrophes != shortest:
+        phrases.append(without_apostrophes)
+    else:
+        with_apostrophe = shortest.replace(" n ", " 'n ").replace(" N ", " 'N ")
+        if with_apostrophe != shortest:
+            phrases.append(with_apostrophe)
+
+    searches: list[dict[str, str]] = []
+    for candidate in phrases:
+        for field in ("ProductName", "RecallTitle"):
+            searches.append({"format": "json", field: candidate})
+            if len(searches) == 6:
+                return searches
+    return searches
+
+
+def _dedupe_cpsc(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Union CPSC search results by official recall ID, retaining id-less rows."""
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for record in records:
+        recall_id = str(record.get("recall_id") or "").strip()
+        if recall_id and recall_id in seen:
+            continue
+        if recall_id:
+            seen.add(recall_id)
+        deduped.append(record)
+    return deduped
+
+
 def check_sources(query: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[str, dict[str, str]]]:
     recalls: list[dict[str, Any]] = []
     statuses: dict[str, dict[str, str]] = {}
 
-    cpsc_params: dict[str, str] = {"format": "json"}
-    if query.get("barcode"):
-        cpsc_params["UPC"] = str(query["barcode"])
+    cpsc_searches = _cpsc_searches(query)
+    cpsc_records: list[dict[str, Any]] = []
+    cpsc_errors: list[str] = []
+    for params in cpsc_searches:
+        try:
+            cpsc_records.extend(normalize_cpsc(request_json(SOURCE_URLS["CPSC"], params)))
+        except (SourceUnavailable, requests.RequestException, ValueError) as exc:
+            cpsc_errors.append(str(exc)[:240])
+    recalls.extend(_dedupe_cpsc(cpsc_records))
+    if not cpsc_searches:
+        statuses["CPSC"] = {"status": "skipped", "as_of": as_of(), "message": "No UPC or product phrase was provided."}
+    elif len(cpsc_errors) == len(cpsc_searches):
+        statuses["CPSC"] = {"status": "error", "as_of": as_of(), "message": cpsc_errors[-1]}
     else:
-        if query.get("brand"):
-            cpsc_params["Manufacturer"] = str(query["brand"])
-        if query.get("model"):
-            cpsc_params["RecallDescription"] = str(query["model"])
-        elif query.get("product_name"):
-            cpsc_params["ProductName"] = str(query["product_name"])
-    try:
-        recalls.extend(normalize_cpsc(request_json(SOURCE_URLS["CPSC"], cpsc_params)))
         statuses["CPSC"] = {"status": "ok", "as_of": as_of()}
-    except (SourceUnavailable, requests.RequestException, ValueError) as exc:
-        statuses["CPSC"] = {"status": "error", "as_of": as_of(), "message": str(exc)[:240]}
 
     if query.get("brand") and query.get("model") and query.get("year"):
         try:
