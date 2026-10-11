@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import date
 import json
 from pathlib import Path
@@ -154,6 +155,33 @@ def test_jobber_response_flows_into_registration_queue_and_unsent_homeowner_draf
     assert draft["sent"] is False
     assert "not registered" in draft["body"].lower()
     assert "June 18, 2026" in draft["body"]
+
+
+def test_lennox_florida_change_window_flows_to_queue_and_homeowner_draft():
+    from ventures.warranty.scripts.warranty import build_jobber_loop
+
+    fixture = Path(__file__).resolve().parents[3] / "ventures" / "blocks" / "connectors" / "fixtures" / "jobber" / "warranty_jobs_page.json"
+    job = deepcopy(json.loads(fixture.read_text(encoding="utf-8"))["data"]["jobs"]["nodes"][0])
+    job["customFields"][0]["valueText"] = "Lennox"
+    job["customFields"][3]["valueText"] = "2026-01-01"
+    job["property"]["address"]["province"] = "FL"
+
+    result = build_jobber_loop([job], as_of=date(2026, 2, 1))
+
+    queued = result["registration_queue"][0]
+    source_url = "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+    assert queued["registration_deadline"] == "2026-03-02"
+    assert queued["result"] == "uncertain — please check"
+    assert queued["registration_action"] == "hold"
+    assert queued["registration_window"]["label"] == "Florida"
+    assert queued["registration_source_url"] == source_url
+    assert "coverage-change window" in queued["registration_window"]["window_type"]
+
+    draft = result["homeowner_email_drafts"][0]
+    assert draft["sent"] is False
+    assert "Florida warranty guidance" in draft["body"]
+    assert "March 2, 2026" in draft["body"]
+    assert source_url in draft["body"]
 
 
 def test_jobber_preview_persists_local_deadline_input_for_daily_flow(tmp_path, monkeypatch, capsys):

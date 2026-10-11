@@ -124,7 +124,15 @@ def evaluate_install(
         return _uncertain("installation date is missing or invalid", official_registration_guidance=_queue_brand_guidance(family))
 
     canonical_brand = family["primary_brand"] if family else brand
-    if _is_registration_exception(canonical_brand, str(record.get("region", "")).strip().upper(), installed):
+    region = str(record.get("region", "")).strip().upper()
+    state_windows = family.get("registration", {}).get("state_windows", {}) if family else {}
+    state_window = state_windows.get(region)
+    if state_window and state_window.get("effective_on_or_after"):
+        effective_on = date.fromisoformat(state_window["effective_on_or_after"])
+        if installed < effective_on:
+            state_window = None
+    registration_exception = _is_registration_exception(canonical_brand, region, installed)
+    if registration_exception and not state_window:
         return {
             "result": f"no match found in registration-required regions as of {as_of.isoformat()}",
             "reason": "spec-listed registration exception; confirm the applicable product warranty",
@@ -136,12 +144,23 @@ def evaluate_install(
             "official_registration_guidance": _queue_brand_guidance(family),
             "photo_request_draft": None,
         }
+    window_days = int(state_window["window_days"]) if state_window else rules.get("window_days")
+    registration_source_url = (
+        state_window.get("source_url") if state_window else rules.get("source")
+    )
 
     result_fields: dict[str, Any] = {
         "official_registration_guidance": _queue_brand_guidance(family),
         "portal_automation_allowed": bool(PORTAL_AUTOMATION_ALLOWED.get(brand, False)),
+        "registration_source_url": registration_source_url,
     }
-    window_days = rules.get("window_days")
+    if state_window:
+        result_fields["registration_window"] = {
+            "label": state_window["label"],
+            "window_type": state_window["window_type"],
+            "description": state_window["description"],
+            "source_url": registration_source_url,
+        }
     if window_days is None:
         result_fields.update({"registration_deadline": None, "days_remaining": None, "deadline_alert": False})
     else:
@@ -179,6 +198,14 @@ def evaluate_install(
         return _uncertain("registered unit has no saved confirmation", **result_fields)
     if canonical_brand == "daikin":
         return _uncertain("Daikin terms do not permit automated portal handling", registration_action="owner_check_required", **result_fields)
+    if registration_exception:
+        return {
+            "result": f"no match found in registration-required regions as of {as_of.isoformat()}",
+            "reason": "spec-listed registration exception; confirm the applicable product warranty",
+            "registration_action": "skip",
+            **result_fields,
+            "photo_request_draft": None,
+        }
 
     return {
         "result": "match",
@@ -256,6 +283,19 @@ def build_jobber_loop(jobs: list[dict[str, Any]], *, as_of: date | None = None) 
         if _valid_email(unit.get("homeowner_email")):
             deadline = assessment.get("registration_deadline")
             deadline_text = date.fromisoformat(deadline).strftime("%B %d, %Y").replace(" 0", " ") if deadline else "not yet available"
+            window = assessment.get("registration_window") or {}
+            if window.get("window_type") == "coverage-change window":
+                deadline_label = "The published deadline to change coverage choice is"
+                status_text = "This draft does not change the manufacturer's published default coverage."
+            else:
+                deadline_label = "The registration deadline is"
+                status_text = "The equipment is not registered yet. We will follow up after review."
+            source_url = assessment.get("registration_source_url")
+            policy_text = (
+                f"\n\n{window['label']} warranty guidance: {window['description']} "
+                f"Source: {window['source_url']}"
+                if window else (f"\n\nOfficial warranty source: {source_url}" if source_url else "")
+            )
             drafts.append({
                 "job_id": unit["job_id"],
                 "to": unit["homeowner_email"],
@@ -264,8 +304,8 @@ def build_jobber_loop(jobs: list[dict[str, Any]], *, as_of: date | None = None) 
                     f"Hello {unit['homeowner_name'] or 'there'},\n\n"
                     f"We are preparing the warranty registration details for your {unit.get('brand') or 'HVAC'} "
                     f"installation on {unit.get('installed_on') or 'the recorded installation date'}. "
-                    f"The registration deadline is {deadline_text}. The equipment details are still being checked; "
-                    "the equipment is not registered yet. We will follow up after review.\n\n"
+                    f"{deadline_label} {deadline_text}. The equipment details are still being checked. "
+                    f"{status_text}{policy_text}\n\n"
                     "Your service team"
                 ),
                 "sent": False,
