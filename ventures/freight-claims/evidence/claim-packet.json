@@ -1,0 +1,243 @@
+{
+  "venture": "freight-claims",
+  "shipment_id": "SS-ORD-1042",
+  "carrier": "UPS",
+  "tracking_number": "A1B2C3D4E5",
+  "result": "match",
+  "claimed_value": "250.00",
+  "damaged_items": [
+    {
+      "description": "Synthetic ceramic tile",
+      "quantity": 1,
+      "invoice_unit_price": "250.00",
+      "claimed_value": "250.00",
+      "customer_confirmed": true
+    }
+  ],
+  "liability_limit_estimate": "250.00",
+  "carrier_terms": {
+    "source_url": "https://www.ups.com/us/en/support/file-a-claim",
+    "effective_date": "2026-10-10",
+    "customer_confirmed": true
+  },
+  "documents": {
+    "delivery_receipt": [
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/delivery-receipt.txt"
+    ],
+    "photos": [
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/damage-photo-note.txt"
+    ],
+    "commercial_invoice": [
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/commercial-invoice.txt"
+    ],
+    "bill_of_lading": [
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/blocks/reader/samples/documents/sample-bill-of-lading.pdf"
+    ]
+  },
+  "missing_documents": [],
+  "damaged_item_values_confirmed_by_customer": true,
+  "insurance_instruction": "customer reports no separate shipment insurance",
+  "document_reads": [
+    {
+      "kind": "delivery_receipt",
+      "path": "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/delivery-receipt.txt",
+      "fields": {
+        "shipment_id": {
+          "value": "ss-demo-001",
+          "page": 1,
+          "confidence": 0.65,
+          "uncertain": false
+        },
+        "invoice_number": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        },
+        "invoice_total": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        }
+      },
+      "text_excerpt": "Shipment ID: ss-demo-001\nException: one pallet damaged at delivery\nDate: 2026-09-01\n",
+      "read_error": null
+    },
+    {
+      "kind": "photos",
+      "path": "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/damage-photo-note.txt",
+      "fields": {
+        "shipment_id": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        },
+        "invoice_number": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        },
+        "invoice_total": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        }
+      },
+      "text_excerpt": "Synthetic photo evidence placeholder for local Glacier dry run; no customer image data.\n",
+      "read_error": null
+    },
+    {
+      "kind": "commercial_invoice",
+      "path": "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/commercial-invoice.txt",
+      "fields": {
+        "shipment_id": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        },
+        "invoice_number": {
+          "value": "INV-DEMO-001",
+          "page": 1,
+          "confidence": 0.65,
+          "uncertain": false
+        },
+        "invoice_total": {
+          "value": "330.00",
+          "page": 1,
+          "confidence": 0.65,
+          "uncertain": false
+        }
+      },
+      "text_excerpt": "Invoice Number: INV-DEMO-001\nInvoice Total: 330.00\nDamaged widget A quantity 2 unit price 125.00\n",
+      "read_error": null
+    },
+    {
+      "kind": "bill_of_lading",
+      "path": "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/blocks/reader/samples/documents/sample-bill-of-lading.pdf",
+      "fields": {
+        "shipment_id": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        },
+        "invoice_number": {
+          "value": null,
+          "page": null,
+          "confidence": 0.0,
+          "uncertain": true
+        },
+        "invoice_total": {
+          "value": null,
+          "page": 1,
+          "confidence": 0.0,
+          "uncertain": true
+        }
+      },
+      "text_excerpt": "B/L NUMBER\nU.S. GOVERNMENT BILL OF LADING\nINTERNATIONAL AND DOMESTIC OVERSEAS SHIPMENTS\nTRANSPORTATION COMPANY TENDERED TO SCAC DATE B/L PREPARED\nDESTINATION NAME AND ADDRESS SPLC (Dest.) ORIGIN NAME AND ADDRESS\nSPLC (Orig.)\nCONSIGNEE (Name and full address of installation) GBLOC (Cons.) SHIPPER NAME AND ADDRESS\nAPPROPRIATION CHARGEABLE BILL CHARGES TO (Dept./agency, bureau/office mailing AGENCY LOC CODE\naddress and ZIP code)\nVIA (Route shipment when advantageous to the Government)\nMARKS AND ANNOTATIONS\nPACKAGES DESCRIPTION OF ARTICLES (Use carrier's classification or tariff description 19. WE",
+      "read_error": null
+    }
+  ],
+  "customer_email_draft": {
+    "to": "claims@example.test",
+    "subject": "Freight claim — A1B2C3D4E5",
+    "body": "Please review this freight claim for shipment SS-ORD-1042 (A1B2C3D4E5).\n\nDamaged invoice items only:\n- 1 × Synthetic ceramic tile: $250.00\n\nClaimed invoice value: $250.00\nEstimated liability limit: $250.00 based on https://www.ups.com/us/en/support/file-a-claim (effective 2026-10-10).\nThe shipper has reviewed the attached documents and claim details. Please acknowledge receipt and provide a claim reference.\nThis draft has not been sent; the customer must review it and submit it through their chosen carrier channel.",
+    "attachments": [
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/delivery-receipt.txt",
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/damage-photo-note.txt",
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/commercial-invoice.txt",
+      "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/blocks/reader/samples/documents/sample-bill-of-lading.pdf"
+    ],
+    "sent": false
+  },
+  "side_effects": [],
+  "human_review_required": true,
+  "carrier_claim_guidance": {
+    "carrier": "UPS",
+    "filing_deadline_days": 60,
+    "filing_deadline_months": null,
+    "filing_deadline_anchor": "scheduled_delivery_date",
+    "deadline_note": "Start a lost or damaged package claim within 60 days of scheduled delivery; confirm the exact service and shipment terms.",
+    "deadline_requires_service_lookup": false,
+    "required_evidence": [
+      "tracking number or carrier PRO/reference",
+      "bill of lading or shipping receipt",
+      "itemized commercial invoice or other proof of value",
+      "delivery receipt / proof of delivery, including any exception notation",
+      "claim amount tied to customer-confirmed damaged, lost, or short items",
+      "invoice or other merchandise-value support",
+      "three damage photos: item as packed, close-up shipping label, and outside package damage",
+      "package dimensions for damage claims; retain contents and packaging for possible inspection"
+    ],
+    "sources": [
+      {
+        "title": "UPS File a Claim",
+        "url": "https://www.ups.com/us/en/support/file-a-claim"
+      },
+      {
+        "title": "UPS Supporting Documents for Claims",
+        "url": "https://www.ups.com/us/en/support/file-a-claim/supporting-documents"
+      }
+    ],
+    "template_id": "ups",
+    "filing_deadline": "2026-12-08",
+    "deadline_anchor_date": "2026-10-09",
+    "filing_deadline_status": "estimated — customer must confirm carrier service and terms",
+    "evidence_checklist": [
+      {
+        "item": "tracking number or carrier PRO/reference",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "bill of lading or shipping receipt",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "itemized commercial invoice or other proof of value",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "delivery receipt / proof of delivery, including any exception notation",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "claim amount tied to customer-confirmed damaged, lost, or short items",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "invoice or other merchandise-value support",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "three damage photos: item as packed, close-up shipping label, and outside package damage",
+        "provided": false,
+        "customer_confirmed": false
+      },
+      {
+        "item": "package dimensions for damage claims; retain contents and packaging for possible inspection",
+        "provided": false,
+        "customer_confirmed": false
+      }
+    ]
+  },
+  "response_tracking": {
+    "carrier_filed_date": null,
+    "carrier_received_date": null,
+    "carrier_reference": null,
+    "carrier_response_due_on": null,
+    "milestones": [],
+    "note": "Record the carrier's receipt, reference, and any promised response date after the shipper files. Parcel-carrier response timing is not a published commitment in these sources."
+  },
+  "packet_path": "/tmp/gf-rg-freight-live/ventures/freight-claims/packets/claim-c2f741b863f7cfbe9427.json"
+}

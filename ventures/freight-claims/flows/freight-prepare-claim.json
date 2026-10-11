@@ -19,7 +19,7 @@
       "id": "prepare_packet",
       "type": "command",
       "config": {
-        "cmd": "python ventures/freight-claims/scripts/claims.py prepare --input \"$GLACIER_HOME/ventures/freight-claims/incoming/claim-intake.json\"",
+        "cmd": "python ventures/freight-claims/scripts/claims.py prepare-csv --csv \"$GLACIER_HOME/ventures/freight-claims/incoming/shipstation-shipments.csv\" --input \"$GLACIER_HOME/ventures/freight-claims/incoming/claim-intake.json\"",
         "cwd": "{repo}",
         "timeout": 900,
         "retries": 0
@@ -81,7 +81,7 @@
       "id": "owner_input_ready",
       "type": "approval",
       "config": {
-        "prompt": "Your step: save customer-confirmed shipment and claim details at $GLACIER_HOME/ventures/freight-claims/incoming/claim-intake.json, with bill of lading, invoice, delivery receipt, photographs, and carrier terms cited by local path. Return and approve after the available source files are in place. Glacier will prepare a draft only."
+        "prompt": "Your step: save a ShipStation Shipments CSV export at $GLACIER_HOME/ventures/freight-claims/incoming/shipstation-shipments.csv and customer-confirmed claim details at $GLACIER_HOME/ventures/freight-claims/incoming/claim-intake.json, with bill of lading, invoice, delivery receipt, photographs, and carrier terms cited by local path. Return and approve after the available source files are in place. Glacier will prepare a draft only."
       },
       "position": {
         "x": -200,

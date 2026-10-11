@@ -1,7 +1,7 @@
 {
   "slug": "freight-claims",
   "name": "freight claims",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "purpose": "Prepare source-linked claim packets with carrier-specific evidence checklists, filing windows, and response-date tracking for customer-confirmed freight loss, damage, or shortage.",
     "channels": [
@@ -81,7 +81,7 @@
         "https://www.ups.com/us/en/support/file-a-claim",
         "https://www.fedex.com/en-us/customer-support/claims.html",
         "https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics",
-        "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title49-section14706"
+        "https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm"
       ]
     }
   ],

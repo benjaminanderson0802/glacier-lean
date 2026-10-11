@@ -1,0 +1,17 @@
+{
+  "result": "match",
+  "checked_on": "2026-10-10",
+  "candidate_count": 1,
+  "candidates": [
+    {
+      "shipment_id": "1042",
+      "signal": "possible damage or delivery exception",
+      "customer_confirmation_required": true,
+      "tracking_number": "A1B2C3D4E5"
+    }
+  ],
+  "source": "csv",
+  "side_effects": [],
+  "csv_file": "/tmp/gf-rg-freight-live/ventures/freight-claims/incoming/shipstation-shipments.csv",
+  "skipped_rows": []
+}

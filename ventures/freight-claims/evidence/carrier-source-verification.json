@@ -1,0 +1,65 @@
+{
+  "checked_on": "2026-10-10",
+  "method": "Direct urllib GET plus official page content retrieval for eCFR pages. No account or login was used.",
+  "all_carrier_source_links_resolved": true,
+  "sources": [
+    {
+      "title": "UPS File a Claim",
+      "url": "https://www.ups.com/us/en/support/file-a-claim",
+      "verified": true,
+      "check": "Direct HTTP 200 and official UPS page content; page states 60 days after scheduled delivery and lists evidence to retain."
+    },
+    {
+      "title": "UPS Supporting Documents for Claims",
+      "url": "https://www.ups.com/us/en/support/file-a-claim/supporting-documents",
+      "verified": true,
+      "check": "Direct HTTP 200 and official UPS page content; invoice/value evidence and damage photos are listed."
+    },
+    {
+      "title": "FedEx File a Claim",
+      "url": "https://www.fedex.com/en-us/customer-support/claims.html",
+      "verified": true,
+      "check": "Direct HTTP 200 and official FedEx page content; current page states 60 days domestic damage/missing contents, 21 days international, and nine months for lost shipments, each from ship date."
+    },
+    {
+      "title": "USPS Domestic Claims — The Basics",
+      "url": "https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics",
+      "verified": true,
+      "check": "Direct HTTP 200 and official USPS page content; damage/missing contents no later than 60 days from mailing and lost windows vary by service."
+    },
+    {
+      "title": "USPS Domestic Mail Manual 609",
+      "url": "https://pe.usps.com/TEXT/DMM300/609.htm",
+      "verified": true,
+      "check": "Direct HTTP 200 and Postal Explorer official manual content; service-specific lost-article filing windows are listed."
+    },
+    {
+      "title": "49 U.S.C. § 14706 (GPO 2024 edition)",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm",
+      "verified": true,
+      "check": "Direct HTTP 200 and U.S. Government Publishing Office text; § (e) states the minimum nine-month claim filing period."
+    },
+    {
+      "title": "49 CFR § 370.3",
+      "url": "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.3",
+      "verified": true,
+      "check": "Official eCFR section content retrieved; rule describes written claim particulars. Direct urllib probe reaches federalregister.gov anti-bot interstitial in this environment."
+    },
+    {
+      "title": "49 CFR § 370.5",
+      "url": "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.5",
+      "verified": true,
+      "check": "Official eCFR section content retrieved; acknowledgment within 30 days is stated. Direct urllib probe reaches federalregister.gov anti-bot interstitial in this environment."
+    },
+    {
+      "title": "49 CFR § 370.9",
+      "url": "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.9",
+      "verified": true,
+      "check": "Official eCFR section content retrieved; disposition within 120 days and written status updates each succeeding 60-day period are stated. Direct urllib probe reaches federalregister.gov anti-bot interstitial in this environment."
+    }
+  ],
+  "superseded_link": {
+    "old_url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title49-section14706",
+    "finding": "OLRC website returned its maintenance page during verification; references now point to the official GPO 2024 U.S. Code section, which returned HTTP 200 and contains § 14706."
+  }
+}

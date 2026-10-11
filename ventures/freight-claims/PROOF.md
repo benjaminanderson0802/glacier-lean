@@ -1,5 +1,40 @@
 # Freight claims proof
 
+## Release-gate update (2026-10-10)
+
+The missing CSV-to-packet engine path is now wired: `freight-prepare-claim` runs the existing `prepare-csv` command against `incoming/shipstation-shipments.csv` plus separate customer-confirmed intake. The run still pauses at `owner_input_ready` until the required data is supplied and approved. A temporary fixture-only copy of the installed flow omitted interactive approval and owner-review nodes so its processing path and unchanged acceptance command could be exercised without impersonating the owner.
+
+The venture was installed through the real local Glacier API into an isolated `GLACIER_HOME`. The fixture runs and artifacts are recorded in [the Glacier run bundle](evidence/glacier-engine-runs.json), [the run log](evidence/glacier-run-log.md), and the adjacent packet, candidate, receipt, and deadline JSON files.
+
+| Glacier run | Result |
+| --- | --- |
+| `3336faf13477` — `freight-watch-shipstation` | `done`, verified; read the synthetic CSV and identified one possible UPS damage exception. |
+| `fbaf166507d9` — production `freight-prepare-claim` | Waiting at `owner_input_ready`; production approval gates were preserved. |
+| `bf91121187a4` — fixture-only packet-processing flow | `done`, verified; joined one exception to the separate intake and generated a source-linked packet with a 2026-12-08 estimated deadline, `$250.00` confirmed damaged-item value, no missing documents, `sent: false`, and no side effects. The unchanged Glacier acceptance check passed. |
+| `75f3f083fa79` — `freight-record-carrier-receipt` | `done`, verified; recorded the synthetic receipt fixture and created 30/120-day reminders. |
+| `75fe4386da35` — `freight-check-deadlines` | `done`, verified; found the synthetic 30-day follow-up due on 2026-10-10. |
+
+All shipment, intake, document, and carrier-receipt data in these runs are synthetic fixtures. No ShipStation account or live export was used, and no carrier was contacted, claim filed, message sent, payment made, or signature collected. The successful processing-only flow is explicitly a test copy; the production flow waits at its owner approval node as intended.
+
+### Carrier source verification
+
+The nine carrier-source links used by the packet templates were checked on 2026-10-10. UPS, FedEx, USPS, Postal Explorer, and the U.S. Government Publishing Office pages returned HTTP 200 and official content. The three eCFR sections returned the official section text through the documentation browser; direct `urllib` requests in this environment reached a Federal Register anti-bot interstitial. The former House Office of the Law Revision Counsel URL was under maintenance, so the LTL materials now link to the official GPO 2024 edition of 49 U.S.C. § 14706. Link-by-link observations are in [carrier-source-verification.json](evidence/carrier-source-verification.json). This is source-link and page-content verification, not a legal opinion or a service-specific deadline determination.
+
+The official pages support the template distinctions: UPS uses scheduled delivery for its 60-day claim window; FedEx parcel windows use shipment date and distinguish domestic, international, and lost shipments; USPS lost-mail windows vary by mail class; the Carmack statute and 49 CFR response periods apply only when governing conditions are met. Recheck a carrier's exact service terms and shipment facts before relying on an estimated date.
+
+Validation after the flow and source-link changes:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m ventures.install_all --dry-run --only freight-claims
+# all seven flows validated
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/freight-claims -q
+# 35 passed
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q
+# 21 passed
+```
+
+Venture status is `ready` for owner setup and review. The first ShipStation listing, account connection or CSV provision, review of the first ten distinct packets, shipper authorization/signature/filing and customer responses, and any invoice approval remain human steps. No real-data or public-use readiness is claimed.
+
 ## Carrier-specific template acceptance (2026-10-10)
 
 Added printable packet checklists for UPS, FedEx, USPS, and LTL/Carmack under `carrier-templates/`. They state the filing window and date anchor, required evidence, source links, and response-date fields. The USPS checklist requires service lookup for lost mail; LTL response reminders are conditional on Part 370 applying. All checklists leave filing and carrier contact with the shipper.
@@ -37,11 +72,11 @@ Acceptance command and result:
 
 The broad collection command `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` did not collect three unrelated test modules from the repo root: two recall-actor imports fail on `src.sources`, and utility-audits import fails on `scripts.utility_audit`. Running venture test directories with `PYTHONPATH` set to the repo root resolves those collection-only issues. That per-venture run passed Apify, all shared blocks except filer, Carpenter goods, co-op, CPSC, DIBBS, FDA, OSHA, property tax, recall actor, utility audits, warranty, and the freight suite. Existing unrelated failures remain: `ventures/tests/test_install_all.py` assumes only two flows (`36 != 2`), three filer acceptance tests cannot resolve Playwright (`MODULE_NOT_FOUND`), and recall-checker has one source-vocabulary assertion mismatch (`no match found` vs `no match`). These files are outside the freight card and were not changed.
 
-Official guidance cited by the templates: [UPS filing window](https://www.ups.com/us/en/support/file-a-claim) and [UPS evidence list](https://www.ups.com/us/en/support/file-a-claim/supporting-documents); [FedEx deadlines and evidence](https://www.fedex.com/en-us/customer-support/claims.html); [USPS claims and evidence](https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics) and [Domestic Mail Manual 609](https://pe.usps.com/TEXT/DMM300/609.htm); [49 U.S.C. § 14706](https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title49-section14706), [49 CFR § 370.3](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.3), [§ 370.5](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.5), and [§ 370.9](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.9).
+Official guidance cited by the templates: [UPS filing window](https://www.ups.com/us/en/support/file-a-claim) and [UPS evidence list](https://www.ups.com/us/en/support/file-a-claim/supporting-documents); [FedEx deadlines and evidence](https://www.fedex.com/en-us/customer-support/claims.html); [USPS claims and evidence](https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics) and [Domestic Mail Manual 609](https://pe.usps.com/TEXT/DMM300/609.htm); [49 U.S.C. § 14706 (GPO 2024 edition)](https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm), [49 CFR § 370.3](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.3), [§ 370.5](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.5), and [§ 370.9](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.9).
 
 No real ShipStation account, carrier claim, filing, payment, signature, invoice, or carrier response was exercised. These artifacts establish fixture behavior only, not live launch readiness.
 
-Real backend startup check: from `glacier/web`, `npm run live` successfully started the disposable FastAPI backend, which answered `GET /api/health` with HTTP 200. The combined live script then stopped because this worktree's untracked `glacier/web/node_modules` does not contain `vite/bin/vite.js` (`MODULE_NOT_FOUND`); it cleaned up its own backend process and temporary home. No UI or real flow run was performed. This is an environment dependency issue outside the freight card's `ventures/**` file scope.
+Historical UI/backend startup check: from `glacier/web`, `npm run live` successfully started the disposable FastAPI backend, which answered `GET /api/health` with HTTP 200. The combined live script then stopped because this worktree's untracked `glacier/web/node_modules` does not contain `vite/bin/vite.js` (`MODULE_NOT_FOUND`); it cleaned up its own backend process and temporary home. This did not block the current headless Glacier-engine run documented above; UI startup remains outside this freight card's `ventures/**` file scope.
 
 Checkpoint: PH12.14. Test data in the real-runtime attempt was synthetic and local-only. No ShipStation account was connected, no carrier was contacted, and no claim, invoice, or payment was submitted.
 
@@ -116,15 +151,14 @@ Command:
 GLACIER_HOME=/tmp/glacier-live-Dk68RB GLACIER_API=http://127.0.0.1:45109 ~/w/glacier-lean/.venv/bin/python -m ventures.install_all --only freight-claims
 ```
 
-Result: all six flows saved through the real Glacier HTTP API. The prepare flow run `fe2f22f5fdc0` failed before executing its command because the runner used the literal working directory `/tmp/glacier-live-Dk68RB/workspaces/freight-prepare-claim/{repo}`. The same blocker is tracked in [CLM-PH12-20-CWD-REPO](../../vault/claims/2026-10-10-ph12-20-command-cwd-repo-placeholder.md); this venture did not change platform code. The failed run had no external side effects.
+Historical attempt: six flows were saved through the real Glacier HTTP API. The prepare flow run `fe2f22f5fdc0` failed before executing its command because that installer version left `{repo}` in the working directory. The installer now binds the checkout path and Python executable; the current fixture processing run completed and verified as recorded above. The historical failed run had no external side effects.
 
-No screenshot was captured. The requested Playwright capture remained queued because both shared heavy-job slots were occupied, and the flow itself stopped before its command output appeared. The full real-flow acceptance remains pending the platform fix.
+No screenshot was captured. The requested Playwright capture remained queued because both shared heavy-job slots were occupied. The production prepare flow currently pauses at its `owner_input_ready` approval; the successful processing-only fixture copy above tests packet generation without bypassing the production owner step.
 
-## Remaining real-data checks
+## Owner/customer data still needed for live use
 
 - Owner adds a ShipStation read-only key and explicitly enables polling after reviewing the account plan's API quota.
 - Owner reviews the first ShipStation listing and the first ten claim packets.
-- Run the real flow with customer-provided bills of lading, invoices, delivery receipts, damage photos, carrier terms, and a confirmed carrier receipt date.
-- After the platform runtime claim is resolved, rerun the flow in real Glacier and capture its successful packet and approval gate.
+- Provide customer shipment data and actual bills of lading, invoices, delivery receipts, damage photos, carrier terms, and carrier receipt dates before using the flow for a real claim.
 - The shared venture lane does not currently provide a customer-facing document upload link; this build uses the local incoming folder until PH12.2 supplies an approved upload path.
 - Contingency charges are calculated as an invoice draft only. No customer payment link is created or charge processed.

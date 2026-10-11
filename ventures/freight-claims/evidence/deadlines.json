@@ -1,0 +1,29 @@
+{
+  "result": "match",
+  "checked_on": "2026-10-10",
+  "reminders": [
+    {
+      "item_id": "fixture-ship-9001",
+      "label": "Freight claim fixture-ship-9001: check carrier status",
+      "rule": "30d|120d",
+      "date": "2026-10-10",
+      "milestone": "reminder",
+      "glacier_steps": [
+        {
+          "type": "note",
+          "config": {
+            "path": "ventures/deadline-reminders/29e4b2464884ab9d-2026-10-10.md",
+            "template": "# Freight claim fixture-ship-9001: check carrier status\n\nReminder on 2026-10-10.\n\n{summary}"
+          }
+        },
+        {
+          "type": "approval",
+          "config": {
+            "prompt": "Review deadline: Freight claim fixture-ship-9001: check carrier status is reminder on 2026-10-10. Mark this reminder acknowledged?"
+          }
+        }
+      ]
+    }
+  ],
+  "side_effects": []
+}
