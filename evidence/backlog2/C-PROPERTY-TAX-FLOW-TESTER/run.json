@@ -1,0 +1,40 @@
+{
+  "backend": "http://127.0.0.1:38571",
+  "glacier_home": "/tmp/glacier-pt-flow-tester-20261011T170613Z",
+  "environment_id": "property-tax-prepare-packet",
+  "runtime_workspaces": [
+    "/tmp/glacier-pt-flow-tester-20261011T170613Z/workspaces/property-tax-prepare-packet/ventures/property-tax/scripts/property_tax.py"
+  ],
+  "run_id": "852c69c6fed4",
+  "approval_transitions": [
+    {
+      "node_id": "owner_input_ready",
+      "approved": true,
+      "purpose": "local test gate for public-row-only case"
+    }
+  ],
+  "run": {
+    "run_id": "852c69c6fed4",
+    "env_id": "property-tax-prepare-packet",
+    "status": "waiting",
+    "waiting_on": "owner_input_ready",
+    "author": "owner",
+    "node_states": {
+      "owner_input_ready": "waiting",
+      "packet_failed": "pending",
+      "packet_handoff": "pending",
+      "packet_not_approved": "pending",
+      "packet_ready": "pending",
+      "prepare_packet": "pending",
+      "review_packet": "pending"
+    },
+    "outputs": {},
+    "usage": {},
+    "verification": [],
+    "workspace": null,
+    "verified": null,
+    "waiting_prompt": "Your step: save the property case at $GLACIER_HOME/ventures/property-tax/incoming/case.json, including parcel/PIN, assessment notice, selected county, valuation evidence, and source documents. Return and approve after the owner-confirmed case and evidence are ready. Glacier will prepare a packet for review only."
+  },
+  "packet_exists": false,
+  "packet": null
+}

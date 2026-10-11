@@ -1,0 +1,24 @@
+{
+  "source": "Cook County Assessor Parcel Universe, Socrata dataset nj4t-kc8j",
+  "source_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json?%24select=pin,year,class,township_code,township_name,zip_code,:updated_at&%24where=year='2026'&%24order=pin&%24limit=50",
+  "fixture_fetched_at_utc": "2026-10-11T02:46:39+00:00",
+  "fixture_rows": 50,
+  "stored_rows": 50,
+  "alerts": [],
+  "smoke_row": {
+    "source_id": "cook_county_assessor",
+    "record_id": "01011000020000",
+    "record_date": "2026-10-01",
+    "fetched_at": "2026-10-11T02:46:39+00:00",
+    "source_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json?%24select=pin,year,class,township_code,township_name,zip_code,:updated_at&%24where=year='2026'&%24order=pin&%24limit=50",
+    "data": {
+      "pin": "01011000020000",
+      "year": "2026.0",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    }
+  }
+}
