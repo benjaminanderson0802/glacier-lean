@@ -317,8 +317,13 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
         chunk, _ = _json_rows(url, timeout=45)
         if not chunk:
             break
-        rows, page_alerts = normalize_rows(source_id, chunk, source_url=source_url, fetched_at=fetched_at)
+        rows, page_alerts = normalize_rows(source_id, chunk, source_url=source_url, fetched_at=fetched_at, source_config=config)
         alerts.extend(page_alerts)
+        if _is_candidate_alert(page_alerts):
+            with _connect(target) as con:
+                con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+                con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
+            return _failed_refresh(source_id, page_alerts)
         inserts = []
         for row in rows:
             digest = hashlib.sha256(json.dumps(row["data"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
@@ -335,14 +340,24 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
     complete = offset >= total
     if not complete:
         alerts.append(f"Sync progress: staged {offset} of {total} Cook County rows for tax year {year}; the next run will continue from row {offset}. The previous complete snapshot remains active.")
-        return {"rows": staged_count, "changed": False, "complete": False,
+        return {"rows": staged_count, "changed": False, "complete": False, "status": "in_progress",
                 "progress": {"downloaded": offset, "total": total, "tax_year": year}, "alerts": alerts}
     if abs(staged_count - total) / total > 0.01:
         alerts.append(f"Row-count alert: normalized {staged_count} of {total} Cook County rows for tax year {year}")
     with _connect(target) as con:
         staged = con.execute("SELECT record_id,digest FROM feed_stage WHERE source_id=? ORDER BY record_id", (source_id,)).fetchall()
-    if not any(row[0] for row in staged):
+    canary = config.get("canary", {}).get("field")
+    with _connect(target) as con:
+        staged_payloads = con.execute("SELECT payload FROM feed_stage WHERE source_id=?", (source_id,)).fetchall()
+    candidate_records = [json.loads(row[0]) for row in staged_payloads]
+    if canary and not any(_first(record, [canary]) is not None for record in candidate_records):
         alerts.append("Canary alert: Cook County parcel identifiers did not parse")
+    if _is_candidate_alert(alerts):
+        with _connect(target) as con:
+            con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+            con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
+        return _failed_refresh(source_id, alerts)
+    candidate_fields = sorted({str(field) for record in candidate_records for field in record})
     digest = hashlib.sha256("\n".join(sorted(row[1] for row in staged)).encode()).hexdigest()
     watermark_rows, _ = _json_rows(config["url"] + f"?$select=max(:updated_at)&$where={where}", timeout=45)
     watermark = next(iter(watermark_rows[0].values()), None) if watermark_rows else None
@@ -357,7 +372,8 @@ def _sync_socrata_stream(source_id: str, config: dict[str, Any]) -> dict[str, An
         con.execute("DELETE FROM feed_progress WHERE source_id=?", (source_id,))
         con.execute("INSERT INTO feed_watermarks(source_id,watermark) VALUES(?,?) ON CONFLICT(source_id) DO UPDATE SET watermark=excluded.watermark", (source_id, str(watermark)))
         con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,digest=excluded.digest,status='ok'", (source_id, fetched_at, total, staged_count, digest))
-    return {"rows": staged_count, "changed": bool(changed), "complete": True, "alerts": alerts}
+        _remember_schema(con, source_id, candidate_fields)
+    return {"rows": staged_count, "changed": bool(changed), "complete": True, "status": "ok", "snapshot_available": True, "alerts": alerts}
 
 
 def _sync_socrata_incremental(source_id: str, config: dict[str, Any], where: str, source_total: int,
@@ -382,7 +398,7 @@ def _sync_socrata_incremental(source_id: str, config: dict[str, Any], where: str
         if not chunk:
             exhausted = True
             break
-        normalized, page_alerts = normalize_rows(source_id, chunk, source_url=source_url, fetched_at=fetched_at)
+        normalized, page_alerts = normalize_rows(source_id, chunk, source_url=source_url, fetched_at=fetched_at, source_config=config)
         alerts.extend(page_alerts)
         inserts = []
         for row, original in zip(normalized, chunk):
@@ -391,8 +407,13 @@ def _sync_socrata_incremental(source_id: str, config: dict[str, Any], where: str
                 latest = str(value)
             digest = hashlib.sha256(json.dumps(row["data"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
             inserts.append((row["source_id"], row["record_id"], row["record_date"], row["fetched_at"], row["source_url"], json.dumps(row["data"], ensure_ascii=False), digest))
+        if _is_candidate_alert(page_alerts):
+            with _connect() as con:
+                con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+            return _failed_refresh(source_id, page_alerts)
         with _connect() as con:
-            con.executemany("INSERT OR REPLACE INTO feed_rows(source_id,record_id,record_date,fetched_at,source_url,payload,digest) VALUES(?,?,?,?,?,?,?)", inserts)
+            con.execute("CREATE TABLE IF NOT EXISTS feed_stage (source_id TEXT NOT NULL, record_id TEXT NOT NULL, record_date TEXT, fetched_at TEXT NOT NULL, source_url TEXT NOT NULL, payload TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(source_id, record_id))")
+            con.executemany("INSERT OR REPLACE INTO feed_stage(source_id,record_id,record_date,fetched_at,source_url,payload,digest) VALUES(?,?,?,?,?,?,?)", inserts)
         rows_seen += len(chunk)
         pages += 1
         if len(chunk) < page_size:
@@ -401,16 +422,39 @@ def _sync_socrata_incremental(source_id: str, config: dict[str, Any], where: str
     complete = exhausted or rows_seen == 0
     if not complete:
         alerts.append(f"Incremental sync progress: read {rows_seen} changed Cook County rows in {max_pages} pages; watermark held for next run.")
-        return {"rows": rows_seen, "changed": bool(rows_seen), "complete": False, "alerts": alerts}
+        return {"rows": rows_seen, "changed": False, "complete": False, "status": "in_progress", "alerts": alerts}
     with _connect() as con:
-        row_count, digest = con.execute("SELECT COUNT(*),COALESCE(group_concat(digest,''),'') FROM feed_rows WHERE source_id=?", (source_id,)).fetchone()
-        rows = con.execute("SELECT digest FROM feed_rows WHERE source_id=? ORDER BY record_id", (source_id,)).fetchall()
-        digest = hashlib.sha256("\n".join(row[0] for row in rows).encode()).hexdigest()
+        current = {row[0]: row[1:] for row in con.execute("SELECT record_id,record_date,fetched_at,source_url,payload,digest FROM feed_rows WHERE source_id=?", (source_id,)).fetchall()}
+        staged = {row[0]: row[1:] for row in con.execute("SELECT record_id,record_date,fetched_at,source_url,payload,digest FROM feed_stage WHERE source_id=?", (source_id,)).fetchall()}
+        candidate = {**current, **staged}
+        row_count = len(candidate)
+        if source_total and abs(row_count - source_total) / source_total > 0.01:
+            alerts.append(f"Row-count alert: normalized {row_count} of {source_total} selected Cook County rows (difference exceeds 1%).")
+        candidate_fields = sorted({str(field) for values in candidate.values() for field in json.loads(values[3])})
+        schema_alerts = _schema_alerts(con, source_id, set(candidate_fields))
+        alerts.extend(schema_alerts)
+        canary = config.get("canary", {}).get("field")
+        if staged and canary:
+            staged_records = [json.loads(values[3]) for values in staged.values()]
+            if not any(_first(record, [canary]) is not None for record in staged_records):
+                alerts.append(f"Canary alert: no changed records included expected identifier field {canary}")
+        if _is_candidate_alert(alerts):
+            con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
+            con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,NULL,?,'','error') ON CONFLICT(source_id) DO UPDATE SET status='error'", (source_id, datetime.now(timezone.utc).isoformat(), len(current)))
+            retained = len(current) > 0
+            disposition = "Previous trusted snapshot retained." if retained else "No trusted snapshot is available; this first import was not accepted."
+            return {"rows": len(current), "changed": False, "complete": True,
+                    "status": "failed" if retained else "failed_initial", "snapshot_available": retained,
+                    "alerts": [*alerts, f"Candidate quarantined. {disposition}"]}
+        digest = hashlib.sha256("\n".join(value[4] for _, value in sorted(candidate.items())).encode()).hexdigest()
+        previous = con.execute("SELECT digest FROM feed_syncs WHERE source_id=?", (source_id,)).fetchone()
+        changed = previous is None or previous[0] != digest
+        con.execute("INSERT OR REPLACE INTO feed_rows(source_id,record_id,record_date,fetched_at,source_url,payload,digest) SELECT source_id,record_id,record_date,fetched_at,source_url,payload,digest FROM feed_stage WHERE source_id=?", (source_id,))
+        con.execute("DELETE FROM feed_stage WHERE source_id=?", (source_id,))
         con.execute("INSERT INTO feed_watermarks(source_id,watermark) VALUES(?,?) ON CONFLICT(source_id) DO UPDATE SET watermark=excluded.watermark", (source_id, latest))
         con.execute("INSERT INTO feed_syncs(source_id,fetched_at,source_total,row_count,digest,status) VALUES(?,?,?,?,?,'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at,source_total=excluded.source_total,row_count=excluded.row_count,digest=excluded.digest,status='ok'", (source_id, fetched_at, source_total, row_count, digest))
-    if source_total and abs(row_count - source_total) / source_total > 0.01:
-        alerts.append(f"Row-count alert: normalized {row_count} of {source_total} selected Cook County rows (difference exceeds 1%).")
-    return {"rows": rows_seen, "changed": bool(rows_seen), "complete": True, "alerts": alerts}
+        _remember_schema(con, source_id, candidate_fields)
+    return {"rows": rows_seen, "changed": bool(changed), "complete": True, "status": "ok", "alerts": alerts}
 
 
 def _nhtsa(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
@@ -663,8 +707,8 @@ def fetch_source(source_id: str, config: dict[str, Any]) -> tuple[list[dict[str,
     return records, total, alerts
 
 
-def normalize_rows(source_id: str, records: list[dict[str, Any]], *, source_url: str, fetched_at: str | None = None) -> tuple[list[dict[str, Any]], list[str]]:
-    config = registry().get(source_id, {})
+def normalize_rows(source_id: str, records: list[dict[str, Any]], *, source_url: str, fetched_at: str | None = None, source_config: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], list[str]]:
+    config = source_config if source_config is not None else registry().get(source_id, {})
     id_fields = list(config.get("id_fields", [])) + ["id", "record_id", "identifier", "recall_number"]
     date_fields = list(config.get("date_fields", [])) + ["date", "record_date", "updated_at", "created_at", "recall_date", "report_date"]
     fetched_at = fetched_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -702,11 +746,39 @@ def normalize_rows(source_id: str, records: list[dict[str, Any]], *, source_url:
             if previous != fields:
                 added, removed = sorted(fields - previous), sorted(previous - fields)
                 alerts.append(f"Format alert: schema changed (added: {added}; removed: {removed})")
-        con.execute("INSERT INTO feed_schemas(source_id, fields) VALUES (?, ?) ON CONFLICT(source_id) DO UPDATE SET fields=excluded.fields", (source_id, json.dumps(current)))
     return rows, alerts
 
 
-def store_snapshot(source_id: str, rows: list[dict[str, Any]], *, db_path: Path | None = None, source_total: int | None = None, source_url: str = "") -> int:
+def _schema_alerts(con: sqlite3.Connection, source_id: str, fields: set[str]) -> list[str]:
+    prior = con.execute("SELECT fields FROM feed_schemas WHERE source_id=?", (source_id,)).fetchone()
+    if not prior or set(json.loads(prior[0])) == fields:
+        return []
+    previous = set(json.loads(prior[0]))
+    added, removed = sorted(fields - previous), sorted(previous - fields)
+    return [f"Format alert: schema changed (added: {added}; removed: {removed})"]
+
+
+def _remember_schema(con: sqlite3.Connection, source_id: str, fields: list[str]) -> None:
+    con.execute("INSERT INTO feed_schemas(source_id, fields) VALUES (?, ?) ON CONFLICT(source_id) DO UPDATE SET fields=excluded.fields", (source_id, json.dumps(sorted(fields))))
+
+
+def _is_candidate_alert(alerts: list[str]) -> bool:
+    return any(alert.startswith(("Format alert:", "Canary alert:", "Row-count alert:")) for alert in alerts)
+
+
+def _failed_refresh(source_id: str, alerts: list[str]) -> dict[str, Any]:
+    with _connect() as con:
+        row = con.execute("SELECT COUNT(*) FROM feed_rows WHERE source_id=?", (source_id,)).fetchone()
+        row_count = int(row[0]) if row else 0
+        con.execute("INSERT INTO feed_syncs(source_id, fetched_at, source_total, row_count, digest, status) VALUES (?, ?, NULL, ?, '', 'error') ON CONFLICT(source_id) DO UPDATE SET status='error'", (source_id, datetime.now(timezone.utc).isoformat(), row_count))
+    retained = row_count > 0
+    status = "failed" if retained else "failed_initial"
+    disposition = "Previous trusted snapshot retained." if retained else "No trusted snapshot is available; this first import was not accepted."
+    return {"rows": row_count, "changed": False, "status": status, "snapshot_available": retained,
+            "alerts": [*alerts, f"Candidate quarantined. {disposition}"]}
+
+
+def store_snapshot(source_id: str, rows: list[dict[str, Any]], *, db_path: Path | None = None, source_total: int | None = None, source_url: str = "", schema_fields: list[str] | None = None) -> int:
     row_digests = [(r, hashlib.sha256(json.dumps(r["data"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()) for r in rows]
     digest = hashlib.sha256("\n".join(sorted(d for _, d in row_digests)).encode()).hexdigest()
     fetched_at = rows[0]["fetched_at"] if rows else datetime.now(timezone.utc).isoformat()
@@ -717,6 +789,8 @@ def store_snapshot(source_id: str, rows: list[dict[str, Any]], *, db_path: Path 
         con.execute("DELETE FROM feed_rows WHERE source_id=?", (source_id,))
         con.executemany("INSERT OR REPLACE INTO feed_rows(source_id, record_id, record_date, fetched_at, source_url, payload, digest) VALUES (?, ?, ?, ?, ?, ?, ?)", [(r["source_id"], r["record_id"], r["record_date"], r["fetched_at"], r["source_url"] or source_url, json.dumps(r["data"], ensure_ascii=False), d) for r, d in row_digests])
         con.execute("INSERT INTO feed_syncs(source_id, fetched_at, source_total, row_count, digest, status) VALUES (?, ?, ?, ?, ?, 'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at, source_total=excluded.source_total, row_count=excluded.row_count, digest=excluded.digest, status='ok'", (source_id, fetched_at, source_total, len(rows), digest))
+        if schema_fields is not None:
+            _remember_schema(con, source_id, schema_fields)
     return int(changed)
 
 
@@ -735,21 +809,21 @@ def sync(source_id: str) -> dict[str, Any]:
         if not records:
             raise ValueError("source returned no records; existing snapshot retained")
         canary = config.get("canary", {}).get("field")
-        if canary and not any(_first(record, [canary, "id", "record_id", "identifier"]) is not None for record in records):
+        if canary and not any(_first(record, [canary]) is not None for record in records):
             alerts.append(f"Canary alert: no records included expected identifier field {canary}")
         if source_total is not None:
             if len(rows) < source_total:
                 alerts.append(f"Row-count alert: downloaded {len(rows)} of {source_total} source rows")
             if source_total and abs(len(rows) - source_total) / source_total > 0.01:
                 alerts.append(f"Row-count alert: normalized rows differ from source total by more than 1% ({len(rows)} vs {source_total})")
-        changed = bool(store_snapshot(source_id, rows, source_total=source_total, source_url=config["url"]))
-        return {"rows": len(rows), "changed": changed, "alerts": alerts}
+        if _is_candidate_alert(alerts):
+            return _failed_refresh(source_id, alerts)
+        schema_fields = sorted({str(field) for record in records if isinstance(record, dict) for field in record})
+        changed = bool(store_snapshot(source_id, rows, source_total=source_total, source_url=config["url"], schema_fields=schema_fields))
+        return {"rows": len(rows), "changed": changed, "status": "ok", "snapshot_available": True, "alerts": alerts}
     except Exception as exc:
         alert = f"Feed sync alert ({source_id}): {type(exc).__name__}: {exc}"
-        with _connect() as con:
-            con.execute("INSERT INTO feed_syncs(source_id, fetched_at, source_total, row_count, digest, status) VALUES (?, ?, NULL, 0, '', 'error') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at, status='error'", (source_id, datetime.now(timezone.utc).isoformat()))
-            existing = con.execute("SELECT row_count FROM feed_syncs WHERE source_id=?", (source_id,)).fetchone()
-        return {"rows": existing[0] if existing else 0, "changed": False, "alerts": [alert]}
+        return _failed_refresh(source_id, [alert])
 
 
 def sync_all() -> dict[str, dict[str, Any]]:
