@@ -1,0 +1,71 @@
+{
+  "api": "http://127.0.0.1:48928",
+  "home": "/tmp/glacier-fda-cosmetics-rg-20261010-02/home",
+  "fixture": "ventures/fda-cosmetics/fixtures/shopify-products.graphql.json",
+  "fixture_mode": "temporary sitecustomize returns the valid fixture from ShopifyClient.graphql and substitutes only the fixture store-domain secret; no network or Shopify account used",
+  "deadline_seed": {
+    "item_id": "fixture-fda-product-1",
+    "first_market_date": "2026-06-12",
+    "rule": "120d",
+    "due_on": "2026-10-10",
+    "synthetic": true
+  },
+  "runs": [
+    {
+      "flow_id": "prepare-listing-packet",
+      "start": {
+        "run_id": "27d795c6047b"
+      },
+      "run": {
+        "run_id": "27d795c6047b",
+        "env_id": "prepare-listing-packet",
+        "status": "waiting",
+        "waiting_on": "customer_submit",
+        "author": "owner",
+        "node_states": {
+          "customer_submit": "waiting",
+          "packet_ready": "done",
+          "prepare_packet": "done"
+        },
+        "outputs": {
+          "packet_ready": "yes",
+          "prepare_packet": "{\n  \"shop\": \"fixture-store.myshopify.com\",\n  \"products_read\": 1,\n  \"products\": [\n    {\n      \"shopify_id\": \"gid://shopify/Product/123456789\",\n      \"shopify_title\": \"Daily Glow Lotion\",\n      \"result\": \"uncertain — please check\",\n      \"please_confirm\": [\n        \"product ingredients, label name, category codes, facilities, and customer checklist\"\n      ]\n    }\n  ],\n  \"submitted\": false,\n  \"ready\": false\n}\n"
+        },
+        "usage": {},
+        "verification": [],
+        "workspace": null,
+        "verified": null,
+        "waiting_prompt": "Your step: connect the Shopify store with read_products access in Glacier Settings → Secrets and save brand-confirmed details at $GLACIER_HOME/ventures/fda-cosmetics/incoming/brand-details.json, including ingredients, label sources, facility information, and listing dates. If the run reports setup required, finish the connection and run again. After a packet exists, review every field; the brand signs and submits the FDA listing through Cosmetics Direct. Glacier has not signed or submitted anything."
+      }
+    },
+    {
+      "flow_id": "daily-deadline-reminders",
+      "start": {
+        "run_id": "532dc5195d17"
+      },
+      "run": {
+        "run_id": "532dc5195d17",
+        "env_id": "daily-deadline-reminders",
+        "status": "waiting",
+        "waiting_on": "review_reminder",
+        "author": "owner",
+        "node_states": {
+          "morning_schedule": "done",
+          "read_due_items": "done",
+          "reminder_check": "done",
+          "review_reminder": "waiting"
+        },
+        "outputs": {
+          "morning_schedule": "",
+          "read_due_items": "[\n  {\n    \"item_id\": \"fixture-fda-product-1\",\n    \"label\": \"Synthetic FDA fixture product\",\n    \"rule\": \"120d\",\n    \"date\": \"2026-10-10\",\n    \"milestone\": \"reminder\",\n    \"glacier_steps\": [\n      {\n        \"type\": \"note\",\n        \"config\": {\n          \"path\": \"ventures/deadline-reminders/d467147638533132-2026-10-10.md\",\n          \"template\": \"# Synthetic FDA fixture product\\n\\nReminder on 2026-10-10.\\n\\n{summary}\"\n        }\n      },\n      {\n        \"type\": \"approval\",\n        \"config\": {\n          \"prompt\": \"Review deadline: Synthetic FDA fixture product is reminder on 2026-10-10. Mark this reminder acknowledged?\"\n        }\n      }\n    ]\n  }\n]\n",
+          "reminder_check": "yes"
+        },
+        "usage": {},
+        "verification": [],
+        "workspace": null,
+        "verified": null,
+        "waiting_prompt": "Your step: Review the FDA listing deadline reminder and confirm the brand's planned submission date. Glacier does not submit the listing."
+      }
+    }
+  ]
+}
