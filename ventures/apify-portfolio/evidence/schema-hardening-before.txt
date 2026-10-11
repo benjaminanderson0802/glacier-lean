@@ -1,0 +1,31 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_________________ test_census_late_column_reorder_fails_closed _________________
+
+    def test_census_late_column_reorder_fails_closed():
+        text = fixture('st2608c.txt').replace('3-4 units', 'unexpected metric', 1)
+        row = module('census-permits').collect({'period': '2026-08', 'states': ['01']}, Client(text, fixture('st2607c.txt')))[0]
+>       assert row['outcome'] == 'uncertain' and not row['billable']
+E       AssertionError: assert ('ok' == 'uncertain'
+E
+E         - uncertain
+E         + ok)
+
+ventures/apify-portfolio/tests/test_portfolio.py:227: AssertionError
+__________________ test_fdic_contradictory_total_fails_closed __________________
+
+    def test_fdic_contradictory_total_fails_closed():
+        payload = json.loads(fixture('fdic-source.txt'))
+        payload['meta']['total'] = 0
+        row = module('fdic-bankfind').collect({'certificate': '3510'}, Client(json.dumps(payload)))[0]
+>       assert row['outcome'] == 'uncertain' and not row['billable']
+E       AssertionError: assert ('ok' == 'uncertain'
+E
+E         - uncertain
+E         + ok)
+
+ventures/apify-portfolio/tests/test_portfolio.py:234: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_census_late_column_reorder_fails_closed
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_fdic_contradictory_total_fails_closed
+2 failed, 29 deselected in 0.14s

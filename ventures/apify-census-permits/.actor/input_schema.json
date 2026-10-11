@@ -1,0 +1,29 @@
+{
+  "title": "Census Building Permits State Change Feed",
+  "description": "Compare official monthly state residential building permit estimates, preserving FIPS, source snapshots, imputation and dollar units.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "period": {
+      "type": "string",
+      "title": "Current period",
+      "description": "YYYY-MM (2000 onward), or latest to discover the latest published monthly file.",
+      "default": "latest",
+      "editor": "textfield"
+    },
+    "previous_period": {
+      "type": "string",
+      "title": "Comparison period",
+      "description": "YYYY-MM, earlier than current period. Omit for preceding calendar month.",
+      "editor": "textfield"
+    },
+    "states": {
+      "type": "array",
+      "title": "State FIPS codes",
+      "description": "Two-digit strings, e.g. [\"01\",\"22\",\"28\"]. Empty means all 50 states and DC.",
+      "editor": "json",
+      "maxItems": 51,
+      "default": []
+    }
+  }
+}

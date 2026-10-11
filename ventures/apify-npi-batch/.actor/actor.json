@@ -1,0 +1,18 @@
+{
+  "actorSpecification": 1,
+  "name": "npi-batch",
+  "title": "NPI Registry Batch Lookup and Normalizer",
+  "description": "Look up exact NPIs in the official CMS NPPES API. Get names, primary taxonomy, practice location and source dates with explicit no-match and uncertainty.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "dockerfile": "./Dockerfile",
+  "input": "./input_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "defaultRunOptions": {
+    "memoryMbytes": 256,
+    "timeoutSecs": 600,
+    "build": "latest"
+  }
+}
