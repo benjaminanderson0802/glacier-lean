@@ -1,5 +1,13 @@
 # Disputed legacy check
 
+## 2026-10-11 F-GEORGIA: Alabama is the product market
+
+`tests/acceptance/test_al_license_verify.py` asserts the official Alabama
+board URL and the text `no match found in supplied Alabama roster`. These are
+intentional Alabama-market/source assertions for this verifier. They do not
+describe the owner's business registrations and are unchanged by the Georgia
+operating-location decision.
+
 ## `AlabamaRosterTests.test_exact_business_name_match_only_and_no_match_is_dated`
 
 This existing unit check expects the no-match outcome to say `2026-10-10`, the

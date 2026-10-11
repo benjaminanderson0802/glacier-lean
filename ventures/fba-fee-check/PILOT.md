@@ -6,7 +6,7 @@
 
 Hi {{business name}} team,
 
-I’m Benjamin Anderson with Anderson Education LLC in Troy, Alabama. I’m testing a small tool that compares an Amazon seller’s own Settlement Report V2 with the expected FBA fulfillment fee for each SKU and size tier. It returns a short, source-linked CSV showing possible differences and an estimated margin effect for your review.
+I’m Benjamin Anderson with Anderson Education LLC, which operates from Georgia. I’m testing a small tool that compares an Amazon seller’s own Settlement Report V2 with the expected FBA fulfillment fee for each SKU and size tier. It returns a short, source-linked CSV showing possible differences and an estimated margin effect for your review.
 
 Would you try a **$49 one-time pilot** for one settlement report and your fee schedule? It uses seller-downloaded CSVs, needs no Amazon login, and does not file disputes or promise refunds. If you’re interested, I’ll agree with you on a secure way to provide the files before you share anything. Please don’t email account credentials or confidential reports in reply.
 

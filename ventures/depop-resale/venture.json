@@ -23,7 +23,13 @@
       "id": "photograph-list-and-fulfill",
       "title": "Buy, photograph, review, list, pack, and ship each item",
       "when": "For each sourcing batch, before listing, and whenever an item sells",
-      "detail": "The owner uses the buy ceilings to choose and purchase inspected used inventory, takes original photos after receiving it, reviews the local draft, manually lists through Depop or a vendor Depop has confirmed as API-authorized, and personally packs and ships any sold order. No drop-shipped or supplier-catalogue stock is used. Follow OWNER-STEPS.md click by click."
+      "detail": "The owner uses the buy ceilings to choose and purchase inspected used inventory, takes original photos after receiving it, reviews the local draft, manually lists through Depop or a vendor Depop has confirmed as API-authorized, and personally packs and ships any sold order. Before selling, check whether the business meets Georgia's dealer definition and, if so, register for Sales & Use Tax through GTC; registration is free. DOR says online registration is available through GTC and electronic filing is free. Use Georgia Form ST-5 only for qualifying tax-exempt wholesale purchases for resale, not personal-use purchases. No drop-shipped or supplier-catalogue stock is used. Follow OWNER-STEPS.md click by click.",
+      "links": [
+        "https://dor.georgia.gov/tax-registration",
+        "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
+        "https://dor.georgia.gov/about-georgia-tax-center",
+        "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"
+      ]
     }
   ],
   "launch_gates": [

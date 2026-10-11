@@ -1,5 +1,9 @@
 # Owner step: buy, photograph, review, list, and fulfill used inventory
 
+## Georgia sales and use tax
+
+Before selling physical goods, check whether this resale activity meets Georgia's dealer definition in the [DOR registration guidance](https://dor.georgia.gov/tax-registration). If it does, register for Sales & Use Tax in the [Georgia Tax Center](https://dor.georgia.gov/how-register-sales-and-use-tax-account); registration is free. DOR's [GTC overview](https://dor.georgia.gov/about-georgia-tax-center) says electronic filing is also free. Complete and submit the registration yourself. Do not assume a marketplace collecting tax replaces any seller registration requirement. If buying qualifying wholesale inventory tax-free for resale, give the supplier a properly completed Georgia [Form ST-5](https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download); it does not cover personal-use purchases.
+
 This is the venture's one human-only workflow. Use the research ceilings to choose and personally buy used stock, then take your own photos after each item is physically received. Never list catalog drop-shipped goods, and never use stock, supplier, or another seller's photos.
 
 ## Before listing each item
