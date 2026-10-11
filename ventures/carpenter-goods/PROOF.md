@@ -10,7 +10,7 @@ Commands and results for this card:
 ~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/carpenter-goods ventures/tests
 ```
 
-**59 passed, 2 subtests passed.** This includes the independent commission acceptance checks, venture regressions, and adjacent ventures board.
+**60 passed, 2 subtests passed.** This includes the independent commission acceptance checks, the regression that requires the commission flow's settlement-review gate, and the adjacent ventures board.
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run
