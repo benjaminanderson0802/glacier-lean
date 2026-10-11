@@ -1,7 +1,7 @@
 {
   "slug": "fda-cosmetics",
   "name": "fda cosmetics listing preparation",
-  "status": "in_progress",
+  "status": "blocked",
   "product": {
     "purpose": "Prepare reader-checked, rules-checked cosmetic product listing packets from Shopify catalog records and brand-confirmed label, ingredient, facility, and exemption data.",
     "channel": "Shopify App Store draft; local Glacier automation until the owner completes app review.",
@@ -42,12 +42,14 @@
   "your_steps": [
     {
       "id": "connect-shopify",
-      "title": "Connect Shopify and provide product details",
+      "title": "Connect Shopify, provide product details, and prepare the App Store submission",
       "when": "Before the first packet",
-      "detail": "Create a Shopify app with read_products access. Paste the four Shopify values into the labeled fields on this step; Glacier saves them in this computer's keychain. Provide source labels, brand-confirmed product details, facility information, first-marketed and last-listing dates, and the exemption checklist for each product. Records stay marked uncertain until you confirm them. If you choose public Shopify App Store distribution, you complete the Partner/App Store review yourself; Glacier does not publish the app.",
+      "detail": "In the connected Shopify account, authorize the existing app with read_products access. Paste the four Shopify values into the labeled fields on this step; Glacier saves them in this computer's keychain. For each product, provide its source label, exact label name and ingredient order, category, facility/FEI or your confirmed exemption, responsible-person details, dates, and exemption answers. Records stay uncertain until you confirm them. The Shopify App Store listing package is prefilled at ventures/shopify-fda-app/listing/STORE-LISTING.md. After non-owner release gates clear, publish its privacy draft at https://andersoneducation.us/privacy-policy, configure the real production URL/contact/reviewer access, choose the prices (draft recommendations are not approved), attach the prepared media, run Shopify's automated checks, and submit from the Partner Dashboard. Follow listing/OWNER-STEPS.md for the exact clicks and values.",
       "links": [
         "https://shopify.dev/docs/apps",
-        "https://shopify.dev/docs/apps/build"
+        "https://shopify.dev/docs/apps/build",
+        "https://partners.shopify.com/",
+        "https://shopify.dev/docs/apps/launch/app-store-review/submit-app-for-review"
       ],
       "secrets": [
         {
@@ -70,7 +72,7 @@
     },
     {
       "id": "submit-listing",
-      "title": "Review and submit the FDA listing",
+      "title": "Review and submit each FDA product listing when required",
       "when": "After a packet passes local checks",
       "detail": "Review every field and source, including the ingredient/label checklist and local 120-day and annual reminders. When a filing or update is due, the responsible person confirms dates and product changes, signs where required, uploads the SPL ZIP to Cosmetics Direct, submits it, and forwards the response into the local incoming folder for parsing. Glacier never signs or submits.",
       "links": [
@@ -81,10 +83,13 @@
     }
   ],
   "launch_gates": [
-    "Owner completes Shopify Partner/App Store review.",
+    "Shopify App Store listing package is drafted; owner must publish the privacy page, choose production hosting and prices, provide real contacts/reviewer access, pass Shopify's live checks, and submit.",
+    "Shared reader-contract claim CLM-2026-10-10-PH12-15-READER-CONFLICT-CONTRACT remains assigned to B1; current acceptance passes but B1 has not reconciled the claim.",
+    "Shopify app dependency security claim CLM-2026-10-11-P-FDA-SHOPIFY-APP-DEPENDENCY-SECURITY is filed; npm audit reports unresolved high-severity advisories in pinned dependencies.",
+    "Shared customer layer has not connected automatic 30-day retention deletion; billing configuration and production review are unverified.",
     "Brand confirms the exemption checklist and every extracted ingredient.",
     "Customer reviews, signs where required, and submits every FDA filing.",
-    "Automated 30-day retention deletion and customer-layer billing are not connected; both remain launch dependencies."
+    "No live Shopify production deployment, customer label, FDA account, signature, filing, or FDA acceptance has been verified."
   ],
   "dry_run_env_id": "prepare-listing-packet"
 }
