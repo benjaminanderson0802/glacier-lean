@@ -7,7 +7,7 @@
       "id": "calculate_commission",
       "type": "command",
       "config": {
-        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py commissions --sales \"$GLACIER_HOME/ventures/carpenter-goods/incoming/paid-sales.json\" --rate-file \"$GLACIER_HOME/ventures/carpenter-goods/incoming/commission-terms.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/reports/commission-{run}.json\"",
+        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py commissions --etsy-csv \"$GLACIER_HOME/ventures/carpenter-goods/incoming/etsy-orders.csv\" --shopify-csv \"$GLACIER_HOME/ventures/carpenter-goods/incoming/shopify-orders.csv\" --rate-file \"$GLACIER_HOME/ventures/carpenter-goods/incoming/commission-terms.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/reports/commission-{run}.json\"",
         "cwd": "{repo}",
         "timeout": "30",
         "retries": "0"
@@ -17,7 +17,7 @@
     {
       "id": "commission_result",
       "type": "note",
-      "config": {"path": "ventures/carpenter-goods/reports/commission-summary-{run}.md", "template": "Commission tracking for run {run}. This is a calculation from imported paid sales only; compare it with the written agreement and platform settlement before any invoice or payment. No money was moved.\n\n{summary}"},
+      "config": {"path": "ventures/carpenter-goods/reports/commission-summary-{run}.md", "template": "Commission tracking for run {run}. This is a calculation from imported paid Etsy and Shopify orders only; compare the export totals with the written agreement and platform settlements before any invoice or payment. No money was moved.\n\n{summary}"},
       "position": {"x": 300, "y": 0}
     }
   ],

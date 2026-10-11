@@ -1,27 +1,35 @@
 # Proof — Carpenter's goods
 
-## Acceptance checks
+## Fixture acceptance
 
-`/home/glacier/w/glacier-lean/.venv/bin/python -m unittest discover -s ventures/carpenter-goods/tests -v`
+Command:
 
-Expected: four tests pass. They check source-linked same-category completed sales, median pricing, uncertain/no-price behavior with missing comparisons, paid-only commission calculation, and invalid-rate rejection. Fixtures are synthetic and do not prove current market pricing.
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q
+```
 
-`/home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run`
+Result: **9 passed**.
 
-Expected: both declared flows validate against the Glacier node catalog.
+The suite covers source-linked same-category completed-sale validation and median pricing, uncertain/no-price behavior, paid-only commission calculations, invalid rates, venture manifest instructions, product-sheet CSV to Etsy/Shopify draft generation, Etsy and Shopify order-export CSV commission summaries, and agreement/template presence. The CSV E2E cases invoke the command-line workflow using synthetic fixtures. They do not prove current market pricing, real platform export compatibility, or live shop behavior.
 
-## Live verification
+## Manifest validation
 
-`/home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run`
+```sh
+~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run
+```
 
-Output: both flows validated (`carpenter-prepare-listing`, `carpenter-track-commissions`).
+`~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run` — both modified flow manifests validated against the node catalog.
 
-`GLACIER_HOME=<disposable home> GLACIER_API=http://127.0.0.1:35987 /home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods`
+## Live verification status
 
-Output: both flows saved to the live Glacier API (commits `e5ea9dcb` and `df550ab0`). A real run of `carpenter-prepare-listing` did not reach the script: Glacier tried to use `<home>/workspaces/carpenter-prepare-listing/{repo}` as its working directory and failed with `Errno 2`. Claim: [CLM-PH12-20-CWD-REPO](../../vault/claims/2026-10-10-ph12-20-command-cwd-repo-placeholder.md). A screenshot was not captured; the two shared heavy-job slots were occupied while the real backend was running. The failure is recorded in the live run and claim, and does not count as a passing live-flow check.
+Started the real FastAPI backend with disposable homes, installed both current flows (`carpenter-prepare-listing`: `c345a47e` and `b82a8fc4`; second listing smoke: installed into a fresh home), and exercised the API with synthetic records. The installer resolved the `{repo}` working directory, so the previous claim's exact failure did not recur in this smoke run. The commission flow was refused with HTTP 400: “This goal has no check yet. Add a way to check it is done before running it.” I stopped there because adding its judging check requires an independent check author under I-04. The listing flow accepted one input approval in the fresh retry but still marked `prepare_draft` and downstream nodes skipped; its required output check failed because `drafts/listing.json` had not been created. The first listing smoke sent duplicate approvals while the backend remained in a waiting state; a fresh backend run with each approval sent only once reproduced the skipped-node result. This runtime behavior needs investigation in the runtime lane. Neither flow counts as a successful live run.
 
-No account setup or public listing was performed. Do not mark PH12.20 done until the runtime claim is resolved, the flow runs in real Glacier with maker-provided facts and at least three current completed-sale records, and the spec-level checks are independently reviewed.
+No Etsy/Shopify account, live export, signed agreement, current comparable-sales record, public listing, invoice, or payment was used or made. Owner signing, account access, publication, and payment remain manual.
 
-## I2 integration update (2026-10-10)
+The broader `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` attempt did not collect: unrelated recall-actor and utility-audits tests raised `ModuleNotFoundError` for `src.sources` and `scripts.utility_audit`. This card did not change those paths.
 
-The installer now resolves a flow's `{repo}` cwd to the local repository root, converts leading `python` commands to `python3`, and adds the repository to `PYTHONPATH`. The eight-flow installer dry-run passes. The fresh real-runtime test needed to verify the prior cwd failure is still pending; the existing claim remains open until that smoke run succeeds with owner-supplied product/comparable data.
+The commission-flow acceptance-check gap and the reproduced listing-flow transition failure need claims routed to the independent verifier/runtime lane. This card is scoped to `ventures/**`, so those claims were not filed here.
+
+## Acceptance still outstanding
+
+Do not mark PH12.20 done based on fixture tests alone. Passing runtime flows, owner-provided current records, an independent commission acceptance check, and independent spec review remain outstanding. Current owner tasks are grouped into two steps in `venture.json`: agree and supply; review and publish.

@@ -23,8 +23,8 @@
     {
       "id": "agree-commission",
       "title": "Agree the commission in writing",
-      "when": "Before tracking sales or collecting commission",
-      "detail": "Agree the rate and eligible sale amount with the carpenter, keep the written agreement, then use that rate when running the commission tracker. Glacier does not sign it.",
+      "when": "Before preparing the launch files or tracking sales",
+      "detail": "Fill and review agreement/commission-agreement.md with the carpenter, including the eligible order amount and treatment of tax, shipping, discounts, refunds, and fees. Both people sign it themselves. Also provide maker-confirmed product facts, local photos, three current source-linked completed-sale comparisons, and owner-exported Etsy/Shopify order CSVs when available. The legacy paid-sales.json input is also supported by the CLI. Glacier does not sign the agreement or connect to either shop.",
       "links": [
         "https://www.etsy.com/your/shops/me/dashboard"
       ]
@@ -33,17 +33,7 @@
       "id": "approve-first-listing",
       "title": "Review and publish the first listing",
       "when": "After a draft is prepared",
-      "detail": "Review the photos, facts, comparable sales and price, then approve and manually publish in the Etsy shop and Shopify site. Glacier does not create accounts or publish listings.",
-      "links": [
-        "https://www.etsy.com/your/shops/me/dashboard",
-        "https://admin.shopify.com/"
-      ]
-    },
-    {
-      "id": "supply-records",
-      "title": "Provide product and sales records",
-      "when": "When preparing a listing or commission summary",
-      "detail": "Save product.json and local photo paths under $GLACIER_HOME/ventures/carpenter-goods/incoming/, add at least three source-linked completed-sale rows with sale dates from the last 365 days in comparables.json, and export paid order records from Etsy/Shopify as paid-sales.json for commission tracking.",
+      "detail": "Review the prepared Etsy and Shopify drafts, photos, facts, comparable sales and price. If correct, publish manually in the shop(s) yourself. Glacier does not create accounts or publish listings.",
       "links": [
         "https://www.etsy.com/your/shops/me/dashboard",
         "https://admin.shopify.com/"

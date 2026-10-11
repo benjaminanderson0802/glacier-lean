@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import statistics
@@ -113,23 +114,89 @@ def calculate_commissions(sales: list[dict[str, Any]], commission_rate: float) -
     if not 0 <= rate <= 1:
         raise ValueError("commission_rate must be between 0 and 1")
     paid = []
+    excluded = []
+    seen_orders: set[tuple[str, str]] = set()
     for row in sales:
-        if str(row.get("status", "")).strip().casefold() != "paid":
+        platform = str(row.get("platform", "Owner export")).strip() or "Owner export"
+        order_id = str(row.get("order_id", "")).strip()
+        status = str(row.get("status", "")).strip().casefold().replace(" ", "_")
+        key = (platform.casefold(), order_id.casefold())
+        if order_id and key in seen_orders:
+            excluded.append({"platform": platform, "order_id": order_id, "reason": "duplicate order id"})
+            continue
+        if order_id:
+            seen_orders.add(key)
+        if status != "paid":
+            excluded.append({"platform": platform, "order_id": order_id, "reason": f"status is {status or 'missing'}, not paid"})
             continue
         try:
             amount = float(row["amount"])
         except (KeyError, TypeError, ValueError):
+            excluded.append({"platform": platform, "order_id": order_id, "reason": "missing or invalid order total"})
             continue
         if amount > 0:
-            paid.append({"order_id": str(row.get("order_id", "")), "amount": round(amount, 2)})
+            paid.append({"platform": platform, "order_id": order_id, "amount": round(amount, 2)})
+        else:
+            excluded.append({"platform": platform, "order_id": order_id, "reason": "order total must be positive"})
     gross = round(sum(row["amount"] for row in paid), 2)
     return {
         "result": "match" if paid else f"no match found in imported sales as of {date.today().isoformat()}",
         "eligible_sales": len(paid), "eligible_orders": paid, "gross_sales": gross,
         "commission_rate": rate, "commission_due": round(gross * rate, 2),
+        "excluded_orders": excluded,
         "source": "owner-exported paid order records; verify against platform settlement records",
-        "payment_status": "calculated only; no charge or transfer was made",
+        "amount_basis": "exported order total; confirm the written agreement defines treatment of tax, shipping, discounts, refunds, and fees",
+        "payment_status": "calculated only; no invoice, charge, or transfer was made",
     }
+
+
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    """Read a UTF-8 (optionally BOM-prefixed) CSV export."""
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
+
+
+def _csv_product(path: Path) -> dict[str, Any]:
+    rows = _read_csv(path)
+    if len(rows) != 1:
+        raise ValueError("product sheet CSV must contain exactly one product row")
+    row = {str(key).strip().casefold(): (value or "").strip() for key, value in rows[0].items()}
+    for field in ("materials", "photos"):
+        row[field] = [part.strip() for part in row.get(field, "").split(";") if part.strip()]
+    return row
+
+
+def _header_key(value: str) -> str:
+    return " ".join("".join(char.casefold() if char.isalnum() else " " for char in value).split())
+
+
+def _export_sales(path: Path, platform: str) -> list[dict[str, Any]]:
+    """Map order-level Etsy or Shopify export headers to commission input rows."""
+    aliases = {
+        "order_id": {"order id", "order", "name", "order number"},
+        "status": {"order status", "financial status", "payment status", "status"},
+        "amount": {"order total", "total order value", "order value", "total"},
+    }
+    result = []
+    for row_number, original in enumerate(_read_csv(path), start=2):
+        row = {_header_key(key): value for key, value in original.items() if key}
+        mapped = {}
+        for field, names in aliases.items():
+            value = next((row[name] for name in names if name in row), None)
+            if value is None:
+                raise ValueError(f"{platform} CSV is missing a recognized {field} column")
+            mapped[field] = value.strip()
+        amount_text = mapped["amount"].replace(",", "").replace("$", "").strip()
+        try:
+            amount = float(amount_text)
+        except ValueError:
+            amount = None
+        result.append({
+            "platform": platform, "order_id": mapped["order_id"],
+            "status": mapped["status"], "amount": amount,
+            "source_row": row_number,
+        })
+    return result
 
 
 def _read_json(path: Path) -> Any:
@@ -140,11 +207,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="action", required=True)
     listing = subparsers.add_parser("prepare", help="prepare local marketplace drafts")
-    listing.add_argument("--product", type=Path, required=True)
+    product_source = listing.add_mutually_exclusive_group(required=True)
+    product_source.add_argument("--product", type=Path, help="JSON product facts")
+    product_source.add_argument("--product-csv", type=Path, help="one-row product sheet CSV")
     listing.add_argument("--comparables", type=Path, required=True)
     listing.add_argument("--output", type=Path, required=True)
     commission = subparsers.add_parser("commissions", help="calculate commission from an owner export")
-    commission.add_argument("--sales", type=Path, required=True)
+    commission.add_argument("--sales", type=Path, help="JSON owner export")
+    commission.add_argument("--etsy-csv", type=Path, help="order-level Etsy CSV export")
+    commission.add_argument("--shopify-csv", type=Path, help="order-level Shopify CSV export")
     rate_source = commission.add_mutually_exclusive_group(required=True)
     rate_source.add_argument("--rate", type=float, help="rate agreed in writing with the maker")
     rate_source.add_argument("--rate-file", type=Path, help="JSON file containing the written commission rate")
@@ -152,12 +223,23 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.action == "prepare":
-        result = prepare_listing(_read_json(args.product), _read_json(args.comparables))
+        product = _read_json(args.product) if args.product else _csv_product(args.product_csv)
+        result = prepare_listing(product, _read_json(args.comparables))
     else:
+        if bool(args.sales) == bool(args.etsy_csv or args.shopify_csv):
+            parser.error("provide --sales or one or both of --etsy-csv and --shopify-csv")
         rate = args.rate if args.rate is not None else _read_json(args.rate_file).get("rate")
         if rate is None:
             parser.error("the written commission rate is missing from --rate-file")
-        result = calculate_commissions(_read_json(args.sales), rate)
+        if args.sales:
+            sales = _read_json(args.sales)
+        else:
+            sales = []
+            if args.etsy_csv:
+                sales.extend(_export_sales(args.etsy_csv, "Etsy"))
+            if args.shopify_csv:
+                sales.extend(_export_sales(args.shopify_csv, "Shopify"))
+        result = calculate_commissions(sales, rate)
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
         os.chmod(args.output.parent, 0o700)
