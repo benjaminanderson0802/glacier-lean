@@ -9,7 +9,7 @@
     "model": {"title": "Model", "type": "string", "description": "Product or vehicle model.", "editor": "textfield", "maxLength": 120},
     "product_name": {"title": "Product name", "type": "string", "description": "Product name to search public recall listings.", "editor": "textfield", "maxLength": 200},
     "year": {"title": "Model year", "type": "integer", "description": "Optional vehicle model year. NHTSA vehicle recall search requires a year.", "minimum": 1900, "maximum": 2100},
-    "queries": {"title": "Batch of items", "type": "array", "description": "Optional list of 1 to 100 items. Each item can contain barcode, brand, model, product_name and year.", "editor": "json", "minItems": 1, "maxItems": 100, "items": {"type": "object", "properties": {"barcode": {"type": "string"}, "brand": {"type": "string"}, "model": {"type": "string"}, "product_name": {"type": "string"}, "year": {"type": "integer"}}}}
+    "queries": {"title": "Batch of items", "type": "array", "description": "Optional list of 1 to 100 items. Each item can contain barcode, brand, model, product_name and year.", "editor": "json", "minItems": 1, "maxItems": 100}
   },
   "required": []
 }
