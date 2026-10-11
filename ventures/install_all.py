@@ -138,17 +138,25 @@ def shlex_quote(value: str) -> str:
     return "'" + value.replace("'", "'\"'\"'") + "'"
 
 
-def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict:
-    """Bind source commands to this checkout and its interpreter for the installed flow."""
+def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path,
+                  staged_assets: bool = False) -> dict:
+    """Bind an installed flow to workspace assets or the legacy checkout view."""
     result = json.loads(json.dumps(flow))
-    venture_cwd = repo_root / "ventures" / slug
+    flow_workspace = home / "workspaces" / str(flow.get("id"))
     python = python_command()
-    # Windows Python expects drive paths and semicolon separators even when its
-    # command is launched through Git Bash. Forward slashes keep Git Bash's path
-    # converter from rewriting the PYTHONPATH value to /c/... for native Python.
-    import_path = os.pathsep.join(
-        path.replace("\\", "/") for path in (str(repo_root), str(venture_cwd))
-    )
+    if staged_assets:
+        # Scripts and their shared venture modules are installed under the flow
+        # workspace. Keep source checkout paths out of registered command configs.
+        import_path = os.pathsep.join(
+            path.replace("\\", "/")
+            for path in (str(flow_workspace), str(flow_workspace / "ventures" / slug))
+        )
+    else:
+        # Keep the compatibility view used by older callers checkout-bound.
+        venture_cwd = repo_root / "ventures" / slug
+        import_path = os.pathsep.join(
+            path.replace("\\", "/") for path in (str(repo_root), str(venture_cwd))
+        )
 
     def bind_command(command: str) -> str:
         command = command.replace("{python}", python)
@@ -173,13 +181,18 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
             continue
         config = node.setdefault("config", {})
         requested_cwd = str(config.get("cwd") or "").strip()
-        if requested_cwd in ("", ".", "{repo}"):
+        if staged_assets:
+            if (requested_cwd in ("", ".", "{repo}")
+                    or requested_cwd == f"ventures/{slug}"
+                    or (requested_cwd.startswith("/home/") and f"/ventures/{slug}" in requested_cwd)):
+                config["cwd"] = "."
+        elif requested_cwd in ("", ".", "{repo}"):
             config["cwd"] = str(repo_root)
         elif requested_cwd == f"ventures/{slug}":
-            staged = home / "workspaces" / str(flow.get("id")) / "ventures" / slug
-            config["cwd"] = str(staged if staged.is_dir() else venture_cwd)
+            staged = flow_workspace / "ventures" / slug
+            config["cwd"] = str(staged if staged.is_dir() else repo_root / "ventures" / slug)
         elif requested_cwd.startswith("/home/") and f"/ventures/{slug}" in requested_cwd:
-            config["cwd"] = str(venture_cwd)
+            config["cwd"] = str(repo_root / "ventures" / slug)
         command = str(config.get("cmd") or "")
         if command:
             path_append = f"${{PYTHONPATH:+{shlex_quote(os.pathsep)}$PYTHONPATH}}"
@@ -225,14 +238,49 @@ def discover_flows(only: str | None = None) -> list[tuple[Path, dict]]:
 
 
 def _stage_scripts(venture_dir: Path, slug: str, home: Path, flow_ids: list[str]) -> None:
-    source = venture_dir / "scripts"
-    if not source.is_dir():
-        return
     for flow_id in flow_ids:
-        destination = home / "workspaces" / flow_id / "ventures" / slug / "scripts"
-        destination.mkdir(parents=True, exist_ok=True)
-        for script in source.glob("*.py"):
-            shutil.copy2(script, destination / script.name)
+        workspace = home / "workspaces" / flow_id
+        destination = workspace / "ventures" / slug
+        _copy_runtime_assets(venture_dir, destination, staging_root=workspace)
+        # A small number of scripts import shared top-level venture modules
+        # such as recall_checker.py. Keep those alongside the staged package.
+        _copy_runtime_assets(ROOT, workspace / "ventures", staging_root=workspace, top_level_only=True)
+        # Venture scripts import these shared, checked-in runtime modules. Copy
+        # just their executable/data files; test suites and documentation stay
+        # in the source tree.
+        blocks = ROOT / "blocks"
+        if blocks.is_dir():
+            _copy_runtime_assets(blocks, workspace / "ventures" / "blocks", staging_root=workspace)
+
+
+def _copy_runtime_assets(source: Path, destination: Path, *, staging_root: Path,
+                         top_level_only: bool = False) -> None:
+    source_root = source.resolve()
+    staged_root = staging_root.resolve(strict=False)
+    resolved_destination = destination.resolve(strict=False)
+    if not resolved_destination.is_relative_to(staged_root):
+        raise ValueError(f"venture runtime destination escapes its staging root: {destination}")
+    for item in sorted(source.rglob("*")):
+        if item.is_dir():
+            continue
+        relative = item.relative_to(source)
+        if top_level_only and len(relative.parts) != 1:
+            continue
+        if top_level_only and (item.suffix != ".py" or item.name == "install_all.py"):
+            continue
+        if any(part in {"tests", "__pycache__", ".pytest_cache", "flows", "evidence", "benchmarks"}
+               for part in relative.parts):
+            continue
+        if item.suffix not in {".py", ".json", ".html"}:
+            continue
+        resolved = item.resolve(strict=True)
+        if not resolved.is_relative_to(source_root):
+            raise ValueError(f"venture runtime asset escapes its source root: {item}")
+        target = destination / relative
+        if not target.resolve(strict=False).is_relative_to(staged_root):
+            raise ValueError(f"venture runtime asset escapes its staging root: {target}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(resolved, target)
 
 
 def register_flow(api: str, token: str, flow: dict) -> dict:
@@ -289,7 +337,7 @@ def install(api: str, token: str, only: str | None = None, *, home: Path | None 
         for flow_id in flow_ids:
             flow_path = flow_file(manifest_path, flow_id)
             flow = json.loads(flow_path.read_text(encoding="utf-8"))
-            runtime = _runtime_flow(flow, repo_root=REPO, slug=slug, home=data_home)
+            runtime = _runtime_flow(flow, repo_root=REPO, slug=slug, home=data_home, staged_assets=True)
             if ready_only:
                 runtime = scheduled_flow(runtime)
             result = register_flow_if_changed(api, token, runtime)
