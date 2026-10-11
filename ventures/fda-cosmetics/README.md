@@ -13,6 +13,8 @@ Shopify product details do not include ingredients in the existing read-only con
 
 ## Run locally
 
+The owner reports that the Shopify development store `glacier-test-cosmetics` is connected. That connection does not supply brand-confirmed ingredients, label, facility, or responsible-person details. No live product packet, Cosmetics Direct response, FDA acceptance, or filing has been verified.
+
 ```sh
 ~/w/glacier-lean/.venv/bin/python ventures/fda-cosmetics/scripts/listing_prep.py prepare --shop example.myshopify.com --details brand-details.json --output "$GLACIER_HOME/ventures/fda-cosmetics/out"
 ~/w/glacier-lean/.venv/bin/python ventures/fda-cosmetics/scripts/shopify_owner_check.py example.myshopify.com

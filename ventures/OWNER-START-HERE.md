@@ -1,8 +1,10 @@
 # start here
 
-Do each venture only after its linked steps are complete. The venture cards in Glacier show these same steps in this order, with their links and connection fields. Glacier prepares drafts and checks. You approve anything that spends money, creates an account, publishes, or is filed with a government agency.
+Current guide for the in-scope ventures in [the Venture Build Spec](SPEC.md). Statuses reflect implementation and evidence available on 2026-10-10. **Live** means publicly operating with live-use evidence; **ready** means the prepared workflow has no known build blocker and needs owner/customer setup or review; **blocked** means a known product, evidence, source, or owner decision still prevents launch. No venture is currently live. Fixture checks and a connected test account do not count as a live customer launch.
 
-| Venture | What Glacier does automatically | Your steps, in Glacier order | What this unlocks |
+Glacier prepares checks, drafts, reminders, and packets. You or the customer still create accounts, verify identity or payouts, choose prices, spend money, approve mail, sign, file, and publish. Never paste credentials into a flow input or this guide; use Glacier Settings → Secrets when a venture explicitly asks for a secret.
+
+| Venture | Status | What Glacier does | Your remaining steps |
 | --- | --- | --- | --- |
 | Apify data tools (parallel) | Checks Mississippi and Louisiana contractor license status and expiration from their public lookups. | 1. [set up your apify developer account](https://console.apify.com/account/integrations) and deploy both prepared Actors with the Apify CLI. 2. [review and publish each listing separately](https://console.apify.com/actors); each of the first three distinct publications needs its own approval and separate-engine review. | Pay-per-use checks for each Actor after you publish it. |
 | Carpenter’s goods | Prepares Etsy and Shopify listing drafts and tracks commissions from your exports. | 1. [agree the commission in writing](https://www.etsy.com/your/shops/me/dashboard). 2. [review and publish the first listing](https://www.etsy.com/your/shops/me/dashboard) or [Shopify admin](https://admin.shopify.com/). 3. [provide product and sales records](https://www.etsy.com/your/shops/me/dashboard) or [Shopify admin](https://admin.shopify.com/). | Reviewed listing drafts and commission summaries from your records. |
@@ -18,9 +20,9 @@ Do each venture only after its linked steps are complete. The venture cards in G
 | Warranty registration | Tracks warranty deadlines and prepares registration work. | 1. [connect a Jobber test account](https://developer.getjobber.com/) and read the [Jobber developer docs](https://developer.getjobber.com/docs/); paste the four named values into Glacier’s fields and run its read-only connector check. 2. [review each brand's portal terms](https://www.trane.com/residential/en/resources/warranty-and-registration/) and [Carrier terms](https://www.carrier.com/residential/en/us/products/warranties/). 3. [review the first listing and homeowner emails](https://developer.getjobber.com/). | Read-only Jobber checks and reviewed homeowner drafts; brand portal automation remains gated by each brand’s terms. |
 | Tariff estimator (on hold) | No estimator flow is installed. | No setup steps until counsel approves work on this venture. | Nothing while the legal hold remains. |
 
-For connected-account keys, open **your steps** in Glacier and paste each key into the named secret field there. Do not put keys in flow inputs, email, or this document. Jobber, Shopify, and ShipStation need one-time secret setup before their live reads can run.
+## Verification record
 
-## known limits
+The complete command `~/w/glacier-lean/.venv/bin/python -m pytest -q ventures` stopped at collection with three import errors: the recall Actor tests could not resolve `src.sources`, and the utility tests could not resolve `scripts.utility_audit` after pytest collected multiple venture directories together. Running each test directory in its own process passed most suites. The remaining test failures and one-line causes are listed in [the test record](OWNER-GUIDE-TESTS.md). These are software/fixture checks; they do not turn a venture into a live service.
 
 - **CPSC:** all three registered government sources returned HTTP 403 in the independent review, so no live flagged-code, rule-code, or registry-template data was retrieved. A draft is not a release-ready registry file until those feeds and their canaries pass.
 - **Apify:** Mississippi has live canary, local Actor, and real Glacier daily-flow evidence. Louisiana has three live source canaries, a local Actor run, a separate deployable package, a no-blocking separate-engine review, and a verified real Glacier daily-flow run; its owner publication approval remains pending. No public Actor listing has been published.

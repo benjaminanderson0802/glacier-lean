@@ -29,3 +29,5 @@ Exact barcode/model matches are automatic. Similar brand/model cases return **un
 ## Extension package
 
 Load `extension/` through `chrome://extensions` → **Developer mode** → **Load unpacked** for owner review. The directory is Manifest V3 and requests current-tab reading, local storage for the optional Actor settings, and access to the loopback API and Apify API. Hosted mode is optional; local mode remains the default. The Chrome Web Store listing and submission remain owner steps.
+
+Current owner update (2026-10-10): the Chrome Web Store developer account is registered and the separate recall Apify Actor is deployed. The Actor accuracy fix and the required 500-recalled/500-clean benchmark are still open; neither account registration nor deployment means this venture is ready for public use.
