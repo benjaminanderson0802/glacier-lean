@@ -6,6 +6,8 @@ Release remains **blocked**. Both venture flows were installed into a disposable
 
 The packet flow read one synthetic fixture product and returned `uncertain — please check` because brand-confirmed product details were deliberately absent. It produced no SPL ZIP and reported `submitted: false`. The deadline flow read one synthetic 120-day reminder dated 2026-10-10 and wrote its JSON output. Exact run records and outputs are in [fixture-engine-runs.json](evidence/fixture-engine-runs.json); the local backend install/run request log is in [fixture-engine-run-log.txt](evidence/fixture-engine-run-log.txt).
 
+Those engine records were captured before rebasing this card onto the latest `origin/glacier-final`. The FDA suite, acceptance checks, reader acceptance checks, venture tests, and installer dry-run were rerun after the rebase and passed. A fresh backend startup for a post-rebase walkthrough did not reach `/api/health`; the process entered uninterruptible filesystem I/O. No repeated start attempt was made; see claim `CLM-2026-10-10-PH12-15-REBASED-ENGINE-START-IO`.
+
 ## Checks run
 
 - `~/w/glacier-lean/.venv/bin/python -m pytest ventures/fda-cosmetics -q` — **17 passed**.
