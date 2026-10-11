@@ -5,11 +5,13 @@ import argparse
 import hashlib
 import html
 import json
+import math
 import os
 import re
 import statistics
 import sys
 from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -128,12 +130,30 @@ def _field_value(fields: dict[str, Any], key: str) -> Any:
     return value
 
 
-def _number(value: Any) -> float | None:
+def _number(value: Any, *, kind: str = "money") -> float | None:
+    """Parse a positive finite amount or area using only its supported formats."""
+    if kind not in {"money", "area"} or value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if kind == "money" and cleaned.startswith("$"):
+            cleaned = cleaned[1:].strip()
+        # Thousands separators must occur in complete groups. Currency symbols
+        # are accepted only for money; scientific notation is intentionally not.
+        if not re.fullmatch(r"(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?", cleaned):
+            return None
+        cleaned = cleaned.replace(",", "")
+    elif isinstance(value, (int, float, Decimal)):
+        cleaned = str(value)
+    else:
+        return None
     try:
-        cleaned = str(value).replace("$", "").replace(",", "").strip()
-        number = float(cleaned)
-        return number if number > 0 else None
-    except (TypeError, ValueError):
+        number = Decimal(cleaned)
+        if not number.is_finite() or number <= 0:
+            return None
+        parsed = float(number)
+        return parsed if math.isfinite(parsed) and parsed > 0 else None
+    except (InvalidOperation, TypeError, ValueError, OverflowError):
         return None
 
 
@@ -188,7 +208,7 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
         "legal_review_notice": "The customer decides whether the records support an appeal, confirms the requested value, signs, and submits the filing. This packet is not legal advice or a filing.",
         "parcel": parcel_result["parcel"],
         "comparables": [],
-        "customer_requested_value": case.get("customer_requested_value"),
+        "customer_requested_value": None,
         "uncertainties": [],
     }
     if parcel_result["parcel"] is None:
@@ -201,11 +221,14 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
     else:
         notice = reader.read_document(notice_path, NOTICE_SCHEMA)
         notice_pin = _field_value(notice.get("fields", {}), "parcel_id")
-        assessed_value = _number(_field_value(notice.get("fields", {}), "assessed_value"))
+        notice_source = case.get("notice_source_url") or str(notice_path)
+        assessed_value = _number(_field_value(notice.get("fields", {}), "assessed_value"), kind="money")
         if notice_pin and _normalize_pin(notice_pin) != _normalize_pin(base["parcel_id"]):
             base["uncertainties"].append("Notice PIN does not match the requested parcel.")
         if assessed_value is None:
-            base["uncertainties"].append("Notice assessed value is missing or uncertain.")
+            base["uncertainties"].append(
+                f"Notice assessed value from {notice_source} is missing, malformed, unsupported, non-finite, or not positive."
+            )
         else:
             base["assessment_notice"] = {"assessed_value": assessed_value, "source_path": str(notice_path), "source_url": case.get("notice_source_url"), "as_of": case.get("notice_date")}
 
@@ -216,10 +239,22 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
     elif deadline < as_of:
         base["uncertainties"].append("The supplied appeal deadline has passed; confirm the current county deadline.")
 
-    subject_sqft = _number(case.get("subject_square_feet"))
+    subject_source = case.get("subject_square_feet_source_url") or "customer-provided subject_square_feet field"
+    subject_sqft = _number(case.get("subject_square_feet"), kind="area")
+    requested_source = case.get("customer_requested_value_source_url") or "customer-provided customer_requested_value field"
+    requested_value = _number(case.get("customer_requested_value"), kind="money")
+    if requested_value is None:
+        if case.get("customer_requested_value") in (None, ""):
+            base["uncertainties"].append("Customer has not supplied the value they want the county to consider.")
+        else:
+            base["uncertainties"].append(
+                f"Customer requested value from {requested_source} is malformed, unsupported, non-finite, or not positive."
+            )
+    else:
+        base["customer_requested_value"] = requested_value
     comp_rows = case.get("comparables", [])
-    comp_dates: list[date] = []
     unit_values: list[float] = []
+    unit_value_sources: list[str] = []
     for comp in comp_rows:
         path = comp.get("path")
         if not path or not Path(path).is_file():
@@ -227,11 +262,25 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
             continue
         extracted = reader.read_document(path, COMPARABLE_SCHEMA)
         fields = extracted.get("fields", {})
+        source = comp.get("source_url") or str(path)
         sale_date = _day(_field_value(fields, "sale_date"))
-        price = _number(_field_value(fields, "sale_price"))
-        sqft = _number(_field_value(fields, "square_feet"))
-        if not sale_date or not price or not sqft:
-            base["uncertainties"].append(f"Comparable at {comp.get('source_url', path)} has missing or uncertain sale date, price, or area.")
+        price = _number(_field_value(fields, "sale_price"), kind="money")
+        sqft = _number(_field_value(fields, "square_feet"), kind="area")
+        if not sale_date:
+            base["uncertainties"].append(f"Comparable at {source} has a missing or uncertain sale date.")
+        if price is None:
+            base["uncertainties"].append(
+                f"Comparable sale price at {source} is missing, malformed, unsupported, non-finite, or not positive."
+            )
+        if sqft is None:
+            base["uncertainties"].append(
+                f"Comparable area at {source} is missing, malformed, unsupported, non-finite, or not positive."
+            )
+        if not sale_date or price is None or sqft is None:
+            continue
+        unit_value = price / sqft
+        if not math.isfinite(unit_value) or unit_value <= 0:
+            base["uncertainties"].append(f"Comparable valuation arithmetic from {source} is outside the supported finite range.")
             continue
         age_limit = notice_day or as_of
         if sale_date > age_limit or sale_date < age_limit - timedelta(days=365):
@@ -248,21 +297,27 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
             "arms_length_confirmed_by_customer": True,
         }
         base["comparables"].append(evidence)
-        comp_dates.append(sale_date)
-        unit_values.append(price / sqft)
+        unit_values.append(unit_value)
+        unit_value_sources.append(str(source))
 
     if len(base["comparables"]) < 3:
         base["uncertainties"].append("At least three recent, source-linked, customer-confirmed arm's-length sales are required.")
     if len(set(comp.get("source_url") for comp in base["comparables"])) != len(base["comparables"]):
         base["uncertainties"].append("Comparable sales need distinct source URLs.")
-    if not subject_sqft:
-        base["uncertainties"].append("Subject property square footage is missing or uncertain.")
+    if subject_sqft is None:
+        base["uncertainties"].append(
+            f"Subject property area from {subject_source} is missing, malformed, unsupported, non-finite, or not positive."
+        )
     elif len(base["comparables"]) >= 3:
-        estimate = round(statistics.median(unit_values) * subject_sqft)
-        base["comparable_value_estimate"] = estimate
-        base["estimate_basis"] = "median sale price per square foot × customer-provided subject area; customer review required"
-    if not base["customer_requested_value"]:
-        base["uncertainties"].append("Customer has not supplied the value they want the county to consider.")
+        estimate_value = statistics.median(unit_values) * subject_sqft
+        if not math.isfinite(estimate_value) or estimate_value <= 0:
+            source_list = ", ".join(unit_value_sources)
+            base["uncertainties"].append(
+                f"Comparable estimate arithmetic from {source_list} and {subject_source} is outside the supported finite range."
+            )
+        else:
+            base["comparable_value_estimate"] = round(estimate_value)
+            base["estimate_basis"] = "median sale price per square foot × customer-provided subject area; customer review required"
 
     base["result"] = "uncertain — please check" if base["uncertainties"] else "match"
     base["status"] = "needs_customer_confirmation" if base["uncertainties"] else "ready_for_customer_review"
