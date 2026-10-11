@@ -27,7 +27,13 @@ In the Google account chooser, select each linked channel in turn and confirm th
 
 Tokens stay in `CLIP_HOME\tokens\`. Never commit the downloaded client JSON or generated channel tokens.
 
-## 4. Submit queued clips on Whop
+## 4. Join campaigns you want to use
+
+Check the Producer's `join_suggestions` in the status report. For a campaign you want to use, open its public URL, sign in and join it yourself in Content Rewards. Then paste that campaign URL on its own line in `CLIP_HOME\joined_campaigns.txt`. Do not enter campaign details in the config: Producer reads available rules, platform limits, CPM, budget, and source links from the public campaign pages. Only URLs in this file are eligible for Producer ranking. Joining and Whop account actions remain manual.
+
+The scout fetches only logged-out public HTML on `contentrewards.com`, caches each URL for an hour, identifies itself as Glacier with the owner's contact email, and never calls `/api/` or accesses Whop pages/endpoints. See [the terms research](docs/WHOP.md).
+
+## 5. Submit queued clips on Whop
 
 Open `CLIP_HOME\submit-queue.html`, submit each queued clip on Whop, check it done, and download `submit-queue-done.json` to `CLIP_HOME`. The next Distributor status read reconciles the completed rows. Whop is a manual submit queue only until Whop grants written consent or publishes an official Content Rewards API. The owner sent Whop an email asking for written consent on 2026-10-11; no automated Whop access is enabled while awaiting a response.
 

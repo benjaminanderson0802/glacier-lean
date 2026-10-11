@@ -15,6 +15,8 @@ class Campaign:
     requires_editing: Optional[bool] = None
     min_payout_usd: Optional[float] = None
     max_payout_usd: Optional[float] = None
+    budget_used_usd: Optional[float] = None
+    budget_total_usd: Optional[float] = None
 
 
 @dataclass
