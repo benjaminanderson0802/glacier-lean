@@ -8,6 +8,8 @@ Hello {{business}} team,
 
 I’m Benjamin Anderson with Anderson Education LLC in Troy. I’m testing a weekly digest for general contractors pursuing public works in Mobile and Baldwin Counties.
 
+This is a draft for a prospective audience, not a claim that a named prospect pursues these bids. The prospect source pages establish business identity and public contact routes only; their interest and buyer fit have not been confirmed.
+
 Send notices or official exports your team is allowed to share. I’ll return a short list with the issuing authority, county, listed deadline, pre-bid details when available and official source link.
 
 The proposed **30-day pilot is $49**, with four digests and no renewal. I’ll show the format first using a clearly labeled synthetic sample. Launch requires three firms to commit and a useful sample review.
@@ -40,7 +42,7 @@ Advertisement. Reply “Remove” to stop future email. I won’t follow up agai
 
 **You supply:** notices, official exports or official links you may share, plus desired trade/counties. No account credentials or confidential bid prices. Glacier converts permitted source details into the existing CSV schema, preserves dates/links and checks fields against the supplied records. Do not automate Alabama Builds extraction; [its official listings](https://alabamabuilds.gov/AdvertisementBids) are also a free alternative.
 
-**Launch and delivery:** no invoice until three firms commit to the $49 pilot AND a reviewer identifies a useful match or time saved from a permitted, current sample. Each buyer then accepts a start date in writing. First digest within two business days of complete intake, then weekly (proposed target). If the threshold is not met by day 14, cancel the launch with no charge. The existing three-firm gate is retained.
+**Launch and delivery:** no invoice until three firms commit to the $49 pilot AND a reviewer identifies a useful match or time saved from a permitted, current sample. Each buyer then accepts a start date in writing, and Benjamin must approve and send any invoice manually. An outage-only, unavailable or rate-limited source result is not a deliverable and is never billable. First digest within two business days of complete intake, then weekly (proposed target). If the threshold is not met by day 14, cancel the launch with no charge. The existing three-firm gate is retained.
 
 **Acceptance/payment:** buyer confirms scope, source links and sample usefulness; Benjamin sends a $49 invoice due on receipt via an existing business payment method. Review each weekly digest before use. Correct a missed contracted digest or refund its $12.25 portion; no automatic renewal. Buyer controls registration, qualifications and bidding, and checks current addenda/deadlines with the issuer.
 
