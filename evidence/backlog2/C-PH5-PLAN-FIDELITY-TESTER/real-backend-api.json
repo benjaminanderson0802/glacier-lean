@@ -1,0 +1,21 @@
+{
+  "isolated_home": "/tmp/pytest-of-glacier/pytest-323/test_real_backend_planner_rece0/glacier-home",
+  "vision_path": "visions/ac4229e2f7fd43628804275cca9e3151.md",
+  "reviewed_goal_seen_by_planner": true,
+  "reviewed_check_seen_by_planner": true,
+  "plan_vision_goal": "Reviewed goal sentinel: help orchard keepers track cold-storage lots.",
+  "plan_vision_spec": {
+    "requirements": [
+      "The system shall retain a reviewed orchard lot location."
+    ],
+    "acceptance": [
+      "Reviewed check sentinel: a lot's cold-storage location remains visible after reload."
+    ],
+    "out_of_scope": [
+      "No supplier accounts"
+    ]
+  },
+  "raw_model_acceptance": [
+    "MODEL-GENERATED CHECK SENTINEL: show a generic dashboard."
+  ]
+}
