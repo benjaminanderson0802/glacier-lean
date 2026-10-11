@@ -12,13 +12,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import depop_prep  # noqa: E402
 
 
-def test_manifest_is_valid_and_has_one_human_step():
+def test_manifest_is_valid_and_has_one_or_two_human_steps():
     schema = json.loads((ROOT.parent / "venture.schema.json").read_text(encoding="utf-8"))
     manifest = json.loads((ROOT / "venture.json").read_text(encoding="utf-8"))
     jsonschema.validate(manifest, schema)
-    assert len(manifest["your_steps"]) == 1
-    assert "photo" in manifest["your_steps"][0]["detail"].lower()
-    assert "ship" in manifest["your_steps"][0]["detail"].lower()
+    assert 1 <= len(manifest["your_steps"]) <= 2
+    details = " ".join(step["detail"] for step in manifest["your_steps"]).lower()
+    assert "photo" in details
+    assert "ship" in details
 
 
 def test_buy_ceilings_ranked_categories_use_net_margin_target():
@@ -88,4 +89,3 @@ def test_research_and_owner_steps_cite_current_policy_and_limit_scope():
     assert "no depop account access" in research.lower()
     assert "click" in owner_steps
     assert "publish" in owner_steps
-

@@ -11,6 +11,8 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
+from ventures.blocks.mail.engine import _proof_browser
+
 SCRIPT = Path(__file__).parents[1] / "scripts" / "osha_filing.py"
 SPEC = importlib.util.spec_from_file_location("osha_filing_release_helpers", SCRIPT)
 assert SPEC and SPEC.loader
@@ -69,6 +71,13 @@ class OshaReleaseGateHelperTests(unittest.TestCase):
         self.assertTrue(status["source_canary_present"])
 
     def test_postcard_preview_renders_establishment_and_local_landing_reference(self) -> None:
+        try:
+            _proof_browser()
+        except RuntimeError as exc:
+            if "Chromium is not installed" in str(exc):
+                self.skipTest(f"Playwright Chromium is not installed: {exc}")
+            raise
+
         with tempfile.TemporaryDirectory() as tmp:
             result = OSHA.render_outreach_proof(
                 {

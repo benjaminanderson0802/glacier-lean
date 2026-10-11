@@ -23,25 +23,18 @@
       "id": "buy-stock",
       "title": "Buy inspected used stock within the ceilings",
       "when": "Before each sourcing batch",
-      "detail": "Use the owner-checked ceiling in RESEARCH.md, inspect the item and its full landed cost, and personally buy only used stock you can verify and physically receive. The example sale prices and ceilings are screening assumptions, not guarantees. Follow the exact steps in OWNER-STEPS.md.",
+      "detail": "Use the owner-checked ceiling in RESEARCH.md, inspect the item and its full landed cost, and personally buy only used stock you can verify and physically receive. The example sale prices and ceilings are screening assumptions, not guarantees. Follow the exact steps in OWNER-STEPS.md. After a sale, you personally pack, buy the shipping label, dispatch, and track the order.",
       "links": [
         "https://www.goodwill.org/locate-a-thrift-store/",
         "https://shopgoodwill.com/listing?catIds=&layout=grid"
       ]
     },
     {
-      "id": "take-original-photos",
-      "title": "Take original photos and enter verified item facts",
+      "id": "prepare-and-list-item",
+      "title": "Photograph, prepare, review, and list each item",
       "when": "After you physically receive each item",
-      "detail": "Photograph the actual garment yourself, record only verified facts in a private inventory CSV, and run the local draft command. Keep the CSV and photos outside the repository. Never use catalogue stock or supplier photos.",
-      "links": ["README.md", "OWNER-STEPS.md"]
-    },
-    {
-      "id": "approve-and-list",
-      "title": "Approve drafts and list manually in Depop",
-      "when": "Before each item is published",
-      "detail": "Compare every generated field and photo to the physical item. Sign in to Depop, click Sell now, enter the checked draft and original photos, choose accurate item fields and final price, then publish yourself or save a draft. No named crosslisting vendor is asserted as Depop-approved. Later, after a sale, you personally pack, buy the label, dispatch, and track the order.",
-      "links": ["https://www.depop.com/", "https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item"]
+      "detail": "In one per-item sitting, photograph the actual garment, record verified facts in a private inventory CSV, run the local draft command, compare every field and photo with the physical item, then enter the checked draft and original photos in Depop and publish or save it yourself. Keep the CSV and photos outside the repository. Never use catalogue stock or supplier photos; no named crosslisting vendor is asserted as Depop-approved.",
+      "links": ["README.md", "OWNER-STEPS.md", "https://www.depop.com/", "https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item"]
     }
   ],
   "launch_gates": [
