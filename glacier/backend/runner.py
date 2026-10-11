@@ -513,6 +513,13 @@ def prepare_workspace(env_id: str, run_id: str, isolate: bool) -> str:
 
 
 @DBOS.step()
+def snapshot_acceptance_files(env_id: str, acceptance: list, ws: str) -> list[dict]:
+    """Persist the protected-file baseline before any worker node executes."""
+    home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    return verify.snapshot_protected_files(home, env_id, acceptance, ws)
+
+
+@DBOS.step()
 def finish_workspace(env_id: str, run_id: str, verified: bool) -> dict:
     r = workspaces.finish(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), env_id, run_id, verified)
     store.record_workspace(run_id, r)
@@ -520,11 +527,12 @@ def finish_workspace(env_id: str, run_id: str, verified: bool) -> dict:
 
 
 @DBOS.step()
-def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str, ws: str = "") -> dict:
+def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str, ws: str = "",
+                         protected_snapshot: dict | None = None) -> dict:
     """Runs one acceptance check outside the worker's control (rule I-04) and records the evidence."""
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
     try:
-        r = verify.run_check(home, env_id, check, last_output, ws)
+        r = verify.run_check(home, env_id, check, last_output, ws, protected_snapshot)
     except Exception as e:
         r = {"passed": False, "evidence": f"the check could not run: {e}"}
     store.record_check(run_id, idx, check["kind"], r["passed"], r["evidence"])
@@ -646,6 +654,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
     isolate = bool(graph.get("isolate"))
     approved_by_human = False
     ws = prepare_workspace(env_id, run_id, isolate)
+    acceptance = graph.get("acceptance") or []
+    protected_snapshots = snapshot_acceptance_files(env_id, acceptance, ws) if acceptance else []
     while queue:
         if executions >= limit:
             status = "failed"
@@ -728,7 +738,6 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             if not edges and node["type"] == "approval" and res["branch"] == "no":
                 status = "rejected"
         queue.extend(e["target"] for e in edges)
-    acceptance = graph.get("acceptance") or []
     if status == "done" and acceptance:  # done only when every required check passes (P-VERIFY)
         last_output = (last or {}).get("output") or ""
         for i, check in enumerate(acceptance):
@@ -736,7 +745,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                 mark_waiting(env_id, run_id, f"check-{i}")
                 r = finish_human_check(env_id, run_id, i, DBOS.recv(topic=f"check-{i}", timeout_seconds=APPROVAL_TIMEOUT))
             else:
-                r = run_acceptance_check(env_id, run_id, i, check, last_output, ws)
+                snapshot = protected_snapshots[i] if i < len(protected_snapshots) else None
+                r = run_acceptance_check(env_id, run_id, i, check, last_output, ws, snapshot)
             if not r["passed"] and check.get("required", True):
                 # The owner saying no is a decision, not a broken run: report it as rejected and stop checking.
                 if check.get("kind") == "human" and r.get("evidence") == "rejected by the owner":

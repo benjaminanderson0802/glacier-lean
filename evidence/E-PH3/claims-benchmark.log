@@ -1,0 +1,45 @@
+Traceback (most recent call last):
+  File "/home/glacier/w/workers/gf-E-PH3/bench/claims/run_claims.py", line 266, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/glacier/w/workers/gf-E-PH3/bench/claims/run_claims.py", line 248, in main
+    rows = run_cases(API(base, home if proc is not None else None), cases)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/glacier/w/workers/gf-E-PH3/bench/claims/run_claims.py", line 154, in run_cases
+    run_id = api.seed_stuck_flow(case) if hasattr(api, "seed_stuck_flow") and needs_run else ""
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/glacier/w/workers/gf-E-PH3/bench/claims/run_claims.py", line 81, in seed_stuck_flow
+    request(self.base, "PUT", f"/api/environments/{urllib.parse.quote(env_id, safe='')}", env)
+  File "/home/glacier/w/workers/gf-E-PH3/bench/claims/run_claims.py", line 56, in request
+    with urllib.request.urlopen(req, timeout=8) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1373, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1348, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 1457, in getresponse
+    response.begin()
+  File "/usr/lib/python3.12/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 707, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out

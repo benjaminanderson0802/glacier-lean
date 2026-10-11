@@ -1,0 +1,1 @@
+Full backend suite requested under /tmp/glacier-suite.lock. Still queued after 9+ minutes behind other workers; pytest had not started. Cancelled only this card's childless lock waiter and parked full-board validation under CLM-2026-10-10-E-PH3-VALIDATION-ENVIRONMENT. No running test suite or another worker process was stopped.
