@@ -168,6 +168,8 @@ def collect_snapshot(
     transport = request_json or _sam_request
     retrieved = _snapshot_time(now)
     rows_by_id: dict[str, dict[str, Any]] = {}
+    rows: list[dict[str, Any]] = []
+    page_coverage: list[dict[str, int]] = []
     pages_fetched = 0
     total_records = 0
 
@@ -215,9 +217,12 @@ def collect_snapshot(
                 if previous is not None and previous != clean_row:
                     raise ValueError("SAM.gov returned conflicting duplicate notice records; snapshot is incomplete.")
                 rows_by_id[notice_id] = clean_row
+                rows.append(clean_row)
+            if page_rows:
+                page_coverage.append({"offset": len(rows) - len(page_rows), "count": len(page_rows)})
             code_records += len(page_rows)
             pages_fetched += 1
-            if len(rows_by_id) > max_records:
+            if len(rows) > max_records:
                 raise ValueError("SAM.gov snapshot is incomplete: record bound reached before completion.")
 
             next_offset = offset + len(page_rows)
@@ -238,16 +243,19 @@ def collect_snapshot(
         "source": "SAM.gov Contract Opportunities API v2",
         "source_url": SAM_SEARCH_URL,
         "query_scope": {"naics_codes": codes},
+        "naics_codes": codes,
         "retrieved_at": retrieved.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "retrieval_date": retrieved.date().isoformat(),
         "status": "complete",
         "complete": True,
         "pages_fetched": pages_fetched,
-        "record_count": len(rows_by_id),
+        "record_count": len(rows),
         "total_records": total_records,
+        "totalRecords": total_records,
         "limit": page_size,
         "offset": 0,
-        "opportunitiesData": list(rows_by_id.values()),
+        "page_coverage": page_coverage,
+        "opportunitiesData": rows,
     }
     if output_path is not None:
         _write_complete_snapshot(Path(output_path), snapshot)
