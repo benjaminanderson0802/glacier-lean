@@ -1,0 +1,24 @@
+{
+  "actorSpecification": 1,
+  "title": "Louisiana contractor license lookup results",
+  "description": "Literal public-board status and expiration date, with source and check time.",
+  "fields": {
+    "outcome": {"type": "string", "description": "match, dated no-match, or uncertain — please check"},
+    "verification_state": {"type": "string", "description": "verified, uncertain, or unverifiable when the source is unavailable"},
+    "license_number": {"type": "string", "description": "License identifier published by the Louisiana board"},
+    "business_name": {"type": "string", "description": "Business name shown in the public source"},
+    "license_type": {"type": "string", "description": "License type as shown by the board"},
+    "status": {"type": "string", "description": "Literal board status; not a legal conclusion"},
+    "effective_date": {"type": "string", "description": "Effective date published by the board"},
+    "expiration_date": {"type": "string", "description": "License expiration date when present"},
+    "source_url": {"type": "string", "description": "Official detail record URL used for this check"},
+    "checked_at": {"type": "string", "description": "UTC time this source was checked"}
+  },
+  "views": {
+    "overview": {
+      "title": "License checks",
+      "transformation": {"fields": ["outcome", "verification_state", "license_number", "business_name", "license_type", "status", "expiration_date", "source_url", "checked_at"]},
+      "display": {"component": "table", "columns": ["outcome", "verification_state", "license_number", "business_name", "license_type", "status", "expiration_date", "source_url", "checked_at"]}
+    }
+  }
+}

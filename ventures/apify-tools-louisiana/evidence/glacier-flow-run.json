@@ -1,0 +1,30 @@
+{
+  "run_id": "5a0844b62ec4",
+  "env_id": "apify-la-license-daily-canary",
+  "status": "done",
+  "waiting_on": null,
+  "author": "owner",
+  "node_states": {
+    "canaries": "done",
+    "canary_result": "done",
+    "daily": "done",
+    "status_note": "done"
+  },
+  "outputs": {
+    "canaries": "{\n  \"status\": \"healthy\",\n  \"checked_at\": \"2026-10-11T01:28:42+00:00\",\n  \"consecutive_failed_runs\": 0,\n  \"repair_attempts\": 0,\n  \"retire_after_repair_attempts\": 2,\n  \"reason\": \"All three Louisiana contractor canaries matched the recorded board values.\",\n  \"failed_license_numbers\": [],\n  \"results\": [\n    {\n      \"license_number\": \"CL.00001\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"CL.00001\",\n        \"business_name\": \"BROWN & ROOT INDUSTRIAL SERVICES, LLC\",\n        \"license_type\": \"Commercial License Certificate\",\n        \"status\": \"Active\",\n        \"effective_date\": \"02/23/2026\",\n        \"expiration_date\": \"2027-07-31\",\n        \"source_url\": \"https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=%2b5cpDGKqRCNNjSxSHnlFTA%3d%3d&Source=DetailedSearch\",\n        \"checked_at\": \"2026-10-11T01:28:36+00:00\"\n      }\n    },\n    {\n      \"license_number\": \"CL.68755\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"CL.68755\",\n        \"business_name\": \"09 Construction Services, LLC\",\n        \"license_type\": \"Commercial License Certificate\",\n        \"status\": \"Active\",\n        \"effective_date\": \"07/19/2026\",\n        \"expiration_date\": \"2029-07-18\",\n        \"source_url\": \"https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=R6DulTdQAO08c2WY3yqQKg%3d%3d&Source=DetailedSearch\",\n        \"checked_at\": \"2026-10-11T01:28:37+00:00\"\n      }\n    },\n    {\n      \"license_number\": \"RL.883684\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"RL.883684\",\n        \"business_name\": \"BROWN & ROOT INDUSTRIAL SERVICES, LLC\",\n        \"license_type\": \"Residential License Certificate\",\n        \"status\": \"Active\",\n        \"effective_date\": \"09/13/2026\",\n        \"expiration_date\": \"2027-09-12\",\n        \"source_url\": \"https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=%2b5cpDGKqRCNNjSxSHnlFTA%3d%3d&Source=DetailedSearch\",\n        \"checked_at\": \"2026-10-11T01:28:40+00:00\"\n      }\n    }\n  ]\n}\n",
+    "canary_result": "yes",
+    "daily": "",
+    "status_note": "ventures/apify-tools/canary-louisiana-2026-10-11.md (commit 60cbffdc)"
+  },
+  "usage": {},
+  "verification": [
+    {
+      "check": 0,
+      "kind": "command",
+      "passed": true,
+      "evidence": "`'/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'apify-tools'/'canary-status-louisiana.json'; d=json.loads(p.read_text(encoding='utf-8')); assert d['status']=='healthy' and len(d['results'])==3\"` exited 0"
+    }
+  ],
+  "workspace": null,
+  "verified": true
+}

@@ -1,8 +1,8 @@
-# Proof: Apify data tools — Mississippi contractor licenses
+# Proof: Apify data tools — Mississippi and Louisiana contractor licenses
 
 ## Acceptance check
 
-For the uncovered Mississippi board, three live license lookups must return the recorded business names, literal board statuses, expiration dates, direct source-record URLs, and UTC timestamps. Requests are rate-limited to at least one second. Source failure returns `uncertain — please check` / `unverifiable`, and a readable empty search is a dated no-match. The Apify SDK Actor must emit the same source-backed result locally. The real Glacier daily-canary flow and its evidence screenshot are the final release checks.
+For each included board, three live license lookups must return the recorded business names, literal board statuses, expiration dates, direct source-record URLs, and UTC timestamps. Requests are rate-limited to at least one second. Source failure returns `uncertain — please check` / `unverifiable`, and a readable empty search is a dated no-match. Each Apify SDK Actor must emit the same source-backed result locally. The real Glacier daily-canary flow is a release check for each board; Mississippi's existing run and screenshot are recorded above, and Louisiana's verified real-backend run is saved in its package evidence.
 
 ## Source choice
 
@@ -53,8 +53,19 @@ The POST returned `{"run_id":"26c2afcecb34"}`. The run finished `done`, `verifie
 
 ## Owner steps
 
-1. Set up the Apify developer account and payout details through the link in the Actor README.
-2. From the repository root, run `cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify login && npm exec --yes --package=apify-cli@1.10.0 -- apify push`.
-3. Review the listing and publish the first Actor in Apify Console at `$0.02` per lookup, with platform usage included, a `$2.00` user run limit, and the automatic `apify-default-dataset-item` event disabled.
+1. Set up the Apify developer and payout account, log in with the pinned CLI, and upload both Actor folders using the commands in the [venture manifest](venture.json).
+2. Review and publish each listing separately. Each of the first three distinct Actor publications needs a separate Glacier approval and different-engine review; confirm the event price, platform usage, run limit, and disabled automatic `apify-default-dataset-item` event before publishing it yourself.
 
 No account was created, credentials or payout details were entered, money was spent, or Actor published. The independent second-engine review and the PH12 phase audit remain pending.
+
+## Louisiana second board: live probe and draft Actor
+
+The candidate live probes were made before implementing the adapter on 2026-10-11 UTC. The Alabama Home Builders Licensure Board homepage was reachable, but its linked GLSuite license portal returned HTTP 403. Alabama's Electrical Contractor Board homepage was reachable, but the page exposed a renewal portal rather than a clear public license search. Georgia's Secretary of State verification page returned HTTP 403. The official Louisiana LSLBC contractor-search page and its linked search portal both returned HTTP 200 without an account. The portal exposes separate keyless company-name and license-number searches. A live POST by license number and a follow-up public detail request both returned records without credentials.
+
+Louisiana was selected for the clearest working keyless search and broad commercial and residential contractor scope. The source returned as many as 1,500 rows for broad company-name searches; this supports a sizeable searchable record set. No comparative paid demand or customer-volume study was run, so this is a practical scope/accessibility choice rather than a measured market-demand ranking.
+
+The live canary values, official record URLs, and UTC probe times are in [`apify-tools-louisiana/tests/canaries.json`](apify-tools-louisiana/tests/canaries.json). The daily live canary output is saved in [`apify-tools-louisiana/evidence/live-canary-run.json`](apify-tools-louisiana/evidence/live-canary-run.json). `pytest ventures/apify-tools-louisiana -q` returned **9 passed, 3 live canary subtests passed**. Coverage includes all three source records, a name search, readable no-match, malformed search/schema and outage classification, incomplete records, search validation, request spacing, canary mismatch handling, and Actor input-schema shape. The canaries matched `CL.00001` (BROWN & ROOT INDUSTRIAL SERVICES, LLC, `Active`, expires `2027-07-31`), `CL.68755` (09 Construction Services, LLC, `Active`, expires `2029-07-18`), and `RL.883684` (BROWN & ROOT INDUSTRIAL SERVICES, LLC, `Active`, expires `2027-09-12`).
+
+The standalone Actor used the shared `src/actor_template.py` lifecycle and emitted the live `CL.68755` record with the expected status, expiration date, and official detail URL. Its output is saved in [`apify-tools-louisiana/evidence/local-actor-output.json`](apify-tools-louisiana/evidence/local-actor-output.json). Its pinned `requirements.txt` is byte-identical to Mississippi's. The Apify input schema has no top-level editor, marks its array input with `editor: json`, and defines no nested array item schema. `ventures/tests/test_install_all.py` now derives Apify flow expectations from its manifest, which declares four flows across the two boards.
+
+The Louisiana Actor is a **review draft**. Its distinct-engine code and Store-listing review by OpenCode `opencode/nemotron-3.5-lightning-free` found no blocking findings; the review is recorded in [`apify-tools-louisiana/REVIEW.md`](apify-tools-louisiana/REVIEW.md). Its Louisiana daily flow was installed through the real Glacier API and completed `done`, `verified: true` (final run `5a0844b62ec4`); the response is saved in [`apify-tools-louisiana/evidence/glacier-flow-run.json`](apify-tools-louisiana/evidence/glacier-flow-run.json). The Louisiana-specific owner publication approval remains a prerequisite to publication. Account creation, payout setup, CLI login/upload, spending, and publication were not performed.

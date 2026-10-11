@@ -1,10 +1,10 @@
-# Mississippi Contractor License Status
+# Contractor License Status — Mississippi and Louisiana
 
-This Apify Actor checks contractor license records published by the Mississippi State Board of Contractors. Enter a license number or business name. Each result includes the board's status, expiration date, source record link, and check time. It repeats the board's wording; it does not decide whether a contractor is legally qualified.
+These independent Apify Actors check public contractor license records in Mississippi and Louisiana. Each result includes the board's status, expiration date, source record link, and check time. The Actors repeat the board's wording; they do not decide whether a contractor is legally qualified. Mississippi's deployable package is in this folder. Louisiana's is in [`../apify-tools-louisiana/`](../apify-tools-louisiana/).
 
-The Actor lifecycle uses the reusable runner in `src/actor_template.py`; a board-specific adapter supplies normalized inputs and public-source lookup behavior. Before adding another board, follow `BOARD_REVIEW.md` and obtain a different-engine code and listing review.
+Both Actor lifecycles use the reusable runner in `src/actor_template.py`; each board adapter supplies normalized inputs and public-source lookup behavior. Follow `BOARD_REVIEW.md` for every board. Louisiana has live canary evidence and a no-blocking distinct-engine code and Store-listing review in [`../apify-tools-louisiana/REVIEW.md`](../apify-tools-louisiana/REVIEW.md); its owner publication approval remains pending.
 
-## Run locally
+## Run Mississippi locally
 
 ```sh
 cd ventures/apify-tools
@@ -19,20 +19,20 @@ JSON
 python -m src
 ```
 
-The Apify SDK reads input from local Actor storage, not standard input. Its output dataset is written under `storage/datasets/default/`. The input schema is `.actor/input_schema.json`.
-
-Batch input accepts up to 100 objects under `queries`, each with either `license_number` or `name`. A name search returns at most 10 records. Requests to the public board search and detail pages are spaced by at least one second. No key, account, browser session, proxy, CAPTCHA, or paid data service is used.
+The Apify SDK reads input from local Actor storage, not standard input. Its output dataset is written under `storage/datasets/default/`. Each package has an independent `.actor/input_schema.json`.
 
 ## Apify Store listing and pricing
 
-The publish-ready title, description, keywords, input notes, and owner steps are in `.actor/README.md` and `store_listing.md`. Suggested billing is $0.02 per completed, readable lookup, including readable no-match results. Source outages return `uncertain — please check` with `verification_state: unverifiable` and are not charged. Include platform usage and cap a run at $2.00. Disable Apify's automatic `apify-default-dataset-item` event to avoid duplicate charges.
+The publish-ready text is in each package's `.actor/README.md` and `store_listing.md`. Suggested billing is $0.02 per completed readable lookup, including readable no-match results. Source outages return `uncertain — please check` with `verification_state: unverifiable` and are not charged. Include platform usage and cap each run at $2.00. Disable Apify's automatic `apify-default-dataset-item` event to avoid duplicate charges.
 
-## Source and limits
+## Sources and limits
 
-The [Mississippi State Board of Contractors public search](https://search.msboc.us/ConsolidatedSearch.cfm) provides contractor search and record detail pages. The board recommends contacting it before taking action because circumstances may change after publication. The Actor returns a point-in-time source result and does not make a legal conclusion. Verify directly with the board before relying on a status.
+- [Mississippi State Board of Contractors public search](https://search.msboc.us/ConsolidatedSearch.cfm)
+- [Louisiana State Licensing Board for Contractors search page](https://lslbc.louisiana.gov/contractor-search/) and its [official search portal](https://arlspublic.lslbc.louisiana.gov/Public/DetailedSearch/ByNumber)
+
+The Louisiana search is publicly reachable without an account and supports company-name and license-number lookups. Live probes found a three-character minimum for company-name searches and a 1,500-row source cap for broad searches; the Actor returns at most 10 matches. Both adapters space source requests at least one second apart. Verify directly with the board before relying on a point-in-time result. Neither Actor is affiliated with or endorsed by its board.
 
 ## Your steps
 
-1. **Your step: Set up the Apify developer and payout account** at [Apify account settings](https://console.apify.com/account/integrations).
-2. **Your step: Log in and deploy the Actor.** After account setup, paste this once from the repository root: `cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify login && npm exec --yes --package=apify-cli@1.10.0 -- apify push`.
-3. **Your step: Approve each of the first three distinct Actor publications separately.** Have a different engine review each Actor's code and Store listing, then publish it yourself in [Apify Console](https://console.apify.com/actors) using its reviewed event price. The current Mississippi Actor is the only prepared listing.
+1. **Your step: Set up your Apify developer and payout account, then deploy both Actors.** Complete account setup at [Apify account settings](https://console.apify.com/account/integrations). Install the CLI and run `npm exec --yes --package=apify-cli@1.10.0 -- apify login`, then upload each package with `(cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify push)` and `(cd ventures/apify-tools-louisiana && npm exec --yes --package=apify-cli@1.10.0 -- apify push)`.
+2. **Your step: Review and publish each listing separately.** Run a separate Glacier approval per Actor. A different engine must review that Actor's code and Store listing; then publish it yourself in [Apify Console](https://console.apify.com/actors), using the reviewed price and billing settings. Mississippi and Louisiana approvals cannot be reused. Louisiana must not be published until its separate-engine review is recorded.

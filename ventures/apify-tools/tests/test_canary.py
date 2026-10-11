@@ -40,7 +40,10 @@ class CanaryStateTests(unittest.TestCase):
         self.assertIn("run this approval separately", prompt)
         self.assertIn("different engine review", prompt)
         self.assertIn("never reuse an earlier approval", prompt)
-        self.assertIn("first three distinct actor publications", manifest["your_steps"][2]["detail"].casefold())
+        publication_step = manifest["your_steps"][1]["detail"].casefold()
+        self.assertIn("separate glacier publication approval", publication_step)
+        self.assertIn("different engine", publication_step)
+        self.assertIn("first three", publication_step)
 
     def test_reusable_actor_template_publishes_records_and_charges_readable_results(self) -> None:
         from src.actor_template import run_lookup_actor
