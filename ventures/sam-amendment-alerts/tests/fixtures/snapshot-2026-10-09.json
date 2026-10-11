@@ -1,0 +1,71 @@
+{
+  "totalRecords": 2,
+  "limit": 100,
+  "offset": 0,
+  "retrieved_at": "2026-10-09T12:00:00Z",
+  "source_url": "https://api.sam.gov/opportunities/v2/search",
+  "opportunitiesData": [
+    {
+      "noticeId": "b33e3d6f41c743bc8e3f8d8b6a460001",
+      "title": "Industrial maintenance supplies - gloves and absorbents (illustrative fixture)",
+      "solicitationNumber": "SPE4A7-26-Q-1234",
+      "fullParentPathName": "DEPT OF DEFENSE.DEPT OF THE ARMY",
+      "department": "DEPT OF DEFENSE",
+      "subTier": "DEPT OF THE ARMY",
+      "office": "DLA TROOP SUPPORT",
+      "postedDate": "2026-10-06",
+      "type": "Solicitation",
+      "baseType": "Combined Synopsis/Solicitation",
+      "typeOfSetAside": "SBA",
+      "typeOfSetAsideDescription": "Small Business Set-Aside (FAR 19.5)",
+      "naicsCode": "423840",
+      "classificationCode": "5340",
+      "active": "Yes",
+      "award": null,
+      "pointOfContact": [],
+      "description": "Illustrative fixture only. Confirm current requirements on the official SAM.gov notice.",
+      "archiveType": "autocustom",
+      "archiveDate": "2026-11-05",
+      "responseDeadLine": "2026-10-22T14:00:00-04:00",
+      "naics": "423840",
+      "organizationType": "OFFICE",
+      "modifiedDate": "2026-10-09T09:30:00-04:00",
+      "version": "1",
+      "resourceLinks": [],
+      "links": [
+        {"rel": "self", "href": "https://sam.gov/opp/b33e3d6f41c743bc8e3f8d8b6a460001/view"}
+      ]
+    },
+    {
+      "noticeId": "c44e4e7f52d854cd9f4f9e9c7b571002",
+      "title": "Shop supplies, routine maintenance (illustrative fixture)",
+      "solicitationNumber": "W912XX-26-Q-4000",
+      "department": "DEPT OF DEFENSE",
+      "subTier": "DEPT OF THE ARMY",
+      "office": "ARMY CONTRACTING COMMAND",
+      "postedDate": "2026-10-08",
+      "type": "Solicitation",
+      "typeOfSetAsideDescription": "Small Business Set-Aside (FAR 19.5)",
+      "naicsCode": "423840",
+      "active": "Yes",
+      "responseDeadLine": "2026-10-30T15:00:00-04:00",
+      "modifiedDate": "2026-10-08T10:00:00-04:00",
+      "version": "1",
+      "links": [
+        {"rel": "self", "href": "https://sam.gov/opp/c44e4e7f52d854cd9f4f9e9c7b571002/view"}
+      ]
+    },
+    {
+      "noticeId": "d55f5f8063e965dea05f0f0d8c682003",
+      "title": "Laboratory equipment (outside configured NAICS; illustrative fixture)",
+      "solicitationNumber": "W81XX-26-Q-5000",
+      "department": "DEPT OF DEFENSE",
+      "naicsCode": "334516",
+      "active": "Yes",
+      "responseDeadLine": "2026-10-29T15:00:00-04:00",
+      "modifiedDate": "2026-10-08T10:00:00-04:00",
+      "version": "1",
+      "links": []
+    }
+  ]
+}
