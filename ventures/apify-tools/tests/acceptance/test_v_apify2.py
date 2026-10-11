@@ -7,7 +7,6 @@ import pytest
 VENTURES = Path(__file__).resolve().parents[3]
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-APIFY2")
 def test_second_board_has_separate_deployable_actor_using_shared_runner():
     candidates = [p for p in VENTURES.glob("apify-tools-*") if p.is_dir() and p.name != "apify-tools"]
     assert candidates, "second state board Actor folder is missing"
@@ -18,7 +17,6 @@ def test_second_board_has_separate_deployable_actor_using_shared_runner():
     assert (actor / "README.md").is_file()
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-APIFY2")
 def test_second_board_has_explicit_owner_publication_steps_and_evidence():
     candidates = [p for p in VENTURES.glob("apify-tools-*") if p.is_dir() and p.name != "apify-tools"]
     assert candidates
@@ -31,7 +29,6 @@ def test_second_board_has_explicit_owner_publication_steps_and_evidence():
 
 
 @pytest.mark.skipif(os.getenv("APIFY2_LIVE") != "1", reason="set APIFY2_LIVE=1 only for the public board canary")
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-APIFY2")
 def test_second_board_live_canary_has_a_source_link():
     candidates = [p for p in VENTURES.glob("apify-tools-*") if p.is_dir() and p.name != "apify-tools"]
     assert candidates

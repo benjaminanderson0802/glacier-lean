@@ -44,7 +44,6 @@ def test_300a_template_is_provided():
     assert paths, "customer injury-log CSV template is required"
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-OSHA3")
 def test_injury_log_csv_runs_through_to_unsigned_worksheet(tmp_path):
     import pytest
     from pathlib import Path

@@ -12,7 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-RECALLFIX")
 def test_openfda_not_found_is_a_valid_empty_response(monkeypatch):
     from src import sources
 
@@ -30,7 +29,6 @@ def test_openfda_not_found_is_a_valid_empty_response(monkeypatch):
     }
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-RECALLFIX")
 def test_cpsc_uses_bounded_phrase_queries_and_deduplicates_results(monkeypatch):
     from src import sources
 
@@ -50,7 +48,6 @@ def test_cpsc_uses_bounded_phrase_queries_and_deduplicates_results(monkeypatch):
     assert any(item["recall_id"] == "18-101" for item in matches)
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-RECALLFIX")
 def test_actor_publishes_full_result_record():
     from src.actor_template import run_actor_queries
 

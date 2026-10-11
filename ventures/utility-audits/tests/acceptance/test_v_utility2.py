@@ -24,7 +24,6 @@ def test_existing_calculator_keeps_output_an_estimate_and_unsigned():
     assert result.get("submitted", False) is False
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-UTILITY2")
 def test_bulletin_55_and_decision_memo_are_source_backed():
     root = Path(__file__).resolve().parents[2]
     memo = (root / "DECISION.md").read_text(encoding="utf-8").lower()
@@ -35,7 +34,6 @@ def test_bulletin_55_and_decision_memo_are_source_backed():
     assert memo.count("https://") >= 3
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-UTILITY2")
 def test_utility_bills_csv_builds_unsigned_st200_application_data(tmp_path):
     utility_audit = load_utility_audit()
     build = getattr(utility_audit, "prepare_st200", None) or getattr(utility_audit, "prepare_application", None)

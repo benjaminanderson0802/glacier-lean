@@ -16,7 +16,6 @@ def load_listing_prep():
     return module
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-CARPENTER2")
 def test_agreement_template_has_plain_language_summary_and_legal_note():
     root = Path(__file__).resolve().parents[2]
     agreement = root / "agreement"
@@ -26,7 +25,6 @@ def test_agreement_template_has_plain_language_summary_and_legal_note():
     assert "summary" in text and ("____" in text or "[blank" in text or "[insert" in text)
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-CARPENTER2")
 def test_product_sheet_csv_generates_etsy_shopify_drafts_without_publishing(tmp_path):
     root = Path(__file__).resolve().parents[2]
     templates = list(root.glob("**/*product*template*.csv"))

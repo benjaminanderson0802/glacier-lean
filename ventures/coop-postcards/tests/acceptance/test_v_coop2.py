@@ -16,7 +16,6 @@ def load_workflow():
     return module
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-COOP2")
 def test_brand_rules_cover_five_brands_with_source_links_and_uncertainty():
     workflow = load_workflow()
     rules = getattr(workflow, "BRAND_RULES", getattr(workflow, "COOP_RULES", {}))
@@ -37,7 +36,6 @@ def test_claim_deadlines_are_before_expiration_and_postcard_is_render_only(monke
     assert result.get("verdict") in {"fail", "uncertain"} or result.get("ready") is False
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-COOP2")
 def test_fixture_jobber_intake_creates_claim_draft_artifacts(tmp_path):
     workflow = load_workflow()
     build = getattr(workflow, "prepare_claim_draft", None) or getattr(workflow, "generate_claim_draft", None)

@@ -8,7 +8,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-OWNERGUIDE")
 def test_guide_covers_every_venture_manifest_with_status_and_steps():
     guide = (ROOT / "OWNER-START-HERE.md").read_text(encoding="utf-8").lower()
     manifests = sorted(ROOT.glob("*/venture.json"))
@@ -22,7 +21,6 @@ def test_guide_covers_every_venture_manifest_with_status_and_steps():
     assert "your steps" in guide
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-OWNERGUIDE")
 def test_owner_guide_keeps_assigned_live_account_facts_and_manual_actions():
     guide = (ROOT / "OWNER-START-HERE.md").read_text(encoding="utf-8").lower()
     for phrase in ("awaiting cage", "jobber", "shopify", "payout", "pricing", "chrome web store"):
@@ -30,7 +28,6 @@ def test_owner_guide_keeps_assigned_live_account_facts_and_manual_actions():
     assert "no filing" in guide or "does not submit" in guide or "sign and submit" in guide
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-OWNERGUIDE")
 def test_owner_guide_lists_remaining_full_suite_failures_with_causes():
     guide = (ROOT / "OWNER-START-HERE.md").read_text(encoding="utf-8").lower()
     assert "remaining test failures" in guide or "test suite failures" in guide

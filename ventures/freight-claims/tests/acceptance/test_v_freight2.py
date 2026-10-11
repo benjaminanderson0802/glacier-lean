@@ -38,7 +38,6 @@ def test_claim_submission_and_invoice_remain_owner_approved():
     assert "send" in readme and "owner" in readme
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-FREIGHT2")
 def test_carrier_specific_packet_templates_cover_deadlines_and_evidence():
     import pytest
     root = Path(__file__).resolve().parents[2]

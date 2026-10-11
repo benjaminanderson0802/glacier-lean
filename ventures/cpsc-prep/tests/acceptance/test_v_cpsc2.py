@@ -37,7 +37,6 @@ def test_live_saferproducts_recall_endpoint_returns_recall_records():
     assert all("RecallID" in row or "RecallNumber" in row for row in payload)
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-CPSC2")
 def test_lawyer_questions_are_cited_and_launch_remains_gated():
     root = Path(__file__).resolve().parents[2]
     questions = (root / "LAWYER-QUESTIONS.md").read_text(encoding="utf-8").lower()

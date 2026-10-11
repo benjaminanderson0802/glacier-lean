@@ -17,7 +17,6 @@ def load_listing_prep():
     return module
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-FDA2")
 def test_shopify_graphql_fixture_produces_field_sources_and_uncertainty(tmp_path, monkeypatch):
     listing_prep = load_listing_prep()
     fixture = json.loads((Path(__file__).parent / "fixtures/shopify-products-2026-04-16.json").read_text(encoding="utf-8"))

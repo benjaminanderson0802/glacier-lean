@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-PROPTAX2")
 def test_homeowner_mode_prepares_guide_and_keeps_filing_with_homeowner():
     root = Path(__file__).resolve().parents[2]
     readme = (root / "README.md").read_text(encoding="utf-8").lower()
@@ -16,7 +15,6 @@ def test_homeowner_mode_prepares_guide_and_keeps_filing_with_homeowner():
     assert "submit" not in serialized or "owner" in serialized or "homeowner" in serialized
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-PROPTAX2")
 def test_decision_memo_compares_three_paths_and_live_mail_stays_disabled():
     root = Path(__file__).resolve().parents[2]
     memo = (root / "DECISION.md").read_text(encoding="utf-8").lower()

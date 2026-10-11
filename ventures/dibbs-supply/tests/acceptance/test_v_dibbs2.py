@@ -23,7 +23,6 @@ def test_sam_v2_fixture_has_real_search_response_shape():
     assert {"noticeId", "solicitationNumber", "title", "department", "naicsCode", "responseDeadLine", "uiLink"} <= set(record)
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-DIBBS2")
 def test_sam_opportunity_filter_ranks_dla_and_owner_naics_without_consent_clickthrough():
     dibbs_supply = load_dibbs()
     fixture = json.loads((Path(__file__).parent / "fixtures/sam-opportunities-v2.json").read_text(encoding="utf-8"))
@@ -43,7 +42,6 @@ def test_quote_workflow_preserves_manual_signature_and_submit_gate():
                for step in manifest.get("your_steps", []))
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-DIBBS2")
 def test_sam_api_key_is_a_named_secret_and_never_checked_into_fixture():
     root = Path(__file__).resolve().parents[2]
     manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
