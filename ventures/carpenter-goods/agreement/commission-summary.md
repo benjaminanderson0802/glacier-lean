@@ -1,8 +1,11 @@
 # Our furniture commission agreement — plain-language summary
 
-**People:** [Owner's name] and [Carpenter's name/business]  
-**Products:** [Products covered]  
-**Shops:** [Etsy shop and/or Shopify site]  
+**People:** [Owner's name] and [Carpenter's name/business]
+
+**Products:** [Products covered]
+
+**Shops:** [Etsy shop and/or Shopify site]
+
 **Starts:** [Date]  **Ends:** [Date or “continues until ended”]
 
 ## What we agreed
@@ -33,7 +36,8 @@ Either person may end it with **[number] days' notice by email/letter to]**. Whe
 
 ## Signatures — both people sign themselves
 
-Owner: **[signature]**  Date: **[date]**  
+Owner: **[signature]**  Date: **[date]**
+
 Carpenter: **[signature]**  Date: **[date]**
 
 This short summary helps explain the filled agreement; if they differ, use the signed agreement. **Not legal advice.** Have both people read and agree to the full terms before signing.
