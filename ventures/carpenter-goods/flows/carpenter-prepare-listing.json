@@ -7,7 +7,7 @@
       "id": "prepare_draft",
       "type": "command",
       "config": {
-        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py prepare --product \"$GLACIER_HOME/ventures/carpenter-goods/incoming/product.json\" --comparables \"$GLACIER_HOME/ventures/carpenter-goods/incoming/comparables.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/drafts/listing.json\"",
+        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py prepare --product-csv \"$GLACIER_HOME/ventures/carpenter-goods/incoming/product-sheet.csv\" --comparables \"$GLACIER_HOME/ventures/carpenter-goods/incoming/comparables.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/drafts/listing.json\"",
         "cwd": "{repo}",
         "timeout": "30",
         "retries": "0"
@@ -67,7 +67,7 @@
       "id": "owner_input_ready",
       "type": "approval",
       "config": {
-        "prompt": "Your step: save maker-confirmed product facts and completed-sale comparables at $GLACIER_HOME/ventures/carpenter-goods/incoming/product.json and $GLACIER_HOME/ventures/carpenter-goods/incoming/comparables.json. Include product name, materials, dimensions, price, photos, and source links. Return and approve after both files are ready. Glacier will not publish the listing."
+        "prompt": "Your step: fill the product sheet CSV from the maker's confirmed facts and save it at $GLACIER_HOME/ventures/carpenter-goods/incoming/product-sheet.csv. Save at least three same-category completed-sale comparisons, each with a source URL, date, and sale price, at $GLACIER_HOME/ventures/carpenter-goods/incoming/comparables.json. Return and approve after both files are ready. Glacier will not publish the listing."
       },
       "position": {
         "x": -300,
