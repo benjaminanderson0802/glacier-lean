@@ -33,10 +33,14 @@
       "id": "approve-first-listing",
       "title": "Review and publish the first listing",
       "when": "After a draft is prepared",
-      "detail": "Review the prepared Etsy and Shopify drafts, photos, facts, comparable sales and price. If correct, publish manually in the shop(s) yourself. Glacier does not create accounts or publish listings.",
+      "detail": "Review the prepared Etsy and Shopify drafts, photos, facts, comparable sales and price. Before physical-goods sales, check whether the business meets Georgia's dealer definition and, if so, register for Sales & Use Tax through GTC; registration is free. DOR says online registration is available through GTC and electronic filing is free. Use Georgia Form ST-5 only for qualifying tax-exempt wholesale purchases for resale, not personal-use purchases. If the drafts and setup are correct, publish manually in the shop(s) yourself. Glacier does not create accounts or publish listings.",
       "links": [
         "https://www.etsy.com/your/shops/me/dashboard",
-        "https://admin.shopify.com/"
+        "https://admin.shopify.com/",
+        "https://dor.georgia.gov/tax-registration",
+        "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
+        "https://dor.georgia.gov/about-georgia-tax-center",
+        "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"
       ]
     }
   ],

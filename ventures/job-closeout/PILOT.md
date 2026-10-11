@@ -6,7 +6,7 @@
 
 Hello {{business}} team,
 
-I’m Benjamin Anderson with Anderson Education LLC in Troy. Would a simple completion packet help your team hand finished jobs to customers?
+I’m Benjamin Anderson with Anderson Education LLC, which operates from Georgia. Would a simple completion packet help your team hand finished jobs to customers?
 
 I can prepare a PDF with your work summary, equipment details, invoice reference and warranty reminder from records you authorize. Photo spaces are included; photos are not automatically embedded.
 
@@ -52,4 +52,4 @@ Advertisement. Reply “Remove” to stop future email. No further follow-up if 
 
 Draft only; nothing has been sent. Replace `{{business}}` and `{{business postal address}}` before sending. The postal address is intentionally not invented or taken from a prospect. Use Benjamin's existing business mailbox with an accurate From/Reply-To. The prospect entries are candidates found on business-owned websites, not independent directory records. The websites do not establish that a listed contact is current, a business uses Jobber, may authorize an export, or is interested in buying. Verify the contact route and buyer fit manually before sending. Send individually; no tracking pixel, bulk send, unsolicited text, or automated follow-up. Use a listed office phone to request the right email when the CSV has no email; do not guess an address or use an emergency/service-booking form for a sales pitch. Send one follow-up only, at least five business days later, and stop immediately on a decline or opt-out. Keep suppression requests and honor them within 10 business days. [FTC business email rules](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) cover commercial B2B email too.
 
-Before taking orders, confirm existing business permissions for operating from Troy and the existing payment route; see [FASTEST-MONEY](../FASTEST-MONEY.md). Price below is a proposed fixed pilot price, subject to owner acceptance, not an invoice already issued. Any applicable tax must be identified in the agreed total before checkout. No new payment account is assumed.
+Before taking orders, confirm existing business permissions for operating from Georgia and the existing payment route; see [FASTEST-MONEY](../FASTEST-MONEY.md). Price below is a proposed fixed pilot price, subject to owner acceptance, not an invoice already issued. Any applicable tax must be identified in the agreed total before checkout. No new payment account is assumed.

@@ -12,6 +12,7 @@ Benjamin (the owner) set these. Every agent, human and AI, reads this file befor
 
 ## Venture decisions log
 - 2026-10-11: added eBay (wholesale drop-ship, high-priced items in less-online niches with long shipping norms) and Depop (buy-first or seller-designed items). Dropped ventures: Pinterest and Vinted.
+- 2026-10-11: the business operates from Georgia; no Alabama foreign-LLC registration; sales tax registrations go to Georgia.
 
 ## Hard boundaries
 - The owner (or the customer) personally does every legally binding or account action: signing, filing, paying, publishing, creating accounts, choosing prices, and sending messages. Agents prepare; they don't perform these.

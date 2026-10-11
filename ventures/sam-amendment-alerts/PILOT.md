@@ -6,7 +6,7 @@
 
 Hello {{business}} team,
 
-I’m Benjamin Anderson with Anderson Education LLC in Troy. I’m testing a narrow digest for industrial suppliers that follows new SAM.gov notices and observed deadline changes for one NAICS code.
+I’m Benjamin Anderson with Anderson Education LLC, which operates from Georgia. I’m testing a narrow digest for industrial suppliers that follows new SAM.gov notices and observed deadline changes for one NAICS code.
 
 The proposed **four-week pilot is $49**, with four weekly digests and no renewal. SAM.gov is free; you’d pay for the focused comparison, not access to government data.
 
@@ -52,4 +52,4 @@ Advertisement. Reply “Remove” to stop future email. No further follow-up wit
 
 Draft only; nothing has been sent. Replace `{{business}}` and `{{business postal address}}` before sending. The postal address is intentionally not invented or taken from a prospect. Use Benjamin's existing business mailbox with an accurate From/Reply-To. The prospect CSV links to first-party business contact pages, not verified SBA profiles; check that the listed business and contact route are still current, and confirm federal-bidding fit directly. These public routes do not establish buyer interest or consent. Send individually; no tracking pixel, bulk send, unsolicited text, or automated follow-up. Use the published business phone to request the right email when the CSV has no email; do not guess an address or use an emergency/service-booking form for a sales pitch. Send one follow-up only, at least five business days later, and stop immediately on a decline or opt-out. Keep suppression requests and honor them within 10 business days. [FTC business email rules](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) cover commercial B2B email too.
 
-Before taking orders, confirm existing business permissions for operating from Troy and the existing payment route; see [FASTEST-MONEY](../FASTEST-MONEY.md). Price below is a proposed fixed pilot price, subject to owner acceptance, not an invoice already issued. Any applicable tax must be identified in the agreed total before checkout. No new payment account is assumed.
+Before taking orders, confirm existing business permissions for operating from Georgia and the existing payment route; see [FASTEST-MONEY](../FASTEST-MONEY.md). Price below is a proposed fixed pilot price, subject to owner acceptance, not an invoice already issued. Any applicable tax must be identified in the agreed total before checkout. No new payment account is assumed.

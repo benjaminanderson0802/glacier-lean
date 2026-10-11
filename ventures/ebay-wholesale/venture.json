@@ -19,7 +19,7 @@
       "id": "accounts-and-suppliers",
       "title": "Set up eBay and apply to wholesale suppliers",
       "when": "Before using live eBay Sell APIs or preparing real supplier POs",
-      "detail": "Follow OWNER-STEPS.md to create or verify your eBay seller account and payouts, create your eBay developer keyset, and apply in writing through the linked wholesale supplier application pages. Provide a resale certificate/EIN where the supplier requires one. Store only the eBay OAuth user token in Glacier Settings → Secrets. Do not enter credentials in CSVs. These are setup actions; Glacier separately pauses for owner approval before each API write, listing publication, supplier PO, or payment.",
+      "detail": "Follow OWNER-STEPS.md to create or verify your eBay seller account and payouts, create your eBay developer keyset, apply in writing through the linked wholesale supplier application pages, and check Georgia Sales & Use Tax registration applicability before physical-goods sales. If Georgia registration applies, register through GTC for free; provide Georgia Form ST-5 only for qualifying tax-exempt wholesale purchases for resale, and provide an EIN only where required. Store only the eBay OAuth user token in Glacier Settings → Secrets. Do not enter credentials in CSVs. These are setup actions; Glacier separately pauses for owner approval before each API write, listing publication, supplier PO, or payment.",
       "links": [
         "https://www.ebay.com/sellercenter",
         "https://developer.ebay.com/my/keys",
@@ -27,7 +27,9 @@
         "https://mammothskidsteer.com/pages/become-a-dealer",
         "https://www.travers.com/wholesale-by-travers-splashpage",
         "https://voltikpower.com/trade",
-        "https://us.mychway.com/distributor"
+        "https://us.mychway.com/distributor",
+        "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
+        "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"
       ],
       "secrets": [{"name": "ebay_user_access_token", "label": "eBay OAuth user access token"}]
     }
