@@ -1,9 +1,9 @@
 const byId = (id) => document.getElementById(id);
 const resultBox = byId("result");
-const settingIds = ["check-mode", "actor-id", "api-token"];
+const settingIds = ["check-mode", "actor-id"];
 
 async function loadSettings() {
-  const settings = await chrome.storage.local.get({ "check-mode": "local", "actor-id": "", "api-token": "" });
+  const settings = await chrome.storage.local.get({ "check-mode": "local", "actor-id": "" });
   for (const id of settingIds) byId(id).value = settings[id] || "";
   byId("hosted-settings").hidden = settings["check-mode"] !== "hosted";
 }

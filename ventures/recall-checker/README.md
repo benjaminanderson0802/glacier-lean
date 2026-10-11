@@ -2,7 +2,7 @@
 
 Recall checker checks a product against public recall records from CPSC, NHTSA, FDA and FSIS. It can check an item you choose in Chrome, process a store inventory CSV, answer a local JSON API request, and generate source-linked local recall pages. A result is **match**, **no match found in CPSC, NHTSA, FDA and FSIS as of [date]**, or **uncertain — please check**. Missing, stale or incomplete feeds and borderline matches stay uncertain.
 
-The extension reads the current tab only after you click **read this page**. It never crawls a marketplace. By default, it extracts a barcode, brand, model and product name in the browser and sends only those fields to the local API on `127.0.0.1`; page text is not sent or saved. Add a model year for vehicle checks. The optional hosted mode sends item fields to the Apify Actor you configure. Its Actor ID, token, and selected mode are saved in `chrome.storage.local`. Start the local API from the repository root with:
+The extension reads the current tab only after you click **read this page**. It never crawls a marketplace. By default, it extracts a barcode, brand, model and product name in the browser and sends only those fields to the local API on `127.0.0.1`; page text is not sent or saved. Add a model year for vehicle checks. The optional hosted mode sends item fields to the Apify Actor you configure. Its Actor ID and selected mode are saved in `chrome.storage.local`; the API token stays in the open popup and is not saved after it closes. Start the local API from the repository root with:
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python ventures/recall-checker/scripts/api.py
@@ -39,7 +39,7 @@ The local listing package is prepared in `store/`: use [STORE-LISTING.md](store/
 ~/w/glacier-lean/.venv/bin/python ventures/recall-checker/store/build_extension.py
 ```
 
-The screenshots are illustrative mockups, not browser captures. Load `extension/` using `chrome://extensions` → **Developer mode** → **Load unpacked** to review the actual popup. Privacy text describes the current behavior, including that the optional Apify token is stored in extension local storage. The owner should verify the final Chrome Web Store privacy disclosures before submission.
+The screenshots are illustrative mockups, not browser captures. Load `extension/` using `chrome://extensions` → **Developer mode** → **Load unpacked** to review the actual popup. Privacy text describes the current behavior, including that the optional Apify token stays only in the open popup and is not saved. The owner should verify the final Chrome Web Store privacy disclosures before submission.
 
 ## Current status and owner actions
 

@@ -45,7 +45,7 @@ Commands run from the repository root with `/home/glacier/w/glacier-lean/.venv/b
 GLACIER_HOME=/tmp/glacier-recall-benchmark-home /home/glacier/w/glacier-lean/.venv/bin/python ventures/recall-checker/bench/run_benchmark.py --output ventures/recall-checker/bench/results.json --as-of 2026-10-10
 ```
 
-Latest test outcomes: recall-checker suite **27 passed**; `ventures/tests` **24 passed, 2 subtests passed**. The first-page CLI check generated 50 pages from fresh, alert-free snapshots of all four sources. No acceptance checks or `ACCEPTANCE.md` files were changed.
+Latest test outcomes: recall-checker suite **28 passed**; `ventures/tests` **24 passed, 2 subtests passed**. The first-page CLI check generated 50 pages from fresh, alert-free snapshots of all four sources. No acceptance checks or `ACCEPTANCE.md` files were changed.
 
 ## Remaining gates
 
