@@ -43,7 +43,7 @@ All venture suites were run in isolation on 2026-10-10 because a single root pyt
 
 ## Out of scope
 
-These five SPEC cuts are excluded and have no venture manifests: motel dynamic pricing, unclaimed property recovery, Whop clipping, truck dispatch, and restaurant delivery refunds.
+These four cuts remain excluded and have no venture manifests: motel dynamic pricing, unclaimed property recovery, truck dispatch, and restaurant delivery refunds.
 
 ## Installer and manifest contract
 

@@ -1,0 +1,45 @@
+{
+  "slug": "whop-clipping",
+  "name": "Whop Content Rewards clipping",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare 20–58 second campaign clips, publish them to the owner's linked YouTube Shorts channels, and submit each post to Whop Content Rewards.",
+    "safety": "Dry-run by default. Live uploads require live=true and an explicitly approved campaign ID in the private CLIP_HOME config. Channel caps, spacing, segment overlap checks, pauses, and all side effects are recorded locally."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": ["whop-clipping-cycle"],
+  "schedules": [
+    {
+      "flow": "whop-clipping-cycle",
+      "cron": "0 */6 * * *",
+      "purpose": "Scout approved Whop Content Rewards campaigns and process eligible clips.",
+      "missed_run": "skip",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "youtube-oauth",
+      "title": "Connect the 10 YouTube channels",
+      "when": "Before the first live upload",
+      "detail": "Follow step 1 in OWNER-STEPS.md to create the Google Cloud OAuth client and authorize each channel once. Keep client_secret.json under CLIP_HOME/tokens/.",
+      "links": ["https://console.cloud.google.com/"]
+    },
+    {
+      "id": "whop-login",
+      "title": "Sign in to Whop",
+      "when": "Before the first Whop submission",
+      "detail": "Follow step 2 in OWNER-STEPS.md to sign in once and save the browser profile under CLIP_HOME/browser-profile/.",
+      "links": ["https://whop.com/"]
+    }
+  ],
+  "launch_gates": [
+    "Dry-run remains enabled unless the owner sets live=true in the private CLIP_HOME config.",
+    "The owner explicitly approves campaign IDs before automated live posting and submission.",
+    "Whop and YouTube adapters must be present in the configured plugins before live mode.",
+    "A flagged Whop submission pauses that campaign on its channel; YouTube strike/terms errors pause that channel."
+  ],
+  "dry_run_env_id": "whop-clipping-cycle"
+}
