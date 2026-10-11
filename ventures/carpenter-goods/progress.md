@@ -1,5 +1,12 @@
 # Progress — Carpenter's goods
 
+## Drift check
+
+- Checkpoint: PH12.20. Its PH5 and PH9 dependencies are marked at exit in `NORTHSTAR.yaml`.
+- Defining properties and metric: P-USABLE / M-INTERVENE through a two-step owner checklist, with P-VERIFY for checked calculations.
+- Existing coverage: the local scripts prepare drafts and calculate JSON exports, but there was no product-sheet CSV import, Etsy/Shopify order CSV import, or agreement template. Python's standard-library CSV parser covers the file handling without a new dependency.
+- Acceptance written first: `tests/test_csv_workflow.py` exercises product CSV → both listing drafts and Etsy + Shopify exports → paid-only commission summary; the requested venture pytest suite must pass.
+
 PH12.20 remains unverified. This card adds an owner-fillable commission agreement and plain-language summary, a one-row product-sheet CSV template, and CLI support to produce Etsy/Shopify drafts from that CSV. Commission calculation now accepts Etsy and Shopify order-level CSV exports and reports paid totals, the written rate calculation, excluded rows, and the need to confirm the eligible amount against the agreement.
 
 Owner actions remain owner-only: both parties sign; the owner obtains and supplies exports; the owner reviews and manually publishes listings; the owner compares commission output with settlements before invoicing or paying. The owner checklist is condensed to two steps in the venture manifest.
