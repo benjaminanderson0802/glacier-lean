@@ -1,0 +1,48 @@
+{
+  "id": "sam-amendment-digest",
+  "name": "Prepare SAM.gov change digest",
+  "goal": "Compare two locally saved SAM.gov Opportunities API v2 snapshots for NAICS 423840 and prepare a dated source-linked change digest. No network request or outbound message is made by this flow.",
+  "nodes": [
+    {
+      "id": "compare_snapshots",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/sam-amendment-alerts/scripts/digest.py --before \"$GLACIER_HOME/ventures/sam-amendment-alerts/incoming/before.json\" --after \"$GLACIER_HOME/ventures/sam-amendment-alerts/incoming/after.json\" --naics 423840 --output \"$GLACIER_HOME/ventures/sam-amendment-alerts/drafts/digest-{run}.md\"",
+        "timeout": "30",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "digest_ready",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "digest_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/sam-amendment-alerts/reviews/digest-{run}.md",
+        "template": "A local SAM.gov snapshot comparison ran. Review its source retrieval date, notice links, deadlines, and coverage note. Verify all live notice details directly on SAM.gov. This flow did not send email or submit a bid.\n\n{summary}"
+      },
+      "position": {"x": 600, "y": -100}
+    },
+    {
+      "id": "digest_failed",
+      "type": "note",
+      "config": {
+        "path": "ventures/sam-amendment-alerts/reviews/digest-failed-{run}.md",
+        "template": "The snapshot comparison failed. Do not use an old digest as current; check the two saved snapshots and run output.\n\n{summary}"
+      },
+      "position": {"x": 600, "y": 120}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "compare_snapshots", "target": "digest_ready", "label": ""},
+    {"id": "e2", "source": "digest_ready", "target": "digest_note", "label": "yes"},
+    {"id": "e3", "source": "digest_ready", "target": "digest_failed", "label": "no"}
+  ],
+  "max_steps": 3
+}
