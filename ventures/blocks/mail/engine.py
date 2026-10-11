@@ -5,13 +5,15 @@ import json
 import os
 import re
 import sys
-import textwrap
+import shutil
+import subprocess
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 import httpx
+from tempfile import TemporaryDirectory
 
 _AGENCY_TERMS = re.compile(r"\b(official\s+government|government\s+notice|federal\s+agency|department\s+of|irs|osha|cpsc|seal\s+of)\b", re.I)
 _TAGS = re.compile(r"<[^>]+>")
@@ -194,39 +196,116 @@ def _render_html(source: str, values: dict[str, Any]) -> str:
     return rendered
 
 
-def _pdf_escape(value: str) -> str:
-    return value.encode("latin-1", "replace").decode("latin-1").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+def _proof_browser() -> str:
+    """Find the locally installed Chromium used for browser/PDF rendering."""
+    configured = os.environ.get("CHROMIUM_PATH", "").strip()
+    candidates = [configured]
+    candidates.extend(str(path) for path in sorted(Path.home().glob(".cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell"), reverse=True))
+    candidates.append("/opt/pw-browsers/chromium")
+    candidates.extend(str(path) for path in sorted(Path.home().glob(".cache/ms-playwright/chromium-*/chrome-linux64/chrome"), reverse=True))
+    candidates.extend(filter(None, (shutil.which("chromium"), shutil.which("chromium-browser"), shutil.which("google-chrome"))))
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file() and os.access(candidate, os.X_OK):
+            return candidate
+    raise RuntimeError("local postcard proof is blocked: Chromium is not installed; install the pinned Playwright Chromium browser")
 
 
-def _proof_pdf(front: str, back: str, output: Path) -> None:
-    """Write a two-page, 4 x 6 inch PDF proof without extra runtime packages."""
-    objects: list[bytes] = [b"<< /Type /Catalog /Pages 2 0 R >>", b"<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>"]
-    for markup, content_id in ((front, 4), (back, 6)):
-        plain = html.unescape(_TAGS.sub(" ", markup))
-        plain = re.sub(r"\s+", " ", plain).strip()
-        lines = textwrap.wrap(plain, width=54)[:16] or [" "]
-        commands = ["BT", "/F1 11 Tf", "24 395 Td"]
-        for line_index, line in enumerate(lines):
-            if line_index:
-                commands.append("0 -18 Td")
-            commands.append(f"({_pdf_escape(line)}) Tj")
-        commands.append("ET")
-        stream = "\n".join(commands).encode("latin-1", "replace")
-        page_id = content_id - 1
-        objects.append(f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 288 432] /Resources << /Font << /F1 7 0 R >> >> /Contents {content_id} 0 R >>".encode())
-        objects.append(f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-    data = bytearray(b"%PDF-1.4\n% Glacier postcard proof\n")
-    offsets = [0]
-    for index, body in enumerate(objects, 1):
-        offsets.append(len(data))
-        data.extend(f"{index} 0 obj\n".encode() + body + b"\nendobj\n")
-    xref = len(data)
-    data.extend(f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode())
-    for offset in offsets[1:]:
-        data.extend(f"{offset:010d} 00000 n \n".encode())
-    data.extend(f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode())
-    output.write_bytes(data)
+def _proof_document(front: str, back: str, sender: dict[str, str], status_id: str, nonce: str) -> str:
+    address_parts = [sender.get(key, "") for key in ("address_line1", "address_line2")]
+    city_line = " ".join(part for part in (sender.get("address_city", ""), sender.get("address_state", ""), sender.get("address_zip", "")) if part)
+    if city_line:
+        address_parts.append(city_line)
+    sender_details = "<aside class=\"sender-details\"><strong>Return address · " + html.escape(sender.get("name", "Sender not provided")) + "</strong><br>" + "<br>".join(html.escape(part) for part in address_parts if part) + "</aside>"
+    notice = "Local review proof · 6 × 4 in · not print-ready"
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline' data:; script-src 'nonce-{nonce}'">
+<title>{notice}</title>
+<style>
+@page {{ size: 6in 4in; margin: 0 }}
+html, body {{ margin: 0; padding: 0; width: 6in; font-family: Arial, sans-serif; color: #111 }}
+.proof-page {{ position: relative; box-sizing: border-box; width: 6in; height: 4in; padding: .22in; overflow: hidden; break-after: page; page-break-after: always }}
+.proof-page:last-child {{ break-after: auto; page-break-after: auto }}
+.copy {{ box-sizing: border-box; width: 100%; height: calc(100% - .48in); overflow: hidden }}
+.proof-label {{ position: absolute; left: .22in; bottom: .12in; font: 8pt Arial, sans-serif; color: #444 }}
+.sender-details {{ margin-top: .12in; font: 8pt Arial, sans-serif; color: #444 }}
+</style></head><body>
+<section class="proof-page"><main class="copy">{front}</main><footer class="proof-label">{notice}</footer></section>
+<section class="proof-page"><main class="copy">{back}{sender_details}</main><footer class="proof-label">{notice}</footer></section>
+<style>
+@page {{ size: 6in 4in; margin: 0 }}
+html, body {{ margin: 0; padding: 0; width: 6in; font-family: Arial, sans-serif; color: #111 }}
+.proof-page {{ position: relative; box-sizing: border-box; width: 6in; height: 4in; padding: .22in; overflow: hidden; break-after: page; page-break-after: always }}
+.proof-page:last-child {{ break-after: auto; page-break-after: auto }}
+.copy {{ box-sizing: border-box; width: 100%; height: calc(100% - .48in); overflow: hidden }}
+.proof-label {{ position: absolute; left: .22in; bottom: .12in; font: 8pt Arial, sans-serif; color: #444 }}
+.sender-details {{ margin-top: .12in; font: 8pt Arial, sans-serif; color: #444 }}
+</style>
+<output id="{status_id}" data-proof-status="pending" hidden></output>
+<script nonce="{nonce}">
+const status = document.getElementById({json.dumps(status_id)});
+const overflowing = [...document.querySelectorAll('.copy')].map((copy, index) => {{
+  const bounds = copy.getBoundingClientRect();
+  const childOutside = [...copy.querySelectorAll('*')].some((child) => {{
+    const rect = child.getBoundingClientRect();
+    return rect.left < bounds.left - 1 || rect.right > bounds.right + 1 || rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1;
+  }});
+  const overflow = copy.scrollHeight > copy.clientHeight + 1 || copy.scrollWidth > copy.clientWidth + 1 || childOutside;
+  return overflow ? (index === 0 ? 'front' : 'back') : null;
+}}).filter(Boolean);
+status.dataset.proofStatus = overflowing.length ? 'overflow' : 'ready';
+status.dataset.proofSides = overflowing.join(',');
+</script></body></html>"""
+
+
+def _proof_pdf(front: str, back: str, output: Path, sender: dict[str, str] | None = None) -> None:
+    """Render a two-page local 6 x 4 inch review PDF through Chromium.
+
+    Raises ValueError when either side cannot fit its page box. The shared
+    preview is separate from the co-op workflow's 11.5 x 6.25 inch EDDM proof.
+    """
+    browser = _proof_browser()
+    status_id = "glacier-proof-status"
+    nonce = __import__("secrets").token_urlsafe(18)
+    document = _proof_document(front, back, sender or {}, status_id, nonce)
+    url = "data:text/html;charset=utf-8," + urllib.parse.quote(document, safe="")
+    with TemporaryDirectory(prefix="glacier-mail-proof-") as temporary:
+        profile = Path(temporary) / "profile"
+        common = [browser, "--headless", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
+                  "--disable-extensions", "--disable-background-networking", "--disable-sync",
+                  "--disable-default-apps", "--no-first-run", "--no-default-browser-check",
+                  "--host-resolver-rules=MAP * ~NOTFOUND", f"--user-data-dir={profile}", "--virtual-time-budget=5000"]
+        try:
+            checked = subprocess.run(common + ["--dump-dom", url], capture_output=True, text=True, timeout=30, check=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise RuntimeError(f"local postcard proof is blocked: Chromium preflight failed: {exc}") from exc
+        if checked.returncode:
+            detail = checked.stderr[-500:].strip()
+            raise RuntimeError(f"local postcard proof is blocked: Chromium preflight failed: {detail or checked.returncode}")
+        status_match = re.search(r'<output id="glacier-proof-status" data-proof-status="(ready|overflow)"(?: data-proof-sides="([^"]*)")?', checked.stdout)
+        if not status_match:
+            raise RuntimeError("local postcard proof is blocked: Chromium could not inspect the rendered pages")
+        if status_match.group(1) == "overflow":
+            sides = status_match.group(2) or "front or back"
+            raise ValueError(f"postcard proof overflow on {sides}; shorten or reflow the copy before review")
+        output.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            rendered = subprocess.run(common + [f"--print-to-pdf={output}", "--no-pdf-header-footer", url], capture_output=True, text=True, timeout=30, check=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise RuntimeError(f"local postcard proof is blocked: Chromium PDF rendering failed: {exc}") from exc
+        if rendered.returncode or not output.is_file() or output.stat().st_size < 500 or not output.read_bytes().startswith(b"%PDF-"):
+            detail = rendered.stderr[-500:].strip()
+            raise RuntimeError(f"local postcard proof is blocked: Chromium did not produce a valid PDF: {detail or rendered.returncode}")
+        media_boxes = re.findall(rb"/MediaBox\s*\[([^\]]+)\]", output.read_bytes())
+        dimensions = []
+        for box in media_boxes:
+            try:
+                dimensions.append(tuple(round(float(value), 2) for value in box.split()))
+            except ValueError:
+                dimensions.append(())
+        if len(dimensions) != 2 or any(box != (0.0, 0.0, 432.0, 288.0) for box in dimensions):
+            output.unlink(missing_ok=True)
+            raise ValueError("postcard proof overflow: rendered pages did not match the standard 6 x 4 inch preview")
 
 
 def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, approval_id: str | None = None,
@@ -248,12 +327,17 @@ def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, approval_i
     check = check_outreach({"sender": sender_name, "address": to}, message_text)
     if check["verdict"] == "fail":
         raise ValueError(f"outreach rule failed: {check['reason']}")
-    digest = __import__("hashlib").sha256((json.dumps(recipient, sort_keys=True) + front_html + back_html).encode()).hexdigest()[:14]
+    digest = __import__("hashlib").sha256((json.dumps({"to": recipient, "from": sender}, sort_keys=True) + front_html + back_html).encode()).hexdigest()[:14]
     front_path, back_path, proof_path = destination / f"{digest}-front.html", destination / f"{digest}-back.html", destination / f"{digest}-proof.pdf"
     front_path.write_text(front_html, encoding="utf-8")
     back_path.write_text(back_html, encoding="utf-8")
-    _proof_pdf(front_html, back_html, proof_path)
-    result: dict[str, Any] = {"status": "render_only", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": str(proof_path), "address_verification": {"verdict": "uncertain", "detail": "not sent; no Lob test key configured" if not key else "not sent; an approval_id is required"}, "outreach_check": check}
+    proof_info = {"proof_kind": "local_review", "proof_dimensions_inches": {"width": 6, "height": 4}, "proof_notice": "Local review proof only; not print-ready."}
+    try:
+        _proof_pdf(front_html, back_html, proof_path, sender)
+    except ValueError as exc:
+        return {"status": "blocked_overflow", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": None,
+                "blocking_reason": str(exc), **proof_info, "outreach_check": check}
+    result: dict[str, Any] = {"status": "render_only", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": str(proof_path), **proof_info, "address_verification": {"verdict": "uncertain", "detail": "not sent; no Lob test key configured" if not key else "not sent; an approval_id is required"}, "outreach_check": check}
     if key and key.startswith("test_") and approval_id and approval_id.strip():
         verification = verify_address(to, secret_getter=secret_getter, transport=transport)
         result["address_verification"] = verification
