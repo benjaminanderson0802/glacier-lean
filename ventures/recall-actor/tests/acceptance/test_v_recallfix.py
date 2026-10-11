@@ -63,8 +63,12 @@ def test_actor_publishes_full_result_record():
     asyncio.run(run_actor_queries(actor, [result["query"]], check_one=lambda _query: result))
     assert actor.rows == [result]
     schema = json.loads((ROOT / ".actor/dataset_schema.json").read_text(encoding="utf-8"))
-    fields = schema.get("properties", {})
-    assert {"outcome", "message", "query", "matches", "sources_checked", "checked_at"} <= set(fields)
+    result_fields = {"outcome", "message", "query", "matches", "sources_checked", "checked_at"}
+    apify_schema_keys = {"actorSpecification", "title", "description", "fields", "views"}
+    assert set(schema) <= apify_schema_keys
+    assert result_fields <= set(schema["fields"]["properties"])
+    overview_fields = schema["views"]["overview"]["transformation"]["fields"]
+    assert result_fields <= set(overview_fields)
 
 
 @pytest.mark.skipif(os.getenv("RECALL_LIVE") != "1", reason="set RECALL_LIVE=1 for public-source canary")
