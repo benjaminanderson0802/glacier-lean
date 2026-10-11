@@ -3,17 +3,24 @@
   "name": "Whop Content Rewards clipping",
   "status": "in_progress",
   "product": {
-    "purpose": "Prepare 20–58 second campaign clips, publish them to the owner's linked YouTube Shorts channels, and submit each post to Whop Content Rewards.",
-    "safety": "Dry-run by default. Live uploads require live=true and an explicitly approved campaign ID in the private CLIP_HOME config. Channel caps, spacing, segment overlap checks, pauses, and all side effects are recorded locally."
+    "purpose": "Producer reviews campaigns and stocks a QA-passing clip library; Distributor publishes each ready clip to one of the owner's linked YouTube Shorts channels and queues the post for manual Whop Content Rewards submission.",
+    "safety": "Dry-run by default. Live uploads require live=true and an explicitly approved campaign ID in the private CLIP_HOME config. Channels never discover content. Channel caps, deadlines, segment overlap checks, pauses, and side effects are recorded locally. Whop access remains manual unless written consent or an official Content Rewards API is available."
   },
   "blocks": [],
   "block_functions": [],
-  "flows": ["whop-clipping-cycle"],
+  "flows": ["whop-clipping-producer", "whop-clipping-distributor"],
   "schedules": [
     {
-      "flow": "whop-clipping-cycle",
-      "cron": "0 */6 * * *",
-      "purpose": "Scout approved Whop Content Rewards campaigns and process eligible clips.",
+      "flow": "whop-clipping-producer",
+      "cron": "0 * * * *",
+      "purpose": "Keep at least 20 reviewed ready clips in the local library.",
+      "missed_run": "skip",
+      "overlap": "skip"
+    },
+    {
+      "flow": "whop-clipping-distributor",
+      "cron": "0 * * * *",
+      "purpose": "Distribute ready library clips by nearest channel deadline and maintain the manual Whop submission queue.",
       "missed_run": "skip",
       "overlap": "skip"
     }
@@ -28,18 +35,19 @@
       "links": ["https://console.cloud.google.com/"]
     },
     {
-      "id": "whop-login",
-      "title": "Sign in to Whop",
-      "when": "Before the first Whop submission",
-      "detail": "Follow step 2 in OWNER-STEPS.md to sign in once and save the browser profile under CLIP_HOME/browser-profile/.",
-      "links": ["https://whop.com/"]
+      "id": "install-automations",
+      "title": "Install the Producer and Distributor automations",
+      "when": "Before the first scheduled run",
+      "detail": "Import flows/whop-clipping-producer.json and flows/whop-clipping-distributor.json into Glacier. Confirm both IDs match this venture's flow list; Distributor runs hourly.",
+      "links": []
     }
   ],
   "launch_gates": [
     "Dry-run remains enabled unless the owner sets live=true in the private CLIP_HOME config.",
-    "The owner explicitly approves campaign IDs before automated live posting and submission.",
-    "Whop and YouTube adapters must be present in the configured plugins before live mode.",
-    "A flagged Whop submission pauses that campaign on its channel; YouTube strike/terms errors pause that channel."
+    "The owner explicitly approves campaign IDs before automated live YouTube posting.",
+    "A YouTube adapter must be present in the configured plugins before live mode.",
+    "Whop Content Rewards submission is manual from CLIP_HOME/submit-queue.html until written consent or an official documented API exists.",
+    "YouTube strike/terms errors pause that channel."
   ],
-  "dry_run_env_id": "whop-clipping-cycle"
+  "dry_run_env_id": "whop-clipping-producer"
 }

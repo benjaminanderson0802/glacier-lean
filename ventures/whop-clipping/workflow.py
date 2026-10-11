@@ -1,4 +1,4 @@
-"""Glacier workflow entry point for the Whop clipping cycle."""
+"""Manual helper that runs Producer and Distributor once."""
 from scripts.cycle import main
 
 

@@ -29,6 +29,8 @@ class Clip:
     description: str
     hashtags: list
     channel_handle: str
+    caption_words: list = field(default_factory=list)
+    passthrough: bool = False
 
 
 @dataclass

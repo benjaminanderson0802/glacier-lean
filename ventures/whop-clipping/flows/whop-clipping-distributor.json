@@ -1,0 +1,10 @@
+{
+  "id": "whop-clipping-distributor",
+  "name": "Whop clipping Distributor",
+  "nodes": [
+    {"id": "hourly_schedule", "type": "schedule", "config": {"cron": "0 * * * *", "missed_run": "skip", "overlap": "skip"}, "position": {"x": 0, "y": 0}},
+    {"id": "distribute", "type": "command", "config": {"cmd": "python -m scripts.distributor --live", "cwd": "ventures/whop-clipping", "timeout": "3600", "retries": "0"}, "position": {"x": 360, "y": 0}}
+  ],
+  "edges": [{"id": "schedule_to_distributor", "source": "hourly_schedule", "target": "distribute"}],
+  "checks": []
+}

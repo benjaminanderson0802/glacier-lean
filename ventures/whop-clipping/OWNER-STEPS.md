@@ -16,21 +16,20 @@
 
 6. The authorization helper opens Google sign-in. Choose the first linked channel, review the requested YouTube permissions, and click **Allow**. Repeat once for each of these ten channels when prompted: `@frameandmomentdesk`, `@highlightdesknotes`, `@replaynotesdesk`, `@quickreplaydesk`, `@dailycutnotes`, `@clipcurrentdesk`, `@sceneselectnotes`, `@momentarchivedesk`, `@thecliproomnotes`, and `@contextclipsdesk`. Tokens stay under `CLIP_HOME/tokens/`.
 
-## 2. Sign in to Whop once
+## 2. Load campaign information without automated Whop access
 
-1. In PowerShell, run:
+Whop's Terms prohibit automated access without written consent, and its public API does not document Content Rewards submissions. Do not create a browser profile or run a Whop login helper. After reviewing campaigns in Whop yourself, place the campaign records you want Producer to process in `CLIP_HOME/campaigns.json` using this shape:
 
-   ```powershell
-   ~/w/glacier-lean/.venv/bin/python ventures/whop-clipping/scripts/whop_login.py
-   ```
+```json
+[{"id":"approved-campaign-id","name":"Campaign name","url":"https://whop.com/...","cpm_usd":2.0,"budget_left_usd":100,"platforms":["youtube_shorts"],"rules_text":"...","source_links":[{"url":"https://..."}],"requires_editing":true}]
+```
 
-2. In the opened browser, sign in to the owner's Whop account and complete any requested verification. Close the browser after the helper confirms the session is saved. The browser profile stays under `CLIP_HOME/browser-profile/`.
-3. Still within this setup step, prepare the private runtime config in PowerShell:
+Then prepare the private runtime config in PowerShell:
 
-   ```powershell
-   New-Item -ItemType Directory -Force $env:USERPROFILE\.glacier\ventures\whop-clipping
-   Copy-Item ventures/whop-clipping/config.example.json $env:USERPROFILE\.glacier\ventures\whop-clipping\config.json
-   notepad $env:USERPROFILE\.glacier\ventures\whop-clipping\config.json
-   ```
+```powershell
+New-Item -ItemType Directory -Force $env:USERPROFILE\.glacier\ventures\whop-clipping
+Copy-Item ventures/whop-clipping/config.example.json $env:USERPROFILE\.glacier\ventures\whop-clipping\config.json
+notepad $env:USERPROFILE\.glacier\ventures\whop-clipping\config.json
+```
 
-   Keep `live` set to `false` until ready. When enabling automation, enter only the campaign IDs Benjamin approved and change `live` to `true`. This private config, OAuth tokens, and browser profile stay outside the repository.
+Keep `live` set to `false` until YouTube setup is complete. When enabling uploads, enter only the campaign IDs Benjamin approved and set `live` to `true`. Whop submissions are always manual: open `CLIP_HOME/submit-queue.html`, submit each post on Whop, check it done, then download `submit-queue-done.json` and place it in `CLIP_HOME/`. The next status read reconciles that file. Tokens and campaign records stay outside the repository.

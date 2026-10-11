@@ -110,12 +110,24 @@ def write_word_captions(words, path: Path, style="bold_center"):
         "emphasis_pulse": ("Arial Black", 68, "&H0000A5FF", 2, 260),
         "small_caps_top": ("Arial", 44, "&H00FFFFFF", 8, 110),
     }
-    font, size, primary, alignment, margin_v = style_options.get(style, style_options["bold_center"])
+    if isinstance(style, dict):
+        font, size, primary, alignment, margin_v = style_options.get(style.get("caption", "bold_center"), style_options["bold_center"])
+        base = style.get("base", style.get("base_color", primary))
+        highlight = style.get("highlight", style.get("highlight_color", style.get("accent_color", "&H0000D7FF")))
+        accent = style.get("accent_color", highlight)
+        key_words = {str(word).lower() for word in style.get("key_words", [])}
+    else:
+        font, size, primary, alignment, margin_v = style_options.get(style, style_options["bold_center"])
+        base, highlight, accent, key_words = primary, "&H0000D7FF", "&H0000D7FF", set()
+    alignment, margin_v = 2, 500  # lower-middle safe area, above Shorts controls
     events = []
     for word in words or []:
         value = str(word.get("word", "")).replace("{", "").replace("}", "").strip()
         if value:
-            events.append(f"Dialogue: 0,{_ass_time(word['start'])},{_ass_time(word['end'])},Caption,,0,0,0,,{value}")
+            clean = re.sub(r"[^\w'-]", "", value).lower()
+            color = accent if clean in key_words else highlight
+            text = f"{{\\c{color}&}}{value}{{\\c{base}&}}"
+            events.append(f"Dialogue: 0,{_ass_time(word['start'])},{_ass_time(word['end'])},Caption,,0,0,0,,{text}")
     content = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -123,7 +135,7 @@ PlayResY: 1920
 WrapStyle: 2
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caption,{font},{size},{primary},&H00000000,-1,0,1,4,2,{alignment},72,72,{margin_v},1
+Style: Caption,{font},{size},{base},&H00000000,-1,0,1,4,2,{alignment},72,72,{margin_v},1
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """ + "\n".join(events) + "\n"

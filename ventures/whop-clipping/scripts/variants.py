@@ -25,12 +25,21 @@ CHANNEL_STYLE_INDEX = {
     "@contextclipsdesk": 9,
 }
 
+CHANNEL_COLOR_PAIRS = (
+    ("&H00FFFFFF", "&H0000D7FF"), ("&H00FFF4D6", "&H00FF7A00"),
+    ("&H00FFFFFF", "&H00FF4DB8"), ("&H00E8FFFF", "&H00FFD000"),
+    ("&H00FFFFFF", "&H0000E070"), ("&H00F5F5FF", "&H00FF5040"),
+    ("&H00FFFFFF", "&H00D080FF"), ("&H00FFFDF0", "&H00FF6B6B"),
+    ("&H00FFFFFF", "&H0000C8C8"), ("&H00F8F8F8", "&H00A0D000"),
+)
+
 
 def channel_style(channel: str):
     index = CHANNEL_STYLE_INDEX.get(channel.lower())
     if index is None:
         index = int(hashlib.sha256(channel.lower().encode("utf-8")).hexdigest()[:8], 16) % len(STYLES)
-    return dict(STYLES[index], index=index)
+    base, accent = CHANNEL_COLOR_PAIRS[index]
+    return {**STYLES[index], "base_color": base, "accent_color": accent, "index": index}
 
 
 def required_tags(rules_text: str):
@@ -74,7 +83,7 @@ def make_variant(campaign, segment, channel: str):
 
 def _overlaps(a, b):
     overlap = max(0.0, min(a["end_s"], b["end_s"]) - max(a["start_s"], b["start_s"]))
-    return overlap / min(a["end_s"] - a["start_s"], b["end_s"] - b["start_s"]) > 0.30
+    return overlap > 0
 
 
 def assign_segments(segments, channels, ledger=None):
@@ -92,7 +101,7 @@ def assign_segments(segments, channels, ledger=None):
             if channel not in channels:
                 continue
         else:
-            if ledger and ledger.overlap_used(segment["source_id"], segment["start_s"], segment["end_s"]):
+            if ledger and ledger.any_segment_overlap(segment["source_id"], segment["start_s"], segment["end_s"]):
                 continue
             channel = channels[len(chosen) % len(channels)]
         chosen.append((segment, channel))

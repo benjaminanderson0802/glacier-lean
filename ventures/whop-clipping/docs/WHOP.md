@@ -22,6 +22,10 @@ The Whop Developer API terms authorize API use only as described in its technica
 
 **Status: blocked pending Whop's written authorization for automated Content Rewards access or an official documented Content Rewards API.** Do not log in, inspect the live app, read browser storage, scrape pages, or submit clips with Playwright until that authorization is available. Do not use workforce bounty endpoints as a substitute.
 
+## Implemented operating decision (2026-10-11)
+
+Whop access stays manual. Producer's default `LocalCampaignScout` reads campaign records the owner reviewed and placed in `CLIP_HOME/campaigns.json`; no Whop page or endpoint is queried. After YouTube upload, `ManualQueueSubmitter` records the Shorts URL, campaign, channel, caption, and required tags in the local ledger and regenerates `CLIP_HOME/submit-queue.html`. The owner submits from Whop directly, checks the row, and downloads `submit-queue-done.json`; the next Glacier status read reconciles completed rows. `Submitter` remains a plugin point, but an automated implementation must wait for written consent or a documented official Content Rewards API.
+
 ## Safety rules for any later approved implementation
 
 - Store any approved OAuth token only under `CLIP_HOME/tokens/whop.json`; never commit tokens, cookies, browser profiles, personal data, or account snapshots.
@@ -29,7 +33,7 @@ The Whop Developer API terms authorize API use only as described in its technica
 - Never join a paid campaign. Auto-join may only join a campaign with a verified zero cost when `auto_join=true`.
 - Select only a connected YouTube account matching the post's channel handle. Skip a clip already submitted to the same campaign.
 - Respect campaign requirements, disclosure, platform, and clip-length rules. Never submit clips from disallowed platforms or edit content for a no-edit campaign.
-- Submit no more than one channel per clip and do not reuse the same or overlapping segment (>30%) across channels. Preserve the venture's upload caps and spacing rules.
+- Submit no more than one channel per clip and do not reuse the same or any overlapping segment across channels. Preserve the venture's upload caps and spacing rules.
 - Do not buy or fabricate engagement. If a submission is flagged, pause that campaign for that channel and record the reason.
 - Make at most one Whop action at a time, with several seconds between actions, only after Whop's written authorization or official API support is established.
 
