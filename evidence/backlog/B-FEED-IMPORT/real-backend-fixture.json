@@ -1,0 +1,55 @@
+{
+  "classification": "synthetic fixture through real local backend process and SQLite feed cache",
+  "backend_health": {
+    "status": 200,
+    "body": "{\"ok\":true}"
+  },
+  "first_import": {
+    "rows": 1,
+    "changed": true,
+    "status": "ok",
+    "snapshot_available": true,
+    "alerts": [],
+    "complete": true,
+    "live_fetch": false,
+    "idempotent": false,
+    "format": "json",
+    "sha256": "53822b95925314915ef89ea75e28f22f12ec54c32c39c6c681c6c654591e6f54"
+  },
+  "repeat_import": {
+    "rows": 1,
+    "changed": false,
+    "status": "ok",
+    "snapshot_available": true,
+    "complete": true,
+    "live_fetch": false,
+    "idempotent": true,
+    "alerts": [],
+    "format": "json",
+    "sha256": "53822b95925314915ef89ea75e28f22f12ec54c32c39c6c681c6c654591e6f54"
+  },
+  "query_rows": [
+    {
+      "source_id": "fsis_recalls",
+      "record_id": "SYNTHETIC-FSIS-001",
+      "record_date": "2026-10-10",
+      "fetched_at": "2026-10-10T00:00:00Z",
+      "source_url": "https://www.fsis.usda.gov/news-events/news-feeds-subscriptions",
+      "data": {
+        "field_recall_number": "SYNTHETIC-FSIS-001",
+        "field_recall_date": "2026-10-10",
+        "field_title": "Synthetic local fixture"
+      }
+    }
+  ],
+  "stored_provenance": [
+    "https://www.fsis.usda.gov/news-events/news-feeds-subscriptions",
+    "2026-10-10",
+    "53822b95925314915ef89ea75e28f22f12ec54c32c39c6c681c6c654591e6f54",
+    "json",
+    1,
+    1
+  ],
+  "live_source_contacted": false,
+  "fetch_source_disabled_for_run": true
+}
