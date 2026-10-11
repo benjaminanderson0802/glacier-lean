@@ -32,15 +32,17 @@ task remained blocked (`retry`), but the supervisor evidence was only
 reproduces the unresolved behavior in the existing claim. The missing-file and
 wrong-byte cases both remained blocked even when the reviewer returned `pass`.
 
-Relevant supervisor suite command from `glacier/backend`:
+Relevant existing supervisor suite command from `glacier/backend`:
 
 ```text
-~/w/glacier-lean/.venv/bin/python -m pytest -q tests/test_C-PH5-SUPERVISOR-evidence.py tests/test_team_execution_regressions.py tests/test_teams.py tests/test_teams_audit.py
-1 failed, 60 passed, 1 warning in 37.89s
+~/w/glacier-lean/.venv/bin/python -m pytest -q tests/test_team_execution_regressions.py tests/test_teams.py tests/test_teams_audit.py
+57 passed, 1 warning in 102.65s
 ```
 
-The sole failure is the new required rationale assertion above. Existing tests
-and the three other focused cases passed. Full output: [focused-test.log](focused-test.log).
+The existing supervisor suites passed. Full output: [supervisor-tests.log](supervisor-tests.log).
+The combined command including the new focused file reported 1 failed and 60
+passed; its sole failure is the required rationale assertion above. The focused
+output is saved in [focused-test.log](focused-test.log).
 
 No existing test or check, supervisor implementation, prompt, or checkpoint
 status was changed. The original claim remains open for an implementation owner
