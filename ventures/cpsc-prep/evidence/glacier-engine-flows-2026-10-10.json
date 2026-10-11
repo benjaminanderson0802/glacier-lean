@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-10",
+  "engine": "Glacier FastAPI + DBOS local runtime",
+  "glacier_home": "/tmp/glacier-cpsc-engine-20261010",
+  "api": "http://127.0.0.1:8129",
+  "live_local_model": "qwen3:1.7b via local Ollama; no API key or network model route",
+  "input_scope": "Synthetic certificate CSV only. No customer data, customer certification, filing, account creation, payment, lawyer contact, contract signature, or publication.",
+  "flow_runs": [
+    {
+      "flow": "cpsc-feed-refresh",
+      "run_id": "8a596dac1ed9",
+      "status": "done",
+      "waiting_on": null,
+      "waiting_prompt": null,
+      "node_states": {
+        "daily": "done",
+        "refresh": "done"
+      },
+      "execution_log": {
+        "daily": "",
+        "refresh": {
+          "sources": {
+            "cpsc_flagged_tariff_codes": {
+              "changed": false,
+              "alerts": [],
+              "row_count": 589
+            },
+            "cpsc_rule_codes": {
+              "changed": false,
+              "alerts": [],
+              "row_count": 130
+            },
+            "cpsc_registry_template": {
+              "changed": false,
+              "alerts": [],
+              "row_count": 1
+            }
+          },
+          "review_required_before_release": []
+        }
+      },
+      "verified": null
+    },
+    {
+      "flow": "cpsc-code-pages",
+      "run_id": "7817241f6796",
+      "status": "failed",
+      "waiting_on": null,
+      "waiting_prompt": null,
+      "node_states": {
+        "build-preview": "failed",
+        "first-listing-review": "skipped",
+        "publish-pages": "skipped"
+      },
+      "execution_log": {
+        "build-preview": {
+          "stdout": "-engine-20261010/workspaces/cpsc-code-pages/ventures/cpsc-prep/scripts/build_code_pages.py\", line 72, in main\n    objects = current_objects()\n              ^^^^^^^^^^^^^^^^^\n  File \"/tmp/glacier-cpsc-engine-20261010/workspaces/cpsc-code-pages/ventures/cpsc-prep/scripts/build_code_pages.py\", line 53, in current_objects\n    raise RuntimeError(f\"CPSC feed record for {tariff_code} is missing source_url or checked_at\")\nRuntimeError: CPSC feed record for 2404120510 is missing source_url or checked_at\n",
+          "preview_count": 0
+        }
+      },
+      "verified": null
+    },
+    {
+      "flow": "cpsc-batch-prep",
+      "run_id": "d8400fe9cb66",
+      "status": "waiting",
+      "waiting_on": "review-certify",
+      "waiting_prompt": "Your step: Review every CPSC field beside its source page and resolve all uncertain results. Certify only if you are the legally responsible and authorized certifier for these products; certify as the importer only when that is your legal role. A licensed broker may act only if authorized. If your role is unclear, stop and ask counsel. The generated file contains only these product records and current CPSC template columns. Glacier will prepare the file; it will not certify or submit anything to CPSC.",
+      "node_states": {
+        "batch-status": "pending",
+        "generate-upload": "pending",
+        "owner_input_ready": "done",
+        "prepare-draft": "done",
+        "review-certify": "waiting"
+      },
+      "execution_log": {
+        "owner_input_ready": "approved",
+        "prepare-draft": {
+          "batch_status": "uncertain — please check",
+          "workflow_state": "awaiting_customer_certification",
+          "product_count": 1,
+          "gap_count": 89,
+          "csv_released": false,
+          "submission_performed": false,
+          "product_summary": [
+            {
+              "product_id": "SYNTHETIC-CPSC-001",
+              "result": "uncertain — please check",
+              "field_verdicts": {
+                "product_id": "match",
+                "applicable_cpsc_rules": "match",
+                "manufacture_date": "match",
+                "manufacture_place": "match",
+                "last_test_date": "match",
+                "testing_lab": "match",
+                "records_contact": "uncertain"
+              }
+            }
+          ]
+        }
+      },
+      "verified": null
+    },
+    {
+      "flow": "cpsc-broker-launch",
+      "run_id": "220a5b7bce99",
+      "status": "waiting",
+      "waiting_on": "lawyer-opinion",
+      "waiting_prompt": "Your step: Use ventures/cpsc-prep/LAWYER-QUESTIONS.md with counsel. Attach and confirm the trade lawyer's written opinion covering the flat monthly broker portal fee and the proposed direct batch plans. Keep all paid launches, broker contracts, and broker portal onboarding on hold until the opinion covers the exact service and fee model. Glacier will not contact a lawyer, sign a contract, create an account, collect live payment, or submit CPSC filings.",
+      "node_states": {
+        "first-contract": "pending",
+        "lawyer-opinion": "waiting",
+        "ready": "pending"
+      },
+      "execution_log": {},
+      "verified": null
+    }
+  ],
+  "earlier_reproduction": [
+    {
+      "run_id": "8323d71e13c1",
+      "flow": "cpsc-batch-prep",
+      "result": "Approval ended the run and skipped prepare-draft because the approval outgoing edge had no yes label; fixed in flows/cpsc-batch-prep.json."
+    },
+    {
+      "run_id": "1dcbc117652c",
+      "flow": "cpsc-code-pages",
+      "result": "Build command reported success but preview had 0 entries because feed data is nested; fixed in scripts/build_code_pages.py."
+    },
+    {
+      "run_id": "7817241f6796",
+      "flow": "cpsc-code-pages",
+      "result": "After flattening nested feed data, the command correctly failed because feed rows provide fetched_at rather than checked_at; builder now maps fetched_at to the displayed checked date."
+    }
+  ],
+  "final_code_pages_run": {
+    "flow": "cpsc-code-pages",
+    "run_id": "3cdbc40fb427",
+    "status": "waiting",
+    "waiting_on": "first-listing-review",
+    "node_states": {
+      "build-preview": "done",
+      "first-listing-review": "waiting",
+      "publish-pages": "pending"
+    },
+    "outputs": {
+      "build-preview": "prepared 589 CPSC code-page previews at code-pages-preview.json; nothing published\n"
+    },
+    "preview_count": 589,
+    "publication_performed": false
+  },
+  "installer_command": "GLACIER_HOME=/tmp/glacier-cpsc-engine-20261010 ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only cpsc-prep --api http://127.0.0.1:8129",
+  "registered_flows": [
+    "cpsc-batch-prep",
+    "cpsc-broker-launch",
+    "cpsc-feed-refresh",
+    "cpsc-code-pages"
+  ]
+}

@@ -7,6 +7,12 @@ authorized certifier reviews each field and certifies it; an importer or broker
 acts only in the role allowed for that product. The authorized filer submits
 through their own CPSC route.
 
+**Ready for owner review; not live.** The official source refresh and code-page
+preview have run through Glacier using live CPSC data. The batch flow has run
+through Glacier with a synthetic certificate and a local second model; it
+stopped for human review and did not release a CSV. See [PROOF.md](PROOF.md)
+for run IDs and the exact limits of that evidence.
+
 The broker product is a white-label importer portal with a flat monthly fee.
 Direct customers choose a $19, $29, or $49 batch checkout plan. Broker pricing
 is intentionally unset until the owner selects a flat monthly amount. Checkout
@@ -84,15 +90,13 @@ or its automated checks.
 
 ## Your steps
 
-1. Before any paid launch or broker contract, attach and confirm the trade
-   lawyer's written opinion covering the exact service, flat-fee broker model,
-   and direct batch plans.
-2. For each batch, review all extracted fields beside their cited source pages
-   and resolve uncertainties. Certify only if you are the legally responsible
-   and authorized certifier for those products; ask counsel if your role is
-   unclear.
-3. Review and sign the first broker contract yourself; confirm it is flat-fee
-   only with no refund commission or attorney fee split.
+1. Before launch, get a trade lawyer's written opinion on the exact service
+   and fees; choose the broker price, configure any live account or payment
+   credential, and sign any broker contract yourself. For each real batch,
+   review its fields and sources, certify only if legally authorized, and have
+   the authorized filer submit it. Review and approve the saved preview before
+   publishing any optional public code pages; confirm any broker contract is
+   flat-fee only, with no refund commission or attorney-fee split.
 
 These are owner actions. In particular, Glacier does not create accounts, make
 payments, certify, file with CPSC/CBP, sign contracts, or publish the optional

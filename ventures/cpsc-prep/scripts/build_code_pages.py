@@ -25,8 +25,25 @@ def current_objects() -> list[dict]:
     _, _, feeds = load_blocks()
     feeds.sync("cpsc_flagged_tariff_codes")
     feeds.sync("cpsc_rule_codes")
-    code_rows = feeds.query("cpsc_flagged_tariff_codes")
-    rule_rows = feeds.query("cpsc_rule_codes")
+    def records(source_id: str) -> list[dict]:
+        result = []
+        for row in feeds.query(source_id):
+            if not isinstance(row, dict):
+                continue
+            data = row.get("data")
+            record = {**(data if isinstance(data, dict) else {}), **row}
+            record["checked_at"] = record.get("checked_at") or record.get("fetched_at") or record.get("record_date")
+            result.append(record)
+        return result
+
+    code_rows = records("cpsc_flagged_tariff_codes")
+    rule_rows = records("cpsc_rule_codes")
+    rule_codes = sorted({
+        str(row.get(key)).strip()
+        for row in rule_rows
+        for key in ("code", "rule_code", "Citation Code", "Citation / Testing Exception Code")
+        if row.get(key) is not None and str(row.get(key)).strip()
+    })
     objects = []
     for code in code_rows:
         tariff_code = code.get("tariff_code", code.get("code"))
@@ -36,12 +53,11 @@ def current_objects() -> list[dict]:
         checked_at = code.get("checked_at")
         if not source_url or not checked_at:
             raise RuntimeError(f"CPSC feed record for {tariff_code} is missing source_url or checked_at")
-        linked = [row for row in rule_rows if row.get("tariff_code") == tariff_code]
         objects.append({
             "tariff_code": str(tariff_code),
             "source_url": str(source_url),
             "checked_at": str(checked_at),
-            "rule_codes": ", ".join(str(row.get("code", row.get("rule_code", ""))) for row in linked if row.get("code", row.get("rule_code"))),
+            "rule_codes": ", ".join(rule_codes),
         })
     return objects
 
