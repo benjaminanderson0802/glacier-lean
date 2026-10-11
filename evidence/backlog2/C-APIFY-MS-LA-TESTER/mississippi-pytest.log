@@ -1,0 +1,21 @@
+...F....s..........                                                   [100%]
+=================================== FAILURES ===================================
+_ test_uncertain_or_unverifiable_lookup_does_not_emit_billable_event[uncertain] _
+
+state = 'uncertain'
+
+    @pytest.mark.parametrize("state", ["uncertain", "unverifiable"])
+    def test_uncertain_or_unverifiable_lookup_does_not_emit_billable_event(state: str) -> None:
+        row = {"outcome": "uncertain — please check", "verification_state": state}
+        actor = run(row, enabled=True)
+        assert actor.rows == [row]
+>       assert actor.charges == []
+E       AssertionError: assert [{'event_name...7212b30cb24'}] == []
+E         
+E         Left contains one more item: {'event_name': 'license-lookup', 'count': 1, 'idempotency_key': '20a717b4503b47234e2ebddeb871914fcaff8f35c22073f2b05067212b30cb24'}
+E         Use -v to get more diff
+
+ventures/apify-tools/tests/acceptance/test_independent_actor_billing.py:79: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/apify-tools/tests/acceptance/test_independent_actor_billing.py::test_uncertain_or_unverifiable_lookup_does_not_emit_billable_event[uncertain]
+1 failed, 17 passed, 1 skipped, 3 subtests passed in 7.25s
