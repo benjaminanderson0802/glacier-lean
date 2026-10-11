@@ -1,10 +1,10 @@
 {
   "slug": "coop-postcards",
   "name": "co-op claims + street postcards",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "co_op_claims": "Read completed Jobber jobs and prepare source-linked, evidence-checklisted claim drafts with local PDF/Markdown output and confirmed-expiry reminders. The dealer signs and files claims directly.",
-    "street_postcards": "Prepare local neighborhood postcard proofs for owner review. Glacier never mails postcards.",
+    "street_postcards": "Prepare local neighborhood landing pages and render-only 11.5 x 6.25 inch EDDM Retail proofs for owner review. Glacier never orders or mails postcards.",
     "budget_timing": "Open dealer outreach and postcard campaigns in November so dealers can use current year-end co-op budgets; calculate brand claim reminders 60 and 30 days before each program expiry."
   },
   "blocks": [

@@ -12,8 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from ventures.blocks.connectors import JobberClient
-from workflow import generate_claim_draft
+from workflow import completed_jobber_jobs, generate_claim_draft
 
 
 def _load_fixture(path: Path) -> tuple[str, list[dict], dict[str, dict]]:
@@ -33,14 +32,7 @@ def main(argv: list[str] | None = None) -> int:
             dealer, jobs, details_by_id = _load_fixture(args.fixture)
             source = "fixture"
         else:
-            client = JobberClient()
-            try:
-                account = client.test_connection()
-                dealer = str(account.get("account") or "Jobber dealer")
-                jobs = client.get_jobs(max_pages=5)
-            finally:
-                client.close()
-            jobs = [job for job in jobs if str(job.get("jobStatus", "")).casefold() in {"completed", "complete"}]
+            dealer, jobs = completed_jobber_jobs()
             detail_dir = home / "ventures/coop-postcards/job-details"
             details_by_id = {}
             if detail_dir.is_dir():
