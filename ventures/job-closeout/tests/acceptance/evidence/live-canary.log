@@ -1,0 +1,189 @@
+....F.F{
+  "source": "fixture",
+  "packets_created": 1,
+  "packets": [
+    {
+      "job_number": "9001",
+      "markdown": "/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_0/packets/job-9001.md",
+      "pdf": "/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_0/packets/job-9001.pdf"
+    }
+  ],
+  "external_actions": "none"
+}
+F{
+  "source": "fixture",
+  "packets_created": 1,
+  "packets": [
+    {
+      "job_number": "9001",
+      "markdown": "/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_1/packets/job-9001.md",
+      "pdf": "/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_1/packets/job-9001.pdf"
+    }
+  ],
+  "external_actions": "none"
+}
+FFF...LIVE document: 200 https://developer.getjobber.com/docs/; marker=completedAt
+...
+=================================== FAILURES ===================================
+___________________ test_pdf_preserves_unicode_customer_name ___________________
+
+job = {'id': 'Z2lkOi8vSm9iYmVyL0pvYi85MDAx', 'jobNumber': 9001, 'title': 'Heat pump installation', 'jobStatus': 'COMPLETED', ...}
+
+    def test_pdf_preserves_unicode_customer_name(job):
+>       from pypdf import PdfReader
+E       ModuleNotFoundError: No module named 'pypdf'
+
+tests/acceptance/test_job_closeout.py:81: ModuleNotFoundError
+________________ test_malformed_completion_not_asserted_as_fact ________________
+
+job = {'id': 'Z2lkOi8vSm9iYmVyL0pvYi85MDAx', 'jobNumber': 9001, 'title': 'Heat pump installation', 'jobStatus': 'COMPLETED', ...}
+
+    def test_malformed_completion_not_asserted_as_fact(job):
+        job["completedAt"] = "not-a-date"
+        try:
+            packet = api.build_packet(job, "Synthetic HVAC")
+        except ValueError:
+            return
+>       assert uncertain(packet["completion_date"])
+E       AssertionError: assert False
+E        +  where False = uncertain('not-a-date')
+
+tests/acceptance/test_job_closeout.py:96: AssertionError
+______ test_partial_or_failed_source_never_delivers_packet[partial_page] _______
+
+job = {'id': 'Z2lkOi8vSm9iYmVyL0pvYi85MDAx', 'jobNumber': 9001, 'title': 'Heat pump installation', 'jobStatus': 'COMPLETED', ...}
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_0')
+case = 'partial_page'
+capsys = <_pytest.capture.CaptureFixture object at 0x7063511163c0>
+
+    @pytest.mark.parametrize("case", ["partial_page", "partial_graphql", "outage", "rate_limit"])
+    def test_partial_or_failed_source_never_delivers_packet(job, tmp_path, case, capsys):
+        payload = envelope([job])
+        if case == "partial_page":
+            payload["data"]["jobs"]["pageInfo"] = {"hasNextPage": True, "endCursor": "cursor-1"}
+        else:
+            payload["errors"] = [{"message": {"partial_graphql": "Field resolution failed", "outage": "Service unavailable", "rate_limit": "Throttled"}[case]}]
+            if case != "partial_graphql":
+                payload["data"] = None
+        source = tmp_path / "job.json"
+        source.write_text(json.dumps(payload))
+        out = tmp_path / "packets"
+        rc = api.main(["--fixture", str(source), "--output-dir", str(out)])
+>       assert rc != 0, "Incomplete/error GraphQL response was accepted as deliverable"
+E       AssertionError: Incomplete/error GraphQL response was accepted as deliverable
+E       assert 0 != 0
+
+tests/acceptance/test_job_closeout.py:111: AssertionError
+_____ test_partial_or_failed_source_never_delivers_packet[partial_graphql] _____
+
+job = {'id': 'Z2lkOi8vSm9iYmVyL0pvYi85MDAx', 'jobNumber': 9001, 'title': 'Heat pump installation', 'jobStatus': 'COMPLETED', ...}
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_1')
+case = 'partial_graphql'
+capsys = <_pytest.capture.CaptureFixture object at 0x7063511150a0>
+
+    @pytest.mark.parametrize("case", ["partial_page", "partial_graphql", "outage", "rate_limit"])
+    def test_partial_or_failed_source_never_delivers_packet(job, tmp_path, case, capsys):
+        payload = envelope([job])
+        if case == "partial_page":
+            payload["data"]["jobs"]["pageInfo"] = {"hasNextPage": True, "endCursor": "cursor-1"}
+        else:
+            payload["errors"] = [{"message": {"partial_graphql": "Field resolution failed", "outage": "Service unavailable", "rate_limit": "Throttled"}[case]}]
+            if case != "partial_graphql":
+                payload["data"] = None
+        source = tmp_path / "job.json"
+        source.write_text(json.dumps(payload))
+        out = tmp_path / "packets"
+        rc = api.main(["--fixture", str(source), "--output-dir", str(out)])
+>       assert rc != 0, "Incomplete/error GraphQL response was accepted as deliverable"
+E       AssertionError: Incomplete/error GraphQL response was accepted as deliverable
+E       assert 0 != 0
+
+tests/acceptance/test_job_closeout.py:111: AssertionError
+_________ test_partial_or_failed_source_never_delivers_packet[outage] __________
+
+job = {'id': 'Z2lkOi8vSm9iYmVyL0pvYi85MDAx', 'jobNumber': 9001, 'title': 'Heat pump installation', 'jobStatus': 'COMPLETED', ...}
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_2')
+case = 'outage'
+capsys = <_pytest.capture.CaptureFixture object at 0x706351114aa0>
+
+    @pytest.mark.parametrize("case", ["partial_page", "partial_graphql", "outage", "rate_limit"])
+    def test_partial_or_failed_source_never_delivers_packet(job, tmp_path, case, capsys):
+        payload = envelope([job])
+        if case == "partial_page":
+            payload["data"]["jobs"]["pageInfo"] = {"hasNextPage": True, "endCursor": "cursor-1"}
+        else:
+            payload["errors"] = [{"message": {"partial_graphql": "Field resolution failed", "outage": "Service unavailable", "rate_limit": "Throttled"}[case]}]
+            if case != "partial_graphql":
+                payload["data"] = None
+        source = tmp_path / "job.json"
+        source.write_text(json.dumps(payload))
+        out = tmp_path / "packets"
+>       rc = api.main(["--fixture", str(source), "--output-dir", str(out)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/test_job_closeout.py:110:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts/generate_packet.py:171: in main
+    business, jobs = _load_fixture(args.fixture)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = PosixPath('/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_2/job.json')
+
+    def _load_fixture(path: Path) -> tuple[str, list[dict[str, Any]]]:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("extensions", {}).get("versioning", {}).get("version") != "2026-04-16":
+            raise ValueError("Fixture must match the Jobber API version used by the read-only connector.")
+>       return payload["data"]["account"]["name"], payload["data"]["jobs"]["nodes"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+scripts/generate_packet.py:158: TypeError
+_______ test_partial_or_failed_source_never_delivers_packet[rate_limit] ________
+
+job = {'id': 'Z2lkOi8vSm9iYmVyL0pvYi85MDAx', 'jobNumber': 9001, 'title': 'Heat pump installation', 'jobStatus': 'COMPLETED', ...}
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_3')
+case = 'rate_limit'
+capsys = <_pytest.capture.CaptureFixture object at 0x7063510f1280>
+
+    @pytest.mark.parametrize("case", ["partial_page", "partial_graphql", "outage", "rate_limit"])
+    def test_partial_or_failed_source_never_delivers_packet(job, tmp_path, case, capsys):
+        payload = envelope([job])
+        if case == "partial_page":
+            payload["data"]["jobs"]["pageInfo"] = {"hasNextPage": True, "endCursor": "cursor-1"}
+        else:
+            payload["errors"] = [{"message": {"partial_graphql": "Field resolution failed", "outage": "Service unavailable", "rate_limit": "Throttled"}[case]}]
+            if case != "partial_graphql":
+                payload["data"] = None
+        source = tmp_path / "job.json"
+        source.write_text(json.dumps(payload))
+        out = tmp_path / "packets"
+>       rc = api.main(["--fixture", str(source), "--output-dir", str(out)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/test_job_closeout.py:110:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts/generate_packet.py:171: in main
+    business, jobs = _load_fixture(args.fixture)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = PosixPath('/tmp/pytest-of-glacier/pytest-11/test_partial_or_failed_source_3/job.json')
+
+    def _load_fixture(path: Path) -> tuple[str, list[dict[str, Any]]]:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("extensions", {}).get("versioning", {}).get("version") != "2026-04-16":
+            raise ValueError("Fixture must match the Jobber API version used by the read-only connector.")
+>       return payload["data"]["account"]["name"], payload["data"]["jobs"]["nodes"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+scripts/generate_packet.py:158: TypeError
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_job_closeout.py::test_pdf_preserves_unicode_customer_name
+FAILED tests/acceptance/test_job_closeout.py::test_malformed_completion_not_asserted_as_fact
+FAILED tests/acceptance/test_job_closeout.py::test_partial_or_failed_source_never_delivers_packet[partial_page]
+FAILED tests/acceptance/test_job_closeout.py::test_partial_or_failed_source_never_delivers_packet[partial_graphql]
+FAILED tests/acceptance/test_job_closeout.py::test_partial_or_failed_source_never_delivers_packet[outage]
+FAILED tests/acceptance/test_job_closeout.py::test_partial_or_failed_source_never_delivers_packet[rate_limit]
+6 failed, 11 passed in 0.57s
