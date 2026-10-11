@@ -6,7 +6,9 @@ import csv
 import json
 import os
 import statistics
+import re
 from datetime import date, timedelta
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -108,44 +110,166 @@ def prepare_listing(product: dict[str, Any], comparables: list[dict[str, Any]], 
     }
 
 
-def calculate_commissions(sales: list[dict[str, Any]], commission_rate: float) -> dict[str, Any]:
-    """Summarize paid sales against the rate agreed in writing with the maker."""
-    rate = float(commission_rate)
-    if not 0 <= rate <= 1:
+def _money(value: Any) -> Decimal | None:
+    if value is None or value == "":
+        return None
+    try:
+        if isinstance(value, Decimal):
+            return value
+        return Decimal(str(value).replace(",", "").replace("$", "").strip())
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _rounded(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _number(value: Decimal | None) -> float | None:
+    return float(value) if value is not None else None
+
+
+def _eligible_basis(terms: dict[str, Any]) -> tuple[str | None, str]:
+    """Return a supported basis and its report label, or uncertainty reason."""
+    named = terms.get("eligible_amount")
+    if named is None:
+        # Backwards-compatible default for rate-only files: use the platform's
+        # explicit order-total field. This is stated in the report and README.
+        return "order_total", "exported order total (default when no eligible_amount is specified)"
+    normalized = " ".join(re.findall(r"[a-z0-9]+", str(named).casefold()))
+    if "item subtotal" in normalized or "subtotal" in normalized:
+        if "after discounts" in normalized or terms.get("deduct_discounts") is True:
+            return "item_subtotal", str(named)
+        return None, "item subtotal does not state whether discounts are deducted"
+    if "order total" in normalized:
+        return "order_total", str(named)
+    return None, "eligible_amount does not identify a supported order total or item subtotal basis"
+
+
+def calculate_commissions(sales: list[dict[str, Any]], commission_rate: float,
+                          terms: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Summarize paid sales using the supported basis stated in written terms."""
+    terms = terms or {}
+    rate = _money(commission_rate)
+    if rate is None or not 0 <= rate <= 1:
         raise ValueError("commission_rate must be between 0 and 1")
+    basis, basis_label = _eligible_basis(terms)
     paid = []
     excluded = []
+    uncertain_reasons = []
     seen_orders: set[tuple[str, str]] = set()
+    currencies: set[str] = set()
     for row in sales:
         platform = str(row.get("platform", "Owner export")).strip() or "Owner export"
         order_id = str(row.get("order_id", "")).strip()
-        status = str(row.get("status", "")).strip().casefold().replace(" ", "_")
+        status = str(row.get("status", "")).strip().casefold().replace("-", "_").replace(" ", "_")
         key = (platform.casefold(), order_id.casefold())
         if order_id and key in seen_orders:
             excluded.append({"platform": platform, "order_id": order_id, "reason": "duplicate order id"})
             continue
         if order_id:
             seen_orders.add(key)
-        if status != "paid":
+        partial_refund_rule = str(terms.get("refund_rule", "")).casefold()
+        partial_refund_status = status in {"partially_refunded", "partially_refund", "partial_refund"}
+        if status != "paid" and not (partial_refund_status and "reduce eligible amount by the refunded item amount" in partial_refund_rule):
             excluded.append({"platform": platform, "order_id": order_id, "reason": f"status is {status or 'missing'}, not paid"})
             continue
-        try:
-            amount = float(row["amount"])
-        except (KeyError, TypeError, ValueError):
-            excluded.append({"platform": platform, "order_id": order_id, "reason": "missing or invalid order total"})
+
+        currency = str(row.get("currency", "USD") or "").strip().upper()
+        if not currency and not row.get("currency_column_present", "currency" in row):
+            currency = "USD"
+        if not currency:
+            uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} has no currency")
             continue
+        if row.get("data_conflicts"):
+            uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} has conflicting exported fields: {', '.join(row['data_conflicts'])}")
+            continue
+        currencies.add(currency)
+        if currency != "USD":
+            uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} uses unsupported currency {currency}")
+            continue
+
+        if basis is None:
+            uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'}: {basis_label}")
+            continue
+        if basis == "item_subtotal":
+            subtotal = _money(row.get("item_subtotal"))
+            discount = _money(row.get("discount"))
+            if subtotal is None or discount is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing subtotal or discount data")
+                continue
+            amount = subtotal - discount
+        else:
+            amount = _money(row.get("order_total", row.get("amount")))
+            if amount is None:
+                excluded.append({"platform": platform, "order_id": order_id, "reason": "missing or invalid order total"})
+                continue
+
+        if terms.get("include_shipping") is True:
+            shipping = _money(row.get("shipping"))
+            if shipping is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing shipping data required by the terms")
+                continue
+            amount += shipping
+        elif terms.get("include_shipping") is False and basis == "order_total":
+            shipping = _money(row.get("shipping"))
+            if shipping is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing shipping data required by the terms")
+                continue
+            amount -= shipping
+        if terms.get("include_sales_tax") is True:
+            tax = _money(row.get("sales_tax"))
+            if tax is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing tax data required by the terms")
+                continue
+            amount += tax
+        elif terms.get("include_sales_tax") is False and basis == "order_total":
+            tax = _money(row.get("sales_tax"))
+            if tax is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing tax data required by the terms")
+                continue
+            amount -= tax
+
+        refund_rule = partial_refund_rule
+        if "reduce eligible amount by the refunded item amount" in refund_rule:
+            refunded = _money(row.get("item_refund"))
+            if refunded is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing item refund data required by the terms")
+                continue
+            amount -= refunded
+        elif refund_rule and not any(word in refund_rule for word in ("exclude", "reverse", "no refund")):
+            uncertain_reasons.append(f"unsupported refund rule in written terms: {terms.get('refund_rule')}")
+            continue
+
+        if terms.get("deduct_platform_fees") is True:
+            fees = _money(row.get("platform_fees"))
+            if fees is None:
+                uncertain_reasons.append(f"{platform} order {order_id or '(unknown)'} is missing platform fee data required by the terms")
+                continue
+            amount -= fees
         if amount > 0:
-            paid.append({"platform": platform, "order_id": order_id, "amount": round(amount, 2)})
+            paid.append({"platform": platform, "order_id": order_id, "amount": _number(_rounded(amount)), "currency": currency})
         else:
             excluded.append({"platform": platform, "order_id": order_id, "reason": "order total must be positive"})
-    gross = round(sum(row["amount"] for row in paid), 2)
+
+    if len(currencies) > 1:
+        uncertain_reasons.append("mixed currencies cannot be combined without an agreed conversion basis")
+    if currencies - {"USD"}:
+        # Keep unsupported-currency orders out of eligible counts and amounts.
+        uncertain_reasons.append("commission currency must be USD unless an agreed conversion basis is provided")
+    uncertain = bool(uncertain_reasons)
+    gross_decimal = sum((Decimal(str(row["amount"])) for row in paid), Decimal("0"))
+    gross = _rounded(gross_decimal)
+    due = _rounded(gross * rate) if not uncertain else None
     return {
-        "result": "match" if paid else f"no match found in imported sales as of {date.today().isoformat()}",
-        "eligible_sales": len(paid), "eligible_orders": paid, "gross_sales": gross,
-        "commission_rate": rate, "commission_due": round(gross * rate, 2),
+        "result": "uncertain — please check" if uncertain else ("match" if paid else f"no match found in imported sales as of {date.today().isoformat()}"),
+        "eligible_sales": 0 if uncertain else len(paid), "eligible_orders": [] if uncertain else paid, "gross_sales": _number(gross),
+        "commission_rate": _number(rate), "commission_due": _number(due),
         "excluded_orders": excluded,
+        "uncertainty_reasons": sorted(set(uncertain_reasons)),
         "source": "owner-exported paid order records; verify against platform settlement records",
-        "amount_basis": "exported order total; confirm the written agreement defines treatment of tax, shipping, discounts, refunds, and fees",
+        "amount_basis": basis_label,
+        "currency": "USD" if not currencies or currencies == {"USD"} else None,
         "payment_status": "calculated only; no invoice, charge, or transfer was made",
     }
 
@@ -172,27 +296,61 @@ def _header_key(value: str) -> str:
 
 def _export_sales(path: Path, platform: str) -> list[dict[str, Any]]:
     """Map Etsy or Shopify order export rows to one commission input per order."""
+    # Keep aliases in precedence order. In particular, choose an explicit
+    # order-total field before Etsy's item-only Order Value field.
     aliases = {
-        "order_id": {"order id", "order", "name", "order number"},
-        "status": {"order status", "financial status", "payment status", "status"},
-        "amount": {"order total", "total order value", "order value", "total"},
+        "order_id": ("order id", "order", "name", "order number"),
+        "status": ("order status", "financial status", "payment status", "status"),
+        "order_total": ("order total", "total order value", "total", "order value"),
     }
+    optional = {
+        "item_subtotal": ("subtotal", "item subtotal", "order value"),
+        "discount": ("discount amount", "discounts"),
+        "shipping": ("shipping", "shipping amount"),
+        "sales_tax": ("sales tax", "taxes", "tax"),
+        "platform_fees": ("card processing fees", "adjusted card processing fees", "transaction fees"),
+        "currency": ("currency",),
+        "refunded": ("refunded amount", "refund amount"),
+        "adjusted_order_total": ("adjusted order total",),
+    }
+
+    def field(row: dict[str, str], names: tuple[str, ...]) -> str | None:
+        for name in names:
+            if name in row and row[name].strip():
+                return row[name].strip()
+        return None
+
+    def decimal_field(row: dict[str, str], names: tuple[str, ...]) -> Decimal | None:
+        return _money(field(row, names))
+
+    def details(row: dict[str, str]) -> dict[str, Any]:
+        values: dict[str, Any] = {}
+        for name, headers in optional.items():
+            raw = field(row, headers)
+            values[name] = raw if name == "currency" else _money(raw)
+        total = decimal_field(row, aliases["order_total"])
+        values["order_total"] = total
+        values["amount"] = total
+        # Etsy exports do not expose a dedicated refund amount in this layout.
+        # Its adjusted total carries the net adjustment; treat only the
+        # positive reduction as the refund candidate for an explicit refund rule.
+        if values["refunded"] is None and platform.casefold() == "etsy":
+            adjusted = values["adjusted_order_total"]
+            if total is not None and adjusted is not None:
+                values["refunded"] = max(Decimal("0"), total - adjusted)
+        values["item_refund"] = values["refunded"]
+        values["currency_column_present"] = "currency" in row
+        return values
+
     result = []
     shopify_orders: dict[str, dict[str, Any]] = {}
     active_shopify_order = ""
     for row_number, original in enumerate(_read_csv(path), start=2):
         row = {_header_key(key): value for key, value in original.items() if key}
-        mapped = {}
-        for field, names in aliases.items():
-            value = next((row[name] for name in names if name in row), None)
-            if value is None:
-                raise ValueError(f"{platform} CSV is missing a recognized {field} column")
-            mapped[field] = value.strip()
-        amount_text = mapped["amount"].replace(",", "").replace("$", "").strip()
-        try:
-            amount = float(amount_text)
-        except ValueError:
-            amount = None
+        mapped = {name: field(row, names) for name, names in aliases.items()}
+        if mapped["order_id"] is None and platform.casefold() != "shopify":
+            raise ValueError(f"{platform} CSV is missing a recognized order_id column")
+        info = details(row)
         if platform.casefold() == "shopify":
             # Shopify's documented order CSV uses one line per line item and
             # leaves many order-level fields blank on continuation lines.
@@ -202,33 +360,46 @@ def _export_sales(path: Path, platform: str) -> list[dict[str, Any]]:
                 active_shopify_order = order_id
             else:
                 result.append({
-                    "platform": platform, "order_id": "", "status": mapped["status"],
-                    "amount": amount, "source_row": row_number,
+                    "platform": platform, "order_id": "", "status": mapped["status"] or "",
+                    **info, "source_row": row_number,
                 })
                 continue
             order = shopify_orders.setdefault(order_id, {
                 "platform": platform, "order_id": order_id,
-                "statuses": set(), "amounts": set(), "source_rows": [],
+                "statuses": set(), "values": {key: set() for key in (*optional, "order_total")},
+                "currency_column_present": False, "source_rows": [],
             })
-            status = mapped["status"].strip().casefold()
+            order["currency_column_present"] = order["currency_column_present"] or info["currency_column_present"]
+            status = (mapped["status"] or "").strip().casefold()
             if status:
                 order["statuses"].add(status)
-            if amount is not None:
-                order["amounts"].add(amount)
+            for key in order["values"]:
+                value = info.get(key)
+                if value not in (None, ""):
+                    order["values"][key].add(value)
             order["source_rows"].append(row_number)
         else:
             result.append({
-                "platform": platform, "order_id": mapped["order_id"],
-                "status": mapped["status"], "amount": amount,
+                "platform": platform, "order_id": mapped["order_id"] or "",
+                "status": mapped["status"] or "", **info,
                 "source_row": row_number,
             })
     for order in shopify_orders.values():
         statuses = order.pop("statuses")
-        amounts = order.pop("amounts")
+        values = order.pop("values")
         order["status"] = next(iter(statuses)) if len(statuses) == 1 else (
             "conflicting status values" if statuses else ""
         )
-        order["amount"] = next(iter(amounts)) if len(amounts) == 1 else None
+        for key, candidates in values.items():
+            if len(candidates) == 1:
+                order[key] = next(iter(candidates))
+            elif len(candidates) > 1:
+                order[key] = None
+                order.setdefault("data_conflicts", []).append(key)
+            else:
+                order[key] = None
+        order["amount"] = order.get("order_total")
+        order["item_refund"] = order.get("refunded")
         order["source_rows"] = order.pop("source_rows")
         result.append(order)
     return result
@@ -263,7 +434,8 @@ def main() -> int:
     else:
         if bool(args.sales) == bool(args.etsy_csv or args.shopify_csv):
             parser.error("provide --sales or one or both of --etsy-csv and --shopify-csv")
-        rate = args.rate if args.rate is not None else _read_json(args.rate_file).get("rate")
+        terms = _read_json(args.rate_file) if args.rate_file else {"rate": args.rate}
+        rate = args.rate if args.rate is not None else terms.get("rate")
         if rate is None:
             parser.error("the written commission rate is missing from --rate-file")
         if args.sales:
@@ -274,7 +446,7 @@ def main() -> int:
                 sales.extend(_export_sales(args.etsy_csv, "Etsy"))
             if args.shopify_csv:
                 sales.extend(_export_sales(args.shopify_csv, "Shopify"))
-        result = calculate_commissions(sales, rate)
+        result = calculate_commissions(sales, rate, terms)
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
         os.chmod(args.output.parent, 0o700)

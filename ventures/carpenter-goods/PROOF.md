@@ -56,3 +56,27 @@ The broader `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` attempt di
 ## Acceptance still outstanding
 
 PH12.20 remains unverified. The listing command and check ran in the real engine, but the full listing run awaits the owner review gate. The commission flow cannot start until an independent author supplies its acceptance check; this is an uncompleted non-owner release gate. Real merchant exports, three current source-linked sales, and independent spec review also remain outstanding. The owner's plain-language action is listed in `README.md`.
+
+## Commission calculation correction
+
+The independent acceptance file `tests/acceptance/test_commission_flow.py` was run unchanged after the commission fix:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/carpenter-goods/tests/acceptance/test_commission_flow.py
+```
+
+Result: **6 passed**. It verifies that Etsy's explicit `Order Total` is chosen consistently when `Order Value` is also present; Shopify multiline orders count once; a written item-subtotal-after-discounts basis excludes shipping and tax and accounts for the stated platform-fee and partial-refund treatment; fully refunded orders do not count; decimal half-up rounding applies; non-USD orders produce an uncertain result and no amount due; and the flow remains local-only with no payment or sending action.
+
+The complete venture checks were also run with the requested interpreter:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q
+```
+
+Result: **20 passed**. The adjacent ventures board was run as well:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q
+```
+
+Result: **22 passed**. These are synthetic CSV/JSON fixtures, not merchant records. I did not run the commission flow through Glacier's live engine: the flow still lacks a Glacier-attached independent completion check, so its backend run is blocked by the existing verification gate. No Etsy or Shopify connection, customer export, invoice, or payment was used.
