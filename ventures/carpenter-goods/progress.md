@@ -2,19 +2,26 @@
 
 ## Drift check
 
-- Checkpoint: PH12.20. Its PH5 and PH9 dependencies are marked at exit in `NORTHSTAR.yaml`.
-- Defining properties and metric: P-USABLE / M-INTERVENE through a two-step owner checklist, with P-VERIFY for checked calculations.
-- Existing coverage: the local scripts already prepare drafts from product-sheet CSV and calculate commissions from Etsy/Shopify order CSV exports. The remaining acceptance gap was that the header-only product sheet lacked the filename pattern the independent check discovers. Python's standard-library CSV parser covers the workflow without a new dependency.
-- Acceptance written first: `tests/test_csv_workflow.py` exercises product CSV → both listing drafts and Etsy + Shopify exports → paid-only commission summary; the requested venture pytest suite must pass.
+- Checkpoint: PH12.20. PH5 and PH9 are marked at exit in `NORTHSTAR.yaml`.
+- Defining properties and metrics: P-USABLE / M-INTERVENE for a clear owner step; P-VERIFY / M-VERIFIED for checked listing output and paid-only commission calculations.
+- Existing tools: the venture's CSV CLI and local Glacier engine cover the workflow; the project interpreter and standard-library CSV support are used. No new dependency was added.
+- Acceptance: the unchanged venture suite plus non-acceptance regression checks for approval routing and the public Shopify export layout; live engine proof records the command/output check and owner-review wait.
 
-PH12.20 remains unverified. This card adds the acceptance-discoverable `templates/product-sheet-template.csv` name for the existing one-row product-sheet template; `templates/product-sheet.csv` remains available as a compatible copy. The CLI produces separate Etsy and Shopify drafts from the CSV, and the README explains that the drafts remain unpublished pending the owner's manual review and publication step. Commission calculation accepts Etsy and Shopify order-level CSV exports and reports paid totals, the written rate calculation, excluded rows, and the need to confirm the eligible amount against the agreement.
+## Work and evidence
 
-Owner actions remain owner-only: both parties sign; the owner obtains and supplies exports; the owner reviews and manually publishes listings; the owner compares commission output with settlements before invoicing or paying. The owner checklist is condensed to two steps in the venture manifest.
+Fixed the listing flow's `owner_input_ready → prepare_draft` edge to use the approval node's `yes` branch. Added `tests/test_flow_runtime.py`; it failed before the flow fix and passes now. A disposable real engine run installed both flows and exercised listing run `c2b14bf4f01f`. The synthetic input approval resumed the graph; `prepare_draft` and `draft_ready` completed, outputting an unpublished Etsy/Shopify draft and passing the required output check. The run is still waiting for the owner to review the draft. The owner approval was not simulated.
 
-Fixture acceptance coverage is in `tests/test_csv_workflow.py`; it uses synthetic data and does not establish live Etsy/Shopify compatibility. No signed agreement, real order export, current completed-sale comparison, public listing, or real shop action was used. In a disposable real backend, both flows installed and the `{repo}` placeholder resolved, but neither flow completed: the commission flow was refused because it has no environment acceptance check (I-04 requires an independent author for that check); the listing flow reproducibly skipped draft generation after its input approval and failed its output check. The first listing smoke sent duplicate approvals; the fresh retry sent each once and reproduced the failure. The listing runtime issue is outside this venture card's code lane. See `PROOF.md`; the earlier `{repo}` issue remains documented in claim `CLM-PH12-20-CWD-REPO` until independently verified with owner data.
+Verified official Etsy and Shopify CSV export instructions. Shopify's official order export documentation says multi-item orders occupy multiple CSV lines and order-level fields may be blank on continuation lines. Added grouping for this shape and a public-schema benchmark test with synthetic values in `tests/test_official_export_benchmark.py`; its red test passed after the importer change. No public merchant records or real merchant export were used. No official public current completed-sale source was identified; three current source-linked comparable sales still need to come from the owner/maker.
 
-`~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods/tests/acceptance/test_v_carpenter2.py::test_product_sheet_csv_generates_etsy_shopify_drafts_without_publishing -q --runxfail` — **1 passed**. `~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q` — **10 passed, 2 xpassed**. These are synthetic fixture checks; manifest dry-run passed previously, while real-runtime verification remains incomplete as described above.
+The commission flow installs but the live engine refuses to start it because it has no completion check. I-04 prevents this worker from authoring the check that judges this flow; an independent check author is needed. Therefore PH12.20 is still unverified and the venture stays **blocked**. The owner step and current gate status are recorded in `README.md`, `PROOF.md`, and `../OWNER-START-HERE.md`.
 
-The optional broader `pytest ventures -q` collection did not start because unrelated recall-actor and utility-audits tests could not import their `src.sources` and `scripts.utility_audit` modules; details are in `PROOF.md`.
+## Verification
 
-The two real-runtime blockers need claims routed outside the `ventures/**` card lane; they are recorded here for handoff.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q` — **14 passed**.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods/tests/test_flow_runtime.py ventures/carpenter-goods/tests/test_official_export_benchmark.py -q` — **2 passed**.
+- `~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run` — both flows validated.
+- Real Glacier engine evidence and the commission-flow refusal are recorded in `PROOF.md`.
+
+## Anti-pattern check
+
+The prior proof treated a stale `waiting` read as a completed runtime result. The fresh smoke waits for a terminal or next approval state and records that the listing command and output check completed while the run awaits owner review. The commission limitation is left visible rather than hidden behind a self-authored check.

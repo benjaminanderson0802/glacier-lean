@@ -171,13 +171,15 @@ def _header_key(value: str) -> str:
 
 
 def _export_sales(path: Path, platform: str) -> list[dict[str, Any]]:
-    """Map order-level Etsy or Shopify export headers to commission input rows."""
+    """Map Etsy or Shopify order export rows to one commission input per order."""
     aliases = {
         "order_id": {"order id", "order", "name", "order number"},
         "status": {"order status", "financial status", "payment status", "status"},
         "amount": {"order total", "total order value", "order value", "total"},
     }
     result = []
+    shopify_orders: dict[str, dict[str, Any]] = {}
+    active_shopify_order = ""
     for row_number, original in enumerate(_read_csv(path), start=2):
         row = {_header_key(key): value for key, value in original.items() if key}
         mapped = {}
@@ -191,11 +193,44 @@ def _export_sales(path: Path, platform: str) -> list[dict[str, Any]]:
             amount = float(amount_text)
         except ValueError:
             amount = None
-        result.append({
-            "platform": platform, "order_id": mapped["order_id"],
-            "status": mapped["status"], "amount": amount,
-            "source_row": row_number,
-        })
+        if platform.casefold() == "shopify":
+            # Shopify's documented order CSV uses one line per line item and
+            # leaves many order-level fields blank on continuation lines.
+            # Preserve the order once, carrying forward the last order ID.
+            order_id = mapped["order_id"] or active_shopify_order
+            if order_id:
+                active_shopify_order = order_id
+            else:
+                result.append({
+                    "platform": platform, "order_id": "", "status": mapped["status"],
+                    "amount": amount, "source_row": row_number,
+                })
+                continue
+            order = shopify_orders.setdefault(order_id, {
+                "platform": platform, "order_id": order_id,
+                "statuses": set(), "amounts": set(), "source_rows": [],
+            })
+            status = mapped["status"].strip().casefold()
+            if status:
+                order["statuses"].add(status)
+            if amount is not None:
+                order["amounts"].add(amount)
+            order["source_rows"].append(row_number)
+        else:
+            result.append({
+                "platform": platform, "order_id": mapped["order_id"],
+                "status": mapped["status"], "amount": amount,
+                "source_row": row_number,
+            })
+    for order in shopify_orders.values():
+        statuses = order.pop("statuses")
+        amounts = order.pop("amounts")
+        order["status"] = next(iter(statuses)) if len(statuses) == 1 else (
+            "conflicting status values" if statuses else ""
+        )
+        order["amount"] = next(iter(amounts)) if len(amounts) == 1 else None
+        order["source_rows"] = order.pop("source_rows")
+        result.append(order)
     return result
 
 

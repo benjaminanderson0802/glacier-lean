@@ -26,16 +26,33 @@ Result: **1 passed**. The discoverable `templates/product-sheet-template.csv` ha
 
 `~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run` — both modified flow manifests validated against the node catalog.
 
-## Live verification status
+## Real Glacier engine run
 
-Started the real FastAPI backend with disposable homes, installed both current flows (`carpenter-prepare-listing`: `c345a47e` and `b82a8fc4`; second listing smoke: installed into a fresh home), and exercised the API with synthetic records. The installer resolved the `{repo}` working directory, so the previous claim's exact failure did not recur in this smoke run. The commission flow was refused with HTTP 400: “This goal has no check yet. Add a way to check it is done before running it.” I stopped there because adding its judging check requires an independent check author under I-04. The listing flow accepted one input approval in the fresh retry but still marked `prepare_draft` and downstream nodes skipped; its required output check failed because `drafts/listing.json` had not been created. The first listing smoke sent duplicate approvals while the backend remained in a waiting state; a fresh backend run with each approval sent only once reproduced the skipped-node result. This runtime behavior needs investigation in the runtime lane. Neither flow counts as a successful live run.
+Started the actual FastAPI/DBOS engine with a disposable `GLACIER_HOME`, installed the two manifest flows with `ventures/install_all.py`, and ran **Prepare a handmade furniture listing** through the local engine API. Inputs were synthetic fixture records copied into that temporary home. No network requests to Etsy or Shopify were made.
 
-No Etsy/Shopify account, live export, signed agreement, current comparable-sales record, public listing, invoice, or payment was used or made. Owner signing, account access, publication, and payment remain manual.
+- Temporary home: `/tmp/carpenter-live-ywr6rqqy`
+- Installed flow registrations: listing `2d3f8892`; commissions `cffb1e2f`
+- Listing run ID: `c2b14bf4f01f`
+- Owner input approval: approved only to let the synthetic fixture continue.
+- Engine state at the review gate: `waiting_on=approve_listing`; `owner_input_ready`, `prepare_draft`, and `draft_ready` were `done`.
+- Command output: `{"result":"match","output":"/tmp/carpenter-live-ywr6rqqy/ventures/carpenter-goods/drafts/listing.json","published":false}`. The generated fixture draft had Etsy and Shopify titles `Live edge walnut coffee table`, suggested price `$425.00` (median of synthetic `$400/$425/$450` comparables), and `published: false`.
+- Check output: `draft_ready: yes`; the flow's required output check passed.
+- Backend log: `POST /api/environments/carpenter-prepare-listing/run` returned 200; one `POST /api/runs/c2b14bf4f01f/approve` returned 200; run polling showed `prepare_draft=done`, `draft_ready=done`, and then `waiting_on=approve_listing`. The engine shut down cleanly.
+
+The real run exposed a flow wiring defect: `owner_input_ready` emits a `yes` branch, but its edge to `prepare_draft` had no label, so the engine skipped the listing command. The edge now has label `yes`, and `tests/test_flow_runtime.py::test_owner_input_approval_yes_edge_runs_listing_command` guards it. The live run above verifies the command and output check after that fix. The run remains at the real owner review gate; I did not approve the draft or publish it.
+
+The commission flow installation succeeded, but starting it through the engine returned HTTP 400: “This goal has no check yet. Add a way to check it is done before running it.” I did not create a judging check because I-04 requires an independent author. The commission CLI remains fixture-tested, but a real engine commission run is an outstanding verifier handoff, not an owner-only action.
+
+## Public-source export benchmark
+
+Verified the Etsy and Shopify export guidance against the platforms' official help pages: [Etsy order CSV instructions](https://help.etsy.com/hc/en-us/articles/360035753053-How-Do-I-Download-My-Etsy-Data) and [Shopify order export format](https://help.shopify.com/en/manual/fulfillment/managing-orders/exporting-orders). Shopify documents that multi-item orders occupy multiple CSV lines and that many order fields are blank on continuation lines. The importer now groups these Shopify rows by order and carries forward the order ID; conflicting totals are not summed or guessed.
+
+`tests/test_official_export_benchmark.py::test_shopify_multiline_order_export_counts_each_paid_order_once` uses Shopify's public header/layout documentation with invented order IDs and amounts, not public transaction records. It checks one paid multiline order is counted once and a refunded order is excluded. This does not establish compatibility with a real merchant export. No official public source located for public, current completed-sale records suitable for pricing; the venture still requires the owner to provide three current, source-linked completed sales.
+
+No Etsy/Shopify account, live merchant export, signed agreement, current comparable-sale record, public listing, invoice, or payment was used or made. Owner signing, price choice, account access, draft approval, publication, and payment remain manual.
 
 The broader `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` attempt did not collect: unrelated recall-actor and utility-audits tests raised `ModuleNotFoundError` for `src.sources` and `scripts.utility_audit`. This card did not change those paths.
 
-The commission-flow acceptance-check gap and the reproduced listing-flow transition failure need claims routed to the independent verifier/runtime lane. This card is scoped to `ventures/**`, so those claims were not filed here.
-
 ## Acceptance still outstanding
 
-Do not mark PH12.20 done based on fixture tests alone. Passing runtime flows, owner-provided current records, an independent commission acceptance check, and independent spec review remain outstanding. Current owner tasks are grouped into two steps in `venture.json`: agree and supply; review and publish.
+PH12.20 remains unverified. The listing command and check ran in the real engine, but the full listing run awaits the owner review gate. The commission flow cannot start until an independent author supplies its acceptance check; this is an uncompleted non-owner release gate. Real merchant exports, three current source-linked sales, and independent spec review also remain outstanding. The owner's plain-language action is listed in `README.md`.
