@@ -146,6 +146,41 @@ def _eligible_basis(terms: dict[str, Any]) -> tuple[str | None, str]:
     return None, "eligible_amount does not identify a supported order total or item subtotal basis"
 
 
+def _commission_terms_uncertainties(terms: dict[str, Any]) -> list[str]:
+    """Require an explicit signed agreement with every supported calculation term."""
+    reasons = []
+    if terms.get("signed") is not True:
+        reasons.append("commission terms are missing proof that both parties signed")
+    required = {
+        "rate": "commission rate",
+        "eligible_amount": "eligible amount basis",
+        "include_shipping": "shipping inclusion rule",
+        "include_sales_tax": "sales tax inclusion rule",
+        "deduct_platform_fees": "platform fee rule",
+        "refund_rule": "refund rule",
+        "rounding": "rounding rule",
+    }
+    for key, label in required.items():
+        if key not in terms or terms[key] in (None, ""):
+            reasons.append(f"signed commission terms are missing the {label}")
+    for key in ("include_shipping", "include_sales_tax", "deduct_platform_fees"):
+        if key in terms and not isinstance(terms[key], bool):
+            reasons.append(f"signed commission {key} must be true or false")
+    basis, basis_reason = _eligible_basis(terms)
+    if basis is None:
+        reasons.append(basis_reason)
+    refund_rule = str(terms.get("refund_rule", "")).strip().casefold()
+    if refund_rule and not (
+        "reduce eligible amount by the refunded item amount" in refund_rule
+        or any(word in refund_rule for word in ("exclude", "reverse", "no refund"))
+    ):
+        reasons.append("unsupported refund rule in written terms")
+    rounding = str(terms.get("rounding", "")).strip().casefold()
+    if rounding and rounding != "round half up to two currency decimals":
+        reasons.append("unsupported rounding rule in written terms")
+    return reasons
+
+
 def calculate_commissions(sales: list[dict[str, Any]], commission_rate: float,
                           terms: dict[str, Any] | None = None) -> dict[str, Any]:
     """Summarize paid sales using the supported basis stated in written terms."""
@@ -156,7 +191,7 @@ def calculate_commissions(sales: list[dict[str, Any]], commission_rate: float,
     basis, basis_label = _eligible_basis(terms)
     paid = []
     excluded = []
-    uncertain_reasons = []
+    uncertain_reasons = _commission_terms_uncertainties(terms)
     seen_orders: set[tuple[str, str]] = set()
     currencies: set[str] = set()
     for row in sales:
@@ -331,6 +366,14 @@ def _export_sales(path: Path, platform: str) -> list[dict[str, Any]]:
         total = decimal_field(row, aliases["order_total"])
         values["order_total"] = total
         values["amount"] = total
+        # The export can include more than one explicit order-total column.
+        # A precedence rule must not hide disagreement between those fields.
+        total_candidates = {
+            value for name in ("order total", "total order value", "total")
+            if (value := decimal_field(row, (name,))) is not None
+        }
+        if len(total_candidates) > 1:
+            values["data_conflicts"] = ["order total columns disagree"]
         # Etsy exports do not expose a dedicated refund amount in this layout.
         # Its adjusted total carries the net adjustment; treat only the
         # positive reduction as the refund candidate for an explicit refund rule.

@@ -55,19 +55,32 @@ class CsvWorkflowAcceptanceTests(unittest.TestCase):
             tmp_path = Path(tmp)
             etsy = tmp_path / "etsy-orders.csv"
             etsy.write_text(
-                "Order ID,Order Status,Order Total\nE-1,Paid,500.00\nE-2,Unpaid,90.00\n",
+                "Order ID,Order Status,Order Total,Shipping,Sales Tax\n"
+                "E-1,Paid,500.00,0.00,0.00\nE-2,Unpaid,90.00,0.00,0.00\n",
                 encoding="utf-8",
             )
             shopify = tmp_path / "shopify-orders.csv"
             shopify.write_text(
-                "Name,Financial Status,Total\n#S-1,paid,250.00\n#S-2,refunded,100.00\n",
+                "Name,Financial Status,Total,Shipping,Taxes\n"
+                "#S-1,paid,250.00,0.00,0.00\n#S-2,refunded,100.00,0.00,0.00\n",
                 encoding="utf-8",
             )
+            terms = tmp_path / "commission-terms.json"
+            terms.write_text(json.dumps({
+                "signed": True,
+                "rate": 0.12,
+                "eligible_amount": "order total",
+                "include_shipping": False,
+                "include_sales_tax": False,
+                "deduct_platform_fees": False,
+                "refund_rule": "exclude refunded orders",
+                "rounding": "round half up to two currency decimals",
+            }), encoding="utf-8")
             output = tmp_path / "commission.json"
 
             subprocess.run([
                 sys.executable, str(SCRIPT), "commissions", "--etsy-csv", str(etsy),
-                "--shopify-csv", str(shopify), "--rate", "0.12", "--output", str(output),
+                "--shopify-csv", str(shopify), "--rate-file", str(terms), "--output", str(output),
             ], check=True, capture_output=True, text=True)
             report = json.loads(output.read_text(encoding="utf-8"))
 
