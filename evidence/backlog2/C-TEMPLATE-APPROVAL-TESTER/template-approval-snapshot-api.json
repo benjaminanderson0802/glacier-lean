@@ -1,0 +1,735 @@
+{
+  "fixture_kind": "real FastAPI backend, synthetic proposals, disposable GLACIER_HOME",
+  "checks": {
+    "unchanged_template_is_reviewed_and_installable": true,
+    "unchanged_import_is_pending": true,
+    "unchanged_reviewed_content_approves": true,
+    "unchanged_approved_template_is_installable": true,
+    "changed_command_approval_refused": false,
+    "changed_command_remains_noninstallable": false,
+    "changed_command_proposal_remains_pending": false,
+    "added_capability_approval_refused": false,
+    "added_capability_remains_noninstallable": false,
+    "added_capability_proposal_remains_pending": false,
+    "unknown_step_rejected": true,
+    "side_effect_is_pending_and_not_installable": true,
+    "side_effect_requires_explicit_approval": true,
+    "encoded_traversal_rejected": true
+  },
+  "api": [
+    {
+      "case": "unchanged_bundle",
+      "method": "GET",
+      "url": "http://127.0.0.1:35665/api/templates",
+      "status": 200,
+      "body": [
+        {
+          "id": "tpl-backup-check",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-daily-report",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-document-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-downloads-tidy",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-inbox-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-search-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-explain-error",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-backup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-cleanup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-inbox-triage",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-item-processor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-local-data-pipeline",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-meeting-tasks",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-morning-brief",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-nightly-job",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-sub-flow-example",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-test-and-fix",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-web-change-watch",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-website-monitor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-weekly-research",
+          "review_status": "reviewed",
+          "installable": true
+        }
+      ]
+    },
+    {
+      "case": "import_unchanged_template",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import",
+      "status": 200,
+      "body": {
+        "accepted": true,
+        "review": [],
+        "id": "bec4b945bfb14e69999afb7ac4976509",
+        "template_id": "community-tpl-daily-report",
+        "source_id": "tpl-daily-report",
+        "status": "pending",
+        "commands_for_review": [
+          "date -Is"
+        ]
+      }
+    },
+    {
+      "case": "approve_unchanged_template",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import/bec4b945bfb14e69999afb7ac4976509/approve",
+      "status": 200,
+      "body": {
+        "id": "bec4b945bfb14e69999afb7ac4976509",
+        "status": "approved"
+      }
+    },
+    {
+      "case": "gallery_after_unchanged_approval",
+      "method": "GET",
+      "url": "http://127.0.0.1:35665/api/templates",
+      "status": 200,
+      "body": [
+        {
+          "id": "tpl-backup-check",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-daily-report",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-document-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-downloads-tidy",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-inbox-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-search-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-explain-error",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-backup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-cleanup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-inbox-triage",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-item-processor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-local-data-pipeline",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-meeting-tasks",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-morning-brief",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-nightly-job",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-sub-flow-example",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-test-and-fix",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-web-change-watch",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-website-monitor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-weekly-research",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        }
+      ]
+    },
+    {
+      "case": "review_before_command_change",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import",
+      "status": 200,
+      "body": {
+        "accepted": true,
+        "review": [],
+        "id": "88c4c52fbc684fac8ed488945168ac08",
+        "template_id": "community-tpl-daily-report",
+        "source_id": "tpl-daily-report",
+        "status": "pending",
+        "commands_for_review": [
+          "date -Is"
+        ]
+      }
+    },
+    {
+      "case": "approve_changed_command",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import/88c4c52fbc684fac8ed488945168ac08/approve",
+      "status": 200,
+      "body": {
+        "id": "88c4c52fbc684fac8ed488945168ac08",
+        "status": "approved"
+      }
+    },
+    {
+      "case": "gallery_after_changed_command",
+      "method": "GET",
+      "url": "http://127.0.0.1:35665/api/templates",
+      "status": 200,
+      "body": [
+        {
+          "id": "tpl-backup-check",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-daily-report",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-document-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-downloads-tidy",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-inbox-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-search-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-explain-error",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-backup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-cleanup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-inbox-triage",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-item-processor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-local-data-pipeline",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-meeting-tasks",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-morning-brief",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-nightly-job",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-sub-flow-example",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-test-and-fix",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-web-change-watch",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-website-monitor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-weekly-research",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        }
+      ]
+    },
+    {
+      "case": "review_before_capability_change",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import",
+      "status": 200,
+      "body": {
+        "accepted": true,
+        "review": [],
+        "id": "712e41856d164baabaefbd6dfb3031a7",
+        "template_id": "community-approval-capability-fixture",
+        "source_id": "approval-capability-fixture",
+        "status": "pending",
+        "commands_for_review": [
+          "date -Is"
+        ]
+      }
+    },
+    {
+      "case": "approve_added_capability",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import/712e41856d164baabaefbd6dfb3031a7/approve",
+      "status": 200,
+      "body": {
+        "id": "712e41856d164baabaefbd6dfb3031a7",
+        "status": "approved"
+      }
+    },
+    {
+      "case": "gallery_after_added_capability",
+      "method": "GET",
+      "url": "http://127.0.0.1:35665/api/templates",
+      "status": 200,
+      "body": [
+        {
+          "id": "tpl-backup-check",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-daily-report",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-document-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-downloads-tidy",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-inbox-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-search-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-explain-error",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-backup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-cleanup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-inbox-triage",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-item-processor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-local-data-pipeline",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-meeting-tasks",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-morning-brief",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-nightly-job",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-sub-flow-example",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-test-and-fix",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-web-change-watch",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-website-monitor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-weekly-research",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "community-approval-capability-fixture",
+          "review_status": "approved",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        }
+      ]
+    },
+    {
+      "case": "unknown_step_type",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import",
+      "status": 200,
+      "body": {
+        "accepted": false,
+        "review": [
+          "Node step uses an unknown type: 'not_a_registered_capability'."
+        ]
+      }
+    },
+    {
+      "case": "side_effect_import",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import",
+      "status": 200,
+      "body": {
+        "accepted": true,
+        "review": [],
+        "id": "30d5fbf8c2d44b14806a660a0422553f",
+        "template_id": "community-side-effect-fixture",
+        "source_id": "side-effect-fixture",
+        "status": "pending",
+        "commands_for_review": [
+          "test -n '{prev_output}'"
+        ]
+      }
+    },
+    {
+      "case": "side_effect_pending_gallery",
+      "method": "GET",
+      "url": "http://127.0.0.1:35665/api/templates",
+      "status": 200,
+      "body": [
+        {
+          "id": "tpl-backup-check",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-daily-report",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-document-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-downloads-tidy",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-inbox-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-email-search-note",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-explain-error",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-backup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-folder-cleanup",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-inbox-triage",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-item-processor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-local-data-pipeline",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-meeting-tasks",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-morning-brief",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-nightly-job",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-sub-flow-example",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-test-and-fix",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-web-change-watch",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-website-monitor",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "tpl-weekly-research",
+          "review_status": "reviewed",
+          "installable": true
+        },
+        {
+          "id": "community-approval-capability-fixture",
+          "review_status": "approved",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        },
+        {
+          "id": "community-tpl-daily-report",
+          "review_status": "approved",
+          "installable": true
+        }
+      ]
+    },
+    {
+      "case": "explicitly_approve_side_effect_template",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import/30d5fbf8c2d44b14806a660a0422553f/approve",
+      "status": 200,
+      "body": {
+        "id": "30d5fbf8c2d44b14806a660a0422553f",
+        "status": "approved"
+      }
+    },
+    {
+      "case": "encoded_traversal",
+      "method": "POST",
+      "url": "http://127.0.0.1:35665/api/templates/import/%2e%2e%2foutside/approve",
+      "status": 404,
+      "body": {
+        "detail": "Not Found"
+      }
+    }
+  ]
+}
