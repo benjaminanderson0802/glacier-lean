@@ -1,12 +1,17 @@
-# Carpenter's goods
+# Carpenter's goods — ready for owner and maker inputs
 
 This venture prepares private Etsy and Shopify listing drafts from a maker-confirmed product sheet and source-linked completed sales. It can also calculate a commission summary from owner-exported order CSVs and the rate in the written agreement. The tools do not sign agreements, connect to shop accounts, answer buyers, handle orders, publish listings, invoice, charge, or move money.
 
 ## Owner steps
 
-1. **Sign, supply, and review.** Agree the commission terms with the carpenter and both sign the agreement; provide maker-confirmed product facts, local photo paths, at least three current source-linked completed sales, and any order exports. When Glacier prepares the draft, review every fact, photo, comparable, and price, then publish manually only if you approve. Glacier does not sign or publish.
+There are two owner sittings; the detailed links, clicks, file paths, and time estimates are in [OWNER-STEPS.md](OWNER-STEPS.md).
 
-The short [plain-language agreement summary](agreement/commission-summary.md) explains the terms; the signed full agreement controls if they differ. The agreement templates are not legal advice. Have both parties review all blanks and terms; seek legal advice if needed. Glacier never signs.
+1. **Meet with the carpenter (about 30–60 minutes, plus gathering records):** finish and both sign the prepared [commission agreement](agreement/commission-agreement.md), provide maker-confirmed product facts and local photo paths, at least three current source-linked completed sales, and any needed order exports. Georgia sales-tax registration applicability remains **uncertain — please check** with the linked DOR guidance before the first physical-goods sale.
+2. **Review and publish (about 15–30 minutes per first product):** review Glacier's Etsy and Shopify drafts, facts, photos and comparable-based suggested price, choose the final price, and publish manually only if approved.
+
+The short [signing worksheet](agreement/commission-summary.md) accompanies the full agreement. Both parties must fill and review all marked terms and sign themselves. These templates are not legal advice. Glacier never signs or publishes.
+
+The human-readable [Etsy listing draft](drafts/etsy-listing-draft.md), [Shopify listing draft](drafts/shopify-listing-draft.md), and [data request](OWNER-DATA-REQUEST.md) are prefilled with known workflow details. Product facts, legal terms, and price stay blank/uncertain because no real maker or sales records were supplied. The sample product and sale values under `tests/` are synthetic and must never be used as listings or pricing evidence.
 
 ## Preparing listing drafts
 
@@ -56,4 +61,4 @@ Compare totals with platform settlements and the signed agreement before any inv
 
 ## Current limits
 
-The live Glacier listing command and output check were exercised with disposable synthetic inputs. The official Shopify export layout has a public-schema benchmark using synthetic order values. No live Etsy/Shopify merchant export, current comparable-sale record, signed agreement, or public listing was used. The commission flow remains blocked by Glacier's requirement for an acceptance check; this card cannot author that independent check. See [PROOF.md](PROOF.md) for run evidence and limits.
+Venture acceptance and regression checks pass, and both flows validate for installation. Live Glacier listing-engine proof used disposable synthetic inputs only; it did not create a shop listing. The independent signed-terms commission acceptance now passes. No live Etsy/Shopify merchant export, real comparable-sale record, signed agreement, or public listing was used. The venture is ready for the owner and carpenter to provide real inputs and perform the two manual approval sittings. See [PROOF.md](PROOF.md) for commands and evidence boundaries.
