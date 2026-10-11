@@ -16,6 +16,6 @@
 
    Do not include passwords, tokens or bank numbers. A valid postal address is still needed before the email can be sent; Troy, Alabama alone is not a complete address. No new payment account is assumed. If you cannot confirm a lawful operating/payment route, keep the offer as a draft.
 
-The first prospect call is [Air Conditioning by Luquire's published office number](https://acbyluquire.com/), **334-264-9666**, on Tuesday during business hours. Say: “I'm Benjamin with Anderson Education LLC. May I email your operations manager a sample job-completion packet? The pilot is $49 after your team reviews five packets.” Only use an email they supply; none is invented in the prospect list.
+The first prospect is [Air Conditioning by Luquire](https://acbyluquire.com/). Outreach is written only (no phone calls): Glacier will draft the closeout pitch for the business email or website contact form that Luquire publishes, and you send it after you approve it.
 
 The [14-day plan](FASTEST-MONEY.md) includes Apify verification on day 2 and the next individual prospect actions. It is one shared ten-minute daily budget. If a task runs long, replace the next day's task instead of adding more work.

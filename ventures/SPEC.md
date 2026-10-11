@@ -16,6 +16,8 @@ Write progress to the venture's progress file after every task, and rewrite it r
 **When a safety concern comes up:** check the venture's purpose and the rules below first; most concerns come from missing context. If the concern still holds (a site's terms ban automation, a step needs a license), redesign that step and record the change here so no later worker trips on it.
 Rules for every venture
 These hold for every venture and every agent. Write them into each venture's system prompt.
+**Outreach rule (owner decision).** All prospect and customer outreach is written: email or the business's own published website contact form. Never plan, script or schedule phone calls for the owner.
+
 **Output vocabulary.** Every result a customer sees is one of: "match", "no match found in [sources] as of [date]", or "uncertain — please check". Legal conclusions such as safe, compliant or exempt are the customer's call; present a checklist they confirm instead.
 **Two-engine agreement.** A model's extracted or judged value counts only when a script check or a second engine agrees. Disagreement becomes "uncertain" and goes to the customer to confirm.
 **Filing.** The customer (or their licensed broker) certifies and submits anything going to CBP, CPSC, FDA or OSHA. Agents prepare files and, where a portal allows a delegate, submit under the customer's own account with their e-signed authorization.
