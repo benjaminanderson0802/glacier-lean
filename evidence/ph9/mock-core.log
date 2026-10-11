@@ -1,0 +1,15 @@
+[e2e] ok   screen loaded, live events socket connected
+[e2e] ERROR locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByTestId('new-env')[22m
+[2m    - locator resolved to <button class="primary block" data-testid="new-env">+ New flow</button>[22m
+
+    at newEnv (/home/glacier/w/workers/gf-E-PH9/glacier/web/e2e/core.spec.mjs:79:26)
+    at /home/glacier/w/workers/gf-E-PH9/glacier/web/e2e/core.spec.mjs:91:9 {
+  log: [
+    "  - waiting for getByTestId('new-env')",
+    '    - locator resolved to <button class="primary block" data-testid="new-env">+ New flow</button>'
+  ],
+  name: 'TimeoutError'
+}
+FAIL (1 failing checks)

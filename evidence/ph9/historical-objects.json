@@ -1,0 +1,20 @@
+[
+  {
+    "historical_practice_merge": "9cdd84d",
+    "available_in_this_checkout": false,
+    "stdout": "",
+    "stderr": "fatal: Not a valid object name 9cdd84d\n"
+  },
+  {
+    "historical_practice_merge": "b6e8095",
+    "available_in_this_checkout": false,
+    "stdout": "",
+    "stderr": "fatal: Not a valid object name b6e8095\n"
+  },
+  {
+    "historical_practice_merge": "deea119",
+    "available_in_this_checkout": false,
+    "stdout": "",
+    "stderr": "fatal: Not a valid object name deea119\n"
+  }
+]
