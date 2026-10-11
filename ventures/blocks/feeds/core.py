@@ -117,7 +117,8 @@ def _request(url: str, *, timeout: int = 30, max_bytes: int | None = None) -> by
     """Fetch a public GET with a descriptive client ID, bounded retries, and a small disk cache."""
     host = urllib.parse.urlparse(url).netloc
     accept = "application/json, application/rss+xml, text/csv, text/html;q=0.9, */*;q=0.8"
-    headers = {"User-Agent": USER_AGENT, "Accept": accept}
+    user_agent = "Glacier public-data client" if host == "www.fsis.usda.gov" else USER_AGENT
+    headers = {"User-Agent": user_agent, "Accept": accept}
     cache_path: Path | None = None
     cache_meta: dict[str, Any] = {}
     if len(url) < 4000:
