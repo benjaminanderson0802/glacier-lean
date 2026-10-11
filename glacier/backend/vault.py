@@ -111,12 +111,44 @@ def init(path: str) -> None:
         c.execute("CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(path UNINDEXED, body)")
         c.execute("CREATE TABLE IF NOT EXISTS links(src TEXT, dst TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS events(ts DEFAULT CURRENT_TIMESTAMP, agent TEXT, kind TEXT, data TEXT)")
+    rebuild_index()
 
 
 def _db():
     c = sqlite3.connect(os.path.join(VAULT, ".index.sqlite"), timeout=30)
     c.execute("PRAGMA synchronous=FULL")
     return c
+
+
+def rebuild_index() -> None:
+    """Recover keyword/link rows from plain files without touching Git or events.
+
+    Startup also reconciles an existing index with edits made in an external
+    editor while Glacier was stopped. Build in one transaction so readers see
+    either the previous index or the complete replacement.
+    """
+    with _lock:
+        c = _db()
+        try:
+            with c:
+                c.execute("DELETE FROM fts")
+                c.execute("DELETE FROM links")
+                for path in sorted(set(list_notes(".md") + list_notes(".json"))):
+                    try:
+                        full = safe_path(path)
+                        with open(full, encoding="utf-8", errors="replace") as note:
+                            raw = note.read()
+                    except (FileNotFoundError, ValueError):
+                        # External editors can move files during the scan;
+                        # symlinks outside the vault are never indexed.
+                        continue
+                    body = memory_meta.parse(raw, path)[1] if path.endswith(".md") else raw
+                    c.execute("INSERT INTO fts VALUES (?,?)", (path, body))
+                    for dst in re.findall(r"\[\[([^\]]+)\]\]", body):
+                        c.execute("INSERT INTO links VALUES (?,?)", (
+                            path, dst.split("|", 1)[0].strip().removesuffix(".md")))
+        finally:
+            c.close()
 
 
 def invalidate_note_history(paths) -> None:
