@@ -1,82 +1,49 @@
 # Proof — Carpenter's goods
 
-## Fixture acceptance
+## Acceptance and regression checks
 
-Command:
+After the signed-terms correction, the independent commission acceptance suite passes. The suite checks paid-order calculations against Etsy seller CSV fields and Shopify's documented CSV headers/continuation rows; agreement basis, discounts, shipping, tax, fees, refunds, rounding, currency, and local-only behavior. Its order values and IDs are synthetic.
 
-```sh
-~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q
-```
-
-Result after adding the acceptance-discoverable template filename: **10 passed, 2 xpassed**. The two xpasses are the agreement and product-sheet acceptance checks whose `awaiting builder` markers remain in place; they pass when run normally and with `--runxfail`.
-
-The suite covers source-linked same-category completed-sale validation and median pricing, uncertain/no-price behavior, paid-only commission calculations, invalid rates, venture manifest instructions, product-sheet CSV to Etsy/Shopify draft generation, Etsy and Shopify order-export CSV commission summaries, and agreement/template presence. The acceptance check was also run directly with xfail disabled:
+Commands and results for this card:
 
 ```sh
-~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods/tests/acceptance/test_v_carpenter2.py::test_product_sheet_csv_generates_etsy_shopify_drafts_without_publishing -q --runxfail
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/carpenter-goods ventures/tests
 ```
 
-Result: **1 passed**. The discoverable `templates/product-sheet-template.csv` has the same header as the compatible `templates/product-sheet.csv`; both are templates only. The CSV E2E cases invoke the command-line workflow using synthetic fixtures. They do not prove current market pricing, real platform export compatibility, or live shop behavior.
-
-## Manifest validation
+**59 passed, 2 subtests passed.** This includes the independent commission acceptance checks, venture regressions, and adjacent ventures board.
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run
 ```
 
-`~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only carpenter-goods --dry-run` — both modified flow manifests validated against the node catalog.
+Both flow manifests validate against the node catalog. The commission flow now has a human acceptance gate: the owner compares the report with the signed terms and platform settlements before relying on an amount. This is a check of that run's actual report; it does not authorize Glacier to invoice, contact anyone, charge, or transfer money.
 
-## Real Glacier engine run
+## Live Glacier listing run
 
-Started the actual FastAPI/DBOS engine with a disposable `GLACIER_HOME`, installed the two manifest flows with `ventures/install_all.py`, and ran **Prepare a handmade furniture listing** through the local engine API. Inputs were synthetic fixture records copied into that temporary home. No network requests to Etsy or Shopify were made.
+An earlier real FastAPI/DBOS run installed both flows and ran **Prepare a handmade furniture listing** using disposable synthetic inputs in `/tmp/carpenter-live-ywr6rqqy` (listing run `c2b14bf4f01f`). The product title and `$425.00` median were synthetic fixture values, not market evidence. The local output check passed with `published: false`, then the run waited at the owner's review gate. No Etsy/Shopify request or publication occurred.
 
-- Temporary home: `/tmp/carpenter-live-ywr6rqqy`
-- Installed flow registrations: listing `2d3f8892`; commissions `cffb1e2f`
-- Listing run ID: `c2b14bf4f01f`
-- Owner input approval: approved only to let the synthetic fixture continue.
-- Engine state at the review gate: `waiting_on=approve_listing`; `owner_input_ready`, `prepare_draft`, and `draft_ready` were `done`.
-- Command output: `{"result":"match","output":"/tmp/carpenter-live-ywr6rqqy/ventures/carpenter-goods/drafts/listing.json","published":false}`. The generated fixture draft had Etsy and Shopify titles `Live edge walnut coffee table`, suggested price `$425.00` (median of synthetic `$400/$425/$450` comparables), and `published: false`.
-- Check output: `draft_ready: yes`; the flow's required output check passed.
-- Backend log: `POST /api/environments/carpenter-prepare-listing/run` returned 200; one `POST /api/runs/c2b14bf4f01f/approve` returned 200; run polling showed `prepare_draft=done`, `draft_ready=done`, and then `waiting_on=approve_listing`. The engine shut down cleanly.
+That run exposed a missing `yes` label on `owner_input_ready → prepare_draft`; it is fixed and covered by `ventures/carpenter-goods/tests/test_flow_runtime.py::test_owner_input_approval_yes_edge_runs_listing_command`.
 
-The real run exposed a flow wiring defect: `owner_input_ready` emits a `yes` branch, but its edge to `prepare_draft` had no label, so the engine skipped the listing command. The edge now has label `yes`, and `tests/test_flow_runtime.py::test_owner_input_approval_yes_edge_runs_listing_command` guards it. The live run above verifies the command and output check after that fix. The run remains at the real owner review gate; I did not approve the draft or publish it.
+## Live Glacier commission run
 
-The commission flow installation succeeded, but starting it through the engine returned HTTP 400: “This goal has no check yet. Add a way to check it is done before running it.” I did not create a judging check because I-04 requires an independent author. The commission CLI remains fixture-tested, but a real engine commission run is an outstanding verifier handoff, not an owner-only action.
+Installed and started **Track agreed furniture commissions** through the real FastAPI/DBOS engine in disposable `GLACIER_HOME` `/tmp/carpenter-commission-live-g0t0iq6e`. Run `a185534d84da` used synthetic Etsy and Shopify CSV rows and explicitly synthetic signed-term settings. The generated report was `match`, 2 eligible orders, `$300.00` gross, and `$30.00` at the synthetic 10% rate. The run then stopped at `waiting_on=check-0` with the owner verification question; `verified` remained null and the gate was deliberately left unapproved. These values are a runtime smoke only, not actual sales or an amount due.
 
-## Public-source export benchmark
+A first smoke omitted shipping and tax columns while the terms excluded those fields. The actual engine correctly returned **uncertain — please check**, listed both missing-field reasons, and set no amount due. A fresh smoke with explicit zero-valued shipping/tax columns produced the synthetic match above. This confirms missing term data remains uncertain rather than guessed.
 
-Verified the Etsy and Shopify export guidance against the platforms' official help pages: [Etsy order CSV instructions](https://help.etsy.com/hc/en-us/articles/360035753053-How-Do-I-Download-My-Etsy-Data) and [Shopify order export format](https://help.shopify.com/en/manual/fulfillment/managing-orders/exporting-orders). Shopify documents that multi-item orders occupy multiple CSV lines and that many order fields are blank on continuation lines. The importer now groups these Shopify rows by order and carries forward the order ID; conflicting totals are not summed or guessed.
+## Shared test board status
 
-`tests/test_official_export_benchmark.py::test_shopify_multiline_order_export_counts_each_paid_order_once` uses Shopify's public header/layout documentation with invented order IDs and amounts, not public transaction records. It checks one paid multiline order is counted once and a refunded order is excluded. This does not establish compatibility with a real merchant export. No official public source located for public, current completed-sale records suitable for pricing; the venture still requires the owner to provide three current, source-linked completed sales.
+`bash setup/run_core_tests.sh` completed but the shared board did not pass: **896 passed, 5 failed, 1 skipped, 5 warnings**. It reported failures in `tests/test_home_route.py`; a focused reproduction from `glacier/backend` gave **3 failed, 2 passed**. The observed mismatches were `/api/home` reporting 38 `need_you` items in an empty state (expected 0), 41 instead of 3 for the seeded case, and a missing `needs_you[0].ref.run_id`. These are outside the carpenter venture files and were not changed here. The same board's web build checks passed, but `node e2e/core.spec.mjs` could not launch because Playwright's Chromium executable is absent. Its bootstrap also attempted `pip --user install uv`, which the host rejected under PEP 668; `uv` was unavailable, so setup continued using the existing environment.
 
-No Etsy/Shopify account, live merchant export, signed agreement, current comparable-sale record, public listing, invoice, or payment was used or made. Owner signing, price choice, account access, draft approval, publication, and payment remain manual.
+`bash setup/live_codex_check.sh` returned exit code 0 but printed repeated `JSONDecodeError: Expecting value` traces while parsing the live run result. The shared core/live checks therefore remain an integration gate; PH12.20 is left `in_progress` in `NORTHSTAR.yaml` even though the carpenter venture itself is ready for its two owner sittings.
 
-The broader `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` attempt did not collect: unrelated recall-actor and utility-audits tests raised `ModuleNotFoundError` for `src.sources` and `scripts.utility_audit`. This card did not change those paths.
+## Export source and data limits
 
-## Acceptance still outstanding
+- [Etsy's official sold-transaction CSV instructions](https://help.etsy.com/hc/en-us/articles/360000343328-How-to-Download-a-Spreadsheet-of-Your-Sold-Transactions) document its Orders/Order items export flow and available data, but not a complete CSV header row.
+- [Shopify's official order export guide](https://help.shopify.com/en/manual/fulfillment/managing-orders/exporting-orders) documents CSV headers and multiple rows for orders with multiple line items. The importer groups continuation rows by order; the independent test uses synthetic values.
+- No official public source of current completed sale records suitable for these products was identified. The maker/owner must supply at least three current, same-category, source-linked completed sales. Fewer than three eligible records produce **uncertain — please check** and no suggested price.
 
-PH12.20 remains unverified. The listing command and check ran in the real engine, but the full listing run awaits the owner review gate. The commission flow cannot start until an independent author supplies its acceptance check; this is an uncompleted non-owner release gate. Real merchant exports, three current source-linked sales, and independent spec review also remain outstanding. The owner's plain-language action is listed in `README.md`.
+## Prepared owner handoff
 
-## Commission calculation correction
+[`OWNER-STEPS.md`](OWNER-STEPS.md) has two combined sittings with exact links/clicks, local file paths, and time estimates. The prepared [commission agreement](agreement/commission-agreement.md), [signing worksheet](agreement/commission-summary.md), [data request](OWNER-DATA-REQUEST.md), and [Etsy](drafts/etsy-listing-draft.md)/[Shopify](drafts/shopify-listing-draft.md) drafts use only known workflow details. Names, commission rate, product facts, photos, and price remain blank or uncertain because none were supplied from real records. The sample data under `tests/` is synthetic and is not an owner listing or price source.
 
-The independent acceptance file `tests/acceptance/test_commission_flow.py` was run unchanged after the commission fix:
-
-```sh
-~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/carpenter-goods/tests/acceptance/test_commission_flow.py
-```
-
-Result: **6 passed**. It verifies that Etsy's explicit `Order Total` is chosen consistently when `Order Value` is also present; Shopify multiline orders count once; a written item-subtotal-after-discounts basis excludes shipping and tax and accounts for the stated platform-fee and partial-refund treatment; fully refunded orders do not count; decimal half-up rounding applies; non-USD orders produce an uncertain result and no amount due; and the flow remains local-only with no payment or sending action.
-
-The complete venture checks were also run with the requested interpreter:
-
-```sh
-~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q
-```
-
-Result: **20 passed**. The adjacent ventures board was run as well:
-
-```sh
-~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q
-```
-
-Result: **22 passed**. These are synthetic CSV/JSON fixtures, not merchant records. I did not run the commission flow through Glacier's live engine: the flow still lacks a Glacier-attached independent completion check, so its backend run is blocked by the existing verification gate. No Etsy or Shopify connection, customer export, invoice, or payment was used.
+No live merchant export, signed agreement, real comparable sale, or public listing was used. Owner signatures, final price choice, Georgia tax applicability check/registration if required, listing approval, and publication remain manual. No invoice or payment was created.

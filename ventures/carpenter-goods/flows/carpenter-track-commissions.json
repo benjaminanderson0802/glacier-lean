@@ -24,5 +24,11 @@
   "edges": [
     {"id": "e1", "source": "calculate_commission", "target": "commission_result", "label": ""}
   ],
+  "acceptance": [
+    {
+      "kind": "human",
+      "question": "Compare this local commission summary with the fully signed agreement and the Etsy/Shopify settlement records. Confirm eligible orders, exclusions, basis, refunds, fees, currency, and rounding. If any term or export field is missing or unsupported, leave the result uncertain and do not approve an amount for payment. This review does not authorize Glacier to invoice, send, charge, or transfer money."
+    }
+  ],
   "max_steps": 2
 }

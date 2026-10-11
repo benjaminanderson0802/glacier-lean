@@ -1,7 +1,7 @@
 {
   "slug": "carpenter-goods",
   "name": "carpenter's goods",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "purpose": "Prepare Etsy and Shopify product drafts and track agreed commissions from owner-exported sales.",
     "channels": [
@@ -22,25 +22,28 @@
   "your_steps": [
     {
       "id": "agree-commission",
-      "title": "Agree the commission in writing",
-      "when": "Before preparing the launch files or tracking sales",
-      "detail": "Fill and review agreement/commission-agreement.md with the carpenter, including the eligible order amount and treatment of tax, shipping, discounts, refunds, and fees. Both people sign it themselves. Also provide maker-confirmed product facts, local photos, three current source-linked completed-sale comparisons, and owner-exported Etsy/Shopify order CSVs when available. The legacy paid-sales.json input is also supported by the CLI. Glacier does not sign the agreement or connect to either shop.",
+      "title": "Agree, sign, and provide the source files",
+      "when": "One working session with the carpenter, before preparing listings or calculating commission",
+      "detail": "Follow OWNER-STEPS.md step 1 and OWNER-DATA-REQUEST.md. Fill the prepared commission agreement together, resolve every marked term, and both sign it yourselves. Provide maker-confirmed product facts, original local photo paths, three current source-linked completed sales, and (if calculating earned commission) the official Etsy/Shopify order CSVs plus matching signed terms. The CLI supports legacy paid-sales.json input, but test fixtures are synthetic and must not be used as merchant data. Before the first physical-goods sale, check the linked Georgia DOR guidance to see whether registration applies; applicability is uncertain and Glacier makes no legal determination. Glacier does not sign, connect to either shop, or access accounts.",
       "links": [
-        "https://www.etsy.com/your/shops/me/dashboard"
-      ]
-    },
-    {
-      "id": "approve-first-listing",
-      "title": "Review and publish the first listing",
-      "when": "After a draft is prepared",
-      "detail": "Review the prepared Etsy and Shopify drafts, photos, facts, comparable sales and price. Before physical-goods sales, check whether the business meets Georgia's dealer definition and, if so, register for Sales & Use Tax through GTC; registration is free. DOR says online registration is available through GTC and electronic filing is free. Use Georgia Form ST-5 only for qualifying tax-exempt wholesale purchases for resale, not personal-use purchases. If the drafts and setup are correct, publish manually in the shop(s) yourself. Glacier does not create accounts or publish listings.",
-      "links": [
+        "OWNER-STEPS.md",
+        "OWNER-DATA-REQUEST.md",
+        "agreement/commission-agreement.md",
         "https://www.etsy.com/your/shops/me/dashboard",
         "https://admin.shopify.com/",
         "https://dor.georgia.gov/tax-registration",
         "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
-        "https://dor.georgia.gov/about-georgia-tax-center",
-        "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"
+        "https://gtc.dor.ga.gov/"
+      ]
+    },
+    {
+      "id": "approve-first-listing",
+      "title": "Review the prepared drafts and publish only if approved",
+      "when": "After Glacier prepares the local drafts",
+      "detail": "Follow OWNER-STEPS.md step 2. Check every maker-confirmed fact and original photo, review the three-source comparable median, choose the final price yourself, then manually publish the Etsy listing only if approved. For Shopify, save as Draft first; change to Active and save only when you approve publication. Any commission report has a separate owner verification prompt: compare it to the signed terms and platform settlements before any payment. Glacier does not create accounts, publish, invoice, send messages, charge, or transfer money.",
+      "links": [
+        "https://www.etsy.com/your/shops/me/dashboard",
+        "https://admin.shopify.com/"
       ]
     }
   ],

@@ -1,43 +1,25 @@
-# Our furniture commission agreement — plain-language summary
+# Commission agreement — signing worksheet
 
-**People:** [Owner's name] and [Carpenter's name/business]
+This is a short companion to [the owner and maker draft](commission-agreement.md), not a separate agreement. Fill the bracketed fields together. If this summary and the full signed agreement differ, use the signed full agreement. **Not legal advice.**
 
-**Products:** [Products covered]
+- Seller: **[owner's full legal name]**
+- Maker: **[carpenter's full legal name/business name]**
+- Products: **[maker-confirmed product sheet attached]**
+- Shops: **Etsy** and **[Shopify store name/URL]**
+- Rate: **[____]%**
+- Eligible order amount: **[order total / item subtotal after discounts / other — specify]**
+- Shipping, tax, discounts, fees: **[state each treatment]**
+- When a sale counts: **[rule]**
+- Refunds, returns, partial refunds, chargebacks: **[rule]**
+- Records shared: **[frequency and method]**; payment: **[when/how]**
+- Who prepares listings, handles buyer messages, fulfillment, and returns: **[assign responsibilities]**
+- Photo/name/design permission: **[scope and limits]**
+- Term and ending notice: **[start/end or ongoing; notice period and method]**
 
-**Shops:** [Etsy shop and/or Shopify site]
+Both parties read and agree to the full terms, then sign and date it themselves:
 
-**Starts:** [Date]  **Ends:** [Date or “continues until ended”]
+Seller: **[signature]**  Date: **[date]**
 
-## What we agreed
+Maker: **[signature]**  Date: **[date]**
 
-- The commission rate is **[____]%**.
-- The rate applies to **[plain description of the exact amount used for each order]**.
-- **[Say whether shipping, tax, discounts, platform fees, and other charges count.]**
-- A sale counts when **[payment/fulfillment rule]**.
-- Cancellations, refunds, returns, and chargebacks are handled this way: **[rule]**.
-
-## Records and payment
-
-- Order records are shared **[when/how often]**.
-- The commission is checked against **[order export fields and platform settlement]**.
-- Payment is due **[when/how]**.
-- Expenses or deductions need **[whose]** written approval first.
-
-## Who does what
-
-- The maker confirms product facts, photos, availability, and **[other duties]**.
-- The owner handles **[listing, buyer questions, fulfillment, returns, or other duties]**.
-- The account owner reviews and publishes each listing by hand.
-- Glacier can prepare drafts and calculate from exported records. It does not sign this agreement, publish listings, invoice, charge, or transfer money.
-
-## Ending the arrangement
-
-Either person may end it with **[number] days' notice by email/letter to]**. When it ends, open orders and any earned commission are handled like this: **[rule]**.
-
-## Signatures — both people sign themselves
-
-Owner: **[signature]**  Date: **[date]**
-
-Carpenter: **[signature]**  Date: **[date]**
-
-This short summary helps explain the filled agreement; if they differ, use the signed agreement. **Not legal advice.** Have both people read and agree to the full terms before signing.
+Glacier can prepare drafts and calculate from supplied exports. It does not sign, publish, invoice, charge, or transfer money.

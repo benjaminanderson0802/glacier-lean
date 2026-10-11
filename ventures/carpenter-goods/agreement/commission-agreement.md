@@ -1,35 +1,45 @@
-# Furniture sales commission agreement — fill-in template
+# Furniture sales commission agreement — owner and maker draft
 
-**Read this first:** This is a working template, not legal advice. The owner and carpenter should review the terms, fill every blank, and decide whether to get legal advice before signing. Glacier does not negotiate, sign, file, or send this agreement.
+**Draft for both parties to complete and review. Not legal advice.** No legal names, rate, payment schedule, or other unprovided term has been guessed. Both parties must fill or strike every bracketed choice and sign the same final copy themselves. Glacier does not negotiate, sign, file, or send this agreement.
 
-## People and work
+## People and products
 
-This agreement is between **[owner's legal name]** of **[address]** (“Seller”) and **[carpenter's legal name/business]** of **[address]** (“Maker”). It covers these products: **[product names or product list]**. The sales channels covered are **[Etsy shop name / Shopify site / other]**.
+This agreement is between **[OWNER'S FULL LEGAL NAME]**, at **[OWNER'S ADDRESS]** ("Seller"), and **[CARPENTER'S FULL LEGAL NAME / BUSINESS NAME]**, at **[CARPENTER'S ADDRESS]** ("Maker").
 
-## Commission
+It covers only products listed in the attached, maker-confirmed product sheet at **[ATTACH OR IDENTIFY THE FINAL PRODUCT SHEET]**. Sales channels covered: **Etsy** and **[SHOPIFY STORE NAME / URL]**. Local pickup applies only if the Maker confirms the pickup area and availability in the attached product sheet.
 
-The commission rate is **[____]%**. It applies to **[define the eligible amount per order: for example, item subtotal after discounts; state whether shipping, sales tax, platform fees, or other charges are included]**. Commission is earned only on **[define when a sale qualifies, such as an order paid and not canceled]**. For canceled, returned, refunded, or chargeback orders, **[state whether commission is excluded, reversed, or adjusted and when]**.
+## Commission terms — complete together before signing
+
+- Rate: **[____]%**.
+- Eligible amount: choose and complete one exact basis: **[ ] order total** or **[ ] item subtotal after discounts** or **[ ] other: __________**.
+- Shipping: **[included / excluded / other: __________]**.
+- Sales tax: **[included / excluded / other: __________]**.
+- Platform fees: **[deducted / not deducted / other: __________]**.
+- Sale qualifies when: **[state the payment and cancellation rule]**.
+- Discounts: **[state how discounts change the eligible amount]**.
+- Refunds, returns, partial refunds, and chargebacks: **[state whether and when commission is excluded, reversed, or adjusted for each]**.
+- Currency and rounding: **[currency]**; commission rounding rule **[rule]**.
+
+The parties should select terms that can be represented by the local calculator. The calculator currently supports an order-total basis or an item-subtotal-after-discounts basis, configurable shipping, sales tax and platform-fee treatment, and a partial-refund rule when the required export fields exist. Unsupported or missing terms or records must be reported as uncertain; no amount is due based only on a Glacier report.
 
 ## Records and payment
 
-Seller will share order records **[how often]**. Seller will calculate commission from **[named fields/order-total basis]**, and Maker may review the records and calculation. Seller will pay commissions **[when and how]**. Any expense or deduction must be approved by **[who]** in writing before it is charged or subtracted. A Glacier summary is a calculation only; the parties must check the platform settlement and this agreement before payment.
+Seller will share order records **[frequency and method]**. Maker may review the records and calculation **[when/how]**. Seller will pay earned commission **[when and how]**. No expense or deduction may be charged to either party or subtracted from commission unless **[who]** approves it in writing first. Before payment, both parties will compare the calculation with platform settlement records and this signed agreement.
 
-## Product and shop responsibilities
+## Responsibilities and permissions
 
-Maker confirms product facts, materials, dimensions, condition, photos, and availability. Seller is responsible for **[listing, customer service, fulfillment, returns, or other agreed duties]**. Neither party may use the other party's name, photos, or designs beyond **[permission and limits]**. Listings are reviewed and published manually by the account owner.
+Maker confirms the product facts, materials, dimensions, condition, photos, availability, and **[any other Maker duties]**. Seller handles **[select and describe: listing preparation/review, buyer questions, fulfillment, returns, or other duties]**. Each party grants the other permission to use their name, photos, and designs only as follows: **[scope, channels, and limits]**. The shop account owner reviews and publishes listings manually. Glacier prepares local drafts and calculations only; it does not sign, publish, contact buyers, invoice, charge, or transfer money.
 
-## Term and ending the agreement
+## Term and ending
 
-This agreement starts on **[date]** and continues until **[end date or ongoing]**. Either party may end it with **[number] days' written notice** sent to **[notice method/address]**. On ending, the parties will **[state how open orders, returns, and earned commissions are handled]**.
+Starts **[date]** and ends **[date / continues until ended]**. Either party may end it with **[number] days' written notice**, sent by **[email or mailing address]**. After it ends, open orders, later refunds/returns/chargebacks, and commission already earned will be handled as follows: **[complete]**.
 
-## Other terms
+Governing law/location, if the parties choose to specify it: **[leave blank for review or specify after advice]**. Changes must be written and accepted by both parties. Attachments: **[list or write “none”]**.
 
-Governing law/location, if agreed: **[state or leave for legal review]**. Changes must be written and accepted by both parties. This document records the complete agreement about the commission described above, subject to **[list any attached schedules]**.
+## Signatures — both parties sign themselves
 
-## Signatures — owner and maker only
+Seller printed name: **[OWNER'S FULL LEGAL NAME]**  Signature: **[sign here]**  Date: **[date]**
 
-Seller: **[printed name]**  Signature: **[blank for handwritten/electronic signature]**  Date: **[date]**
+Maker printed name: **[CARPENTER'S FULL LEGAL NAME / BUSINESS NAME]**  Signature: **[sign here]**  Date: **[date]**
 
-Maker: **[printed name]**  Signature: **[blank for handwritten/electronic signature]**  Date: **[date]**
-
-**Not legal advice.** No signature is applied by Glacier. Keep the signed copy with the parties' records.
+Keep a copy signed by both parties with each party's records. **Not legal advice. Glacier does not sign this agreement.**
