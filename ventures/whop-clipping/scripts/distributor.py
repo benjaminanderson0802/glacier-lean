@@ -6,6 +6,7 @@ import json
 import os
 import random
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -430,9 +431,23 @@ def status_report(config, *, home=None, now_fn=lambda: datetime.now(timezone.utc
     for item in ledger.library_items("ready"):
         campaigns[item["campaign_id"]] = campaigns.get(item["campaign_id"], 0) + 1
     failures = [event["details"] for event in ledger.events() if event["kind"] == "producer_qa_failed"]
+    suggestions = []
+    suggestion_error = None
+    try:
+        saved_suggestions = home / "join_suggestions.json"
+        if saved_suggestions.exists():
+            record = json.loads(saved_suggestions.read_text(encoding="utf-8"))
+            updated_at = float(record.get("updated_at", 0))
+            if time.time() - updated_at < 60 * 60:
+                suggestions = record.get("campaigns", [])
+            else:
+                suggestion_error = "cached campaign suggestions are older than one hour"
+    except (OSError, json.JSONDecodeError, AttributeError) as exc:
+        suggestion_error = str(exc)
     return {"channels": channels, "library_stock_by_campaign": campaigns,
             "producer_qa_failures": failures, "waiting_for_whop": len(waiting),
-            "paused_channels": [channel for channel, data in channels.items() if data["paused"]]}
+            "paused_channels": [channel for channel, data in channels.items() if data["paused"]],
+            "join_suggestions": suggestions, "join_suggestions_error": suggestion_error}
 
 
 def main(argv=None):
@@ -447,6 +462,13 @@ def main(argv=None):
     if args.status:
         report = status_report(config, home=args.home)
         print(f"{report['waiting_for_whop']} clips waiting for you to submit on Whop")
+        if report.get("join_suggestions"):
+            print("Join these campaigns (then paste each URL into joined_campaigns.txt):")
+            for campaign in report["join_suggestions"]:
+                print(f"- {campaign['name']}: ${campaign['cpm_usd']:.2f} CPM, "
+                      f"${campaign['budget_left_usd'] or 0:.2f} remaining — {campaign['url']}")
+        elif report.get("join_suggestions_error"):
+            print(f"Campaign discovery unavailable: {report['join_suggestions_error']}")
         print(json.dumps(report, indent=2))
     else:
         print(json.dumps(distribute_ready(config, home=args.home,

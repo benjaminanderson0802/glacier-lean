@@ -3,8 +3,8 @@
   "name": "Whop Content Rewards clipping",
   "status": "in_progress",
   "product": {
-    "purpose": "Producer reviews campaigns and stocks a QA-passing clip library; Distributor publishes each ready clip to one of the owner's linked YouTube Shorts channels and queues the post for manual Whop Content Rewards submission.",
-    "safety": "Dry-run by default. Live uploads require live=true and an explicitly approved campaign ID in the private CLIP_HOME config. Channels never discover content. Channel caps, deadlines, segment overlap checks, pauses, and side effects are recorded locally. Whop access remains manual unless written consent or an official Content Rewards API is available."
+    "purpose": "Producer discovers public Content Rewards campaigns, ranks only campaigns the owner joined, and stocks a QA-passing clip library; Distributor publishes each ready clip to one of the owner's linked YouTube Shorts channels and queues the post for manual submission.",
+    "safety": "Dry-run by default. Live uploads require live=true and a campaign URL recorded by the owner in joined_campaigns.txt after manually joining it. Producer reads logged-out public contentrewards.com HTML only, with hourly per-page caching, and never calls /api/ or accesses Whop pages. Channels never discover content. Channel caps, deadlines, segment overlap checks, pauses, and side effects are recorded locally. Submissions stay manual unless written consent or an official Content Rewards API is available."
   },
   "blocks": [],
   "block_functions": [],
@@ -44,7 +44,7 @@
   ],
   "launch_gates": [
     "Dry-run remains enabled unless the owner sets live=true in the private CLIP_HOME config.",
-    "The owner explicitly approves campaign IDs before automated live YouTube posting.",
+    "The owner manually joins each campaign and records its URL in joined_campaigns.txt before it can be ranked for live YouTube posting.",
     "A YouTube adapter must be present in the configured plugins before live mode.",
     "Whop Content Rewards submission is manual from CLIP_HOME/submit-queue.html until written consent or an official documented API exists.",
     "YouTube strike/terms errors pause that channel."

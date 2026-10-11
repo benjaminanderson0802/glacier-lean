@@ -1,8 +1,8 @@
 # Whop Content Rewards clipping
 
-This venture uses two Glacier automations. **Producer** reviews locally supplied campaign records, stores a structured requirements checklist, fetches sources, makes neutral clip masters, runs campaign QA, and stocks `CLIP_HOME/library/`. **Distributor** runs hourly, reserves each ready segment for one channel, observes that channel's deadline and posting limits, uploads to YouTube, then queues a manual Whop submission. A channel never scouts or selects its own content.
+This venture uses two Glacier automations. **Producer** reads Content Rewards' logged-out public campaign pages, stores a structured requirements checklist for campaigns the owner has joined, fetches their public sources, makes neutral clip masters, runs campaign QA, and stocks `CLIP_HOME/library/`. **Distributor** runs hourly, reserves each ready segment for one channel, observes that channel's deadline and posting limits, uploads to YouTube, then queues a manual Content Rewards submission. A channel never scouts or selects its own content.
 
-Whop's Terms prohibit automated service access without written consent. The reviewed public API does not document Content Rewards campaigns or submissions. The default Scout reads `CLIP_HOME/campaigns.json`; it does not connect to Whop. Distributor always uses the local manual queue and ignores automated submitter plugins. It creates `CLIP_HOME/submit-queue.html`, grouped by campaign, with the channel, Shorts URL, required caption/tags, and a done checkbox. Download the checked list as `submit-queue-done.json`, place it in `CLIP_HOME/`, and the next status read reconciles those rows. The owner asked Whop for written consent by email on 2026-10-11; Whop submissions stay manual unless written consent or an official Content Rewards API is available.
+`PublicDiscoverScout` only fetches public HTML from `contentrewards.com`, at most once per URL per hour. It obeys the site's robots.txt, never calls `/api/`, and identifies Glacier and `ben@andersoneducation.us` in its User-Agent. It does not access Whop pages, log in, or join campaigns. The owner joins campaigns manually, then pastes each URL on its own line in `CLIP_HOME/joined_campaigns.txt`; only those campaigns are eligible for Producer ranking. The latest high-value unjoined YouTube campaigns appear in the status report as “join these” suggestions. Whop's public API does not document Content Rewards campaigns or submissions. Distributor always uses the local manual queue and ignores automated submitter plugins. It creates `CLIP_HOME/submit-queue.html`, grouped by campaign, with the channel, Shorts URL, required caption/tags, and a done checkbox. Download the checked list as `submit-queue-done.json`, place it in `CLIP_HOME/`, and the next status read reconciles those rows. Submissions stay manual unless written consent or an official Content Rewards API is available; see [the terms research](docs/WHOP.md).
 
 ## Runtime and limits
 
@@ -14,7 +14,7 @@ Whop's Terms prohibit automated service access without written consent. The revi
 
 ## Run and check status
 
-Copy `config.example.json` to `CLIP_HOME/config.json`, add owner-approved campaign records to `CLIP_HOME/campaigns.json`, import both JSON flows into Glacier, and complete the five owner steps in [OWNER-STEPS.md](OWNER-STEPS.md). Live YouTube uploads require `live: true` and explicit approved campaign IDs. The exact Windows PowerShell setup commands are in that guide.
+Copy `config.example.json` to `CLIP_HOME/config.json`, create `CLIP_HOME/joined_campaigns.txt` for campaign URLs you have manually joined, import both JSON flows into Glacier, and complete the setup steps in [OWNER-STEPS.md](OWNER-STEPS.md). Live YouTube uploads require `live: true`; the joined URL file is the campaign-specific owner gate. The exact Windows PowerShell setup commands are in that guide.
 
 ```sh
 cd ventures/whop-clipping

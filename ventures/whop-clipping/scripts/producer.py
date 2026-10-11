@@ -188,7 +188,10 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
     plugins = config.get("plugins", {})
     if scout is None:
         try:
-            scout = load_plugin(plugins.get("scout", "scripts.scout.LocalCampaignScout"), config={**config, "clip_home": str(home)})
+            scout_spec = plugins.get("scout", "scripts.public_discover.PublicDiscoverScout")
+            if scout_spec == "scripts.scout.LocalCampaignScout":
+                scout_spec = "scripts.public_discover.PublicDiscoverScout"
+            scout = load_plugin(scout_spec, config={**config, "clip_home": str(home)})
         except (ImportError, AttributeError, ValueError) as exc:
             scout = FakeScout()
             ledger.event("plugin_unavailable", {"plugin": "scout", "error": str(exc)})
@@ -196,7 +199,12 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
     campaigns = [_campaign(item) for item in scout.list_campaigns()]
     for campaign in campaigns:
         ledger.record_campaign(campaign)
-    eligible = [campaign for campaign in campaigns if _campaign_eligible(campaign, config, ledger)]
+    eligibility_config = config
+    joined_ids = getattr(scout, "joined_campaign_ids", None)
+    if joined_ids is not None:
+        eligibility_config = {**config, "approved_campaign_ids": sorted(
+            set(config.get("approved_campaign_ids", [])) | set(joined_ids))}
+    eligible = [campaign for campaign in campaigns if _campaign_eligible(campaign, eligibility_config, ledger)]
     history = config.get("approval_history", {})
     def approval_score(campaign_id):
         record = history.get(campaign_id, 0)
@@ -206,6 +214,8 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
                                  len(c.platforms)), reverse=True)
     ready_before = len(ledger.library_items("ready"))
     output = {"campaigns": len(eligible), "produced": 0, "qa_failures": 0, "ready": ready_before}
+    if hasattr(scout, "join_suggestions"):
+        output["join_suggestions"] = scout.join_suggestions()
     for campaign in eligible:
         checklist = parse_campaign_requirements(campaign.rules_text)
         ledger.save_campaign_checklist(campaign.id, checklist)

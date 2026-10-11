@@ -1,6 +1,5 @@
 {
   "live": false,
-  "approved_campaign_ids": [],
   "approval_history": {},
   "paused_campaign_ids": [],
   "channels": [
@@ -34,7 +33,7 @@
   "video_layout": "blurred_background",
   "ollama_url": "http://127.0.0.1:11434",
   "plugins": {
-    "scout": "scripts.scout.LocalCampaignScout",
+    "scout": "scripts.public_discover.PublicDiscoverScout",
     "uploader": "youtube_upload.YouTubeUploader",
     "submitter": "scripts.submitter.ManualQueueSubmitter"
   }
