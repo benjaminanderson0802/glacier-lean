@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sqlite3
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -175,7 +176,11 @@ def _venture_row(manifest: dict, now: datetime) -> dict:
     flow_ids = _flow_ids(manifest)
     for env_id in flow_ids:
         # Run history remains useful even if an installed graph was later removed.
-        run_rows.extend(store.list_runs(env_id))
+        try:
+            run_rows.extend(store.list_runs(env_id))
+        except sqlite3.OperationalError:
+            # A fresh install has no run table until the first run is stored.
+            pass
         try:
             graph = runner.load_env(env_id)
         except (FileNotFoundError, ValueError, TypeError):
