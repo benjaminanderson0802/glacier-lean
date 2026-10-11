@@ -1,0 +1,18 @@
+{
+  "id": "al-license-pilot-pitch",
+  "name": "Your step: send the Alabama roster pilot pitch",
+  "description": "One owner action to test interest. Glacier does not send the email or contact anyone.",
+  "goal": "Let Benjamin send the ready pilot email to one municipal business contact after checking the published contact channel.",
+  "nodes": [
+    {
+      "id": "send_pitch",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Open ventures/al-license-verify/PILOT.md, choose a municipal office in prospects.csv, verify the published business contact channel, and send the draft pitch yourself if you want to test interest. This only validates buyer interest; do not promise current or official license status. Nothing is sent by Glacier."
+      },
+      "position": {"x": 0, "y": 0}
+    }
+  ],
+  "edges": [],
+  "max_steps": 1
+}
