@@ -47,7 +47,12 @@ def _is_event_loop_socketpair(sock, address):
     found_asyncio = False
     while frame is not None:
         filename = frame.f_code.co_filename.replace("\\", "/")
-        found_socketpair |= frame.f_code.co_name == "socketpair" and filename.endswith("/socket.py")
+        found_socketpair |= (
+            frame.f_code.co_name == "socketpair" and filename.endswith("/socket.py")
+        ) or (
+            frame.f_code.co_name in {"socketpair", "_socketpair"}
+            and filename.endswith("/asyncio/windows_utils.py")
+        )
         found_asyncio |= "/asyncio/" in filename
         frame = frame.f_back
     return found_socketpair and found_asyncio
@@ -77,6 +82,30 @@ def test_connections_outside_event_loop_socketpair_are_refused(address):
     with socket.socket() as sock:
         with pytest.raises(ExternalNetworkBlocked):
             sock.connect(address)
+
+
+def test_windows_asyncio_socketpair_connect_is_allowed(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_ORIGINAL_SOCKET_CONNECT",
+        lambda sock, address: calls.append(address),
+    )
+    namespace = {"_blocked_connect": _blocked_connect}
+    exec(
+        compile(
+            "def socketpair(sock, address):\n"
+            "    return _blocked_connect(sock, address)\n",
+            "C:/Python/Lib/asyncio/windows_utils.py",
+            "exec",
+        ),
+        namespace,
+    )
+
+    with socket.socket() as sock:
+        namespace["socketpair"](sock, ("127.0.0.1", 43210))
+
+    assert calls == [("127.0.0.1", 43210)]
 
 
 def uncertain(value):
