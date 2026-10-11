@@ -62,17 +62,19 @@ def authorize_all(*, home=None, handles=None, flow_factory=InstalledAppFlow.from
     while remaining:
         output_fn("Channels still needing authorization: " + ", ".join(remaining))
         target = remaining[0]
-        output_fn(f"Choose the Google/brand account for {target} in Google's account chooser.")
+        output_fn("Pick any one of the channels above in Google's account chooser.")
         flow = flow_factory(str(client_secret), scopes=SCOPES)
         credentials = flow.run_local_server(port=0, open_browser=True)
         identity = channel_identity(credentials, service=(service_factory(credentials)
                                                            if service_factory else None))
         actual_handle = identity["handle"].casefold()
-        expected = target.casefold()
-        if actual_handle != expected:
-            output_fn(f"Selected {identity['title']} ({identity['handle'] or identity['id']}); expected {target}. "
-                      "No token was saved. Restart consent and choose the matching channel.")
+        # Accept whichever still-missing channel the owner picked, in any order.
+        match = next((h for h in remaining if h.casefold() == actual_handle), None)
+        if match is None:
+            output_fn(f"Selected {identity['title']} ({identity['handle'] or identity['id']}), which is not one of the "
+                      "channels still needed. No token was saved. Pick one of: " + ", ".join(remaining))
             continue
+        target = match
         token_path = _token_file(tokens_dir, target)
         token_path.write_text(credentials.to_json(), encoding="utf-8")
         try:

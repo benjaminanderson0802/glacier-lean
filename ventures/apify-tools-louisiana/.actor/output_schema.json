@@ -1,0 +1,11 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Output of Louisiana Contractor License Status",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Results",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        }
+    }
+}
