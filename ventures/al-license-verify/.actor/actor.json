@@ -1,0 +1,12 @@
+{
+  "actorSpecification": 1,
+  "name": "alabama-contractor-roster-verify",
+  "title": "Alabama Contractor Roster Verifier",
+  "description": "Match license numbers or business names against a user-supplied, dated Alabama contractor roster export. This Actor does not access the board website.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "dockerfile": "./Dockerfile",
+  "input": "./input_schema.json",
+  "storages": {"dataset": "./dataset_schema.json"},
+  "defaultRunOptions": {"memoryMbytes": 256, "timeoutSecs": 300, "build": "latest"}
+}

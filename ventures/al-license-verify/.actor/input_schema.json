@@ -1,0 +1,38 @@
+{
+  "title": "Alabama contractor roster verification",
+  "description": "Upload a roster CSV you obtained from the Alabama board or another source you are authorized to use. The Actor reads only this uploaded file; it never browses the board site.",
+  "type": "object",
+  "schemaVersion": 1,
+  "required": ["roster_file", "roster_as_of", "source_url", "queries"],
+  "properties": {
+    "roster_file": {
+      "title": "User-supplied roster CSV",
+      "type": "string",
+      "description": "Upload an authorized roster export as CSV through Apify's file upload. Direct URLs are restricted to Apify file storage; the Actor does not fetch board or arbitrary URLs.",
+      "editor": "fileupload",
+      "maxLength": 2000
+    },
+    "roster_as_of": {
+      "title": "Roster date",
+      "type": "string",
+      "description": "Date the supplied roster reflects, in YYYY-MM-DD format. Results older than 365 days are returned as uncertain.",
+      "editor": "datepicker",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "source_url": {
+      "title": "Official source URL",
+      "type": "string",
+      "description": "URL of the board-published roster/export or other authorized official source for the uploaded file. This is recorded as metadata and is never fetched by the Actor.",
+      "editor": "textfield",
+      "maxLength": 500
+    },
+    "queries": {
+      "title": "Contractors to check",
+      "type": "array",
+      "description": "JSON array of up to 100 objects, each with exactly one of license_number or name. Name matching is exact after simple punctuation/case normalization.",
+      "editor": "json",
+      "minItems": 1,
+      "maxItems": 100
+    }
+  }
+}

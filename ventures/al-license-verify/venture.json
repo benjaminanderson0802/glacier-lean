@@ -1,0 +1,27 @@
+{
+  "slug": "al-license-verify",
+  "name": "Alabama contractor roster verifier",
+  "status": "in_progress",
+  "flows": ["al-license-pilot-pitch"],
+  "dry_run_env_id": "al-license-pilot-pitch",
+  "secrets_needed": [],
+  "product": {
+    "purpose": "Return dated exact matches from an Alabama contractor roster export supplied by the Actor user. Report missing or stale records as uncertainty; do not make legal or quality determinations.",
+    "source_id": "al_general_contractors_user_supplied_roster",
+    "source_url": "https://genconbd.alabama.gov/",
+    "pricing": {"model": "pay_per_event", "event": "license-lookup", "price_usd": 0.05, "run_limit_usd": 5.0, "platform_usage_included": true},
+    "maintenance": {"source_mode": "user_supplied_file_only", "max_roster_age_days": 365, "failure_action": "uncertain_and_alert"}
+  },
+  "your_steps": [
+    {
+      "id": "send-pilot-pitch",
+      "title": "send the ready pilot pitch",
+      "when": "when you want to test buyer interest",
+      "detail": "Choose a municipal purchasing or public works contact from prospects.csv, confirm its public contact channel, and send the draft email in PILOT.md. The pitch tests interest only; it does not promise that the board's search is official or that the product is cleared for sale."
+    }
+  ],
+  "launch_gates": [
+    "Before processing or reselling any Alabama roster, the owner must ask the board whether a downloadable roster/export exists and whether automated reuse and commercial redistribution are permitted. Until then, use only a buyer-supplied export the buyer is authorized to use.",
+    "The owner reviews source wording, price, Apify event settings, and the first Store publication before any listing is published."
+  ]
+}

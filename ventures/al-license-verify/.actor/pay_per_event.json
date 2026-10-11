@@ -1,0 +1,15 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "platformUsageIncluded": true,
+  "actorChargeEvents": {
+    "license-lookup": {
+      "eventTitle": "Roster lookup",
+      "eventDescription": "One exact lookup in the roster CSV supplied by the Actor user. Unreadable or stale files are not charged.",
+      "eventPriceUsd": 0.05,
+      "isPrimaryEvent": true,
+      "isOneTimeEvent": false
+    }
+  },
+  "minimalMaxTotalChargeUsd": 0.05,
+  "pricingNote": "Hypothesis only. Before any publication, confirm the event price, platform usage, run limit, and disable automatic dataset-item charges in Apify Console. No listing has been published."
+}
