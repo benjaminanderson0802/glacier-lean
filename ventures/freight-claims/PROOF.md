@@ -1,5 +1,25 @@
 # Freight claims proof
 
+## Carrier-specific template acceptance (2026-10-10)
+
+Added printable packet checklists for UPS, FedEx, USPS, and LTL/Carmack under `carrier-templates/`. They state the filing window and date anchor, required evidence, source links, and response-date fields. The USPS checklist requires service lookup for lost mail; LTL response reminders are conditional on Part 370 applying. All checklists leave filing and carrier contact with the shipper.
+
+The independent acceptance check originally failed because `carrier-templates/` did not exist. After adding the checklists, this command passed with the xfail marker ignored:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/freight-claims/tests/acceptance/test_v_freight2.py::test_carrier_specific_packet_templates_cover_deadlines_and_evidence -q --runxfail
+# 1 passed
+```
+
+The complete venture suite also passed:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/freight-claims -q
+# 34 passed, 1 xpassed
+```
+
+This checks local template content only. It does not establish live carrier service terms, claim filing, or response behavior. The sources linked in the templates should be rechecked for each shipment before a shipper relies on a deadline.
+
 ## Carrier packet templates and CSV-to-packet acceptance (2026-10-10)
 
 Added venture-local guidance for UPS, FedEx, USPS, and LTL/Carmack review. Each generated packet includes a filing-window note, chosen date anchor and calculated estimate when enough dates exist, carrier-specific evidence checklist, official source links, and a response-tracking record. UPS, FedEx, and USPS timelines are scoped to the published package/service rules; USPS lost-mail deadlines remain service-specific. For LTL, the nine-month date is only the Carmack statutory minimum when it applies, and carrier response milestones are labeled as 49 CFR Part 370 reminders only when that part governs. Parcel response dates are not presented as carrier promises. The owner/customer records the actual carrier receipt and any promised response date; no carrier form is sent.
