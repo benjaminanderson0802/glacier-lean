@@ -96,14 +96,23 @@ def test_windows_asyncio_socketpair_connect_is_allowed(monkeypatch):
         compile(
             "def socketpair(sock, address):\n"
             "    return _blocked_connect(sock, address)\n",
-            "C:/Python/Lib/asyncio/windows_utils.py",
+            r"C:\Python\Lib\socket.py",
+            "exec",
+        ),
+        namespace,
+    )
+    exec(
+        compile(
+            "def windows_socketpair(sock, address):\n"
+            "    return socketpair(sock, address)\n",
+            r"C:\Python\Lib\asyncio\windows_utils.py",
             "exec",
         ),
         namespace,
     )
 
     with socket.socket() as sock:
-        namespace["socketpair"](sock, ("127.0.0.1", 43210))
+        namespace["windows_socketpair"](sock, ("127.0.0.1", 43210))
 
     assert calls == [("127.0.0.1", 43210)]
 
