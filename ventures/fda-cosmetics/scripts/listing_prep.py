@@ -380,6 +380,87 @@ def _prepare_from_shopify(shop: str, details_path: Path, output: Path, as_of: st
     return summary
 
 
+def read_shopify_products(shop: str) -> list[dict[str, Any]]:
+    """Read catalog products through Glacier's read-only Shopify connector."""
+    from ventures.blocks.connectors import ShopifyClient
+
+    client = ShopifyClient(shop)
+    try:
+        return client.get_products()
+    finally:
+        client.close()
+
+
+def _shopify_product_nodes(response: Any) -> list[dict[str, Any]]:
+    """Accept either connector rows or a raw Shopify GraphQL response."""
+    if isinstance(response, dict):
+        data = response.get("data", response)
+        products = data.get("products", {}) if isinstance(data, dict) else {}
+        edges = products.get("edges", []) if isinstance(products, dict) else []
+        return [edge.get("node", {}) for edge in edges if isinstance(edge, dict) and isinstance(edge.get("node"), dict)]
+    if isinstance(response, list):
+        return [item for item in response if isinstance(item, dict)]
+    return []
+
+
+def _shopify_review_field(value: Any, source: str, *, uncertain: bool = False) -> dict[str, Any]:
+    return _field(value, source=source, uncertain=uncertain)
+
+
+def prepare_from_shopify(shop: str, details_path: str | Path, output_dir: str | Path,
+                         *, as_of: str | None = None) -> dict[str, Any]:
+    """Build a source-linked owner-review view from Shopify catalog records.
+
+    Catalog data is useful for cross-reference, but it cannot establish the
+    product's label identity or brand-confirmed FDA listing facts. This adapter
+    therefore reports the packet as ready for review while keeping filing
+    readiness false until the separate brand details and label review exist.
+    """
+    products = _shopify_product_nodes(read_shopify_products(shop))
+    if not products:
+        return {"result": "uncertain — please check", "ready_for_review": False,
+                "filing_ready": False, "submitted": False, "products_read": 0,
+                "fields": {}, "uncertainties": ["Shopify returned no product records."]}
+
+    product = products[0]
+    product_id = _s(product.get("id")) or "unknown product id"
+    gql_source = f"Shopify GraphQL products.edges[].node ({product_id})"
+    metafields = product.get("metafields") or {}
+    metafield_nodes = [edge.get("node", {}) for edge in metafields.get("edges", [])
+                       if isinstance(edge, dict) and isinstance(edge.get("node"), dict)]
+    ingredients = next((node.get("value") for node in metafield_nodes
+                        if node.get("key", "").casefold() in {"ingredients", "ingredient_list"}), None)
+    ingredient_source_node = next((node for node in metafield_nodes
+                                   if node.get("key", "").casefold() in {"ingredients", "ingredient_list"}), None)
+    fields = {
+        "shopify_id": _shopify_review_field(product.get("id"), f"{gql_source}.id"),
+        "shopify_title": _shopify_review_field(product.get("title"), f"{gql_source}.title", uncertain=True),
+        "shopify_vendor": _shopify_review_field(product.get("vendor"), f"{gql_source}.vendor", uncertain=True),
+        "shopify_product_type": _shopify_review_field(product.get("productType"), f"{gql_source}.productType", uncertain=True),
+        "product_name": _shopify_review_field(None, "missing: brand-confirmed product label", uncertain=True),
+        "product_category_codes": _shopify_review_field(None, "missing: brand-confirmed category", uncertain=True),
+        "ingredients": _shopify_review_field(
+            ingredients,
+            (f"{gql_source}.metafields.{ingredient_source_node.get('namespace', 'custom')}.{ingredient_source_node.get('key')}"
+             if ingredient_source_node else "missing: brand label/source document"),
+            uncertain=True,
+        ),
+        "responsible_person": _shopify_review_field(None, "missing: brand-confirmed responsible person", uncertain=True),
+        "facility_fei_or_exemption": _shopify_review_field(None, "missing: brand-confirmed facility details", uncertain=True),
+    }
+    uncertainties = [f"{name} needs brand or label confirmation" for name, field in fields.items()
+                     if field["uncertain"]]
+    result = {"result": "ready", "ready_for_review": True, "filing_ready": False,
+              "submitted": False, "shop": shop, "products_read": len(products),
+              "shopify_id": product.get("id"), "fields": fields,
+              "uncertainties": uncertainties,
+              "instruction": "Review catalog sources and provide the current label and brand-confirmed details. This is not filing-ready; the owner signs and submits any FDA listing."}
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "shopify-review.json").write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)

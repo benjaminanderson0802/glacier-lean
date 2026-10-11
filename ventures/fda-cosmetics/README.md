@@ -25,7 +25,11 @@ The owner reports that the Shopify development store `glacier-test-cosmetics` is
 
 The owner check calls Shopify's connection metadata and product-read endpoints only. It reports the store and product count without printing catalog records; it does not create, update, publish, or delete Shopify records. The packet records a source for every Form 5067/SPL field. Catalog title is marked uncertain and kept separate from the label name; brand-confirmation fields remain uncertain until explicitly confirmed. The checklist compares parsed label ingredients with the supplied ingredient order and requires the responsible person's confirmation.
 
+The `prepare_from_shopify(shop, details_path, output_dir)` adapter also supports an owner-review preview directly from Shopify GraphQL product records. It labels that preview `ready` only for review, keeps `filing_ready` and `submitted` false, and marks catalog-only or brand-dependent values uncertain.
+
 The FDA SPL XSD check proves XML structure only. FDA Cosmetics Direct still runs its own technical and business validation. No public data or test payload can verify the brand's ingredients, exemption, facility, FDA response, or filing.
+
+The independent Shopify GraphQL fixture check currently stops at a JSON parse error in its protected acceptance fixture, before calling the venture adapter. See [PROOF.md](PROOF.md) and [DISPUTE.md](DISPUTE.md); no passing claim is made for that check.
 
 ## Data and billing
 
