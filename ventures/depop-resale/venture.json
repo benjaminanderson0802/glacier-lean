@@ -1,0 +1,37 @@
+{
+  "slug": "depop-resale",
+  "name": "buy-first secondhand clothing resale prep",
+  "status": "blocked",
+  "product": {
+    "purpose": "Prepare sourced-category buy ceilings, listing drafts from owner-provided item facts and original photos, and sold-item shipping checklists for owner review.",
+    "inventory_model": "BUY-FIRST: the owner purchases and physically possesses each item before any listing; owner takes original photos.",
+    "data_access": "Local CSV and local photo paths only. No Depop login, API, browsing, scraping, bot, posting, purchase, or label purchase.",
+    "listing_handoff": "Vendor-neutral CSV; no named crosslisting vendor is claimed as Depop-approved because Depop does not publish a named approved-vendor list.",
+    "pricing_assumption": "Illustrative USD ceilings target 50% contribution margin after US payment processing, seller-paid postage, and packaging; owner verifies current fees and comparable sold prices before purchase.",
+    "limitations": [
+      "Depop trend coverage is directional, not proof of category sell-through or revenue.",
+      "Owner must confirm all listing facts and original-photo ownership; the script cannot infer authenticity or verify photo provenance.",
+      "A Depop-authorized API-connected crosslisting vendor and its import schema must be confirmed by the owner before using the CSV with any external service.",
+      "Owner purchases inventory, chooses final prices, manually approves and publishes listings, buys labels, packs, and ships."
+    ]
+  },
+  "flows": ["depop-resale-owner-workflow"],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "photograph-list-and-fulfill",
+      "title": "Buy, photograph, review, list, pack, and ship each item",
+      "when": "For each sourcing batch, before listing, and whenever an item sells",
+      "detail": "The owner uses the buy ceilings to choose and purchase inspected used inventory, takes original photos after receiving it, reviews the local draft, manually lists through Depop or a vendor Depop has confirmed as API-authorized, and personally packs and ships any sold order. No drop-shipped or supplier-catalogue stock is used. Follow OWNER-STEPS.md click by click."
+    }
+  ],
+  "launch_gates": [
+    "Do not list catalog drop-shipped goods, stock/supplier photos, or items not physically owned and available to ship.",
+    "Sell only authentic, legally owned, Depop-permitted used clothing; do not list prohibited items or counterfeit goods.",
+    "Use only the owner's original item photos and review all AI/template text for accuracy; no unsupported brand, era, material, or condition claims.",
+    "Do not use bots, scraping, browser automation, or Depop API access. Only a vendor the owner confirms is Depop-authorized for API crosslisting may be used outside this local tool.",
+    "Remove a cross-listed item promptly if it sells elsewhere and personally resolve any double sale.",
+    "No buying, account creation, publishing, spending, label purchase, or external write is performed by the venture scripts."
+  ]
+}
