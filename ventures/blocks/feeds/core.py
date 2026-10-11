@@ -768,7 +768,13 @@ def _remember_schema(con: sqlite3.Connection, source_id: str, fields: list[str])
 
 
 def _is_candidate_alert(alerts: list[str]) -> bool:
-    return any(alert.startswith(("Format alert:", "Canary alert:", "Row-count alert:")) for alert in alerts)
+    candidate_alerts = (
+        "Format alert:",
+        "Canary alert:",
+        "Row-count alert:",
+        "Duplicate identifier alert:",
+    )
+    return any(alert.startswith(candidate_alerts) for alert in alerts)
 
 
 def _failed_refresh(source_id: str, alerts: list[str]) -> dict[str, Any]:
@@ -853,6 +859,19 @@ def _validated_snapshot_candidate(source_id: str, records: list[dict[str, Any]],
     """Shared canary/schema/count validation and snapshot promotion for refreshes and imports."""
     rows, format_alerts = normalize_rows(source_id, records, source_url=source_url, fetched_at=fetched_at)
     alerts.extend(format_alerts)
+    identifiers: set[str] = set()
+    duplicate_identifiers: set[str] = set()
+    for row in rows:
+        record_id = row["record_id"]
+        if record_id in identifiers:
+            duplicate_identifiers.add(record_id)
+        identifiers.add(record_id)
+    if duplicate_identifiers:
+        examples = ", ".join(sorted(duplicate_identifiers)[:5])
+        alerts.append(
+            f"Duplicate identifier alert: {len(duplicate_identifiers)} identifiers occur more than once"
+            + (f" ({examples})" if examples else "")
+        )
     if not records:
         alerts.append("Format alert: source returned no records")
     config = registry()[source_id]
