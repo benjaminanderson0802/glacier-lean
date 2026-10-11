@@ -471,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
     prepare.add_argument("--as-of")
     due = sub.add_parser("due", help="print any local FDA listing deadline reminders due today")
     due.add_argument("--on")
+    due.add_argument("--output", type=Path, help="also save the JSON reminder list for audit and verification")
     response = sub.add_parser("response", help="parse an FDA response file forwarded by the customer")
     response.add_argument("--file", type=Path, required=True)
     response.add_argument("--output", type=Path, required=True)
@@ -479,16 +480,22 @@ def main(argv: list[str] | None = None) -> int:
         result = _prepare_from_shopify(args.shop, args.details, args.output, args.as_of)
     elif args.action == "due":
         result = due_deadlines(args.on or date.today())
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-        return 0 if result else 3
+        rendered = json.dumps(result, indent=2, ensure_ascii=False)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(rendered + "\n", encoding="utf-8")
+        print(rendered)
+        # No reminders are due on most days; that is a healthy scheduled run.
+        return 0
     else:
         result = parse_response(args.file)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    # Missing Shopify access is an expected owner setup step. Keep the
-    # flow healthy so Glacier can present its explicit setup/review prompt.
-    return 0 if result.get("ready", True) or result.get("setup_required") else 1
+    # Missing Shopify access and incomplete brand data are expected review
+    # states. Keep the flow healthy so Glacier can present its explicit owner
+    # step; neither state means an FDA filing is ready.
+    return 0
 
 
 if __name__ == "__main__":

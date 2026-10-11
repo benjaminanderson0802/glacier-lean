@@ -1,34 +1,30 @@
 # Proof — FDA cosmetics listing preparation
 
-## Acceptance checks
+## Current state
 
-- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/fda-cosmetics/tests/acceptance/test_v_fda2.py::test_shopify_graphql_fixture_produces_field_sources_and_uncertainty -q --runxfail` — **1 failed before venture code ran**. The acceptance fixture cannot be decoded as JSON (`JSONDecodeError` at line 2, column 1, character 477); details and a corrected-check request are in [DISPUTE.md](DISPUTE.md). The protected acceptance files were not modified.
+Release remains **blocked**. Both venture flows were installed into a disposable `GLACIER_HOME` and executed through the real local Glacier backend with the valid Shopify GraphQL fixture. The runs reached their owner review steps, where they were intentionally left waiting. No real Shopify store, customer label, FDA account, signature, filing, or external write was used.
 
-- Adapter smoke check — **passed** using the fixture content with its missing outer `}` supplied in memory (no acceptance file changed). `prepare_from_shopify` returned a review-ready response with sourced fields, explicit uncertainty for catalog-only or brand-confirmed facts, and `filing_ready: false`, `submitted: false`.
+The packet flow read one synthetic fixture product and returned `uncertain — please check` because brand-confirmed product details were deliberately absent. It produced no SPL ZIP and reported `submitted: false`. The deadline flow read one synthetic 120-day reminder dated 2026-10-10 and wrote its JSON output. Exact run records and outputs are in [fixture-engine-runs.json](evidence/fixture-engine-runs.json); the local backend install/run request log is in [fixture-engine-run-log.txt](evidence/fixture-engine-run-log.txt).
 
-- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/fda-cosmetics -q` — **14 passed, 1 xfailed**. Existing venture tests use a fixture shaped like Shopify GraphQL `data.products.edges[].node`, run it through `ShopifyClient.get_products`, and check packet provenance, uncertainty flags, missing label-name handling, ingredient checklist, 120-day/annual reminder dates, and the read-only owner check contract. The xfailed independent fixture check is documented above.
-- `~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only fda-cosmetics --dry-run` — **both flows validated** (`prepare-listing-packet`, `daily-deadline-reminders`).
-- The read-only owner script invokes only `ShopifyClient.test_connection()` and `get_products()`. Its test uses a stubbed client; it was **not run against a live store** in this worktree.
+## Checks run
 
-The listing packet emits a value, source, confidence, page when available, and `uncertain` flag for every field. Shopify's catalog title is kept as a separate uncertain cross-reference and is not treated as the product name on the label. Brand confirmation, facility identity/exemption, product category, responsible-person details, ingredient order, and exemption checklist entries remain uncertain when missing or not confirmed. The packet is not generated until its required review fields are complete. The customer remains the only signer and submitter.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/fda-cosmetics -q` — **17 passed**.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/fda-cosmetics/tests/acceptance/test_v_fda2.py -q --runxfail` — **3 passed**. The protected fixture is valid JSON in the current tree; the previously recorded parse failure no longer reproduces. No acceptance file was changed.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/blocks/reader/tests/test_acceptance.py -q` — **3 passed**. The previously recorded reader disagreement no longer reproduces. The existing claims remain assigned to their recorded owners and were not edited by this card.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q` — **21 passed**.
+- `~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only fda-cosmetics --dry-run` — **both flows validated**.
+- Real local backend: `ventures/install_all.py --only fda-cosmetics` installed `prepare-listing-packet` and `daily-deadline-reminders`; run IDs `27d795c6047b` and `532dc5195d17` reached `customer_submit` and `review_reminder` respectively. Both command nodes and the branch checks completed. They remain waiting on owner approval, so the engine reports `verified: null` for both runs.
+- `GLACIER_READER_MODEL_TIMEOUT=30 ~/w/glacier-lean/.venv/bin/python -m ventures.blocks.reader.benchmark ventures/blocks/reader/samples/manifest.json` — **100% agreement (7/7 known-value fields)** across the official public sample set. Its FDA cosmetics sample is the FDA Cosmetic Labeling Guide; the `example_ingredient` field matched `castor oil` on page 21. The captured result is [reader-public-benchmark.json](evidence/reader-public-benchmark.json). This is a small extraction benchmark and does not substitute for product-label review.
 
-The earlier recorded synthetic SPL XSD check was not repeated in this update. A fixture-generated SPL ZIP is exercised by the focused suite, but no live Shopify catalog, brand label, Cosmetics Direct response, or FDA filing was available. Cosmetics Direct performs its own technical and business validation, so a local packet is not evidence of FDA acceptance. Automated 30-day retention deletion and customer-layer billing remain launch dependencies.
+## Release gates still open
 
-## Other venture-suite status
+- Automatic 30-day retention deletion and customer-layer billing are not connected. These are non-owner launch dependencies in the shared customer layer and remain outside this venture card.
+- The FDA fixture claim `CLM-2026-10-10-PH12-15-LABEL-TEST-FIXTURE` is resolved with the current passing protected acceptance check as evidence. The shared-reader claim `CLM-2026-10-10-PH12-15-READER-CONFLICT-CONTRACT` remains filed and assigned to B1, although its current check passes; that owner needs to reconcile the claim with this evidence. This card did not change another worker's claim.
+- The owner must connect Shopify and provide each product's exact current label, ingredient order, category, responsible person, facility/FEI or confirmed exemption, dates, and exemption answers. The responsible person reviews and signs where required, submits through Cosmetics Direct, and forwards the response. Glacier does not perform those steps.
+- Shopify App Store review is needed only if the owner chooses public Shopify App Store distribution. It is not needed for local Glacier runs.
 
-Individual suites run from their venture directories passed for Apify tools, Shopify/Jobber/ShipStation connectors, customer, deadlines, feeds, mail, reader, rules, Carpenter's goods, co-op, CPSC, DIBBS, freight, OSHA, property tax, Recall Actor, utility audits, and warranty. The following pre-existing issues remain outside this FDA card:
+Official references were checked against FDA and Shopify pages. The README now links the February 2026 Cosmetics Direct guide at `https://www.fda.gov/media/191059/download`; the FDA SPL implementation guide link at `https://www.fda.gov/media/84201/download` is official and its chapter 3.4 covers cosmetic product data. The earlier APEX guide URL was replaced.
 
-- `ventures/blocks/filer/tests`: three tests could not start because `ventures/blocks/filer/runner.mjs` cannot resolve the Playwright package under `glacier/web/node_modules/playwright` in this checkout.
-- `ventures/recall-checker/tests`: 10 passed and 1 failed because the test expects `no match in ...` while the current global output vocabulary and implementation use `no match found in ...`; see `vault/claims/2026-10-10-ph12-12-recall-output-vocabulary.md`.
-- `ventures/tests`: 15 passed and 1 failed because an installer test assumes all discovered flows are Apify flows (`36 != 2`).
-- A single `pytest ventures -q` collection also fails before running all tests because `recall-actor` and `utility-audits` import their local `src`/`scripts` packages as top-level modules. Their suites pass when run individually from their venture directories.
+## Evidence limits
 
-No NORTHSTAR checkpoint status was changed. PH12.15 remains in progress pending shared-phase dependencies and live owner-side verification.
-
-## FDA references
-
-- [Form FDA 5067](https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing)
-- [FDA Direct User's Guide — February 2026](https://www.fda.gov/media/191059/download)
-- [Cosmetics Direct](https://direct.fda.gov/)
-- [SPL Implementation Guide with Validation Procedures](https://www.fda.gov/media/84201/download)
-- [FDA SPL schema and resources](https://www.fda.gov/industry/fda-data-standards-advisory-board/structured-product-labeling-resources)
+The engine run used `ventures/fda-cosmetics/fixtures/shopify-products.graphql.json` through a temporary, local-only fixture adapter. The synthetic deadline row was seeded in the disposable home. This proves installed flow execution, output creation, branching, and owner handoff; it is not a live Shopify run or evidence that a real cosmetic product is compliant or FDA-accepted. A parsed FDA response would also not independently establish acceptance.

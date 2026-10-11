@@ -20,7 +20,7 @@
       "id": "read_due_items",
       "type": "command",
       "config": {
-        "cmd": "python ventures/fda-cosmetics/scripts/listing_prep.py due",
+        "cmd": "python ventures/fda-cosmetics/scripts/listing_prep.py due --output \"$GLACIER_HOME/ventures/fda-cosmetics/out/due-reminders.json\"",
         "timeout": "30",
         "retries": "0"
       },
@@ -70,6 +70,13 @@
       "source": "reminder_check",
       "target": "review_reminder",
       "label": "yes"
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'fda-cosmetics'/'out'/'due-reminders.json'; rows=json.loads(p.read_text()); assert isinstance(rows,list) and all(isinstance(row,dict) and row.get('date') and row.get('glacier_steps') for row in rows)\"",
+      "required": true
     }
   ],
   "max_steps": 4

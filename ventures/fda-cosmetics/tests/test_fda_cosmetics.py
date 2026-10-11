@@ -230,6 +230,27 @@ def test_missing_shopify_connection_is_a_setup_step_not_a_failed_command(tmp_pat
     assert output["submitted"] is False
 
 
+def test_uncertain_shopify_product_review_is_a_successful_owner_handoff(tmp_path, monkeypatch, capsys):
+    from ventures.blocks.connectors import ShopifyClient
+
+    monkeypatch.setattr(ShopifyClient, "__init__", lambda self, _shop: None)
+    monkeypatch.setattr(ShopifyClient, "get_products", lambda self: [{"id": "gid://shopify/Product/1", "title": "Catalog title"}])
+    monkeypatch.setattr(ShopifyClient, "close", lambda self: None)
+    details = tmp_path / "brand-details.json"
+    details.write_text(json.dumps({"brand": {}, "products": {}}), encoding="utf-8")
+
+    result = listing_prep.main([
+        "prepare", "--shop", "fixture-store.myshopify.com", "--details", str(details),
+        "--output", str(tmp_path / "out"),
+    ])
+
+    output = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert output["products_read"] == 1
+    assert output["products"][0]["result"] == "uncertain — please check"
+    assert output["submitted"] is False
+
+
 def test_120_day_and_annual_reminders_are_registered(tmp_path, monkeypatch):
     label = tmp_path / "label.pdf"
     label.write_bytes(b"synthetic fixture; reader is mocked below")
@@ -245,6 +266,15 @@ def test_120_day_and_annual_reminders_are_registered(tmp_path, monkeypatch):
     assert result["result"] == "match"
     assert {row[2] for row in recorded} == {"120d", "365d"}
     assert len(recorded) == 2
+
+
+def test_due_command_succeeds_when_no_reminders_are_due(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "glacier-home"))
+    output = tmp_path / "out" / "due-reminders.json"
+
+    assert listing_prep.main(["due", "--on", "2026-10-10", "--output", str(output)]) == 0
+    assert json.loads(capsys.readouterr().out) == []
+    assert json.loads(output.read_text(encoding="utf-8")) == []
 
 
 def test_fda_response_parser_records_customer_status_without_submitting(tmp_path):
