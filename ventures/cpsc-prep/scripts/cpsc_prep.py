@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import sys
@@ -89,14 +90,43 @@ def _field_record(record: Any) -> dict[str, Any]:
 
 def _feed_rows(feeds: Any, source_id: str) -> list[dict[str, Any]]:
     """Refresh a configured source, then read its current records."""
+    return _feed_snapshot(feeds, source_id)[0]
+
+
+def source_revision(source_id: str, rows: list[Mapping[str, Any]]) -> str:
+    """Return a stable digest for the exact locally stored records used."""
+    revision_rows = []
+    for row in rows:
+        data = row.get("data")
+        revision_rows.append({
+            "record_id": row.get("record_id"),
+            "source_url": row.get("source_url"),
+            "data": data if isinstance(data, Mapping) else row,
+        })
+    canonical = json.dumps(
+        {"source_id": source_id, "rows": revision_rows},
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(canonical).hexdigest()
+
+
+def _feed_snapshot(feeds: Any, source_id: str) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
+    """Refresh and read one source, retaining sync state and local provenance."""
     try:
-        feeds.sync(source_id)
+        sync_result = feeds.sync(source_id)
         rows = feeds.query(source_id)
     except KeyError:
-        # An unregistered source is a release blocker, not a reason to crash or
-        # fall back to stale/hard-coded government data.
-        return []
+        return [], {"status": "unavailable", "alerts": [f"source is not registered: {source_id}"]}, {
+            "source_id": source_id, "revision": None, "source_url": None, "fetched_at": None,
+            "sync": {"changed": False, "status": "unavailable", "alerts": [f"source is not registered: {source_id}"]},
+        }
+    if not isinstance(sync_result, Mapping):
+        sync_result = {"status": "unavailable", "alerts": ["feed sync returned invalid metadata"]}
     result = []
+    source_urls: set[str] = set()
+    fetched_at: set[str] = set()
     for row in rows:
         if not isinstance(row, Mapping):
             continue
@@ -104,8 +134,50 @@ def _feed_rows(feeds: Any, source_id: str) -> list[dict[str, Any]]:
         data = row.get("data")
         if isinstance(data, Mapping):
             normalized.update(data)
+        if row.get("source_url"):
+            source_urls.add(str(row["source_url"]))
+        if row.get("fetched_at"):
+            fetched_at.add(str(row["fetched_at"]))
         result.append(normalized)
-    return result
+    revision = {
+        "source_id": source_id,
+        "revision": source_revision(source_id, [row for row in rows if isinstance(row, Mapping)]),
+        "source_url": sorted(source_urls)[0] if source_urls else None,
+        "fetched_at": sorted(fetched_at)[-1] if fetched_at else None,
+        "sync": {
+            "changed": bool(sync_result.get("changed")),
+            "status": sync_result.get("status", "unknown"),
+            "alerts": list(sync_result.get("alerts", [])),
+        },
+    }
+    return result, dict(sync_result), revision
+
+
+def _template_schema_gaps(columns: Any, field_map: Any, required_columns: Any) -> list[str]:
+    """Check that every required intake field maps to a current ordered column."""
+    if not isinstance(columns, list) or not columns or not all(isinstance(column, str) and column for column in columns):
+        return ["template columns are missing or invalid"]
+    if len(columns) != len(set(columns)):
+        return ["template contains duplicate columns"]
+    if not isinstance(field_map, Mapping):
+        return ["template field map is missing or invalid"]
+    gaps: list[str] = []
+    declared_required = required_columns if isinstance(required_columns, list) else []
+    for column in declared_required:
+        if not isinstance(column, str) or column not in columns:
+            gaps.append(f"required template column is absent: {column}")
+        elif column not in field_map.values():
+            gaps.append(f"required template column has no intake mapping: {column}")
+    for name in REQUIRED_FIELDS:
+        mapped_keys = [key for key in field_map if key == name or str(key).startswith(name + ".")]
+        if not mapped_keys:
+            gaps.append(f"required field has no template mapping: {name}")
+            continue
+        for key in mapped_keys:
+            target = field_map[key]
+            if not isinstance(target, str) or target not in columns:
+                gaps.append(f"required field mapping targets an absent template column: {name}")
+    return gaps
 
 
 def _codes(rows: list[dict[str, Any]], *keys: str) -> set[str]:
@@ -190,15 +262,29 @@ def prepare_batch(
     if not isinstance(products, list) or not products:
         raise ValueError("products must be a non-empty list")
 
-    tariff_rows = _feed_rows(feeds, flagged_codes_source)
-    rule_rows = _feed_rows(feeds, rule_codes_source)
-    template_rows = _feed_rows(feeds, template_source)
+    tariff_rows, tariff_sync, tariff_revision = _feed_snapshot(feeds, flagged_codes_source)
+    rule_rows, rule_sync, rule_revision = _feed_snapshot(feeds, rule_codes_source)
+    template_rows, template_sync, template_revision = _feed_snapshot(feeds, template_source)
+    source_revisions = [tariff_revision, rule_revision, template_revision]
     flagged_codes = {_tariff_key(code) for code in _codes(tariff_rows, "tariff_code", "code", "hts")}
     valid_rule_codes = _codes(rule_rows, "code", "rule_code", "citation", "citation_code", "citation codes", "citation / testing exception code")
     columns = template_rows[0].get("columns") if template_rows else None
     field_map = template_rows[0].get("field_map", {}) if template_rows else {}
+    required_columns = template_rows[0].get("required_columns", []) if template_rows else []
     if not isinstance(field_map, Mapping):
         field_map = {}
+    template_review_reasons = []
+    if bool(template_sync.get("changed")):
+        template_review_reasons.append("source content changed during this batch refresh")
+    if template_sync.get("alerts"):
+        template_review_reasons.extend(str(alert) for alert in template_sync["alerts"])
+    if template_sync.get("status") in {"failed", "failed_initial", "unavailable", "in_progress"}:
+        template_review_reasons.append(f"template source sync status is {template_sync['status']}")
+    schema_gaps = _template_schema_gaps(columns, field_map, required_columns)
+    template_review_reasons.extend(schema_gaps)
+    template_revision["status"] = "review_required" if template_review_reasons else "validated"
+    if template_review_reasons:
+        template_revision["review_reasons"] = template_review_reasons
     if not isinstance(columns, list) or not columns or not all(isinstance(col, str) for col in columns):
         return {
             "batch_id": batch_id,
@@ -210,11 +296,15 @@ def prepare_batch(
             "gaps": [{"field": "registry_template", "reason": "current CPSC template is unavailable"}],
             "products": [],
             "submission_performed": False,
+            "source_revisions": source_revisions,
+            "template_revision": template_revision,
         }
 
     processed: list[dict[str, Any]] = []
     gaps: list[dict[str, Any]] = []
-    all_ready = True
+    all_ready = not template_review_reasons
+    if template_review_reasons:
+        gaps.extend({"field": "registry_template", "reason": reason} for reason in template_review_reasons)
     csv_rows: list[dict[str, str]] = []
     as_of = date.today().isoformat()
 
@@ -373,6 +463,8 @@ def prepare_batch(
         "gaps": gaps,
         "products": processed,
         "submission_performed": False,
+        "source_revisions": source_revisions,
+        "template_revision": template_revision,
     }
 
 
