@@ -1,0 +1,95 @@
+{
+  "checkpoint": "PH12.17",
+  "captured_at_utc": "2026-10-11T02:49:24+00:00",
+  "backend": "real local Glacier FastAPI/DBOS engine",
+  "backend_url": "http://127.0.0.1:38491",
+  "glacier_home": "/tmp/glacier-property-tax-card-live-20261010",
+  "install_command": "GLACIER_API=... GLACIER_HOME=... ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only property-tax",
+  "run_id": "b07f55571184",
+  "status": "failed",
+  "verified": false,
+  "waiting_on": null,
+  "node_results": {
+    "owner_input_ready": "done",
+    "packet_failed": "skipped",
+    "packet_handoff": "skipped",
+    "packet_not_approved": "skipped",
+    "packet_ready": "skipped",
+    "prepare_packet": "skipped",
+    "review_packet": "skipped"
+  },
+  "verification": [
+    {
+      "check": 0,
+      "kind": "command",
+      "passed": false,
+      "evidence": "`repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"'/home/glacier/w/glacier-lean/.venv/bin/python'\" -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'packets'/'case.json'; d=json.loads(p.read_text()); assert d['result'] in ('match', 'no match found in Cook County Assessor parcel roll as of '+d['as_of'], 'uncertain — please check') and d['filing_submitted'] is False\"` exited non-zero\n/bin/sh: 1: '/home/glacier/w/glacier-lean/.venv/bin/python': not found\n"
+    }
+  ],
+  "packet": null,
+  "log": [
+    {
+      "action": "seed_official_public_sample",
+      "source_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json?%24select=pin,year,class,township_code,township_name,zip_code,:updated_at&%24where=year='2026'&%24order=pin&%24limit=50",
+      "rows": 50,
+      "alerts": []
+    },
+    {
+      "action": "write_isolated_smoke_case",
+      "parcel_id": "01011000020000",
+      "source": "public county parcel sample; customer notice/comparable files intentionally absent"
+    },
+    {
+      "action": "start_real_engine_flow",
+      "run_id": "b07f55571184"
+    },
+    {
+      "action": "approve_local_gate",
+      "node_id": "owner_input_ready",
+      "approved": true,
+      "scope": "isolated local test only; no message/mail/filed submission"
+    }
+  ],
+  "external_effects": {
+    "email_sent": false,
+    "mail_sent": false,
+    "signature_requested": false,
+    "filing_submitted": false,
+    "checkout_enabled": false
+  },
+  "attempts": [
+    {
+      "run_id": "52bbebcdb9c4",
+      "status": "failed",
+      "verified": false,
+      "node_states": {
+        "owner_input_ready": "done",
+        "prepare_packet": "skipped",
+        "packet_ready": "skipped",
+        "review_packet": "skipped",
+        "packet_handoff": "skipped",
+        "packet_not_approved": "skipped",
+        "packet_failed": "skipped"
+      },
+      "acceptance_error": "fallback selected /home/glacier/w/workers/gf-V-OSHA3/ventures/property-tax/scripts/property_tax.py as the repo root; cd failed because it is a file, not a directory",
+      "external_effects": "none"
+    },
+    {
+      "run_id": "b07f55571184",
+      "status": "failed",
+      "verified": false,
+      "node_states": {
+        "owner_input_ready": "done",
+        "packet_failed": "skipped",
+        "packet_handoff": "skipped",
+        "packet_not_approved": "skipped",
+        "packet_ready": "skipped",
+        "prepare_packet": "skipped",
+        "review_packet": "skipped"
+      },
+      "acceptance_error": "protected acceptance command could not invoke /home/glacier/w/glacier-lean/.venv/bin/python from the verifier copy",
+      "external_effects": "none"
+    }
+  ],
+  "conclusion": "No packet command ran and no Glacier packet output was produced. These failed attempts do not satisfy the end-to-end release gate."
+}

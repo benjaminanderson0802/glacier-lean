@@ -146,6 +146,13 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
             lambda _match: python,
             command,
         )
+        # Flow commands often quote this shell variable themselves. Replace the
+        # whole quoted expression so the shlex-quoted interpreter is not nested
+        # inside literal double quotes (which makes the quotes part of its name).
+        command = command.replace(
+            '"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}"', python
+        )
+        command = command.replace('"$HOME/w/glacier-lean/.venv/bin/python"', python)
         command = command.replace("${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}", python)
         return command.replace("$HOME/w/glacier-lean/.venv/bin/python", python)
 
