@@ -14,6 +14,8 @@ The annual dates above follow OSHA's [recordkeeping FAQ](https://www.osha.gov/in
 
 The customer provides its injury log using `templates/customer-injury-log-template.csv`: one row per distinct recordable case, with consistent establishment, employee, hours, and executive details on every row. Use a single `zero_injury` row with a blank case ID when there were no recordable cases. Glacier counts cases by category and adds day totals, then writes the review worksheet; duplicate IDs, unsupported categories, conflicting establishment details, or incomplete day totals are rejected for correction. `fixtures/injury-log.example.csv` and `fixtures/ita-establishments.example.csv` are synthetic E2E fixtures and must not be submitted or treated as OSHA data. Existing JSON input remains supported (`fixtures/300a.zero-injury.example.json`).
 
+The `scripts.filing.prepare_from_injury_log_csv` adapter also accepts the compact single-row summary format used by the local intake workflow. It writes an unsigned JSON worksheet, keeps missing identity and certification values visible for customer confirmation, and schedules a local filing-window reminder. It does not sign, post, or submit.
+
 ### Jobber marketplace draft
 
 **Name:** Glacier OSHA Filing Preparation<br>
