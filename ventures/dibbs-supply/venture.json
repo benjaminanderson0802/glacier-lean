@@ -28,11 +28,7 @@
     }
   ],
   "secrets_needed": [
-    {
-      "name": "sam_api_key",
-      "label": "SAM.gov public API key",
-      "description": "Owner-provided key resolved from Glacier Secrets for read-only SAM.gov opportunities requests."
-    }
+    "sam_api_key"
   ],
   "your_steps": [
     {
@@ -48,7 +44,10 @@
         "https://www.dibbs.bsm.dla.mil/rfq/"
       ],
       "secrets": [
-        {"name": "sam_api_key", "label": "SAM.gov public API key"}
+        {
+          "name": "sam_api_key",
+          "label": "SAM.gov public API key"
+        }
       ]
     },
     {

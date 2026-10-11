@@ -45,6 +45,7 @@ def test_fixture_jobber_intake_creates_claim_draft_artifacts(tmp_path):
     job = {"job_id": "9001", "brand": "Carrier", "program_year": "2026", "invoice": "INV-11",
            "installed_on": "2026-04-01", "dealer_authorized": True, "preapproval_id": "PA-1"}
     result = build(job, output_dir=tmp_path)
-    assert result["filing_ready"] is True
+    # Fixture lacks ad proof, payment proof and confirmed program terms, so the draft must not be filing-ready.
+    assert result["filing_ready"] is False
     assert result["reminders"]
     assert any(path.suffix.lower() in {".pdf", ".md", ".markdown"} for path in tmp_path.iterdir())
