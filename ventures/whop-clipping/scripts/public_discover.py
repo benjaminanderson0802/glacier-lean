@@ -29,6 +29,7 @@ class _PageParser(HTMLParser):
         self.cards = []
         self.scripts = []
         self.links = []
+        self.campaign_anchors = []
         self._script = None
         self._anchor = None
 
@@ -53,8 +54,12 @@ class _PageParser(HTMLParser):
             self.scripts.append("".join(self._script))
             self._script = None
         if tag == "a" and self._anchor is not None:
-            if self._anchor[2]:
-                self.links.append((self._anchor[0], " ".join(self._anchor[1]).strip()))
+            href, text, in_main = self._anchor
+            label = " ".join(text).strip()
+            if in_main:
+                self.links.append((href, label))
+            if _campaign_id_from_url(urljoin(BASE_URL, href)):
+                self.campaign_anchors.append((href, label))
             self._anchor = None
         for idx in range(len(self.stack) - 1, -1, -1):
             if self.stack[idx]["tag"] == tag:
@@ -103,6 +108,46 @@ def _campaign_id_from_url(url):
     return match.group(1) if match else ""
 
 
+def _compact_amount(raw):
+    match = re.search(r"(-?\d[\d,]*(?:\.\d+)?)\s*([kmb])?", str(raw), re.I)
+    if not match:
+        return None
+    amount = float(match.group(1).replace(",", ""))
+    scale = {"k": 1_000, "m": 1_000_000, "b": 1_000_000_000}.get(
+        (match.group(2) or "").lower(), 1
+    )
+    return amount * scale
+
+
+def _anchor_card(href, text):
+    campaign_id = _campaign_id_from_url(urljoin(BASE_URL, href))
+    if not campaign_id:
+        return None
+    # Live cards render as: organization · age title $used / $budget
+    # submissions $cpm /1K. Keep this as a fallback for markup without data.
+    metrics = re.search(
+        r"\$\s*(?P<used>[\d,.]+\s*[kmb]?)\s*/\s*\$\s*"
+        r"(?P<budget>[\d,.]+\s*[kmb]?)\s+(?P<submissions>[\d,.]+)\s+"
+        r"\$\s*(?P<cpm>[\d,.]+(?:\s*[kmb])?)\s*/\s*1k\b",
+        text,
+        re.I,
+    )
+    if not metrics:
+        return None
+    prefix = text[:metrics.start()].strip()
+    title_match = re.search(r"(?:Â)?·\s*\d+\s*[a-z]+\s*(.+?)\s*$", prefix, re.I)
+    name = title_match.group(1).strip() if title_match else prefix
+    if not name:
+        return None
+    return _normalize_card({
+        "id": campaign_id,
+        "name": name,
+        "cpm_usd": _compact_amount(metrics.group("cpm")),
+        "budget_used_usd": _compact_amount(metrics.group("used")),
+        "budget_total_usd": _compact_amount(metrics.group("budget")),
+    }, href)
+
+
 class _PublicRedirectHandler(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         PublicDiscoverScout._validate_url(newurl)
@@ -123,14 +168,16 @@ def _normalize_card(data, url=""):
         cpm = _money(data.get("cpmMaxRateCents"), cents=True)
     if cpm is None:
         cpm = _money(data.get("ratePer1kLabel"))
+    configuration = data.get("configuration") or {}
+    payout_model = data.get("payoutModel") or configuration.get("payoutModel") or []
     if cpm is None:
-        rate = data.get("payoutModel") or []
+        rate = payout_model
         rates = [_money(item.get("rate"), cents=True) for item in rate if isinstance(item, dict)]
         rates = [item for item in rates if item is not None]
         cpm = max(rates) if rates else 0.0
     budget_total = _money(data.get("budget_total_usd", data.get("budgetTotalRaw")))
     if budget_total is None:
-        budget_total = _money(data.get("budgetCents", data.get("budget")), cents=True)
+        budget_total = _money(data.get("budgetCents", data.get("budget", configuration.get("budget"))), cents=True)
     budget_used = _money(data.get("budget_used_usd", data.get("budgetSpentRaw")))
     if budget_used is None:
         metrics = data.get("metrics") or {}
@@ -144,7 +191,7 @@ def _normalize_card(data, url=""):
             budget_left = max(0.0, budget_total * (100 - progress) / 100)
     platforms = data.get("platforms") or []
     if not platforms:
-        platforms = [item.get("platform") for item in (data.get("payoutModel") or []) if isinstance(item, dict)]
+        platforms = [item.get("platform") for item in payout_model if isinstance(item, dict)]
     return {
         "id": campaign_id,
         "name": str(name).strip(),
@@ -257,6 +304,10 @@ def parse_campaign_cards(html):
             found[card["id"]] = card
     for item in parser.cards:
         card = _element_card(item)
+        if card:
+            found.setdefault(card["id"], card)
+    for href, text in parser.campaign_anchors:
+        card = _anchor_card(href, text)
         if card:
             found.setdefault(card["id"], card)
     # Campaign list pages may expose JSON-LD item lists.
@@ -435,20 +486,24 @@ class PublicDiscoverScout:
             self._details[card["id"]] = parse_campaign_detail(html, card)
         return self._details[card["id"]]
 
-    def _joined_urls(self):
+    def _joined_campaign_ids(self):
         if not self.joined_path.exists():
             return set()
-        urls = set()
+        campaign_ids = set()
         for line in self.joined_path.read_text(encoding="utf-8").splitlines():
             value = line.split("#", 1)[0].strip()
-            if value:
-                urls.add(self._validate_url(value).rstrip("/"))
-        return urls
+            if not value:
+                continue
+            parsed = urlparse(value)
+            campaign_id = _campaign_id_from_url(value) if parsed.scheme or "/" in value else value
+            if campaign_id:
+                campaign_ids.add(campaign_id.casefold())
+        return campaign_ids
 
     def list_campaigns(self):
         cards = self._discover_cards()
-        joined = self._joined_urls()
-        selected = [card for card in cards if card["url"].rstrip("/") in joined]
+        joined = self._joined_campaign_ids()
+        selected = [card for card in cards if card["id"].casefold() in joined]
         return [self._detail(card) for card in selected]
 
     @property
@@ -456,9 +511,9 @@ class PublicDiscoverScout:
         return {campaign["id"] for campaign in self.list_campaigns()}
 
     def join_suggestions(self, limit=10):
-        joined = self._joined_urls()
+        joined = self._joined_campaign_ids()
         candidates = [card for card in self._discover_cards()
-                      if card["url"].rstrip("/") not in joined
+                      if card["id"].casefold() not in joined
                       and card["cpm_usd"] > 0
                       and bool(set(card["platforms"]) & {"youtube", "youtube_shorts", "shorts"})
                       and (card["budget_left_usd"] is None or card["budget_left_usd"] > 0)]

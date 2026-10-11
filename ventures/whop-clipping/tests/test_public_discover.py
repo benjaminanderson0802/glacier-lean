@@ -45,6 +45,63 @@ def test_parser_reads_public_content_rewards_server_rendered_fixtures():
     assert isinstance(detail["source_links"], list)
 
 
+def test_parser_reads_live_discover_anchor_cards_and_compact_amounts():
+    live_fixtures = FIXTURES / "contentrewards"
+    cards = parse_campaign_cards((live_fixtures / "discover.html").read_text(encoding="utf-8"))
+    assert len(cards) > 0
+
+    boxabl = next(item for item in cards if item["name"] == "Boxabl Official Clipping")
+    assert boxabl["id"] == "188c3e39-7850-4896-94df-e7a5be0cfec3"
+    assert boxabl["cpm_usd"] == 0.50
+    assert boxabl["budget_used_usd"] == 20100
+    assert boxabl["budget_total_usd"] == 85000
+
+    detail = parse_campaign_detail(
+        (live_fixtures / f"{boxabl['id']}.html").read_text(encoding="utf-8"), boxabl
+    )
+    assert {"youtube", "tiktok", "instagram", "x"}.issubset(detail["platforms"])
+    assert "pre-approved YouTube videos" in detail["rules_text"]
+    assert isinstance(detail["source_links"], list)
+
+
+def test_joined_campaigns_match_uuid_across_hosts_and_bare_ids(tmp_path):
+    fixture_dir = FIXTURES / "contentrewards"
+    campaign_id = "188c3e39-7850-4896-94df-e7a5be0cfec3"
+    fetches = []
+
+    def fetch(url):
+        fetches.append(url)
+        if url.endswith("/discover"):
+            return (fixture_dir / "discover.html").read_text(encoding="utf-8")
+        return (fixture_dir / f"{campaign_id}.html").read_text(encoding="utf-8")
+
+    (tmp_path / "joined_campaigns.txt").write_text(
+        f"{campaign_id}\nhttps://whop.com/c/campaigns/{campaign_id}\n", encoding="utf-8"
+    )
+    scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
+    assert [item["id"] for item in scout.list_campaigns()] == [campaign_id]
+    assert fetches.count("https://contentrewards.com/c/campaigns/" + campaign_id) == 1
+
+
+def test_joined_campaigns_match_contentrewards_url_and_bare_uuid(tmp_path):
+    fixture_dir = FIXTURES / "contentrewards"
+    campaign_id = "188c3e39-7850-4896-94df-e7a5be0cfec3"
+
+    def fetch(url):
+        if url.endswith("/discover"):
+            return (fixture_dir / "discover.html").read_text(encoding="utf-8")
+        return (fixture_dir / f"{campaign_id}.html").read_text(encoding="utf-8")
+
+    (tmp_path / "joined_campaigns.txt").write_text(
+        f"https://contentrewards.com/c/campaigns/{campaign_id}\n", encoding="utf-8"
+    )
+    scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
+    assert scout.list_campaigns()[0]["id"] == campaign_id
+    (tmp_path / "joined_campaigns.txt").write_text(campaign_id + "\n", encoding="utf-8")
+    scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
+    assert scout.list_campaigns()[0]["id"] == campaign_id
+
+
 def test_scout_only_lists_joined_urls_and_surfaces_suggestions(tmp_path):
     now = [1000.0]
     calls = []
