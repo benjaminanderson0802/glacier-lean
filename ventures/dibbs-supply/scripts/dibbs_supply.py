@@ -89,7 +89,8 @@ def _is_dla(row: dict[str, Any]) -> bool:
     return names_dla(department) or names_dla(sub_tier) or names_dla(office)
 
 
-def _sam_opportunities(payloads: list[dict[str, Any]], *, as_of: date) -> list[dict[str, Any]]:
+def _sam_opportunities(payloads: list[dict[str, Any]], *, as_of: date,
+                       naics_codes: set[str] | tuple[str, ...] = SAM_NAICS) -> list[dict[str, Any]]:
     """Normalize official v2 response rows, retaining source facts and ranking likely open notices."""
     rows_by_id: dict[str, dict[str, Any]] = {}
     for payload in payloads:
@@ -97,7 +98,7 @@ def _sam_opportunities(payloads: list[dict[str, Any]], *, as_of: date) -> list[d
             if not isinstance(raw, dict) or not _is_dla(raw):
                 continue
             naics = str(raw.get("naicsCode") or "").strip()
-            if naics not in SAM_NAICS:
+            if naics not in naics_codes:
                 continue
             notice_id = str(raw.get("noticeId") or "").strip()
             solnum = str(raw.get("solicitationNumber") or "").strip()
@@ -144,6 +145,20 @@ def _sam_opportunities(payloads: list[dict[str, Any]], *, as_of: date) -> list[d
         row["posted_date"],
         row["solicitation_number"],
     ))
+
+
+def parse_sam_opportunities(payload: dict[str, Any], *, naics_codes: set[str] | tuple[str, ...] = SAM_NAICS,
+                            as_of: date | None = None) -> list[dict[str, Any]]:
+    """Parse and rank one SAM.gov v2 response envelope for owner review.
+
+    The function deliberately accepts only the public API's ``opportunitiesData``
+    envelope and produces discovery candidates; it does not visit DIBBS or
+    acknowledge any consent page.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("opportunitiesData"), list):
+        raise ValueError("SAM.gov returned an unexpected opportunities response format.")
+    today = as_of or datetime.now(timezone.utc).date()
+    return _sam_opportunities([payload], as_of=today, naics_codes=naics_codes)
 
 
 def fetch_sam_opportunities(*, api_key: str | None = None, as_of: date | None = None,
