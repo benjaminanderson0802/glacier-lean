@@ -14,7 +14,9 @@
     "source_url": {"type": "string", "description": "Official source URL provided by the Actor user; not fetched"},
     "source_as_of": {"type": "string", "description": "Date supplied for the snapshot"},
     "checked_at": {"type": "string", "description": "UTC time the comparison ran"},
-    "limitations": {"type": "string", "description": "Point-in-time limitations and any uncertainty reason"}
+    "limitations": {"type": "string", "description": "Point-in-time limitations and any uncertainty reason"},
+    "field_provenance": {"type": "string", "description": "JSON object mapping normalized output fields to the original populated CSV column headers"},
+    "conflicting_fields": {"type": "string", "description": "Comma-separated fields with conflicting or invalid source values; populated on uncertain results"}
   },
   "views": {
     "overview": {

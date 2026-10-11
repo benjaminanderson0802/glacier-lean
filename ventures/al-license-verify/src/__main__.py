@@ -12,20 +12,37 @@ from apify import Actor
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.verify import actor_queries, load_roster_text, lookup_many, read_roster_file  # noqa: E402
+from scripts.verify import (  # noqa: E402
+    SourceUnavailable,
+    actor_queries,
+    load_roster_text,
+    lookup_many,
+    read_roster_file,
+)
 
 
 async def main() -> None:
     async with Actor:
         actor_input = await Actor.get_input() or {}
         queries = actor_queries(actor_input)
-        roster_text = read_roster_file(str(actor_input.get("roster_file") or ""))
+        roster_as_of = str(actor_input.get("roster_as_of") or "")
+        source_url = str(actor_input.get("source_url") or "")
+        try:
+            roster_text = read_roster_file(str(actor_input.get("roster_file") or ""))
+        except SourceUnavailable as exc:
+            message = "Roster file unavailable; lookup results are uncertain — please check. "
+            message += f"No lookup charge was recorded. {exc}"
+            await Actor.set_status_message(
+                message,
+                is_terminal=True,
+            )
+            return
         roster = load_roster_text(roster_text)
         results = lookup_many(
             roster=roster,
             queries=queries,
-            roster_as_of=str(actor_input.get("roster_as_of") or ""),
-            source_url=str(actor_input.get("source_url") or ""),
+            roster_as_of=roster_as_of,
+            source_url=source_url,
             checked_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         )
         for index, result in enumerate(results):

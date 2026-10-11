@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import os
 import re
+import unicodedata
 from datetime import date, datetime, timezone
 from pathlib import Path
 from urllib.error import URLError
@@ -47,16 +49,18 @@ def _normalize_header(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.strip().casefold()).strip("_")
 
 
+# Earlier names in each tuple win when synonymous columns are both populated.
+# Preserve this explicit precedence: set iteration is not a field-mapping rule.
 HEADER_ALIASES = {
-    "license_number": {"license_number", "license_no", "license", "license_num", "license_#"},
-    "business_name": {"business_name", "company_name", "name", "contractor_name"},
-    "address": {"address", "business_address", "mailing_address"},
-    "city": {"city", "business_city"},
-    "state": {"state", "business_state"},
-    "zip_code": {"zip", "zip_code", "zipcode", "postal_code"},
-    "status": {"status", "license_status"},
-    "expiration_date": {"expiration_date", "expiration", "expires", "expiry_date", "exp_date"},
-    "specialty": {"specialty", "classification", "license_type", "type"},
+    "license_number": ("license_number", "license_no", "license_num", "license", "license_#"),
+    "business_name": ("business_name", "company_name", "contractor_name", "name"),
+    "address": ("business_address", "mailing_address", "address"),
+    "city": ("business_city", "city"),
+    "state": ("business_state", "state"),
+    "zip_code": ("zip_code", "zipcode", "postal_code", "zip"),
+    "status": ("license_status", "status"),
+    "expiration_date": ("expiration_date", "expiry_date", "expiration", "expires", "exp_date"),
+    "specialty": ("specialty", "classification", "license_type", "type"),
 }
 
 
@@ -72,7 +76,15 @@ def _normalize_license(value: str) -> str:
 
 
 def _normalize_name(value: str) -> str:
-    return " ".join(re.sub(r"[^a-z0-9]+", " ", value.casefold()).split())
+    # Keep letters and numbers from every script. The old ASCII-only expression
+    # erased names such as 李氏建设, making every such name compare as empty.
+    chars: list[str] = []
+    for char in unicodedata.normalize("NFKC", value).casefold():
+        if char.isalnum() or unicodedata.category(char).startswith("M"):
+            chars.append(char)
+        else:
+            chars.append(" ")
+    return " ".join("".join(chars).split())
 
 
 def load_roster(path: str | Path) -> list[dict[str, str | None]]:
@@ -83,25 +95,45 @@ def load_roster_text(csv_text: str) -> list[dict[str, str | None]]:
     if not isinstance(csv_text, str) or not csv_text.strip():
         raise ValueError("The supplied roster file is empty")
     try:
-        reader = csv.DictReader(io.StringIO(csv_text))
-        if not reader.fieldnames:
+        reader = csv.reader(io.StringIO(csv_text))
+        try:
+            fieldnames = next(reader)
+        except StopIteration:
+            fieldnames = []
+        if not fieldnames:
             raise ValueError("The supplied file must be a CSV with a header row")
-        source_columns = {_normalize_header(name): name for name in reader.fieldnames if name}
-        columns: dict[str, str] = {}
-        for target, aliases in HEADER_ALIASES.items():
-            source = next((source_columns[name] for name in aliases if name in source_columns), None)
+        source_columns: dict[str, list[tuple[int, str]]] = {}
+        for index, source in enumerate(fieldnames):
             if source:
-                columns[target] = source
+                source_columns.setdefault(_normalize_header(source), []).append((index, source))
+        columns: dict[str, list[tuple[int, str]]] = {}
+        for target, aliases in HEADER_ALIASES.items():
+            sources = [source for alias in aliases for source in source_columns.get(alias, [])]
+            if sources:
+                columns[target] = sources
         if "license_number" not in columns and "business_name" not in columns:
             raise ValueError("The roster needs a license-number or business-name column")
         records: list[dict[str, str | None]] = []
         for source_row in reader:
-            row = {
-                field: (source_row.get(source) or "").strip() or None
-                for field, source in columns.items()
-            }
+            if len(source_row) != len(fieldnames):
+                raise ValueError("The supplied roster has a malformed row with missing or extra columns")
+            row: dict[str, str | None] = {}
+            provenance: dict[str, list[str]] = {}
+            conflicts: list[str] = []
+            for field, sources in columns.items():
+                populated = [(source, (source_row[index] or "").strip())
+                             for index, source in sources if (source_row[index] or "").strip()]
+                provenance[field] = [source for source, _ in populated]
+                row[field] = populated[0][1] if populated else None
+                if len({value for _, value in populated}) > 1:
+                    conflicts.append(field)
             if "expiration_date" in row:
-                row["expiration_date"] = _normalize_expiration(row["expiration_date"])
+                raw_expiration = row["expiration_date"]
+                row["expiration_date"] = _normalize_expiration(raw_expiration)
+                if raw_expiration and row["expiration_date"] is None:
+                    conflicts.append("invalid_expiration_date")
+            row["_field_provenance"] = provenance  # type: ignore[assignment]
+            row["_conflicting_fields"] = conflicts  # type: ignore[assignment]
             if row.get("license_number") or row.get("business_name"):
                 records.append(row)
         if not records:
@@ -213,6 +245,16 @@ def lookup_many(
             results.append(_uncertain(query, source_url, roster_as_of, now.isoformat(timespec="seconds"), "The query matches multiple rows; use an exact license number."))
         elif found:
             row = found[0]
+            provenance = row.get("_field_provenance") or {}
+            conflicts = row.get("_conflicting_fields") or []
+            if conflicts:
+                results.append(_uncertain(
+                    query, source_url, roster_as_of, now.isoformat(timespec="seconds"),
+                    "The matched roster row has conflicting or invalid fields: " + ", ".join(conflicts) + ".",
+                    field_provenance=provenance,
+                    conflicting_fields=conflicts,
+                ))
+                continue
             results.append({
                 "outcome": "match",
                 "verification_state": "verified",
@@ -226,10 +268,11 @@ def lookup_many(
                 "source_as_of": as_of.isoformat(),
                 "checked_at": now.isoformat(timespec="seconds"),
                 "limitations": LIMITATIONS,
+                "field_provenance": json.dumps(provenance, ensure_ascii=False, sort_keys=True),
             })
         else:
             results.append({
-                "outcome": f"no match found in {SOURCE_NAME} as of {checked_date.isoformat()}",
+                "outcome": f"no match found in {SOURCE_NAME} as of {as_of.isoformat()}",
                 "verification_state": "verified",
                 "roster_presence": "not_listed",
                 "license_number": str(number) if number else None,
@@ -253,11 +296,13 @@ def _normalize_expiration(value: str | None) -> str | None:
             return datetime.strptime(value, pattern).date().isoformat()
         except ValueError:
             continue
-    return value
+    return None
 
 
 def _uncertain(query: dict[str, object], source_url: str, roster_as_of: str,
-               checked_at: str, reason: str) -> dict[str, object]:
+               checked_at: str, reason: str, *,
+               field_provenance: object | None = None,
+               conflicting_fields: object | None = None) -> dict[str, object]:
     return {
         "outcome": "uncertain — please check",
         "verification_state": "unverifiable",
@@ -271,4 +316,13 @@ def _uncertain(query: dict[str, object], source_url: str, roster_as_of: str,
         "source_as_of": roster_as_of,
         "checked_at": checked_at,
         "limitations": f"{LIMITATIONS} {reason}",
+        "field_provenance": json.dumps(field_provenance or {}, ensure_ascii=False, sort_keys=True),
+        "conflicting_fields": ", ".join(conflicting_fields or []),
     }
+
+
+def outage_result(query: dict[str, object], source_url: str, roster_as_of: str,
+                  checked_at: str, reason: str) -> dict[str, object]:
+    """Create a customer-facing uncertainty result when the supplied file is unavailable."""
+    return _uncertain(query, source_url, roster_as_of, checked_at,
+                      f"The supplied roster could not be read: {reason}")
