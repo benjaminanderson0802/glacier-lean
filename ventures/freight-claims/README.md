@@ -10,17 +10,19 @@ ShipStation API access is read-only and starts disabled. ShipStation requires th
 
 If the account cannot use the API, download a ShipStation **Shipments** or **Orders** CSV export and place it in `$GLACIER_HOME/ventures/freight-claims/incoming/`. The daily flow automatically reads the newest `.csv` there if the API is not enabled or a read fails. You can select a particular export with `python ventures/freight-claims/scripts/claims.py watch --csv /path/to/export.csv`. The report records the source file and any skipped rows. Extra columns are ignored; rows without a tracking number are skipped with a reason. CSV intake is local and read-only. No account, paid service, or live transaction is created by this venture. The shared customer block's Stripe support remains test-mode only.
 
+Carrier-specific packet guidance now covers UPS, FedEx, USPS, and LTL/Carmack review: filing window and date anchor, evidence checklist, official sources, and response-date tracking. The packet labels calculated dates as estimates to verify against the exact service and shipment contract. USPS lost-mail deadlines require a service lookup; unknown carriers do not get a guessed deadline. LTL response milestones apply only where 49 CFR Part 370 governs. See the [customer intake checklist](incoming/CUSTOMER-INTAKE.md) for the customer-facing handoff and current source links.
+
 ## Your steps
 
-1. Pick API or CSV. For API access, check the Gold plan requirement and limits in [ShipStation API Settings](https://docs.shipstation.com/authentication) and its [usage guide](https://docs.shipstation.com/rate-limits), save the key in Glacier Secrets, then enable polling. Otherwise, put a Shipments or Orders CSV export in `incoming/`. Review the first shipment list either way.
-2. Review and approve the first ten distinct claim packets against their source documents, carrier terms, and insurance status. Each approval ID is recorded in a local review ledger; later packets still require shipper review.
-3. Have the shipper provide or sign owner-approved authorization, confirm the claim details, and send the draft. Record the carrier receipt and any recovery. For a full-release offer, the shipper explicitly accepts or declines; acceptance closes the claim, while declining keeps it open. Approve any invoice draft before it is sent.
+1. Connect ShipStation or add a Shipments/Orders export. For API access, the owner checks the Gold plan and limits in [ShipStation API Settings](https://docs.shipstation.com/authentication) and its [usage guide](https://docs.shipstation.com/rate-limits), saves the key in Glacier Secrets, enables polling, and reviews the first shipment list. Otherwise, the owner adds a CSV to `incoming/`. Before routine use, review and approve the first ten distinct packets against their source documents, carrier terms, carrier-specific checklist, and insurance status.
+2. For each claim, the shipper confirms details, supplies or signs owner-approved authorization, reviews and files the packet with the carrier, then provides the carrier receipt and reference. Record responses and recovery. The shipper explicitly accepts or declines any full-release offer, and the owner approves any invoice draft before it is sent. Glacier never signs or files for the shipper.
 
 ## Run locally
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python -m ventures.install_all --dry-run --only freight-claims
 ~/w/glacier-lean/.venv/bin/python ventures/freight-claims/scripts/claims.py watch
+~/w/glacier-lean/.venv/bin/python ventures/freight-claims/scripts/claims.py prepare-csv --csv /path/to/shipstation-export.csv --input /path/to/customer-claim-intake.json
 ~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/freight-claims/tests
 ```
 

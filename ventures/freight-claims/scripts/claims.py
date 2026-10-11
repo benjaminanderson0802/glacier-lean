@@ -23,6 +23,7 @@ from ventures.blocks.connectors.common import ConnectorError
 from ventures.blocks.deadlines import add as add_deadline, due as due_deadlines
 from ventures.blocks.filer import prepare as prepare_portal_draft
 from ventures.blocks.reader import read_document
+from carrier_claims import carrier_guidance, filing_deadline, response_schedule
 from csv_intake import parse_shipments_csv
 
 
@@ -195,6 +196,47 @@ def build_claim_packet(claim: dict[str, Any], *, evidence_dir: str | Path | None
         "side_effects": [],
         "human_review_required": True,
     }
+    shipment_type = str(claim.get("shipment_type") or shipment.get("shipment_type") or "unknown")
+    guidance_carrier = shipment.get("carrier")
+    if re.search(r"\b(?:LTL|less[ -]than[ -]truckload)\b", str(shipment.get("service") or ""), re.I):
+        guidance_carrier = "LTL"
+    international = claim.get("international") if isinstance(claim.get("international"), bool) else None
+    country = str((shipment.get("ship_to") or {}).get("country") or "").strip().upper()
+    if international is None and country:
+        international = country not in {"US", "USA", "UNITED STATES"}
+    guidance = carrier_guidance(guidance_carrier, shipment_type=shipment_type,
+                                international=international)
+    if guidance["template_id"] == "ups":
+        anchor = (claim.get("scheduled_delivery_date") or shipment.get("scheduled_delivery_date")
+                  or shipment.get("delivered_date"))
+    elif guidance["template_id"] == "fedex":
+        anchor = shipment.get("ship_date") or claim.get("ship_date")
+    elif guidance["template_id"] in {"usps", "ltl"}:
+        anchor = (shipment.get("ship_date") or claim.get("ship_date")) if guidance["template_id"] == "usps" else (
+            shipment.get("delivered_date") or shipment.get("expected_delivery_date")
+            or claim.get("delivered_date") or claim.get("expected_delivery_date")
+        )
+    else:
+        anchor = None
+    due = filing_deadline(guidance_carrier, anchor, shipment_type=shipment_type,
+                          international=international)
+    guidance["filing_deadline"] = due.isoformat() if due else None
+    guidance["deadline_anchor_date"] = anchor
+    guidance["filing_deadline_status"] = "estimated — customer must confirm carrier service and terms" if due else "not calculated — customer must check the carrier service deadline"
+    guidance["evidence_checklist"] = [
+        {"item": item, "provided": False, "customer_confirmed": False}
+        for item in guidance["required_evidence"]
+    ]
+    packet["carrier_claim_guidance"] = guidance
+    received_date = claim.get("carrier_received_date")
+    packet["response_tracking"] = {
+        "carrier_filed_date": claim.get("carrier_filed_date"),
+        "carrier_received_date": received_date,
+        "carrier_reference": claim.get("carrier_reference"),
+        "carrier_response_due_on": claim.get("carrier_response_due_on"),
+        "milestones": response_schedule(guidance_carrier, received_date) if received_date else [],
+        "note": "Record the carrier's receipt, reference, and any promised response date after the shipper files. Parcel-carrier response timing is not a published commitment in these sources." if guidance["template_id"] != "ltl" else "Record the carrier's receipt, reference, and notices. The listed LTL milestones apply only when 49 CFR Part 370 governs."
+    }
     if evidence_dir:
         destination = Path(evidence_dir)
         destination.mkdir(parents=True, exist_ok=True)
@@ -206,14 +248,16 @@ def build_claim_packet(claim: dict[str, Any], *, evidence_dir: str | Path | None
 
 
 def schedule_claim_deadlines(claim_id: str, carrier_received_date: str) -> None:
-    """Schedule the carrier acknowledgment and resolution reminders once receipt is confirmed."""
+    """Schedule local 30/120-day status follow-ups from a customer-confirmed receipt date."""
     date.fromisoformat(carrier_received_date)
     add_deadline(claim_id, carrier_received_date, "30d|120d",
-                 f"Freight claim {claim_id}: carrier acknowledgment and resolution")
+                 f"Freight claim {claim_id}: check carrier status")
 
 
 def record_carrier_receipt(claim_id: str, carrier_received_date: str, reference: str,
-                           confirmation_document: str, *, output_dir: str | Path | None = None) -> dict[str, Any]:
+                           confirmation_document: str, *, carrier: str | None = None,
+                           carrier_response_due_on: str | None = None,
+                           output_dir: str | Path | None = None) -> dict[str, Any]:
     """Record customer-provided submission confirmation and start the local 30/120-day clock."""
     received = date.fromisoformat(carrier_received_date)
     confirmation = Path(confirmation_document).expanduser().resolve()
@@ -221,13 +265,24 @@ def record_carrier_receipt(claim_id: str, carrier_received_date: str, reference:
         raise ValueError("customer-provided carrier confirmation document is required")
     if not reference.strip():
         raise ValueError("carrier confirmation reference is required")
+    response_due = date.fromisoformat(carrier_response_due_on) if carrier_response_due_on else None
     schedule_claim_deadlines(claim_id, received.isoformat())
+    if response_due:
+        add_deadline(f"{claim_id}-promised-response", response_due.isoformat(), "0d",
+                     f"Freight claim {claim_id}: customer-entered carrier response date")
     record = {
         "claim_id": claim_id,
+        "carrier": carrier,
         "carrier_received_date": received.isoformat(),
         "carrier_reference": reference.strip(),
+        "carrier_response_due_on": response_due.isoformat() if response_due else None,
         "confirmation_document": str(confirmation),
         "deadline_rule": "30d|120d",
+        "response_tracking": {
+            "milestones": response_schedule(carrier, received) if carrier else [],
+            "carrier_response_due_on": response_due.isoformat() if response_due else None,
+            "note": "For parcel carriers, this is a customer-entered follow-up date, not a published response promise." if carrier and carrier_guidance(carrier)["template_id"] != "ltl" else "LTL milestones apply only when 49 CFR Part 370 governs; continue tracking carrier notices every 60 days if unresolved." if carrier else "Provide the carrier name and any promised response date to track carrier-specific response milestones."
+        },
         "result": "match",
         "side_effects": [],
     }
@@ -471,6 +526,56 @@ def prepare_file(input_path: str, output_dir: str | None) -> dict[str, Any]:
             "packets": results, "side_effects": []}
 
 
+def prepare_csv_packets(csv_path: str | Path, claim_intakes: list[dict[str, Any]] | dict[str, Any],
+                        output_dir: str | Path) -> dict[str, Any]:
+    """Join a local ShipStation CSV to customer-confirmed claim data and write packet drafts.
+
+    The CSV supplies shipment facts only. Customer damage/value/evidence/terms fields
+    remain a separate explicit intake and no carrier is contacted.
+    """
+    rows, skipped = parse_shipments_csv(csv_path)
+    inputs = claim_intakes if isinstance(claim_intakes, list) else [claim_intakes]
+    by_id: dict[str, dict[str, Any]] = {}
+    for item in inputs:
+        shipment_id = str(item.get("shipment_id") or (item.get("shipment") or {}).get("shipment_id") or "").strip()
+        if not shipment_id:
+            raise ValueError("each customer intake needs shipment_id")
+        if shipment_id in by_id:
+            raise ValueError(f"duplicate customer intake for shipment {shipment_id}")
+        by_id[shipment_id] = item
+
+    candidates = classify_shipments(rows)
+    row_by_id = {str(row.get("shipment_id") or ""): row for row in rows}
+    packets = []
+    needs_intake = []
+    for candidate in candidates:
+        shipment_id = candidate["shipment_id"]
+        row = next(
+            (row for row in rows if str(row.get("order_number") or "") == shipment_id), None
+        ) or row_by_id.get(shipment_id)
+        canonical_id = str((row or {}).get("shipment_id") or shipment_id)
+        intake = by_id.get(canonical_id) or by_id.get(shipment_id)
+        if not intake:
+            needs_intake.append({**candidate, "reason": "customer must confirm loss/damage, claimed items, evidence, and carrier terms before a packet can be prepared"})
+            continue
+        shipment = dict(row or {})
+        shipment.update(intake.get("shipment") or {})
+        shipment.setdefault("shipment_id", shipment_id)
+        claim = {**intake, "shipment": shipment}
+        packets.append(build_claim_packet(claim, evidence_dir=output_dir))
+    return {
+        "result": "match" if packets and all(packet["result"] == "match" for packet in packets) and not needs_intake else "uncertain — please check",
+        "source": "csv",
+        "csv_file": str(Path(csv_path).expanduser()),
+        "candidate_count": len(candidates),
+        "packet_count": len(packets),
+        "packets": packets,
+        "needs_customer_intake": needs_intake,
+        "skipped_rows": skipped,
+        "side_effects": [],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -480,6 +585,10 @@ def main(argv: list[str] | None = None) -> int:
     prepare = commands.add_parser("prepare", help="prepare claim packet drafts from customer-confirmed intake JSON")
     prepare.add_argument("--input", required=True)
     prepare.add_argument("--output-dir")
+    prepare_csv = commands.add_parser("prepare-csv", help="join a ShipStation CSV to customer-confirmed claim intake and prepare packet drafts")
+    prepare_csv.add_argument("--csv", required=True)
+    prepare_csv.add_argument("--input", required=True, help="JSON list of customer-confirmed records keyed by shipment_id")
+    prepare_csv.add_argument("--output-dir")
     invoice = commands.add_parser("invoice", help="prepare a contingency invoice draft after confirmed recovery")
     invoice.add_argument("--input", required=True)
     invoice.add_argument("--output")
@@ -511,6 +620,10 @@ def main(argv: list[str] | None = None) -> int:
             result = remind()
         elif args.command == "prepare":
             result = prepare_file(args.input, args.output_dir)
+        elif args.command == "prepare-csv":
+            intake = json.loads(Path(args.input).read_text(encoding="utf-8"))
+            destination = args.output_dir or Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / SLUG / "packets"
+            result = prepare_csv_packets(args.csv, intake, destination)
         elif args.command == "invoice":
             recovery = json.loads(Path(args.input).read_text(encoding="utf-8"))
             result = build_contingency_invoice(recovery["claim_id"], recovery["recovered_amount"], recovery["share_percent"])
@@ -527,6 +640,8 @@ def main(argv: list[str] | None = None) -> int:
             submitted = json.loads(Path(args.input).read_text(encoding="utf-8"))
             result = record_carrier_receipt(submitted["claim_id"], submitted["carrier_received_date"],
                                             submitted["reference"], submitted["confirmation_document"],
+                                            carrier=submitted.get("carrier"),
+                                            carrier_response_due_on=submitted.get("carrier_response_due_on"),
                                             output_dir=args.output_dir)
         elif args.command == "owner-review":
             state_dir = args.state_dir or Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / SLUG / "reviews"

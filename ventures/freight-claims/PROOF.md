@@ -1,5 +1,28 @@
 # Freight claims proof
 
+## Carrier packet templates and CSV-to-packet acceptance (2026-10-10)
+
+Added venture-local guidance for UPS, FedEx, USPS, and LTL/Carmack review. Each generated packet includes a filing-window note, chosen date anchor and calculated estimate when enough dates exist, carrier-specific evidence checklist, official source links, and a response-tracking record. UPS, FedEx, and USPS timelines are scoped to the published package/service rules; USPS lost-mail deadlines remain service-specific. For LTL, the nine-month date is only the Carmack statutory minimum when it applies, and carrier response milestones are labeled as 49 CFR Part 370 reminders only when that part governs. Parcel response dates are not presented as carrier promises. The owner/customer records the actual carrier receipt and any promised response date; no carrier form is sent.
+
+The new `prepare-csv` command joins exception shipments in a local ShipStation CSV to a separate customer-confirmed intake record and prepares source-linked packet drafts. CSV rows alone never assert a loss, damage, amount, or evidence. Missing intake stays in `needs_customer_intake`. The customer-facing questions and evidence list are in [CUSTOMER-INTAKE.md](incoming/CUSTOMER-INTAKE.md). The first ten distinct packets still require Glacier owner approval; the shipper still signs and files each claim and decides settlements.
+
+Acceptance command and result:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/freight-claims -q
+# 31 passed
+```
+
+`test_shipstation_csv_fixture_to_carrier_claim_packets` joined a synthetic UPS exception row to separate customer-confirmed claim details and produced a JSON packet with its `$125.00` claimed value, estimated 60-day deadline (2026-03-06 from the fixture's scheduled-delivery date), attached evidence, `sent: false`, and no side effects. This is fixture-only evidence; no real carrier response or filing was made.
+
+The broad collection command `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` did not collect three unrelated test modules from the repo root: two recall-actor imports fail on `src.sources`, and utility-audits import fails on `scripts.utility_audit`. Running venture test directories with `PYTHONPATH` set to the repo root resolves those collection-only issues. That per-venture run passed Apify, all shared blocks except filer, Carpenter goods, co-op, CPSC, DIBBS, FDA, OSHA, property tax, recall actor, utility audits, warranty, and the freight suite. Existing unrelated failures remain: `ventures/tests/test_install_all.py` assumes only two flows (`36 != 2`), three filer acceptance tests cannot resolve Playwright (`MODULE_NOT_FOUND`), and recall-checker has one source-vocabulary assertion mismatch (`no match found` vs `no match`). These files are outside the freight card and were not changed.
+
+Official guidance cited by the templates: [UPS filing window](https://www.ups.com/us/en/support/file-a-claim) and [UPS evidence list](https://www.ups.com/us/en/support/file-a-claim/supporting-documents); [FedEx deadlines and evidence](https://www.fedex.com/en-us/customer-support/claims.html); [USPS claims and evidence](https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics) and [Domestic Mail Manual 609](https://pe.usps.com/TEXT/DMM300/609.htm); [49 U.S.C. § 14706](https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title49-section14706), [49 CFR § 370.3](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.3), [§ 370.5](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.5), and [§ 370.9](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.9).
+
+No real ShipStation account, carrier claim, filing, payment, signature, invoice, or carrier response was exercised. These artifacts establish fixture behavior only, not live launch readiness.
+
+Real backend startup check: from `glacier/web`, `npm run live` successfully started the disposable FastAPI backend, which answered `GET /api/health` with HTTP 200. The combined live script then stopped because this worktree's untracked `glacier/web/node_modules` does not contain `vite/bin/vite.js` (`MODULE_NOT_FOUND`); it cleaned up its own backend process and temporary home. No UI or real flow run was performed. This is an environment dependency issue outside the freight card's `ventures/**` file scope.
+
 Checkpoint: PH12.14. Test data in the real-runtime attempt was synthetic and local-only. No ShipStation account was connected, no carrier was contacted, and no claim, invoice, or payment was submitted.
 
 ## ShipStation API plan handling and CSV intake (this card)

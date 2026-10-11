@@ -1,7 +1,7 @@
 {
   "id": "freight-check-deadlines",
   "name": "Check freight claim deadlines",
-  "goal": "Collect one-time reminders for carrier acknowledgment at day 30 and resolution at day 120 after the carrier receipt date is confirmed.",
+  "goal": "Collect local status-check reminders at 30 and 120 days after customer-confirmed carrier receipt; these dates are not parcel-carrier response promises.",
   "nodes": [
     {
       "id": "daily",
@@ -35,7 +35,7 @@
       "type": "note",
       "config": {
         "path": "ventures/freight-claims/reports/deadlines-{run}.md",
-        "template": "Freight claim deadlines due today. These are tracking reminders, not a legal determination.\n\n{summary}"
+        "template": "Freight claim status follow-up due today. These reminders are not parcel-carrier response promises or a legal deadline determination. For LTL claims governed by 49 CFR Part 370, confirm the applicable acknowledgment/disposition and any 60-day status update.\n\n{summary}"
       },
       "position": {
         "x": 700,
