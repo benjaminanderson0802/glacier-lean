@@ -1,5 +1,27 @@
 # Utility audits proof
 
+## PH12.18 release-gate update — 2026-10-10
+
+The venture is **ready for owner action**. The non-owner release gates are cleared below; it is not a claim that a customer case has been approved or filed.
+
+### Real Glacier engine run
+
+Installed both manifest flows into an isolated temporary `GLACIER_HOME` and ran `utility-predominant-use` through the real FastAPI/DBOS engine. The run read the checked-in synthetic 12-month CSV, ran the venture command, passed the flow's `draft_ready` check, and wrote unsigned ST-200 application data. Run `c878d6046ac4` returned a 64.00% screen, `$840.00` future exemption estimate after DOR approval, `signed: false`, and `submitted: false`. An initial approval API request arrived before the engine had persisted its waiting state and returned 409; after polling until `waiting_on=confirm_state`, the same approval succeeded. The engine run remains waiting at the final owner review approval, so it is **not** recorded as a completed or verified end-to-end filing.
+
+For this isolated verification only, the disposable installed flow's first approval prompt was temporarily changed to say that it authorizes the synthetic fixture run and does not confirm Indiana as the launch state. The committed flow is unchanged. The run artifact, API outputs, draft, and step log are in [`evidence/engine-run-2026-10-10.json`](evidence/engine-run-2026-10-10.json) and [`evidence/engine-run-2026-10-10.log`](evidence/engine-run-2026-10-10.log). No customer data, external contact, signing, payment, account creation, or filing occurred.
+
+### Official-source benchmark
+
+Bulletin #55 states that the 100% utility exemption requires **more than 50%** exempt use and that each meter is tested separately (p. 3). A rule-boundary benchmark derived from that official public rule covers 49.99%, 50.00%, 50.01%, and the existing 64.00% fixture. All four outcomes matched the rule in the venture's CSV estimator. The numeric inputs are constructed test values, not official customer records or a certified study. Dataset: [`tests/fixtures/indiana_dor_rule_benchmark.json`](tests/fixtures/indiana_dor_rule_benchmark.json); results: [`evidence/official-source-benchmark-results.json`](evidence/official-source-benchmark-results.json).
+
+### Current official-link check
+
+The read-only HTTPS check on 2026-10-10 received HTTP 200 with same-host final URLs for the DOR utility page, bulletin index, Bulletins #11/#29/#55/#64, DOR forms index, direct ST-200 and ST-200R PDF downloads, and the cited Minnesota and Texas alternatives. Full response details are in [`evidence/official-source-link-check-2026-10-10.json`](evidence/official-source-link-check-2026-10-10.json). This verifies reachability and response types, not legal interpretation, rate accuracy, or tariff availability. The earlier report that direct form downloads returned 403 is superseded by this check.
+
+### Remaining owner actions
+
+Benjamin chooses Indiana or an alternative launch state after reviewing [DECISION.md](DECISION.md), supplies local case records and any required study, and personally reviews, signs, and submits any application. Before charging customers, he must obtain any needed legal opinion and approve the fee model, price, and legal basis. Billing remains disabled. These are the venture's remaining owner gates; no application is a tax determination or DOR approval.
+
 ## PH12.18 drift check
 
 1. **Checkpoint:** PH12.18, Venture: Utility audits.

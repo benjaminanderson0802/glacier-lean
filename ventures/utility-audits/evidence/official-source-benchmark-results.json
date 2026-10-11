@@ -1,0 +1,59 @@
+{
+  "benchmark_id": "indiana-dor-bulletin-55-predominant-use-boundaries-v1",
+  "source_url": "https://www.in.gov/dor/files/sib55.pdf",
+  "rule": "strictly more than 50% on each meter",
+  "all_cases_passed": true,
+  "case_count": 4,
+  "runner": "prepare_st200 with actual unsigned application-data output; generated CSV values are constructed boundary cases",
+  "results": [
+    {
+      "case_id": "below-threshold-49_99",
+      "input_exempt_use_percentage": 49.99,
+      "actual_screen": "predominant-use threshold not met \u2014 professional review required",
+      "actual_exempt_use_percentage": 49.99,
+      "expected_screen": "predominant-use threshold not met \u2014 professional review required",
+      "expected_application_data": false,
+      "application_data_prepared": false,
+      "signed": false,
+      "submitted": false,
+      "passed": true
+    },
+    {
+      "case_id": "at-threshold-50_00",
+      "input_exempt_use_percentage": 50.0,
+      "actual_screen": "predominant-use threshold not met \u2014 professional review required",
+      "actual_exempt_use_percentage": 50.0,
+      "expected_screen": "predominant-use threshold not met \u2014 professional review required",
+      "expected_application_data": false,
+      "application_data_prepared": false,
+      "signed": false,
+      "submitted": false,
+      "passed": true
+    },
+    {
+      "case_id": "above-threshold-50_01",
+      "input_exempt_use_percentage": 50.01,
+      "actual_screen": "predominant-use threshold met \u2014 DOR review required",
+      "actual_exempt_use_percentage": 50.01,
+      "expected_screen": "predominant-use threshold met \u2014 DOR review required",
+      "expected_application_data": true,
+      "application_data_prepared": true,
+      "signed": false,
+      "submitted": false,
+      "passed": true
+    },
+    {
+      "case_id": "existing-fixture-64_00",
+      "input_exempt_use_percentage": 64.0,
+      "actual_screen": "predominant-use threshold met \u2014 DOR review required",
+      "actual_exempt_use_percentage": 64.0,
+      "expected_screen": "predominant-use threshold met \u2014 DOR review required",
+      "expected_application_data": true,
+      "application_data_prepared": true,
+      "signed": false,
+      "submitted": false,
+      "passed": true
+    }
+  ],
+  "note": "This benchmark is not tax advice, a customer eligibility decision, or a DOR-certified data set."
+}

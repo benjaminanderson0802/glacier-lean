@@ -1,0 +1,47 @@
+{
+  "benchmark_id": "indiana-dor-bulletin-55-predominant-use-boundaries-v1",
+  "source_type": "official public rule; constructed benchmark inputs",
+  "as_of": "2026-10-10",
+  "rule": {
+    "source": "Indiana Department of Revenue, Sales Tax Information Bulletin #55",
+    "url": "https://www.in.gov/dor/files/sib55.pdf",
+    "page": 3,
+    "citation": "The 100% exemption applies only when nontaxable utilities are separately metered and predominately used for exempt uses; predominately used means more than 50%; each meter is considered separately.",
+    "expected_interpretation": "strictly greater than 50 percent, evaluated one meter at a time"
+  },
+  "input_construction": {
+    "months": 12,
+    "meter_count_per_case": 1,
+    "usage_units_per_month": 1000,
+    "sales_tax_paid_per_month": 70,
+    "periods": "2025-01 through 2025-12",
+    "exempt_use_units_per_month": "case-specific; constructed to hit the stated ratio",
+    "note": "These are deterministic rule-boundary test values, not DOR-published customer records, bills, tariffs, or a certified utility study."
+  },
+  "cases": [
+    {
+      "id": "below-threshold-49_99",
+      "exempt_use_percentage": 49.99,
+      "expected_screen": "predominant-use threshold not met — professional review required",
+      "expected_application_data": false
+    },
+    {
+      "id": "at-threshold-50_00",
+      "exempt_use_percentage": 50.0,
+      "expected_screen": "predominant-use threshold not met — professional review required",
+      "expected_application_data": false
+    },
+    {
+      "id": "above-threshold-50_01",
+      "exempt_use_percentage": 50.01,
+      "expected_screen": "predominant-use threshold met — DOR review required",
+      "expected_application_data": true
+    },
+    {
+      "id": "existing-fixture-64_00",
+      "exempt_use_percentage": 64.0,
+      "expected_screen": "predominant-use threshold met — DOR review required",
+      "expected_application_data": true
+    }
+  ]
+}

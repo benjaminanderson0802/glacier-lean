@@ -1,6 +1,6 @@
 # Utility audits
 
-This venture prepares customer-reviewed Indiana utility exemption estimates and unsigned application data. Indiana is the recommended launch state; Benjamin must confirm it before customer work. The state decides whether an application qualifies and issues any utility exemption certificate.
+This venture prepares customer-reviewed Indiana utility exemption estimates and unsigned application data. **Ready for owner action:** the real Glacier CSV-to-ST-200 draft run, official source checks, and rule-boundary benchmark are recorded in [PROOF.md](PROOF.md). Benjamin chooses Indiana or an alternative state before customer work; Indiana is the current recommendation only. The state decides whether an application qualifies and issues any utility exemption certificate.
 
 ## Two Indiana paths
 
@@ -19,7 +19,7 @@ The included CSV path expects twelve monthly rows for one meter and utility. `us
 From the repository root:
 
 ```sh
-python ventures/utility-audits/scripts/utility_audit.py study \
+~/w/glacier-lean/.venv/bin/python ventures/utility-audits/scripts/utility_audit.py study \
   --input ventures/utility-audits/tests/fixtures/indiana_predominant_use_bills.csv \
   --output /tmp/utility-audit-st200-study.json
 ```
@@ -32,8 +32,9 @@ Local integrations can call `prepare_st200(csv_path, output_dir)` from `scripts/
 
 ## Owner steps
 
-1. Confirm Indiana as the launch state and provide case-specific records locally. Read the official [DOR utility exemption page](https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/), [Bulletin #11](https://www.in.gov/dor/files/reference/sib11.pdf), [Bulletin #29](https://www.in.gov/dor/files/reference/sib29.pdf) when using the restaurant path, and [Bulletin #55](https://www.in.gov/dor/files/sib55.pdf) for a utility study. Select the applicable form from the [DOR forms index](https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html).
-2. Review and complete the official ST-200R or ST-200, attach source bills and any required study, then sign and submit it yourself. After DOR approval, send the issued certificate to the utility.
+1. Choose Indiana or an alternative launch state before customer work; Indiana is a recommendation, not a decision. For a case, provide its records locally, including the documented use study when applicable.
+2. Review and complete the official ST-200R or ST-200, attach source bills and any required study, then sign and submit it yourself. After DOR approval, send the issued certificate to the utility. Read the official [DOR utility exemption page](https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/), [Bulletin #11](https://www.in.gov/dor/files/reference/sib11.pdf), [Bulletin #29](https://www.in.gov/dor/files/reference/sib29.pdf) when using the restaurant path, and [Bulletin #55](https://www.in.gov/dor/files/sib55.pdf) for a utility study. Select the applicable form from the [DOR forms index](https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html).
+3. Before charging customers, obtain any legal opinion you need and approve the fee model, price, and legal basis. Billing remains disabled until then.
 
 Billing remains disabled until the owner records approval of a fee model and its legal basis. No refund-share or first-year-savings fee is enabled.
 

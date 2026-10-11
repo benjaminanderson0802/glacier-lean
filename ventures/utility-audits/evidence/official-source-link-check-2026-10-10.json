@@ -1,0 +1,116 @@
+{
+  "checked_at_local_date": "2026-10-10",
+  "method": "read-only HTTPS GET, final host checked; first 2 KB read",
+  "all_passed": true,
+  "links": [
+    {
+      "label": "DOR utility exemption page",
+      "url": "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/",
+      "content_type": "text/html; charset=UTF-8",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "DOR information bulletins index",
+      "url": "https://www.in.gov/dor/resources/tax-library/information-bulletins/",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/resources/tax-library/information-bulletins/",
+      "content_type": "text/html; charset=UTF-8",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Bulletin #55",
+      "url": "https://www.in.gov/dor/files/sib55.pdf",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/files/sib55.pdf",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Bulletin #11",
+      "url": "https://www.in.gov/dor/files/reference/sib11.pdf",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/files/reference/sib11.pdf",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Bulletin #29",
+      "url": "https://www.in.gov/dor/files/reference/sib29.pdf",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/files/reference/sib29.pdf",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Bulletin #64",
+      "url": "https://www.in.gov/dor/files/reference/sib64.pdf",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/files/reference/sib64.pdf",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "DOR sales tax forms index",
+      "url": "https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html",
+      "http_status": 200,
+      "final_url": "https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html",
+      "content_type": "text/html; charset=UTF-8",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Form ST-200 download",
+      "url": "https://forms.in.gov/Download.aspx?id=14085",
+      "http_status": 200,
+      "final_url": "https://forms.in.gov/Download.aspx?id=14085",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Form ST-200R download",
+      "url": "https://forms.in.gov/Download.aspx?id=16301",
+      "http_status": 200,
+      "final_url": "https://forms.in.gov/Download.aspx?id=16301",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Minnesota Revenue production utilities fact sheet",
+      "url": "https://www.revenue.state.mn.us/sites/default/files/2025-08/fs129_0.pdf",
+      "http_status": 200,
+      "final_url": "https://www.revenue.state.mn.us/sites/default/files/2025-08/fs129_0.pdf",
+      "content_type": "application/pdf",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Texas Comptroller manufacturing exemptions",
+      "url": "https://comptroller.texas.gov/taxes/publications/94-124.php",
+      "http_status": 200,
+      "final_url": "https://comptroller.texas.gov/taxes/publications/94-124.php",
+      "content_type": "text/html; charset=UTF-8",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    },
+    {
+      "label": "Texas Comptroller manufacturers audit procedures",
+      "url": "https://comptroller.texas.gov/taxes/audit/docs/manufacturers.pdf",
+      "http_status": 200,
+      "final_url": "https://comptroller.texas.gov/taxes/audit/docs/manufacturers.pdf",
+      "content_type": "application/octet-stream",
+      "same_host": true,
+      "bytes_read_for_check": 2048
+    }
+  ],
+  "correction": "Direct ST-200 and ST-200R downloads returned HTTP 200 in this check; the earlier PROOF.md HTTP 403 report is historical and superseded."
+}

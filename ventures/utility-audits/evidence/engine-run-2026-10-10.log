@@ -1,0 +1,20 @@
+Glacier real-engine run log excerpt (captured from the live backend process stdout)
+Date: 2026-10-10 local
+GLACIER_HOME: /tmp/glacier-utility-run-20261010
+Flow: utility-predominant-use
+Run ID: c878d6046ac4
+
+Install API: PUT /api/environments/utility-audit-calculator -> 200 OK
+Install API: PUT /api/environments/utility-predominant-use -> 200 OK
+Run API: POST /api/environments/utility-predominant-use/run -> 200 OK
+Run API: POST /api/runs/c878d6046ac4/approve -> 409 Conflict (first attempt arrived before the approval wait was persisted)
+Run API: POST /api/runs/c878d6046ac4/approve -> 200 OK (after GET showed waiting_on=confirm_state)
+Run API: GET /api/runs/c878d6046ac4 -> 200 OK
+confirm_state: done (temporary fixture-only prompt override; not a launch decision)
+estimate: done; result="predominant-use threshold met — DOR review required"
+draft_ready: done; check output=yes
+review_draft: waiting (owner review intentionally left pending)
+study: 64.00% (7680 / 12000 units)
+form: ST-200; signed=false; submitted=false
+run status: waiting; waiting_on=review_draft
+verified: null
