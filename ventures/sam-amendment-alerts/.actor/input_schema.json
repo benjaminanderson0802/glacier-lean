@@ -1,0 +1,26 @@
+{
+  "title": "SAM.gov opportunity change alerts",
+  "description": "Enter your own free SAM.gov API key in the encrypted secret field. The first complete run saves a baseline without billing; later runs report observed changes between complete snapshots. No-match, uncertain, and outage results are not billed.",
+  "type": "object",
+  "schemaVersion": 1,
+  "required": ["api_key", "naics_codes"],
+  "properties": {
+    "api_key": {
+      "title": "SAM.gov API key (secret)",
+      "type": "string",
+      "description": "Your own free SAM.gov public API key. This field is stored encrypted by Apify and revealed only to the Actor at run time. It is sent to the official SAM.gov Opportunities API and is never written to output or snapshot storage.",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "naics_codes": {
+      "title": "NAICS codes to watch",
+      "type": "array",
+      "description": "One or more 2–6 digit NAICS codes. The prefilled 423840 watch is for industrial supplies merchant wholesalers. The saved baseline is kept separately for each exact code set.",
+      "editor": "json",
+      "minItems": 1,
+      "maxItems": 20,
+      "prefill": ["423840"]
+    }
+  },
+  "additionalProperties": false
+}

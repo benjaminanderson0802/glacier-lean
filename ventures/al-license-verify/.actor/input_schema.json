@@ -1,6 +1,6 @@
 {
   "title": "Alabama contractor roster verification",
-  "description": "Upload a roster CSV you obtained from the Alabama board or another source you are authorized to use. The Actor reads only this uploaded file; it never browses the board site.",
+  "description": "Upload a roster CSV you obtained from the Alabama board or another source you are authorized to use. The prefilled query is a synthetic fixture, not live board data. The Actor reads only this uploaded file and never performs live board lookups.",
   "type": "object",
   "schemaVersion": 1,
   "required": ["roster_file", "roster_as_of", "source_url", "queries"],
@@ -8,7 +8,7 @@
     "roster_file": {
       "title": "User-supplied roster CSV",
       "type": "string",
-      "description": "Upload an authorized roster export as CSV through Apify's file upload. Direct URLs are restricted to Apify file storage; the Actor does not fetch board or arbitrary URLs.",
+      "description": "Upload an authorized roster export as CSV through Apify's file upload. The Actor never performs live board lookups. Direct URLs are restricted to Apify file storage; arbitrary URLs are not fetched.",
       "editor": "fileupload",
       "maxLength": 2000
     },
@@ -17,6 +17,7 @@
       "type": "string",
       "description": "Date the supplied roster reflects, in YYYY-MM-DD format. Results older than 365 days are returned as uncertain.",
       "editor": "datepicker",
+      "prefill": "2026-10-11",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
     },
     "source_url": {
@@ -24,7 +25,8 @@
       "type": "string",
       "description": "URL of the board-published roster/export or other authorized official source for the uploaded file. This is recorded as metadata and is never fetched by the Actor.",
       "editor": "textfield",
-      "maxLength": 500
+      "maxLength": 500,
+      "prefill": "https://genconbd.alabama.gov/"
     },
     "queries": {
       "title": "Contractors to check",
@@ -32,7 +34,8 @@
       "description": "JSON array of up to 100 objects, each with exactly one of license_number or name. Name matching is exact after simple punctuation/case normalization.",
       "editor": "json",
       "minItems": 1,
-      "maxItems": 100
+      "maxItems": 100,
+      "prefill": [{"license_number": "AL-EXAMPLE-1042"}]
     }
   }
 }

@@ -1,8 +1,8 @@
 {
   "actorSpecification": 1,
-  "name": "alabama-contractor-roster-verify",
-  "title": "Alabama Contractor Roster Verifier",
-  "description": "Match license numbers or business names against a user-supplied, dated Alabama contractor roster export. This Actor does not access the board website.",
+  "name": "alabama-contractor-roster-check",
+  "title": "Alabama Contractor Roster Check",
+  "description": "Check exact contractor license numbers or business names against a dated Alabama roster CSV you are authorized to use. No board scraping; no-match and uncertain results are free.",
   "version": "0.1",
   "buildTag": "latest",
   "dockerfile": "./Dockerfile",
