@@ -19,13 +19,52 @@ from ventures.blocks.connectors import JobberClient
 from ventures.blocks.filer import prepare as filer_prepare
 
 
+BRANDS_DIR = Path(__file__).resolve().parents[1] / "brands"
+
+
+def load_brand_guidance() -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Load official brand guidance and map normalized names to family records."""
+    families: dict[str, dict[str, Any]] = {}
+    by_name: dict[str, dict[str, Any]] = {}
+    for path in sorted(BRANDS_DIR.glob("*.json")):
+        family = json.loads(path.read_text(encoding="utf-8"))
+        families[family["id"]] = family
+        for name in family["brand_names"]:
+            by_name[re.sub(r"[^a-z0-9]+", "", name.casefold())] = family
+    return families, by_name
+
+
+BRAND_GUIDANCE, BRAND_FAMILIES_BY_NAME = load_brand_guidance()
 BRAND_RULES: dict[str, dict[str, Any]] = {
-    "trane": {"window_days": 60, "serial_pattern": None, "source": "https://www.trane.com/residential/en/resources/warranty-and-registration/"},
-    "goodman": {"window_days": 60, "serial_pattern": None, "source": "https://warranty.goodmanmfg.com/newregistration/"},
-    "daikin": {"window_days": 60, "serial_pattern": None, "source": "https://daikincomfort.com/terms-of-use"},
-    "lennox": {"window_days": 60, "serial_pattern": None, "source": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"},
-    "carrier": {"window_days": 90, "serial_pattern": None, "source": "https://www.carrier.com/us/en/residential/homeowner-resources/warranty/"},
+    normalized_name: {
+        "window_days": family.get("queue_window_days"),
+        "serial_pattern": None,
+        "source": family["sources"][0]["url"],
+    }
+    for normalized_name, family in BRAND_FAMILIES_BY_NAME.items()
 }
+
+
+def _queue_brand_guidance(family: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Keep the queue reviewable while pointing to the full source-backed record."""
+    if family is None:
+        return None
+    registration = family["registration"]
+    date_code = family["date_code"]
+    return {
+        "family_id": family["id"],
+        "source_record": f"ventures/warranty/brands/{family['id']}.json",
+        "registration_deadline": registration["deadline"],
+        "who_may_register": registration["who_may_register"],
+        "portal_urls": registration["portal_urls"],
+        "portal_accepts_dealer": "yes" if registration["portal_accepts_dealer"].startswith("yes") else "uncertain - please check",
+        "terms_allow_third_party_preparation": (
+            "uncertain - please check"
+            if "uncertain" in registration["terms_allow_third_party_preparation"].casefold()
+            else registration["terms_allow_third_party_preparation"]
+        ),
+        "date_code_status": date_code["status"],
+    }
 
 # A positive result requires an owner-maintained, source-backed serial regex.
 # None means terms and format have not been verified for automated handling.
@@ -71,19 +110,21 @@ def evaluate_install(
     """Validate one install and calculate its reminder date without side effects."""
     as_of = as_of or date.today()
     rules_by_brand = brand_rules if brand_rules is not None else BRAND_RULES
-    brand = str(record.get("brand", "")).strip().lower()
+    brand = re.sub(r"[^a-z0-9]+", "", str(record.get("brand", "")).strip().casefold())
+    family = BRAND_FAMILIES_BY_NAME.get(brand)
     rules = rules_by_brand.get(brand)
     if rules is None:
         return _uncertain("brand is not in the reviewed brand list")
     if not record.get("completed"):
-        return _uncertain("Jobber job is not confirmed complete")
+        return _uncertain("Jobber job is not confirmed complete", official_registration_guidance=_queue_brand_guidance(family))
 
     try:
         installed = date.fromisoformat(str(record["installed_on"]))
     except (KeyError, TypeError, ValueError):
-        return _uncertain("installation date is missing or invalid")
+        return _uncertain("installation date is missing or invalid", official_registration_guidance=_queue_brand_guidance(family))
 
-    if _is_registration_exception(brand, str(record.get("region", "")).strip().upper(), installed):
+    canonical_brand = family["primary_brand"] if family else brand
+    if _is_registration_exception(canonical_brand, str(record.get("region", "")).strip().upper(), installed):
         return {
             "result": f"no match found in registration-required regions as of {as_of.isoformat()}",
             "reason": "spec-listed registration exception; confirm the applicable product warranty",
@@ -92,17 +133,25 @@ def evaluate_install(
             "days_remaining": None,
             "deadline_alert": False,
             "portal_automation_allowed": False,
+            "official_registration_guidance": _queue_brand_guidance(family),
             "photo_request_draft": None,
         }
 
-    deadline = installed + timedelta(days=int(rules["window_days"]))
-    days_remaining = (deadline - as_of).days
     result_fields: dict[str, Any] = {
-        "registration_deadline": deadline.isoformat(),
-        "days_remaining": days_remaining,
-        "deadline_alert": 0 <= days_remaining <= 10 and not record.get("registered"),
+        "official_registration_guidance": _queue_brand_guidance(family),
         "portal_automation_allowed": bool(PORTAL_AUTOMATION_ALLOWED.get(brand, False)),
     }
+    window_days = rules.get("window_days")
+    if window_days is None:
+        result_fields.update({"registration_deadline": None, "days_remaining": None, "deadline_alert": False})
+    else:
+        deadline = installed + timedelta(days=int(window_days))
+        days_remaining = (deadline - as_of).days
+        result_fields.update({
+            "registration_deadline": deadline.isoformat(),
+            "days_remaining": days_remaining,
+            "deadline_alert": 0 <= days_remaining <= 10 and not record.get("registered"),
+        })
 
     model = str(record.get("model_reading", "")).strip()
     serial = str(record.get("serial_reading", "")).strip().upper()
@@ -128,7 +177,7 @@ def evaluate_install(
         return _uncertain("homeowner name or email is missing or invalid", **result_fields)
     if record.get("registered") and not record.get("confirmation_path"):
         return _uncertain("registered unit has no saved confirmation", **result_fields)
-    if brand == "daikin":
+    if canonical_brand == "daikin":
         return _uncertain("Daikin terms do not permit automated portal handling", registration_action="owner_check_required", **result_fields)
 
     return {
@@ -276,11 +325,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("evaluate", "deadlines", "jobber-preview"))
     parser.add_argument("--input", type=Path, help="JSON file containing normalized install records")
+    parser.add_argument("--fixture-jobs", type=Path, help="local Jobber GraphQL fixture; never makes a network request")
     parser.add_argument("--as-of", type=date.fromisoformat, default=date.today())
     args = parser.parse_args(argv)
     try:
         if args.action == "jobber-preview":
-            jobs = read_jobber_jobs()
+            if args.fixture_jobs:
+                fixture = json.loads(args.fixture_jobs.read_text(encoding="utf-8"))
+                jobs = JobberClient._normalize_jobs(fixture)
+            else:
+                jobs = read_jobber_jobs()
             output: Any = build_jobber_loop(jobs, as_of=args.as_of)
             home = Path(os.environ.get("GLACIER_HOME", Path.home() / ".glacier"))
             target = home / "ventures" / "warranty" / "pending-units.json"

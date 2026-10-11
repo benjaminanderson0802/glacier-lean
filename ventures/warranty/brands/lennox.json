@@ -1,0 +1,24 @@
+{
+  "id": "lennox",
+  "brand_names": ["Lennox"],
+  "primary_brand": "lennox",
+  "queue_window_days": 60,
+  "registration": {
+    "deadline": "60 calendar days after installation for eligible homes, or closing date for new construction; California, Florida, Georgia installations on/after 2026-01-01, Quebec, and other jurisdictions may be exempt or have different choices.",
+    "who_may_register": "Homeowner; the official portal also has a dealer path that requires the dealer customer number. The exact scope of dealer authority for each registration is product-specific.",
+    "portal_urls": {
+      "Lennox": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+    },
+    "portal_accepts_dealer": "dealer path is present; the official page says dealers need their customer number.",
+    "terms_allow_third_party_preparation": "uncertain - please check; dealer portal access is documented, but the reviewed terms do not expressly authorize an unrelated third party to prepare registrations."
+  },
+  "date_code": {
+    "status": "published for specific model series; verify by unit",
+    "format": "Lennox's 2023 ML17XC1 service guide gives typical serial `58 21 C 05716`: location code (e.g. 58=Marshalltown, IA), 2-digit year code, month letter (A=Jan, B=Feb, C=Mar in the cited guide), then a 5- or 6-digit unique number. The guide is model-series-specific; do not apply this layout to every Lennox generation."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Lennox product registration", "url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"},
+    {"title": "Lennox ML17XC1 service guide, typical serial format", "url": "https://www.lennox.com/dA/7a43950f24/100049.pdf"}
+  ]
+}

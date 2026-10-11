@@ -1,0 +1,26 @@
+{
+  "id": "daikin",
+  "brand_names": ["Daikin"],
+  "primary_brand": "daikin",
+  "queue_window_days": 60,
+  "registration": {
+    "deadline": "60 days after installation for eligible registered additional-term coverage; product and jurisdiction exceptions apply.",
+    "who_may_register": "Homeowner/customer or a person registering on the homeowner/customer's behalf; the official registration form shows both roles.",
+    "portal_urls": {
+      "Daikin": "https://warranty.goodmanmfg.com/newregistration/"
+    },
+    "portal_accepts_dealer": "yes - the Daikin registration form offers `I am registering on behalf of the homeowner/customer`.",
+    "terms_allow_third_party_preparation": "uncertain - please check; the portal permits a representative role, but Daikin's site terms prohibit automated systems from monitoring or copying its sites. No automated portal access is enabled."
+  },
+  "date_code": {
+    "status": "published for a specific product family; general format uncertain - please check",
+    "format": "An official Daikin warranty document for DM97MC/DC97MC states that the first four serial digits are YYMM, e.g. `1306` indicates June 2013. This source is model-family-specific; do not apply it to other Daikin units without their warranty documents."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Daikin warranty registration form", "url": "https://warranty.goodmanmfg.com/newregistration/"},
+    {"title": "Daikin residential warranty information", "url": "https://daikincomfort.com/warranties"},
+    {"title": "Daikin DM97MC/DC97MC warranty document with date-code key", "url": "https://daikincomfort.com/docs/default-source/dm97mc/wgs-u09-2020-dm97mc-dc97mc_d4740a6d-3a4e-4813-b296-5a5e9a0588e2.pdf"},
+    {"title": "Daikin terms of use", "url": "https://daikincomfort.com/terms-of-use"}
+  ]
+}
