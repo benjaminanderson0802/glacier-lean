@@ -10,6 +10,9 @@ Benjamin (the owner) set these. Every agent, human and AI, reads this file befor
 5. **Money:** ventures run only on money they earn. No spending, subscriptions or paid tools without the owner's explicit approval.
 6. **Owner effort:** each venture should need at most one or two human-only steps. Prepare everything up to that step (pages filled, drafts written, links ready) and queue just that step.
 
+## Venture decisions log
+- 2026-10-11: added eBay (wholesale drop-ship, high-priced items in less-online niches with long shipping norms) and Depop (buy-first or seller-designed items). Dropped ventures: Pinterest and Vinted.
+
 ## Hard boundaries
 - The owner (or the customer) personally does every legally binding or account action: signing, filing, paying, publishing, creating accounts, choosing prices, and sending messages. Agents prepare; they don't perform these.
 - No invented testimonials, clients, statistics, guarantees or legal conclusions. Uncertain data stays "uncertain - please check".
