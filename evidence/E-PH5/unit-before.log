@@ -1,0 +1,166 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+__________ test_approval_gate_precedes_worker_and_creating_workspace ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-612/test_approval_gate_precedes_wo0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x763f509f8740>
+
+    def test_approval_gate_precedes_worker_and_creating_workspace(tmp_path, monkeypatch):
+        calls = []
+        monkeypatch.setattr(teams, '_worker', lambda *a: calls.append(a) or {'exit_code': 0})
+        monkeypatch.setattr(teams, '_review', lambda *a: {'passed': True})
+        monkeypatch.setattr(teams, '_check_task', lambda *a: {'passed': True})
+        p = plan()
+        workspace = tmp_path / 'not-created'
+        result = teams.execute_task('team', 'write', p, p['tasks'][0], str(workspace),
+                                    {'tasks': {'write': {'status': 'pending', 'attempts': 0}}})
+        assert result['status'] == 'awaiting_approval'
+>       assert calls == []
+E       AssertionError: assert [('You are wo...: True, ...})] == []
+E         
+E         Left contains one more item: ('You are working under this role mask. Follow only this charter for this task.\nRole: builder\nCharter: Write the res...precedes_wo0/not-created', {'id': 'write', 'title': 'Write result', 'role': 'builder', 'requires_approval': True, ...})
+E         Use -v to get more diff
+
+tests/test_team_execution_regressions.py:29: AssertionError
+_______ test_recorded_approval_allows_one_execution_without_second_gate ________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-612/test_recorded_approval_allows_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x763f4e5bf740>
+
+    def test_recorded_approval_allows_one_execution_without_second_gate(tmp_path, monkeypatch):
+        calls = []
+        monkeypatch.setattr(teams, '_worker', lambda *a: calls.append(a) or {'exit_code': 0})
+        monkeypatch.setattr(teams, '_review', lambda *a: {'passed': True})
+        monkeypatch.setattr(teams, '_check_task', lambda *a: {'passed': True})
+        monkeypatch.setattr(teams, '_relevant_memory', lambda *a: [])
+        p = plan()
+        result = teams.execute_task('team', 'write', p, p['tasks'][0], str(tmp_path),
+                                    {'tasks': {'write': {'approved': True}}})
+>       assert result['status'] == 'done'
+E       AssertionError: assert 'awaiting_approval' == 'done'
+E         
+E         - done
+E         + awaiting_approval
+
+tests/test_team_execution_regressions.py:42: AssertionError
+____________ test_parallel_plan_final_workspace_is_merged_workspace ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-612/test_parallel_plan_final_works0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x763f4e5bf6e0>
+
+    def test_parallel_plan_final_workspace_is_merged_workspace(tmp_path, monkeypatch):
+        monkeypatch.setenv('GLACIER_HOME', str(tmp_path))
+        teams.vault.init(str(tmp_path / 'vault'))
+        teams.init(str(tmp_path / 'glacier.sqlite'))
+        p = plan()
+        vision = teams.create_vision(p['vision'])
+        saved = teams.save_plan(p, vision['path'])
+        row = teams._read(saved['team_id'])
+>       assert row['workspace'] == teams.runner.workspaces.base(str(tmp_path), f"team-{saved['team_id']}")
+E       AssertionError: assert '/tmp/pytest-...86ba65c1e4998' == '/tmp/pytest-...86ba65c1e4998'
+E         
+E         Skipping 56 identical leading characters in diff, use -v to show
+E         - al_works0/workspaces/team-e0686ba65c1e4998
+E         ?           -----------    ^
+E         + al_works0/teams/e0686ba65c1e4998
+E         ?               ^^
+
+tests/test_team_execution_regressions.py:54: AssertionError
+_______ test_retry_state_preserves_failure_evidence_and_retries_to_limit _______
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-612/test_retry_state_preserves_fai0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x763f4e5bf920>
+
+    def test_retry_state_preserves_failure_evidence_and_retries_to_limit(tmp_path, monkeypatch):
+        monkeypatch.setenv('GLACIER_HOME', str(tmp_path))
+        teams.init(str(tmp_path / 'glacier.sqlite'))
+        p = plan()
+        p['team']['worker_mode'] = 'sequential'
+        p['guards'] = {'max_retries': 2}
+        p['tasks'][0]['requires_approval'] = False
+        calls = []
+        monkeypatch.setattr(teams, 'execute_task', lambda *a: calls.append(a) or
+                            {'status': 'retry', 'output': 'failed check'})
+        monkeypatch.setattr(teams, 'stuck_claim', lambda *a: 'claim-proof')
+>       result = teams.run_team_local('unit', p, str(tmp_path))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_team_execution_regressions.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+team_id = 'unit'
+plan = {'vision': {'goal': 'Write a result', 'done': ['result.txt exists']}, 'spec': {'requirements': ['Write a result'], 'ou...sequential', 'parallel_limit': 3, 'engine': 'codex', 'roles': [{'id': 'builder', 'charter': 'Write the result'}]}, ...}
+workspace = '/tmp/pytest-of-glacier/pytest-612/test_retry_state_preserves_fai0'
+state = {'status': 'running', 'tasks': {'write': {'status': 'running', 'attempts': 1}}, 'features': {'result': {'status': 'pending', 'evaluator_evidence': None}}}
+
+    def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None = None) -> dict:
+        """Synchronous testable engine. Production workflow uses durable per-task workflow steps below."""
+        state = state or {"status": "running", "tasks": {t["id"]: {"status": "pending", "attempts": 0} for t in plan["tasks"]}}
+        def persist_task(task_id: str, item: dict) -> None:
+            if _persisted_status(team_id) is not None:
+                _save_task(team_id, task_id, item)
+        _mark_legacy_completions(plan, state)
+        state.setdefault("features", {feature["id"]: {"status": "pending", "evaluator_evidence": None}
+                                       for feature in plan.get("features", [])})
+        if plan.get("features") and not _uses_feature_evaluators(plan):
+            # Older persisted runs have no feature records. Rebuild evaluator evidence from
+            # their independently reviewed, completed task results when resuming.
+            for feature in plan["features"]:
+                related = [task for task in plan.get("tasks", []) if task.get("feature_id") in (None, feature["id"])]
+                # Legacy fixture/runtime records saved only `done`; when no structured
+                # evidence exists, require all downstream work plus the final objective check.
+                if related and all(state.get("tasks", {}).get(task["id"], {}).get("status") == "done"
+                                   for task in related):
+                    state["features"][feature["id"]] = {"status": "passing",
+                        "evaluator_evidence": "legacy completed task records; final objective check required"}
+        limit = int((plan.get("guards") or {}).get("max_retries", 2))
+        while True:
+            batch = ready_batch(plan, state["tasks"])
+            if not batch:
+                break
+            def run_one(task):
+                task_id = task["id"]
+                item = state["tasks"].setdefault(task_id, {"status": "pending", "attempts": 0})
+                item["status"] = "running"
+                item["attempts"] += 1
+                persist_task(task_id, item)
+                store.broadcaster.publish({"type": "team_task_taken", "team_id": team_id, "task_id": task_id, "role": task["role"]})
+                task_workspace = workspace
+                if plan["team"]["worker_mode"] == "parallel":
+                    task_workspace = os.path.join(workspace, "worktrees", task_id)
+                    os.makedirs(task_workspace, exist_ok=True)
+                result = execute_task(team_id, task_id, plan, task, task_workspace, state, item["attempts"])
+                return task, item, result
+            if plan["team"]["worker_mode"] == "parallel" and len(batch) > 1:
+                with ThreadPoolExecutor(max_workers=int(plan["team"].get("parallel_limit", 1))) as pool:
+                    outcomes = list(pool.map(run_one, batch))
+            else:
+                outcomes = [run_one(task) for task in batch]
+            for task, item, result in outcomes:
+                task_id = task["id"]
+                if result["status"] == "awaiting_approval":
+                    item.update(result)
+                    persist_task(task_id, item)
+                    continue
+                if result["status"] == "done":
+                    item.update(result)
+                    item["status"] = "done"
+                    persist_task(task_id, item)
+                    continue
+                if item["attempts"] >= limit:
+                    cid = stuck_claim(team_id, task_id, item["attempts"], json.dumps(result))
+                    item.update(status="needs_owner", claim_id=cid, **result)
+                    persist_task(task_id, item)
+                    state["status"] = "needs_owner"
+                    store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "task_id": task_id, "claim_id": cid})
+                    return state
+>               item.update(status="pending", **result)
+E               TypeError: dict.update() got multiple values for keyword argument 'status'
+
+teams.py:819: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_team_execution_regressions.py::test_approval_gate_precedes_worker_and_creating_workspace
+FAILED tests/test_team_execution_regressions.py::test_recorded_approval_allows_one_execution_without_second_gate
+FAILED tests/test_team_execution_regressions.py::test_parallel_plan_final_workspace_is_merged_workspace
+FAILED tests/test_team_execution_regressions.py::test_retry_state_preserves_failure_evidence_and_retries_to_limit
+4 failed in 8.20s
