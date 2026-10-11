@@ -1,0 +1,56 @@
+[
+  {
+    "scenario": "file-link",
+    "result": {
+      "passed": false,
+      "evidence": "the worker changed check.sh (a protected check path is a link)\nnot accepted: the worker changed a protected check file"
+    },
+    "outside_after": "original outside content",
+    "dangling_target_created": false
+  },
+  {
+    "scenario": "parent-link",
+    "result": {
+      "passed": false,
+      "evidence": "the worker changed checks/check.sh (a protected check path is a link)\nnot accepted: the worker changed a protected check file"
+    },
+    "outside_after": "original outside content",
+    "dangling_target_created": false
+  },
+  {
+    "scenario": "dangling-link",
+    "result": {
+      "passed": false,
+      "evidence": "the worker changed check.sh (a protected check path is a link)\nnot accepted: the worker changed a protected check file"
+    },
+    "outside_after": "original outside content",
+    "dangling_target_created": false
+  },
+  {
+    "scenario": "changed",
+    "result": {
+      "passed": false,
+      "evidence": "the worker changed check.sh (a protected check file)\nnot accepted: the worker changed a protected check file"
+    },
+    "outside_after": "original outside content",
+    "dangling_target_created": false
+  },
+  {
+    "scenario": "unchanged",
+    "result": {
+      "passed": true,
+      "evidence": "`sh check.sh` exited 0"
+    },
+    "outside_after": "original outside content",
+    "dangling_target_created": false
+  },
+  {
+    "scenario": "absent",
+    "result": {
+      "passed": true,
+      "evidence": "`sh check.sh` exited 0"
+    },
+    "outside_after": "original outside content",
+    "dangling_target_created": false
+  }
+]

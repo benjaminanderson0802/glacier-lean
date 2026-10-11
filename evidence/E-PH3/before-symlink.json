@@ -1,0 +1,9 @@
+{
+  "reproduction": "protected file symlink redirects restoration outside verifier copy",
+  "result": {
+    "passed": false,
+    "evidence": "the worker changed check.sh (a protected check file)\nnot accepted: the worker changed a protected check file"
+  },
+  "outside_after": "exit 1",
+  "outside_before": "original outside content"
+}

@@ -1,12 +1,24 @@
 """Acceptance checks, run by the verifier outside the worker's control (docs/contracts/VERIFICATION.md, rule I-04).
 Each check runs on a fresh copy of the flow's workspace; files the check owns ("files") are restored from the saved
 flow, so a worker that edits or weakens them changes nothing."""
-import json, os, shutil, subprocess, tempfile
+import json, os, shutil, stat, subprocess, tempfile
+from pathlib import PureWindowsPath
 import decider
 import shell_commands
 
 KINDS = ("command", "schema", "rubric", "human")
 CHECK_TIMEOUT = 600
+
+
+def _check_file_parts(rel: str) -> list[str]:
+    # Saved flows are portable: reject Windows traversal/drives on POSIX too.
+    if not isinstance(rel, str) or not rel or "\x00" in rel:
+        raise ValueError("check file needs a relative path")
+    path = PureWindowsPath(rel)
+    parts = rel.replace("\\", "/").split("/")
+    if path.drive or path.root or any(p in ("", ".", "..") or ":" in p for p in parts):
+        raise ValueError(f"check file {rel!r} is outside the workspace or has an invalid path")
+    return parts
 
 
 def validate(acceptance) -> None:
@@ -20,10 +32,36 @@ def validate(acceptance) -> None:
         need = {"command": "cmd", "schema": "schema", "rubric": "rubric", "human": "question"}[c["kind"]]
         if not c.get(need):
             raise ValueError(f"check {i + 1} ({c['kind']}) needs '{need}'")
+        files = c.get("files", {})
+        if not isinstance(files, dict):
+            raise ValueError(f"check {i + 1}: files must map relative paths to text")
+        for rel, content in files.items():
+            _check_file_parts(rel)
+            if not isinstance(content, str):
+                raise ValueError(f"check file {rel!r} must contain text")
 
 
 def workspace(home: str, env_id: str, check: dict, ws: str = "") -> str:
     return check.get("cwd") or ws or os.path.join(home, "workspaces", env_id)
+
+
+def _protected_target(root: str, rel: str) -> str:
+    """Inspect the private copy without following worker-controlled links."""
+    parts = _check_file_parts(rel)
+    target = root
+    for i, part in enumerate(parts):
+        target = os.path.join(target, part)
+        try:
+            info = os.lstat(target)
+        except FileNotFoundError:
+            continue  # checks supplied only in the saved flow need not exist yet
+        # Windows junctions/reparse points must not redirect restoration either.
+        if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise ValueError(f"the worker changed {rel} (a protected check path is a link)")
+        expected = stat.S_ISREG if i == len(parts) - 1 else stat.S_ISDIR
+        if not expected(info.st_mode):
+            raise ValueError(f"the worker changed {rel} (a protected check path has the wrong file type)")
+    return target
 
 
 def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str = "") -> dict:
@@ -40,21 +78,24 @@ def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str
             shutil.copytree(ws, copy, symlinks=True, ignore=shutil.ignore_patterns(".git"))
         else:
             os.makedirs(copy)
-        notes = []
+        notes, targets = [], []
         for rel, content in (check.get("files") or {}).items():
-            target = os.path.normpath(os.path.join(copy, rel))
-            if not target.startswith(copy + os.sep):
-                return {"passed": False, "evidence": f"check file {rel!r} is outside the workspace"}
-            original = os.path.join(ws, rel)
-            if os.path.exists(original):
-                with open(original, errors="replace") as f:
-                    if f.read() != content:
-                        notes.append(f"the worker changed {rel} (a protected check file)")
-            os.makedirs(os.path.dirname(target), exist_ok=True)
-            with open(target, "w") as f:
-                f.write(content)
+            try:
+                target = _protected_target(copy, rel)
+                if os.path.exists(target):
+                    with open(target, encoding="utf-8") as f:
+                        if f.read() != content:
+                            notes.append(f"the worker changed {rel} (a protected check file)")
+                targets.append((target, content))
+            except (OSError, ValueError) as e:
+                notes.append(str(e))
         if notes:  # rule I-04: touching the check that judges you is never accepted, even if the work is right
             return {"passed": False, "evidence": "\n".join(notes + ["not accepted: the worker changed a protected check file"])}
+        # Do not write anything until every protected path and existing file is checked.
+        for target, content in targets:
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "w", encoding="utf-8") as f:
+                f.write(content)
         if kind == "command":
             try:
                 command, shell, warning = shell_commands.command_invocation(check["cmd"])
