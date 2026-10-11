@@ -14,6 +14,11 @@ import tempfile
 import time
 import venv
 
+try:
+    from . import venture_health
+except ImportError:  # direct execution: python setup/health_check.py
+    import venture_health
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 REQUIREMENTS = HERE / "requirements.txt"
@@ -83,11 +88,13 @@ def check_upgrades(python: Path | None = None) -> tuple[list[dict], str]:
 
 def command_specs(results_path: Path) -> list[tuple[str, list[str], Path]]:
     py = "{python}"
-    return [
+    specs = [
         ("backend", [py, "-m", "pytest", "-q", "tests"], REPO / "glacier/backend"),
         ("other suites", [py, "-m", "pytest", "-q", "glacier/importers", "templates", "bench", "tools/scan", "tools/catalog"], REPO),
         ("verification benchmark", [py, "bench/verification/run_glacier.py", "--results", str(results_path)], REPO),
     ]
+    specs.extend(venture_health.command_specs(REPO, Path(py)))
+    return specs
 
 
 def command_timeout() -> int:
@@ -116,11 +123,19 @@ def run_commands(specs, python: Path, quick: bool) -> list[dict]:
             result = subprocess.run(expanded, cwd=cwd, text=True, capture_output=True,
                                     timeout=command_timeout())
             passed = result.returncode == 0
-            summary = result_summary(name, passed, result.stdout + "\n" + result.stderr)[:500]
+            output = result.stdout + "\n" + result.stderr
+            if name.startswith("venture suite: "):
+                passed, summary = venture_health.summarize(name, result.returncode, output)
+            else:
+                summary = result_summary(name, passed, output)
+            summary = summary[:500]
         except subprocess.TimeoutExpired:
-            passed, summary = False, "timed out"
+            passed, summary = False, ("FAILED: timed out" if name.startswith("venture suite: ") else "timed out")
         except OSError as error:
-            passed, summary = False, str(error)[:500]
+            passed = False
+            summary = str(error)[:500]
+            if name.startswith("venture suite: "):
+                summary = f"FAILED: {summary}"
         sections.append({"name": name, "passed": passed, "summary": summary})
     return sections
 
@@ -181,7 +196,9 @@ def run_health_sections(quick: bool = False) -> list[dict]:
                 install_section = {"name": "fresh environment", "passed": False, "summary": str(error)[:500]}
             prefix_sections = [install_section]
             if not install_section["passed"]:
-                return prefix_sections
+                return prefix_sections + venture_health.not_run_sections(
+                    REPO, "fresh environment setup failed"
+                )
         sections = prefix_sections + run_commands(command_specs(run_dir / "verification-results.md"), python, quick)
         sections.append(run_security_suite(python, run_dir / "security-results.md"))
         return sections
