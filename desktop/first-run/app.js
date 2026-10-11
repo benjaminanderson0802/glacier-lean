@@ -1,4 +1,4 @@
-const names = {codex: 'Codex', ollama: 'Ollama (local AI models)', opencode: 'OpenCode', gemini: 'Gemini CLI', git: 'Git'};
+const names = {codex: 'Codex', ollama: 'Ollama (local AI models)', opencode: 'OpenCode', gemini: 'Gemini CLI', git: 'Git (required for note history)'};
 
 async function showTools() {
   const list = document.querySelector('#tools');

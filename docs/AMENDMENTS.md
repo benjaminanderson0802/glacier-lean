@@ -21,3 +21,7 @@ Owner approved Ask/Build supporting OpenAI-compatible and Anthropic APIs alongsi
 
 ## 2026-10-10 - PH12 Ventures on Glacier (owner-approved)
 Owner instruction (chat, 2026-10-10): build the ventures in the owner's Venture Build Spec as Glacier automations tonight, using Codex workers in waves, changing Glacier as needed and auditing for coherence. Added phase PH12 with one checkpoint per platform card, shared block and in-scope venture. Card mapping: P1-P3 -> PH12.1-12.3, B1-B5 -> PH12.4-12.8, V-* -> PH12.9-12.20, I* -> PH12.22.
+
+## 2026-10-10 — E-PH8 verification drift (no policy amendment)
+
+The desktop first-run page still shipped the superseded pixel theme; the existing theme check failed. Restored the current room artwork, Nunito and exact screen tokens; the unchanged check now passes. Desktop/update docs also described completed integration as pending. Corrected them and separated Linux fixture/live-resource evidence from the still-open Windows installer/update proofs in `evidence/PH8/2026-10-10/README.md`. The packaging check's literal command expectation predates Python user-site isolation; filed `CLM-2026-10-10-E-PH8-VALIDATION` for the independent tester rather than changing that check or weakening isolation. This addresses the anti-pattern of status claims without current passing artifacts. No invariant or exit criterion changed.
