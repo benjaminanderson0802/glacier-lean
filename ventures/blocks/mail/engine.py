@@ -4,16 +4,22 @@ import html
 import json
 import os
 import re
+import sys
 import textwrap
-import urllib.error
 import urllib.parse
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+import httpx
 
 _AGENCY_TERMS = re.compile(r"\b(official\s+government|government\s+notice|federal\s+agency|department\s+of|irs|osha|cpsc|seal\s+of)\b", re.I)
 _TAGS = re.compile(r"<[^>]+>")
+_LOB_API_BASE_URL = "https://api.lob.com/v1"
+
+
+class _LobRequestError(RuntimeError):
+    """A safe-to-display failure from Lob's test-only API."""
 
 
 def _default_output_dir() -> Path:
@@ -74,40 +80,109 @@ def check_outreach(record: dict[str, Any], message_html: str, *, suppression_pat
     return {"verdict": "pass", "reason": "sender is clear, no agency-style wording, and recipient is not suppressed"}
 
 
+def _secrets_store():
+    backend_path = str(Path(__file__).resolve().parents[3] / "glacier" / "backend")
+    if backend_path not in sys.path:
+        sys.path.insert(0, backend_path)
+    import secrets_store  # type: ignore[import-not-found]
+    return secrets_store
+
+
+def _glacier_secret(name: str) -> str | None:
+    try:
+        return _secrets_store().resolve("{secret:" + name + "}")
+    except Exception:
+        return None
+
+
+def _lob_key(secret_getter: Callable[[str], str | None] | None = None) -> str | None:
+    try:
+        value = (secret_getter or _glacier_secret)("LOB_API_KEY")
+    except Exception:
+        return None
+    return str(value).strip() if value else None
+
+
+def _check_lob_base_url() -> None:
+    configured = os.environ.get("LOB_API_BASE_URL")
+    if configured is not None and configured.rstrip("/") != _LOB_API_BASE_URL:
+        raise ValueError("Lob API base URL must be the approved HTTPS endpoint")
+
+
 def _api_url(path: str) -> str:
-    base = os.environ.get("LOB_API_BASE_URL", "https://api.lob.com/v1").rstrip("/")
-    return f"{base}/{path.lstrip('/')}"
+    _check_lob_base_url()
+    if not isinstance(path, str) or not path or "\\" in path or "?" in path or "#" in path:
+        raise ValueError("Lob API path is invalid")
+    relative = path.lstrip("/")
+    parts = relative.split("/")
+    if not relative or any(part in {"", ".", ".."} for part in parts):
+        raise ValueError("Lob API path is invalid")
+    if urllib.parse.unquote(relative) != relative:
+        raise ValueError("Lob API path is invalid")
+    return f"{_LOB_API_BASE_URL}/{relative}"
 
 
-def _lob_request(path: str, *, payload: dict[str, Any] | None = None, params: dict[str, str] | None = None) -> dict[str, Any]:
-    key = os.environ.get("LOB_API_KEY", "").strip()
-    if not key.startswith("test_"):
+def _lob_request(
+    path: str,
+    *,
+    payload: dict[str, Any] | None = None,
+    params: dict[str, str] | None = None,
+    secret_getter: Callable[[str], str | None] | None = None,
+    transport: Any = None,
+) -> dict[str, Any]:
+    _check_lob_base_url()
+    key = _lob_key(secret_getter)
+    if not key or not key.startswith("test_"):
         raise ValueError("Lob API key must be a test key (test_ prefix); live sending is disabled")
     url = _api_url(path)
-    if params:
-        url += "?" + urllib.parse.urlencode(params)
-    data = json.dumps(payload).encode() if payload is not None else None
-    request = urllib.request.Request(url, data=data, method="POST" if data else "GET")
-    request.add_header("Authorization", "Basic " + __import__("base64").b64encode((key + ":").encode()).decode())
-    if data:
-        request.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return json.loads(response.read().decode())
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"Lob test API request failed: {exc}") from exc
+        method = "POST" if payload is not None else "GET"
+        request_options: dict[str, Any] = {
+            "params": params,
+            "json": payload,
+            "auth": (key, ""),
+            "timeout": 15,
+            "follow_redirects": False,
+        }
+        if transport is None:
+            with httpx.Client(timeout=15, follow_redirects=False, trust_env=False) as client:
+                response = client.request(method, url, **request_options)
+        else:
+            response = transport.request(method, url, **request_options)
+        status_code = int(response.status_code)
+        if 300 <= status_code < 400:
+            raise _LobRequestError("Lob test API redirect was refused")
+        if status_code >= 400:
+            raise _LobRequestError("Lob test API request failed")
+        try:
+            result = response.json()
+        except Exception:
+            raise _LobRequestError("Lob test API returned an invalid response") from None
+        if not isinstance(result, dict):
+            raise _LobRequestError("Lob test API returned an invalid response")
+        return result
+    except _LobRequestError:
+        raise
+    except Exception:
+        raise RuntimeError("Lob test API request failed") from None
 
 
-def verify_address(address: Any) -> dict[str, Any]:
+def verify_address(
+    address: Any,
+    *,
+    secret_getter: Callable[[str], str | None] | None = None,
+    transport: Any = None,
+) -> dict[str, Any]:
     """Validate an address with Lob; without a test key return an honest uncertain result."""
     fields = _record_address(address)
     if not fields.get("address_line1"):
         return {"verdict": "uncertain", "address": fields, "detail": "street address is missing"}
     if not all(fields.get(key) for key in ("address_city", "address_state", "address_zip")):
         return {"verdict": "uncertain", "address": fields, "detail": "city, state, and ZIP are required for verification"}
-    if not os.environ.get("LOB_API_KEY", "").startswith("test_"):
+    key = _lob_key(secret_getter)
+    if not key or not key.startswith("test_"):
         return {"verdict": "uncertain", "address": fields, "detail": "Lob test key is not configured; address was not verified"}
-    result = _lob_request("addresses/validate", params=fields)
+    result = _lob_request("addresses/validate", params=fields, secret_getter=secret_getter, transport=transport)
     verified = result.get("deliverability") in {"deliverable", "deliverable_unnecessary_unit"}
     return {"verdict": "pass" if verified else "fail", "address": result.get("components") or fields, "detail": result.get("deliverability", "Lob returned no deliverability status"), "lob_address_id": result.get("id")}
 
@@ -155,10 +230,15 @@ def _proof_pdf(front: str, back: str, output: Path) -> None:
 
 
 def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, approval_id: str | None = None,
-             output_dir: str | Path | None = None) -> dict[str, Any]:
+             output_dir: str | Path | None = None,
+             secret_getter: Callable[[str], str | None] | None = None,
+             transport: Any = None) -> dict[str, Any]:
     """Render a proof; deliver through Lob's test API only with an explicit approval ID."""
-    key = os.environ.get("LOB_API_KEY", "").strip()
+    key = _lob_key(secret_getter)
     if key and not key.startswith("test_"):
+        raise ValueError("Lob API key must be a test key (test_ prefix); live sending is disabled")
+    if not key and os.environ.get("LOB_API_KEY", "").strip().startswith("live_"):
+        # Keep legacy live-key rejection without ever using an environment value to authenticate.
         raise ValueError("Lob API key must be a test key (test_ prefix); live sending is disabled")
     destination = Path(output_dir) if output_dir else _default_output_dir()
     destination.mkdir(parents=True, exist_ok=True)
@@ -174,13 +254,13 @@ def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, approval_i
     back_path.write_text(back_html, encoding="utf-8")
     _proof_pdf(front_html, back_html, proof_path)
     result: dict[str, Any] = {"status": "render_only", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": str(proof_path), "address_verification": {"verdict": "uncertain", "detail": "not sent; no Lob test key configured" if not key else "not sent; an approval_id is required"}, "outreach_check": check}
-    if key.startswith("test_") and approval_id and approval_id.strip():
-        verification = verify_address(to)
+    if key and key.startswith("test_") and approval_id and approval_id.strip():
+        verification = verify_address(to, secret_getter=secret_getter, transport=transport)
         result["address_verification"] = verification
         if verification["verdict"] != "pass":
             result["status"] = "not_sent_address_unverified"
             return result
-        response = _lob_request("postcards", payload={"to": recipient, "from": sender, "front": front_html, "back": back_html, "size": "6x4", "metadata": {"proof": digest, "approval_id": approval_id.strip()}})
+        response = _lob_request("postcards", payload={"to": recipient, "from": sender, "front": front_html, "back": back_html, "size": "6x4", "metadata": {"proof": digest, "approval_id": approval_id.strip()}}, secret_getter=secret_getter, transport=transport)
         result.update({"status": "sent_test", "lob_postcard_id": response.get("id"), "delivery_date": response.get("expected_delivery_date"), "approval_id": approval_id.strip()})
     return result
 
