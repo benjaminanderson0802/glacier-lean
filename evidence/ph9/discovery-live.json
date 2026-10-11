@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-10",
+  "sources": {
+    "mcp": "https://registry.modelcontextprotocol.io/v0/servers",
+    "github_mcp": "https://api.github.com/search/repositories?q=topic:mcp-server&sort=updated&order=desc&per_page=100",
+    "github_agents": "https://api.github.com/search/repositories?q=topic:ai-agents&sort=updated&order=desc&per_page=100",
+    "github_ollama": "https://api.github.com/search/repositories?q=topic:ollama&sort=updated&order=desc&per_page=100",
+    "ollama": "https://ollama.com/library"
+  },
+  "failures": [],
+  "records": [],
+  "proposals": []
+}

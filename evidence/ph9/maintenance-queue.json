@@ -1,0 +1,8 @@
+{
+  "observed_utc": "2026-10-11T03:32:49.554935+00:00",
+  "queue_pid": 402721,
+  "maintenance_started": false,
+  "children": "",
+  "reason": "Required project acceptance already fails outside PH9; maintenance has not acquired the shared suite lock.",
+  "shared_lock": "409647 WRITE* /tmp/glacier-suite.lock                                                                              397779\n409302 WRITE* /tmp/glacier-suite.lock                                                                              397779\n408224 WRITE* /tmp/glacier-suite.lock                                                                              397779\n407342 WRITE* /tmp/glacier-suite.lock                                                                              397779\n405217 WRITE* /tmp/glacier-suite.lock                                                                              397779\n403617 WRITE* /tmp/glacier-suite.lock                                                                              397779\n402721 WRITE* /tmp/glacier-suite.lock                                                                              397779\n397779 WRITE  /tmp/glacier-suite.lock                                                                             "
+}

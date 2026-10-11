@@ -1,0 +1,67 @@
+.....FF....F............................................................ [ 91%]
+.......                                                                  [100%]
+=================================== FAILURES ===================================
+_______________ test_gallery_has_the_sixteen_requested_templates _______________
+
+    def test_gallery_has_the_sixteen_requested_templates():
+        templates = load_templates()
+>       assert len(templates) == 16
+E       AssertionError: assert 20 == 16
+E        +  where 20 = len([{'id': 'tpl-backup-check', 'name': 'Check my backups ran', 'description': 'Checks the newest recent backup file and w...messages into a note without marking them as read. Add your IMAP app password in Settings > Secrets first.', ...}, ...])
+
+templates/test_templates.py:62: AssertionError
+__________ test_templates_follow_the_environment_contract_and_catalog __________
+
+    def test_templates_follow_the_environment_contract_and_catalog():
+        catalog = {item["type"]: item for item in load_catalog()}
+        templates = load_templates()
+        ids = [template["id"] for template in templates]
+        assert len(ids) == len(set(ids))
+
+        for template in templates:
+            assert set(template) <= {"id", "name", "nodes", "edges", "max_steps",
+                                     "goal", "acceptance", "description", "when_to_use"}
+            if template["id"] in EVERYDAY_IDS:
+                assert template.get("goal") and template.get("acceptance"), template["id"]
+            assert template["id"].startswith("tpl-")
+            assert template["name"].strip()
+            assert "_" not in template["name"]
+            assert template["nodes"]
+
+            node_ids = [node["id"] for node in template["nodes"]]
+            assert len(node_ids) == len(set(node_ids))
+            known_node_ids = set(node_ids)
+            nodes_by_id = {node["id"]: node for node in template["nodes"]}
+            for node in template["nodes"]:
+                assert node["type"] in catalog
+                assert set(node["config"]) <= {
+                    field["key"] for field in catalog[node["type"]]["fields"]
+                }
+                assert set(node["position"]) >= {"x", "y"}
+                assert all(isinstance(node["position"][axis], (int, float)) for axis in ("x", "y"))
+>               assert node["position"]["x"] % 260 == 0
+E               assert (300 % 260) == 0
+
+templates/test_templates.py:93: AssertionError
+_______________ test_every_template_has_a_current_graph_preview ________________
+
+    def test_every_template_has_a_current_graph_preview():
+        """Previews are generated from source graphs; this acceptance check must stay independent."""
+        import hashlib
+
+        previews = ROOT / "previews"
+        for template in load_templates():
+            preview = previews / f"{template['id']}.png"
+            digest_file = previews / f"{template['id']}.sha256"
+>           assert preview.is_file() and preview.stat().st_size > 1000, template["id"]
+E           AssertionError: tpl-email-inbox-note
+E           assert (False)
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/home/glacier/w/workers/gf-E-PH9/templates/previews/tpl-email-inbox-note.png').is_file
+
+templates/test_templates.py:235: AssertionError
+=========================== short test summary info ============================
+FAILED templates/test_templates.py::test_gallery_has_the_sixteen_requested_templates
+FAILED templates/test_templates.py::test_templates_follow_the_environment_contract_and_catalog
+FAILED templates/test_templates.py::test_every_template_has_a_current_graph_preview
+3 failed, 76 passed in 30.16s
