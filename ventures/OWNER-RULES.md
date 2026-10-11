@@ -13,6 +13,8 @@ Benjamin (the owner) set these. Every agent, human and AI, reads this file befor
 ## Venture decisions log
 - 2026-10-11: added eBay (wholesale drop-ship, high-priced items in less-online niches with long shipping norms) and Depop (buy-first or seller-designed items). Dropped ventures: Pinterest and Vinted.
 - 2026-10-11: Whop clipping only — owner approved fully automated posting to his linked YouTube channels and submission to Whop Content Rewards after one-time setup and explicit live configuration.
+- 2026-10-11: Whop clipping runs as separate Producer and hourly Distributor automations; channels never discover content, and Whop submissions remain in a manual local queue until Whop provides written consent or an official API.
+- 2026-10-11: Whop clipping Distributor targets at least one post per active channel every 6 hours, with a 2-hour minimum spacing and a 6-per-channel daily cap.
 - 2026-10-11: the business operates from Georgia; no Alabama foreign-LLC registration; sales tax registrations go to Georgia.
 
 ## Hard boundaries

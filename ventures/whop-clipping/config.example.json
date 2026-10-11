@@ -1,6 +1,7 @@
 {
   "live": false,
   "approved_campaign_ids": [],
+  "approval_history": {},
   "paused_campaign_ids": [],
   "channels": [
     "@frameandmomentdesk",
@@ -14,10 +15,13 @@
     "@thecliproomnotes",
     "@contextclipsdesk"
   ],
-  "daily_channel_cap": 3,
-  "global_daily_cap": 90,
+  "daily_channel_cap": 6,
+  "global_daily_cap": 100,
   "min_spacing_hours": 2,
+  "max_spacing_hours": 6,
   "posting_jitter_minutes": 45,
+  "target_library_stock": 20,
+  "notification_url": "",
   "view_collapse_ratio": 0.2,
   "sources": {
     "max_bytes": 2000000000,
@@ -30,8 +34,8 @@
   "video_layout": "blurred_background",
   "ollama_url": "http://127.0.0.1:11434",
   "plugins": {
-    "scout": "whop_scout.WhopScout",
+    "scout": "scripts.scout.LocalCampaignScout",
     "uploader": "youtube_upload.YouTubeUploader",
-    "submitter": "whop_submit.WhopSubmitter"
+    "submitter": "scripts.submitter.ManualQueueSubmitter"
   }
 }
