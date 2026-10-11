@@ -1,0 +1,37 @@
+{
+  "id": "ebay-order-po-review",
+  "name": "Prepare a supplier PO for approval",
+  "goal": "Read an owner-exported eBay order payload and prepare an unsent supplier PO draft for owner review.",
+  "nodes": [
+    {
+      "id": "build_po",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/ebay-wholesale/scripts/ebay_wholesale.py po --order \"$GLACIER_HOME/ventures/ebay-wholesale/incoming/fulfillment-order.json\" --supplier-map \"$GLACIER_HOME/ventures/ebay-wholesale/incoming/supplier-map.json\" --output \"$GLACIER_HOME/ventures/ebay-wholesale/drafts/supplier-po.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "po_ok",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "owner_approval",
+      "type": "approval",
+      "config": {
+        "prompt": "Review the eBay ship-by date, supplier stock and lead time, freight, costs, buyer address, and return obligations. Glacier has not sent a purchase order, paid the supplier, or updated eBay. Approve any supplier purchase and shipment update separately."
+      },
+      "position": {"x": 600, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "build_po", "target": "po_ok", "label": ""},
+    {"id": "e2", "source": "po_ok", "target": "owner_approval", "label": "yes"}
+  ],
+  "max_steps": 3
+}
