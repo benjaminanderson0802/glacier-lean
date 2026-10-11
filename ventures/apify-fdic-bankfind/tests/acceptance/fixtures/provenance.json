@@ -1,0 +1,8 @@
+{
+  "institution.json": {
+    "source_url": "https://api.fdic.gov/banks/institutions?filters=CERT%3A3510&fields=CERT,NAME,ACTIVE,STALP,CITY,ZIP,DATEUPDT,WEBADDR&format=json&sort_by=CERT&sort_order=ASC&limit=100&offset=0",
+    "retrieved_at": "2026-10-11T03:41:52.583224+00:00",
+    "sha256": "9a185b5ff6750b7b11b53351d5190212af5c7d5fe3cf76cca72d36dd88fbb489",
+    "last_modified": null
+  }
+}
