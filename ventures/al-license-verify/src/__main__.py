@@ -2,65 +2,26 @@
 
 from __future__ import annotations
 
-import os
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
+from scripts.verify import lookup_many, read_roster_file  # noqa: E402
 
 from apify import Actor
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.verify import (  # noqa: E402
-    SourceUnavailable,
-    actor_queries,
-    load_roster_text,
-    lookup_many,
-    read_roster_file,
-)
+from src.actor_template import run_roster_actor  # noqa: E402
 
 
 async def main() -> None:
     async with Actor:
         actor_input = await Actor.get_input() or {}
-        queries = actor_queries(actor_input)
-        roster_as_of = str(actor_input.get("roster_as_of") or "")
-        source_url = str(actor_input.get("source_url") or "")
-        try:
-            roster_text = read_roster_file(str(actor_input.get("roster_file") or ""))
-        except SourceUnavailable as exc:
-            message = "Roster file unavailable; lookup results are uncertain — please check. "
-            message += f"No lookup charge was recorded. {exc}"
-            await Actor.set_status_message(
-                message,
-                is_terminal=True,
-            )
-            return
-        roster = load_roster_text(roster_text)
-        results = lookup_many(
-            roster=roster,
-            queries=queries,
-            roster_as_of=roster_as_of,
-            source_url=source_url,
-            checked_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        )
-        for index, result in enumerate(results):
-            await Actor.push_data(result)
-            if result["verification_state"] != "unverifiable" and (
-                os.getenv("APIFY_IS_AT_HOME") == "1"
-                or os.getenv("ACTOR_TEST_PAY_PER_EVENT", "").lower() == "true"
-            ):
-                import hashlib
-
-                search = queries[index].get("license_number") or queries[index].get("name")
-                key = hashlib.sha256(
-                    f"{os.getenv('APIFY_ACTOR_RUN_ID', 'local')}:{index}:{search}".encode()
-                ).hexdigest()
-                await Actor.charge(event_name="license-lookup", count=1, idempotency_key=key)
-        await Actor.set_status_message(
-            f"Compared {len(results)} queries with the user-supplied Alabama roster snapshot.",
-            is_terminal=True,
+        await run_roster_actor(
+            Actor,
+            actor_input,
+            file_reader=read_roster_file,
+            lookup=lookup_many,
         )
 
 

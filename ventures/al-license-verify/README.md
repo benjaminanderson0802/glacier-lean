@@ -1,41 +1,42 @@
-# Alabama contractor roster verifier
+# Alabama Contractor Roster Check
 
-This is a small Apify Actor prototype for matching a contractor license number or business name against a dated Alabama contractor roster CSV. It returns the literal status and expiration fields when the supplied file has them, a dated `no match found` when it does not, and `uncertain — please check` for stale or ambiguous inputs. It never calls the Alabama board, opens a browser, or treats roster absence as proof that a business is unlicensed.
+## What this Actor does
 
-## Who may pay and price hypothesis
+Check whether a license number or exact business name appears in a dated Alabama contractor roster CSV that **you upload and are authorized to use**. The Actor returns the source fields, source URL, snapshot date, and check time in a dataset that you can export as JSON or CSV or connect through the Apify API. It does not visit the Alabama board website, download a roster, or decide whether a contractor is legally qualified.
 
-Potential buyers are municipal purchasing/public works teams, property managers, and general contractors that repeatedly check subcontractors. The first test is a **$49 paid pilot** for one customer-supplied, authorized roster and up to 100 exact checks. A later self-serve hypothesis is **$0.05 per completed lookup**, with a $5 per-run cap. Neither price is validated; the prospect email asks whether this workflow is useful before any listing is published.
+Use it for a small subcontractor roster review, vendor onboarding cross-check, or repeat comparison against a roster your organization already has permission to use. The example prefill is synthetic. Replace it with your own file and queries.
 
-## Source and permission boundary
+## How to run it
 
-The Alabama Licensing Board for General Contractors points consumers to its license search. Its public detail pages warn that the displayed database may be incomplete and is **not official**; the research file also bars automated access unless the board permits it. The board's law describes an annual roster containing contractor names and places of business, but the currently visible board site does not provide a confirmed downloadable machine-readable roster. See the [board](https://genconbd.alabama.gov/), [board search page](https://genconbd.alabama.gov/search/), and [Section 34-8-26](https://genconbd.alabama.gov/Law/34-8-26.pdf).
+1. Upload a CSV roster using the **User-supplied roster CSV** field.
+2. Enter the date represented by that file and the source URL for reference. The URL is stored as metadata and is never fetched.
+3. Enter one or more license numbers or exact business names. A query must contain exactly one of those fields. The batch limit is 100.
+4. Start the Actor and inspect the `outcome`, `verification_state`, source, and check time in the output dataset.
+5. Confirm important results with the relevant board before relying on them.
 
-For that reason, this version only reads a CSV explicitly uploaded by the Actor user. Apify's `fileupload` field supports user-uploaded files; the runtime restricts network retrieval to Apify file storage. `source_url` is metadata and is never fetched. Before commercial reuse of a board export, Benjamin must ask the board if a downloadable export exists and whether automated use, commercial redistribution, and status/expiry fields are permitted. Until permission is clear, only use an export that the buyer provides and is authorized to use. See the board's public-search disclaimer and the cautions in [`R-APIFYGAPS.md`](../research/R-APIFYGAPS.md).
+The input accepts common column headers for license number, business name, status, expiration, specialty, and address. CSV rows are matched exactly after basic punctuation and case normalization. Duplicate matches, conflicting fields, missing comparison columns, or a snapshot more than 365 days old return `uncertain — please check`. A readable exact absence returns `no match found in supplied Alabama roster as of [date]`.
 
-The roster is a snapshot, not real-time status. A name match is exact after basic punctuation/case normalization; it is not proof of identity. Results do not establish legal qualification, insurance, workmanship, or endorsements. If a file has no status/expiration columns, those fields remain blank.
+## Pricing
 
-## Run locally
+The proposed Store price is **$0.001 per verified exact match**. A successful match is charged only after its result row is written. Readable no-match results, stale or conflicting records, upload failures, and uncertain results are not charged. There is no start fee or automatic dataset-item charge. A 100-query batch therefore has at most $0.10 in custom match events. Confirm the final price, platform usage setting, and run limit in the Store pricing panel before publication.
 
-```sh
-cd ventures/al-license-verify
-~/w/glacier-lean/.venv/bin/python -m pytest -q tests
-```
+Apify provides run monitoring, dataset storage and export, API access, and scheduling for repeated checks. Standard Apify account charges and storage retention settings still apply to your account.
 
-For an Apify run, upload an authorized UTF-8 CSV using the `roster_file` input, enter the file's official source URL and as-of date, then add one or more exact lookup objects:
+## Example input
 
 ```json
-[{"license_number":"AL-EXAMPLE-1042"},{"name":"Example Building Services LLC"}]
+{
+  "roster_file": "<upload a CSV in Apify Console>",
+  "roster_as_of": "2026-10-11",
+  "source_url": "https://genconbd.alabama.gov/",
+  "queries": [{"license_number": "AL-EXAMPLE-1042"}]
+}
 ```
 
-Accepted CSV headers include common variants of license number, company/name, status, expiration date, specialty, address, city, state, and ZIP. The Actor accepts at most 100 lookups and a 25 MiB CSV. A snapshot older than 365 days is always uncertain. No credentials or API key are needed.
+The example query and output values are fabricated test fixtures, not a live board record. The Actor cannot validate the source URL, CSV ownership, or a contractor's identity.
 
-## Files
+## Limits and privacy
 
-- `scripts/verify.py`: CSV parsing, exact match, date handling, host restriction, and output vocabulary.
-- `src/__main__.py`: Apify Actor wrapper.
-- `.actor/input_schema.json`: Apify input UI (fileupload plus JSON array, without nested item schemas).
-- `tests/fixtures/alabama_roster.csv`: synthetic fixture shaped after fields displayed on the board's official detail page; values are fabricated for tests.
-- `samples/sample-output.json`: one sample generated from that fixture, not from a live roster.
-- `prospects.csv`: municipal office contacts from the public Alabama League of Municipalities Municipal Directory; entries are prospects only, and no one has been contacted.
+This Actor reads only the uploaded Apify file and stores the resulting rows in the run dataset. Do not upload data you are not authorized to process. The customer controls input and dataset retention in Apify. A result reflects a point-in-time file and is not a certified report, legal conclusion, insurance check, or guarantee of current status. No board affiliation or endorsement is claimed.
 
-The Actor folder can be deployed directly from this subfolder. Requirements are copied from [`ventures/apify-tools/requirements.txt`](../apify-tools/requirements.txt). No account signup, upload, publication, or payment has been performed.
+For support, use the Apify Issues tab or contact `{{BUSINESS_EMAIL}}`. Include the run ID and a redacted example; do not email a full roster or confidential data.

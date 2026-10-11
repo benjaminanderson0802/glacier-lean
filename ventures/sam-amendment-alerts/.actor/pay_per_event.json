@@ -1,0 +1,15 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "platformUsageIncluded": true,
+  "actorChargeEvents": {
+    "opportunity-change": {
+      "eventTitle": "Verified opportunity change",
+      "eventDescription": "One verified new notice, amendment/version change, or response-deadline change written to the dataset. Baseline, no-change, uncertain, incomplete, and outage rows are not charged.",
+      "eventPriceUsd": 0.001,
+      "isPrimaryEvent": true,
+      "isOneTimeEvent": false
+    }
+  },
+  "minimalMaxTotalChargeUsd": 0.001,
+  "pricingNote": "Proposed price only. Set up this custom event in Apify Console, disable automatic apify-default-dataset-item and apify-actor-start events, and confirm platform-usage handling and a run charge cap before publication. Account and payout actions are owner-only."
+}
