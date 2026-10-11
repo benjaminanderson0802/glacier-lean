@@ -1,0 +1,46 @@
+{
+  "checked_at": "2026-10-11",
+  "check": "sample of five committed official NHTSA campaign API links with ordinary browser User-Agent",
+  "results": [
+    {
+      "campaign": "14V180000",
+      "url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=14V180000",
+      "status": 200,
+      "final_url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=14V180000",
+      "content_type": "application/json;charset=UTF-8",
+      "count": null
+    },
+    {
+      "campaign": "24V500000",
+      "url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=24V500000",
+      "status": 200,
+      "final_url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=24V500000",
+      "content_type": "application/json;charset=UTF-8",
+      "count": null
+    },
+    {
+      "campaign": "26V124000",
+      "url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=26V124000",
+      "status": 200,
+      "final_url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=26V124000",
+      "content_type": "application/json;charset=UTF-8",
+      "count": null
+    },
+    {
+      "campaign": "25V900000",
+      "url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=25V900000",
+      "status": 200,
+      "final_url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=25V900000",
+      "content_type": "application/json;charset=UTF-8",
+      "count": null
+    },
+    {
+      "campaign": "19V749000",
+      "url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=19V749000",
+      "status": 200,
+      "final_url": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber=19V749000",
+      "content_type": "application/json;charset=UTF-8",
+      "count": null
+    }
+  ]
+}

@@ -18,16 +18,19 @@ The free tier covers single lookups. `plans.json` records the spec's individual 
 
 ## Your steps
 
-1. Review the first 50 generated pages, then choose and configure a public host before placing any page online.
-2. Review and submit the Chrome Web Store listing and extension package at the [Chrome Web Store developer console](https://chrome.google.com/webstore/devconsole).
-3. Configure test prices in [Glacier Settings → Secrets](#/settings/secrets) and review plan wording before offering paid access.
+1. Review the first 50 generated pages, then choose a public host before publishing any page.
+2. Rename the rebuilt Actor and choose its price in [Apify Console](https://console.apify.com/actors); choose Stripe test prices, review plan wording, and review then submit the extension through [Glacier Settings → Secrets](#/settings/secrets) and the [Chrome Web Store developer console](https://chrome.google.com/webstore/devconsole).
 
 ## Current limits
 
-Exact barcode/model matches are automatic. Similar brand/model cases return **uncertain — please check**; this version does not invoke local and second-engine model judges. The required labeled 500 recalled and 500 clean benchmark has not been provided, so no accuracy release claim is made and public rollout remains gated. The reader and rules shared packages are absent from this branch; recall matching is a small venture-local function and does not edit a shared block.
+Exact barcode/model matches are automatic. For NHTSA vehicle records, make, model, and model year must agree with the structured recall row; narrative-only model overlap stays **uncertain — please check**. Other borderline matches stay uncertain rather than being judged by local and second-engine model reviewers.
+
+The committed 500-recalled/500-clean benchmark passes on the NHTSA vehicle slice: 0 false negatives, 0 false positive matches, 100% precision and recall. Of 500 clean cases, 261 returned no-match and 239 remained uncertain for review. This is a source-coverage benchmark, not an individual-VIN or cross-source accuracy claim; see [benchmark methods and limits](bench/README.md).
+
+The local Glacier engine ran the inventory and first-pages flows on live CPSC, NHTSA, and FDA snapshots. FSIS still returns HTTP 403 in the shared feed adapter (claim `CLM-2026-10-10-B2-FSIS-API-403`). Until that source is available, batch items return **uncertain — please check** and the first-pages/nightly flows block page generation. The independent local-model/second-engine route for fuzzy matches is also still open in `claim-ph12-12-recall-benchmark-engine`; borderline results remain uncertain. The checker remains blocked from public rollout while these non-owner gates are open.
 
 ## Extension package
 
 Load `extension/` through `chrome://extensions` → **Developer mode** → **Load unpacked** for owner review. The directory is Manifest V3 and requests current-tab reading, local storage for the optional Actor settings, and access to the loopback API and Apify API. Hosted mode is optional; local mode remains the default. The Chrome Web Store listing and submission remain owner steps.
 
-Current owner update (2026-10-10): the Chrome Web Store developer account is registered and the separate recall Apify Actor is deployed. The Actor accuracy fix and the required 500-recalled/500-clean benchmark are still open; neither account registration nor deployment means this venture is ready for public use.
+Current owner update (2026-10-10): the Chrome Web Store developer account is registered and the separate recall Apify Actor is deployed. The vehicle-slice benchmark and live engine checks are complete. The FSIS feed gate remains open; account registration and Actor deployment do not mean this venture is ready for public use.
