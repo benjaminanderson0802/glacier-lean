@@ -12,11 +12,11 @@ The SAM Data Services page was reachable as an HTML application, but no direct k
 
 Small industrial-supply wholesalers and procurement teams that bid federal opportunities are the intended buyers. The validation offer is a four-week pilot for **$49**, covering one NAICS watch. If buyers continue after the pilot, the hypothesis is **$29/month**. Both prices are tests, not market findings, and nothing is charged until Benjamin offers and approves it.
 
-The prospect seeds in `prospects.csv` come from the SBA's public Small Business Search / Dynamic Small Business Search profiles. The list is a manual research starting point, not an endorsement or proof of current registration, fit, or consent. Check each official profile before contacting the business. Use one individually reviewed invitation at a time; do not bulk mail or automate outreach.
+The three prospect rows link to first-party business contact pages. They are manual research leads, not SBA profile records, endorsements, proof of current registration, NAICS fit, active bidding, or consent. Check the linked contact route and confirm fit directly before any invitation. Use one individually reviewed invitation at a time; do not bulk mail or automate outreach.
 
 ## One owner step
 
-1. Choose one prospect, open its SBA profile, personalize the greeting, fill in the valid business postal address, review the offer and sample, then send the one pitch email in [PILOT.md](PILOT.md) yourself.
+1. Choose one prospect, check its linked business contact page and contact route, personalize the greeting, fill in the valid business postal address, review the offer and sample, then send the one pitch email in [PILOT.md](PILOT.md) yourself.
 
 The API key is only needed if a paid pilot is accepted and live monitoring is activated. The owner then obtains the free key from SAM.gov and stores it in Glacier Secrets as `sam_api_key`. Never put it in a file or command line. No account signup, email sending, billing, payment, signature, bid, or agency submission is automated.
 
