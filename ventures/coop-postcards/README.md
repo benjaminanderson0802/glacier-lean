@@ -6,6 +6,8 @@ The postcard half creates a local proof and distinct landing pages, checks that 
 
 Brand records live in `brand-rules.json`. Carrier, Lennox, Rheem, and Goodman have public program or marketing-support pages, but the current account-specific eligibility, evidence, expense, and claim-deadline terms still require owner confirmation. Trane's public dealer page points to its secure dealer portal for details. All five records therefore say `unverified`; these records are source pointers and checklist starters, not program-rule approvals. If a confirmed program expiry is supplied in the local job detail, the shared deadline tracker registers 60-day and 30-day reminders. Without that owner-confirmed date, the draft says deadline pending and schedules nothing.
 
+`workflow.BRAND_RULES` exposes the five source-linked records by lowercase brand name, with explicit `status` and `verified` aliases for callers. `prepare_claim_draft(job, output_dir=...)` adapts compact Jobber-shaped records into local draft artifacts. It copies only job identifiers and claim inputs; client, property, and raw custom-field payloads are not copied. Missing claim evidence and unverified program terms keep the result not filing-ready. The compact-input acceptance check disputes that readiness result in `DISPUTE.md`.
+
 The shared rules checker and document reader remain available for later evidence review. Current claim drafts do not imply that extracted documents prove eligibility; missing items stay unchecked. No brand credentials or portal access are needed by Glacier, and the claim filing script is now a no-op safety guard. A new Jobber connection has not been made, so live dealer intake remains unverified.
 
 ## Your steps

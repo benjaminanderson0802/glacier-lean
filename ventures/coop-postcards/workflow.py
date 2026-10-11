@@ -18,6 +18,17 @@ from ventures.blocks.connectors import JobberClient
 
 
 BRAND_RULES_PATH = Path(__file__).resolve().parent / "brand-rules.json"
+# Public, source-linked records for integrations that need a quick brand lookup.
+# These are pointers for owner review, not authority to approve or file a claim.
+BRAND_RULES = {
+    record["brand"].casefold(): {
+        **record,
+        "status": record.get("rule_status", "unverified"),
+        "verified": record.get("rule_status") == "verified",
+    }
+    for record in json.loads(BRAND_RULES_PATH.read_text(encoding="utf-8"))
+}
+COOP_RULES = BRAND_RULES
 EVIDENCE_CHECKLIST = (
     ("dealer_authorization", "Dealer authorization for this specific claim"),
     ("program_preapproval", "Brand pre-approval, if required by the confirmed current program"),
@@ -178,6 +189,60 @@ def generate_claim_draft(
         from ventures.blocks.deadlines import add as add_deadline
         first_reminder = claim_reminder_dates(expiry)[0]
         add_deadline(claim_id, first_reminder.isoformat(), "0d|30d", f"{brand.title()} co-op claim expiry")
+    return draft
+
+
+def prepare_claim_draft(job: dict[str, Any], *, output_dir: str | Path) -> dict[str, Any]:
+    """Create a safe draft from a compact Jobber intake record.
+
+    This adapter accepts job-shaped input used by local integrations and fixtures.
+    It copies only claim-relevant fields; Jobber client/property/custom-field payloads
+    are deliberately excluded from all generated artifacts.
+    """
+    job_id = str(job.get("id") or job.get("job_id") or job.get("jobNumber") or "")
+    if not job_id:
+        raise ValueError("Jobber job needs an id or job number")
+    status = str(job.get("jobStatus", job.get("status", "completed"))).casefold()
+    if status not in {"completed", "complete"}:
+        raise ValueError("only completed Jobber jobs can start a co-op claim draft")
+
+    safe_job = {
+        "id": job_id,
+        "jobNumber": job.get("jobNumber") or job.get("job_number") or job_id,
+        "title": job.get("title") or "Completed job",
+        "jobStatus": "COMPLETED",
+        "completedAt": job.get("completedAt") or job.get("completed_at"),
+        "jobberWebUri": job.get("jobberWebUri") or job.get("source_url"),
+    }
+    evidence = list(job.get("evidence") or [])
+    if job.get("invoice"):
+        evidence.append("itemized_invoice")
+    details = {
+        "brand": job.get("brand"),
+        "program_year": job.get("program_year"),
+        "expires_on": job.get("expires_on"),
+        "evidence": evidence,
+        "dealer_authorized": job.get("dealer_authorized"),
+        "preapproval_id": job.get("preapproval_id"),
+        "installed_on": job.get("installed_on"),
+    }
+    draft = generate_claim_draft(
+        safe_job,
+        str(job.get("dealer_label") or "Jobber dealer"),
+        details=details,
+        output_dir=output_dir,
+    )
+    # Preserve the year and invoice reference for the owner, without treating
+    # either as proof of the missing ad/payment records or current program terms.
+    draft["program_year"] = str(job.get("program_year") or "") or None
+    draft["invoice_reference"] = str(job.get("invoice") or "") or None
+    if not draft.get("reminder_dates"):
+        draft["reminders"] = [
+            f"Confirm the current {draft.get('brand') or 'brand'} program deadline for {draft.get('program_year') or 'the applicable program year'}"
+        ]
+    else:
+        draft["reminders"] = list(draft["reminder_dates"])
+    Path(draft["record_path"]).write_text(json.dumps(draft, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return draft
 
 
