@@ -1,0 +1,6 @@
+first-run theme ok
+
+> glacier-web@0.2.0 build
+> tsc -b && vite build
+
+sh: 1: tsc: not found

@@ -1,0 +1,48 @@
+Traceback (most recent call last):
+  File "/home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/git/__init__.py", line 296, in <module>
+    refresh()
+  File "/home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/git/__init__.py", line 287, in refresh
+    if not Git.refresh(path=path):
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/git/cmd.py", line 876, in refresh
+    raise ImportError(err)
+ImportError: Bad git executable.
+The git executable must be specified in one of the following ways:
+    - be included in your $PATH
+    - be set via $GIT_PYTHON_GIT_EXECUTABLE
+    - explicitly set via git.refresh(<full-path-to-git-executable>)
+
+All git commands will error until this is rectified.
+
+This initial message can be silenced or aggravated in the future by setting the
+$GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+    - quiet|q|silence|s|silent|none|n|0: for no message or exception
+    - warn|w|warning|log|l|1: for a warning message (logging level CRITICAL, displayed by default)
+    - error|e|exception|raise|r|2: for a raised exception
+
+Example:
+    export GIT_PYTHON_REFRESH=quiet
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/git/__init__.py", line 298, in <module>
+    raise ImportError(f"Failed to initialize: {_exc}") from _exc
+ImportError: Failed to initialize: Bad git executable.
+The git executable must be specified in one of the following ways:
+    - be included in your $PATH
+    - be set via $GIT_PYTHON_GIT_EXECUTABLE
+    - explicitly set via git.refresh(<full-path-to-git-executable>)
+
+All git commands will error until this is rectified.
+
+This initial message can be silenced or aggravated in the future by setting the
+$GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+    - quiet|q|silence|s|silent|none|n|0: for no message or exception
+    - warn|w|warning|log|l|1: for a warning message (logging level CRITICAL, displayed by default)
+    - error|e|exception|raise|r|2: for a raised exception
+
+Example:
+    export GIT_PYTHON_REFRESH=quiet

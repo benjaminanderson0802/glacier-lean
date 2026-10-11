@@ -41,3 +41,6 @@ CLM-2026-10-10-E-PH1-AUDIT-EXIT-PROOF for missing crash/storage coverage.
 The implementation fixes event placement using existing DBOS/SQLite services;
 no replacement engine or governance layer was introduced. No amendment to the
 mission, invariants, exits or decisions is proposed or applied.
+## 2026-10-10 — E-PH8 verification drift (no policy amendment)
+
+The desktop first-run page still shipped the superseded pixel theme; the existing theme check failed. Restored the current room artwork, Nunito and exact screen tokens; the unchanged check now passes. Desktop/update docs also described completed integration as pending. Corrected them and separated Linux fixture/live-resource evidence from the still-open Windows installer/update proofs in `evidence/PH8/2026-10-10/README.md`. The packaging check's literal command expectation predates Python user-site isolation; filed `CLM-2026-10-10-E-PH8-VALIDATION` for the independent tester rather than changing that check or weakening isolation. This addresses the anti-pattern of status claims without current passing artifacts. No invariant or exit criterion changed.
