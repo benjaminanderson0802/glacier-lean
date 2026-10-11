@@ -53,4 +53,6 @@ The extension defaults to the local Glacier API. In the popup, choose **hosted A
 
 ## Verification status
 
-The offline test suite uses recorded response fixtures for CPSC, NHTSA, and FDA food, drug, and device shapes. The optional live canary is skipped by default. This repository has not deployed or published this Actor.
+The offline test suite uses recorded response fixtures for CPSC, NHTSA, and FDA food, drug, and device shapes. The optional live canary is skipped by default. The tests do not verify Actor deployment or public publication.
+
+Owner update on 2026-10-10: the Recall Actor is deployed, and the Chrome Web Store developer account is registered. Accuracy correction remains in progress; deployment and account registration do not satisfy the required labeled accuracy benchmark or establish a public listing/customer launch. Review official source behavior before enabling public use.

@@ -20,6 +20,8 @@ Primary references:
 
 ## Commands and results
 
+Current integrated run on 2026-10-10: `/home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/utility-audits/tests` — **9 passed**. This suite uses synthetic inputs and mocked rate-link responses.
+
 - `PYTHONDONTWRITEBYTECODE=1 /home/glacier/w/glacier-lean/.venv/bin/python -m unittest discover -s ventures/utility-audits/tests -v` — **7 tests passed**, including statewide threshold, period validation, and flat-rate scenario cases.
 - `/home/glacier/w/glacier-lean/.venv/bin/python -m ventures.install_all --only utility-audits --dry-run` — **utility-audit-calculator validated**.
 - CLI dry-run with the synthetic 12-month sample — **result `match`, estimated annual future savings `$240.00`, ST-200R draft present, `signed: false`, `submitted: false`**. Output was written under a disposable `/tmp/utility-audit-check` home.

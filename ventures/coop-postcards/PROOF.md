@@ -34,7 +34,7 @@ Earlier runtime failures were corrected before that passing run: the runner imag
 
 ## Limits
 
-No Jobber account or app UI was connected; no brand portal or customer credentials were used; no claim was filed. No Lob test API request was made. The current mail block renders 6x4 cards, so the USPS EDDM flat size/weight check is unproven. The venture's shared reader, rules and deadline packages are absent, and the local rules adapter refuses filing until the shared rules checker is installed. The real runtime screenshot is pending at `evidence/ventures/coop-postcards/approval-review.png`.
+Owner update on 2026-10-10: the Jobber test app is connected. This venture did not verify live dealer intake, the full field contract, or a dealer-facing app screen. No brand portal or customer credentials were used; no claim was filed. No Lob test API request was made. The current mail block renders 6x4 cards, so the USPS EDDM flat size/weight check is unproven. The venture still does not call the shared reader or deadline APIs for claim documents and reminders. The screenshot is pending at `evidence/ventures/coop-postcards/approval-review.png`.
 
 ## I2 integration update (2026-10-10)
 

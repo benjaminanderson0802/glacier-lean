@@ -58,3 +58,7 @@ The POST returned `{"run_id":"26c2afcecb34"}`. The run finished `done`, `verifie
 3. Review the listing and publish the first Actor in Apify Console at `$0.02` per lookup, with platform usage included, a `$2.00` user run limit, and the automatic `apify-default-dataset-item` event disabled.
 
 No account was created, credentials or payout details were entered, money was spent, or Actor published. The independent second-engine review and the PH12 phase audit remain pending.
+
+## Owner status update — 2026-10-10
+
+The owner reports the Mississippi Actor is built. Apify payout verification and final listing price setup are still pending. The live canaries and real Glacier daily-canary above verify source monitoring only; they do not verify an Apify deployment or public listing. No payout details, price, publication, or customer use was tested by this card.

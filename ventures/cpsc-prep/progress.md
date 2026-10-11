@@ -1,7 +1,8 @@
 # CPSC data prep progress
 
-Card V-CPSC advances PH12.9. PH12 depends on PH5 and PH9, both at exit; this
-venture is assigned as parallel-safe in wave 6. It serves P-CONTROL and
+Card V-CPSC advances PH12.9. PH5 and PH9 remain in progress; this venture is
+assigned as parallel-safe in wave 6 and may start without marking its checkpoint
+complete. It serves P-CONTROL and
 P-USABLE, with M-VERIFIED and M-INTERVENE, by requiring review and certification
 before release, with source pages and independent extraction agreement for
 every field.
@@ -17,12 +18,15 @@ Block functions relied on: `reader.read_document`, `rules.check`,
 `feeds.sync`, `feeds.query`, `customer.create_customer`,
 `customer.checkout_link`, `customer.status_page`, `customer.support_inbox`,
 and `mail.landing_pages`. Their fixed contract is in
-`ventures/blocks/CONTRACT.md`; tests use fakes because the block packages are
-still being built in parallel.
+`ventures/blocks/CONTRACT.md`; isolated tests use block fakes and do not verify
+the shared blocks' live sources or release checks.
 
-Release is not yet verified: real feed/reader/rules/customer/mail checks and a
-successful end-to-end CPSC batch in Glacier await those blocks, a configured
-local second engine, and the spec's public data/sandbox checks. The earlier live
-Glacier attempt registered all four flows and confirmed the broker launch flow
-waited at the lawyer approval; the batch command stopped because those shared
-blocks were not yet present. No checkpoint status was changed.
+Release is not yet verified: the integrated installer validates all four flows,
+but the feed registry lacks the required CPSC list/template IDs and the current
+venture fields do not satisfy the merged `cpsc_efiling.json` ruleset. Missing
+source IDs now produce an uncertain result. The public feed/reader/rules checks,
+configured local second engine, and successful end-to-end batch are still
+required. The earlier broker launch flow waited at the lawyer approval; the
+batch command failure due to absent shared blocks is historical and those blocks
+are now present. The latest isolated suite passes 18 tests; no checkpoint status
+was changed.

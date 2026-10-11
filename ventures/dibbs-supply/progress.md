@@ -1,6 +1,6 @@
 # Progress — DIBBS government supply
 
-PH12.19 remains in progress. The public `dla_dibbs` feed now identifies the DoD warning/consent redirect as unavailable, does not acknowledge it or log in, and directs the owner to verify exact official solicitation links through the local `solicitations.json` intake. Live sync on 2026-10-10 returned 0 rows and preserved the prior snapshot.
+PH12.19 remains in progress. The public `dla_dibbs` feed now identifies the DoD warning/consent redirect as unavailable, does not acknowledge it or log in, and directs the owner to verify exact official solicitation links through the local `solicitations.json` intake. Live sync on 2026-10-10 returned 0 rows and preserved the prior snapshot. Owner update on 2026-10-10: SAM.gov registration was submitted and CAGE is awaiting processing; this does not resolve the unavailable DIBBS feed.
 
 Owner steps link directly to SAM.gov entity registration, CAGE, and the DIBBS solicitation search. The daily flow now has a separate approval gate for the exact parts commitment before any purchase; declining writes a no-purchase review note. Glacier never places an order.
 

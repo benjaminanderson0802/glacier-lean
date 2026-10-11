@@ -18,4 +18,6 @@ Pending heavy-wrapped `npm run live` install and dry-run. No screenshot is claim
 
 ## Limits
 
+Owner update on 2026-10-10: SAM.gov registration has been submitted and CAGE is pending. This owner-reported account status was not independently verified by these fixture tests and does not resolve the unavailable DIBBS feed.
+
 DIBBS's current shared `dla_dibbs` adapter is public-link discovery only, not a documented complete solicitation feed. The venture keeps feed alerts visible and does not infer solicitation eligibility, part identity, instructions, authorization, or traceability. No SAM.gov/CAGE account, supplier contact, purchase, signature, bid, or agency submission is performed by this venture.

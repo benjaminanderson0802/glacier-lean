@@ -10,7 +10,7 @@ The result vocabulary is **match**, **no match found in DLA DIBBS and supplier q
 
 ## Your steps
 
-1. Complete [SAM.gov](https://sam.gov/entity-registration) and [CAGE](https://cage.dla.mil/) registration yourself, then use the [DIBBS solicitation search](https://www.dibbs.bsm.dla.mil/rfq/).
+1. SAM.gov registration was submitted on 2026-10-10; wait for CAGE processing and complete any requested owner-only follow-up through [SAM.gov](https://sam.gov/entity-registration) and [CAGE](https://cage.dla.mil/). Then use the [DIBBS solicitation search](https://www.dibbs.bsm.dla.mil/rfq/).
 2. Review solicitations, request quotes only from original manufacturers or verified authorized distributors, provide quote evidence, and approve each exact parts commitment in the separate Glacier approval step before purchase.
 3. Review each prepared bid, then personally sign and submit it in DIBBS. Keep traceability documents before shipping.
 

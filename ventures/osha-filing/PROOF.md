@@ -51,5 +51,5 @@ The first real-Glacier attempt failed to start Vite because this worktree lacked
 
 - The high-hazard NAICS prefixes come from OSHA's current designated industry page and should be rechecked if that page changes; missing or unknown industry data is excluded as uncertain.
 - Lob address verification and delivery are unavailable without the owner's test key and explicit approval. The venture currently creates render-only proofs.
-- The Jobber connector requires an owner-created test account and keychain secrets, and its current read-only schema does not include employee counts; shops stay uncertain until that channel has a verified staff-count source.
+- Owner update on 2026-10-10: the Jobber test app is connected. Its current read-only schema does not include employee counts; shops stay uncertain until the channel has a verified staff-count source. This venture's synthetic and public-feed checks did not verify a complete live Jobber intake.
 - OSHA ITA credentials and customer submissions are deliberately out of scope; no real portal run is attempted.

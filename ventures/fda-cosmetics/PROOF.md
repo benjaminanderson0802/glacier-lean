@@ -2,7 +2,7 @@
 
 ## Acceptance checks
 
-- `~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/fda-cosmetics/tests` — **8 passed**.
+- `~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/fda-cosmetics/tests` — **9 passed** on 2026-10-10.
 - `~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only fda-cosmetics --dry-run` — both flows validated.
 - A synthetic, customer-confirmed payload produced a local SPL ZIP; `lxml.etree.XMLSchema` validated its XML against FDA's published `SPL.xsd`: **`FDA SPL XSD valid: True`**. FDA's current SPL resources page links the 2016 schema package. This checks XML structure only; Cosmetics Direct performs additional validation.
 
@@ -10,7 +10,9 @@ The focused tests now create the label path required by `_reader_review`; the pr
 
 ## Current limits
 
-No real Shopify credentials, brand label, product catalog, Cosmetics Direct response, or FDA filing was available. The synthetic payload and schema check do not prove the FDA portal accepts a submission. Forwarded FDA responses remain customer-provided records for parsing. Automated 30-day retention deletion and customer-layer billing are not connected and remain launch dependencies.
+Owner update on 2026-10-10: development store `glacier-test-cosmetics` is connected. No live brand label, confirmed product record, Cosmetics Direct response, or FDA filing was available for this verification.
+
+No live customer Shopify product catalog, brand label, Cosmetics Direct response, or FDA filing was available. The synthetic payload and schema check do not prove the FDA portal accepts a submission. Forwarded FDA responses remain customer-provided records for parsing. Automated 30-day retention deletion and customer-layer billing are not connected and remain launch dependencies.
 
 The separate imported-reader disagreement behavior is still assigned to the shared reader owner under claim `CLM-2026-10-10-PH12-15-READER-CONFLICT-CONTRACT`; it is outside this venture card. No NORTHSTAR checkpoint status was changed.
 

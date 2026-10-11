@@ -21,24 +21,25 @@ Package imports are rooted at `ventures.blocks`; all eight contract modules are 
 
 ## Ventures
 
-Owner steps below are taken from the approval gates, build queue, and setup requirements in SPEC.md. Any public launch, account signup, identity check, legal decision, spend, or government filing remains an owner/customer action.
+The current owner-facing steps and direct links are maintained in [OWNER-START-HERE.md](OWNER-START-HERE.md). “Ready” means the prepared workflow has no known build blocker and awaits owner/customer setup or review. “Blocked” identifies a release gate or implementation/evidence gap. “Live” requires public operating evidence; none of the ventures currently qualifies. An account connection, local run, fixture pass, or synthetic record alone is not a live launch.
 
-| Venture | Status | Exact owner steps before/at launch |
+| Venture | Status | Current evidence or release gate |
 | --- | --- | --- |
-| CPSC data prep | Integrated; local acceptance and install checks available; source feeds and second-engine proof remain | Obtain the trade lawyer’s written opinion that the broker flat-fee model is permitted; review and sign the first broker contract; review every extracted batch field, resolve uncertain values, and certify the upload as importer or licensed broker. The customer/importer or broker submits to CPSC. |
-| Apify data tools | Integrated; local/live canary evidence available; account and publication steps remain | Create/sign in to the Apify account and complete payout setup; create and least-privilege the dedicated token, then save it in Glacier Secrets; choose three terms-permitted public license canaries; review and publish the first three actors. |
-| Warranty registration | Integrated; connector fixture and flow checks available; owner account and real records remain | Create/configure the Jobber developer app and test account; save OAuth credentials in Glacier Secrets and run its read-only connection check; review the marketplace listing and submit it after five eligible test accounts; review the first 20 homeowner emails. |
-| Recall checker | Integrated; local matching and flow checks available; benchmark and publishing gates remain | Review and submit the first Chrome Web Store listing; review the first 50 recall pages. The extension must stay limited to the page the user opened. |
-| Co-op claims | Integrated; local acceptance and shared-block checks available; live account and mail remain | Review the first claim for each brand; authorize each customer claim and sign/submit any government filing where applicable. |
-| Street postcards | Integrated; local proof and test-mode flow; not launch-ready until live EDDM proof | Choose the first towns/routes; approve the first card before print; complete the Lob account and printer/post-office setup; approve each buyer proof where its checkout terms require approval. |
-| Freight claims | Integrated; local acceptance and install checks available; live account and carrier claim remain | Complete ShipStation partner/app access; review the first ten claims; the shipper decides whether to accept any settlement/full release. |
-| FDA cosmetics listing tool | Integrated; local acceptance and install checks available; real Shopify/FDA evidence remains | Create the Shopify Partner app/account and development store; request only `read_products`; complete app review and submit the first listing. The brand confirms product/ingredient data; Glacier does not submit FDA filings. |
-| OSHA filing | Integrated; shared-block implementation and fixture acceptance available; OSHA customer-data run remains | Connect the Jobber test app and review the first postcard; review the first five prepared filings; the executive reviews, signs, posts, and submits Form 300A through the establishment’s own OSHA ITA account. |
-| Property tax appeals | Integrated; local acceptance and install checks available; county rule decision remains | Select the initial counties and mail design; obtain Texas consultant registration before Texas filings; the property owner reviews/signs and submits each appeal. |
-| Utility audits | Integrated; local acceptance and install checks available; customer bill and tariff evidence remain | Choose the launch state and utility tariff; approve the first customer-facing offer. The customer confirms account data and approves any utility authorization or external submission. |
-| DIBBS government supply | Integrated; fixture acceptance and install checks available; live solicitations and quotes remain | Complete SAM.gov and CAGE registration; approve each quote/order and sign all government representations. Glacier may prepare bid packets but the owner/customer submits. |
-| Carpenter’s goods | Integrated; fixture acceptance and install checks available; real runtime proof remains | Agree commission terms with the carpenter in writing; approve the first product listing and any paid production/order. |
-| Tariff estimator | On hold by owner’s instruction; not built | Do not build or launch until the owner’s trade lawyer approves the flat-fee model and confirms open deadlines; importer or licensed broker files. |
+| Apify data tools — Mississippi contractor licenses | Ready | Three live source canaries and a verified real-Glacier daily canary; Actor is built, payout verification and listing price remain. |
+| Carpenter’s goods | Blocked | Focused fixtures pass; real Glacier command run previously failed at the unresolved `{repo}` working-directory issue; no owner sales records. |
+| Co-op claims + street postcards | Blocked | Local acceptance and a synthetic render-only run; claim reader/deadline wiring and USPS EDDM size proof remain. Jobber test app is connected, but live dealer intake is not verified. |
+| CPSC data prep | Blocked | Fixture suite and flow validation pass; source IDs/rules integration and real public-source release checks remain. |
+| DIBBS government supply | Blocked | Fixture suite passes; SAM.gov submitted 2026-10-10 awaiting CAGE, while the public DIBBS source returns a DoD warning page and no rows. |
+| FDA cosmetics listing preparation | Blocked | Fixture suite and synthetic SPL schema check pass; Shopify development store is connected, but the reader-contract claim, no live product/label record, and no FDA acceptance remain. |
+| Freight claims | Blocked | Local fixture packet and suite pass; no live ShipStation/customer run, and the shared filer tests lack the Playwright module. |
+| OSHA filing | Blocked | Official feed parsed 400,288 rows and synthetic draft checks pass; complete Jobber field contract and customer-record run remain. |
+| Property tax appeals | Blocked | One live parcel row and an uncertain local packet were checked; county-rule discrepancy, complete roll, and successful real-Glacier run remain. |
+| Recall checker | Blocked | Recall Actor deployed; accuracy fix and required labeled benchmark remain. Chrome Web Store developer account is registered, but no listing is submitted. |
+| Utility audits | Blocked | Synthetic input and fixture tests pass; Indiana launch and pricing/legal basis need owner confirmation, and no customer bills were available. |
+| Warranty registration | Blocked | Fixture checks and a synthetic real-Glacier deadline review pass; connected Jobber test app lacks a verified full field contract, and serial rules/email drafts remain. |
+| Tariff estimator | Blocked | Explicit owner hold; no flow is installed pending counsel approval. |
+
+All venture suites were run in isolation on 2026-10-10 because a single root pytest collection collides on generic `src` and `scripts` imports. Per-directory outcomes and causes for the remaining red checks are recorded in [OWNER-GUIDE-TESTS.md](OWNER-GUIDE-TESTS.md). Do not treat the integration count or fixture passes as release evidence for a gate listed above.
 
 ## Out of scope
 

@@ -48,8 +48,8 @@ reader's stable field names.
 The fixed reader contract has no second-engine method. The CLI uses a separately
 configured local Ollama model (`GLACIER_OLLAMA_URL` and `GLACIER_LOCAL_MODEL`)
 for re-extraction; without it, cross-check results stay uncertain and no CSV
-can be released. Unit tests inject a fake second engine and fakes for blocks
-that have not merged yet.
+can be released. Unit tests inject a fake second engine and isolated block fakes;
+that does not verify the shared blocks' live sources or release checks.
 
 ## Your steps
 
