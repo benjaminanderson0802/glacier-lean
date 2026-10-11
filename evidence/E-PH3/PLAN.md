@@ -14,8 +14,12 @@ Assumption: `copytree(..., symlinks=True)` preserves worker-controlled links; re
 
 ## File lane
 
-Production edits are limited to `glacier/backend/verify.py`. Supporting evidence lives in `evidence/E-PH3/`; unresolved verification/environment work becomes claims in `vault/claims/`. Any NORTHSTAR edits are restricted to PH3 status/evidence; no contract, acceptance, benchmark or existing test file is edited. No screen behavior or API shape changes, so the mock needs no changes.
+The initial production edit was limited to `glacier/backend/verify.py`; the follow-up also touches `glacier/backend/runner.py` to persist a pre-node baseline. Supporting evidence lives in `evidence/E-PH3/`; unresolved verification/environment work becomes claims in `vault/claims/`. Any NORTHSTAR edits are restricted to PH3 status/evidence; no contract, acceptance, benchmark or existing test file is edited. No screen behavior or API shape changes, so the mock needs no changes.
 
 ## Board execution constraints
 
 `setup/run_core_tests.sh` installs into this worktree's shared venv/node_modules symlinks, deletes the fixed `/tmp/e2edata`, and binds port 8000 without ownership checks. Do not run it against other workers' resources. Run its non-mutating backend/type/theme/i18n portions separately and record unavailable browser/dependency steps. `setup/live_codex_check.sh` needs authentication supplied externally and an owned disposable backend on its fixed port; run unchanged if that port is available. No owner decisions, paid APIs, publication or push.
+
+## Follow-up acceptance boundary
+
+The existing verification/workspace/backend suites remain unchanged and must pass. Tester-owned adversarial acceptance is still required for deletion, modification, creation, link redirection, and a verifier-only absent file; this builder does not author those judging checks. The follow-up captures a durable pre-node baseline and fails verification when a protected file's final state differs, while preserving a saved-flow check that was absent before work. `protected-provenance-diagnostic.json` is a direct builder diagnostic only and cannot close the independent coverage claim.

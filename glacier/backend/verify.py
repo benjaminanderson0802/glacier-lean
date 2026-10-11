@@ -1,7 +1,7 @@
 """Acceptance checks, run by the verifier outside the worker's control (docs/contracts/VERIFICATION.md, rule I-04).
 Each check runs on a fresh copy of the flow's workspace; files the check owns ("files") are restored from the saved
 flow, so a worker that edits or weakens them changes nothing."""
-import json, os, shutil, stat, subprocess, tempfile
+import hashlib, json, os, shutil, stat, subprocess, tempfile
 from pathlib import PureWindowsPath
 import decider
 import shell_commands
@@ -64,7 +64,28 @@ def _protected_target(root: str, rel: str) -> str:
     return target
 
 
-def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str = "") -> dict:
+def snapshot_protected_files(home: str, env_id: str, acceptance: list, run_ws: str = "") -> list[dict]:
+    """Capture protected-file provenance before any workflow node can edit its workspace."""
+    snapshots = []
+    for check in acceptance:
+        root = workspace(home, env_id, check, run_ws)
+        files = {}
+        for rel in (check.get("files") or {}):
+            try:
+                target = _protected_target(root, rel)
+                try:
+                    with open(target, "rb") as stream:
+                        files[rel] = hashlib.sha256(stream.read()).hexdigest()
+                except FileNotFoundError:
+                    files[rel] = None
+            except (OSError, ValueError) as exc:
+                files[rel] = {"error": str(exc)}
+        snapshots.append(files)
+    return snapshots
+
+
+def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str = "",
+              protected_snapshot: dict | None = None) -> dict:
     kind = check["kind"]
     ws = workspace(home, env_id, check, run_ws)
     if kind == "rubric":
@@ -82,6 +103,21 @@ def run_check(home: str, env_id: str, check: dict, last_output: str, run_ws: str
         for rel, content in (check.get("files") or {}).items():
             try:
                 target = _protected_target(copy, rel)
+                if protected_snapshot is not None:
+                    baseline = protected_snapshot.get(rel)
+                    if isinstance(baseline, dict) and baseline.get("error"):
+                        notes.append(f"the protected check {rel} was unsafe before the run: {baseline['error']}")
+                    elif baseline is None and os.path.lexists(target):
+                        notes.append(f"the worker created protected check file {rel} during the run")
+                    elif baseline is not None:
+                        try:
+                            with open(target, "rb") as stream:
+                                current = hashlib.sha256(stream.read()).hexdigest()
+                        except FileNotFoundError:
+                            notes.append(f"the worker deleted protected check file {rel} during the run")
+                        else:
+                            if current != baseline:
+                                notes.append(f"the worker changed protected check file {rel} during the run")
                 if os.path.exists(target):
                     with open(target, encoding="utf-8") as f:
                         if f.read() != content:

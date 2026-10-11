@@ -1,5 +1,13 @@
 # E-PH3 verification results
 
+## Follow-up: protected-file provenance
+
+This follow-up adds a durable workflow step that snapshots each protected acceptance file after workspace preparation and before workflow nodes run. The verifier compares the final workspace with that baseline before restoring trusted check content. The local diagnostic in `protected-provenance-diagnostic.json` rejects deletion, modification, and creation after the snapshot, and accepts a verifier-only check file that was absent both before and after work. It is builder evidence, not independent acceptance.
+
+PH3.2 remains in progress. The tester-owned independent adversarial cases and a green backend board are still required; the two filed claims remain open. No benchmark metric has been remeasured by this change.
+
+## Earlier validation attempts
+
 Implementation: `f644fbf` (`verify.py` only). Protected check files are inspected in the verifier's private copy before any restoration. Symlink/reparse and wrong-file-type paths are refused; modified content fails without writing; saved check file paths/content are validated. No acceptance test, benchmark case, contract, or screen behavior was changed.
 
 ## Evidence boundaries
