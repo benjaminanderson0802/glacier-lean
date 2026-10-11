@@ -137,6 +137,7 @@ def load_customer_csv(path: str | Path) -> dict[str, Any]:
     totals = {name: 0 for name in COUNT_FIELDS}
     seen_cases: set[str] = set()
     zero_rows = 0
+    source_cases: list[dict[str, Any]] = []
     for line_number, row in enumerate(rows, start=2):
         case_id = str(row.get("case_id", "")).strip()
         case_type = str(row.get("case_type", "")).strip().casefold()
@@ -144,6 +145,14 @@ def load_customer_csv(path: str | Path) -> dict[str, Any]:
             if case_id:
                 raise ValueError(f"zero-injury row {line_number} must leave case_id blank")
             zero_rows += 1
+            source_cases.append({
+                "source_row": line_number,
+                "source_date": str(row.get("source_date", "")).strip(),
+                "case_id": "zero_injury",
+                "case_type": case_type,
+                "days_away": 0,
+                "job_transfer_or_restriction_days": 0,
+            })
             continue
         if not case_id:
             raise ValueError(f"case_id is required on CSV row {line_number}")
@@ -160,6 +169,14 @@ def load_customer_csv(path: str | Path) -> dict[str, Any]:
             raise ValueError(f"nonnegative whole-number day totals are required on CSV row {line_number}")
         totals["days_away"] += away
         totals["job_transfer_or_restriction_days"] += restricted
+        source_cases.append({
+            "source_row": line_number,
+            "source_date": str(row.get("source_date", "")).strip(),
+            "case_id": case_id,
+            "case_type": case_type,
+            "days_away": away,
+            "job_transfer_or_restriction_days": restricted,
+        })
     if zero_rows and (len(rows) != 1 or seen_cases):
         raise ValueError("a zero-injury row cannot be combined with injury-log cases")
     totals["total_cases"] = sum(totals[name] for name in (
@@ -168,13 +185,17 @@ def load_customer_csv(path: str | Path) -> dict[str, Any]:
     ))
     fields.update(totals)
     fields["source_file"] = Path(path).name
+    fields["source_cases"] = source_cases
     return fields
 
 
 def build_300a_packet(fields: dict[str, Any]) -> dict[str, Any]:
     """Build a printable review draft with an intentionally blank certification."""
     validation = validate_300a(fields)
-    escaped = {key: html.escape(str(value)) for key, value in fields.items()}
+
+    def is_supplied(value: Any) -> bool:
+        return value is not None and bool(str(value).strip())
+
     labels = (
         ("establishment_name", "Establishment name"), ("establishment_address", "Street address"),
         ("establishment_city", "City"), ("establishment_state", "State"),
@@ -188,12 +209,46 @@ def build_300a_packet(fields: dict[str, Any]) -> dict[str, Any]:
         ("job_transfer_or_restriction_days", "Job transfer or restriction days"),
         ("executive_name", "Executive name"), ("executive_title", "Executive title"),
     )
-    rows = "".join(f"<tr><th>{label}</th><td>{escaped.get(key, 'Customer confirmation needed')}</td></tr>" for key, label in labels)
+    missing_fields = [key for key, _label in labels if not is_supplied(fields.get(key))]
+    if missing_fields and validation["verdict"] == "pass":
+        validation["results"].append({
+            "rule": "osha.worksheet_values_present",
+            "verdict": "uncertain",
+            "cite": OSHA_FORM,
+            "detail": "Customer confirmation needed for missing worksheet values: " + ", ".join(missing_fields),
+        })
+        validation["verdict"] = "uncertain"
+    escaped = {key: html.escape(str(value)) for key, value in fields.items()}
+    rows = "".join(
+        f"<tr><th>{label}</th><td>{escaped.get(key) if is_supplied(fields.get(key)) else 'Customer confirmation needed'}</td></tr>"
+        for key, label in labels
+    )
+    provenance_rows = "".join(
+        "<tr>"
+        f"<td>CSV row {html.escape(str(case.get('source_row', 'Customer confirmation needed')))}</td>"
+        f"<td>{html.escape(str(case.get('source_date') or '').strip() or 'Customer confirmation needed')}</td>"
+        f"<td>{html.escape(str(case.get('case_id', '')).strip() or 'Customer confirmation needed')}</td>"
+        f"<td>{html.escape(str(case.get('case_type', '')).strip() or 'Customer confirmation needed')}</td>"
+        f"<td>{html.escape(str(case.get('days_away', 'Customer confirmation needed')))}</td>"
+        f"<td>{html.escape(str(case.get('job_transfer_or_restriction_days', 'Customer confirmation needed')))}</td>"
+        "</tr>"
+        for case in fields.get("source_cases", [])
+        if isinstance(case, dict)
+    )
+    provenance = ""
+    if fields.get("source_file") or provenance_rows:
+        provenance = (
+            "<h2>CSV source and case details</h2>"
+            f"<p>Source file: {html.escape(str(fields.get('source_file') or '').strip() or 'Customer confirmation needed')}</p>"
+            "<table><thead><tr><th>Source row</th><th>Source date</th><th>Case ID</th><th>Case type</th>"
+            "<th>Days away</th><th>Job transfer or restriction days</th></tr></thead>"
+            f"<tbody>{provenance_rows}</tbody></table>"
+        )
     html_doc = (
         "<!doctype html><html lang='en'><meta charset='utf-8'><title>Form 300A preparation draft</title>"
         "<style>body{font:16px Arial,sans-serif;max-width:900px;margin:2rem auto;color:#222}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:.5rem;text-align:left}th{width:40%}.notice{border:2px solid #8a2f00;padding:1rem}</style>"
         "<h1>OSHA Form 300A preparation draft</h1><p>Customer review copy. Compare every value with the establishment's OSHA 300 Log.</p>"
-        f"<table>{rows}</table><h2>Executive certification</h2><p>{html.escape(str(fields.get('executive_name', 'Customer confirmation needed')))}, {html.escape(str(fields.get('executive_title', '')))}</p>"
+        f"<table>{rows}</table>{provenance}<h2>Executive certification</h2><p>{html.escape(str(fields.get('executive_name') or '').strip() or 'Customer confirmation needed')}, {html.escape(str(fields.get('executive_title') or '').strip() or 'Customer confirmation needed')}</p>"
         "<p>Signature: ____________________________________ &nbsp; Date: ______________</p>"
         f"<div class='notice'><strong>Customer action:</strong> executive signs and dates this form, posts it at the establishment February 1–April 30, and submits the required data in OSHA ITA by March 2 (submission opens January 2). Glacier does not certify or submit. Check current OSHA requirements at <a href='{ITA}'>OSHA ITA</a>.</div>"
         f"<p>Review status: {html.escape('Customer must review and certify' if validation['verdict'] == 'pass' else 'Customer confirmation required')}.</p>"
