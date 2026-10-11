@@ -27,7 +27,13 @@
       "overlap": "skip"
     }
   ],
-  "secrets_needed": [],
+  "secrets_needed": [
+    {
+      "name": "sam_api_key",
+      "label": "SAM.gov public API key",
+      "description": "Owner-provided key resolved from Glacier Secrets for read-only SAM.gov opportunities requests."
+    }
+  ],
   "your_steps": [
     {
       "id": "sam-cage-registration",
