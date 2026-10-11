@@ -19,7 +19,7 @@
       "id": "review-certify",
       "type": "approval",
       "config": {
-        "prompt": "Your step: Review every CPSC field beside its source page, resolve all uncertain results, and certify this batch as the importer or licensed customs broker. The generated file contains only these product records and current CPSC template columns. Glacier will prepare the file; it will not submit anything to CPSC."
+        "prompt": "Your step: Review every CPSC field beside its source page and resolve all uncertain results. Certify only if you are the legally responsible and authorized certifier for these products; certify as the importer only when that is your legal role. A licensed broker may act only if authorized. If your role is unclear, stop and ask counsel. The generated file contains only these product records and current CPSC template columns. Glacier will prepare the file; it will not certify or submit anything to CPSC."
       },
       "position": {
         "x": 360,

@@ -2,94 +2,108 @@
 
 ## Drift check and acceptance
 
-- Checkpoint: PH12.9. PH12 depends on PH5 and PH9; wave 6 explicitly assigns
-  this venture as parallel-safe.
+- Checkpoint: PH12.9. PH12 depends on PH5 and PH9; their phase exits are
+  recorded as reached, and wave 6 assigns this venture in parallel.
 - Properties/metrics: P-CONTROL and P-USABLE; M-VERIFIED and M-INTERVENE.
-- Existing tools / I-01: CPSC provides a Product Registry, a bulk-upload CSV
-  template and an API for certificate data. Those support registry management
-  and import, but do not cover this card's document extraction, cited source
-  review, gap reporting, two-engine agreement, and local customer certification
-  workflow. The venture uses that official template and the shared OSS blocks;
-  its custom code is glue for this workflow and never replaces the registry or
-  submits data. Sources: [CPSC Product Registry](https://www.cpsc.gov/eFiling-CPSC-Product-Registry)
-  and [eFiling Document Library](https://www.cpsc.gov/eFiling-Document-Library).
-- Acceptance: output follows the current template columns, carries cited source
-  pages, reports blanks as gaps, blocks missing required fields,
-  mismatches/unknown codes/unapproved customer certification, and never
-  submits to CPSC.
+- Existing tools / I-01: CPSC provides the Product Registry, API, bulk-upload
+  template, and official code guidance. Those cover registry management and
+  filing formats, not this venture's local document extraction, source-linked
+  review, gap reporting, and customer approval flow. This venture is glue
+  around CPSC's system and never certifies or submits data. Sources: [CPSC
+  Product Registry](https://www.cpsc.gov/eFiling-CPSC-Product-Registry),
+  [eFiling Document Library](https://www.cpsc.gov/eFiling-Document-Library).
+- Acceptance: tests verify exact-template output, cited source pages, blank
+  field gaps, blocking required fields, independent agreement, known tariff and
+  rule codes, and customer certification. The venture must never submit to
+  CPSC. Live feed checks must return current official source records without
+  canary alerts; live feed access alone does not establish batch readiness.
 
-## Checks run
+## Venture tests and fixture scope
 
-Command:
-
-```sh
-/home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/cpsc-prep/tests
-```
-
-Output: `13 passed in 0.04s`.
-
-Command:
+Command, using the project interpreter:
 
 ```sh
-/home/glacier/w/glacier-lean/.venv/bin/python -m py_compile ventures/cpsc-prep/scripts/cpsc_prep.py ventures/cpsc-prep/tests/test_pipeline.py
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/cpsc-prep -q
 ```
 
-Output: exit 0, no compile errors.
+Result: `18 passed in 0.08s` on the final run.
 
-Command:
+Installer validation:
 
 ```sh
-/home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only cpsc-prep --dry-run
+~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only cpsc-prep --dry-run
 ```
 
-Output: all four manifest flows validated: `cpsc-batch-prep`,
-`cpsc-broker-launch`, `cpsc-feed-refresh`, and `cpsc-code-pages`; exit 0.
+Result: all four flows (`cpsc-batch-prep`, `cpsc-broker-launch`,
+`cpsc-feed-refresh`, and `cpsc-code-pages`) validated successfully.
 
-## Real Glacier registration/run
+The pipeline tests use fake reader/feed outputs and a fake independent second
+engine; ruleset mapping is checked with the real CPSC rules checker. This is
+fixture-tested behavior. It is not evidence of a customer batch processed from
+real documents, an independent live model cross-check, or a CPSC filing.
 
-Started `npm run live` from `glacier/web` under
-`flock /tmp/glacier-heavy.lock`. The real backend started successfully in a
-temporary Glacier home. `ventures/install_all.py --only cpsc-prep` registered
-all four flows; each `PUT /api/environments/{flow}` returned `saved: true`.
+## Live CPSC feed canaries
 
-The real `cpsc-batch-prep` dry run failed at `prepare-draft` with:
+On 2026-10-10, I ran each CPSC source sync with an isolated `GLACIER_HOME` under
+`/tmp/glacier-cpsc-live-canary-20261010`. The source adapter uses a descriptive
+Glacier public-data User-Agent and sends a read-only GET; it did not log in,
+create an account, use an API key, or submit data. The CPSC records came from
+the official [eFiling Document Library](https://www.cpsc.gov/eFiling-Document-Library)
+and the [SaferProducts.gov CPSC Recalls REST service](https://www.saferproducts.gov/RestWebServices/).
 
-```text
-cpsc-prep: CPSC prep requires the reader, rules, and feeds blocks from ventures.blocks
+First-pass command pattern:
+
+```sh
+GLACIER_HOME=/tmp/glacier-cpsc-live-canary-20261010 \
+  ~/w/glacier-lean/.venv/bin/python -m ventures.blocks.feeds.cli sync SOURCE_ID
 ```
 
-Those blocks are assigned to parallel PH12.4–PH12.6 cards and are not merged in
-this checkout. No claim is made that the CPSC batch ran on public data. The
-separate real Glacier `cpsc-broker-launch` flow reached its durable wait:
+The four `SOURCE_ID` values are the rows below. A second sequential sync of
+those same IDs used the cached public responses and the same isolated database.
 
-```text
-status: waiting
-waiting_on: lawyer-opinion
-node_states: lawyer-opinion=waiting, first-contract=pending, ready=pending
-```
+| Source | First live sync | Canary alerts | Immediate second sync |
+| --- | ---: | --- | --- |
+| `cpsc_flagged_tariff_codes` | 589 rows | None | 589 rows, `changed: false` |
+| `cpsc_rule_codes` | 130 rows | None | 130 rows, `changed: false` |
+| `cpsc_registry_template` | 1 template/header record | None | 1 record, `changed: false` |
+| `cpsc_recalls` | 10,047 rows | None | 10,047 rows, `changed: false` |
 
-It was left waiting; no legal opinion or contract was approved or signed.
-Glacier's temporary live home was removed when the live process stopped.
+Each first sync returned `changed: true`; each repeat returned `changed: false`
+and no alerts. The Recalls API is an auxiliary public recall source; the CPSC
+batch pipeline consumes the first three eFiling sources. The detailed feed
+block check is in [`ventures/blocks/feeds/CHECK.md`](../blocks/feeds/CHECK.md).
+This card's exact row counts, endpoints, first-sync/repeat-sync results, and
+scope are captured in
+[`evidence/live-feed-canaries-2026-10-10.json`](evidence/live-feed-canaries-2026-10-10.json).
+These live feed results supersede the earlier 403 note for CPSC sources. They
+do not supersede any 403 notes for unrelated FSIS or OSHA feeds.
 
-## External source check
+## Real Glacier and remaining launch evidence
 
-CPSC's [eFiling Document Library](https://www.cpsc.gov/eFiling-Document-Library)
-currently lists the official bulk upload template and user guide, plus a
-September 14, 2026 HTS flagging list. The feeds block must expose these current
-sources and canaries before the real-data release check can pass.
+An earlier real Glacier attempt in the pre-integration worktree registered the
+four CPSC flows. The batch flow stopped because its reader, rules, and feeds
+blocks were not available in that worktree; the separate broker-launch flow
+waited at the lawyer-opinion approval. That result is historical and does not
+describe the current checkout. The block implementations are now present.
 
-## Remaining release checks
+The current venture suite confirms the feeds block loads, the three CPSC
+source IDs are registered, and the venture's field adapter can pass the
+fixture to the merged rules checker. The old wave-2 note about missing source
+IDs and unadapted fields is superseded by the current checkout. However, no
+current real-Glacier end-to-end batch was run in this card. No customer
+certificate batch, live independent second-engine extraction, customer
+certification, Product Registry upload, or filing has been demonstrated.
 
-The shared reader, rules, feeds, customer, and mail release checks have not
-been demonstrated because those block implementations are not present here.
-The real second-engine path also needs a configured local Ollama model via
-`GLACIER_OLLAMA_URL` and `GLACIER_LOCAL_MODEL`; absent that, the pipeline leaves
-fields uncertain. Stripe/customer sandbox purchase and signature checks are
-not done. Screenshots in `evidence/ventures/` and the PH12.9 status update are
-deferred to the integrator after the blocks merge and a successful live run.
+Paid launch for either customer channel and broker-portal onboarding remain
+gated on the owner's written trade lawyer opinion covering this exact service
+and fee model. The owner must also sign any broker contract and create/configure
+accounts or payment credentials. The legally responsible and authorized
+certifier reviews and certifies each batch; the authorized filer submits
+through their own route. Public code-page publication also remains behind its
+explicit owner approval flow. Glacier does not perform these actions. See
+[LAWYER-QUESTIONS.md](LAWYER-QUESTIONS.md) for the counsel checklist.
 
-Exact shared-block functions are listed in `README.md` and `venture.json`.
-
-## I2 integration update (2026-10-10)
-
-B1's reader/rules blocks and B2's feeds/deadlines blocks are now present in the I2 worktree. The original missing-block error above describes the earlier branch state. The integrated installer dry-run validated all four CPSC flows. The current feed registry still lacks the three CPSC list/template IDs, and the flat venture fields do not satisfy the merged `cpsc_efiling.json` ruleset; see `../AUDIT-wave2.md` and claim `CLM-PH12-22-CPSC-INTEGRATION-GAP`. Missing source IDs now stop with an uncertain result instead of an uncaught lookup error. No CPSC batch or public-source release check was run because the shared heavy-job slots exceeded the worker backstop. Do not treat PH12.9 as released.
+The evidence supports working official source canaries and fixture-tested
+pipeline logic. It does not support calling PH12.9 released or the venture
+launch-ready while the legal opinion, real batch verification, configured
+independent engine, and owner-only steps remain outstanding.
