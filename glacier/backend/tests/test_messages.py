@@ -1,6 +1,7 @@
 import json
 import sqlite3
 import uuid
+from datetime import datetime, timezone
 
 import keyring
 import pytest
@@ -78,6 +79,31 @@ def test_threads_unify_glacier_session_and_worker_messages_and_search(client, mo
     worker = next(row for row in http.get("/api/messages/threads").json() if row["source"] == "worker")
     detail = http.get(f"/api/messages/threads/{worker['id']}").json()
     assert any(item["text"] == "Started work" for item in detail["messages"])
+
+
+def test_codex_thread_preview_uses_latest_human_message_from_jsonl(client, monkeypatch, tmp_path):
+    http, _ = client
+    sessions = tmp_path / "codex-sessions"
+    sessions.mkdir()
+    monkeypatch.setenv("GLACIER_CODEX_SESSIONS", str(sessions))
+    stamp = datetime.now(timezone.utc).isoformat()
+    (sessions / "preview-session.jsonl").write_text("\n".join([
+        json.dumps({"type": "session_meta", "payload": {"id": "preview-session", "cwd": "/work/project", "timestamp": stamp}}),
+        json.dumps({"type": "event_msg", "timestamp": stamp, "payload": {"type": "user_message", "message": "Fix the empty search result."}}),
+        json.dumps({"type": "response_item", "timestamp": stamp, "payload": {"type": "reasoning", "id": "rs_01", "summary": [{"type": "summary_text", "text": "I should inspect the filter."}]}}),
+        json.dumps({"type": "response_item", "timestamp": stamp, "payload": {"type": "function_call", "id": "fc_01", "name": "exec_command", "arguments": json.dumps({"cmd": "cat src/search.ts"})}}),
+        json.dumps({"type": "response_item", "timestamp": stamp, "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "The search now returns a clear empty state."}]}}),
+        json.dumps({"type": "response_item", "timestamp": stamp, "payload": {"type": "reasoning", "id": "rs_02", "summary": [{"type": "summary_text", "text": "I have finished checking the change."}]}}),
+    ]) + "\n", encoding="utf-8")
+
+    rows = http.get("/api/messages/threads").json()
+    preview = next(row["last_text"] for row in rows if row["id"] == "codex:preview-session")
+    assert preview == "The search now returns a clear empty state."
+    assert not preview.startswith('{"type"')
+
+
+def test_active_codex_preview_without_messages_uses_lowercase_status():
+    assert messages.service._session_preview([], active=True) == "working..."
 
 
 def test_session_detail_is_newest_first_and_secret_redacted(client, monkeypatch):
