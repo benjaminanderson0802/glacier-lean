@@ -5,6 +5,13 @@ Checkpoint: PH10.3 (evaluator evidence only; no phase exit claim)
 Platform: Linux x86_64, CPython 3.12.3
 Lane: offline-evaluator
 
+## Drift check
+
+- Checkpoint: PH10.3. The phase ledger records PH10 as in progress with PH8 and PH9 also in progress; the card permits scoped evaluation before their exits, but this evidence does not claim a phase exit.
+- Defining properties and metrics: P-PORTABLE and P-USABLE; M-LOCAL and M-VERIFIED.
+- Existing-tool choice (I-01): use the existing offline builder/installer and the existing Landlock/seccomp OS sandbox. No installer, release pipeline, or isolation tool was added.
+- Acceptance: run the unchanged offline unit suite, build the current Linux pack, install it in a fresh disposable destination with OS network access blocked, capture the manifest and installed versions, and run a deterministic automation from the shipped source/docs under the same network policy. The automation requirement remains open under the claim below.
+
 ## Acceptance defined before the run
 
 1. Run the existing offline-pack tests unchanged.
