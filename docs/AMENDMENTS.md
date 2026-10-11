@@ -21,3 +21,9 @@ Owner approved Ask/Build supporting OpenAI-compatible and Anthropic APIs alongsi
 
 ## 2026-10-10 - PH12 Ventures on Glacier (owner-approved)
 Owner instruction (chat, 2026-10-10): build the ventures in the owner's Venture Build Spec as Glacier automations tonight, using Codex workers in waves, changing Glacier as needed and auditing for coherence. Added phase PH12 with one checkpoint per platform card, shared block and in-scope venture. Card mapping: P1-P3 -> PH12.1-12.3, B1-B5 -> PH12.4-12.8, V-* -> PH12.9-12.20, I* -> PH12.22.
+
+## 2026-10-10 - E-PH3 verification evidence correction
+
+Anti-pattern review found that protected-file restoration followed worker-provided links before rejecting changed content; a failed verdict alone did not prove that verification preserved outside files. The narrow `verify.py` correction inspects all protected paths/content before restoration. See `evidence/E-PH3/before-symlink.json` and `after-protected-files.json` (builder diagnostics only). Independent adversarial coverage and generic-flow deletion provenance remain under `CLM-2026-10-10-E-PH3-INDEPENDENT-PROTECTION`; the existing self-build protected guard already checks deletions against a baseline but is separate from generic acceptance verification.
+
+The legacy live script can print `LIVE_DONE` and exit zero after a failed worker; `evidence/E-PH3/live-codex.log` reports `STATUS failed` and `database is locked`. Script completion is not successful-work evidence. Current benchmark startup/API timeouts and missing shared TypeScript dependencies are recorded in `CLM-2026-10-10-E-PH3-VALIDATION-ENVIRONMENT`. No acceptance checks, invariants, exit criteria, or owner decisions were changed. This records an observed evidence gap and correction, not a proposed weakening of the rules.

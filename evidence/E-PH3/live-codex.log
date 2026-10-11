@@ -1,0 +1,7 @@
+{"saved":true,"commit":"04e962d4"}
+run 2fbfb4512fba
+STATUS failed
+NODES {'n1': 'failed', 'n2': 'skipped', 'n3': 'skipped'}
+--- n1
+error: database is locked
+LIVE_DONE
