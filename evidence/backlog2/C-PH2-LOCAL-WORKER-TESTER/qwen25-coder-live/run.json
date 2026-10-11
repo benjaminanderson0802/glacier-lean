@@ -1,0 +1,54 @@
+{
+  "acceptance": "frozen bench/portable/run_portable.py CODING_GOAL; Glacier acceptance and independent bench/portable/acceptance.py pytest check must both pass",
+  "artifact_files": [
+    "README.md",
+    "opencode.json",
+    "pyproject.toml"
+  ],
+  "backend": "OpenCode ACP (Ollama qwen2.5-coder:7b)",
+  "credential_recorded": false,
+  "elapsed_including_backend_start_seconds": 278.22,
+  "elapsed_seconds": 243.11,
+  "flow": {
+    "acceptance": [
+      {
+        "cmd": "/home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q",
+        "cwd": "<WORKSPACE>",
+        "kind": "command"
+      }
+    ],
+    "edges": [],
+    "goal": "In this tiny Python project, add a function `add(a, b)` in math_ops.py that returns the sum, and add pytest tests in test_math_ops.py covering positive values and zero. Run the tests. Use relative paths in this project; do not modify test files after adding them.",
+    "name": "Portable swap bench",
+    "nodes": [
+      {
+        "config": {
+          "<BACKEND_CONFIG>": "<BACKEND_CONFIG>",
+          "project_folder": "<WORKSPACE>",
+          "prompt": "In this tiny Python project, add a function `add(a, b)` in math_ops.py that returns the sum, and add pytest tests in test_math_ops.py covering positive values and zero. Run the tests. Use relative paths in this project; do not modify test files after adding them.",
+          "timeout": 900
+        },
+        "id": "worker",
+        "type": "<BACKEND>"
+      }
+    ]
+  },
+  "flow_backend": "acp_agent",
+  "glacier_check": false,
+  "independent_check": false,
+  "independent_output": "no tests ran in 0.00s",
+  "isolated_home": true,
+  "model_endpoint": "http://127.0.0.1:11434/v1",
+  "output": "{\n  \"name\": \"todowrite\",\n  \"arguments\": {\n    \"todos\": [\n      {\n        \"content\": \"Create add function in math_ops.py that returns the sum of a and b.\",\n        \"priority\": \"high\",\n        \"status\": \"pending\"\n      },\n      {\n        \"content\": \"Write pytest tests in test_math_ops.py covering positive values and zero.\",\n        \"priority\": \"high\",\n        \"status\": \"pending\"\n      },\n      {\n        \"content\": \"Run the tests using pytest.\",\n        \"priority\": \"high\",\n        \"status\": \"pending\"\n      }\n    ]\n  }\n}\nProject instructions: AGENTS.md (AGENTS.md \u2014 read this before doing anything in this repo) \u2014 /home/glacier/w/workers/gf-C-PH2-LOCAL-WORKER-TESTER/AGENTS.md",
+  "paid_route_used": false,
+  "provider": "Ollama local; OpenCode ACP",
+  "status": "failed",
+  "usage": {
+    "cost_usd": 0.0,
+    "model": "opencode",
+    "route": "acp/opencode",
+    "tokens_in": 0,
+    "tokens_out": 0
+  },
+  "workspace": "workspace-coding-opencode-acp-ollama-qwen2-5-coder-7b"
+}

@@ -1,0 +1,515 @@
+00:48:30 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [169430]
+INFO:     Waiting for application startup.
+00:48:31 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+00:48:31 [    INFO] (dbos:_dbos.py:621) Application version: afb8564599350370d94f67698e9cd913
+00:48:31 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+00:48:31 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/glacier-local-worker-home-5za22da8/glacier-home/glacier.sqlite (schema: dbos)
+00:48:31 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+00:48:32 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+00:48:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+00:48:33 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version afb8564599350370d94f67698e9cd913
+00:48:33 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+00:48:33 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+00:48:33 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:46191 (Press CTRL+C to quit)
+INFO:     127.0.0.1:40526 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "PUT /api/environments/portable-opencode-acp-ollama-qwen2-5-coder-7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "POST /api/environments/portable-opencode-acp-ollama-qwen2-5-coder-7b/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33576 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33580 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33596 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33600 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33602 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33606 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33622 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33632 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33634 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33648 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33664 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33668 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33670 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33672 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33680 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33696 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33708 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33714 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33724 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33732 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33734 - "GET /api/runs/784b9f699623 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33742 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40534 - "GET /api/runs/784b9f699623 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+00:52:43 [    INFO] (dbos:_queue.py:888) Stopping queue manager, joining all worker threads...
+00:52:44 [    INFO] (dbos:_dbos.py:444) DBOS successfully shut down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [169430]
