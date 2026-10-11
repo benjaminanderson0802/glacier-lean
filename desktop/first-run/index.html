@@ -8,53 +8,51 @@
        (desktop/test_first_run_theme.sh fails if they drift). Colours, fonts and radii come only from its tokens. -->
   <link rel="stylesheet" href="theme/tokens.css">
   <style>
-    html, body { margin: 0; height: 100%; background: var(--g-void); }
-    body { font-family: var(--g-font-body); font-size: var(--g-size-body); color: var(--g-text); display: grid; place-items: center; -webkit-font-smoothing: none; }
-    main { width: min(720px, 92vw); background: var(--g-bg); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); }
-    header { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 16px; background: var(--g-bar); border-bottom: var(--g-border) solid var(--g-line); font-family: var(--g-font-head); font-weight: 700; font-size: 30px; color: var(--g-head); }
-    header svg { image-rendering: pixelated; }
+    html, body { margin: 0; min-height: 100%; background: var(--g-void); }
+    body { min-height: 100vh; box-sizing: border-box; padding: 24px 0; background: url('theme/limbo/room.webp') center / cover no-repeat; font-family: var(--g-font-body); font-size: var(--g-size-body); color: var(--g-text); display: grid; place-items: center; -webkit-font-smoothing: antialiased; }
+    main { width: min(720px, 92vw); background: linear-gradient(160deg, var(--g-ice3), var(--l-glass-deep)), var(--l-glass); border: var(--g-border) solid var(--l-edge); border-radius: var(--l-radius); box-shadow: 0 12px 40px var(--g-shadow); backdrop-filter: blur(18px); overflow: hidden; text-shadow: var(--l-text-shadow); }
+    header { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 22px; border-bottom: var(--g-border) solid var(--g-line); font-family: var(--g-font-head); font-weight: 700; font-size: 26px; color: var(--g-head); }
     section { padding: 18px 22px 20px; }
     h1 { margin: 0; font-family: var(--g-font-head); font-weight: 600; font-size: var(--g-size-title); color: var(--g-head); }
     .sub { color: var(--g-sub); font-size: var(--g-size-h2); margin: 4px 0 14px; }
-    .panel { background: var(--g-panel); border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius); box-shadow: var(--g-glow); padding: 10px 16px; margin-bottom: 14px; }
+    .panel { background: var(--g-ice2); border: var(--g-border) solid var(--g-line); border-radius: var(--l-radius-sm); padding: 10px 16px; margin-bottom: 14px; }
     .panel h2 { margin: 2px 0 6px; font-family: var(--g-font-head); font-weight: 500; font-size: var(--g-size-h2); color: var(--g-head); }
     ul { list-style: none; margin: 0; padding: 0; }
     li { display: flex; align-items: center; gap: 12px; padding: 8px 2px; border-bottom: 1px solid var(--g-line-dim); }
     li:last-child { border-bottom: 0; }
     li .when { margin-left: auto; color: var(--g-muted); font-size: var(--g-size-small); }
-    .dot { width: 12px; height: 12px; background: var(--g-line-dim); flex: none; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g-line-dim); flex: none; }
     .yes .dot { background: var(--g-ok); box-shadow: 0 0 6px var(--g-ok); }
     .no .dot { background: var(--g-warn); }
     .note { color: var(--g-muted); font-size: var(--g-size-small); }
     .status { display: flex; align-items: center; gap: 12px; color: var(--g-sub); }
-    .status .bar { flex: 1; height: 16px; border: var(--g-border) solid var(--g-line); border-radius: var(--g-radius-bar); padding: 2px; background: var(--g-bar); }
-    .status .bar i { display: block; height: 100%; width: 30%; border-radius: var(--g-radius-bar-in); background: var(--g-accent); animation: slide 1.6s steps(8) infinite; }
-    @keyframes slide { 0% { margin-left: 0 } 100% { margin-left: 70% } }
+    .status .bar { flex: 1; height: 8px; border: var(--g-border) solid var(--g-line); border-radius: 999px; padding: 2px; background: var(--g-bar); overflow: hidden; }
+    .status .bar i { display: block; height: 100%; width: 30%; border-radius: 999px; background: var(--g-accent); animation: slide 1.6s ease-in-out infinite alternate; }
+    @keyframes slide { from { margin-left: 0 } to { margin-left: 70% } }
+    @media (prefers-reduced-motion: reduce) { .status .bar i { animation: none; } }
+    [hidden] { display: none !important; }
     #startup-error { color: var(--g-bad); font-size: var(--g-size-small); }
-    button { height: 40px; padding: 0 16px; background: var(--g-panel); border: 1px solid var(--g-text); border-radius: var(--g-radius-btn); color: var(--g-head); font-family: var(--g-font-body); font-size: var(--g-size-body); cursor: pointer; }
-    button:hover { background: var(--g-panel-hi); }
+    button { height: 40px; padding: 0 20px; background: var(--l-pill); border: 1px solid var(--l-edge); border-radius: 999px; color: var(--l-pill-ink); font-family: var(--g-font-body); font-size: var(--g-size-body); cursor: pointer; }
+    button:hover { background: var(--l-pill-hi); }
+    button:focus-visible { outline: 2px solid var(--g-head); outline-offset: 3px; }
   </style>
 </head>
 <body>
 <main>
-  <header><svg width="78" height="45" viewBox="0 0 26 15" shape-rendering="crispEdges" aria-hidden="true">
-    <path d="M9 0h1v1h1v1h1v1h1v12H0v-2h1v-2h1v-2h1V8h1V6h1V5h1V3h1V2h1V1h1z" style="fill:var(--g-accent)"/>
-    <path d="M18 4h1v1h1v1h1v1h1v1h1v1h1v1h1v5H13V9h1V8h1V7h1V6h1V5h1z" style="fill:var(--g-line)"/>
-    <path d="M9 0h1v1h1v1h1v1h-1v1H8V3H7V2h1V1h1zM18 4h1v1h1v1h-1v1h-2V6h-1V5h1z" style="fill:var(--g-head)"/>
-  </svg>Glacier</header>
+  <header>glacier</header>
   <section>
     <h1>Welcome to Glacier</h1>
     <div class="sub">Starting your local engine. Everything stays on this computer.</div>
     <div class="panel">
-      <div class="status" id="starting"><span>Starting…</span><div class="bar"><i></i></div></div>
+      <div class="status" id="starting" role="status"><span>starting…</span><div class="bar" aria-hidden="true"><i></i></div></div>
       <p id="startup-error" role="alert" hidden></p>
     </div>
     <div class="panel">
-      <h2>Tools on this computer</h2>
+      <h2>tools on this computer</h2>
       <ul id="tools"><li><span class="dot"></span>Checking this computer…</li></ul>
     </div>
     <p class="note">All of these are optional. Glacier works without them and never sends this list anywhere.</p>
-    <button id="check-again">Check again</button>
+    <button id="check-again">check again</button>
   </section>
 </main>
 <script src="app.js"></script>
