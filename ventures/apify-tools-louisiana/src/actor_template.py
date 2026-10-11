@@ -30,7 +30,23 @@ async def run_lookup_actor(
         )
         for result in results:
             await actor.push_data(result)
-        if results and results[0].get("verification_state") != "unverifiable" and (
+        readable_lookup = bool(results) and all(
+            result.get("verification_state") == "verified"
+            and (
+                result.get("outcome") == "match"
+                or (
+                    isinstance(result.get("outcome"), str)
+                    and result["outcome"].startswith("no match found in ")
+                )
+                or (
+                    result.get("outcome") is None
+                    and isinstance(result.get("status"), str)
+                    and bool(result["status"].strip())
+                )
+            )
+            for result in results
+        )
+        if readable_lookup and (
             os.getenv("APIFY_IS_AT_HOME") == "1"
             or os.getenv("ACTOR_TEST_PAY_PER_EVENT", "").lower() == "true"
         ):
