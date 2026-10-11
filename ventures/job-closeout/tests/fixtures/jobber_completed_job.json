@@ -1,0 +1,38 @@
+{
+  "source": "Synthetic Jobber GraphQL fixture, shaped to the 2026-04-16 API response documented by ventures/blocks/connectors/fixtures/SOURCES.md",
+  "data": {
+    "account": {"id": "Z2lkOi8vSm9iYmVyL0FjY291bnQvMTAw", "name": "Fixture Comfort Systems"},
+    "jobs": {
+      "nodes": [
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MDAx",
+          "jobNumber": 9001,
+          "title": "Heat pump installation",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-03-20T15:30:00-05:00",
+          "customFields": [
+            {"__typename": "CustomFieldText", "id": "field-work-summary", "label": "Work Summary", "valueText": "Installed and started up a variable-speed heat pump; reviewed thermostat operation with the customer."},
+            {"__typename": "CustomFieldText", "id": "field-equipment-brand", "label": "Equipment Brand", "valueText": "Carrier"},
+            {"__typename": "CustomFieldText", "id": "field-equipment-model", "label": "Equipment Model", "valueText": "Infinity 24"},
+            {"__typename": "CustomFieldText", "id": "field-equipment-serial", "label": "Equipment Serial", "valueText": "ABC123456789"},
+            {"__typename": "CustomFieldText", "id": "field-invoice-reference", "label": "Invoice Reference", "valueText": "INV-9001"}
+          ],
+          "client": {"id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8yMDAx", "name": "Maya Rivera", "email": "maya@example.test"},
+          "property": {"id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzMwMDE", "address": {"city": "Austin", "province": "TX", "postalCode": "78701", "country": "US"}}
+        },
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MDAy",
+          "jobNumber": 9002,
+          "title": "Heat pump estimate",
+          "jobStatus": "UPCOMING",
+          "completedAt": null,
+          "customFields": [],
+          "client": {"id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8yMDAy", "name": "Alex Kim", "email": "alex@example.test"},
+          "property": {"id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzMwMDI", "address": {"city": "Austin", "province": "TX", "postalCode": "78702", "country": "US"}}
+        }
+      ],
+      "pageInfo": {"hasNextPage": false, "endCursor": null}
+    }
+  },
+  "extensions": {"versioning": {"version": "2026-04-16"}}
+}

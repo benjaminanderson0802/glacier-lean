@@ -1,0 +1,29 @@
+{
+  "slug": "job-closeout",
+  "name": "Job Closeout Packet Builder",
+  "status": "ready",
+  "product": {
+    "customer": "HVAC and plumbing shops using Jobber",
+    "description": "Turn a completed Jobber job into a locally generated customer closeout packet in Markdown and PDF.",
+    "price_hypothesis": "$49 for a paid pilot covering up to 10 reviewed packets; test willingness to pay before choosing ongoing pricing.",
+    "source_policy": "Read-only official Jobber API or user-supplied export; fixture mode stays offline. No portal filing, message sending, or third-party uploads."
+  },
+  "blocks": ["jobber-connector"],
+  "block_functions": ["ventures.blocks.connectors.JobberClient.get_jobs", "ventures.job-closeout.scripts.generate_packet"],
+  "flows": ["closeout-packet"],
+  "secrets_needed": ["jobber_access_token", "jobber_client_id", "jobber_client_secret", "jobber_refresh_token"],
+  "your_steps": [
+    {
+      "id": "send-pilot-pitch",
+      "title": "Send the pilot pitch to one shop",
+      "when": "When you are ready to test buyer interest",
+      "detail": "Choose one prospect from prospects.csv, personalize the email in PILOT.md, and send it yourself. Nothing is sent automatically.",
+      "instructions": "Use the business contact information published by the directory and honor any request not to contact again. The prospect list is a research starting point, not a claim that they use Jobber or need the product."
+    }
+  ],
+  "launch_gates": [
+    "Buyer confirms the closeout packet matches shop workflow and source records.",
+    "Customer authorizes read-only Jobber access or supplies an export before any real customer data is processed.",
+    "Owner and pilot shop agree to the $49 pilot scope and terms before charging."
+  ]
+}
