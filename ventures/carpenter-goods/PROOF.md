@@ -8,9 +8,15 @@ Command:
 ~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods -q
 ```
 
-Result: **9 passed**.
+Result after adding the acceptance-discoverable template filename: **10 passed, 2 xpassed**. The two xpasses are the agreement and product-sheet acceptance checks whose `awaiting builder` markers remain in place; they pass when run normally and with `--runxfail`.
 
-The suite covers source-linked same-category completed-sale validation and median pricing, uncertain/no-price behavior, paid-only commission calculations, invalid rates, venture manifest instructions, product-sheet CSV to Etsy/Shopify draft generation, Etsy and Shopify order-export CSV commission summaries, and agreement/template presence. The CSV E2E cases invoke the command-line workflow using synthetic fixtures. They do not prove current market pricing, real platform export compatibility, or live shop behavior.
+The suite covers source-linked same-category completed-sale validation and median pricing, uncertain/no-price behavior, paid-only commission calculations, invalid rates, venture manifest instructions, product-sheet CSV to Etsy/Shopify draft generation, Etsy and Shopify order-export CSV commission summaries, and agreement/template presence. The acceptance check was also run directly with xfail disabled:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/carpenter-goods/tests/acceptance/test_v_carpenter2.py::test_product_sheet_csv_generates_etsy_shopify_drafts_without_publishing -q --runxfail
+```
+
+Result: **1 passed**. The discoverable `templates/product-sheet-template.csv` has the same header as the compatible `templates/product-sheet.csv`; both are templates only. The CSV E2E cases invoke the command-line workflow using synthetic fixtures. They do not prove current market pricing, real platform export compatibility, or live shop behavior.
 
 ## Manifest validation
 

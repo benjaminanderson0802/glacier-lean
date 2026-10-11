@@ -11,7 +11,7 @@ The short [plain-language agreement summary](agreement/commission-summary.md) ex
 
 ## Preparing listing drafts
 
-Copy `templates/product-sheet.csv` to `$GLACIER_HOME/ventures/carpenter-goods/incoming/product-sheet.csv` and fill exactly one row. Use semicolons between materials and between local photo paths. Keep photos on the local machine. The `comparables.json` file is a list of objects with `source_url`, `category`, `completed: true`, `sold_price`, and `sold_date` (`YYYY-MM-DD`). Duplicate URLs, invalid prices/dates, stale or future sales, incomplete sales, and category mismatches are rejected. Fewer than three eligible comparisons leave the suggested price blank and the result **uncertain — please check**. No market data is scraped or invented.
+Copy the [product sheet CSV template](templates/product-sheet-template.csv) to `$GLACIER_HOME/ventures/carpenter-goods/incoming/product-sheet.csv` and fill exactly one row. `templates/product-sheet.csv` is kept as a compatible copy of the same header-only template. Use semicolons between materials and between local photo paths. Keep photos on the local machine. The `comparables.json` file is a list of objects with `source_url`, `category`, `completed: true`, `sold_price`, and `sold_date` (`YYYY-MM-DD`). Duplicate URLs, invalid prices/dates, stale or future sales, incomplete sales, and category mismatches are rejected. Fewer than three eligible comparisons leave the suggested price blank and the result **uncertain — please check**. No market data is scraped or invented.
 
 Run the **Prepare a handmade furniture listing** flow, or from the repository root run:
 
