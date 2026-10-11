@@ -18,7 +18,7 @@ def load_utility_audit():
 
 def test_existing_calculator_keeps_output_an_estimate_and_unsigned():
     calculate_audit = load_utility_audit().calculate_audit
-    fixture = json.loads((Path(__file__).resolve().parents[2] / "tests/sample_audit.json").read_text())
+    fixture = json.loads((Path(__file__).resolve().parents[2] / "tests/sample_audit.json").read_text(encoding="utf-8"))
     result = calculate_audit(fixture)
     assert result.get("result") in {"match", "uncertain"}
     assert result.get("submitted", False) is False
@@ -27,8 +27,8 @@ def test_existing_calculator_keeps_output_an_estimate_and_unsigned():
 @pytest.mark.xfail(strict=False, reason="awaiting builder V-UTILITY2")
 def test_bulletin_55_and_decision_memo_are_source_backed():
     root = Path(__file__).resolve().parents[2]
-    memo = (root / "DECISION.md").read_text().lower()
-    readme = (root / "README.md").read_text().lower()
+    memo = (root / "DECISION.md").read_text(encoding="utf-8").lower()
+    readme = (root / "README.md").read_text(encoding="utf-8").lower()
     assert "bulletin #55" in readme or "bulletin 55" in readme
     for term in ("indiana", "alternative", "source"):
         assert term in memo

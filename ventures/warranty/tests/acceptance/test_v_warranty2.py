@@ -35,7 +35,7 @@ def test_unverified_brand_serial_patterns_remain_uncertain():
 def test_jobber_graphql_fixture_maps_completed_job_to_homeowner_draft():
     from ventures.blocks.connectors import JobberClient
     warranty = load_warranty()
-    fixture = json.loads((Path(__file__).parent / "fixtures/jobber-jobs-2026-04-16.json").read_text())
+    fixture = json.loads((Path(__file__).parent / "fixtures/jobber-jobs-2026-04-16.json").read_text(encoding="utf-8"))
     client = JobberClient()
     jobs = client._normalize_jobs(fixture) if hasattr(client, "_normalize_jobs") else client._parse_jobs(fixture)
     assert jobs and jobs[0]["job_id"] == "gid://jobber/Job/9001"

@@ -33,7 +33,7 @@ def test_shipstation_fixture_is_csv_with_order_tracking_and_carrier():
 
 def test_claim_submission_and_invoice_remain_owner_approved():
     root = Path(__file__).resolve().parents[2]
-    readme = (root / "README.md").read_text().lower()
+    readme = (root / "README.md").read_text(encoding="utf-8").lower()
     assert "shipper" in readme and ("approve" in readme or "review" in readme)
     assert "send" in readme and "owner" in readme
 

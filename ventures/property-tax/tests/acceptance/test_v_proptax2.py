@@ -8,8 +8,8 @@ import pytest
 @pytest.mark.xfail(strict=False, reason="awaiting builder V-PROPTAX2")
 def test_homeowner_mode_prepares_guide_and_keeps_filing_with_homeowner():
     root = Path(__file__).resolve().parents[2]
-    readme = (root / "README.md").read_text().lower()
-    flow = json.loads((root / "flows/property-tax-prepare-packet.json").read_text())
+    readme = (root / "README.md").read_text(encoding="utf-8").lower()
+    flow = json.loads((root / "flows/property-tax-prepare-packet.json").read_text(encoding="utf-8"))
     assert "homeowner self-file" in readme or "self-file" in readme
     serialized = json.dumps(flow).lower()
     assert "homeowner" in serialized and ("filing guide" in serialized or "step-by-step" in serialized)
@@ -19,7 +19,7 @@ def test_homeowner_mode_prepares_guide_and_keeps_filing_with_homeowner():
 @pytest.mark.xfail(strict=False, reason="awaiting builder V-PROPTAX2")
 def test_decision_memo_compares_three_paths_and_live_mail_stays_disabled():
     root = Path(__file__).resolve().parents[2]
-    memo = (root / "DECISION.md").read_text().lower()
+    memo = (root / "DECISION.md").read_text(encoding="utf-8").lower()
     for term in ("self-file", "licensed attorney", "assessor-stage"):
         assert term in memo
     assert memo.count("http") >= 3

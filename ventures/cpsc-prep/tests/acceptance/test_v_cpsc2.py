@@ -20,7 +20,7 @@ def load_refresh():
 
 
 def test_cpsc_fixture_uses_saferproducts_recall_api_shape():
-    payload = json.loads((Path(__file__).parent / "fixtures/cpsc-recall.json").read_text())
+    payload = json.loads((Path(__file__).parent / "fixtures/cpsc-recall.json").read_text(encoding="utf-8"))
     assert isinstance(payload, list) and payload[0]["RecallID"] == 30123
     assert payload[0]["URL"].startswith("https://www.cpsc.gov/")
 
@@ -40,7 +40,7 @@ def test_live_saferproducts_recall_endpoint_returns_recall_records():
 @pytest.mark.xfail(strict=False, reason="awaiting builder V-CPSC2")
 def test_lawyer_questions_are_cited_and_launch_remains_gated():
     root = Path(__file__).resolve().parents[2]
-    questions = (root / "LAWYER-QUESTIONS.md").read_text().lower()
-    manifest = json.loads((root / "venture.json").read_text())
+    questions = (root / "LAWYER-QUESTIONS.md").read_text(encoding="utf-8").lower()
+    manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
     assert "https://" in questions and "lawyer" in questions
     assert any("lawyer" in str(gate).lower() or "opinion" in str(gate).lower() for gate in manifest.get("launch_gates", []))

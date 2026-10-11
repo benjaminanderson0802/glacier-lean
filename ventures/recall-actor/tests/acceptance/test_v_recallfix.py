@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 def test_openfda_not_found_is_a_valid_empty_response(monkeypatch):
     from src import sources
 
-    payload = json.loads((Path(__file__).parent / "fixtures/openfda-not-found.json").read_text())
+    payload = json.loads((Path(__file__).parent / "fixtures/openfda-not-found.json").read_text(encoding="utf-8"))
 
     class Response:
         status_code = 404
@@ -65,7 +65,7 @@ def test_actor_publishes_full_result_record():
               "checked_at": "2026-10-10T00:00:00Z"}
     asyncio.run(run_actor_queries(actor, [result["query"]], check_one=lambda _query: result))
     assert actor.rows == [result]
-    schema = json.loads((ROOT / ".actor/dataset_schema.json").read_text())
+    schema = json.loads((ROOT / ".actor/dataset_schema.json").read_text(encoding="utf-8"))
     fields = schema.get("properties", {})
     assert {"outcome", "message", "query", "matches", "sources_checked", "checked_at"} <= set(fields)
 

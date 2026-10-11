@@ -31,7 +31,7 @@ def test_product_sheet_csv_generates_etsy_shopify_drafts_without_publishing(tmp_
     root = Path(__file__).resolve().parents[2]
     templates = list(root.glob("**/*product*template*.csv"))
     assert templates, "product sheet CSV template is required"
-    readme = (root / "README.md").read_text().lower()
+    readme = (root / "README.md").read_text(encoding="utf-8").lower()
     assert "etsy" in readme and "shopify" in readme and "draft" in readme
     assert "publish" in readme and "owner" in readme
 
