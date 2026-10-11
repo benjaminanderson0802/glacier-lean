@@ -1,0 +1,35 @@
+[
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-refresh-roll",
+    "result": {
+      "saved": true,
+      "commit": "3bb8afb6"
+    }
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-prepare-packet",
+    "result": {
+      "saved": true,
+      "commit": "df6e0c97"
+    }
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-postcard-proof",
+    "result": {
+      "saved": true,
+      "commit": "0213af0d"
+    }
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-upload-retention",
+    "result": {
+      "saved": true,
+      "commit": "78d93a30"
+    }
+  }
+]
+exit=0
