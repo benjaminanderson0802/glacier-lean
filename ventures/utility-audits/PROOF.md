@@ -3,28 +3,36 @@
 ## PH12.18 drift check
 
 1. **Checkpoint:** PH12.18, Venture: Utility audits.
-2. **Dependencies:** PH12 parent exit is not yet complete. ORCHESTRATION wave 6 explicitly allows assigned venture cards to start; no checkpoint status is changed in this card.
-3. **Property and metric:** P-CONTROL (customer signs/submits; no portal actions or external writes) and P-USABLE; M-VERIFIED and M-TTFA.
-4. **Existing tool:** no existing utility audit calculator was found. Reuse-only shared blocks that would apply (reader/rules) are absent from this base branch. UtilityAPI/Arcadia are paid services; this build accepts customer-entered bill and tariff data and does not connect to them. No shared block is modified.
-5. **Acceptance test, written first:** `/home/glacier/w/glacier-lean/.venv/bin/python -m unittest discover -s ventures/utility-audits/tests -v`; covers statewide threshold inputs, the electricity estimate, missing-evidence uncertainty, period validation, and unsigned/unsubmitted output.
+2. **Dependencies:** PH12 exit is not complete. ORCHESTRATION wave 6 explicitly allows assigned venture cards to start; this card does not change checkpoint status.
+3. **Property and metric:** P-CONTROL (signature, payment, account, utility contact, and filing stay human actions), P-USABLE; M-VERIFIED and M-TTFA.
+4. **Existing tool:** no existing utility exemption estimator or study-CSV intake flow was found. This uses local Python and the existing Glacier approval/command/check flow nodes; it does not add a paid service or shared platform block.
+5. **Acceptance test, written first:** `~/w/glacier-lean/.venv/bin/python -m pytest ventures/utility-audits/tests/test_predominant_use.py -q`. The synthetic CSV must yield a 64% meter-use screen, annual future exemption estimate, and unsigned/unsubmitted ST-200 application data; a nonconsecutive study period must return uncertainty. The requested full venture command is `~/w/glacier-lean/.venv/bin/python -m pytest ventures/utility-audits -q`.
 
-## Launch-state decision for owner confirmation
+## Rule and source verification
 
-Recommended state: **Indiana**, limited to the restaurant electricity exemption for a seller whose annual statewide prepared-food sales percentage meets the DOR's 75% test and whose selected electricity is through one meter. Indiana DOR describes a 50% exemption of tax on single-meter electricity transactions and requires ST-200R before issuing ST-109R. Bulletin #29 says the 75% calculation is annual across all of a seller's Indiana establishments. The owner must confirm Indiana as the launch state before customer launch or any filing support is offered.
+Indiana DOR's current bulletin index lists #55, “Application of Sales Tax to Sales of Utilities Used in Manufacturing, Production, Recycling, Floriculture, and Arboriculture,” with July 2022 effective date. It remains the directly applicable bulletin for utility-use studies: the DOR bulletin says each meter is considered separately and the 100% meter exemption requires **more than 50%** exempt use; Form ST-200 is the application. DOR's utility page also points customers to gas and electric study workpapers. Bulletin #64, effective October 1, 2026, covers production exemptions and informs qualifying-use analysis; it does not replace utility-specific Bulletin #55.
 
-Primary references:
+Bulletin #29 remains linked only for the restaurant branch: its current Appendix B contains the annual 75% prepared-food formula. Bulletin #11 (January 2026) covers restaurants and cross-references #29 for food-sale examples. General predominant-use cases use #55 and ST-200. Launch-state tradeoffs and alternatives are in [DECISION.md](DECISION.md).
 
-- Indiana DOR, [Utility Sales Tax Exemption](https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/)
-- Indiana DOR, [Sales Tax Information Bulletin #11 (January 2026)](https://www.in.gov/dor/files/reference/sib11.pdf)
-- Indiana DOR, [Sales Tax Information Bulletin #29, Appendix B](https://www.in.gov/dor/reference/files/sib29.pdf)
+Official source URLs checked October 10, 2026:
+
+- [Indiana DOR utility exemption page](https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/) — reachable.
+- [Indiana DOR bulletin index](https://www.in.gov/dor/resources/tax-library/information-bulletins/) — reachable; #11 Jan 2026, #29 Sep 2025, #55 effective Jul 2022, #64 effective Oct 1, 2026.
+- [Bulletin #11](https://www.in.gov/dor/files/reference/sib11.pdf), [Bulletin #29](https://www.in.gov/dor/files/reference/sib29.pdf), [Bulletin #55](https://www.in.gov/dor/files/sib55.pdf), [Bulletin #64](https://www.in.gov/dor/files/reference/sib64.pdf) — reachable from official DOR pages.
+- [Indiana DOR sales tax forms index](https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html) — reachable and lists ST-200 and ST-200R.
+- The direct form downloads [ST-200](https://forms.in.gov/Download.aspx?id=14085) and [ST-200R](https://forms.in.gov/Download.aspx?id=16301) returned HTTP 403 to the research fetcher; both are linked from the accessible DOR forms index. The links are retained as official downloads, with the index provided as the accessible alternative.
+- Sample rate URLs under `utility.example` are fake test placeholders and are marked **unreachable / not a rate source**. No current customer utility tariffs were supplied or verified. Runtime `reachable_unverified` means only that the customer's HTTPS link answered on the same host; it does not verify official source identity, tariff terms, or plan availability.
+
+## Fixture result
+
+The fixture `tests/fixtures/indiana_predominant_use_bills.csv` is synthetic. Its bill columns are 12 months of 1,000 usage units, $70 reported tax per month, and an `exempt_use_units` allocation supplied as study evidence (640 per month). Bills themselves do not identify exempt use. The calculator screens 64% exempt use and $840 estimated annual tax exemption **only after DOR approval**, for one meter. It emits missing official customer fields and `signed: false`, `submitted: false`. It does not certify the usage study or calculate the partial production/refund path below 50%.
 
 ## Commands and results
 
-- `PYTHONDONTWRITEBYTECODE=1 /home/glacier/w/glacier-lean/.venv/bin/python -m unittest discover -s ventures/utility-audits/tests -v` — **7 tests passed**, including statewide threshold, period validation, and flat-rate scenario cases.
-- `/home/glacier/w/glacier-lean/.venv/bin/python -m ventures.install_all --only utility-audits --dry-run` — **utility-audit-calculator validated**.
-- CLI dry-run with the synthetic 12-month sample — **result `match`, estimated annual future savings `$240.00`, ST-200R draft present, `signed: false`, `submitted: false`**. Output was written under a disposable `/tmp/utility-audit-check` home.
-- Real Glacier live runtime run — not completed: `heavy npm run live` waited 15m09s for a shared heavy-job slot and was canceled per the project backstop. The environment claim is `vault/claims/2026-10-10-v-utility-live-lock.md`. The venture flow pauses at the owner-only launch-state approval; it will not proceed until the owner confirms Indiana.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/utility-audits -q` — **12 passed**.
+- `~/w/glacier-lean/.venv/bin/python ventures/utility-audits/scripts/utility_audit.py study --input ventures/utility-audits/tests/fixtures/indiana_predominant_use_bills.csv --output /tmp/utility-audit-st200-study.json` — **64%**, `$840.00`, ST-200 application data present, `signed: false`, `submitted: false`.
+- `~/w/glacier-lean/.venv/bin/python -m ventures.install_all --only utility-audits --dry-run` — both `utility-audit-calculator` and `utility-predominant-use` validated.
+- Per-venture tests were run with each venture root on `PYTHONPATH`: every suite passed except the existing recall-checker vocabulary assertion (10 passed, 1 failed; expected `no match`, got `no match found`). Recall Actor had one skip. A top-level `pytest ventures -q` invocation also cannot collect hyphenated venture packages/import roots; running the suites individually with their package roots collected them correctly. The recall-checker discrepancy is already recorded in `ventures/OWNER-START-HERE.md` and its existing claim; it is outside this card.
+- `cd glacier/web && npm run live` — the real FastAPI backend started and `/api/health` returned **200 OK**, then the dev screen failed to start because `glacier/web/node_modules/vite/bin/vite.js` is missing. No full live flow walkthrough occurred. The earlier shared heavy-job wait is recorded in `vault/claims/2026-10-10-v-utility-live-lock.md`; this worktree's missing Vite dependency is a separate environment issue outside this card's file list. The CSV result remains fixture-tested, not live-tested.
 
-Independent review found two issues and guided fixes: the 75% test is annual across all the seller's Indiana establishments, and monthly periods must be valid and consecutive. The calculator now requires customer-confirmed statewide totals, validates real and consecutive periods, and compares customer-supplied flat-rate scenarios without claiming that a cheaper plan is available. A second independent review confirmed the rate math and safety wording, and the requested manifest and flow-prompt consistency fixes are applied.
-
-No real restaurant utility bills or rate tariffs were available for the synthetic sample. The optional rate check requires a customer to enter published flat-rate data and links; the tool does not fetch or validate them, verify availability, or model demand charges, taxes, riders, and other tariff charges. Tests use clearly synthetic customer records. No utility account, tax portal, paid API, signature, external message or filing was used.
+No restaurant bills, certified utility study, live customer tariff, utility account, tax account, signature, payment, external message, or filing was used. Billing remains disabled pending owner approval of its model and legal basis.

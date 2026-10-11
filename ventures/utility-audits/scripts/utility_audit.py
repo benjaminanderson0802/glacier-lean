@@ -1,8 +1,9 @@
-"""Customer-entered estimate and unsigned Indiana ST-200R preparation data."""
+"""Prepare customer-entered Indiana ST-200R or ST-200 utility audit data."""
 from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import csv
 import ipaddress
 import argparse
 import json
@@ -14,7 +15,8 @@ from pathlib import Path
 from typing import Any
 
 
-RULE_SOURCE = "Indiana DOR Utility Sales Tax Exemption, Sales Tax Information Bulletins #11 and #29"
+RULE_SOURCE = "Indiana DOR Utility Sales Tax Exemption and Sales Tax Information Bulletin #55"
+RESTAURANT_RULE_SOURCE = "Indiana DOR Utility Sales Tax Exemption and Sales Tax Information Bulletins #11 and #29 (restaurant qualification), #55 (utility exemption)"
 CENT = Decimal("0.01")
 
 
@@ -193,7 +195,7 @@ def calculate_audit(data: dict[str, Any], *, as_of: date | None = None) -> dict[
         return {
             "result": f"no match found in Indiana DOR restaurant electricity rule as of {today}",
             "as_of": today,
-            "rule_source": RULE_SOURCE,
+            "rule_source": RESTAURANT_RULE_SOURCE,
             "detail": "This calculator only covers Indiana restaurant electricity applications.",
             "estimate": _empty_estimate(),
             "rate_check": rate_check,
@@ -226,7 +228,7 @@ def calculate_audit(data: dict[str, Any], *, as_of: date | None = None) -> dict[
         return {
             "result": f"no match found in Indiana DOR restaurant electricity rule as of {today}",
             "as_of": today,
-            "rule_source": RULE_SOURCE,
+            "rule_source": RESTAURANT_RULE_SOURCE,
             "detail": "Customer-confirmed annual statewide prepared-food sales are below Indiana's 75% threshold.",
             "statewide_tax_year": str(statewide["tax_year"]),
             "statewide_receipt_ratio": float(statewide_prepared / statewide_total),
@@ -282,13 +284,14 @@ def calculate_audit(data: dict[str, Any], *, as_of: date | None = None) -> dict[
         "email": "",
         "date": "",
     }
+
     missing_fields = [name for name, value in fields.items() if value == "" and name not in {"franchise_name", "location_number", "fein"}]
     if any(fields[f"section_f_prepared_food_line{line}"] is None for line in (1, 2, 3)):
         missing_fields.append("section_f_prepared_food_line1-line3: supply the ST-200R category breakdown")
     return {
         "result": "match",
         "as_of": today,
-        "rule_source": RULE_SOURCE,
+        "rule_source": RESTAURANT_RULE_SOURCE,
         "detail": "Customer-confirmed annual statewide totals meet the numeric threshold; the selected meter's form data is prepared separately. Indiana DOR decides the application.",
         "location_form_receipt_ratio": float(prepared_12 / total_12),
         "statewide_tax_year": str(statewide["tax_year"]),
@@ -314,11 +317,133 @@ def calculate_audit(data: dict[str, Any], *, as_of: date | None = None) -> dict[
     }
 
 
-def _uncertain(today: str, detail: str, rate_check: dict[str, Any] | None = None) -> dict[str, Any]:
+def estimate_predominant_use_csv(path: Path, *, as_of: str | None = None) -> dict[str, Any]:
+    """Screen a customer-supplied 12-month bill/study CSV for Indiana ST-200 prep.
+
+    exempt_use_units are study inputs supplied by the customer from an equipment
+    inventory and usage study; utility invoices do not report this allocation.
+    The result is an estimate and does not determine DOR eligibility.
+    """
+    today = as_of or date.today().isoformat()
+    required = {"period", "meter_id", "utility_type", "usage_units", "exempt_use_units", "sales_tax_paid"}
+    with path.open(newline="", encoding="utf-8-sig") as source:
+        reader = csv.DictReader(source)
+        if not reader.fieldnames or not required.issubset(reader.fieldnames):
+            raise ValueError(f"CSV must include columns: {', '.join(sorted(required))}")
+        rows = list(reader)
+    if len(rows) != 12:
+        return _predominant_use_uncertain(today, "Provide exactly 12 consecutive monthly utility bills and study allocations.")
+
+    periods: list[str] = []
+    meter_ids: set[str] = set()
+    utility_types: set[str] = set()
+    usage_total = Decimal(0)
+    exempt_total = Decimal(0)
+    tax_total = Decimal(0)
+    for index, row in enumerate(rows, start=2):
+        period = (row.get("period") or "").strip()
+        if len(period) != 7 or period[4] != "-":
+            raise ValueError(f"CSV row {index}: period must use YYYY-MM")
+        try:
+            date.fromisoformat(f"{period}-01")
+        except ValueError as exc:
+            raise ValueError(f"CSV row {index}: period must be a real calendar month") from exc
+        periods.append(period)
+        meter_ids.add((row.get("meter_id") or "").strip())
+        utility_types.add((row.get("utility_type") or "").strip().casefold())
+        usage = _amount(row.get("usage_units"), f"CSV row {index} usage_units")
+        exempt = _amount(row.get("exempt_use_units"), f"CSV row {index} exempt_use_units")
+        tax = _amount(row.get("sales_tax_paid"), f"CSV row {index} sales_tax_paid")
+        if usage <= 0 or exempt > usage:
+            raise ValueError(f"CSV row {index}: usage must be positive and exempt use cannot exceed billed usage")
+        usage_total += usage
+        exempt_total += exempt
+        tax_total += tax
+
+    if "" in meter_ids or len(meter_ids) != 1:
+        return _predominant_use_uncertain(today, "Provide one meter per study; meters must be evaluated separately.")
+    if not utility_types.issubset({"electricity", "natural_gas"}) or len(utility_types) != 1:
+        return _predominant_use_uncertain(today, "Provide one supported utility type (electricity or natural_gas) per study.")
+    if not _consecutive_months(sorted(periods)) or len(set(periods)) != 12:
+        return _predominant_use_uncertain(today, "The bill and study rows must cover 12 consecutive, non-duplicated calendar months.")
+
+    ratio = exempt_total / usage_total
+    percentage = (ratio * Decimal(100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    threshold_met = ratio > Decimal("0.50")
+    return {
+        "result": "predominant-use threshold met — DOR review required" if threshold_met else "predominant-use threshold not met — professional review required",
+        "as_of": today,
+        "rule_source": RULE_SOURCE,
+        "detail": "This fixture calculation only screens the customer-provided usage study. Indiana DOR reviews the application and study; this is not a certificate, approved exemption, or refund calculation.",
+        "study": {
+            "period_count": 12,
+            "periods": sorted(periods),
+            "meter_id": next(iter(meter_ids)),
+            "utility_type": next(iter(utility_types)),
+            "total_usage_units": float(usage_total),
+            "exempt_use_units": float(exempt_total),
+            "exempt_use_percentage": float(percentage),
+            "threshold": "more than 50% on each meter",
+            "evidence_note": "exempt_use_units must come from a documented customer or qualified study, not from the bill alone.",
+        },
+        "estimate": {
+            "estimated_annual_tax_exemption_after_approval": float(tax_total.quantize(CENT, rounding=ROUND_HALF_UP)) if threshold_met else None,
+            "basis": "100% of reported sales tax on this meter, only if DOR approves the exemption",
+            "estimate_type": "future exemption estimate after approval",
+            "currency": "USD",
+        },
+        "application_data": {
+            "form": "ST-200",
+            "title": "Utility Sales Tax Exemption Application",
+            "source_url": "https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html",
+            "fields": {
+                "meter_id": next(iter(meter_ids)),
+                "utility_type": next(iter(utility_types)),
+                "study_periods": sorted(periods),
+                "annual_usage_units": float(usage_total),
+                "annual_exempt_use_units": float(exempt_total),
+                "estimated_exempt_use_percentage": float(percentage),
+                "reported_annual_sales_tax": float(tax_total.quantize(CENT, rounding=ROUND_HALF_UP)),
+                "business_name": "",
+                "service_address": "",
+                "utility_provider": "",
+                "account_number": "",
+                "customer_signature": "",
+                "signature_date": "",
+            },
+            "missing_fields": ["business_name", "service_address", "utility_provider", "account_number", "customer_signature", "signature_date"],
+            "attachments_to_add": ["12 monthly utility bills", "documented utility usage study and equipment inventory"],
+            "signed": False,
+            "submitted": False,
+            "note": "Unsigned application data only. The customer reviews the study, completes the official ST-200, and signs and submits it. Indiana DOR determines eligibility.",
+        } if threshold_met else None,
+        "next_step": "Customer and qualified study preparer review the underlying usage allocation; customer completes, signs, and submits ST-200 to Indiana DOR.",
+    }
+
+
+def _predominant_use_uncertain(today: str, detail: str) -> dict[str, Any]:
     return {
         "result": "uncertain — please check",
         "as_of": today,
         "rule_source": RULE_SOURCE,
+        "detail": detail,
+        "study": None,
+        "estimate": {
+            "estimated_annual_tax_exemption_after_approval": None,
+            "basis": "not estimated without a complete supported study",
+            "estimate_type": "future exemption estimate after approval",
+            "currency": "USD",
+        },
+        "application_data": None,
+        "next_step": "Correct or complete the source records before preparing application data.",
+    }
+
+
+def _uncertain(today: str, detail: str, rate_check: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "result": "uncertain — please check",
+        "as_of": today,
+        "rule_source": RESTAURANT_RULE_SOURCE,
         "detail": detail,
         "estimate": _empty_estimate(),
         "rate_check": rate_check or {
@@ -335,12 +460,15 @@ def _uncertain(today: str, detail: str, rate_check: dict[str, Any] | None = None
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("calculate", choices=["calculate"])
+    parser.add_argument("calculate", choices=["calculate", "study"])
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    data = json.loads(args.input.read_text(encoding="utf-8"))
-    result = calculate_audit(data)
+    if args.calculate == "study":
+        result = estimate_predominant_use_csv(args.input)
+    else:
+        data = json.loads(args.input.read_text(encoding="utf-8"))
+        result = calculate_audit(data)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     try:
@@ -348,7 +476,7 @@ def main() -> int:
     except OSError:
         pass
     print(json.dumps({"result": result["result"], "output": str(args.output)}, indent=2))
-    return 0
+    return 2 if args.calculate == "study" and result["application_data"] is None else 0
 
 
 if __name__ == "__main__":
