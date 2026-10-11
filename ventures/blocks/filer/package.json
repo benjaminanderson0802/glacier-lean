@@ -1,0 +1,9 @@
+{
+  "name": "@glacier/portal-filer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local Playwright runtime for Glacier's portal filer",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}
