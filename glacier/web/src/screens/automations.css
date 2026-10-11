@@ -70,3 +70,4 @@
   .automations-window .g-table th:nth-child(5) { width: 18%; }
   .claims-screen-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
+.automations-window :is(.g-seg-btn, .g-status-cell, .automation-trigger-summary select) { text-transform: lowercase; }

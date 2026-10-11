@@ -434,6 +434,7 @@ export const en: Record<string, string> = {
   'memoryCleanup.tidy': 'Your memory looks tidy. Press Scan again to check.',
   'memoryCleanup.undo': 'Undo',
   'memoryCleanup.undone': 'Undone: {value}',
+  'memoryMap.fit': 'fit map',
   'memoryMap.hint': 'Click a note square to open it. Scroll to zoom, drag to move. Notes light up while they are being written.',
   'memoryMap.links': 'Links',
   'memoryMap.nothing': 'Nothing in memory yet.',

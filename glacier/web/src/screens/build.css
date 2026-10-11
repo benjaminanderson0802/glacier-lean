@@ -67,3 +67,12 @@
 .react-flow__minimap-node { fill:var(--l-pill-ink); stroke:none; }
 .react-flow__edge-path { stroke:var(--g-white); }
 .app .react-flow__controls-button { padding:0; display:flex; align-items:center; justify-content:center; min-width:0; border-radius:0; } .react-flow__controls-button svg { flex:none; }
+
+/* The editor belongs to the back-wall panel, including its palette and inspector. */
+.is-building .l-center:has(.app) { left: 19.32%; width: 61.3%; top: 20.3%; height: 46.44%; z-index: 4; }
+.app .palette { display: flex; max-height: calc(48 * var(--px)); overflow-y: auto; flex: 0 1 auto; }
+.app .palette > .pal { width: auto; }
+.app .canvas-wrap { min-height: calc(80 * var(--px)); padding: var(--px); }
+.app .tabs { max-height: 45%; overflow-y: auto; }
+.app .term-panel { max-height: 30%; }
+.app :is(button, .section-head, .field > span, .term-head) { text-transform: lowercase; }
