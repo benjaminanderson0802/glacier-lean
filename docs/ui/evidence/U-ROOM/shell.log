@@ -1,0 +1,65 @@
+[shell] ok   start screen shows on launch
+[shell] ok   Enter on the start screen continues to Home
+[shell] ok   Home: Get started explains the suggested setup in plain words
+[shell] ok   Get started sets up only the picked automations
+[shell] ok   Get started can be closed
+[shell] ok   exactly five English menu options (got Home,Build,Automations,Memory,Settings)
+[shell] ok   home: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:45641/assets/room-z25ywC4x.webp\")"})
+[shell] ok   home: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   ask: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:45641/assets/room-z25ywC4x.webp\")"})
+[shell] ok   ask: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   automations: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:45641/assets/room-z25ywC4x.webp\")"})
+[shell] ok   automations: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   memory: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:45641/assets/room-z25ywC4x.webp\")"})
+[shell] ok   memory: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   settings: active menu item and panels inside room ({"active":"page","panels":[true,true,true],"background":"url(\"http://localhost:45641/assets/room-z25ywC4x.webp\")"})
+[shell] ok   settings: readable Limbo title ({"glass":"blur(14px) saturate(1.25)","font":"Nunito, \"Segoe UI\", system-ui, sans-serif","titleFits":true,"chromeCase":true})
+[shell] ok   body text uses Nunito
+[shell] ok   bundled Nunito font loaded (offline)
+[shell] ok   New opens the builder with the flow named
+[shell] ok   saved flow appears in the Automations list
+[shell] ok   clicking a flow opens its Run view
+[shell] ok   Run view opens
+[shell] ok   Past runs view opens
+[shell] ok   Edit flow opens the builder
+[shell] ok   new note saved and shown
+[shell] ok   note shows who wrote it
+[shell] ok   typing [[ suggests notes and inserts a link
+[shell] ok   saved note shows its outgoing link
+[shell] ok   a link to a missing note says "not written yet"
+[shell] ok   Undo restores the previous version
+[shell] ok   Rename moves the note and says links were updated
+[shell] ok   notes that linked to the old name now link to the new one
+[shell] ok   Undo puts the old name and its links back
+[shell] ok   memory map draws the graph
+[shell] ok   memory map lights up a note the moment it is written
+[shell] ok   Add > Text saves a note
+[shell] ok   Add > Files uploads a file
+[shell] ok   Chat import: Check for new chats refreshes
+[shell] ok   Coding sessions: an OpenCode session opens read-only
+[shell] ok   Coding sessions: Save to memory saves a note
+[shell] ok   cleanup applies a suggestion and offers Undo
+[shell] ok   Settings > Models says which assistant Ask uses and why
+[shell] ok   Settings > Models shows the model in use
+[shell] ok   Settings > Usage, Data and About open
+[shell] ok   Settings > Secrets saves a secret and never shows its value
+[shell] ok   Settings > Secrets removes a secret after confirming
+[shell] ok   Ask shows how a proposed automation will be checked before it runs
+[shell] ok   a new chat is titled from the first question
+[shell] ok   Rename changes the chat title
+[shell] ok   Past chats: search finds a chat and reopening it shows its messages
+[shell] ok   New chat starts empty
+[shell] ok   Ask: "run my ... now" asks first, then starts the run and links to it
+[shell] ok   Ask > Edit opens the proposed flow in the builder
+[shell] ok   saving keeps the goal and checks the builder does not show
+[shell] ok   Saved versions: Restore brings back an earlier version of a flow
+[shell] ok   Simple detail level hides advanced steps and technical fields
+[shell] ok   Run view explains a run in plain words
+[shell] ok   claim detail shows problem and research
+[shell] ok   Ask for more research updates the claim
+[shell] ok   after approving, "Run it again to check" re-runs the flow and opens the run
+[shell] ok   Use this template creates the flow and opens it
+[shell] ok   Ctrl+K palette jumps to Memory
+[shell] ok   Ctrl+Tab moves to the next option
+[shell] ok   no page errors
+PASS

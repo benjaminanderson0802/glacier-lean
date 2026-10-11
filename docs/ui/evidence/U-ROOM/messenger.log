@@ -1,0 +1,1 @@
+`node e2e/messenger.spec.mjs` — PASS. Messenger visibility, thread list, search, read-only sessions, sends, new chats, malformed response handling, and live events passed.

@@ -1,0 +1,2 @@
+`ROOM_UI=http://127.0.0.1:<disposable-vite-port> node docs/ui/evidence/U-ROOM/capture.mjs` — PASS against `npm run live` real FastAPI backend.
+Real approval reached waiting, appeared in the room, and completed after approval. Screenshots captured at 1280x800, 1440x900, 1920x1080, 2560x1440 and keyboard/running/completed states. No active teams existed; the team section displayed the engine's empty state. Page errors: 0.
