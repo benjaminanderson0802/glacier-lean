@@ -8,18 +8,20 @@ Shopify product details do not include ingredients in the existing read-only con
 
 ## Your steps
 
-1. Create a Shopify app with read-only `read_products` access using [Shopify's app setup guide](https://shopify.dev/docs/apps/build). Save credentials through Glacier Secrets. For each product, provide the source label and brand-confirmed ingredients, category, responsible person, facility FEI/address or confirmed exemption, first-marketed date, last-listing date, and the three-item exemption checklist.
-2. Review the complete SPL ZIP and source checklist. The responsible person signs where needed, uploads the ZIP to [FDA Cosmetics Direct](https://direct.fda.gov/), and submits it. Use the [FDA Form 5067 instructions](https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing) if any field is unclear. Forward the response into the local incoming folder for parsing; Glacier does not claim FDA accepted a listing unless the response says so.
-3. Check the local deadline reminders each day. FDA says an initial listing for a product first marketed after December 29, 2022 is due within 120 days of first marketing, and product listing updates are due annually. Confirm those dates and any changes with the responsible person using [FDA's Cosmetics Direct guide](https://direct.fda.gov/apex/f?p=100:103:::::P103_GUIDE:26). The responsible person decides, signs, and submits each update.
+1. Connect a Shopify app with read-only `read_products` access using [Shopify's app setup guide](https://shopify.dev/docs/apps/build), then save credentials through Glacier Secrets. Provide each product's exact label name, label source, ingredient order, category, responsible person, facility FEI/address or confirmed exemption, first-marketed/last-listing dates, and the exemption checklist. Shopify titles are catalog references only; they never stand in for label-confirmed values. If you choose public Shopify App Store distribution, you complete the Partner/App Store review yourself; Glacier does not publish the app.
+2. Review each packet's field sources, uncertainty flags, ingredient/label checklist, and local 120-day and annual reminders. The responsible person confirms dates and product changes, signs where required, uploads the ZIP to [FDA Cosmetics Direct](https://direct.fda.gov/), and submits any filing or update. Use [FDA Form 5067 instructions](https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing) and the [Cosmetics Direct guide](https://direct.fda.gov/apex/f?p=100:103:::::P103_GUIDE:26) when needed. Forward the response into the incoming folder for parsing; Glacier does not claim acceptance unless the response says so.
 
 ## Run locally
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python ventures/fda-cosmetics/scripts/listing_prep.py prepare --shop example.myshopify.com --details brand-details.json --output "$GLACIER_HOME/ventures/fda-cosmetics/out"
+~/w/glacier-lean/.venv/bin/python ventures/fda-cosmetics/scripts/shopify_owner_check.py example.myshopify.com
 ~/w/glacier-lean/.venv/bin/python ventures/fda-cosmetics/scripts/listing_prep.py response --file "$GLACIER_HOME/ventures/fda-cosmetics/incoming/fda-response.txt" --output "$GLACIER_HOME/ventures/fda-cosmetics/out/fda-response.json"
 ~/w/glacier-lean/.venv/bin/python ventures/fda-cosmetics/scripts/listing_prep.py due
-~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/fda-cosmetics/tests
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/fda-cosmetics -q
 ```
+
+The owner check calls Shopify's connection metadata and product-read endpoints only. It reports the store and product count without printing catalog records; it does not create, update, publish, or delete Shopify records. The packet records a source for every Form 5067/SPL field. Catalog title is marked uncertain and kept separate from the label name; brand-confirmation fields remain uncertain until explicitly confirmed. The checklist compares parsed label ingredients with the supplied ingredient order and requires the responsible person's confirmation.
 
 The FDA SPL XSD check proves XML structure only. FDA Cosmetics Direct still runs its own technical and business validation. No public data or test payload can verify the brand's ingredients, exemption, facility, FDA response, or filing.
 
