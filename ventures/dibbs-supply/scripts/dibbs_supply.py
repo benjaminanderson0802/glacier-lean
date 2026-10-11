@@ -553,19 +553,13 @@ def prepare_from_feed(output_dir: Path, solicitations_path: Path, quotes_path: P
     owner_rows = _read_json(solicitations_path)
     if not isinstance(owner_rows, list):
         raise ValueError("solicitations input must be a JSON array")
-    public_by_number = {str(row.get("record_id", "")): row for row in feed_rows}
     merged = []
     for supplied in owner_rows:
         if not isinstance(supplied, dict):
             raise ValueError("solicitations input must contain JSON objects")
-        public = public_by_number.get(str(supplied.get("solicitation_number", "")))
-        row = dict(supplied)
-        if public:
-            row["source_url"] = public["data"].get("source_url") or public.get("source_url")
-            row["public_description"] = public["data"].get("description", "")
-        else:
-            row["source_url"] = row.get("source_url", "")
-        merged.append(row)
+        # Discovery rows are informational; mutating a confirmed record here
+        # would invalidate its owner-confirmation digest and could misbind a bid.
+        merged.append(dict(supplied))
     temporary = Path(output_dir) / "solicitations-from-feed.json"
     temporary.parent.mkdir(parents=True, exist_ok=True)
     temporary.write_text(json.dumps(merged, indent=2), encoding="utf-8")
