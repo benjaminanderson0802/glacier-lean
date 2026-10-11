@@ -1,5 +1,14 @@
 # NORTHSTAR amendments log
 
+## 2026-10-10 - E-PH2 evidence audit
+
+Observed anti-pattern: PH2's `done` checkpoint evidence still describes simulated
+local/second-machine checks, while the linked three-backend benchmark reports
+failure. E-PH2 keeps live and fixture results separate in evidence/ph2 and leaves
+phase closure to the integrator after independent verification. The gateway's
+old model default is corrected to the owner's already approved Granite choice;
+no invariant, exit criterion or open decision changes are proposed.
+
 Every change to NORTHSTAR.yaml other than checkpoint `status`/`evidence` goes here first, and is applied only after the owner approves it.
 
 | Date | Proposed by | Section | Change | Reason | Owner decision |

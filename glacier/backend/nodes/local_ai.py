@@ -81,6 +81,12 @@ def run(ctx: dict) -> dict:
     try:
         with open_model_request(request, timeout=timeout) as response:
             reply = json.loads(response.read())
+        output = reply["message"]["content"]
+        if not isinstance(output, str) or not output.strip():
+            raise ValueError("empty chat content")
+        tokens_in = int(reply.get("prompt_eval_count") or 0)
+        tokens_out = int(reply.get("eval_count") or 0)
+        generation_seconds = float(reply.get("eval_duration") or 0) / 1_000_000_000
     except (socket.timeout, TimeoutError):
         return {
             "state": "failed",
@@ -99,10 +105,12 @@ def run(ctx: dict) -> dict:
             "exit_code": 1,
             "output": f"Local AI is not running at {base_url}. Start Ollama, or pick another worker.",
         }
-    message = reply.get("message") or {}
-    output = message.get("content", "")
-    if not isinstance(output, str):
-        raise ValueError("Ollama returned an invalid reply")
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return {
+            "state": "failed",
+            "exit_code": 1,
+            "output": "Ollama returned an invalid reply. Try again, or pick another worker.",
+        }
     if choices:
         try:
             selected = json.loads(output)["labels"]
@@ -124,9 +132,9 @@ def run(ctx: dict) -> dict:
         "usage": {
             "model": model,
             "route": "local/ollama",
-            "tokens_in": int(reply.get("prompt_eval_count") or 0),
-            "tokens_out": int(reply.get("eval_count") or 0),
-            "generation_seconds": (float(reply.get("eval_duration") or 0) / 1_000_000_000),
+            "tokens_in": tokens_in,
+            "tokens_out": tokens_out,
+            "generation_seconds": generation_seconds,
             "cost_usd": 0.0,
         },
     }

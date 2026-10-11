@@ -1,0 +1,943 @@
+FFF.FFFFFFFFFFFFF                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_gateway_default_uses_owner_selected_granite _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_gateway_default_uses_owne0')
+
+    def test_gateway_default_uses_owner_selected_granite(tmp_path):
+>       assert gateway.routes(tmp_path)[0]["model"] == "granite3.3:2b"
+E       AssertionError: assert 'qwen3:0.6b' == 'granite3.3:2b'
+E
+E         - granite3.3:2b
+E         + qwen3:0.6b
+
+tests/test_worker_reply_validation.py:25: AssertionError
+_______________ test_invalid_gateway_reply_uses_next_route[None] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f2417440>
+payload = None
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+>       result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_worker_reply_validation.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gateway.py:207: in complete
+    reply = _post(route, prompt, request_timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+route = {'name': 'bad', 'base_url': 'http://localhost/bad', 'model': 'granite3.3:2b', 'paid': False}
+prompt = 'hello', timeout = 600
+
+    def _post(route: dict, prompt: str, timeout: int) -> dict:
+        endpoint = route["base_url"].rstrip("/") + "/chat/completions"
+        body = json.dumps({
+            "model": route["model"],
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+        }).encode()
+        request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
+        with open_model_request(request, timeout=timeout) as response:
+            result = json.loads(response.read())
+>       content = result["choices"][0]["message"]["content"]
+                  ^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+gateway.py:98: TypeError
+_____________ test_invalid_gateway_reply_uses_next_route[payload1] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f24170e0>
+payload = []
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+>       result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_worker_reply_validation.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gateway.py:207: in complete
+    reply = _post(route, prompt, request_timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+route = {'name': 'bad', 'base_url': 'http://localhost/bad', 'model': 'granite3.3:2b', 'paid': False}
+prompt = 'hello', timeout = 600
+
+    def _post(route: dict, prompt: str, timeout: int) -> dict:
+        endpoint = route["base_url"].rstrip("/") + "/chat/completions"
+        body = json.dumps({
+            "model": route["model"],
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+        }).encode()
+        request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
+        with open_model_request(request, timeout=timeout) as response:
+            result = json.loads(response.read())
+>       content = result["choices"][0]["message"]["content"]
+                  ^^^^^^^^^^^^^^^^^
+E       TypeError: list indices must be integers or slices, not str
+
+gateway.py:98: TypeError
+_____________ test_invalid_gateway_reply_uses_next_route[payload3] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f24165a0>
+payload = {'choices': []}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+>       result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_worker_reply_validation.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gateway.py:207: in complete
+    reply = _post(route, prompt, request_timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+route = {'name': 'bad', 'base_url': 'http://localhost/bad', 'model': 'granite3.3:2b', 'paid': False}
+prompt = 'hello', timeout = 600
+
+    def _post(route: dict, prompt: str, timeout: int) -> dict:
+        endpoint = route["base_url"].rstrip("/") + "/chat/completions"
+        body = json.dumps({
+            "model": route["model"],
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+        }).encode()
+        request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
+        with open_model_request(request, timeout=timeout) as response:
+            result = json.loads(response.read())
+>       content = result["choices"][0]["message"]["content"]
+                  ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+gateway.py:98: IndexError
+_____________ test_invalid_gateway_reply_uses_next_route[payload4] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use4')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f29090a0>
+payload = {'choices': [None]}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+>       result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_worker_reply_validation.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gateway.py:207: in complete
+    reply = _post(route, prompt, request_timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+route = {'name': 'bad', 'base_url': 'http://localhost/bad', 'model': 'granite3.3:2b', 'paid': False}
+prompt = 'hello', timeout = 600
+
+    def _post(route: dict, prompt: str, timeout: int) -> dict:
+        endpoint = route["base_url"].rstrip("/") + "/chat/completions"
+        body = json.dumps({
+            "model": route["model"],
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+        }).encode()
+        request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
+        with open_model_request(request, timeout=timeout) as response:
+            result = json.loads(response.read())
+>       content = result["choices"][0]["message"]["content"]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+gateway.py:98: TypeError
+_____________ test_invalid_gateway_reply_uses_next_route[payload5] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use5')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f290aa20>
+payload = {'choices': [{'message': None}]}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+>       result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_worker_reply_validation.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gateway.py:207: in complete
+    reply = _post(route, prompt, request_timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+route = {'name': 'bad', 'base_url': 'http://localhost/bad', 'model': 'granite3.3:2b', 'paid': False}
+prompt = 'hello', timeout = 600
+
+    def _post(route: dict, prompt: str, timeout: int) -> dict:
+        endpoint = route["base_url"].rstrip("/") + "/chat/completions"
+        body = json.dumps({
+            "model": route["model"],
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+        }).encode()
+        request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
+        with open_model_request(request, timeout=timeout) as response:
+            result = json.loads(response.read())
+>       content = result["choices"][0]["message"]["content"]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+gateway.py:98: TypeError
+_____________ test_invalid_gateway_reply_uses_next_route[payload6] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use6')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f28cffb0>
+payload = {'choices': [{'message': {'content': ' '}}]}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+        result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+        assert result["state"] == "done"
+>       assert result["output"] == "fallback answer"
+E       AssertionError: assert ' ' == 'fallback answer'
+E
+E         Strings contain only whitespace, escaping them using repr()
+E         - 'fallback answer'
+E         + ' '
+
+tests/test_worker_reply_validation.py:49: AssertionError
+_____________ test_invalid_gateway_reply_uses_next_route[payload7] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use7')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f28ce120>
+payload = {'choices': [{'message': {'content': 'answer'}}], 'usage': []}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+        result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+        assert result["state"] == "done"
+>       assert result["output"] == "fallback answer"
+E       AssertionError: assert 'answer' == 'fallback answer'
+E
+E         - fallback answer
+E         + answer
+
+tests/test_worker_reply_validation.py:49: AssertionError
+_____________ test_invalid_gateway_reply_uses_next_route[payload8] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use8')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f2416660>
+payload = {'choices': [{'message': {'content': 'answer'}}], 'usage': {'prompt_tokens': 'bad'}}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"choices": []},
+        {"choices": [None]}, {"choices": [{"message": None}]},
+        {"choices": [{"message": {"content": " "}}]},
+        {"choices": [{"message": {"content": "answer"}}], "usage": []},
+        {"choices": [{"message": {"content": "answer"}}], "usage": {"prompt_tokens": "bad"}},
+    ])
+    def test_invalid_gateway_reply_uses_next_route(tmp_path, monkeypatch, payload):
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request.full_url)
+            return Reply(payload if len(requests) == 1 else {
+                "choices": [{"message": {"content": "fallback answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            })
+
+        monkeypatch.setattr(gateway, "open_model_request", respond)
+        routes = [{"name": name, "base_url": f"http://localhost/{name}",
+                   "model": "granite3.3:2b", "paid": False} for name in ("bad", "good")]
+>       result = gateway.complete({"home": tmp_path, "config": {"prompt": "hello"}}, routes=routes)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_worker_reply_validation.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ctx = {'home': PosixPath('/tmp/pytest-of-glacier/pytest-600/test_invalid_gateway_reply_use8'), 'config': {'prompt': 'hello'}}
+routes = [{'name': 'bad', 'base_url': 'http://localhost/bad', 'model': 'granite3.3:2b', 'paid': False}, {'name': 'good', 'base_url': 'http://localhost/good', 'model': 'granite3.3:2b', 'paid': False}]
+timeout = None
+
+    def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = None) -> dict:
+        """Try eligible routes in order and report the route that answered."""
+        config = ctx.get("config") or {}
+        try:
+            route_list = routes if routes is not None else globals()["routes"](ctx["home"])
+        except ValueError as exc:
+            return {"state": "failed", "exit_code": 1, "output": str(exc)}
+        selected = config.get("routes")
+        if selected:
+            names = {part.strip() for part in selected.split(",") if part.strip()}
+            route_list = [route for route in route_list if route.get("name") in names]
+        prompt = (config.get("prompt") or "").strip()
+        previous = ((ctx.get("prev") or {}).get("output") or "")[-8000:]
+        prompt = prompt.replace("{env}", str(ctx.get("env_id", "")))
+        prompt = prompt.replace("{run}", str(ctx.get("run_id", "")))
+        prompt = prompt.replace("{prev_output}", previous)
+        try:
+            request_timeout = int(timeout if timeout is not None else config.get("timeout") or 600)
+        except (TypeError, ValueError):
+            request_timeout = 600
+        request_timeout = max(1, min(request_timeout, 24 * 3600))
+        today = datetime.now(timezone.utc).date().isoformat()
+        paid_blocked = False
+        failures = []
+        eligible_routes = []
+        preferred_online = []
+        for route in route_list:
+            if route.get("paid", True) is not False:
+                paid_blocked = True
+                continue
+            eligible_routes.append(route)
+            if route.get("prefer_when_online"):
+                if _is_online(route):
+                    preferred_online.append(route)
+        ordered_routes = preferred_online + [
+            route for route in eligible_routes
+            if not route.get("prefer_when_online")
+        ]
+        for route in ordered_routes:
+            cap = int(route.get("daily_request_cap", 0) or 0)
+            if cap > 0 and _daily_count(ctx["home"], route["name"], today) >= cap:
+                continue
+            try:
+                reply = _post(route, prompt, request_timeout)
+            except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout, TimeoutError, OSError, ValueError, KeyError) as exc:
+                failures.append(f"{route.get('name', 'unnamed')}: {exc}")
+                continue
+            _record_request(ctx["home"], route["name"], today)
+            result = reply["response"]
+            usage = result.get("usage") or {}
+            return {
+                "state": "done",
+                "exit_code": 0,
+                "output": reply["content"],
+                "usage": {
+                    "model": str(result.get("model") or route.get("model", "")),
+                    "route": f"gateway/{route['name']}",
+>                   "tokens_in": int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0),
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    "tokens_out": int(usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0),
+                    "cost_usd": 0.0,
+                },
+            }
+E           ValueError: invalid literal for int() with base 10: 'bad'
+
+gateway.py:221: ValueError
+_________________ test_invalid_local_reply_fails_cleanly[None] _________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f2415790>
+payload = None
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+>       result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+
+tests/test_worker_reply_validation.py:61:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ctx = {'config': {'prompt': 'hello', 'model': 'granite3.3:2b'}, 'env_id': 'e', 'run_id': 'r'}
+
+    def run(ctx: dict) -> dict:
+        config = ctx["config"]
+        prompt = (config.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError("Local AI needs a prompt")
+        previous = ((ctx.get("prev") or {}).get("output") or "")[-PREV_LIMIT:]
+        prompt = (prompt.replace("{env}", ctx["env_id"])
+                  .replace("{run}", ctx["run_id"])
+                  .replace("{prev_output}", previous))
+        instructions = find_agents_md(config.get("project_folder")) if config.get("project_folder") else None
+        if instructions:
+            prompt += (
+                "\n\n----- BEGIN PROJECT INSTRUCTIONS (AGENTS.md: " + instructions["path"] + ") -----\n"
+                + instructions["text"]
+                + "\n----- END PROJECT INSTRUCTIONS -----"
+            )
+        choice_text = str(config.get("choose_one") or "").strip()
+        choices = [choice.strip() for choice in choice_text.split(",") if choice.strip()]
+        if choice_text and (len(choices) < 2 or len(set(choices)) != len(choices) or len(choices) > 12):
+            raise ValueError("Choose one needs at least two distinct options separated by commas")
+        if choices:
+            prompt += "\n\nChoose one of: " + ", ".join(choices) + ". Reply with a JSON object containing a labels array, one label for each item in order."
+        import system_check
+        model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
+        try:
+            timeout = int(config.get("timeout") or DEFAULT_TIMEOUT)
+        except (TypeError, ValueError):
+            timeout = DEFAULT_TIMEOUT
+        timeout = max(1, min(timeout, 24 * 3600))
+        base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/")
+        url = base_url + "/api/chat"
+        body = {
+                "model": model,
+                "messages": ([{"role": "system", "content": ANSWER_ONLY_SYSTEM}]
+                             if config.get("answer_style", "Answer only") == "Answer only" else []) +
+                            [{"role": "user", "content": prompt}],
+                "stream": False,
+                "think": False,
+                **({"options": {"temperature": 0}}
+                   if config.get("answer_style", "Answer only") == "Answer only" else {}),
+            }
+        if choices:
+            body["format"] = {"type": "object", "properties": {
+                "labels": {"type": "array", "items": {"type": "string", "enum": choices},
+                           "minItems": 1, "maxItems": 100}},
+                "required": ["labels"], "additionalProperties": False}
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with open_model_request(request, timeout=timeout) as response:
+                reply = json.loads(response.read())
+        except (socket.timeout, TimeoutError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI took longer than {timeout} seconds.",
+            }
+        except urllib.error.HTTPError:
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f'Local AI could not use model "{model}". Download it with: ollama pull {model}.',
+            }
+        except (urllib.error.URLError, OSError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI is not running at {base_url}. Start Ollama, or pick another worker.",
+            }
+>       message = reply.get("message") or {}
+                  ^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'get'
+
+nodes/local_ai.py:102: AttributeError
+_______________ test_invalid_local_reply_fails_cleanly[payload1] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f2417740>
+payload = []
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+>       result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+
+tests/test_worker_reply_validation.py:61:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ctx = {'config': {'prompt': 'hello', 'model': 'granite3.3:2b'}, 'env_id': 'e', 'run_id': 'r'}
+
+    def run(ctx: dict) -> dict:
+        config = ctx["config"]
+        prompt = (config.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError("Local AI needs a prompt")
+        previous = ((ctx.get("prev") or {}).get("output") or "")[-PREV_LIMIT:]
+        prompt = (prompt.replace("{env}", ctx["env_id"])
+                  .replace("{run}", ctx["run_id"])
+                  .replace("{prev_output}", previous))
+        instructions = find_agents_md(config.get("project_folder")) if config.get("project_folder") else None
+        if instructions:
+            prompt += (
+                "\n\n----- BEGIN PROJECT INSTRUCTIONS (AGENTS.md: " + instructions["path"] + ") -----\n"
+                + instructions["text"]
+                + "\n----- END PROJECT INSTRUCTIONS -----"
+            )
+        choice_text = str(config.get("choose_one") or "").strip()
+        choices = [choice.strip() for choice in choice_text.split(",") if choice.strip()]
+        if choice_text and (len(choices) < 2 or len(set(choices)) != len(choices) or len(choices) > 12):
+            raise ValueError("Choose one needs at least two distinct options separated by commas")
+        if choices:
+            prompt += "\n\nChoose one of: " + ", ".join(choices) + ". Reply with a JSON object containing a labels array, one label for each item in order."
+        import system_check
+        model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
+        try:
+            timeout = int(config.get("timeout") or DEFAULT_TIMEOUT)
+        except (TypeError, ValueError):
+            timeout = DEFAULT_TIMEOUT
+        timeout = max(1, min(timeout, 24 * 3600))
+        base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/")
+        url = base_url + "/api/chat"
+        body = {
+                "model": model,
+                "messages": ([{"role": "system", "content": ANSWER_ONLY_SYSTEM}]
+                             if config.get("answer_style", "Answer only") == "Answer only" else []) +
+                            [{"role": "user", "content": prompt}],
+                "stream": False,
+                "think": False,
+                **({"options": {"temperature": 0}}
+                   if config.get("answer_style", "Answer only") == "Answer only" else {}),
+            }
+        if choices:
+            body["format"] = {"type": "object", "properties": {
+                "labels": {"type": "array", "items": {"type": "string", "enum": choices},
+                           "minItems": 1, "maxItems": 100}},
+                "required": ["labels"], "additionalProperties": False}
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with open_model_request(request, timeout=timeout) as response:
+                reply = json.loads(response.read())
+        except (socket.timeout, TimeoutError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI took longer than {timeout} seconds.",
+            }
+        except urllib.error.HTTPError:
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f'Local AI could not use model "{model}". Download it with: ollama pull {model}.',
+            }
+        except (urllib.error.URLError, OSError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI is not running at {base_url}. Start Ollama, or pick another worker.",
+            }
+>       message = reply.get("message") or {}
+                  ^^^^^^^^^
+E       AttributeError: 'list' object has no attribute 'get'
+
+nodes/local_ai.py:102: AttributeError
+_______________ test_invalid_local_reply_fails_cleanly[payload2] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f28cd100>
+payload = {}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+        result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+>       assert result["state"] == "failed" and result["exit_code"] != 0
+E       AssertionError: assert ('done' == 'failed'
+E
+E         - failed
+E         + done)
+
+tests/test_worker_reply_validation.py:63: AssertionError
+_______________ test_invalid_local_reply_fails_cleanly[payload3] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f2908e00>
+payload = {'message': []}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+        result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+>       assert result["state"] == "failed" and result["exit_code"] != 0
+E       AssertionError: assert ('done' == 'failed'
+E
+E         - failed
+E         + done)
+
+tests/test_worker_reply_validation.py:63: AssertionError
+_______________ test_invalid_local_reply_fails_cleanly[payload4] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f2908230>
+payload = {'message': {'content': ' '}}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+        result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+>       assert result["state"] == "failed" and result["exit_code"] != 0
+E       AssertionError: assert ('done' == 'failed'
+E
+E         - failed
+E         + done)
+
+tests/test_worker_reply_validation.py:63: AssertionError
+_______________ test_invalid_local_reply_fails_cleanly[payload5] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f24c1370>
+payload = {'message': {'content': 42}}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+>       result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+
+tests/test_worker_reply_validation.py:61:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ctx = {'config': {'prompt': 'hello', 'model': 'granite3.3:2b'}, 'env_id': 'e', 'run_id': 'r'}
+
+    def run(ctx: dict) -> dict:
+        config = ctx["config"]
+        prompt = (config.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError("Local AI needs a prompt")
+        previous = ((ctx.get("prev") or {}).get("output") or "")[-PREV_LIMIT:]
+        prompt = (prompt.replace("{env}", ctx["env_id"])
+                  .replace("{run}", ctx["run_id"])
+                  .replace("{prev_output}", previous))
+        instructions = find_agents_md(config.get("project_folder")) if config.get("project_folder") else None
+        if instructions:
+            prompt += (
+                "\n\n----- BEGIN PROJECT INSTRUCTIONS (AGENTS.md: " + instructions["path"] + ") -----\n"
+                + instructions["text"]
+                + "\n----- END PROJECT INSTRUCTIONS -----"
+            )
+        choice_text = str(config.get("choose_one") or "").strip()
+        choices = [choice.strip() for choice in choice_text.split(",") if choice.strip()]
+        if choice_text and (len(choices) < 2 or len(set(choices)) != len(choices) or len(choices) > 12):
+            raise ValueError("Choose one needs at least two distinct options separated by commas")
+        if choices:
+            prompt += "\n\nChoose one of: " + ", ".join(choices) + ". Reply with a JSON object containing a labels array, one label for each item in order."
+        import system_check
+        model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
+        try:
+            timeout = int(config.get("timeout") or DEFAULT_TIMEOUT)
+        except (TypeError, ValueError):
+            timeout = DEFAULT_TIMEOUT
+        timeout = max(1, min(timeout, 24 * 3600))
+        base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/")
+        url = base_url + "/api/chat"
+        body = {
+                "model": model,
+                "messages": ([{"role": "system", "content": ANSWER_ONLY_SYSTEM}]
+                             if config.get("answer_style", "Answer only") == "Answer only" else []) +
+                            [{"role": "user", "content": prompt}],
+                "stream": False,
+                "think": False,
+                **({"options": {"temperature": 0}}
+                   if config.get("answer_style", "Answer only") == "Answer only" else {}),
+            }
+        if choices:
+            body["format"] = {"type": "object", "properties": {
+                "labels": {"type": "array", "items": {"type": "string", "enum": choices},
+                           "minItems": 1, "maxItems": 100}},
+                "required": ["labels"], "additionalProperties": False}
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with open_model_request(request, timeout=timeout) as response:
+                reply = json.loads(response.read())
+        except (socket.timeout, TimeoutError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI took longer than {timeout} seconds.",
+            }
+        except urllib.error.HTTPError:
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f'Local AI could not use model "{model}". Download it with: ollama pull {model}.',
+            }
+        except (urllib.error.URLError, OSError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI is not running at {base_url}. Start Ollama, or pick another worker.",
+            }
+        message = reply.get("message") or {}
+        output = message.get("content", "")
+        if not isinstance(output, str):
+>           raise ValueError("Ollama returned an invalid reply")
+E           ValueError: Ollama returned an invalid reply
+
+nodes/local_ai.py:105: ValueError
+_______________ test_invalid_local_reply_fails_cleanly[payload6] _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b12f24c1ca0>
+payload = {'message': {'content': 'ok'}, 'eval_count': 'bad'}
+
+    @pytest.mark.parametrize("payload", [None, [], {}, {"message": []},
+        {"message": {"content": " "}}, {"message": {"content": 42}},
+        {"message": {"content": "ok"}, "eval_count": "bad"},
+    ])
+    def test_invalid_local_reply_fails_cleanly(monkeypatch, payload):
+        monkeypatch.setattr(local_ai, "open_model_request", lambda *a, **k: Reply(payload))
+>       result = local_ai.run({"config": {"prompt": "hello", "model": "granite3.3:2b"},
+                               "env_id": "e", "run_id": "r"})
+
+tests/test_worker_reply_validation.py:61:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ctx = {'config': {'prompt': 'hello', 'model': 'granite3.3:2b'}, 'env_id': 'e', 'run_id': 'r'}
+
+    def run(ctx: dict) -> dict:
+        config = ctx["config"]
+        prompt = (config.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError("Local AI needs a prompt")
+        previous = ((ctx.get("prev") or {}).get("output") or "")[-PREV_LIMIT:]
+        prompt = (prompt.replace("{env}", ctx["env_id"])
+                  .replace("{run}", ctx["run_id"])
+                  .replace("{prev_output}", previous))
+        instructions = find_agents_md(config.get("project_folder")) if config.get("project_folder") else None
+        if instructions:
+            prompt += (
+                "\n\n----- BEGIN PROJECT INSTRUCTIONS (AGENTS.md: " + instructions["path"] + ") -----\n"
+                + instructions["text"]
+                + "\n----- END PROJECT INSTRUCTIONS -----"
+            )
+        choice_text = str(config.get("choose_one") or "").strip()
+        choices = [choice.strip() for choice in choice_text.split(",") if choice.strip()]
+        if choice_text and (len(choices) < 2 or len(set(choices)) != len(choices) or len(choices) > 12):
+            raise ValueError("Choose one needs at least two distinct options separated by commas")
+        if choices:
+            prompt += "\n\nChoose one of: " + ", ".join(choices) + ". Reply with a JSON object containing a labels array, one label for each item in order."
+        import system_check
+        model = config.get("model") or system_check.default_local_model() or DEFAULT_MODEL
+        try:
+            timeout = int(config.get("timeout") or DEFAULT_TIMEOUT)
+        except (TypeError, ValueError):
+            timeout = DEFAULT_TIMEOUT
+        timeout = max(1, min(timeout, 24 * 3600))
+        base_url = os.environ.get("GLACIER_OLLAMA_URL", "http://localhost:11434").rstrip("/")
+        url = base_url + "/api/chat"
+        body = {
+                "model": model,
+                "messages": ([{"role": "system", "content": ANSWER_ONLY_SYSTEM}]
+                             if config.get("answer_style", "Answer only") == "Answer only" else []) +
+                            [{"role": "user", "content": prompt}],
+                "stream": False,
+                "think": False,
+                **({"options": {"temperature": 0}}
+                   if config.get("answer_style", "Answer only") == "Answer only" else {}),
+            }
+        if choices:
+            body["format"] = {"type": "object", "properties": {
+                "labels": {"type": "array", "items": {"type": "string", "enum": choices},
+                           "minItems": 1, "maxItems": 100}},
+                "required": ["labels"], "additionalProperties": False}
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with open_model_request(request, timeout=timeout) as response:
+                reply = json.loads(response.read())
+        except (socket.timeout, TimeoutError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI took longer than {timeout} seconds.",
+            }
+        except urllib.error.HTTPError:
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f'Local AI could not use model "{model}". Download it with: ollama pull {model}.',
+            }
+        except (urllib.error.URLError, OSError):
+            return {
+                "state": "failed",
+                "exit_code": 1,
+                "output": f"Local AI is not running at {base_url}. Start Ollama, or pick another worker.",
+            }
+        message = reply.get("message") or {}
+        output = message.get("content", "")
+        if not isinstance(output, str):
+            raise ValueError("Ollama returned an invalid reply")
+        if choices:
+            try:
+                selected = json.loads(output)["labels"]
+            except (json.JSONDecodeError, KeyError, TypeError):
+                raise ValueError("Ollama returned an invalid choice") from None
+            if (not isinstance(selected, list) or not selected or len(selected) > 100
+                    or any(option not in choices for option in selected)):
+                raise ValueError("Ollama returned a choice outside the allowed options")
+            output = "\n".join(selected)
+        if config.get("answer_style", "Answer only") == "Answer only":
+            output = _clean_answer(output)
+        instructions_detail = project_instructions_detail(config.get("project_folder")) if config.get("project_folder") else ""
+        if instructions_detail:
+            output += f"\n{instructions_detail}"
+        return {
+            "state": "done",
+            "exit_code": 0,
+            "output": output,
+            "usage": {
+                "model": model,
+                "route": "local/ollama",
+                "tokens_in": int(reply.get("prompt_eval_count") or 0),
+>               "tokens_out": int(reply.get("eval_count") or 0),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                "generation_seconds": (float(reply.get("eval_duration") or 0) / 1_000_000_000),
+                "cost_usd": 0.0,
+            },
+        }
+E       ValueError: invalid literal for int() with base 10: 'bad'
+
+nodes/local_ai.py:128: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_worker_reply_validation.py::test_gateway_default_uses_owner_selected_granite
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[None]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload1]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload3]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload4]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload5]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload6]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload7]
+FAILED tests/test_worker_reply_validation.py::test_invalid_gateway_reply_uses_next_route[payload8]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[None]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[payload1]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[payload2]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[payload3]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[payload4]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[payload5]
+FAILED tests/test_worker_reply_validation.py::test_invalid_local_reply_fails_cleanly[payload6]
+16 failed, 1 passed in 0.25s

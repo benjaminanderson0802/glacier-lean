@@ -1,0 +1,46 @@
+ssF                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_real_codex_worker_creates_checked_file_in_temporary_folder ________
+
+make_server = <function make_server.<locals>.make at 0x7af8b668b100>
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-631/test_real_codex_worker_creates0')
+
+    def test_real_codex_worker_creates_checked_file_in_temporary_folder(make_server, tmp_path):
+>       binary = _require_codex()
+                 ^^^^^^^^^^^^^^^^
+
+tests/test_flows_real_runtime.py:288:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_flows_real_runtime.py:84: in _require_codex
+    result = subprocess.run([binary, "login", "status"], capture_output=True, text=True, timeout=10)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: -9 args: ['/usr/bin/codex', 'login', 'status']>
+endtime = 76727.57270367, orig_timeout = 10, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/bin/codex', 'login', 'status']' timed out after 10 seconds
+
+/usr/lib/python3.12/subprocess.py:1253: TimeoutExpired
+=========================== short test summary info ============================
+FAILED tests/test_flows_real_runtime.py::test_real_codex_worker_creates_checked_file_in_temporary_folder
+1 failed, 2 skipped, 23 deselected in 19.98s
