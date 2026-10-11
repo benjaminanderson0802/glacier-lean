@@ -1,11 +1,7 @@
 import { createRequire } from 'node:module';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
-const playwrightPath = path.resolve(here, '../../../glacier/web/node_modules/playwright');
-const { chromium } = require(playwrightPath);
+const { chromium } = require('playwright');
 
 async function readInput() {
   let text = '';
