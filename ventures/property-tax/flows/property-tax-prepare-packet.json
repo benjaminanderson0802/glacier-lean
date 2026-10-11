@@ -121,7 +121,8 @@
     {
       "id": "i5-owner_input_ready-prepare_packet",
       "source": "owner_input_ready",
-      "target": "prepare_packet"
+      "target": "prepare_packet",
+      "label": "yes"
     }
   ],
   "acceptance": [
