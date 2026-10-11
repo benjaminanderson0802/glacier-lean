@@ -6,7 +6,9 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
+from datetime import datetime, timezone, timedelta
 from functools import lru_cache
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -21,7 +23,7 @@ SCHEMA_PATH = ROOT / "venture.schema.json"
 NODE_TYPES_PATH = REPO / "glacier" / "contract" / "node_types.json"
 
 
-def manifests(only: str | None = None) -> list[Path]:
+def manifests(only: str | None = None, *, ready_only: bool = False) -> list[Path]:
     found = sorted(ROOT.glob("*/venture.json"))
     if only:
         found = [path for path in found if json.loads(path.read_text(encoding="utf-8")).get("slug") == only]
@@ -29,6 +31,10 @@ def manifests(only: str | None = None) -> list[Path]:
             raise ValueError(f"venture manifest not found: {only}")
     if not found:
         raise ValueError("no venture manifests found; no flows can be installed")
+    if ready_only:
+        found = [p for p in found if json.loads(p.read_text(encoding="utf-8")).get("status") == "ready"]
+        if not found:
+            raise ValueError("no ready venture manifests found")
     return found
 
 
@@ -74,12 +80,13 @@ def validate_schedules(manifest: dict, flow: dict) -> None:
             raise ValueError(f"{flow_id}: manifest missed-run or overlap policy does not match schedule node")
 
 
-def validate_all(only: str | None = None) -> list[dict]:
+def validate_all(only: str | None = None, *, ready_only: bool = False) -> list[dict]:
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     known_types = _catalog_types()
     checked: list[dict] = []
     slugs: set[str] = set()
-    for manifest_path in manifests(only):
+    flow_ids: set[str] = set()
+    for manifest_path in manifests(only, ready_only=ready_only):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         jsonschema.validate(manifest, schema)
         slug = manifest["slug"]
@@ -95,6 +102,9 @@ def validate_all(only: str | None = None) -> list[dict]:
                 raise ValueError(f"{flow_path}: flow has no id")
             if not isinstance(flow.get("nodes"), list) or not isinstance(flow.get("edges"), list):
                 raise ValueError(f"{flow_path}: flow must contain node and edge lists")
+            if flow["id"] in flow_ids:
+                raise ValueError(f"duplicate environment id: {flow['id']}")
+            flow_ids.add(flow["id"])
             for node in flow["nodes"]:
                 node_type = node.get("type") if isinstance(node, dict) else None
                 if node_type not in known_types:
@@ -107,6 +117,8 @@ def validate_all(only: str | None = None) -> list[dict]:
 
 
 def _engine_token() -> str:
+    if os.environ.get("GLACIER_TOKEN", "").strip():
+        return os.environ["GLACIER_TOKEN"].strip()
     home = Path(os.environ.get("GLACIER_HOME", "data"))
     token_path = home / ".engine-token"
     if not token_path.is_file():
@@ -171,7 +183,7 @@ def _runtime_flow(flow: dict, *, repo_root: Path, slug: str, home: Path) -> dict
         command = str(config.get("cmd") or "")
         if command:
             path_append = f"${{PYTHONPATH:+{shlex_quote(os.pathsep)}$PYTHONPATH}}"
-            config["cmd"] = f"PYTHONPATH={shlex_quote(import_path)}{path_append} {bind_command(command)}"
+            config["cmd"] = f"export PYTHONPATH={shlex_quote(import_path)}{path_append}; {bind_command(command)}"
     for key in ("acceptance", "checks"):
         rows = result.get(key)
         if isinstance(rows, list):
@@ -250,6 +262,9 @@ def register_flow_if_changed(api: str, token: str, flow: dict) -> dict:
         if exc.code != 404:
             raise
     else:
+        # Reinstall must not undo a pause chosen in Glacier.
+        if current.get("enabled") is False:
+            flow = dict(flow, enabled=False)
         if current == flow:
             return {"saved": False, "unchanged": True}
     return register_flow(api, token, flow)
@@ -261,11 +276,12 @@ def install_flow(flow: dict, *, base: str, token: str) -> dict:
     return register_flow(api, token, flow)
 
 
-def install(api: str, token: str, only: str | None = None, *, home: Path | None = None) -> list[dict]:
-    validate_all(only)
+def install(api: str, token: str, only: str | None = None, *, home: Path | None = None,
+            ready_only: bool = False, start: bool = False) -> list[dict]:
+    validate_all(only, ready_only=ready_only)
     data_home = home or Path(os.environ.get("GLACIER_HOME", "data"))
     registered: list[dict] = []
-    for manifest_path in manifests(only):
+    for manifest_path in manifests(only, ready_only=ready_only):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         slug = manifest["slug"]
         flow_ids = manifest["flows"]
@@ -274,9 +290,111 @@ def install(api: str, token: str, only: str | None = None, *, home: Path | None 
             flow_path = flow_file(manifest_path, flow_id)
             flow = json.loads(flow_path.read_text(encoding="utf-8"))
             runtime = _runtime_flow(flow, repo_root=REPO, slug=slug, home=data_home)
+            if ready_only:
+                runtime = scheduled_flow(runtime)
             result = register_flow_if_changed(api, token, runtime)
             registered.append({"venture": slug, "flow": flow_id, "result": result})
+        if ready_only:
+            canary = health_flow(slug, api)
+            result = register_flow_if_changed(api, token, canary)
+            registered.append({"venture": slug, "flow": canary["id"], "result": result})
+    if start:
+        for row in registered:
+            row["run"] = start_once(api, token, row["flow"])
     return registered
+
+
+def api_json(api: str, token: str, path: str, *, method: str = "GET", body=None, timeout: int = 30):
+    request = Request(api.rstrip("/") + path, method=method,
+                      data=json.dumps(body).encode() if body is not None else None,
+                      headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    with urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def scheduled_flow(flow: dict) -> dict:
+    """Use DBOS for daily intake; an outstanding approval blocks overlapping runs."""
+    result = json.loads(json.dumps(flow))
+    if any(n["type"] == "schedule" for n in result["nodes"]):
+        return result
+    targets = {edge["target"] for edge in result["edges"]}
+    roots = [node["id"] for node in result["nodes"] if node["id"] not in targets]
+    if not roots:
+        raise ValueError(f"{flow['id']}: cannot schedule a flow without an entry step")
+    nid = "venture-daily-intake"
+    if any(n["id"] == nid for n in result["nodes"]):
+        raise ValueError(f"{flow['id']}: reserved schedule node id")
+    result["nodes"].insert(0, {"id": nid, "type": "schedule", "position": {"x": -500, "y": 0},
+                              "config": {"cron": "0 7 * * *", "missed_run": "run_once", "overlap": "skip"}})
+    result["edges"].extend({"id": f"{nid}-{root}", "source": nid, "target": root} for root in roots)
+    if "max_steps" in result:
+        result["max_steps"] = int(result["max_steps"]) + 1
+    return result
+
+
+def start_once(api: str, token: str, flow_id: str) -> dict:
+    path = f"/api/environments/{quote(flow_id, safe='')}"
+    if api_json(api, token, path).get("enabled") is False:
+        return {"state": "paused"}
+    runs = api_json(api, token, f"/api/runs?env_id={quote(flow_id, safe='')}")
+    active = next((row for row in runs if row["status"] in ("queued", "running", "waiting")), None)
+    if active:
+        return {"state": active["status"], "run_id": active["run_id"], "existing": True}
+    return api_json(api, token, path + "/run", method="POST")
+
+
+def health_flow(slug: str, api: str) -> dict:
+    """A visible, hourly DBOS canary. Failures use Glacier's existing Home alerts."""
+    command = (f"{python_command()} {shlex_quote(str(REPO / 'ventures/install_all.py').replace(chr(92), '/'))}"
+               f" --health-canary {shlex_quote(slug)} --api {shlex_quote(api)}")
+    return {"id": f"venture-health-{slug}", "name": f"{slug}: automation health",
+            "nodes": [
+                {"id": "hourly", "type": "schedule", "config": {
+                    "cron": "5 * * * *", "missed_run": "run_once", "overlap": "skip"}},
+                {"id": "health", "type": "command", "config": {
+                    "cmd": command, "cwd": str(REPO), "timeout": 120, "retries": 0}},
+                {"id": "report", "type": "note", "config": {
+                    "path": f"ventures/{slug}/health/{{run}}.md",
+                    "template": "Automation health (local runtime only, not a live source certification):\n\n{prev_output}"}}],
+            "edges": [{"id": "h1", "source": "hourly", "target": "health"},
+                      {"id": "h2", "source": "health", "target": "report"}]}
+
+
+def health_canary(api: str, token: str, slug: str) -> dict:
+    from dbos._croniter import croniter
+
+    manifest = json.loads(manifests(slug, ready_only=True)[0].read_text(encoding="utf-8"))
+    now = datetime.now(timezone.utc)
+    rows = []
+    problems = []
+    for flow_id in manifest["flows"]:
+        graph = api_json(api, token, f"/api/environments/{quote(flow_id, safe='')}")
+        if graph.get("enabled") is False:
+            rows.append({"flow": flow_id, "state": "paused by owner"})
+            continue
+        schedule = next((n for n in graph["nodes"] if n["type"] == "schedule"), None)
+        if schedule is None:
+            problems.append(f"{flow_id}: schedule missing; reinstall with --ready")
+            continue
+        runs = api_json(api, token, f"/api/runs?env_id={quote(flow_id, safe='')}")
+        latest = max(runs, key=lambda r: r["started_at"], default=None)
+        state = latest["status"] if latest else "not run yet"
+        rows.append({"flow": flow_id, "state": state, "run_id": latest["run_id"] if latest else None})
+        if not latest or state == "failed":
+            problems.append(f"{flow_id}: {state}; open its run in Glacier")
+        elif state not in ("waiting", "running", "queued"):
+            started = datetime.fromisoformat(latest["started_at"].replace("Z", "+00:00"))
+            if started.tzinfo is None:
+                started = started.replace(tzinfo=timezone.utc)
+            expected = croniter(schedule["config"]["cron"], started, second_at_beginning=True).get_next(datetime)
+            if now > expected + timedelta(hours=2):
+                problems.append(f"{flow_id}: scheduled run overdue since {expected.isoformat()}")
+        elif state in ("running", "queued"):
+            started = datetime.fromisoformat(latest["started_at"].replace("Z", "+00:00"))
+            if now - started.replace(tzinfo=timezone.utc) > timedelta(hours=24):
+                problems.append(f"{flow_id}: running or queued for more than 24 hours")
+    return {"venture": slug, "checked_at": now.isoformat(), "scope": "local automation runtime",
+            "flows": rows, "problems": problems, "healthy": not problems}
 
 
 def main() -> int:
@@ -284,9 +402,25 @@ def main() -> int:
     parser.add_argument("--only", help="install only this venture slug")
     parser.add_argument("--api", default=os.environ.get("GLACIER_API", "http://127.0.0.1:8000"))
     parser.add_argument("--dry-run", action="store_true", help="validate manifests and flows without contacting Glacier")
+    parser.add_argument("--ready", action="store_true", help="install only ready ventures, with schedules and hourly health canaries")
+    parser.add_argument("--start", action="store_true", help="also start each installed flow, preserving pauses and active owner waits")
+    parser.add_argument("--prove", metavar="OUTPUT_DIR", type=Path,
+                        help="run ready flows in a disposable real backend; record completions and owner stops")
+    parser.add_argument("--health-canary", metavar="SLUG", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
-        result = validate_all(args.only) if args.dry_run else install(args.api, _engine_token(), args.only)
+        if args.prove:
+            command = [sys.executable, str(ROOT / "job-closeout/flows/prove_automations.py"),
+                       "--output", str(args.prove)]
+            if args.only:
+                command.extend(["--only", args.only])
+            return subprocess.run(command, check=False).returncode
+        if args.health_canary:
+            result = health_canary(args.api, _engine_token(), args.health_canary)
+            print(json.dumps(result, indent=2))
+            return 0 if result["healthy"] else 1
+        result = (validate_all(args.only, ready_only=args.ready) if args.dry_run else
+                  install(args.api, _engine_token(), args.only, ready_only=args.ready, start=args.start))
         print(json.dumps(result, indent=2))
         return 0
     except (OSError, ValueError, HTTPError, URLError, json.JSONDecodeError, jsonschema.ValidationError) as exc:

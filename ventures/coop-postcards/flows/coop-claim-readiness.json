@@ -19,7 +19,7 @@
       "id": "create_drafts",
       "type": "command",
       "config": {
-        "cmd": "python3 ventures/coop-postcards/scripts/generate_claim_drafts.py",
+        "cmd": "if [ -f \"$GLACIER_HOME/ventures/coop-postcards/intake/jobber.json\" ]; then python ventures/coop-postcards/scripts/generate_claim_drafts.py --fixture \"$GLACIER_HOME/ventures/coop-postcards/intake/jobber.json\"; else python ventures/coop-postcards/scripts/generate_claim_drafts.py; fi",
         "cwd": ".",
         "timeout": "60",
         "retries": "0"

@@ -1,0 +1,702 @@
+{
+  "scope": "real Linux Glacier, synthetic local inputs, no approval decisions; commands behind gates remain unexecuted",
+  "home": "/tmp/glacier-venture-proof-ume4k5hy",
+  "api": "http://127.0.0.1:52525",
+  "flows": [
+    {
+      "venture": "coop-postcards",
+      "flow": "coop-claim-readiness",
+      "run_id": "ac2912ea41be",
+      "status": "waiting",
+      "waiting_on": "claim_review",
+      "verified": null,
+      "node_states": {
+        "claim_review": "waiting",
+        "create_drafts": "done",
+        "daily": "done",
+        "record_review_only": "pending"
+      },
+      "verification": [],
+      "unexecuted": [
+        "claim_review",
+        "record_review_only"
+      ],
+      "schedule": {
+        "cron": "0 9 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "street-postcard-proof",
+      "run_id": "08ef52e01113",
+      "status": "waiting",
+      "waiting_on": "owner_input_ready",
+      "verified": null,
+      "node_states": {
+        "lob_test": "pending",
+        "mail_approval": "pending",
+        "november": "done",
+        "owner_input_ready": "waiting",
+        "proof": "pending"
+      },
+      "verification": [],
+      "unexecuted": [
+        "proof",
+        "mail_approval",
+        "lob_test",
+        "owner_input_ready"
+      ],
+      "schedule": {
+        "cron": "0 9 1 11 *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-watch-shipstation",
+      "run_id": "53f9e012868f",
+      "status": "done",
+      "waiting_on": null,
+      "verified": true,
+      "node_states": {
+        "candidate_note": "done",
+        "daily": "done",
+        "read_shipments": "done"
+      },
+      "verification": [
+        {
+          "check": 0,
+          "kind": "command",
+          "passed": true,
+          "evidence": "`'/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/shipstation-candidates.json'; d=json.loads(p.read_text()); assert d.get('result') in ('match','uncertain \u2014 please check') or d.get('result','').startswith('no match found in ShipStation as of '); assert d.get('side_effects',[]) == [] and all(x.get('customer_confirmation_required') for x in d.get('candidates',[]))\"` exited 0"
+        }
+      ],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "0 8 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-check-deadlines",
+      "run_id": "dd43f651511c",
+      "status": "done",
+      "waiting_on": null,
+      "verified": true,
+      "node_states": {
+        "daily": "done",
+        "deadline_note": "done",
+        "due_items": "done"
+      },
+      "verification": [
+        {
+          "check": 0,
+          "kind": "command",
+          "passed": true,
+          "evidence": "`'/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/deadlines.json'; d=json.loads(p.read_text()); assert d.get('checked_on') and d.get('side_effects') == [] and all(x.get('rule') == '30d|120d' for x in d.get('reminders',[]))\"` exited 0"
+        }
+      ],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "15 8 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-request-authorization",
+      "run_id": "1c0a1e261664",
+      "status": "waiting",
+      "waiting_on": "approve_signature_request",
+      "verified": null,
+      "node_states": {
+        "approve_signature_request": "waiting",
+        "prepare_signature": "done",
+        "signature_note": "done",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "approve_signature_request"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-prepare-claim",
+      "run_id": "18fd4669c35d",
+      "status": "waiting",
+      "waiting_on": "owner_input_ready",
+      "verified": null,
+      "node_states": {
+        "approve_customer_submission": "pending",
+        "owner_first_ten": "pending",
+        "owner_input_ready": "waiting",
+        "packet_note": "pending",
+        "prepare_packet": "pending",
+        "record_owner_review": "pending",
+        "upload_instructions": "done",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "prepare_packet",
+        "packet_note",
+        "owner_first_ten",
+        "record_owner_review",
+        "approve_customer_submission",
+        "owner_input_ready"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-record-carrier-receipt",
+      "run_id": "81140e4cb4bb",
+      "status": "done",
+      "waiting_on": null,
+      "verified": true,
+      "node_states": {
+        "receipt_note": "done",
+        "record_receipt": "done",
+        "venture-daily-intake": "done"
+      },
+      "verification": [
+        {
+          "check": 0,
+          "kind": "command",
+          "passed": true,
+          "evidence": "`'/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports'; rows=[json.loads(x.read_text()) for x in p.glob('receipt-*.json')]; assert rows and all(r.get('deadline_rule') == '30d|120d' and r.get('carrier_reference') and r.get('side_effects') == [] for r in rows)\"` exited 0"
+        }
+      ],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-invoice-draft",
+      "run_id": "0fa2c28f2f96",
+      "status": "waiting",
+      "waiting_on": "approve_billing",
+      "verified": null,
+      "node_states": {
+        "approve_billing": "waiting",
+        "calculate_invoice": "done",
+        "invoice_note": "done",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "approve_billing"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-settlement-decision",
+      "run_id": "2bc773980026",
+      "status": "waiting",
+      "waiting_on": "customer_choice_gate",
+      "verified": null,
+      "node_states": {
+        "customer_choice_gate": "waiting",
+        "offer": "done",
+        "record_choice": "pending",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "customer_choice_gate",
+        "record_choice"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "job-closeout",
+      "flow": "closeout-packet",
+      "run_id": "49e51aa7acbd",
+      "status": "waiting",
+      "waiting_on": "owner-review",
+      "verified": null,
+      "node_states": {
+        "owner-review": "waiting",
+        "read-completed-job": "done",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "owner-review"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "january-outreach",
+      "run_id": "921b3fbb9a83",
+      "status": "waiting",
+      "waiting_on": "approve_postcard",
+      "verified": null,
+      "node_states": {
+        "approve_postcard": "waiting",
+        "find_prospects": "done",
+        "jan_2": "done",
+        "refresh_feed": "done",
+        "render_proof": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "approve_postcard"
+      ],
+      "schedule": {
+        "cron": "0 10 2 1 *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "prepare-300a",
+      "run_id": "51a04dd6721a",
+      "status": "waiting",
+      "waiting_on": "owner_input_ready",
+      "verified": null,
+      "node_states": {
+        "customer_review": "pending",
+        "first_five_review": "pending",
+        "owner_input_ready": "waiting",
+        "prepare": "pending",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "prepare",
+        "first_five_review",
+        "customer_review",
+        "owner_input_ready"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "osha-daily-deadlines",
+      "run_id": "b78c8df42f1e",
+      "status": "done",
+      "waiting_on": null,
+      "verified": true,
+      "node_states": {
+        "daily": "done",
+        "deadline_check": "done"
+      },
+      "verification": [
+        {
+          "check": 0,
+          "kind": "command",
+          "passed": true,
+          "evidence": "`'/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import json,os,pathlib; d=json.loads((pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'osha-filing'/'deadline-status.json').read_text()); assert d['customer_submits'] and not d['certification_by_glacier']\"` exited 0"
+        }
+      ],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "0 9 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "jobber-channel",
+      "run_id": "7ec4e729e77b",
+      "status": "waiting",
+      "waiting_on": "connect_jobber",
+      "verified": null,
+      "node_states": {
+        "connect_jobber": "waiting",
+        "preview_jobs": "pending",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "connect_jobber",
+        "preview_jobs"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "utility-audit-calculator",
+      "run_id": "f1ba540e9cb8",
+      "status": "waiting",
+      "waiting_on": "confirm_state",
+      "verified": null,
+      "node_states": {
+        "approved_note": "pending",
+        "calculate": "pending",
+        "confirm_state": "waiting",
+        "declined_note": "pending",
+        "draft_ready": "pending",
+        "review_draft": "pending",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "confirm_state",
+        "calculate",
+        "draft_ready",
+        "review_draft",
+        "approved_note",
+        "declined_note"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "utility-predominant-use",
+      "run_id": "7a6f2448c1bd",
+      "status": "waiting",
+      "waiting_on": "confirm_state",
+      "verified": null,
+      "node_states": {
+        "confirm_state": "waiting",
+        "draft_ready": "pending",
+        "estimate": "pending",
+        "review_draft": "pending",
+        "review_note": "pending",
+        "venture-daily-intake": "done"
+      },
+      "verification": [],
+      "unexecuted": [
+        "confirm_state",
+        "estimate",
+        "draft_ready",
+        "review_draft",
+        "review_note"
+      ],
+      "schedule": {
+        "cron": "0 7 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "venture-health-coop-postcards",
+      "run_id": "28cb2df7e1f0",
+      "status": "done",
+      "waiting_on": null,
+      "verified": null,
+      "node_states": {
+        "health": "done",
+        "hourly": "done",
+        "report": "done"
+      },
+      "verification": [],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "5 * * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "venture-health-freight-claims",
+      "run_id": "cbc0c165ef19",
+      "status": "done",
+      "waiting_on": null,
+      "verified": null,
+      "node_states": {
+        "health": "done",
+        "hourly": "done",
+        "report": "done"
+      },
+      "verification": [],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "5 * * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "job-closeout",
+      "flow": "venture-health-job-closeout",
+      "run_id": "1d1a091cfbb2",
+      "status": "done",
+      "waiting_on": null,
+      "verified": null,
+      "node_states": {
+        "health": "done",
+        "hourly": "done",
+        "report": "done"
+      },
+      "verification": [],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "5 * * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "venture-health-osha-filing",
+      "run_id": "4f8fbc132366",
+      "status": "done",
+      "waiting_on": null,
+      "verified": null,
+      "node_states": {
+        "health": "done",
+        "hourly": "done",
+        "report": "done"
+      },
+      "verification": [],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "5 * * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "venture-health-utility-audits",
+      "run_id": "5bcd767e7751",
+      "status": "done",
+      "waiting_on": null,
+      "verified": null,
+      "node_states": {
+        "health": "done",
+        "hourly": "done",
+        "report": "done"
+      },
+      "verification": [],
+      "unexecuted": [],
+      "schedule": {
+        "cron": "5 * * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      }
+    }
+  ],
+  "errors": [
+    "injected failure did not produce a Home alert"
+  ],
+  "installed": [
+    {
+      "venture": "coop-postcards",
+      "flow": "coop-claim-readiness",
+      "result": {
+        "saved": true,
+        "commit": "de3cab65"
+      }
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "street-postcard-proof",
+      "result": {
+        "saved": true,
+        "commit": "802c8dfe"
+      }
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "venture-health-coop-postcards",
+      "result": {
+        "saved": true,
+        "commit": "64bac80e"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-watch-shipstation",
+      "result": {
+        "saved": true,
+        "commit": "a96b5e91"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-check-deadlines",
+      "result": {
+        "saved": true,
+        "commit": "6a41c70a"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-request-authorization",
+      "result": {
+        "saved": true,
+        "commit": "49b7fdf6"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-prepare-claim",
+      "result": {
+        "saved": true,
+        "commit": "752c524f"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-record-carrier-receipt",
+      "result": {
+        "saved": true,
+        "commit": "e89f5b90"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-invoice-draft",
+      "result": {
+        "saved": true,
+        "commit": "99f93619"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-settlement-decision",
+      "result": {
+        "saved": true,
+        "commit": "55e9d83f"
+      }
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "venture-health-freight-claims",
+      "result": {
+        "saved": true,
+        "commit": "2b5e919b"
+      }
+    },
+    {
+      "venture": "job-closeout",
+      "flow": "closeout-packet",
+      "result": {
+        "saved": true,
+        "commit": "167006a0"
+      }
+    },
+    {
+      "venture": "job-closeout",
+      "flow": "venture-health-job-closeout",
+      "result": {
+        "saved": true,
+        "commit": "63046499"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "january-outreach",
+      "result": {
+        "saved": true,
+        "commit": "e17b25c2"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "prepare-300a",
+      "result": {
+        "saved": true,
+        "commit": "8f67d111"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "osha-daily-deadlines",
+      "result": {
+        "saved": true,
+        "commit": "64b7663d"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "jobber-channel",
+      "result": {
+        "saved": true,
+        "commit": "0f6d2ec6"
+      }
+    },
+    {
+      "venture": "osha-filing",
+      "flow": "venture-health-osha-filing",
+      "result": {
+        "saved": true,
+        "commit": "95e0bb08"
+      }
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "utility-audit-calculator",
+      "result": {
+        "saved": true,
+        "commit": "b9d3045f"
+      }
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "utility-predominant-use",
+      "result": {
+        "saved": true,
+        "commit": "1450206b"
+      }
+    },
+    {
+      "venture": "utility-audits",
+      "flow": "venture-health-utility-audits",
+      "result": {
+        "saved": true,
+        "commit": "50c1534a"
+      }
+    }
+  ],
+  "unchanged_on_second_install": true,
+  "failure_alert": {
+    "run_id": "9828634c939a",
+    "status": "failed",
+    "visible_on_home": false
+  }
+}

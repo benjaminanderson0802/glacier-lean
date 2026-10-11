@@ -68,11 +68,6 @@
   ],
   "edges": [
     {
-      "id": "e1",
-      "source": "november",
-      "target": "proof"
-    },
-    {
       "id": "e2",
       "source": "proof",
       "target": "mail_approval"
@@ -86,7 +81,13 @@
     {
       "id": "i5-owner_input_ready-proof",
       "source": "owner_input_ready",
-      "target": "proof"
+      "target": "proof",
+      "label": "yes"
+    },
+    {
+      "id": "automation-intake-first",
+      "source": "november",
+      "target": "owner_input_ready"
     }
   ],
   "checks": []

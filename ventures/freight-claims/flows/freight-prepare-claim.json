@@ -91,11 +91,6 @@
   ],
   "edges": [
     {
-      "id": "e0",
-      "source": "upload_instructions",
-      "target": "prepare_packet"
-    },
-    {
       "id": "e1",
       "source": "prepare_packet",
       "target": "packet_note"
@@ -119,7 +114,13 @@
     {
       "id": "i5-owner_input_ready-prepare_packet",
       "source": "owner_input_ready",
-      "target": "prepare_packet"
+      "target": "prepare_packet",
+      "label": "yes"
+    },
+    {
+      "id": "automation-intake-first",
+      "source": "upload_instructions",
+      "target": "owner_input_ready"
     }
   ],
   "acceptance": [
@@ -129,5 +130,5 @@
       "required": true
     }
   ],
-  "max_steps": 6
+  "max_steps": 7
 }
