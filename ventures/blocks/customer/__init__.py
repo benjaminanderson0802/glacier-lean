@@ -80,13 +80,16 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS support_drafts (
             id TEXT PRIMARY KEY, message_id TEXT NOT NULL, body TEXT NOT NULL,
             status TEXT NOT NULL, created_at TEXT NOT NULL,
-            approved_at TEXT, approval_id TEXT
+            approved_at TEXT, approval_id TEXT, outbound_message_id TEXT
         );
         """
     )
     token_columns = {row["name"] for row in connection.execute("PRAGMA table_info(checkout_return_tokens)")}
     if "expected_customer_id" not in token_columns:
         connection.execute("ALTER TABLE checkout_return_tokens ADD COLUMN expected_customer_id TEXT")
+    draft_columns = {row["name"] for row in connection.execute("PRAGMA table_info(support_drafts)")}
+    if "outbound_message_id" not in draft_columns:
+        connection.execute("ALTER TABLE support_drafts ADD COLUMN outbound_message_id TEXT")
     connection.commit()
     return connection
 
@@ -563,8 +566,12 @@ def draft_reply(message_id: str, body: str, *, db_path: str | Path | None = None
     with _database(db_path) as db:
         if not db.execute("SELECT 1 FROM support_messages WHERE id=?", (message_id,)).fetchone():
             raise CustomerError("Support message was not found. Read the inbox before drafting a reply.")
-        db.execute("INSERT INTO support_drafts VALUES (?, ?, ?, 'pending_approval', ?, NULL, NULL)",
+        db.execute("INSERT INTO support_drafts (id, message_id, body, status, created_at, approved_at, approval_id, outbound_message_id) "
+                   "VALUES (?, ?, ?, 'pending_approval', ?, NULL, NULL, NULL)",
                    (draft_id, message_id, body.strip(), created))
+        db.execute("INSERT INTO audit_events(event, subject_id, details_json, happened_at) VALUES (?, ?, ?, ?)",
+                   ("support_reply_drafted", draft_id,
+                    json.dumps({"message_id": message_id, "status": "pending_approval"}), created))
     return {"id": draft_id, "message_id": message_id, "body": body.strip(), "status": "pending_approval"}
 
 
@@ -572,10 +579,15 @@ def send_reply(draft_id: str, *, approval_id: str, smtp_sender: Callable[[str, s
                db_path: str | Path | None = None) -> None:
     if not approval_id.strip():
         raise CustomerError("Owner approval is required before sending a support reply.")
+    approval_id = approval_id.strip()
     if smtp_sender is None:
         raise CustomerError("An approved SMTP sender is required; no reply was sent.")
+    outbound_message_id = f"<{uuid.uuid5(uuid.NAMESPACE_URL, 'glacier-support-reply:' + draft_id)}@glacier.local>"
     with _database(db_path) as db:
+        db.execute("BEGIN IMMEDIATE")
         draft = db.execute("SELECT * FROM support_drafts WHERE id=?", (draft_id,)).fetchone()
+        if draft and draft["status"] == "uncertain":
+            raise CustomerError("This reply's delivery is uncertain; reconcile it before sending again.")
         if not draft or draft["status"] != "pending_approval":
             raise CustomerError("This reply is missing or is no longer pending approval.")
         message = db.execute("SELECT * FROM support_messages WHERE id=?", (draft["message_id"],)).fetchone()
@@ -584,18 +596,95 @@ def send_reply(draft_id: str, *, approval_id: str, smtp_sender: Callable[[str, s
         recipient = parseaddr(message["sender"])[1]
         if not recipient:
             raise CustomerError("The sender address could not be parsed; no reply was sent.")
-        smtp_sender(recipient, draft["body"])
-        db.execute("UPDATE support_drafts SET status='sent', approved_at=?, approval_id=? WHERE id=?",
-                   (_now(), approval_id, draft_id))
+        used = db.execute(
+            "SELECT 1 FROM audit_events WHERE event='support_reply_claimed' AND subject_id=? AND approval_id=?",
+            (draft_id, approval_id),
+        ).fetchone()
+        if used:
+            raise CustomerError("This approval was already used for a delivery attempt; reconcile the reply first.")
+        claimed_at = _now()
+        db.execute(
+            "UPDATE support_drafts SET status='uncertain', approved_at=?, approval_id=?, outbound_message_id=? "
+            "WHERE id=? AND status='pending_approval'",
+            (claimed_at, approval_id, draft["outbound_message_id"] or outbound_message_id, draft_id),
+        )
+        if db.execute("SELECT changes()").fetchone()[0] != 1:
+            raise CustomerError("This reply is already being sent or needs reconciliation.")
+        outbound_message_id = draft["outbound_message_id"] or outbound_message_id
         db.execute("INSERT INTO audit_events(event, subject_id, approval_id, details_json, happened_at) VALUES (?, ?, ?, ?, ?)",
-                   ("support_reply_sent", draft_id, approval_id, json.dumps({"message_id": message["id"]}), _now()))
+                   ("support_reply_claimed", draft_id, approval_id,
+                    json.dumps({"message_id": message["id"], "outbound_message_id": outbound_message_id,
+                                "status": "uncertain"}), claimed_at))
+
+    try:
+        # New transports can use this stable identity as their RFC Message-ID;
+        # existing two-argument senders remain compatible.
+        import inspect
+
+        try:
+            parameters = inspect.signature(smtp_sender).parameters.values()
+        except (TypeError, ValueError):
+            parameters = ()
+        supports_keyword = any(parameter.name == "message_id" or parameter.kind == inspect.Parameter.VAR_KEYWORD
+                               for parameter in parameters)
+        if supports_keyword:
+            smtp_sender(recipient, draft["body"], message_id=outbound_message_id)
+        else:
+            smtp_sender(recipient, draft["body"])
+    except Exception as exc:
+        with _database(db_path) as db:
+            db.execute("INSERT INTO audit_events(event, subject_id, approval_id, details_json, happened_at) VALUES (?, ?, ?, ?, ?)",
+                       ("support_reply_uncertain", draft_id, approval_id,
+                        json.dumps({"outbound_message_id": outbound_message_id,
+                                    "error_type": type(exc).__name__, "status": "uncertain"}), _now()))
+        raise
+
+    sent_at = _now()
+    with _database(db_path) as db:
+        db.execute("BEGIN IMMEDIATE")
+        updated = db.execute("UPDATE support_drafts SET status='sent' WHERE id=? AND status='uncertain' AND approval_id=?",
+                             (draft_id, approval_id))
+        if updated.rowcount != 1:
+            raise CustomerError("The reply was accepted but its state changed; reconcile the delivery before retrying.")
+        db.execute("INSERT INTO audit_events(event, subject_id, approval_id, details_json, happened_at) VALUES (?, ?, ?, ?, ?)",
+                   ("support_reply_sent", draft_id, approval_id,
+                    json.dumps({"message_id": message["id"], "outbound_message_id": outbound_message_id,
+                                "status": "sent"}), sent_at))
+
+
+def reconcile_reply(draft_id: str, *, delivered: bool, reconciliation_id: str,
+                    db_path: str | Path | None = None) -> None:
+    """Record an owner's delivery check before an uncertain reply can be retried."""
+    if not isinstance(delivered, bool):
+        raise CustomerError("A reconciliation must confirm whether the reply was delivered.")
+    if not reconciliation_id.strip():
+        raise CustomerError("A reconciliation reference is required.")
+    status = "sent" if delivered else "pending_approval"
+    with _database(db_path) as db:
+        db.execute("BEGIN IMMEDIATE")
+        draft = db.execute("SELECT * FROM support_drafts WHERE id=?", (draft_id,)).fetchone()
+        if not draft or draft["status"] != "uncertain":
+            raise CustomerError("Only an uncertain support reply can be reconciled.")
+        db.execute("UPDATE support_drafts SET status=?, approved_at=?, approval_id=? WHERE id=? AND status='uncertain'",
+                   (status, draft["approved_at"] if delivered else None,
+                    draft["approval_id"] if delivered else None, draft_id))
+        db.execute("INSERT INTO audit_events(event, subject_id, approval_id, details_json, happened_at) VALUES (?, ?, ?, ?, ?)",
+                   ("support_reply_reconciled", draft_id, draft["approval_id"],
+                    json.dumps({"delivered": delivered, "reconciliation_id": reconciliation_id.strip(),
+                                "outbound_message_id": draft["outbound_message_id"], "status": status}), _now()))
+        if delivered:
+            db.execute("INSERT INTO audit_events(event, subject_id, approval_id, details_json, happened_at) VALUES (?, ?, ?, ?, ?)",
+                       ("support_reply_sent", draft_id, draft["approval_id"],
+                        json.dumps({"outbound_message_id": draft["outbound_message_id"],
+                                    "reconciled": True, "status": "sent"}), _now()))
 
 
 def list_support_drafts(*, db_path: str | Path | None = None) -> list[dict[str, str]]:
     with _database(db_path) as db:
         rows = db.execute("SELECT * FROM support_drafts ORDER BY created_at DESC").fetchall()
     return [{"id": row["id"], "message_id": row["message_id"], "body": row["body"],
-             "status": row["status"], "created_at": row["created_at"]} for row in rows]
+             "status": row["status"], "created_at": row["created_at"],
+             "outbound_message_id": row["outbound_message_id"] or ""} for row in rows]
 
 
 def create_signature_server(data_dir: str | Path | None = None, *, host: str = "127.0.0.1", port: int = 8765,
