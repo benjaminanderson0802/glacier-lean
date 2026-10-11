@@ -1,7 +1,7 @@
 {
   "id": "property-tax-prepare-packet",
   "name": "Prepare a property-tax evidence packet",
-  "goal": "Check a Cook County parcel against the current public roll, read the customer's notice and recent sale evidence, and prepare a customer-reviewed packet. The customer chooses, signs, and submits any appeal.",
+  "goal": "Check a Cook County parcel against the current public roll, read the customer's notice and recent sale evidence, and prepare a customer-reviewed packet with a homeowner self-file filing guide and plain-language, step-by-step Assessor and Board of Review instructions. The homeowner chooses, signs, and submits any appeal personally; Glacier does not submit or represent the homeowner.",
   "nodes": [
     {
       "id": "prepare_packet",
