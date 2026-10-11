@@ -435,6 +435,7 @@ export const es: Record<string, string> = {
   'memoryCleanup.tidy': 'Tu memoria está ordenada. Pulsa Analizar otra vez para comprobarla.',
   'memoryCleanup.undo': 'Deshacer',
   'memoryCleanup.undone': 'Deshecho: {value}',
+  'memoryMap.fit': 'ajustar mapa',
   'memoryMap.hint': 'Haz clic en una nota para abrirla. Desplázate para acercar o alejar y arrastra para moverte. Las notas se iluminan mientras se escriben.',
   'memoryMap.links': 'Enlaces',
   'memoryMap.nothing': 'Todavía no hay nada en la memoria.',

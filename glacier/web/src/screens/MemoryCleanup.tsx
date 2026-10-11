@@ -15,7 +15,7 @@ export function MemoryCleanup() {
   const [err, setErr] = useState('')
   const load = () => memoryMore.hygiene().then(p => { setItems(p); setChosen(new Set()) }).catch(e => setErr(String(e)))
   useEffect(() => { load() }, [])
-  const scan = async () => { setBusy(true); try { setItems(await memoryMore.scan()); setChosen(new Set()) } catch (e) { setErr(String(e)) } finally { setBusy(false) } }
+  const scan = async () => { setBusy(true); setErr(''); try { setItems(await memoryMore.scan()); setChosen(new Set()) } catch (e) { setErr(String(e)) } finally { setBusy(false) } }
   const apply = async (approve: boolean) => {
     setBusy(true)
     const out: typeof log = []
@@ -54,6 +54,7 @@ export function MemoryCleanup() {
     <div className="g-memadd g-memory-cleanup-layout">
       <Panel title={t('memoryCleanup.suggestions')} aside={<Btn onClick={scan} disabled={busy} data-testid="cleanup-scan">{t('memoryCleanup.scanAgain')}</Btn>} testid="cleanup-list" className="g-scroll">
         {err && <div className="g-error">{err}</div>}
+        {!items && !err && <Empty>{t('home.loading')}</Empty>}
         {items && items.length === 0 && <Empty>{t('memoryCleanup.tidy')}</Empty>}
         <div className="g-rows">
           {(items ?? []).map(p => (

@@ -1,0 +1,6 @@
+/* Each section keeps its content height; the two columns scroll inside the glass. */
+.g-home-grid > .g-stack { overflow: auto; }
+.g-home-grid .g-panel { flex: 0 0 auto !important; }
+.g-home-grid .g-rows { max-height: calc(115 * var(--px)); overflow: auto; }
+.g-home-grid [data-testid="needs-you"] .g-rows { max-height: none; }
+.g-home-grid :is(.g-detail, .g-lead) { overflow-wrap: anywhere; }

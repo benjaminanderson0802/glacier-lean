@@ -47,6 +47,8 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
   const [notes, setNotes] = useState<MemNote[] | null>(null)
   const [tag, setTag] = useState<string>(t('memory.all'))
   const [q, setQ] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [noteLoading, setNoteLoading] = useState(false)
   const [hits, setHits] = useState<MemHit[] | null>(null)
   const [note, setNote] = useState<MemNoteFull | null>(null)
   const [hist, setHist] = useState<MemCommit[]>([])
@@ -75,15 +77,19 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
     memory.history(p).then(setHist).catch(() => setHist([]))
   }
   useEffect(() => {
-    setEditing(null); setRenaming(null)
-    if (!path) { setNote(null); return }
-    memory.note(path).then(setNote).catch(e => setErr(String(e)))
-    memory.history(path).then(setHist).catch(() => setHist([]))
+    let live = true
+    setEditing(null); setRenaming(null); setNote(null); setHist([]); setErr(''); setNoteLoading(Boolean(path))
+    if (!path) return
+    memory.note(path).then(value => { if (live) setNote(value) }).catch(e => { if (live) setErr(String(e)) }).finally(() => { if (live) setNoteLoading(false) })
+    memory.history(path).then(value => { if (live) setHist(value) }).catch(e => { if (live) setErr(String(e)) })
+    return () => { live = false }
   }, [path])
   useEffect(() => {
-    if (!q.trim()) { setHits(null); return }
-    const t = setTimeout(() => memory.search(q).then(setHits).catch(e => setErr(String(e))), 250)
-    return () => clearTimeout(t)
+    let live = true
+    setHits(null); setSearching(Boolean(q.trim()))
+    if (!q.trim()) return
+    const timer = setTimeout(() => memory.search(q).then(value => { if (live) { setHits(value); setErr('') } }).catch(e => { if (live) setErr(String(e)) }).finally(() => { if (live) setSearching(false) }), 250)
+    return () => { live = false; clearTimeout(timer) }
   }, [q])
 
   const tags = useMemo(() => {
@@ -126,10 +132,11 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
         </Panel>
         <Panel title={hits ? t('memory.results', { query: q }) : t('memory.viewsNotes')} aside={hits ? hits.length : list.length} testid="memory-list" className="g-scroll">
           <div className="g-rows" onKeyDown={moveNoteFocus}>
-            {hits
+            {(notes === null || searching) && !err && <Empty>{t('home.loading')}</Empty>}
+            {!searching && (hits
               ? hits.map(h => <div key={h.path} className="g-memory-note-row"><div className="g-memory-note-row-main"><Row lead={h.title||h.path} detail={h.snippet} onClick={()=>open(h.path)} testid={`mem-hit-${h.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(h.path)}`} onDelete={()=>deleteNote(h.path)} onDeleted={action=>noteDeleted(h.path,action)} onError={e=>setErr(String(e))} /></div>)
-              : list.map(n => <div key={n.path} className="g-memory-note-row"><div className="g-memory-note-row-main"><Row lead={n.title||n.path} detail={n.author?t('memory.byAuthor',{name:n.author}):undefined} when={ago(n.updated)} onClick={()=>open(n.path)} onFocus={() => setFocusedNotePath(n.path)} className={focusedNotePath === n.path ? 'sel' : ''} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={()=>deleteNote(n.path)} onDeleted={action=>noteDeleted(n.path,action)} onError={e=>setErr(String(e))} /></div>)}
-            {notes && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
+              : list.map(n => <div key={n.path} className="g-memory-note-row"><div className="g-memory-note-row-main"><Row lead={n.title||n.path} detail={n.author?t('memory.byAuthor',{name:n.author}):undefined} when={ago(n.updated)} onClick={()=>open(n.path)} onFocus={() => setFocusedNotePath(n.path)} className={focusedNotePath === n.path ? 'sel' : ''} testid={`mem-note-${n.path}`} /></div><DeleteAction label={t('memory.deleteNote')} impact={t('delete.noteImpact')} testid={`mem-delete-${encodeURIComponent(n.path)}`} onDelete={()=>deleteNote(n.path)} onDeleted={action=>noteDeleted(n.path,action)} onError={e=>setErr(String(e))} /></div>))}
+            {notes && !searching && !hits && list.length === 0 && <Empty>{t('memory.noNotes')}</Empty>}
             {hits && hits.length === 0 && <Empty>{t('memory.nothingFound')}</Empty>}
           </div>
         </Panel>
@@ -138,7 +145,7 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
           testid="memory-note" className="g-scroll">
           {saved && !editing && (
             <div className="g-saved" data-testid="note-saved">{t('memory.savedVersion', { commit: saved.commit })}
-              <Btn onClick={async () => { await memory.undo(saved.path, saved.commit); setSaved(null); loadNote(saved.path); reloadNotes() }} data-testid="note-undo">{t('memory.undo')}</Btn></div>
+              <Btn onClick={async () => { try { await memory.undo(saved.path, saved.commit); setSaved(null); loadNote(saved.path); reloadNotes() } catch (e) { setErr(String(e)) } }} data-testid="note-undo">{t('memory.undo')}</Btn></div>
           )}
           {renamed && !editing && (
             <div className="g-saved" data-testid="note-renamed">{t('memory.renamed', { from: renamed.from })}
@@ -166,13 +173,13 @@ function NotesView({ path, switcher }: { path?: string; switcher: React.ReactNod
             <NoteEditor key={editing + (note?.path ?? '')} path={editing === 'edit' ? note?.path : undefined} initial={editing === 'edit' ? note?.body ?? '' : ''} notes={notes ?? []}
               onCancel={() => setEditing(null)}
               onSaved={(p, commit) => { setSaved({ path: p, commit }); setEditing(null); reloadNotes(); if (p === path) loadNote(p); else open(p) }} />
-          ) : !note ? <Empty>{t('memory.pickNote')}</Empty> : (
+          ) : !note ? !err && <Empty>{t(noteLoading ? 'home.loading' : 'memory.pickNote')}</Empty> : (
             <>
               <div className="g-trust" data-testid="note-trust">
                 <span>{t('memory.writtenBy')}<b>{whoWrote(String(note.meta?.author ?? 'owner'))}</b></span>
                 {note.meta?.updated ? <span>{ago(String(note.meta.updated))}</span> : null}
                 {note.meta?.run_id ? <button className="g-link" data-testid="note-run" onClick={() => api.getRun(String(note.meta.run_id)).then(r => go(`automations/flow/${r.env_id}/${r.run_id}`)).catch(() => setErr(t('memory.noRun')))}>{t('memory.fromRun')}</button> : null}
-                {hist.length > 1 && <button className="g-link" data-testid="note-undo-last" onClick={async () => { await memory.undo(note.path); loadNote(note.path); reloadNotes() }}>{t('memory.undoLast')}</button>}
+                {hist.length > 1 && <button className="g-link" data-testid="note-undo-last" onClick={async () => { try { await memory.undo(note.path); loadNote(note.path); reloadNotes() } catch (e) { setErr(String(e)) } }}>{t('memory.undoLast')}</button>}
               </div>
               <NamedTextBox className="g-notebody" testid="memory-note-body"><pre className="g-memory-text" style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{note.body}</pre></NamedTextBox>
               {(note.links_out.length > 0 || note.links_in.length > 0) && (

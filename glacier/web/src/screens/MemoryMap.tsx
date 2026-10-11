@@ -3,7 +3,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d'
 import { forceManyBody, forceLink, type SimulationNodeDatum, type SimulationLinkDatum } from 'd3-force'
 import { memoryMore, subscribeEvents, type GraphEdge, type GraphNode, type MemoryEvent } from '../api.ts'
-import { Empty, Panel } from '../ui/kit.tsx'
+import { Btn, Empty, Panel } from '../ui/kit.tsx'
 import { tok } from '../ui/tok.ts'
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
@@ -19,11 +19,13 @@ export function MemoryMap() {
   const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [size, setSize] = useState({ w: 600, h: 400 })
   const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const fitPending = useRef(true)
+  const [selected, setSelected] = useState('')
   const [hovered, setHovered] = useState<string | null>(null)
   // Notes light up for a few seconds when anything (you, an automation, an AI worker) writes them.
   const [lit, setLit] = useState<Record<string, number>>({})
   useEffect(() => {
-    const load = () => memoryMore.graph(1500).then(setData).catch(e => setErr(String(e)))
+    const load = () => memoryMore.graph().then(value => { setData(value); setErr('') }).catch(e => setErr(String(e)))
     load()
     let t: ReturnType<typeof setTimeout> | undefined
     const off = subscribeEvents(ev => {
@@ -33,7 +35,7 @@ export function MemoryMap() {
       clearTimeout(t); t = setTimeout(load, 300)
     }, () => {})
     const fade = setInterval(() => setLit(x => Object.fromEntries(Object.entries(x).filter(([, at]) => Date.now() - at < 4000))), 500)
-    return () => { off(); clearTimeout(t); clearInterval(fade) }
+    return () => { off(); clearTimeout(t); clearInterval(fade); clearTimeout(clickTimer.current) }
   }, [])
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -74,42 +76,44 @@ export function MemoryMap() {
   const line = useMemo(() => tok('--g-line-dim'), [])
   const activeLine = useMemo(() => tok('--g-white'), [])
   const text = useMemo(() => tok('--g-text'), [])
+  const focus = hovered || selected
   const highlighted = useMemo(() => {
-    if (!hovered) return null
-    const ids = new Set([hovered])
+    if (!focus) return null
+    const ids = new Set([focus])
     for (const edge of graph.links) {
       const source = typeof edge.source === 'object' ? (edge.source as { id: string }).id : edge.source
       const target = typeof edge.target === 'object' ? (edge.target as { id: string }).id : edge.target
-      if (source === hovered) ids.add(target)
-      if (target === hovered) ids.add(source)
+      if (source === focus) ids.add(target)
+      if (target === focus) ids.add(source)
     }
     return ids
-  }, [graph.links, hovered])
+  }, [graph.links, focus])
   return (
     <div className="g-memmap">
-      <Panel title={t('memory.map')} className="g-map-panel" testid="memory-map">
+      <Panel title={t('memory.map')} aside={<Btn onClick={() => fg.current?.zoomToFit(reducedMotion ? 0 : 300, 30)} disabled={!graph.nodes.length} data-testid="memory-map-fit">{t('memoryMap.fit')}</Btn>} className="g-map-panel" testid="memory-map">
         <div ref={box} className="g-map-box" style={{ flex: 1, minHeight: 0 }}>
-          {err && <div className="g-error">{err}</div>}
+          {err && <div className="g-error" role="alert">{err} <Btn onClick={() => memoryMore.graph().then(value => { setData(value); setErr('') }).catch(e => setErr(String(e)))}>{t('build.refresh')}</Btn></div>}
+          {!data && !err && <Empty>{t('memory.drawMap')}</Empty>}
           {data && graph.nodes.length === 0 && <Empty>{t('memoryMap.nothing')}</Empty>}
           {graph.nodes.length > 0 && (
-            <ForceGraph2D ref={fg} onEngineStop={() => fg.current?.zoomToFit(300, 30)} graphData={graph} width={size.w} height={size.h} backgroundColor={tok('--g-bg')}
+            <ForceGraph2D ref={fg} onEngineStop={() => { if (fitPending.current) { fg.current?.zoomToFit(reducedMotion ? 0 : 300, 30); fitPending.current = false } }} graphData={graph} width={size.w} height={size.h} backgroundColor={tok('--g-bg')}
               d3AlphaDecay={0.035} d3VelocityDecay={0.38} d3AlphaMin={0.001}
               nodeRelSize={4} linkColor={(l) => {
                 if (!highlighted) return line
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
-                return source === hovered || target === hovered ? tok('--g-accent') : tok('--g-bg')
+                return source === focus || target === focus ? tok('--g-accent') : tok('--g-bg')
               }} linkWidth={(l) => {
                 if (!highlighted) return 1
                 const source = typeof l.source === 'object' ? l.source.id : l.source
                 const target = typeof l.target === 'object' ? l.target.id : l.target
-                return source === hovered || target === hovered ? 1.5 : 0
-              }} linkCanvasObjectMode="replace" cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 0 : Math.min(24, Math.floor(graph.nodes.length / 25))}
+                return source === focus || target === focus ? 1.5 : 0
+              }} linkCanvasObjectMode="replace" cooldownTicks={reducedMotion ? 0 : 90} warmupTicks={reducedMotion ? 90 : Math.min(24, Math.floor(graph.nodes.length / 25))}
               linkCanvasObject={(link, ctx) => {
                 if (!link.source || !link.target || typeof link.source !== 'object' || typeof link.target !== 'object') return
                 const source = String(typeof link.source === 'object' ? link.source.id : link.source)
                 const target = String(typeof link.target === 'object' ? link.target.id : link.target)
-                const emphasized = hovered && (source === hovered || target === hovered)
+                const emphasized = focus && (source === focus || target === focus)
                 ctx.beginPath()
                 ctx.moveTo(link.source.x ?? 0, link.source.y ?? 0)
                 ctx.lineTo(link.target.x ?? 0, link.target.y ?? 0)
@@ -166,6 +170,17 @@ export function MemoryMap() {
         </div>
       </Panel>
       <Panel title={t('memoryMap.stats')} testid="memory-stats" style={{ fontSize: 'calc(5 * var(--px))' }}>
+        <label className="g-map-picker">{t('memory.viewsNotes')}
+          <select className="g-input" value={selected} data-testid="memory-map-select" onChange={event => {
+            const id = event.target.value; setSelected(id)
+            const node = graph.nodes.find(n => n.id === id) as (GraphNode & { x?: number; y?: number }) | undefined
+            if (node && Number.isFinite(node.x) && Number.isFinite(node.y)) fg.current?.centerAt(node.x, node.y, reducedMotion ? 0 : 300)
+          }}>
+            <option value="">{t('memory.all')}</option>
+            {graph.nodes.filter(n => n.kind === 'note').map(n => <option key={n.id} value={n.id}>{n.title || n.id}</option>)}
+          </select>
+        </label>
+        {selected && <Btn onClick={() => go(`memory/${encodeURIComponent(`${selected}.md`)}`)} data-testid="memory-map-open">{t('hint.openNote')}</Btn>}
         <dl className="g-kv g-kv-tight">
           {Object.entries(KIND_LABEL).filter(([k]) => counts[k]).map(([k, label]) => (
             <Fragment key={k}><dt><i className="g-swatch" style={{ background: `var(${KIND_TOKEN[k]})` }} />{label}</dt><dd>{counts[k]}</dd></Fragment>

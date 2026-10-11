@@ -53,6 +53,7 @@ export function Templates() {
           </div>
         ))}
       </div></Window>
+      {!items && !err && <Empty>{t('home.loading')}</Empty>}
       {items && shown.length === 0 && <Empty>{t('templates.noTemplates')}</Empty>}
       {pick && (
         <Window title={<>{pick.name}<span className="g-aside">{pick.author ?? 'Glacier'} · {pick.license ?? ''} · {pick.review_status}</span></>} className="template-detail-window" testid="template-detail">

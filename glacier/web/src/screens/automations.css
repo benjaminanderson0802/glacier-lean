@@ -77,3 +77,5 @@
 .venture-blockers { margin: 0; padding-inline-start: calc(6 * var(--px)); color: var(--g-ink2); font-size: var(--g-size-small); }
 .venture-steps summary { cursor: pointer; color: var(--g-ink2); padding-block: calc(2 * var(--px)); }
 .venture-steps details .venture-step + .venture-step { margin-top: calc(2 * var(--px)); }
+
+.automations-window :is(.g-seg-btn, .g-status-cell, .automation-trigger-summary select) { text-transform: lowercase; }
