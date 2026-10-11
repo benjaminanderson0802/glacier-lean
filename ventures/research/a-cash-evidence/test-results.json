@@ -1,0 +1,98 @@
+[
+  {
+    "venture": "apify-tools",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/apify-tools",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "12 passed, 1 skipped, 3 subtests passed in 8.28s"
+  },
+  {
+    "venture": "apify-tools-louisiana",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/apify-tools-louisiana",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "9 passed, 3 subtests passed in 8.45s"
+  },
+  {
+    "venture": "recall-actor",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/recall-actor",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "13 passed, 2 skipped, 3 subtests passed in 6.58s"
+  },
+  {
+    "venture": "al-license-verify",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/al-license-verify",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "9 passed in 7.87s"
+  },
+  {
+    "venture": "job-closeout",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/job-closeout",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "3 passed in 3.19s"
+  },
+  {
+    "venture": "al-bid-triage",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/al-bid-triage",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "4 passed in 1.40s"
+  },
+  {
+    "venture": "sam-amendment-alerts",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/sam-amendment-alerts",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "4 passed in 0.56s"
+  },
+  {
+    "venture": "tests",
+    "command": [
+      "/home/glacier/w/glacier-lean/.venv/bin/python",
+      "-m",
+      "pytest",
+      "ventures/tests",
+      "-q"
+    ],
+    "exit_code": 0,
+    "summary": "21 passed in 5.30s"
+  }
+]

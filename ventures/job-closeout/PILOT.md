@@ -1,20 +1,55 @@
-# Pilot pitch
+# Job closeout packet pilot
 
-**Subject:** A simpler Jobber job closeout packet for your shop
+## Initial email
 
-Hi,
+**Subject:** Advertisement: $49 job closeout packet pilot
 
-I’m testing a small tool for HVAC and plumbing shops that use Jobber. It turns a completed job into a customer-ready closeout packet with the work summary, equipment details, warranty/registration reminder, photo slots, and invoice reference, in both Markdown and PDF.
+Hello {{business}} team,
 
-Would you be open to reviewing one sample and telling me what is missing? If the format fits, I’m offering a **$49 pilot for up to 10 packets**. You would authorize read-only access to the selected Jobber jobs (or provide an export), review every packet before sharing it, and tell me whether it saved time. No customer emails are sent, no warranty registration is submitted, and no compliance or coverage claims are made.
+I’m Benjamin Anderson with Anderson Education LLC in Troy. Would a simple completion packet help your team hand finished jobs to customers?
 
-If you’re interested, reply and I’ll send the sample and proposed pilot details. If this is not relevant, let me know and I won’t follow up.
+I can prepare a PDF with your work summary, equipment details, invoice reference and warranty reminder from records you authorize. Photo spaces are included; photos are not automatically embedded.
 
-Benjamin Anderson  
-Anderson Education LLC
+The pilot is **$49 for up to 10 packets**. Your team reviews the first five before any charge; if they are inaccurate or don’t save time, we stop without payment. You review every packet before sharing it. No account password or new software subscription is needed.
 
-## Stop rule
+Reply “sample” if useful. I’ll send a clearly labeled demonstration.
 
-Stop before any real customer data is processed unless the shop confirms its authorization and data-handling terms. Stop the pilot if any customer, job, equipment, or invoice detail is wrong or cannot be checked against the source. Do not deliver an unreviewed packet. If the first five reviewed packets do not save time or require repeated corrections, stop the pilot and do not ask for payment or expand it.
+Benjamin Anderson | Anderson Education LLC
+{{business postal address}}
+Advertisement. Reply “Remove” to stop future email.
 
-This is a draft the owner may edit. It has not been sent. The $49 amount is a price hypothesis, not a binding quote or signed agreement.
+## Follow-up
+
+**Subject:** Re: Advertisement: $49 job closeout packet pilot
+
+Hello {{business}} team,
+
+One follow-up on the $49 closeout packet pilot: would you like the demonstration PDF? It shows the format using synthetic job details. Your team would verify the first five real packets before any charge. If your current system already handles this well, there’s no need to add another tool.
+
+Benjamin Anderson | Anderson Education LLC
+{{business postal address}}
+Advertisement. Reply “Remove” to stop future email. No further follow-up if you do not respond.
+
+## One-page offer
+
+**Provider:** Anderson Education LLC, Benjamin Anderson. **Buyer:** an HVAC/plumbing shop with completed-job records and authority to share them. Jobber use is a fit question, not assumed from the prospect list.
+
+**Price and scope:** $49 once, up to 10 completed-job packets within 30 days, one shop/template, one correction pass per packet. No renewal or subscription. First five are a no-charge evaluation and count toward the 10; bill only after the shop confirms all five are accurate and useful. If they fail that review, stop with $0 due. No collection authority or binding offer exists until Benjamin confirms scope and payment terms in writing.
+
+**You receive:** PDF and Markdown per job: work summary, completion details, supplied equipment fields, invoice reference, generic warranty reminder and photo placeholders. No automatic photo embedding, manufacturer registration, homeowner email or compliance certification.
+
+**You supply:** five completed-job records first, then up to five more, with authorized source details. Start with a redacted sample and field mapping; the current generator accepts completed Jobber-shaped JSON, not arbitrary PDFs or every CSV format. Glacier prepares a checked conversion of an authorized export only when fields can be traced. Use OAuth only after the shop authorizes permitted read scopes; no passwords.
+
+**Delivery and acceptance:** first batch within two business days after complete intake (proposed service target); missing facts are marked uncertain. Shop checks each customer/job/equipment/invoice field, tells us whether it saved time and approves each packet before use. One source mismatch stops delivery until corrected; no repeated manual rescue. All materials stay in an approved local workspace. Honor the spec's deletion rule 30 days after closure unless the buyer opts to retain; confirm the deletion process before intake.
+
+**Payment:** after acceptance, Benjamin sends a $49 invoice through an already available business payment method, due on receipt; an invoice or verbal “yes” is not cash. If only mailed check is available, add clearing time. No automatic debit.
+
+**Sample:** [synthetic packet PDF](samples/job-9001.pdf), [sample explanation](samples/README.md). Competitors include [Jobber's existing integrations](https://developer.getjobber.com/docs/custom_integrations/); buy only if this particular handoff saves work.
+
+**Stop:** existing quality/data-authorization gates remain. Pause after five reviewed packets if they do not save time or need repeated corrections. Acquisition experiment ends on day 14 or 10 qualified invitations, whichever comes first, without a paying pilot. No extra features to rescue a weak offer.
+
+## Owner sending notes
+
+Draft only; nothing has been sent. Replace `{{business}}` and `{{business postal address}}` before sending. The postal address is intentionally not invented or taken from a prospect. Use Benjamin's existing business mailbox with an accurate From/Reply-To. Send individually; no tracking pixel, bulk send, unsolicited text, or automated follow-up. Use the published business phone to request the right email when the CSV has no email; do not guess an address or use an emergency/service-booking form for a sales pitch. Send one follow-up only, at least five business days later, and stop immediately on a decline or opt-out. Keep suppression requests and honor them within 10 business days. [FTC business email rules](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) cover commercial B2B email too.
+
+Before taking orders, confirm existing business permissions for operating from Troy and the existing payment route; see [FASTEST-MONEY](../FASTEST-MONEY.md). Price below is a proposed fixed pilot price, subject to owner acceptance, not an invoice already issued. Any applicable tax must be identified in the agreed total before checkout. No new payment account is assumed.
