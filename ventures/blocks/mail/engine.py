@@ -48,20 +48,46 @@ def _suppression_file(path: str | Path | None = None) -> Path:
 
 def _normalized_address(value: Any) -> str:
     parts = _record_address(value)
-    return " ".join(parts.get(k, "") for k in ("address_line1", "address_line2", "address_city", "address_state", "address_zip")).strip().casefold()
+    value = " ".join(parts.get(k, "") for k in ("address_line1", "address_line2", "address_city", "address_state", "address_zip"))
+    value = value.casefold().replace("#", " unit ")
+    # ZIP+4 and ZIP5 identify the same postal delivery point for suppression.
+    value = re.sub(r"\b(\d{5})[- ]\d{4}\b", r"\1", value)
+    tokens = re.findall(r"[^\W_]+", value, flags=re.UNICODE)
+    # Common USPS street and unit spellings have one deterministic spelling.
+    aliases = {
+        "st": "street", "ave": "avenue", "rd": "road", "blvd": "boulevard",
+        "dr": "drive", "ln": "lane", "ct": "court", "hwy": "highway",
+        "pkwy": "parkway", "pl": "place", "ter": "terrace", "cir": "circle",
+        "trl": "trail", "apt": "unit", "apartment": "unit", "ste": "unit",
+        "suite": "unit",
+    }
+    tokens = [aliases.get(token, token) for token in tokens]
+    return " ".join(tokens)
+
+
+def _is_suppressed(normalized: str, blocked: set[str]) -> bool:
+    if normalized in blocked:
+        return True
+    # Preserve support for a record that contains only the street line when
+    # the opt-out contains that street plus city/state/ZIP. Unit numbers stay
+    # part of the prefix, so Apt 2 never suppresses Apt 3.
+    return any(item.startswith(normalized + " ") for item in blocked)
 
 
 def add_to_suppression(address: Any, *, path: str | Path | None = None) -> None:
     """Add a do-not-mail address to the local, rebuildable plain-text suppression list."""
+    parts = _record_address(address)
+    stored = " ".join(parts.get(k, "") for k in ("address_line1", "address_line2", "address_city", "address_state", "address_zip"))
+    stored = re.sub(r"\s+", " ", stored).strip().casefold()
     normalized = _normalized_address(address)
     if not normalized:
         raise ValueError("an address is required for the suppression list")
     target = _suppression_file(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    existing = {line.strip().casefold() for line in target.read_text().splitlines()} if target.exists() else set()
+    existing = {_normalized_address(line) for line in target.read_text(encoding="utf-8").splitlines()} if target.exists() else set()
     if normalized not in existing:
         with target.open("a", encoding="utf-8") as stream:
-            stream.write(normalized + "\n")
+            stream.write(stored + "\n")
 
 
 def check_outreach(record: dict[str, Any], message_html: str, *, suppression_path: str | Path | None = None) -> dict[str, str]:
@@ -76,8 +102,8 @@ def check_outreach(record: dict[str, Any], message_html: str, *, suppression_pat
         return {"verdict": "fail", "reason": "the postcard must name its sender clearly"}
     normalized = _normalized_address(record.get("address") or record)
     suppression = _suppression_file(suppression_path)
-    blocked = {line.strip().casefold() for line in suppression.read_text().splitlines()} if suppression.exists() else set()
-    if normalized and (normalized in blocked or any(item.startswith(normalized + ", ") for item in blocked)):
+    blocked = {_normalized_address(line) for line in suppression.read_text(encoding="utf-8").splitlines()} if suppression.exists() else set()
+    if normalized and _is_suppressed(normalized, blocked):
         return {"verdict": "fail", "reason": "recipient is suppressed by the do-not-mail suppression list"}
     return {"verdict": "pass", "reason": "sender is clear, no agency-style wording, and recipient is not suppressed"}
 
@@ -339,11 +365,21 @@ def postcard(front_html: str, back_html: str, to: Any, from_: Any, *, approval_i
                 "blocking_reason": str(exc), **proof_info, "outreach_check": check}
     result: dict[str, Any] = {"status": "render_only", "front_html": str(front_path), "back_html": str(back_path), "proof_pdf": str(proof_path), **proof_info, "address_verification": {"verdict": "uncertain", "detail": "not sent; no Lob test key configured" if not key else "not sent; an approval_id is required"}, "outreach_check": check}
     if key and key.startswith("test_") and approval_id and approval_id.strip():
+        check = check_outreach({"sender": sender_name, "address": to}, message_text)
+        result["outreach_check"] = check
+        if check["verdict"] == "fail":
+            raise ValueError(f"outreach rule failed: {check['reason']}")
         verification = verify_address(to, secret_getter=secret_getter, transport=transport)
         result["address_verification"] = verification
         if verification["verdict"] != "pass":
             result["status"] = "not_sent_address_unverified"
             return result
+        # Suppression can change between proof preparation and an approved
+        # send. Re-read the durable list immediately before the outbound call.
+        check = check_outreach({"sender": sender_name, "address": to}, message_text)
+        result["outreach_check"] = check
+        if check["verdict"] == "fail":
+            raise ValueError(f"outreach rule failed: {check['reason']}")
         response = _lob_request("postcards", payload={"to": recipient, "from": sender, "front": front_html, "back": back_html, "size": "6x4", "metadata": {"proof": digest, "approval_id": approval_id.strip()}}, secret_getter=secret_getter, transport=transport)
         result.update({"status": "sent_test", "lob_postcard_id": response.get("id"), "delivery_date": response.get("expected_delivery_date"), "approval_id": approval_id.strip()})
     return result
