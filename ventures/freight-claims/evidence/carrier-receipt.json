@@ -1,0 +1,17 @@
+{
+  "claim_id": "fixture-ship-9001",
+  "carrier": "UPS",
+  "carrier_received_date": "2026-09-10",
+  "carrier_reference": "FIXTURE-RECEIPT-9001",
+  "carrier_response_due_on": null,
+  "confirmation_document": "/home/glacier/w/workers/gf-RG-FREIGHT/ventures/freight-claims/tests/fixtures/delivery-receipt.txt",
+  "deadline_rule": "30d|120d",
+  "response_tracking": {
+    "milestones": [],
+    "carrier_response_due_on": null,
+    "note": "For parcel carriers, this is a customer-entered follow-up date, not a published response promise."
+  },
+  "result": "match",
+  "side_effects": [],
+  "record_path": "/tmp/gf-rg-freight-live/ventures/freight-claims/reports/receipt-29e4b2464884ab9dad5b.json"
+}

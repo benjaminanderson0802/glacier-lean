@@ -85,7 +85,7 @@ _GUIDANCE: dict[str, dict[str, Any]] = {
             "carrier correspondence, claim receipt/reference, and customer-confirmed dates",
         ],
         "sources": [
-            {"title": "49 U.S.C. § 14706 (Carmack Amendment)", "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title49-section14706"},
+            {"title": "49 U.S.C. § 14706 (Carmack Amendment)", "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm"},
             {"title": "49 CFR § 370.3 Filing of claims", "url": "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.3"},
             {"title": "49 CFR § 370.5 Acknowledgment of claims", "url": "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.5"},
             {"title": "49 CFR § 370.9 Disposition of claims", "url": "https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-370/section-370.9"},
