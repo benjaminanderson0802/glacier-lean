@@ -15,11 +15,11 @@ Prepared for the Shopify Partner Dashboard review form. Shopify's form and polic
 - **Feature media alt text:** Source-linked cosmetic product review draft from a Shopify catalog, with uncertain fields flagged for brand review.
 - **Screenshots:** See `screenshots/` and the alt-text list below.
 - **Demo store URL:** https://glacier-test-cosmetics.myshopify.com/ (owner: confirm this exact store URL and reviewer access in Partner Dashboard.)
-- **App URL:** `{{APP_BASE_URL}}`
-- **Privacy policy URL:** `{{APP_BASE_URL}}/privacy`
+- **App URL:** Owner-selected, no-spend HTTPS deployment URL (not configured yet).
+- **Privacy policy URL:** https://andersoneducation.us/privacy-policy (draft prepared in `PRIVACY-POLICY.md`; owner must publish it at this exact address and verify it is publicly accessible before submission.)
 - **Support email:** `{{BUSINESS_EMAIL}}`
 - **Support channel:** Email
-- **Developer website:** `{{APP_BASE_URL}}`
+- **Developer website:** https://andersoneducation.us/ (confirm the site is live and identifies the app operator before submission.)
 - **Online Store channel required:** No. The app runs in Shopify Admin.
 - **Geographic availability:** No store-location restriction. The packet workflow is for U.S. FDA cosmetic product listing records.
 - **Test credentials:** No separate Glacier account. The app uses Shopify's merchant authorization. For listing review, install the draft app in Shopify's review store and use the fixture product workflow shown in `review/TESTING-INSTRUCTIONS.md`.
@@ -107,14 +107,16 @@ The proposed $4.99 starting plan is a low-price entry point to encourage adoptio
 - [Shopify Billing API](https://shopify.dev/docs/api/admin-graphql/2026-10/mutations/appSubscriptionCreate)
 - [Access scopes](https://shopify.dev/docs/apps/build/authentication-authorization/manage-access-scopes)
 
-## Content checks before submission
+## Owner-supplied values before submission
 
-- Replace `{{APP_BASE_URL}}` and `{{BUSINESS_EMAIL}}` everywhere.
+- Production app URL: owner-selected, no-spend HTTPS deployment URL. It is not known yet and must be entered in Partner Dashboard and `shopify.app.toml`.
+- Support email: owner-controlled, monitored address. It is not known yet; replace `{{BUSINESS_EMAIL}}` in the privacy draft and enter the same address in Partner Dashboard.
+- Physical business/contact address: owner must decide whether to publish it in the privacy policy based on the operating entity and applicable requirements; it is intentionally not invented here.
 - Confirm the demo store URL and provide Shopify reviewers access using the Partner Dashboard.
-- Confirm the support email is monitored and appears in the Partner Dashboard.
+- Approve or change the recommended plan prices before saving the listing. The current $4.99 Starter / $9.99 Studio values are proposals, not approved prices.
 - Check the app name for uniqueness in the live App Store before submission.
 - Confirm the category and pricing plan setup in the live form.
 - Attach the app icon, feature image, three screenshots, and review screencast.
-- Ensure production app URL and privacy URL use HTTPS and are live.
+- Ensure production app URL and privacy URL use HTTPS and are live. `andersoneducation.us` and its `/privacy-policy` page could not be fetched during preparation; publication is unverified.
 - Add current app review test instructions; there is no separate Glacier username or password.
 - Run Shopify's automated review checks, fix any findings, then submit from the Partner Dashboard.
