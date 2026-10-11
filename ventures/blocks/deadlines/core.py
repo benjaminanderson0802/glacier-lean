@@ -5,6 +5,7 @@ import hashlib
 import os
 import re
 import sqlite3
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,17 @@ def _connect() -> sqlite3.Connection:
         fired_at TEXT NOT NULL, PRIMARY KEY(item_id, milestone, due_date));
     """)
     return con
+
+
+@contextmanager
+def _session():
+    """Open, commit/rollback, and always close (Windows keeps open files locked)."""
+    con = _connect()
+    try:
+        with con:
+            yield con
+    finally:
+        con.close()
 
 
 def _date(value: str | date) -> date:
@@ -60,7 +72,7 @@ def add(item_id: str, start_date: str, rule: str, label: str) -> None:
     _validate_rule(rule)
     if not item_id.strip() or not label.strip():
         raise ValueError("item_id and label are required")
-    with _connect() as con:
+    with _session() as con:
         con.execute("INSERT INTO deadline_items(item_id,start_date,rule,label,created_at) VALUES(?,?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET start_date=excluded.start_date, rule=excluded.rule, label=excluded.label", (item_id, start_date, rule, label, datetime.now(timezone.utc).isoformat()))
 
 
@@ -101,7 +113,7 @@ def due(on_date: str | date) -> list[dict[str, Any]]:
     day = _date(on_date)
     fired_at = datetime.now(timezone.utc).isoformat()
     result: list[dict[str, Any]] = []
-    with _connect() as con:
+    with _session() as con:
         items = con.execute("SELECT item_id,start_date,rule,label FROM deadline_items ORDER BY item_id").fetchall()
         for item_id, start, rule, label in items:
             for milestone, due_day in _events(date.fromisoformat(start), rule):

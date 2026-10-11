@@ -51,7 +51,7 @@ def test_installer_stages_scripts_and_keeps_workspace_data_separate(tmp_path):
     runtime = installer._runtime_flow(flow, repo_root=ROOT, slug="cpsc-prep", home=tmp_path)
     command = next(node for node in runtime["nodes"] if node["id"] == "prepare-draft")
     assert command["config"]["cwd"] == str(tmp_path / "workspaces" / "cpsc-batch-prep" / "ventures" / "cpsc-prep")
-    assert str(ROOT) in command["config"]["cmd"]
+    assert ROOT.as_posix() in command["config"]["cmd"]
     assert "batch.json" in command["config"]["cmd"]
 
 
