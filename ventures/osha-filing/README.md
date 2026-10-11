@@ -1,10 +1,10 @@
-# OSHA filing preparation — ready for owner setup
+# OSHA filing preparation — blocked on official feed access
 
 Glacier prepares a review worksheet for OSHA Form 300A from the establishment's injury-log CSV. The customer compares every figure with its OSHA 300 Log and hours/headcount records. The executive signs and dates the form, posts it at the establishment from February 1 through April 30, and submits required data through the customer's own OSHA ITA account by March 2 (submission opens January 2). Glacier never certifies or submits a government filing.
 
 ## Public data and outreach
 
-The venture refreshes the OSHA ITA establishment summary through the shared `osha_ita` feed and uses it only to screen prospects. The public summary's `size` field records the largest employee-size category reached during the year (code `3` for 250+, codes `2`, `21`, or `22` for 20–249); this is the screening input, rather than annual average employees. Establishments with 20–249 employees are retained only when their industry code matches OSHA's currently published designated-industry table. Missing or ambiguous fields remain `uncertain — please check`. A prospect match is only a lead signal, not an OSHA coverage or compliance determination; OSHA notes that the public data can include establishments that were not required to submit. The industry table is based on OSHA's [published NAICS list](https://www.osha.gov/recordkeeping/naics-codes-electronic-submission) and must be rechecked if that page changes. The current bulk download is linked from OSHA's [ITA data page](https://www.osha.gov/itadata); this client's live request returned HTTP 403, so the current-file canary is still an owner setup step. A saved official CSV can be screened locally with `--source-csv`; `fixtures/ita-establishments.example.csv` remains synthetic and is never represented as current OSHA data.
+The venture refreshes the OSHA ITA establishment summary through the shared `osha_ita` feed and uses it only to screen prospects. The public summary's `size` field records the largest employee-size category reached during the year (code `3` for 250+, codes `2`, `21`, or `22` for 20–249); this is the screening input, rather than annual average employees. Establishments with 20–249 employees are retained only when their industry code matches OSHA's currently published designated-industry table. Missing or ambiguous fields remain `uncertain — please check`. A prospect match is only a lead signal, not an OSHA coverage or compliance determination; OSHA notes that the public data can include establishments that were not required to submit. The industry table is based on OSHA's [published NAICS list](https://www.osha.gov/recordkeeping/naics-codes-electronic-submission) and must be rechecked if that page changes. OSHA's [ITA data page](https://www.osha.gov/itadata) links a direct bulk CSV at `https://www.osha.gov/sites/default/largefiles/`; both the page and its direct current CSV returned HTTP 403 to this script client on 2026-10-11. The official [DOL API catalog](https://apiprod.dol.gov/v4/datasets) lists OSHA enforcement datasets but no ITA summary dataset. The adapter only follows the official page's own HTTPS download link, then requires a nonempty unique establishment-ID canary. It does not impersonate a browser or treat a manual download as a live refresh. `fixtures/ita-establishments.example.csv` remains synthetic and is never represented as current OSHA data.
 
 The January mail flow produces render-only postcard proofs and a separate page populated with the establishment's source data. The sender is named clearly and the design does not imitate OSHA. No real postcard is sent. The mail block uses Lob test mode only after an owner configures a test key and approval; no live key is accepted by the shared block. The venture does not send messages through Jobber. Its Jobber channel uses the shared read-only connector to preview candidate shops.
 
@@ -57,18 +57,24 @@ For an offline synthetic screening walkthrough, use the explicitly labeled fixtu
 ~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prospects --fixture ventures/osha-filing/fixtures/ita-establishments.example.csv --as-of 2027-01-03
 ```
 
-If the live feed remains unavailable, screen a CSV downloaded from OSHA's official ITA data page and record its row count and establishment-ID canary:
+Prepare the first five source-linked worksheets automatically after the official feed is restored and passes its canaries:
 
 ```sh
-~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prospects --source-csv ./2025_summary_data.csv --as-of 2027-01-03
+~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prepare-first-five
+```
+
+The command refreshes the live official feed, refuses a failed or stale source, and writes at most five unsigned HTML review worksheets plus `first-five-status.json` under `$GLACIER_HOME/ventures/osha-filing/worksheets/`. Outside the Jan 2–Mar 2 filing period, it screens against the next upcoming January window so the drafts can be prepared in advance. The worksheets copy public historical summary values and mark missing executive/current-year fields for customer confirmation; they do not determine coverage, mail, sign, or submit. For an explicit local recovery from an official CSV already obtained by an authorized operator, the same command accepts `--source-csv PATH`; the result is labeled `local_official_csv` and still requires the ID canary. This local mode is not represented as a live-feed canary:
+
+```sh
+~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prepare-first-five --source-csv ./2025_summary_data.csv --source-url https://www.osha.gov/itadata --as-of 2027-01-03 --output-dir ./osha-review-worksheets
 ```
 
 The local-file mode records only the source filename, row count, identifier-canary result, and prospect totals in `prospect-status.json`; it saves at most one minimum-field candidate for proof review. Confirm the file came from OSHA before using it. No alternate host or access workaround is used.
 
 Checkout is not enabled until an owner configures the customer block's Stripe test mode. No credentials or live billing configuration are included.
 
-## Your steps
+## Outreach and owner steps
 
-1. **Owner setup and review:** Download the current ITA Summary Data CSV from OSHA's [official data page](https://www.osha.gov/itadata) in a normal browser, then run the local `--source-csv` screen to record the actual row count and establishment-ID canary. The feed request currently returns HTTP 403 to this client, so prospecting remains fixture-only until that is done. Review the first postcard, recipient source, landing page, marketplace listing, and the first five prepared worksheets; publish the Jobber listing yourself only if you choose. The Jobber test app is already connected. Glacier does not send mail or publish listings.
+This venture depends on written postcard or marketplace outreach; cold outreach is not being expanded. No postcard is sent and no listing is published. The live data source currently blocks this script client, so prospect worksheets are not available yet. See [OWNER-STEPS.md](OWNER-STEPS.md) for the single review action that becomes available after source access is restored. The Jobber test app is already connected.
 
 For every customer filing, the establishment's executive compares the worksheet to source records, certifies and signs it, posts the signed summary February 1–April 30, and submits required data in the customer's OSHA ITA account by March 2. OSHA says submission opens January 2. The annual local reminders prompt those owner/customer actions; they do not sign, post, or submit.

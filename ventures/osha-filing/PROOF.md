@@ -1,6 +1,6 @@
 # OSHA filing preparation proof
 
-The OSHA venture is **ready for owner setup**, not live with customers. No customer records or accounts, payment, OSHA portal, signature, filing, mail, listing publication, or public outreach were used. The real-backend walkthrough used only the synthetic fixtures in this folder. The current official public CSV still needs to be downloaded by the owner in a normal browser because the local source request returns HTTP 403.
+The OSHA venture is **blocked on official source access**, not live with customers. No customer records or accounts, payment, OSHA portal, signature, filing, mail, listing publication, or public outreach were used. The real-backend walkthrough used only the synthetic fixtures in this folder. This card added an automated live canary and first-five worksheet preparation; on 2026-10-11 the OSHA page-linked download still returned HTTP 403, so the canary correctly generated zero worksheets.
 
 ## Drift check
 
@@ -80,21 +80,51 @@ Started FastAPI/DBOS with `GLACIER_HOME=/tmp/gf-rg-osha-20261010` and installed 
 - `prepare-300a`, run `6e72d02ec1e5`: used `fixtures/injury-log.example.csv` copied to the temporary home's `incoming/injury-log.csv`. The engine approved the synthetic input-ready and first-five review gates, ran `prepare` successfully, and wrote `packets/300a-review.html` (1,986 bytes). All eight worksheet field/arithmetic checks passed; output reported `result=match`, `signature=customer_signature_required`, and `submission=customer_submits_in_osha_ita`. The run stopped at `customer_review`, with the fixture establishment present and the unsigned/certification disclaimer visible. No customer review, signature, posting, or submission was performed.
 - `osha-daily-deadlines`, run `136bb6ef71b0`: status `done`; both nodes completed and its independent command check passed. On the 2026-10-10 as-of date, output named the next cycle: ITA window `2027-01-02 through 2027-03-02`, due `2027-03-02`; posting window `2027-02-01 through 2027-04-30`. The due list was empty in October, as expected.
 
-The owner-ready state leaves one setup/review step: download the current official summary CSV in a normal browser, run `--source-csv` to record its real row count and canary, then review the first five worksheets and outreach materials. The Jobber test app is already connected; any marketplace publication remains the owner's choice. Customers still review and complete their own filings. No alternate data host or blocked-request workaround was used. PH12.16 remains `todo` in `NORTHSTAR.yaml`; this card did not change the roadmap checkpoint.
+The 2026-10-10 owner-download workaround above is historical and superseded by this card's 2026-10-11 source investigation. It is not counted as a resolved data-source blocker or an owner step. PH12.16 remains `todo` in `NORTHSTAR.yaml`; this card did not change the roadmap checkpoint.
 
 Anti-pattern review: the historical 400,288-row count remains explicitly historical, and no current public-feed result is claimed. The first postcard preview exposed unresolved template values; those are now filled or marked as a local unhosted reference, with a new regression test. Acceptance files were not changed. No status claim is based only on this report; the venture tests, installer check, and engine runs are linked above.
 
 Other venture suites were run one project at a time with the repository and project directories on `PYTHONPATH`: 12 venture projects passed, with one optional recall-actor live canary skipped. Recall checker has 10 passing tests and one existing wording assertion failure already recorded in `vault/claims/2026-10-10-ph12-12-recall-output-vocabulary.md`; no other venture files were changed. A single root-level `pytest ventures -q` also has import collisions for recall-actor and utility-audits, so it is not used as the per-venture result above.
 
-## Limits and owner actions
+## Limits and owner actions — status as of 2026-10-11
 
 - OSHA public feed synchronization is blocked by HTTP 403 in this run; prospect screening has fixture evidence only.
 - The ITA prospect fixture is synthetic and cannot be treated as a current lead list. OSHA's [ITA page](https://www.osha.gov/itadata) remains the source for the official download.
 - OSHA's [calendar](https://www.osha.gov/calendar) confirms the Feb 1–Apr 30 posting period and Mar 2 submission deadline; OSHA's [recordkeeping FAQ](https://www.osha.gov/injuryreporting/faqs) describes the Jan 2 submission opening. OSHA rules and coverage can change; the customer checks current requirements.
 - The HTML output is a review worksheet, not the official Form 300A. CSV input requires one row per distinct recordable case, consistent establishment fields, and a single explicit zero-injury row when appropriate.
 - The compact single-row intake adapter may produce an incomplete JSON review worksheet so missing fields can be confirmed by the customer; its `uncertain` result is not an OSHA coverage or compliance decision.
-- The owner setup/review step is to download the current official OSHA CSV in a normal browser and run the local canary, review the first postcard, listing, and five prepared packets, and publish the marketplace listing only if desired. The Jobber test app is already connected.
-- Current tests after this recheck: `~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing -q` → 22 passed; `~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q` → 21 passed; installer dry-run → 4 flows validated.
+- The owner setup/review step written on 2026-10-10 asked for a browser download. This is historical and superseded; a browser download is not counted as the resolution or a required owner action.
+- At the 2026-10-10 recheck, `ventures/osha-filing` reported 22 passed; `ventures/tests` reported 21 passed; installer dry-run validated 4 flows.
 - Each establishment's executive checks the worksheet against source records, certifies and signs it, posts it February 1–April 30, and submits required data in its own OSHA ITA account by March 2. Glacier never performs these acts.
 - Lob remains render-only; no live address verification or mailing was attempted. No customer checkout, OSHA credentials, or real prospect data were used.
 - PH12.16 remains `todo` in NORTHSTAR; this card does not update the checkpoint status or evidence.
+
+## P-OSHA source canary and first-five preparation — 2026-10-11
+
+OSHA's official [ITA data page](https://www.osha.gov/itadata) currently links the summary download directly to `https://www.osha.gov/sites/default/largefiles/ITA_300A_Summary_Data_2025_through_08-31-2026.csv`. The page request and that exact file request each returned HTTP 403 from this script runtime. The [DOL Open Data API catalog](https://apiprod.dol.gov/v4/datasets) was checked across all catalog pages: it lists OSHA enforcement datasets, but no ITA Summary Data dataset. There is no official data.dol.gov/api.dol.gov ITA route to substitute, so no unauthorized host or browser impersonation was used.
+
+The shared OSHA adapter now accepts only the official OSHA HTTPS host for the page-linked CSV and rejects files without a nonempty, unique establishment-ID canary. The venture command `prepare-first-five` refreshes the live feed before use, prepares at most five unsigned local HTML worksheets with source links and historical-value warnings, and saves a status manifest. It selects for the upcoming January filing window when run outside the Jan 2–Mar 2 cycle. Failed refresh canaries stop preparation, so no stale cache or fixture is represented as live data.
+
+Live canary run:
+
+```text
+GLACIER_HOME=/tmp/gf-p-osha-canary-20261011 ~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prepare-first-five --as-of 2027-01-03 --output-dir /tmp/gf-p-osha-canary-20261011/worksheets
+result: blocked — official OSHA ITA summary source did not pass refresh canaries
+alert: HTTPError: HTTP Error 403: Forbidden
+source_mode: official_live_feed
+worksheets_prepared: 0
+```
+
+This is a confirmed external source block, not a successful current-data canary. Consequently the first five actual prospect worksheets could not be emitted in this environment and the venture remains `blocked`; after the source is reachable, the command generates them automatically and the owner review action is listed in [OWNER-STEPS.md](OWNER-STEPS.md). No owner browser download is counted as a required setup step. Cold outreach is optional and not expanded.
+
+Verification after this card's changes:
+
+```text
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/osha-filing ventures/blocks/feeds/tests ventures/tests
+88 passed, 2 subtests passed
+
+~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only osha-filing --dry-run
+4 flows validated: january-outreach, prepare-300a, osha-daily-deadlines, jobber-channel
+```
+
+Acceptance files were not edited. Anti-pattern review: this update separates working software (automatic source gate and worksheet generation) from historical/synthetic evidence and does not claim current public data reachability. PH12.16 remains `todo` in `NORTHSTAR.yaml`, and no checkpoint status was changed.

@@ -242,6 +242,9 @@ def _osha(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, str
         raise ValueError("OSHA current Summary Data download link was not found; page format may have changed")
     # Current summary link is first in the Current ITA Data section on the official page.
     label, url = found[0]
+    parsed_url = urllib.parse.urlparse(url)
+    if parsed_url.scheme != "https" or parsed_url.hostname not in {"osha.gov", "www.osha.gov"}:
+        raise ValueError("OSHA Summary Data link did not point to an official OSHA HTTPS host")
     # OSHA publishes hundreds of thousands of establishments. Bound both the
     # transfer and the row loop so a page/schema change cannot run indefinitely.
     raw = _request(url, timeout=120, max_bytes=150_000_000)
@@ -253,6 +256,15 @@ def _osha(config: dict[str, Any]) -> tuple[list[dict[str, Any]], int | None, str
         rows.append(row)
     if not reader.fieldnames:
         raise ValueError("OSHA summary CSV has no header row")
+    headers = {str(name).strip().casefold(): name for name in reader.fieldnames if name}
+    id_header = next((headers[name] for name in ("establishment_id", "establishment id", "establishmentid") if name in headers), None)
+    if id_header is None:
+        raise ValueError("OSHA summary CSV is missing the establishment_ID canary field")
+    canary_ids = [str(row.get(id_header, "")).strip() for row in rows if str(row.get(id_header, "")).strip()]
+    if not canary_ids:
+        raise ValueError("OSHA summary CSV establishment_ID canary has no nonempty identifiers")
+    if len(canary_ids) != len(set(canary_ids)):
+        raise ValueError("OSHA summary CSV establishment_ID canary contains duplicate identifiers")
     return rows, len(rows), url
 
 

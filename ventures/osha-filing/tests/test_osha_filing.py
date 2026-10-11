@@ -147,6 +147,52 @@ class OshaFilingAcceptanceTests(unittest.TestCase):
         self.assertEqual(report["candidate_count"], 2)
         self.assertEqual(report["uncertain_count"], 2)
 
+    def test_first_five_public_summary_rows_become_unsigned_review_worksheets(self) -> None:
+        rows = [
+            {
+                "establishment_id": str(index), "establishment_name": f"Sample establishment {index}",
+                "street_address": f"{index} Main St", "city": "Atlanta", "state": "GA", "zip_code": "30301",
+                "naics_code": "238220", "size": "3", "year_filing_for": "2025",
+                "annual_average_employees": "280", "total_hours_worked": "500000",
+                "total_deaths": "0", "total_dafw_cases": "1", "total_djtr_cases": "2",
+                "total_other_cases": "3", "total_dafw_days": "4", "total_djtr_days": "5",
+            }
+            for index in range(1, 8)
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            result = OSHA.prepare_first_five(
+                records=rows, output_dir=Path(tmp), as_of=date(2026, 10, 11),
+                source_url="https://www.osha.gov/itadata",
+            )
+            self.assertEqual(result["source_canary"]["passed"], True)
+            self.assertEqual(result["source_canary"]["establishment_ids_present"], 7)
+            self.assertEqual(result["worksheets_prepared"], 5)
+            self.assertEqual(result["screening_window_date"], "2027-01-03")
+            for item in result["worksheets"]:
+                content = Path(item["path"]).read_text()
+                self.assertIn("Sample establishment", content)
+                self.assertIn("https://www.osha.gov/itadata", content)
+                self.assertIn("historical submissions", content)
+                self.assertIn("Signature: ____________________________________", content)
+                self.assertIn("Glacier does not certify or submit", content)
+                self.assertEqual(item["signature"], "customer_signature_required")
+                self.assertEqual(item["submission"], "customer_submits_in_osha_ita")
+            self.assertEqual(result["mail_status"], "not_sent")
+            self.assertFalse(result["submission_by_glacier"])
+
+    def test_first_five_refuses_source_without_unique_establishment_id_canary(self) -> None:
+        rows = [
+            {"establishment_id": "same", "establishment_name": "Sample", "size": "3"},
+            {"establishment_id": "same", "establishment_name": "Sample", "size": "3"},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "source canary failed"):
+                OSHA.prepare_first_five(
+                    records=rows, output_dir=Path(tmp), as_of=date(2026, 10, 11),
+                    source_url="https://www.osha.gov/itadata",
+                )
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
     def test_flows_gate_outreach_and_keep_customer_submission_explicit(self) -> None:
         root = Path(__file__).parents[1]
         outreach = json.loads((root / "flows" / "january-outreach.json").read_text())
