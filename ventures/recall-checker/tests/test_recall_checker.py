@@ -63,6 +63,16 @@ class RecallMatcherAcceptanceTests(unittest.TestCase):
         self.assertEqual(set(manifest["permissions"]), {"activeTab", "scripting", "storage"})
         self.assertEqual(set(manifest["host_permissions"]), {"http://127.0.0.1:8765/*", "https://api.apify.com/*"})
 
+    def test_hosted_api_token_is_not_persisted_between_popup_sessions(self):
+        root = Path(__file__).parents[1]
+        script = (root / "extension" / "popup.js").read_text(encoding="utf-8")
+        popup = (root / "extension" / "popup.html").read_text(encoding="utf-8")
+        policy = (root / "store" / "PRIVACY.md").read_text(encoding="utf-8")
+        self.assertIn('const settingIds = ["check-mode", "actor-id"];', script)
+        self.assertIn('chrome.storage.local.get({ "check-mode": "local", "actor-id": "" })', script)
+        self.assertIn("token stays in this popup", popup)
+        self.assertIn("not saved after the popup closes", policy)
+
     def test_owner_steps_link_store_secrets_and_require_host_choice(self):
         root = Path(__file__).resolve().parents[1]
         manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
