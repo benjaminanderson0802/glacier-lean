@@ -47,8 +47,25 @@ def test_digest_carries_provenance_and_does_not_claim_history_before_first_snaps
 
 
 def test_digest_reports_no_match_with_the_source_date():
-    before = {"retrieved_at": "2026-10-09T12:00:00Z", "source_url": "fixture", "opportunitiesData": []}
-    after = {"retrieved_at": "2026-10-10T12:00:00Z", "source_url": "fixture", "opportunitiesData": []}
+    # SAM.gov v2 response envelope fields are documented by GSA:
+    # https://open.gsa.gov/api/get-opportunities-public-api/
+    # The response has no records, and its sole empty page covers that total.
+    before = {
+        "retrieved_at": "2026-10-09T12:00:00Z",
+        "source_url": "https://api.sam.gov/opportunities/v2/search?ncode=423840",
+        "totalRecords": 0,
+        "limit": 1000,
+        "offset": 0,
+        "opportunitiesData": [],
+    }
+    after = {
+        "retrieved_at": "2026-10-10T12:00:00Z",
+        "source_url": "https://api.sam.gov/opportunities/v2/search?ncode=423840",
+        "totalRecords": 0,
+        "limit": 1000,
+        "offset": 0,
+        "opportunitiesData": [],
+    }
 
     digest = build_digest(before, after, naics_codes={"423840"})
 
