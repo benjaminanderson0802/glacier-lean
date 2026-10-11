@@ -661,12 +661,25 @@ def _review(plan: dict, task: dict, output: str, attempt: int, checks: dict | No
     if not role:
         return {"passed": False, "evidence": "the plan has no valid supervisor role"}
     import decider
-    criteria = "Review the handover against the supervisor charter and task acceptance checks. Reject incomplete, unsupported, or off-plan work."
+    criteria = ("Review the handover against the supervisor charter and task acceptance checks. Reject incomplete, "
+                "unsupported, or off-plan work. If your verdict contradicts a passing deterministic acceptance "
+                "check, provide an explicit reason grounded in the evidence.")
     decision = decider.decide(criteria + "\nSupervisor charter: " + role["charter"] + "\nTask: " + task["title"] +
                               "\nAcceptance checks: " + json.dumps(task["acceptance"]),
                               ["pass", "fail"], "Worker handover (not proof):\n" + (output or "(empty handover)") +
                               "\nIndependent check results:\n" + json.dumps(checks or {}))
-    return {"passed": decision.get("choice") == "pass", "evidence": f"supervisor review ({decision.get('engine')}): {decision.get('choice')}"}
+    choice = decision.get("choice")
+    reason = decision.get("reason")
+    reason = reason.strip() if isinstance(reason, str) else ""
+    evidence = f"supervisor review ({decision.get('engine')}): {choice}"
+    if choice == "fail" and (checks or {}).get("passed") is True:
+        if reason:
+            evidence += f"; reason: {reason}"
+        else:
+            evidence += "; unreasoned contradiction rejected because deterministic acceptance checks passed and no reason was provided"
+    elif reason:
+        evidence += f"; reason: {reason}"
+    return {"passed": choice == "pass", "evidence": evidence}
 
 
 def _check_task(task: dict, output: str, workspace: str) -> dict:
