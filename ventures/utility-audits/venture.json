@@ -1,7 +1,7 @@
 {
   "slug": "utility-audits",
   "name": "utility audits",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "purpose": "Prepare customer-reviewed Indiana restaurant electricity exemption estimates and predominant-use utility study estimates with unsigned application data.",
     "launch_state": "Indiana (recommended; owner confirmation required before launch)",
@@ -19,9 +19,9 @@
   "your_steps": [
     {
       "id": "confirm-and-provide-records",
-      "title": "Confirm Indiana and provide the records for a case",
+      "title": "Choose a launch state and provide a case's records",
       "when": "Before offering this venture to customers",
-      "detail": "Indiana is recommended for the restaurant 50% single-meter electricity election and the general utility study path. Confirm Indiana before launch. For restaurant cases, provide the seller's annual statewide prepared-food calculation and 12 months of meter records. For a predominant-use case, provide 12 monthly bills plus the documented exempt-use allocation for each meter; bills alone do not show exempt-use allocation. Keep records local. Bulletin #29 remains relevant to prepared-food sales calculations; Bulletin #55 governs the utility use exemption and ST-200 process.",
+      "detail": "Choose Indiana or an alternative state before launch; Indiana is only the current recommendation. For restaurant cases, provide the seller's annual statewide prepared-food calculation and 12 months of meter records. For a predominant-use case, provide 12 monthly bills plus the documented exempt-use allocation for each meter; bills alone do not show exempt-use allocation. Keep records local. Bulletin #29 remains relevant to prepared-food sales calculations; Bulletin #55 governs the utility use exemption and ST-200 process.",
       "links": [
         "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/",
         "https://www.in.gov/dor/files/reference/sib11.pdf",
@@ -43,6 +43,13 @@
         "https://forms.in.gov/Download.aspx?id=14085",
         "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/"
       ]
+    },
+    {
+      "id": "approve-fee-model",
+      "title": "Approve a fee model before enabling billing",
+      "when": "Before charging customers",
+      "detail": "Get any legal opinion you need, choose the price and fee model, and record its legal basis. Billing stays disabled until you approve it.",
+      "links": []
     }
   ],
   "launch_gates": [
