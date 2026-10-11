@@ -1,0 +1,11 @@
+{
+  "name": "closeout-packet",
+  "description": "Create a local Markdown and PDF closeout packet for a completed Jobber job. Review every field before customer delivery.",
+  "trigger": "owner_run",
+  "steps": [
+    {"id": "read-completed-job", "type": "connector", "client": "JobberClient", "operation": "get_jobs", "read_only": true, "max_pages": 5},
+    {"id": "prepare-packet", "type": "command", "command": "python ventures/job-closeout/scripts/generate_packet.py --jobber --output-dir <selected-folder>"},
+    {"id": "owner-review", "type": "approval", "prompt": "Review the Markdown and PDF; confirm customer name, work, equipment, photos, and invoice reference before you share the packet."}
+  ],
+  "side_effects": "local files only; no email, portal submission, or external write"
+}
