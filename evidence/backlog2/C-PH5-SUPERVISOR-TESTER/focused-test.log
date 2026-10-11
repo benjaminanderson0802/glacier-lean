@@ -1,0 +1,26 @@
+.F..                                                                     [100%]
+=================================== FAILURES ===================================
+__ test_C_PH5_SUPERVISOR_rejects_unreasoned_contradiction_of_exact_byte_pass ___
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-329/test_C_PH5_SUPERVISOR_rejects_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b3c2dde91c0>
+
+    def test_C_PH5_SUPERVISOR_rejects_unreasoned_contradiction_of_exact_byte_pass(tmp_path, monkeypatch):
+        outcome, reviewer_calls, _ = _run_task(tmp_path, monkeypatch, reviewer_choice="fail")
+    
+        assert outcome["checks"]["passed"] is True
+        assert outcome["status"] != "done"
+        assert len(reviewer_calls) == 1
+        # A bare pass/fail choice is not a reason to contradict the exact-byte evidence.
+        review_evidence = outcome["review"].get("evidence", "")
+>       assert "reason" in review_evidence.lower() or "because" in review_evidence.lower()
+E       AssertionError: assert ('reason' in 'supervisor review (separate-reviewer-fixture): fail' or 'because' in 'supervisor review (separate-reviewer-fixture): fail')
+E        +  where 'supervisor review (separate-reviewer-fixture): fail' = <built-in method lower of str object at 0x7b3c31c66310>()
+E        +    where <built-in method lower of str object at 0x7b3c31c66310> = 'supervisor review (separate-reviewer-fixture): fail'.lower
+E        +  and   'supervisor review (separate-reviewer-fixture): fail' = <built-in method lower of str object at 0x7b3c31c66310>()
+E        +    where <built-in method lower of str object at 0x7b3c31c66310> = 'supervisor review (separate-reviewer-fixture): fail'.lower
+
+tests/test_C-PH5-SUPERVISOR-evidence.py:90: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_C-PH5-SUPERVISOR-evidence.py::test_C_PH5_SUPERVISOR_rejects_unreasoned_contradiction_of_exact_byte_pass
+1 failed, 3 passed in 0.64s
