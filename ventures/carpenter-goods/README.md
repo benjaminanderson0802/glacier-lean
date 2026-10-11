@@ -4,8 +4,7 @@ This venture prepares private Etsy and Shopify listing drafts from a maker-confi
 
 ## Owner steps
 
-1. **Agree and supply.** Fill in [the commission agreement](agreement/commission-agreement.md) with the carpenter, decide what order amount the commission applies to, and have both people sign it themselves. Fill [the product sheet](templates/product-sheet.csv) with maker-confirmed facts and local photo paths. Supply at least three same-category completed sales from the last 365 days, with dates and source URLs, in `incoming/comparables.json`. For a commission report, export Etsy and Shopify order-level CSVs and place them at `incoming/etsy-orders.csv` and `incoming/shopify-orders.csv`. Use the filled agreement's decimal rate in `incoming/commission-terms.json`. Obtain exports yourself from the [Etsy shop dashboard](https://www.etsy.com/your/shops/me/dashboard) or [Shopify admin](https://admin.shopify.com/).
-2. **Review and publish.** Review every generated fact, photo path, comparable, price, and platform draft. If correct, publish manually in the Etsy shop or Shopify admin. Glacier will not publish.
+1. **Sign, supply, and review.** Agree the commission terms with the carpenter and both sign the agreement; provide maker-confirmed product facts, local photo paths, at least three current source-linked completed sales, and any order exports. When Glacier prepares the draft, review every fact, photo, comparable, and price, then publish manually only if you approve. Glacier does not sign or publish.
 
 The short [plain-language agreement summary](agreement/commission-summary.md) explains the terms; the signed full agreement controls if they differ. The agreement templates are not legal advice. Have both parties review all blanks and terms; seek legal advice if needed. Glacier never signs.
 
@@ -26,7 +25,7 @@ The result contains separate Etsy and Shopify copy and stays unpublished. Photos
 
 ## Commission summary
 
-Export order-level CSVs (one order per row) using the headers in `templates/etsy-orders.csv` and `templates/shopify-orders.csv`, or supported equivalent headers: order ID (`Order ID`, `Name`, `Order`, or `Order Number`), payment status (`Order Status`, `Financial Status`, `Payment Status`, or `Status`), and order total (`Order Total`, `Total Order Value`, `Order Value`, or `Total`). Save the exports under `incoming/etsy-orders.csv` and `incoming/shopify-orders.csv`. Only rows whose status is exactly **paid** count. Unpaid, refunded, partial, canceled, duplicate, invalid, or missing-total rows are excluded and listed. Use an order-level export to avoid counting line items twice.
+Export Etsy's **Orders** CSV and Shopify's orders CSV to `incoming/etsy-orders.csv` and `incoming/shopify-orders.csv`. The importer recognizes order ID (`Order ID`, `Name`, `Order`, or `Order Number`), payment status (`Order Status`, `Financial Status`, `Payment Status`, or `Status`), and order total (`Order Total`, `Total Order Value`, `Order Value`, or `Total`). Shopify's documented export can use multiple lines for multi-item orders; the importer groups its line-item rows by order and reads the order total once. Only rows whose status is exactly **paid** count. Unpaid, refunded, partial, canceled, duplicate, invalid, or missing-total rows are excluded and listed. The Etsy and Shopify instructions are documented in [Etsy's order CSV help](https://help.etsy.com/hc/en-us/articles/360035753053-How-Do-I-Download-My-Etsy-Data) and [Shopify's order export guide](https://help.shopify.com/en/manual/fulfillment/managing-orders/exporting-orders).
 
 Run the **Track agreed furniture commissions** flow, or:
 
@@ -42,4 +41,4 @@ The report calculates the agreed rate against exported order totals. Confirm in 
 
 ## Current limits
 
-CSV workflow and agreement files are fixture-tested only. No live Etsy/Shopify export, current comparable-sale record, signed agreement, public listing, or real runtime workflow has been verified. The previously observed runtime working-directory issue is tracked in [claim CLM-PH12-20-CWD-REPO](../../vault/claims/2026-10-10-ph12-20-command-cwd-repo-placeholder.md); the installer adjustment has not yet had a fresh real-runtime smoke check. See [PROOF.md](PROOF.md) for exact evidence and limits.
+The live Glacier listing command and output check were exercised with disposable synthetic inputs. The official Shopify export layout has a public-schema benchmark using synthetic order values. No live Etsy/Shopify merchant export, current comparable-sale record, signed agreement, or public listing was used. The commission flow remains blocked by Glacier's requirement for an acceptance check; this card cannot author that independent check. See [PROOF.md](PROOF.md) for run evidence and limits.
