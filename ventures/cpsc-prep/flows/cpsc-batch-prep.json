@@ -86,7 +86,8 @@
     {
       "id": "i5-owner_input_ready-prepare-draft",
       "source": "owner_input_ready",
-      "target": "prepare-draft"
+      "target": "prepare-draft",
+      "label": "yes"
     }
   ],
   "max_steps": 20

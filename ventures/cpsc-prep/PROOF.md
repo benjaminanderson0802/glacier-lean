@@ -89,32 +89,72 @@ scope are captured in
 These live feed results supersede the earlier 403 note for CPSC sources. They
 do not supersede any 403 notes for unrelated FSIS or OSHA feeds.
 
-## Real Glacier and remaining launch evidence
+## Glacier engine flow runs
 
-An earlier real Glacier attempt in the pre-integration worktree registered the
-four CPSC flows. The batch flow stopped because its reader, rules, and feeds
-blocks were not available in that worktree; the separate broker-launch flow
-waited at the lawyer-opinion approval. That result is historical and does not
-describe the current checkout. The block implementations are now present.
+On 2026-10-10, all four installed flows were run in an isolated home with the
+local FastAPI + DBOS runtime. The captured run IDs, approval states, node
+outputs, sample-input limits, and reproductions are in
+[`evidence/glacier-engine-flows-2026-10-10.json`](evidence/glacier-engine-flows-2026-10-10.json).
 
-The current venture suite confirms the feeds block loads, the three CPSC
-source IDs are registered, and the venture's field adapter can pass the
-fixture to the merged rules checker. The old wave-2 note about missing source
-IDs and unadapted fields is superseded by the current checkout. However, no
-current real-Glacier end-to-end batch was run in this card. No customer
-certificate batch, live independent second-engine extraction, customer
-certification, Product Registry upload, or filing has been demonstrated.
+| Flow | Run | Engine result |
+| --- | --- | --- |
+| `cpsc-feed-refresh` | `8a596dac1ed9` | Done; 589 tariff rows, 130 rule rows, and one template record; stable snapshots, no alerts. |
+| `cpsc-code-pages` | `3cdbc40fb427` | Built 589 previews from live CPSC data, then waited at `first-listing-review`; nothing was published. |
+| `cpsc-batch-prep` | `d8400fe9cb66` | Ran with one synthetic CSV and local `qwen3:1.7b` second extraction; six required fields matched, one remained uncertain, 89 gaps were reported, no CSV was released, and the flow waited at `review-certify`. This is a runtime demonstration, not a real customer batch. |
+| `cpsc-broker-launch` | `220a5b7bce99` | Waited at `lawyer-opinion` as designed; no owner approval was supplied. |
 
-Paid launch for either customer channel and broker-portal onboarding remain
-gated on the owner's written trade lawyer opinion covering this exact service
-and fee model. The owner must also sign any broker contract and create/configure
-accounts or payment credentials. The legally responsible and authorized
-certifier reviews and certifies each batch; the authorized filer submits
-through their own route. Public code-page publication also remains behind its
-explicit owner approval flow. Glacier does not perform these actions. See
-[LAWYER-QUESTIONS.md](LAWYER-QUESTIONS.md) for the counsel checklist.
+The real-engine run found two flow defects and one data-shape mismatch. The
+batch input-ready approval edge lacked the `yes` label, so the engine skipped
+draft preparation; that edge is now labeled. The code-page preview initially
+reported success with zero rows because it read only top-level feed fields;
+the builder now flattens the block's nested `data` records and uses the
+published `fetched_at` timestamp for its checked date. The corrected preview
+produced all 589 tariff-code pages. A focused non-acceptance test covers the
+shared feed record shape. No file under `tests/acceptance/` or
+`ACCEPTANCE.md` was changed.
 
-The evidence supports working official source canaries and fixture-tested
-pipeline logic. It does not support calling PH12.9 released or the venture
-launch-ready while the legal opinion, real batch verification, configured
-independent engine, and owner-only steps remain outstanding.
+## Official CPSC source page check
+
+On 2026-10-10, the operative CPSC links in the venture README, manifest, lawyer
+checklist, ruleset, and source catalog were opened and checked. The eFiling
+Importer and Broker resources, Product Registry, Document Library, and FAQ
+were reachable. The Document Library listed the current V3 CSV upload
+template, the September 2026 HTS guidance, and the citation/testing-exception
+workbook. The cited Quick Start Guide, citation/testing guidance PDF, and V4
+API specifications PDF were also reachable. The official Recalls API page and
+SaferProducts.gov REST endpoint were reachable. These pages support the
+venture's data and workflow descriptions; they do not decide whether a
+product is regulated or certify a batch.
+
+One URL in an acceptance-only recall fixture,
+`https://www.cpsc.gov/Recalls/2026/Example-Heater`, returned an internal error
+when opened. It is fixture data, not a production CPSC source link. The
+acceptance-owned fixture and tests were left unchanged.
+
+## Test results and owner actions
+
+Using the project interpreter on 2026-10-10:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/cpsc-prep -q
+```
+
+Result: **21 passed, 1 skipped**.
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q
+```
+
+Result: **21 passed**.
+
+The venture is **ready for owner review**, not live. Paid launch on either
+channel still needs the owner's written trade-lawyer opinion. The owner must
+choose the broker price, configure live accounts or payment credentials, and
+sign any broker contract; each real batch needs review and certification by
+the legally responsible, authorized party, and its authorized filer submits
+it. The owner also approves any optional code-page publication. See
+[LAWYER-QUESTIONS.md](LAWYER-QUESTIONS.md). No customer certificate, paid
+transaction, Product Registry upload, certification, filing, account creation,
+contract signature, or publication was performed. PH12.9 remains unchanged in
+`NORTHSTAR.yaml`; this card updates the venture readiness guide, not the phase
+checkpoint.
