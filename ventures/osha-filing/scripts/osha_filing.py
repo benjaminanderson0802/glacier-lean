@@ -6,6 +6,7 @@ signs, enters, and submits the prepared data in the OSHA ITA.
 from __future__ import annotations
 
 import argparse
+import csv
 import html
 import json
 import sys
@@ -102,6 +103,74 @@ def validate_300a(fields: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def load_customer_csv(path: str | Path) -> dict[str, Any]:
+    """Aggregate a customer-supplied injury-log CSV into Form 300A fields.
+
+    Each non-zero-injury row represents one distinct recordable case. The
+    zero-injury template row has a blank case_id and case_type=zero_injury.
+    Establishment-level values must agree on every row so conflicting source
+    records cannot be silently combined.
+    """
+    with Path(path).open("r", encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    if not rows:
+        raise ValueError("CSV must contain a zero-injury row or at least one injury-log case")
+    metadata_fields = (
+        "year", "establishment_name", "establishment_id", "industry_code",
+        "establishment_address", "establishment_city", "establishment_state",
+        "establishment_zip", "average_employees", "total_hours_worked",
+        "executive_name", "executive_title",
+    )
+    fields: dict[str, Any] = {}
+    for name in metadata_fields:
+        values = {str(row.get(name, "")).strip() for row in rows if str(row.get(name, "")).strip()}
+        if len(values) > 1:
+            raise ValueError(f"CSV rows disagree on establishment field: {name}")
+        fields[name] = next(iter(values), "")
+
+    category_fields = {
+        "death": "total_deaths",
+        "days_away": "cases_with_days_away",
+        "job_transfer_or_restriction": "cases_with_job_transfer_or_restriction",
+        "other_recordable": "other_recordable_cases",
+    }
+    totals = {name: 0 for name in COUNT_FIELDS}
+    seen_cases: set[str] = set()
+    zero_rows = 0
+    for line_number, row in enumerate(rows, start=2):
+        case_id = str(row.get("case_id", "")).strip()
+        case_type = str(row.get("case_type", "")).strip().casefold()
+        if case_type == "zero_injury":
+            if case_id:
+                raise ValueError(f"zero-injury row {line_number} must leave case_id blank")
+            zero_rows += 1
+            continue
+        if not case_id:
+            raise ValueError(f"case_id is required on CSV row {line_number}")
+        if case_id in seen_cases:
+            raise ValueError(f"duplicate case_id {case_id!r} on CSV row {line_number}")
+        seen_cases.add(case_id)
+        target = category_fields.get(case_type)
+        if target is None:
+            raise ValueError(f"unsupported case_type {case_type!r} on CSV row {line_number}")
+        totals[target] += 1
+        away = _int_field({"n": row.get("days_away")}, "n")
+        restricted = _int_field({"n": row.get("job_transfer_or_restriction_days")}, "n")
+        if away is None or restricted is None:
+            raise ValueError(f"nonnegative whole-number day totals are required on CSV row {line_number}")
+        totals["days_away"] += away
+        totals["job_transfer_or_restriction_days"] += restricted
+    if zero_rows and (len(rows) != 1 or seen_cases):
+        raise ValueError("a zero-injury row cannot be combined with injury-log cases")
+    totals["total_cases"] = sum(totals[name] for name in (
+        "total_deaths", "cases_with_days_away",
+        "cases_with_job_transfer_or_restriction", "other_recordable_cases",
+    ))
+    fields.update(totals)
+    fields["source_file"] = Path(path).name
+    return fields
+
+
 def build_300a_packet(fields: dict[str, Any]) -> dict[str, Any]:
     """Build a printable review draft with an intentionally blank certification."""
     validation = validate_300a(fields)
@@ -126,7 +195,8 @@ def build_300a_packet(fields: dict[str, Any]) -> dict[str, Any]:
         "<h1>OSHA Form 300A preparation draft</h1><p>Customer review copy. Compare every value with the establishment's OSHA 300 Log.</p>"
         f"<table>{rows}</table><h2>Executive certification</h2><p>{html.escape(str(fields.get('executive_name', 'Customer confirmation needed')))}, {html.escape(str(fields.get('executive_title', '')))}</p>"
         "<p>Signature: ____________________________________ &nbsp; Date: ______________</p>"
-        f"<div class='notice'><strong>Customer action:</strong> executive signs and dates this form, posts it at the establishment February 1–April 30, and submits the required data in OSHA ITA during the Jan 2–Mar 2 window. Glacier does not certify or submit. Check current OSHA requirements at <a href='{ITA}'>OSHA ITA</a>.</div>"
+        f"<div class='notice'><strong>Customer action:</strong> executive signs and dates this form, posts it at the establishment February 1–April 30, and submits the required data in OSHA ITA by March 2 (submission opens January 2). Glacier does not certify or submit. Check current OSHA requirements at <a href='{ITA}'>OSHA ITA</a>.</div>"
+        f"<p>Review status: {html.escape('Customer must review and certify' if validation['verdict'] == 'pass' else 'Customer confirmation required')}.</p>"
         "</html>"
     )
     customer_result = "match" if validation["verdict"] == "pass" else "uncertain — please check"
@@ -162,13 +232,13 @@ def refresh_public_data() -> dict[str, Any]:
     return feeds.sync(SOURCE_ID)
 
 
-def eligible_prospects(*, as_of: date | None = None, high_hazard_codes: set[str] | None = None) -> dict[str, Any]:
+def eligible_prospects(*, as_of: date | None = None, high_hazard_codes: set[str] | None = None, records: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Return repeat-filer leads; uncertain industry cases remain excluded."""
     as_of = as_of or date.today()
     today_window = (as_of.month, as_of.day)
     if today_window > (3, 2):
         return {"result": "no match found in OSHA public submission data as of " + as_of.isoformat(), "prospects": [], "excluded": [], "sales": "waitlist_for_next_january"}
-    rows = feeds.query(SOURCE_ID)
+    rows = records if records is not None else feeds.query(SOURCE_ID)
     prospects: list[dict[str, Any]] = []
     excluded: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -202,8 +272,8 @@ def render_outreach_proof(prospect: dict[str, Any], *, output_dir: str | Path) -
 
 
 def schedule_deadlines(item_id: str, year: int, label: str) -> None:
-    add_deadline(item_id, f"{year}-01-02", "jan2-mar2", label)
-    add_deadline(item_id + "-posting", f"{year}-02-01", f"{year}-02-01|{year}-04-30", label + " workplace posting period")
+    add_deadline(item_id, f"{year}-01-02", "jan2-mar2", "Customer action: " + label + " OSHA ITA submission")
+    add_deadline(item_id + "-posting", f"{year}-02-01", f"{year}-02-01|{year}-04-30", "Customer action: " + label + " workplace posting period")
 
 
 def jobber_preview(client: JobberClient | None = None) -> dict[str, Any]:
@@ -221,9 +291,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("sync")
     leads = sub.add_parser("prospects")
     leads.add_argument("--as-of", type=date.fromisoformat, default=date.today())
+    leads.add_argument("--fixture", type=Path, help="screen a local synthetic CSV fixture instead of the public feed")
     leads.add_argument("--output", type=Path, help="local path for a single address-complete candidate; never writes the full public dataset")
     prepare = sub.add_parser("prepare-300a")
-    prepare.add_argument("--input", type=Path, required=True)
+    prepare.add_argument("--input", type=Path, required=True, help="customer-confirmed JSON or injury-log CSV")
     prepare.add_argument("--output", type=Path, required=True)
     sub.add_parser("jobber-preview")
     preview = sub.add_parser("postcard-preview")
@@ -236,7 +307,14 @@ def main(argv: list[str] | None = None) -> int:
         if args.action == "sync":
             output: Any = refresh_public_data()
         elif args.action == "prospects":
-            result = eligible_prospects(as_of=args.as_of)
+            if args.fixture:
+                with args.fixture.open(encoding="utf-8-sig", newline="") as source:
+                    fixture_records = list(csv.DictReader(source))
+                result = eligible_prospects(as_of=args.as_of, records=fixture_records)
+                source_mode = "synthetic_fixture"
+            else:
+                result = eligible_prospects(as_of=args.as_of)
+                source_mode = "public_feed"
             selected = next((row for row in result["prospects"] if all(_value(row, *names) for names in (("street_address", "address", "address_line1"), ("city",), ("state",), ("zip_code", "zip", "postal_code")))), None)
             target = args.output or Path(__import__("os").environ.get("GLACIER_HOME", str(Path.home() / ".glacier"))) / "ventures" / "osha-filing" / "selected-prospect.json"
             selected_path = None
@@ -262,9 +340,12 @@ def main(argv: list[str] | None = None) -> int:
             status_path = target.parent / "prospect-status.json"
             public_result = result["result"] if selected or not result["prospects"] else "uncertain — please check"
             status_path.write_text(json.dumps({"result": public_result, "as_of": args.as_of.isoformat(), "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "sales": result.get("sales", "open")}, indent=2, ensure_ascii=False), encoding="utf-8")
-            output = {"result": public_result, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "detail": "Only a single minimum-field candidate is saved for postcard proof review; no complete mailing list is exported."}
+            output = {"result": public_result, "source_mode": source_mode, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "detail": "Only a single minimum-field candidate is saved for postcard proof review; no complete mailing list is exported."}
         elif args.action == "prepare-300a":
-            fields = json.loads(args.input.read_text(encoding="utf-8"))
+            if args.input.suffix.casefold() == ".csv":
+                fields = load_customer_csv(args.input)
+            else:
+                fields = json.loads(args.input.read_text(encoding="utf-8"))
             if not isinstance(fields, dict):
                 raise ValueError("input must be one JSON object with customer-confirmed fields")
             packet = build_300a_packet(fields)
@@ -284,7 +365,15 @@ def main(argv: list[str] | None = None) -> int:
             output = render_outreach_proof(prospect, output_dir=args.output)
         elif args.action == "deadlines":
             due = due_deadlines(args.as_of)
-            output = {"due": due, "customer_submits": True, "certification_by_glacier": False}
+            output = {
+                "due": due,
+                "customer_submits": True,
+                "certification_by_glacier": False,
+                "customer_actions": [
+                    {"action": "post the signed Form 300A summary", "window": f"{args.as_of.year}-02-01 through {args.as_of.year}-04-30", "owner_required": True},
+                    {"action": "submit required data through the customer's OSHA ITA account", "due": f"{args.as_of.year}-03-02", "owner_required": True},
+                ],
+            }
             home = Path(__import__("os").environ.get("GLACIER_HOME", str(Path.home() / ".glacier")))
             status_path = home / "ventures" / "osha-filing" / "deadline-status.json"
             status_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,55 +1,61 @@
 # OSHA filing preparation proof
 
-This file records commands and outputs for the OSHA filing venture. The deliverable is not live: no customer account, real person, mail service, OSHA portal, signature, or payment was contacted or used.
+This card makes the OSHA venture more launch-ready, but it is not live with customers. No customer records or accounts, payment, OSHA portal, signature, filing, mail, listing publication, or public outreach were used. The real-backend walkthrough used only the synthetic fixtures in this folder.
 
 ## Drift check
 
-- Checkpoint: PH12.16 (V-OSHA2), owner-approved PH12 wave 6.
-- Dependencies: PH5/PH9 are not at exit; the task is explicitly authorized to start in this wave. No phase status is changed here.
-- Defining properties and metrics: P-CONTROL and P-VERIFY; M-VERIFIED and M-INTERVENE.
-- Existing tools: all required shared blocks exist and are imported. No shared block changes or new dependencies.
-- Acceptance test: `ventures/osha-filing/tests/test_osha_filing.py` checks 300A arithmetic, hours plausibility, uncertain missing data, Jan 2–Mar 2 and no duplicate deadline firing, conservative public feed prospect selection, local-only filer guard, and approval/customer-submission flow wiring.
+- Checkpoint: PH12.16, OSHA filing (V-OSHA3; owner-authorized PH12 wave 6).
+- Dependencies: PH5 and PH9 have not reached their exits. PH12 is explicitly parallel-safe for this wave, so work may proceed; this card does not mark the checkpoint or phase complete.
+- Defining properties and metrics: P-CONTROL / M-VERIFIED for the customer-held certification and submission gates; P-VERIFY / M-VERIFIED for the totals and source screening; P-USABLE / M-INTERVENE for the reusable CSV template and two owner launch steps.
+- Existing tools: the shared OSHA feed adapter, rules checker, deadline tracker, local-only filer guard, and Glacier approval nodes already exist. This card composes them and adds no dependency.
+- Acceptance test, written first: `ventures/osha-filing/tests/test_osha_filing.py` imports a synthetic injury-log CSV into a worksheet, screens a synthetic ITA CSV through the CLI while retaining uncertain records, verifies the Jan 2–Mar 2 submission dates and Feb 1–Apr 30 posting dates, and checks the approval graph leaves certification and filing to the customer.
 
 ## Verification
 
-Focused acceptance tests:
+Focused acceptance suite:
 
 ```text
-$ /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/osha-filing/tests
-........                                                                 [100%]
-8 passed
+$ ~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing -q
+.............                                                            [100%]
+13 passed
 ```
 
-Manifest and flow validation:
+Manifest/flow validation:
 
 ```text
-$ /home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only osha-filing --dry-run
+$ ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only osha-filing --dry-run
 4 flows validated: january-outreach, prepare-300a, osha-daily-deadlines, jobber-channel
 ```
 
-Synthetic zero-injury Form 300A packet:
+The command-line fixture screen reported `source_mode=synthetic_fixture`, 2 candidates, and 2 uncertain rows. The worksheet CLI test loaded `fixtures/injury-log.example.csv`, calculated two cases and their day totals, and wrote a printable review worksheet. The zero-injury template fixture also parsed with zero cases. These are fixture results, not OSHA source data.
+
+Real local Glacier backend walkthrough:
+
+- Started the FastAPI/DBOS backend with a disposable `GLACIER_HOME` using the project venv.
+- Installed all four OSHA flows through `ventures/install_all.py --only osha-filing`.
+- Ran `prepare-300a` from Glacier with the synthetic injury-log CSV. After the fixture-input and first-five review approvals, the run reached the `customer_review` approval with the worksheet present, containing the fixture establishment and the customer-only certification/submission language. Run ID: `c64f27bbafb2`.
+- This verified the preparation and handoff path. The customer-review approval was left waiting; no signing, posting, or ITA submission occurred.
+- A first run exposed two stale approval-edge labels and a step cap below the flow's node count. The flow fixture test caught those conditions; labels now follow the runner's `yes` branch and the cap covers the full path.
+- `npm run live` started the real backend and health check, then exited because this worktree's installed web dependencies do not contain `glacier/web/node_modules/vite/bin/vite.js`. The backend was then exercised directly. No UI browser run was possible in this worktree.
+
+Current OSHA public feed check:
 
 ```text
-$ /home/glacier/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prepare-300a --input ventures/osha-filing/fixtures/300a.zero-injury.example.json --output /tmp/osha-300a-review.html
-{"result":"match","check_count":8,"signature":"customer_signature_required","submission":"customer_submits_in_osha_ita","printable_draft_created":true}
+$ GLACIER_HOME=/tmp/gf-v-osha3-live-ita ~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py sync
+{"alerts": ["Feed sync alert (osha_ita): HTTPError: HTTP Error 403: Forbidden"], "changed": false, "rows": 0}
 ```
 
-Live public source:
+The download was not reachable from this client, so this card does not claim a current live-data screen. The previous PH12.16 proof recorded 400,288 rows in an earlier run; that historical result does not override today's 403. No alternate host or access workaround was used. The included ITA CSV fixture supports local screening until the official public download is reachable.
 
-```text
-$ /home/glacier/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py sync
-{"alerts": [], "changed": false, "rows": 400288}
-```
+Other venture suites were run one project at a time with the repository and project directories on `PYTHONPATH`: 12 venture projects passed, with one optional recall-actor live canary skipped. Recall checker has 10 passing tests and one existing wording assertion failure already recorded in `vault/claims/2026-10-10-ph12-12-recall-output-vocabulary.md`; no other venture files were changed. A single root-level `pytest ventures -q` also has import collisions for recall-actor and utility-audits, so it is not used as the per-venture result above.
 
-The live feed parser loaded 400,288 rows from OSHA's official ITA download page without a format alert. A real-data prospect run using `--as-of 2027-01-03` found 249,763 candidate records and kept 150,525 records uncertain because the available employee/industry fields did not establish the specified prospect criteria. The preview harness selected one address-complete record, rendered the postcard PDF and distinct landing page, and returned `mail_status=render_only`, `postcard_status=render_only`, `address_verification=uncertain` (no Lob test key configured). No address was mailed or displayed here.
+## Limits and owner actions
 
-The four flow acceptance commands passed against a disposable local `GLACIER_HOME` with synthetic status files.
-
-The first real-Glacier attempt failed to start Vite because this worktree lacked installed web dependencies. After installing the pinned lockfile dependencies with `npm ci`, `heavy npm run live` started both the real backend and UI. On a fresh disposable home, the installer validated 36 flows, saved all 36 on the first run, and reported all 36 unchanged on the second run. The OSHA main flow waited at `Your step: save customer-confirmed Form 300A input .../ventures/osha-filing/incoming/300a.json`; its prepare command remained pending and no node failed. Screenshot: `evidence/ventures/final-osha.png`; run record: `evidence/ventures/i5-final3-live-walkthrough.json` (OSHA run `a90dcaff0937`, repeated as `61affb3483ea`). No customer records, OSHA account, signature, mail, filing, or payment were used. PH12.22 remains in progress.
-
-## Limitations
-
-- The high-hazard NAICS prefixes come from OSHA's current designated industry page and should be rechecked if that page changes; missing or unknown industry data is excluded as uncertain.
-- Lob address verification and delivery are unavailable without the owner's test key and explicit approval. The venture currently creates render-only proofs.
-- The Jobber connector requires an owner-created test account and keychain secrets, and its current read-only schema does not include employee counts; shops stay uncertain until that channel has a verified staff-count source.
-- OSHA ITA credentials and customer submissions are deliberately out of scope; no real portal run is attempted.
+- OSHA public feed synchronization is blocked by HTTP 403 in this run; prospect screening has fixture evidence only.
+- The ITA prospect fixture is synthetic and cannot be treated as a current lead list. OSHA's [ITA page](https://www.osha.gov/itadata) remains the source for the official download.
+- OSHA's [calendar](https://www.osha.gov/calendar) confirms the Feb 1–Apr 30 posting period and Mar 2 submission deadline; OSHA's [recordkeeping FAQ](https://www.osha.gov/injuryreporting/faqs) describes the Jan 2 submission opening. OSHA rules and coverage can change; the customer checks current requirements.
+- The HTML output is a review worksheet, not the official Form 300A. CSV input requires one row per distinct recordable case, consistent establishment fields, and a single explicit zero-injury row when appropriate.
+- The owner still creates the Jobber app/test account, saves secrets, reviews the first postcard and listing, and manually publishes a marketplace listing if desired. The owner also reviews the first five prepared packets.
+- Each establishment's executive checks the worksheet against source records, certifies and signs it, posts it February 1–April 30, and submits required data in its own OSHA ITA account by March 2. Glacier never performs these acts.
+- Lob remains render-only; no live address verification or mailing was attempted. No customer checkout, OSHA credentials, or real prospect data were used.
+- PH12.16 remains `todo` in NORTHSTAR; this card does not update the checkpoint status or evidence.

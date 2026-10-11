@@ -7,7 +7,7 @@
       "id": "prepare",
       "type": "command",
       "config": {
-        "cmd": "python ventures/osha-filing/scripts/osha_filing.py prepare-300a --input \"$GLACIER_HOME/ventures/osha-filing/incoming/300a.json\" --output \"$GLACIER_HOME/ventures/osha-filing/packets/300a-review.html\"",
+        "cmd": "python ventures/osha-filing/scripts/osha_filing.py prepare-300a --input \"$GLACIER_HOME/ventures/osha-filing/incoming/injury-log.csv\" --output \"$GLACIER_HOME/ventures/osha-filing/packets/300a-review.html\"",
         "timeout": "120",
         "retries": "0",
         "cwd": "{repo}"
@@ -43,7 +43,7 @@
       "id": "owner_input_ready",
       "type": "approval",
       "config": {
-        "prompt": "Your step: save customer-confirmed Form 300A input at $GLACIER_HOME/ventures/osha-filing/incoming/300a.json. Include establishment name/ID, year, industry code, employee count, hours worked, all case/day totals, and executive name/title. The sample ventures/osha-filing/fixtures/300a.zero-injury.example.json is synthetic and must only be used for a dry-run. Return and approve once the file is ready; the executive signs, posts, and submits through OSHA ITA."
+        "prompt": "Your step: save the establishment's customer-confirmed OSHA 300 injury-log rows as $GLACIER_HOME/ventures/osha-filing/incoming/injury-log.csv using ventures/osha-filing/templates/customer-injury-log-template.csv. Use one row per distinct recordable case; for zero injuries use one zero_injury row. Keep establishment details, average employees, hours, and executive details consistent on every row. The sample CSV under fixtures is synthetic and for dry-runs only. Return and approve once the file is ready; the executive signs, posts February 1–April 30, and submits through the customer's OSHA ITA account by March 2."
       },
       "position": {
         "x": -300,
@@ -62,12 +62,13 @@
       "id": "e2",
       "source": "first_five_review",
       "target": "customer_review",
-      "label": "approved"
+      "label": "yes"
     },
     {
       "id": "i5-owner_input_ready-prepare",
       "source": "owner_input_ready",
-      "target": "prepare"
+      "target": "prepare",
+      "label": "yes"
     }
   ],
   "acceptance": [
@@ -77,5 +78,5 @@
       "required": true
     }
   ],
-  "max_steps": 3
+  "max_steps": 4
 }
