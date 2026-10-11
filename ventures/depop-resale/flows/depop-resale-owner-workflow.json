@@ -1,0 +1,18 @@
+{
+  "id": "depop-resale-owner-workflow",
+  "name": "Your step: buy, photograph, review, list, and fulfill used inventory",
+  "description": "Local preparation only; the owner controls all Depop and shipping actions.",
+  "goal": "Prepare sourcing ceilings and accurate drafts for used clothing, then let the owner handle purchase, original photos, manual listing approval, and sold-order fulfillment.",
+  "nodes": [
+    {
+      "id": "owner-review-and-fulfillment",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: follow ventures/depop-resale/OWNER-STEPS.md. Use the buy ceilings to select, inspect, and personally purchase used stock; after receiving each item, take your own photos; run and review the local listing CSV; only use Depop directly or a crosslisting provider Depop has confirmed as API-authorized; manually approve listing facts and publish yourself; when sold, follow the local shipping checklist, buy the label yourself, pack and dispatch the item, and confirm tracking. Do not use stock or supplier photos, dropship, bots, scraping, or browser automation."
+      },
+      "position": {"x": 0, "y": 0}
+    }
+  ],
+  "edges": [],
+  "max_steps": 1
+}
