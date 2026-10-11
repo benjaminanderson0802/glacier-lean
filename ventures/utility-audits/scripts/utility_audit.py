@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import csv
+import hashlib
 import ipaddress
 import argparse
 import json
@@ -419,6 +420,46 @@ def estimate_predominant_use_csv(path: Path, *, as_of: str | None = None) -> dic
         } if threshold_met else None,
         "next_step": "Customer and qualified study preparer review the underlying usage allocation; customer completes, signs, and submits ST-200 to Indiana DOR.",
     }
+
+
+def prepare_st200(bills_csv: Path, output_dir: Path | None = None) -> dict[str, Any]:
+    """Prepare unsigned ST-200 data from a local bill/study CSV.
+
+    A missing source file is reported as uncertain rather than replaced with
+    fixture or fabricated customer data. When an output directory is supplied,
+    the complete result is written there for owner review.
+    """
+    bills_csv = Path(bills_csv)
+    today = date.today().isoformat()
+    try:
+        payload = bills_csv.read_bytes()
+    except FileNotFoundError:
+        result = _predominant_use_uncertain(today, "The supplied utility bill and study CSV was not found; no application data was prepared.")
+        result["source_input"] = {"path": str(bills_csv), "sha256": None}
+    else:
+        result = estimate_predominant_use_csv(bills_csv)
+        result["source_input"] = {
+            "path": str(bills_csv),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        }
+
+    application = result.get("application_data")
+    result["signed"] = False
+    result["submitted"] = False
+    if application is not None:
+        result["application_data"] = {**application, "source_input": result["source_input"]}
+
+    if output_dir is not None:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "st200-application-data.json"
+        result["output_path"] = str(output_path)
+        output_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        try:
+            os.chmod(output_path, 0o600)
+        except OSError:
+            pass
+    return result
 
 
 def _predominant_use_uncertain(today: str, detail: str) -> dict[str, Any]:

@@ -28,6 +28,8 @@ The synthetic fixture produces a 64% exempt-use screen and unsigned ST-200 appli
 
 The older `utility-audit-calculator` flow estimates the restaurant election. `utility-predominant-use` runs the CSV study screen and prepares local ST-200 application data. Both flows stop for human review. Neither signs, pays, contacts a utility, creates accounts, or submits a filing.
 
+Local integrations can call `prepare_st200(csv_path, output_dir)` from `scripts/utility_audit.py`. It returns the study screen and unsigned application data, records the source CSV path and SHA-256 digest, and writes `st200-application-data.json` with owner-only file permissions. If the CSV is missing, it returns an uncertain result with no application data; it never substitutes the synthetic fixture.
+
 ## Owner steps
 
 1. Confirm Indiana as the launch state and provide case-specific records locally. Read the official [DOR utility exemption page](https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/), [Bulletin #11](https://www.in.gov/dor/files/reference/sib11.pdf), [Bulletin #29](https://www.in.gov/dor/files/reference/sib29.pdf) when using the restaurant path, and [Bulletin #55](https://www.in.gov/dor/files/sib55.pdf) for a utility study. Select the applicable form from the [DOR forms index](https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html).
