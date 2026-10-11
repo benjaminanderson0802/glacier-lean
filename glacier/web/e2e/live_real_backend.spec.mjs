@@ -1,7 +1,7 @@
 // Real engine + real browser screen acceptance. Run after `npm run build` with
 // `node e2e/live_real_backend.spec.mjs`; skips when the project backend venv is absent.
 import { spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, writeFileSync, chmodSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, chmodSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -44,6 +44,17 @@ const uiPort = await freePort()
 const api = `http://127.0.0.1:${backendPort}`
 const ui = `http://127.0.0.1:${uiPort}`
 const fakeCli = path.join(home, process.platform === 'win32' ? 'fake_chat.py' : 'fake_chat')
+const codexSessions = path.join(home, 'codex-sessions')
+mkdirSync(codexSessions, { recursive: true })
+const codexAt = new Date().toISOString()
+writeFileSync(path.join(codexSessions, 'worker-preview.jsonl'), [
+  { type: 'session_meta', payload: { id: 'worker-preview', cwd: '/work/project', timestamp: codexAt } },
+  { type: 'event_msg', timestamp: codexAt, payload: { type: 'user_message', message: 'Fix the room message preview.' } },
+  { type: 'response_item', timestamp: codexAt, payload: { type: 'reasoning', id: 'rs_01', summary: [{ type: 'summary_text', text: 'I should check the message parser.' }] } },
+  { type: 'response_item', timestamp: codexAt, payload: { type: 'function_call', id: 'fc_01', name: 'exec_command', arguments: JSON.stringify({ cmd: 'rg last_text' }) } },
+  { type: 'response_item', timestamp: codexAt, payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'The room now shows the latest conversation text.' }] } },
+  { type: 'response_item', timestamp: codexAt, payload: { type: 'reasoning', id: 'rs_02', summary: [{ type: 'summary_text', text: 'The preview should ignore this event.' }] } },
+].map(record => JSON.stringify(record)).join('\n') + '\n')
 writeFileSync(fakeCli, `#!/usr/bin/env python3
 import json, sys
 args = sys.argv[1:]
@@ -57,7 +68,7 @@ const live = spawn(process.execPath, ['scripts/live.mjs'], {
   cwd: web,
   env: { ...process.env, GLACIER_HOME: home, GLACIER_API_PORT: String(backendPort),
     GLACIER_UI_PORT: String(uiPort), GLACIER_CHAT_BIN: fakeCli, GLACIER_ASK_ROUTE: 'codex',
-    GLACIER_CODEX_SESSIONS: path.join(home, 'no-codex-sessions'),
+    GLACIER_CODEX_SESSIONS: codexSessions,
     GLACIER_OPENCODE_DATA: path.join(home, 'no-opencode-sessions'),
     GLACIER_CLAUDE_CODE_DATA: path.join(home, 'no-claude-sessions'),
     GLACIER_GEMINI_DATA: path.join(home, 'no-gemini-sessions') },
@@ -98,6 +109,19 @@ try {
   await page.waitForSelector('[data-testid="ws-status"][data-connected="true"]', { timeout: 15000 })
   check(true, 'real backend events socket connected through the Vite proxy')
 
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto(`${ui}/#/home`, { waitUntil: 'networkidle' })
+  const sessionThread = tid('messenger-thread-codex:worker-preview')
+  await sessionThread.waitFor({ state: 'visible', timeout: 15000 })
+  check(await sessionThread.locator('.messenger-preview').textContent() === 'The room now shows the latest conversation text.',
+    'right-wall preview uses Codex assistant text and skips the trailing reasoning event')
+  const evidenceDir = path.resolve(web, '../../docs/ui/evidence/U-FIX2')
+  mkdirSync(evidenceDir, { recursive: true })
+  await page.screenshot({ path: path.join(evidenceDir, 'live-running-1280x800.png'), fullPage: false, animations: 'disabled' })
+  check(existsSync(path.join(evidenceDir, 'live-running-1280x800.png')), '1280x800 live room screenshot saved as U-FIX2 evidence')
+
+  await page.setViewportSize({ width: 1500, height: 900 })
+  await page.goto(`${ui}/#/automations/build`, { waitUntil: 'networkidle' })
   await tid('new-env').click()
   await tid('new-env-name').fill('Live real backend')
   await tid('new-env-create').click()

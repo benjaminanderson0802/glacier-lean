@@ -110,9 +110,7 @@ def _session_rows(query: str) -> list[dict]:
         if row.get("active"):
             found = session_mirror.read_session(str(row.get("id", "")))
             events = found[1] if found else []
-            latest = next((event for event in reversed(events) if event.get("text")), None)
-            if latest:
-                last_text = _safe(latest["text"])
+            last_text = _safe(_session_preview(events, active=True) or title)
         searchable = f"{title} {source} {last_text}".casefold()
         if terms and not all(term in searchable for term in terms):
             # Detail is read only for a matching title; avoid loading every transcript on search.
@@ -127,6 +125,14 @@ def _session_rows(query: str) -> list[dict]:
                        "last_text": last_text, "last_at": _timestamp(row.get("updated")),
                        "unread": False, "can_send": bool(can_send), "can_send_reason": reason or ""})
     return result
+
+
+def _session_preview(events: list[dict], *, active: bool) -> str:
+    """Pick the newest conversational message, ignoring reasoning and tool events."""
+    latest = next((event.get("text", "").strip() for event in reversed(events)
+                   if event.get("type") in {"user_message", "assistant_message"}
+                   and isinstance(event.get("text"), str) and event["text"].strip()), "")
+    return latest or ("working..." if active else "")
 
 
 def _worker_rows(query: str) -> list[dict]:
