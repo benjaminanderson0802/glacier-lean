@@ -70,3 +70,10 @@
   .automations-window .g-table th:nth-child(5) { width: 18%; }
   .claims-screen-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* Venture content stays inside the existing centre glass panel. */
+.venture-card-copy p { margin: calc(1 * var(--px)) 0 0; overflow-wrap: anywhere; }
+.venture-card-copy a { overflow-wrap: anywhere; }
+.venture-blockers { margin: 0; padding-inline-start: calc(6 * var(--px)); color: var(--g-ink2); font-size: var(--g-size-small); }
+.venture-steps summary { cursor: pointer; color: var(--g-ink2); padding-block: calc(2 * var(--px)); }
+.venture-steps details .venture-step + .venture-step { margin-top: calc(2 * var(--px)); }

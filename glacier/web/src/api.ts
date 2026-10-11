@@ -160,6 +160,8 @@ export interface VentureStep {
 }
 export interface Venture {
   slug: string; name: string; status: 'setting_up' | 'running' | 'paused' | 'needs_you'
+  readiness: 'live' | 'ready' | 'blocked'; blockers: string[]; description: string
+  last_run: RunSummary | null; run_available: boolean
   flows: { env_id: string; dry_run_env_id?: string | null }[]; schedule?: unknown
   next_run: string | null; today: { runs: number; completed: number; failed: number; [count: string]: number }; your_steps: VentureStep[]
 }
