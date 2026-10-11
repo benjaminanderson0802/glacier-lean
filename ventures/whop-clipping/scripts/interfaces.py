@@ -33,6 +33,8 @@ class Clip:
     channel_handle: str
     caption_words: list = field(default_factory=list)
     passthrough: bool = False
+    source_route: str = ""
+    render_seconds: float = 0.0
 
 
 @dataclass
@@ -54,4 +56,4 @@ class Submitter(Protocol):
 
 
 class Scout(Protocol):
-    def list_campaigns(self) -> list: ...
+    def list_campaigns(self) -> list[Campaign]: ...

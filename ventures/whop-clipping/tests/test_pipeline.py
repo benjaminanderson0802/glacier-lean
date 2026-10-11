@@ -117,6 +117,75 @@ def test_candidate_scoring_uses_hook_complete_sentence_and_campaign_keywords():
     assert late_hook[0]["score"] < candidates[0]["score"]
 
 
+def test_campaign_source_routes_follow_public_rules_override_order(tmp_path):
+    from scripts.producer import _campaign_sources
+
+    row = campaign(source_links=[{"url": "https://youtube.com/watch?v=public"}])
+    assert _campaign_sources(row, tmp_path) == [
+        {"url": "https://youtube.com/watch?v=public", "route": "public_detail_page"}
+    ]
+
+    row.source_links = []
+    row.rules_text = "Use this approved video: https://youtu.be/rules-video"
+    assert _campaign_sources(row, tmp_path) == [
+        {"url": "https://youtu.be/rules-video", "route": "campaign_rules_or_description"}
+    ]
+
+    row.rules_text = "Only use pre-approved YouTube videos."
+    source_dir = tmp_path / "campaign_sources"
+    source_dir.mkdir()
+    (source_dir / f"{row.id}.txt").write_text(
+        "https://youtube.com/watch?v=owner-approved\n", encoding="utf-8"
+    )
+    assert _campaign_sources(row, tmp_path) == [
+        {"url": "https://youtube.com/watch?v=owner-approved", "route": "campaign_override"}
+    ]
+
+
+def test_clip_source_and_render_provenance_survive_dataclass_roundtrip():
+    clip = Clip("clip", "campaign", "source", 0, 30, "/tmp/clip.mp4",
+                "Title", "Description", [], "", source_route="campaign_override",
+                render_seconds=12.5)
+
+    restored = Clip(**clip.__dict__)
+
+    assert restored.source_route == "campaign_override"
+    assert restored.render_seconds == 12.5
+
+
+def test_producer_recovers_rendered_unstocked_clips_after_interruption(tmp_path):
+    from scripts.producer import _prepare_clips
+
+    media = tmp_path / "interrupted.mp4"
+    media.write_bytes(b"rendered")
+    original = Clip("clip", "camp-1", "source", 0, 30, str(media),
+                    "Title", "Description", [], "", source_route="campaign_override",
+                    render_seconds=8.4)
+    ledger = Ledger(tmp_path)
+    ledger.record_clip(original)
+
+    recovered = _prepare_clips(campaign(), {}, ledger, tmp_path)
+
+    assert [clip.id for clip in recovered] == ["clip"]
+    assert recovered[0].render_seconds == 8.4
+    assert recovered[0].source_route == "campaign_override"
+
+
+def test_campaign_without_sources_is_reported_instead_of_silent_zero(tmp_path):
+    from scripts.producer import produce_ready
+    from scripts.ledger import Ledger
+
+    result = produce_ready(
+        {"approved_campaign_ids": ["camp-1"], "channels": ["@first"]},
+        home=tmp_path, scout=FakeScout([campaign(source_links=[])]), target_stock=1,
+    )
+
+    assert result["campaigns"] == 1
+    assert result["produced"] == 0
+    assert result["error_count"] == 1
+    assert result["errors"][0]["kind"] == "campaign_sources_unavailable"
+
+
 def test_no_edit_campaign_passes_source_through_untouched(tmp_path):
     source = tmp_path / "provided.mp4"
     source.write_bytes(b"provided clip bytes")

@@ -123,6 +123,14 @@ class Ledger:
             row = db.execute("SELECT payload FROM clips WHERE id=?", (clip_id,)).fetchone()
         return json.loads(row[0]) if row else None
 
+    def campaign_clips(self, campaign_id):
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT payload FROM clips WHERE campaign_id=? ORDER BY start_s,end_s,id",
+                (campaign_id,),
+            ).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
     def save_campaign_checklist(self, campaign_id: str, checklist: dict):
         with self._connect() as db:
             db.execute("UPDATE campaigns SET payload=json_set(payload,'$.checklist',json(?)) WHERE id=?",

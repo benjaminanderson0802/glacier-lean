@@ -3,8 +3,10 @@ from pathlib import Path
 import time
 
 from scripts.public_discover import PublicDiscoverScout, parse_campaign_cards, parse_campaign_detail
+from scripts.interfaces import Campaign
 from scripts.producer import produce_ready
 from scripts.distributor import status_report
+from scripts.ledger import Ledger
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -79,7 +81,7 @@ def test_joined_campaigns_match_uuid_across_hosts_and_bare_ids(tmp_path):
         f"{campaign_id}\nhttps://whop.com/c/campaigns/{campaign_id}\n", encoding="utf-8"
     )
     scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
-    assert [item["id"] for item in scout.list_campaigns()] == [campaign_id]
+    assert [item.id for item in scout.list_campaigns()] == [campaign_id]
     assert fetches.count("https://contentrewards.com/c/campaigns/" + campaign_id) == 1
 
 
@@ -96,10 +98,29 @@ def test_joined_campaigns_match_contentrewards_url_and_bare_uuid(tmp_path):
         f"https://contentrewards.com/c/campaigns/{campaign_id}\n", encoding="utf-8"
     )
     scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
-    assert scout.list_campaigns()[0]["id"] == campaign_id
+    assert scout.list_campaigns()[0].id == campaign_id
     (tmp_path / "joined_campaigns.txt").write_text(campaign_id + "\n", encoding="utf-8")
     scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
-    assert scout.list_campaigns()[0]["id"] == campaign_id
+    assert scout.list_campaigns()[0].id == campaign_id
+
+
+def test_public_scout_returns_campaign_contract_objects(tmp_path):
+    fixture_dir = FIXTURES / "contentrewards"
+    campaign_id = "188c3e39-7850-4896-94df-e7a5be0cfec3"
+
+    def fetch(url):
+        if url.endswith("/discover"):
+            return (fixture_dir / "discover.html").read_text(encoding="utf-8")
+        return (fixture_dir / f"{campaign_id}.html").read_text(encoding="utf-8")
+
+    (tmp_path / "joined_campaigns.txt").write_text(campaign_id + "\n", encoding="utf-8")
+    scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch, clock=lambda: 1000.0)
+    campaigns = scout.list_campaigns()
+
+    assert len(campaigns) == 1
+    assert isinstance(campaigns[0], Campaign)
+    assert campaigns[0].id == campaign_id
+    assert set(campaigns[0].platforms) == {"instagram", "tiktok", "x", "youtube"}
 
 
 def test_scout_only_lists_joined_urls_and_surfaces_suggestions(tmp_path):
@@ -118,7 +139,7 @@ def test_scout_only_lists_joined_urls_and_surfaces_suggestions(tmp_path):
     scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=fetch,
                                 clock=lambda: now[0])
     joined = scout.list_campaigns()
-    assert [item["id"] for item in joined] == ["camp-joined"]
+    assert [item.id for item in joined] == ["camp-joined"]
     assert [item["url"] for item in scout.join_suggestions()] == [
         "https://contentrewards.com/c/campaigns/camp-suggested"
     ]
@@ -151,6 +172,90 @@ def test_producer_accepts_joined_campaign_without_campaign_id_config(tmp_path):
                            target_stock=0)
     assert result["campaigns"] == 1
     assert [item["id"] for item in result["join_suggestions"]] == ["camp-suggested"]
+
+
+def test_producer_normalizes_campaign_dicts_from_legacy_scouts(tmp_path):
+    class DictScout:
+        def list_campaigns(self):
+            return [{
+                "id": "dict-campaign", "name": "Dictionary campaign",
+                "url": "https://contentrewards.com/c/campaigns/dict-campaign",
+                "cpm_usd": 1.5, "budget_left_usd": 50,
+                "platforms": ["youtube"], "rules_text": "Minimum length: 20 seconds.",
+                "source_links": [],
+            }]
+
+    result = produce_ready({"approved_campaign_ids": ["dict-campaign"], "channels": ["@first"]},
+                           home=tmp_path, scout=DictScout(), campaign_clips={"dict-campaign": []},
+                           target_stock=0)
+
+    assert result["campaigns"] == 1
+    assert result["error_count"] == 0
+
+
+def test_discovery_failure_is_logged_and_counted(tmp_path):
+    class BrokenScout:
+        def list_campaigns(self):
+            raise OSError("public discover is unavailable")
+
+    result = produce_ready({}, home=tmp_path, scout=BrokenScout(), target_stock=0)
+
+    assert result["campaigns"] == 0
+    assert result["error_count"] == 1
+    assert result["failure_count"] == 1
+    assert result["errors"][0]["kind"] == "campaign_discovery_failed"
+    assert any(event["kind"] == "producer_error" for event in Ledger(tmp_path).events())
+
+
+def test_producer_cli_returns_nonzero_and_prints_failure_counts(tmp_path, monkeypatch, capsys):
+    import scripts.producer as producer_module
+
+    class BrokenScout:
+        def list_campaigns(self):
+            raise OSError("discover unavailable")
+
+    config_path = tmp_path / "config.json"
+    config_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(producer_module, "load_plugin", lambda *_args, **_kwargs: BrokenScout())
+
+    status = producer_module.main([
+        "--config", str(config_path), "--home", str(tmp_path), "--target-stock", "0",
+    ])
+
+    output = json.loads(capsys.readouterr().out)
+    assert status == 1
+    assert output["error_count"] == 1
+    assert output["failure_count"] == 1
+
+
+def test_join_suggestions_rank_unjoined_youtube_campaigns_with_budget(tmp_path):
+    scout = PublicDiscoverScout({"clip_home": str(tmp_path)}, fetcher=lambda _url: "", clock=lambda: 1000.0)
+    scout._cards = [
+        {"id": "joined", "name": "Joined", "url": "https://contentrewards.com/c/campaigns/joined",
+         "cpm_usd": 12, "budget_left_usd": 100, "platforms": ["youtube"], "rules_text": ""},
+        {"id": "best", "name": "Best", "url": "https://contentrewards.com/c/campaigns/best",
+         "cpm_usd": 8, "budget_left_usd": 300, "platforms": ["youtube_shorts"], "rules_text": ""},
+        {"id": "no-budget", "name": "No budget", "url": "https://contentrewards.com/c/campaigns/no-budget",
+         "cpm_usd": 99, "budget_left_usd": 0, "platforms": ["youtube"], "rules_text": ""},
+        {"id": "other-platform", "name": "Other platform", "url": "https://contentrewards.com/c/campaigns/other",
+         "cpm_usd": 50, "budget_left_usd": 100, "platforms": ["tiktok"], "rules_text": ""},
+        {"id": "rules-prohibited", "name": "Rules prohibited", "url": "https://contentrewards.com/c/campaigns/prohibited",
+         "cpm_usd": 40, "budget_left_usd": 100, "platforms": ["youtube"], "rules_text": "YouTube is not allowed."},
+        {"id": "unknown-budget", "name": "Unknown budget", "url": "https://contentrewards.com/c/campaigns/unknown-budget",
+         "cpm_usd": 30, "budget_left_usd": None, "platforms": ["youtube"], "rules_text": ""},
+        {"id": "second", "name": "Second", "url": "https://contentrewards.com/c/campaigns/second",
+         "cpm_usd": 8, "budget_left_usd": 100, "platforms": ["youtube"], "rules_text": ""},
+    ]
+    scout._by_id = {row["id"]: row for row in scout._cards}
+    (tmp_path / "joined_campaigns.txt").write_text(
+        "https://contentrewards.com/c/campaigns/joined\n", encoding="utf-8"
+    )
+    scout._detail = lambda card: card
+
+    suggestions = scout.join_suggestions(limit=10)
+
+    assert [item["id"] for item in suggestions] == ["best", "second"]
+    assert json.loads((tmp_path / "join_suggestions.json").read_text(encoding="utf-8"))["campaigns"] == suggestions
 
 
 def test_status_report_includes_saved_join_suggestions(tmp_path):

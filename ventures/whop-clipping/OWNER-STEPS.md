@@ -29,6 +29,8 @@ Tokens stay in `CLIP_HOME\tokens\`. Never commit the downloaded client JSON or g
 
 ## 4. Join campaigns you want to use
 
+For source media, Producer first uses links exposed on the logged-out campaign detail page, then YouTube links named in the campaign rules or description. If neither exposes the approved videos, create CLIP_HOME\campaign_sources\{campaign-uuid}.txt and paste one approved public source URL per line. Producer records whether each source came from the public detail page, campaign rules, or this override in its local event ledger. Keep sources within the campaign's stated permissions and restrictions.
+
 Check the Producer's `join_suggestions` in the status report. For a campaign you want to use, open its public URL, sign in and join it yourself in Content Rewards. Then paste that campaign URL on its own line in `CLIP_HOME\joined_campaigns.txt`. Do not enter campaign details in the config: Producer reads available rules, platform limits, CPM, budget, and source links from the public campaign pages. Only URLs in this file are eligible for Producer ranking. Joining and Whop account actions remain manual.
 
 The scout fetches only logged-out public HTML on `contentrewards.com`, caches each URL for an hour, identifies itself as Glacier with the owner's contact email, and never calls `/api/` or accesses Whop pages/endpoints. See [the terms research](docs/WHOP.md).

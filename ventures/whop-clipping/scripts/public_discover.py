@@ -15,6 +15,8 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from .interfaces import Campaign
+
 
 BASE_URL = "https://contentrewards.com"
 DISCOVER_URL = f"{BASE_URL}/c/discover"
@@ -504,19 +506,34 @@ class PublicDiscoverScout:
         cards = self._discover_cards()
         joined = self._joined_campaign_ids()
         selected = [card for card in cards if card["id"].casefold() in joined]
-        return [self._detail(card) for card in selected]
+        return [_campaign_contract(self._detail(card)) for card in selected]
 
     @property
     def joined_campaign_ids(self):
-        return {campaign["id"] for campaign in self.list_campaigns()}
+        return {campaign.id for campaign in self.list_campaigns()}
 
     def join_suggestions(self, limit=10):
         joined = self._joined_campaign_ids()
-        candidates = [card for card in self._discover_cards()
-                      if card["id"].casefold() not in joined
-                      and card["cpm_usd"] > 0
-                      and bool(set(card["platforms"]) & {"youtube", "youtube_shorts", "shorts"})
-                      and (card["budget_left_usd"] is None or card["budget_left_usd"] > 0)]
+        candidates = []
+        for card in self._discover_cards():
+            platforms = {str(value).lower().replace(" ", "_") for value in card["platforms"]}
+            rules = card["rules_text"].lower()
+            allowed_line = re.search(
+                r"(?:allowed|eligible) platforms?\s*[:=]\s*([^\n.]+)",
+                card["rules_text"], re.I,
+            )
+            youtube_allowed = bool(platforms & {"youtube", "youtube_shorts", "shorts"})
+            youtube_prohibited = bool(re.search(
+                r"(?:youtube(?: shorts)?).{0,35}(?:not allowed|prohibited|forbidden|excluded)|"
+                r"(?:no|do not use|don't use)\s+youtube", rules,
+            ))
+            if allowed_line and not re.search(r"youtube|shorts", allowed_line.group(1), re.I):
+                youtube_prohibited = True
+            if (card["id"].casefold() in joined or card["cpm_usd"] <= 0
+                    or card["budget_left_usd"] is None or card["budget_left_usd"] <= 0
+                    or not youtube_allowed or youtube_prohibited):
+                continue
+            candidates.append(card)
         candidates.sort(key=lambda row: (row["cpm_usd"], row["budget_left_usd"] or 0), reverse=True)
         suggestions = [self._detail(card) for card in candidates[:max(0, int(limit))]]
         self.home.mkdir(parents=True, exist_ok=True)
@@ -525,6 +542,13 @@ class PublicDiscoverScout:
         temp.write_text(json.dumps({"updated_at": self.clock(), "campaigns": suggestions}, indent=2), encoding="utf-8")
         temp.replace(path)
         return suggestions
+
+
+def _campaign_contract(row):
+    """Convert public-page data into the stable campaign interface."""
+    fields = Campaign.__dataclass_fields__
+    values = {name: row[name] for name in fields if name in row}
+    return Campaign(**values)
 
 
 __all__ = ["PublicDiscoverScout", "parse_campaign_cards", "parse_campaign_detail"]

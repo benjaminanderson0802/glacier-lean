@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from .cycle import DEFAULT_CHANNELS, FakeScout, _campaign, _campaign_eligible, load_plugin
@@ -129,19 +130,60 @@ def _source_id(campaign_id, url):
     return hashlib.sha256(url.encode("utf-8")).hexdigest()[:20]
 
 
+def _campaign_sources(campaign, home):
+    """Choose source links in order and label their provenance."""
+    if campaign.source_links:
+        return [{**(item if isinstance(item, dict) else {"url": str(item)}),
+                 "route": "public_detail_page"} for item in campaign.source_links]
+
+    youtube_urls = list(dict.fromkeys(re.findall(
+        r"https?://(?:www\.)?(?:youtube\.com/(?:watch\?[^\s<>]+|shorts/[^\s<>]+|"
+        r"channel/[^\s<>]+|@[^ \s<>]+)|youtu\.be/[^\s<>]+)",
+        campaign.rules_text, re.I,
+    )))
+    if youtube_urls:
+        return [{"url": url.rstrip(".,);]"), "route": "campaign_rules_or_description"}
+                for url in youtube_urls]
+
+    override = home / "campaign_sources" / f"{campaign.id}.txt"
+    if override.is_file():
+        urls = []
+        for line in override.read_text(encoding="utf-8").splitlines():
+            value = line.split("#", 1)[0].strip()
+            if value.startswith(("https://", "http://")):
+                urls.append(value)
+        return [{"url": url, "route": "campaign_override"} for url in dict.fromkeys(urls)]
+    return []
+
+
 def _prepare_clips(campaign, config, ledger, home):
     output = []
     source_cfg = config.get("sources", {})
     checklist = parse_campaign_requirements(campaign.rules_text)
-    for source_item in campaign.source_links:
+    recovered = []
+    for row in ledger.campaign_clips(campaign.id):
+        library_item = ledger.library_item(row["id"])
+        if library_item and library_item["status"] in {"ready", "posted"}:
+            continue
+        if Path(row.get("path", "")).is_file():
+            recovered.append(Clip(**row))
+    if recovered:
+        return recovered
+    for source_item in _campaign_sources(campaign, home):
         url = source_item.get("url") if isinstance(source_item, dict) else str(source_item)
+        source_route = source_item.get("route", "public_detail_page") if isinstance(source_item, dict) else "public_detail_page"
         source_id = str(source_item.get("id")) if isinstance(source_item, dict) and source_item.get("id") else _source_id(campaign.id, url)
         source = fetch_source(url, source_id, cache_dir=home / "media" / "sources", ledger=ledger,
                               max_bytes=int(source_cfg.get("max_bytes", 2_000_000_000)),
                               timeout_s=int(source_cfg.get("timeout_s", 1800)))
         source_id = source.provenance["sha256"][:20]
         ledger.record_source(source_id, source.url, source.path, source.provenance["sha256"],
-                             {**source.provenance, "canonical_source_id": source_id})
+                             {**source.provenance, "canonical_source_id": source_id,
+                              "campaign_id": campaign.id, "source_route": source_route})
+        ledger.event("campaign_source_selected", {
+            "campaign_id": campaign.id, "source_id": source_id,
+            "url": source.url, "route": source_route,
+        }, f"campaign-source-selected:{campaign.id}:{source_id}")
         if _no_edit_required(campaign):
             duration = _media_duration(source.path)
             minimum, maximum = checklist["min_length_s"], checklist["max_length_s"]
@@ -166,15 +208,22 @@ def _prepare_clips(campaign, config, ledger, home):
             variant = make_variant(campaign, item, item["channel_handle"])
             digest = hashlib.sha256(f"{campaign.id}:{source_id}:{item['start_s']:.3f}:{item['end_s']:.3f}".encode()).hexdigest()[:24]
             target = home / "media" / "clips" / f"{digest}.mp4"
+            render_started = time.monotonic()
+            rendered = not target.exists()
+            previous = ledger.clip(digest) if not rendered else None
             if not target.exists():
                 make_clip(source.path, target, item, requires_editing=not item.get("passthrough", False),
                           caption_words=False, mode=config.get("video_layout", "blurred_background"))
+            render_seconds = (time.monotonic() - render_started if rendered else
+                              float((previous or {}).get("render_seconds", 0.0)))
             words = [{**word, "start": max(0.0, float(word["start"])-float(item["start_s"])),
                       "end": min(float(item["end_s"])-float(item["start_s"]), float(word["end"])-float(item["start_s"]))}
                      for word in item.get("words", [])]
             clip = Clip(digest, campaign.id, source_id, item["start_s"], item["end_s"], str(target),
                         variant["title"], variant["description"], variant["hashtags"], "",
                         caption_words=words, passthrough=bool(item.get("passthrough")))
+            clip.render_seconds = render_seconds
+            clip.source_route = source_route
             ledger.record_clip(clip)
             output.append(clip)
     return output
@@ -193,12 +242,34 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
                 scout_spec = "scripts.public_discover.PublicDiscoverScout"
             scout = load_plugin(scout_spec, config={**config, "clip_home": str(home)})
         except (ImportError, AttributeError, ValueError) as exc:
-            scout = FakeScout()
             ledger.event("plugin_unavailable", {"plugin": "scout", "error": str(exc)})
+            scout = None
     channels = config.get("channels", DEFAULT_CHANNELS)
-    campaigns = [_campaign(item) for item in scout.list_campaigns()]
-    for campaign in campaigns:
-        ledger.record_campaign(campaign)
+    errors = []
+
+    def report_error(kind, message, *, campaign_id=None):
+        item = {"kind": kind, "message": str(message)}
+        if campaign_id:
+            item["campaign_id"] = campaign_id
+        errors.append(item)
+        ledger.event("producer_error", item)
+
+    raw_campaigns = []
+    if scout is None:
+        report_error("scout_unavailable", "Campaign discovery plugin is unavailable")
+    else:
+        try:
+            raw_campaigns = scout.list_campaigns()
+        except Exception as exc:
+            report_error("campaign_discovery_failed", f"{type(exc).__name__}: {exc}")
+    campaigns = []
+    for index, row in enumerate(raw_campaigns):
+        try:
+            campaign = _campaign(row)
+            campaigns.append(campaign)
+            ledger.record_campaign(campaign)
+        except Exception as exc:
+            report_error("campaign_contract_invalid", f"campaign {index}: {type(exc).__name__}: {exc}")
     eligibility_config = config
     joined_ids = getattr(scout, "joined_campaign_ids", None)
     if joined_ids is not None:
@@ -213,15 +284,42 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
                                  approval_score(c.id),
                                  len(c.platforms)), reverse=True)
     ready_before = len(ledger.library_items("ready"))
-    output = {"campaigns": len(eligible), "produced": 0, "qa_failures": 0, "ready": ready_before}
+    output = {"campaigns": len(eligible), "produced": 0, "qa_failures": 0, "ready": ready_before,
+              "errors": errors, "error_count": 0, "failure_count": 0,
+              "render_time_per_clip_seconds": {}, "source_routes": {}, "qa_rules_enforced": {}}
     if hasattr(scout, "join_suggestions"):
-        output["join_suggestions"] = scout.join_suggestions()
+        try:
+            output["join_suggestions"] = scout.join_suggestions()
+        except Exception as exc:
+            report_error("join_suggestions_failed", f"{type(exc).__name__}: {exc}")
+            output["join_suggestions"] = []
+    else:
+        output["join_suggestions"] = []
     for campaign in eligible:
         checklist = parse_campaign_requirements(campaign.rules_text)
         ledger.save_campaign_checklist(campaign.id, checklist)
-        clips = list(campaign_clips[campaign.id]) if campaign_clips is not None else _prepare_clips(
-            campaign, {**config, "channels": ["__library__"], "captions": False}, ledger, home)
+        output["qa_rules_enforced"][campaign.id] = checklist
+        if campaign_clips is None and not _campaign_sources(campaign, home):
+            report_error("campaign_sources_unavailable",
+                         "No public detail, campaign-rule, or override source links found",
+                         campaign_id=campaign.id)
+            continue
+        try:
+            clips = list(campaign_clips[campaign.id]) if campaign_clips is not None else _prepare_clips(
+                campaign, {**config, "channels": ["__library__"], "captions": False}, ledger, home)
+        except Exception as exc:
+            report_error("campaign_production_failed", f"{type(exc).__name__}: {exc}", campaign_id=campaign.id)
+            continue
+        if not clips and campaign_clips is None:
+            report_error("campaign_no_clip_candidates",
+                         "Source media produced no campaign-compliant clip candidates",
+                         campaign_id=campaign.id)
         for original in clips:
+            if getattr(original, "source_route", None):
+                output["source_routes"].setdefault(campaign.id, original.source_route)
+            output["render_time_per_clip_seconds"][original.id] = round(
+                float(getattr(original, "render_seconds", 0)), 3
+            )
             if original.channel_handle not in {"", "__library__"}:
                 original.channel_handle = ""
             existing_item = ledger.library_item(original.id)
@@ -249,6 +347,13 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         if len(ledger.library_items("ready")) >= target_stock:
             break
     output["ready"] = len(ledger.library_items("ready"))
+    for event in ledger.events():
+        if event["kind"] != "campaign_source_selected":
+            continue
+        details = event["details"]
+        output["source_routes"].setdefault(details["campaign_id"], details["route"])
+    output["error_count"] = len(errors)
+    output["failure_count"] = len(errors) + output["qa_failures"]
     if output["ready"] < target_stock:
         ledger.event("producer_stock_low", {"ready": output["ready"], "target": target_stock})
     return output
@@ -301,9 +406,10 @@ def main(argv=None):
     parser.add_argument("--home", type=Path)
     parser.add_argument("--target-stock", type=int, default=20)
     args = parser.parse_args(argv)
-    print(json.dumps(produce_ready(json.loads(args.config.read_text(encoding="utf-8")), home=args.home,
-                                   target_stock=args.target_stock), indent=2))
-    return 0
+    output = produce_ready(json.loads(args.config.read_text(encoding="utf-8")), home=args.home,
+                           target_stock=args.target_stock)
+    print(json.dumps(output, indent=2))
+    return 1 if output["failure_count"] else 0
 
 
 if __name__ == "__main__":
