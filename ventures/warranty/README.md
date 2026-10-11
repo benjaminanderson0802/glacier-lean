@@ -1,57 +1,41 @@
 # Warranty registration
 
-This venture prepares warranty intake records for HVAC contractors. It reads Jobber GraphQL jobs through the shared read-only connector, maps account-labeled text fields for brand/model/serial/install date, calculates registration deadlines, and builds a local review queue plus homeowner email drafts. Drafts are never sent. A `match` is not a legal conclusion or proof of warranty coverage.
+This venture prepares HVAC warranty intake records for contractor review. It reads completed Jobber jobs through the shared read-only connector, maps account-labeled text fields for brand/model/serial/install date, calculates registration deadlines, and builds a local review queue plus homeowner email drafts. Drafts are never sent. A `match` is not a legal conclusion or proof of warranty coverage.
 
-The local rules use the cited eligible-product windows for Trane, Goodman, Daikin, Lennox, and Carrier. California and Quebec are skipped; Lennox units in Florida or Georgia installed on or after January 1, 2026 are also skipped. These are intake rules only. Product eligibility and warranty coverage remain the contractor/homeowner's call.
+## What is ready
 
-## Portal automation status
+The local rules use source-backed eligible-product windows for Trane, Goodman, Daikin, Lennox, and Carrier. California and Quebec are skipped; Lennox units in Florida or Georgia installed on or after January 1, 2026 are also skipped. Rheem/Ruud's reviewed public sources do not establish a universal registration window, so no deadline is calculated for that family. These are intake rules only. Product eligibility and warranty coverage remain the contractor/homeowner's call.
 
-Official-source registration and serial guidance is stored as data in [`brands/`](brands/). It covers Carrier/Bryant, Trane/American Standard, Lennox, Rheem/Ruud, Goodman/Amana, and Daikin. The queue carries the matching family's source links, deadline guidance, registrant options, terms status, and date-code note. Where a product/jurisdiction rule or permission is not stated clearly, the data says `uncertain - please check`.
+Official registration and serial guidance for Carrier/Bryant, Trane/American Standard, Lennox, Rheem/Ruud, Goodman/Amana, and Daikin is stored in [`brands/`](brands/). Where a rule or serial pattern is not stated clearly, it remains `uncertain - please check`; no serial pattern is enabled. Unknown or unconfirmed unit data remains held for human review.
 
-No brand is enabled for automated portal access or submission. Some official portals explicitly support a homeowner or installing-dealer/representative role; that does not establish permission for an outside service to prepare data or for automation. Daikin's terms prohibit automated systems from monitoring or copying its sites. Trane's site terms require prior written permission for automated monitoring/copying, and applicability to the registration flow still needs owner review. No portal credentials are requested or used. The shared filer remains behind a localhost-only mock helper. Customer authorization and a saved approval would still be required for any future filing.
+The synthetic five-job Jobber-shaped fixture has run through the real Glacier engine. It produced five local queue records, five held `uncertain — please check` assessments, and five unsent homeowner drafts. This proves local workflow behavior, not a live Jobber account. The full evidence and limits are in [`PROOF.md`](PROOF.md).
 
-- [Daikin Terms of Use](https://daikincomfort.com/terms-of-use)
-- [Trane website terms](https://www.trane.com/content/dam/Trane/Commercial/global/terms-and-conditions-of-use.pdf)
-- [Brand-by-brand registration and date-code records](brands/)
+## Jobber setup and owner action
 
-The terms check is not legal advice. The owner should confirm current terms directly with each brand before enabling any portal workflow.
+The only current owner setup is one Jobber setup session. The exact clicks, field names, types, blank defaults, and sample formats are pre-written in [`JOBBER-SETUP.md`](JOBBER-SETUP.md); the concise checklist is [`OWNER-STEPS.md`](OWNER-STEPS.md). The reader requests only GraphQL data and does not change Jobber jobs.
 
-## Run the owner Jobber check
+Jobber's GraphiQL-issued access token is a temporary test credential that expires after 60 minutes. It can support a short read-only connection check, but it does not prove an always-on live connection. Production OAuth, a published Jobber Marketplace app, and billing are not enabled by this venture. No app is to be published in this setup step.
 
-After the owner has saved the four Jobber values in Glacier **Settings → Secrets**, run this one command from the repository root:
+The local pending deadline input is written to `GLACIER_HOME/ventures/warranty/pending-units.json` (or `~/.glacier/...`). It contains Jobber customer data and stays on the local machine. Credentials are read from Glacier's OS keychain and are not printed.
 
-```sh
-~/w/glacier-lean/.venv/bin/python ventures/warranty/scripts/owner_check.py
-```
+## Manufacturer terms and permission boundary
 
-At run time, the connector reads OAuth values from Glacier's OS keychain. It makes read-only GraphQL requests using API version `2026-04-16`, writes the local pending deadline input to `GLACIER_HOME/ventures/warranty/pending-units.json` (or `~/.glacier/...`), and prints the registration queue with unsent homeowner drafts. Credentials are not printed. The local queue contains Jobber customer data and stays on this machine. Create the four Job Text fields using the exact names in [`JOBBER-SETUP.md`](JOBBER-SETUP.md).
+The official pages reviewed on 2026-10-11 do not establish permission for an outside service to prepare registrations for a contractor. Daikin's site terms expressly prohibit automated systems from monitoring or copying the sites. Trane's website terms restrict automated page monitoring/copying without prior written permission. Other reviewed materials either address their own sites generally or do not specify third-party preparation. The scope of those terms for a contractor's manual portal visit or local Jobber-only intake remains unconfirmed; those items stay `uncertain - please check`. This is a factual summary, not a legal conclusion.
 
-Serial validation remains disabled for every brand, so records return `uncertain — please check` and stay on owner review even when a deadline can be calculated. The `brands/` records include official date-code descriptions where available, scoped to the cited product families. A draft is not a registration confirmation; no email or portal submission occurs.
+No owner terms review is needed for the current workflow: it reads Jobber and prepares records locally without accessing manufacturer sites. Before future portal access or registration preparation is added, require documented permission covering that proposed action and customer authorization; until then, keep portal automation disabled. See [Daikin terms](https://daikincomfort.com/terms-of-use), [Trane website terms](https://www.trane.com/content/dam/Trane/Commercial/global/terms-and-conditions-of-use.pdf), [Carrier terms](https://www.carrier.com/us/en/terms-of-use/), and [Goodman legal terms](https://www.goodmanmfg.com/legal), plus the source links in each brand record.
 
-## Run a local intake check
+## Local intake check
 
-Create a JSON file containing normalized records with `job_id`, `completed`, `brand`, `model_reading`, `model_confirmation`, `serial_reading`, `serial_confirmation`, `installed_on`, `region`, `homeowner_name`, and `homeowner_email`. Do not put portal passwords in this file. To evaluate it:
+Create a JSON file containing normalized records with `job_id`, `completed`, `brand`, `model_reading`, `model_confirmation`, `serial_reading`, `serial_confirmation`, `installed_on`, `region`, `homeowner_name`, and `homeowner_email`. Do not put portal passwords in this file. Evaluate it with:
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python -m ventures.warranty.scripts.warranty evaluate --input ./install-records.json --as-of 2026-10-10
 ```
 
-The records document official date-code descriptions where published, but the queue does not parse serial codes: it has no enabled brand serial patterns, and intake records stay `uncertain — please check` until independently checked. The opt-in missing-photo output is only a draft; this venture does not send texts or emails.
+The opt-in missing-photo output is a draft only. This venture does not send texts or emails, submit portal forms, or automate manufacturer portals.
 
-## Serial-format availability and human fallback
+## Status
 
-No brand has an enabled serial pattern. Published date-code descriptions for Lennox, Rheem, Goodman, Amana, and a specific Daikin product family are recorded in the brand data, with their model-specific limits. Carrier/Bryant and Trane/American Standard remain `uncertain - please check` for a general residential HVAC date code. Do not infer a pattern from sample numbers. For any real unit, use the brand's official warranty page or contact the brand/dealer, verify the serial manually, and keep registration under owner review. Portal automation remains disabled.
+**Ready for local, read-only Jobber intake preparation and review.** Live account behavior remains unverified until the owner runs a check with a test account; the temporary GraphiQL token only proves a short-lived connection. This venture depends on contractor customers, so no cold outreach work is added.
 
-## Jobber launch prerequisites
-
-Create an app in the [Jobber Developer Center](https://developer.getjobber.com/) and use its [API documentation](https://developer.getjobber.com/docs/). Save `jobber_client_id`, `jobber_client_secret`, `jobber_access_token`, and `jobber_refresh_token` in Glacier under **Settings → Secrets**, then run the read-only owner check. Follow the exact two-minute field setup in [`JOBBER-SETUP.md`](JOBBER-SETUP.md). A five-job local GraphQL-shaped fixture was run through the real Glacier engine; this verifies the local workflow only. Live-account behavior still requires the owner to configure the test account and verify five eligible records. The shared reader and deadline blocks remain separate PH12 work, and this warranty loop calculates its own reminders.
-
-The first Jobber listing and first 20 generated homeowner email drafts are owner-review gates. The warranty check prepares the drafts locally; the shared mail block is not integrated and this venture does not send email.
-
-## Your steps
-
-1. Create the Jobber developer app/test account and save its values in Glacier Secrets. Run the shared connector check.
-2. Confirm portal terms and official serial formats brand by brand. Daikin automation is disabled by its published terms.
-3. Review the first marketplace listing and first 20 homeowner email drafts before launch. Neither is published or sent by this build.
-
-Paid billing is not enabled. Stripe or Jobber billing needs a separate owner-approved configuration.
+Paid billing is not enabled. Stripe or Jobber billing needs separate owner approval.

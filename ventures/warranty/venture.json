@@ -1,7 +1,7 @@
 {
   "slug": "warranty",
   "name": "warranty registration",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "description": "Prepare and track HVAC warranty registration records for contractor review.",
     "customer_output_vocabulary": [
@@ -10,7 +10,13 @@
       "uncertain — please check"
     ],
     "portal_submission": "disabled until an official brand portal policy permits automation and customer authorization is recorded",
-    "email_sending": "not configured; drafts only"
+    "email_sending": "not configured; drafts only",
+    "readiness_scope": "Ready for local and short-lived read-only Jobber test intake preparation; durable production OAuth, marketplace publication, email sending, and manufacturer portal submission are not enabled.",
+    "future_portal_enablement_gates": [
+      "Documented permission must cover the exact proposed manufacturer portal action; uncertain sources stay uncertain.",
+      "Any customer authorization and consequential-action approval must be recorded before an external write.",
+      "Serial parsing stays disabled unless official, model-scoped patterns and an independent check are available."
+    ]
   },
   "blocks": [
     "ventures.blocks.connectors.jobber",
@@ -43,18 +49,17 @@
   "secrets_needed": [
     "jobber_client_id",
     "jobber_client_secret",
-    "jobber_access_token",
-    "jobber_refresh_token"
+    "jobber_access_token"
   ],
   "your_steps": [
     {
       "id": "jobber-setup",
-      "title": "Connect a Jobber test account",
-      "when": "Before the first live read",
-      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Paste jobber_client_id, jobber_client_secret, jobber_access_token, and jobber_refresh_token into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only owner check. It reads completed job status/date, homeowner name/email, property region, and the Brand/Model/Serial/Install Date text custom fields; it writes a local deadline queue and prints homeowner drafts without sending them. The shared reader and deadline blocks remain separate PH12 work; this venture calculates warranty deadlines locally. Before launch, the owner must verify five eligible test accounts and confirm the account's custom field labels. Until then, use local sample JSON only.",
+      "title": "Set up Jobber fields and run a read-only test",
+      "when": "Before the first live test read; about 15 minutes if accounts already exist",
+      "detail": "Follow OWNER-STEPS.md in one setup session. Create the four pre-written Job Text fields, enter actual values on completed installation jobs, and optionally create a draft test app in Jobber Developer Center for a short GraphiQL read test. Save the app Client ID, Client Secret, and temporary GraphiQL access token in Glacier Settings → Secrets, then run the read-only owner check. The temporary token expires after 60 minutes and does not enable recurring production access. Manufacturer terms review, outreach, publication, email sending, and portal submission are not required for the current local preparation workflow.",
       "links": [
-        "https://developer.getjobber.com/",
-        "https://developer.getjobber.com/docs/"
+        "https://secure.getjobber.com/",
+        "https://developer.getjobber.com/"
       ],
       "secrets": [
         {
@@ -67,40 +72,11 @@
         },
         {
           "name": "jobber_access_token",
-          "label": "Jobber access token"
-        },
-        {
-          "name": "jobber_refresh_token",
-          "label": "Jobber refresh token"
+          "label": "Temporary Jobber test access token"
         }
-      ]
-    },
-    {
-      "id": "brand-portal-terms",
-      "title": "Review each brand's portal terms",
-      "when": "Before adding a brand portal",
-      "detail": "Confirm with each brand whether the exact proposed browser action is allowed and record a source-backed serial format. No serial pattern is verified in this build, so every real brand record remains unavailable to automatic validation and returns uncertain — please check. Human fallback: use that brand's linked official warranty page or contact the brand/dealer, verify the serial manually, and keep registration on owner review. Do not enter a guessed pattern or enable portal automation.",
-      "links": [
-        "https://www.trane.com/residential/en/resources/warranty-and-registration/",
-        "https://www.carrier.com/residential/en/us/products/warranties/"
-      ]
-    },
-    {
-      "id": "launch-and-email-review",
-      "title": "Review the first listing and homeowner emails",
-      "when": "Before marketplace launch and the first 20 homeowner emails",
-      "detail": "Only after five eligible test accounts pass the connector check: open the prepared Jobber marketplace listing for owner review, then inspect the first 20 generated homeowner email drafts, produced locally by the read-only owner check, one by one. Save corrections before any owner submission. This build does not send email or publish the listing.",
-      "links": [
-        "https://developer.getjobber.com/"
       ]
     }
   ],
-  "launch_gates": [
-    "Brand-by-brand portal terms allow the proposed automated action.",
-    "Brand-specific serial formats are configured from official sources.",
-    "Jobber shared connector returns completed status, install date, homeowner, region, and unit fields without writes.",
-    "Registration deadlines and unsent homeowner drafts are generated from completed Jobber jobs.",
-    "First marketplace listing and first 20 homeowner emails receive owner review."
-  ],
+  "launch_gates": [],
   "dry_run_env_id": "daily-deadlines"
 }
