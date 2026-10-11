@@ -1,0 +1,42 @@
+{
+  "data": {
+    "jobs": {
+      "nodes": [
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MDAx",
+          "jobNumber": 9001,
+          "title": "Heat pump installation",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-03-20T15:30:00-05:00",
+          "customFields": [
+            {"__typename": "CustomFieldText", "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC8xMDAx", "label": "Equipment Brand", "valueText": "Carrier"},
+            {"__typename": "CustomFieldText", "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC8xMDAy", "label": "Equipment Model", "valueText": "Infinity 24"},
+            {"__typename": "CustomFieldText", "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC8xMDAz", "label": "Equipment Serial", "valueText": "ABC123456789"},
+            {"__typename": "CustomFieldText", "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC8xMDA0", "label": "Install Date", "valueText": "2026-03-20"}
+          ],
+          "client": {"id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8yMDAx", "name": "Maya Rivera", "email": "maya@example.test"},
+          "property": {"id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzMwMDE", "address": {"city": "Austin", "province": "TX", "postalCode": "78701", "country": "US"}}
+        },
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MDAy",
+          "jobNumber": 9002,
+          "title": "Heat pump estimate",
+          "jobStatus": "UPCOMING",
+          "completedAt": null,
+          "customFields": [],
+          "client": {"id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8yMDAy", "name": "Alex Kim", "email": "alex@example.test"},
+          "property": {"id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzMwMDI", "address": {"city": "Austin", "province": "TX", "postalCode": "78702", "country": "US"}}
+        }
+      ],
+      "pageInfo": {"hasNextPage": false, "endCursor": null}
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 42,
+      "actualQueryCost": 11,
+      "throttleStatus": {"maximumAvailable": 10000, "currentlyAvailable": 9989, "restoreRate": 500}
+    },
+    "versioning": {"version": "2026-04-16"}
+  }
+}

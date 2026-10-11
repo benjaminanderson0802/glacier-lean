@@ -130,3 +130,66 @@ def test_missing_photo_yields_a_request_draft_only_if_technician_opted_in():
     assert opted_in["photo_request_draft"]
     assert opted_in["photo_request_draft"]["sent"] is False
     assert opted_out["photo_request_draft"] is None
+
+
+def test_jobber_response_flows_into_registration_queue_and_unsent_homeowner_draft():
+    from ventures.warranty.scripts.warranty import build_jobber_loop
+
+    fixture = Path(__file__).resolve().parents[3] / "ventures" / "blocks" / "connectors" / "fixtures" / "jobber" / "warranty_jobs_page.json"
+    job = json.loads(fixture.read_text(encoding="utf-8"))["data"]["jobs"]["nodes"][0]
+
+    result = build_jobber_loop([job], as_of=date(2026, 6, 15))
+
+    assert len(result["registration_queue"]) == 1
+    queued = result["registration_queue"][0]
+    assert queued["job_id"] == job["id"]
+    assert queued["registration_deadline"] == "2026-06-18"
+    assert queued["days_remaining"] == 3
+    assert queued["deadline_alert"] is True
+    assert queued["result"] == "uncertain — please check"
+    assert "serial format is not verified" in queued["reason"]
+    assert len(result["homeowner_email_drafts"]) == 1
+    draft = result["homeowner_email_drafts"][0]
+    assert draft["to"] == "maya@example.test"
+    assert draft["sent"] is False
+    assert "not registered" in draft["body"].lower()
+    assert "June 18, 2026" in draft["body"]
+
+
+def test_jobber_preview_persists_local_deadline_input_for_daily_flow(tmp_path, monkeypatch, capsys):
+    from ventures.warranty.scripts import warranty
+
+    fixture = Path(__file__).resolve().parents[3] / "ventures" / "blocks" / "connectors" / "fixtures" / "jobber" / "warranty_jobs_page.json"
+    jobs = json.loads(fixture.read_text(encoding="utf-8"))["data"]["jobs"]["nodes"]
+    monkeypatch.setenv("GLACIER_HOME", str(tmp_path))
+    monkeypatch.setattr(warranty, "read_jobber_jobs", lambda: jobs)
+
+    assert warranty.main(["jobber-preview", "--as-of", "2026-06-15"]) == 0
+    intake = json.loads((tmp_path / "ventures" / "warranty" / "pending-units.json").read_text(encoding="utf-8"))
+    assert len(intake["units"]) == 1
+    capsys.readouterr()
+    assert warranty.main(["deadlines", "--as-of", "2026-06-15"]) == 0
+    daily = json.loads(capsys.readouterr().out)
+    assert len(daily["alerts"]) == 1
+    assert daily["alerts"][0]["registration_deadline"] == "2026-06-18"
+
+
+def test_jobber_completion_timestamp_is_not_substituted_for_install_date():
+    from ventures.warranty.scripts.warranty import build_jobber_loop
+
+    job = {
+        "id": "job-missing-install-date",
+        "jobStatus": "COMPLETED",
+        "completedAt": "2026-03-20T15:30:00-05:00",
+        "client": {"name": "Maya Rivera", "email": "maya@example.test"},
+        "customFields": [
+            {"__typename": "CustomFieldText", "label": "Brand", "valueText": "Carrier"},
+            {"__typename": "CustomFieldText", "label": "Model", "valueText": "Infinity 24"},
+            {"__typename": "CustomFieldText", "label": "Serial", "valueText": "ABC123456789"},
+        ],
+    }
+
+    result = build_jobber_loop([job], as_of=date(2026, 6, 15))
+
+    assert result["registration_queue"][0].get("registration_deadline") is None
+    assert result["registration_queue"][0]["result"] == "uncertain — please check"

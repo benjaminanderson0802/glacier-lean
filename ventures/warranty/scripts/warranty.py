@@ -119,11 +119,11 @@ def evaluate_install(
 
     if missing_plate_data:
         return _uncertain("data-plate model or serial is missing", **result_fields, photo_request_draft=photo_request_draft)
-    if model != model_confirmation or serial != serial_confirmation:
-        return _uncertain("independent model and serial readings do not agree", **result_fields)
     serial_pattern = rules.get("serial_pattern")
     if not record.get("serial_format_validated") or not serial_pattern or not re.fullmatch(str(serial_pattern), serial):
         return _uncertain("brand serial format is not verified or did not match", **result_fields)
+    if model != model_confirmation or serial != serial_confirmation:
+        return _uncertain("independent model and serial readings do not agree", **result_fields)
     if not record.get("homeowner_name") or not _valid_email(record.get("homeowner_email")):
         return _uncertain("homeowner name or email is missing or invalid", **result_fields)
     if record.get("registered") and not record.get("confirmation_path"):
@@ -137,6 +137,98 @@ def evaluate_install(
         "registration_action": "skip" if record.get("registered") else "owner_check_required",
         **result_fields,
         "photo_request_draft": None,
+    }
+
+
+def _jobber_custom_field_map(job: dict[str, Any]) -> dict[str, str]:
+    """Map Jobber text custom fields by their account-configured labels."""
+    fields: dict[str, str] = {}
+    for item in job.get("customFields") or []:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get("label") or item.get("name") or "").strip().casefold()
+        value = item.get("valueText")
+        if label and value is not None:
+            fields[re.sub(r"[^a-z0-9]+", "", label)] = str(value).strip()
+    return fields
+
+
+def _jobber_unit(job: dict[str, Any]) -> dict[str, Any] | None:
+    """Convert one completed Jobber job response into the local intake shape."""
+    status = str(job.get("jobStatus") or "").strip().upper()
+    completed_at = job.get("completedAt")
+    if not completed_at and status not in {"COMPLETED", "COMPLETE"}:
+        return None
+    fields = _jobber_custom_field_map(job)
+    client = job.get("client") if isinstance(job.get("client"), dict) else {}
+    property_data = job.get("property") if isinstance(job.get("property"), dict) else {}
+    address = property_data.get("address") if isinstance(property_data.get("address"), dict) else {}
+
+    def value(*labels: str) -> str:
+        return next((fields[key] for label in labels if (key := re.sub(r"[^a-z0-9]+", "", label.casefold())) in fields), "")
+
+    installed_on = value("Install Date", "Installation Date", "Installed On")
+    brand = value("Equipment Brand", "Brand", "Manufacturer")
+    model = value("Equipment Model", "Model")
+    serial = value("Equipment Serial", "Serial", "Serial Number")
+    region = value("Region", "State", "Province") or str(address.get("province") or address.get("state") or "")
+    homeowner_name = str(client.get("name") or "").strip()
+    homeowner_email = str(client.get("email") or "").strip()
+    return {
+        "job_id": str(job.get("id") or ""),
+        "job_number": job.get("jobNumber"),
+        "job_title": str(job.get("title") or ""),
+        "completed": bool(completed_at) or status in {"COMPLETED", "COMPLETE"},
+        "brand": brand,
+        "model_reading": model,
+        "model_confirmation": "",
+        "serial_reading": serial,
+        "serial_confirmation": "",
+        "serial_format_validated": False,
+        "installed_on": installed_on,
+        "region": region,
+        "homeowner_name": homeowner_name,
+        "homeowner_email": homeowner_email,
+        "technician_opted_in": False,
+        "intake_source": "Jobber read-only",
+    }
+
+
+def build_jobber_loop(jobs: list[dict[str, Any]], *, as_of: date | None = None) -> dict[str, Any]:
+    """Build deadline queue and unsent homeowner drafts from Jobber GraphQL jobs."""
+    units = [unit for job in jobs if isinstance(job, dict) if (unit := _jobber_unit(job)) is not None]
+    batch = prepare_batch(units, as_of=as_of)
+    queue: list[dict[str, Any]] = []
+    drafts: list[dict[str, Any]] = []
+    for item in batch["units"]:
+        unit = item["unit"]
+        assessment = {key: value for key, value in item.items() if key != "unit"}
+        queue.append({**unit, **assessment})
+        if _valid_email(unit.get("homeowner_email")):
+            deadline = assessment.get("registration_deadline")
+            deadline_text = date.fromisoformat(deadline).strftime("%B %d, %Y").replace(" 0", " ") if deadline else "not yet available"
+            drafts.append({
+                "job_id": unit["job_id"],
+                "to": unit["homeowner_email"],
+                "subject": "Warranty registration follow-up for your HVAC installation",
+                "body": (
+                    f"Hello {unit['homeowner_name'] or 'there'},\n\n"
+                    f"We are preparing the warranty registration details for your {unit.get('brand') or 'HVAC'} "
+                    f"installation on {unit.get('installed_on') or 'the recorded installation date'}. "
+                    f"The registration deadline is {deadline_text}. The equipment details are still being checked; "
+                    "the equipment is not registered yet. We will follow up after review.\n\n"
+                    "Your service team"
+                ),
+                "sent": False,
+                "requires_owner_review": True,
+            })
+    return {
+        "source": "Jobber read-only GraphQL API",
+        "as_of": (as_of or date.today()).isoformat(),
+        "registration_queue": queue,
+        "homeowner_email_drafts": drafts,
+        "duplicates": batch["duplicates"],
+        "units": units,
     }
 
 
@@ -163,7 +255,13 @@ def prepare_batch(
 
 def read_jobber_jobs(client: JobberClient | None = None) -> list[dict[str, Any]]:
     """Read Jobber jobs through the shared read-only connector."""
-    return (client or JobberClient()).get_jobs(max_pages=5)
+    own_client = client is None
+    connector = client or JobberClient()
+    try:
+        return connector.get_jobs(max_pages=5)
+    finally:
+        if own_client:
+            connector.close()
 
 
 def _load_units(path: Path) -> list[dict[str, Any]]:
@@ -183,11 +281,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.action == "jobber-preview":
             jobs = read_jobber_jobs()
-            output: Any = {
-                "result": "match" if jobs else f"no match found in Jobber as of {args.as_of.isoformat()}",
-                "source": "Jobber read-only connector",
-                "jobs": jobs,
-            }
+            output: Any = build_jobber_loop(jobs, as_of=args.as_of)
+            home = Path(os.environ.get("GLACIER_HOME", Path.home() / ".glacier"))
+            target = home / "ventures" / "warranty" / "pending-units.json"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps({"units": output["units"]}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            output["result"] = "match" if output["registration_queue"] else f"no match found in Jobber as of {args.as_of.isoformat()}"
+            output["local_queue_file"] = str(target)
         else:
             if args.input is None and args.action == "evaluate":
                 raise ValueError("--input is required for evaluate")

@@ -28,7 +28,7 @@
     {
       "flow": "hourly-intake",
       "cron": "0 * * * *",
-      "purpose": "Read Jobber jobs through its read-only connector; no registration or messages are sent.",
+      "purpose": "Read Jobber jobs, prepare the local registration queue, and generate unsent homeowner email drafts; no records or messages are changed.",
       "missed_run": "run_once",
       "overlap": "skip"
     },
@@ -51,7 +51,7 @@
       "id": "jobber-setup",
       "title": "Connect a Jobber test account",
       "when": "Before the first live read",
-      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Paste jobber_client_id, jobber_client_secret, jobber_access_token, and jobber_refresh_token into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only connector check. Before launch, the connector must return completed status, install date, homeowner name and email, brand, model, serial, region, and job ID. Use five eligible test accounts; intake also requires the shared reader and deadline blocks. Until those prerequisites are met, use local sample JSON only.",
+      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Paste jobber_client_id, jobber_client_secret, jobber_access_token, and jobber_refresh_token into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only owner check. It reads completed job status/date, homeowner name/email, property region, and the Brand/Model/Serial/Install Date text custom fields; it writes a local deadline queue and prints homeowner drafts without sending them. The shared reader and deadline blocks remain separate PH12 work; this venture calculates warranty deadlines locally. Before launch, the owner must verify five eligible test accounts and confirm the account's custom field labels. Until then, use local sample JSON only.",
       "links": [
         "https://developer.getjobber.com/",
         "https://developer.getjobber.com/docs/"
@@ -89,7 +89,7 @@
       "id": "launch-and-email-review",
       "title": "Review the first listing and homeowner emails",
       "when": "Before marketplace launch and the first 20 homeowner emails",
-      "detail": "Only after five eligible test accounts pass the connector check and the shared reader/deadline blocks are installed: open the generated Jobber marketplace listing for owner review, then inspect the first 20 generated homeowner email drafts one by one. Save corrections before any owner submission. This build does not send email or publish the listing. Email drafts are not generated until the mail block is integrated.",
+      "detail": "Only after five eligible test accounts pass the connector check: open the prepared Jobber marketplace listing for owner review, then inspect the first 20 generated homeowner email drafts, produced locally by the read-only owner check, one by one. Save corrections before any owner submission. This build does not send email or publish the listing.",
       "links": [
         "https://developer.getjobber.com/"
       ]
@@ -98,8 +98,8 @@
   "launch_gates": [
     "Brand-by-brand portal terms allow the proposed automated action.",
     "Brand-specific serial formats are configured from official sources.",
-    "Jobber shared connector returns completed status, install date, homeowner, and unit fields without writes.",
-    "Shared document reader and deadline tracker are merged and integrated.",
+    "Jobber shared connector returns completed status, install date, homeowner, region, and unit fields without writes.",
+    "Registration deadlines and unsent homeowner drafts are generated from completed Jobber jobs.",
     "First marketplace listing and first 20 homeowner emails receive owner review."
   ],
   "dry_run_env_id": "daily-deadlines"

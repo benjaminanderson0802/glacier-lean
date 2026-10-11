@@ -30,6 +30,34 @@ def test_jobber_reads_account_and_cursor_pages_from_official_fixtures():
     assert client.test_connection() == {"connected": True, "account": "Fixture HVAC"}
     assert [job["id"] for job in client.get_jobs()] == ["job-1", "job-2"]
     assert requests[-1]["variables"]["after"] == "cursor-1"
+    job_query = next(request["query"] for request in requests if "ReadJobs" in request["query"])
+    assert "completedAt" in job_query
+    assert "customFields" in job_query
+    assert "valueText" in job_query
+    assert "client" in job_query
+    assert "property" in job_query
+    client.close()
+
+
+def test_jobber_warranty_fields_match_jobber_graphql_fixture_shape():
+    response = fixture_json("jobber", "warranty_jobs_page.json")
+    sent = []
+
+    def handler(request):
+        sent.append((request.headers.get("X-JOBBER-GRAPHQL-VERSION"), json.loads(request.content)))
+        return httpx.Response(200, json=response)
+
+    client = JobberClient(access_token="fixture-token", transport=httpx.MockTransport(handler), sleep=lambda _: None)
+    jobs = client.get_jobs()
+    assert jobs[0]["client"]["name"] == "Maya Rivera"
+    assert jobs[0]["customFields"][0] == {
+        "__typename": "CustomFieldText",
+        "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC8xMDAx",
+        "label": "Equipment Brand",
+        "valueText": "Carrier",
+    }
+    assert sent[0][0] == "2026-04-16"
+    assert "mutation" not in sent[0][1]["query"].lower()
     client.close()
 
 
