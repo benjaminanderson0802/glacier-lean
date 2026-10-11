@@ -6,7 +6,7 @@ node_id: ''
 checkpoint: PH3.4
 kind: environment
 summary: PH3 revalidation is limited by shared dependency gaps and backend startup/API timeouts
-evidence: evidence/E-PH3/verification-benchmark.log; evidence/E-PH3/claims-benchmark.log; evidence/E-PH3/typescript.log; evidence/E-PH3/i18n.log
+evidence: evidence/E-PH3/verification-benchmark.log; evidence/E-PH3/claims-benchmark.log; evidence/E-PH3/verification-benchmark-followup.log; evidence/E-PH3/claims-benchmark-followup.md; evidence/E-PH3/backend-full-followup.log; evidence/E-PH3/targeted-followup.log; evidence/E-PH3/typescript.log; evidence/E-PH3/i18n.log
 attempts_made: 0
 status: filed
 assigned_to: fixer
@@ -43,3 +43,7 @@ After more than nine minutes waiting for the shared suite lock, the full-suite r
 ## Scoped suite final outcome
 
 The suite completed normally: **33 passed, 4 failed, 1 setup error in 1056.15 seconds**. Three cases could not start their backend within the fixture deadline; one merge case hit an HTTP read timeout; one tampering case recorded the correct failed verification evidence but its run stayed running past the completion deadline. See `evidence/E-PH3/targeted-tests.log` and `RESULTS.md` for test names. Shared-host load reached roughly 59; load is an observation, not proof of the cause of every failure. The test limits and assertions are unchanged. The existing benchmark fixture suite separately passed 12/12; that is not a live phase metric or a green backend suite.
+
+## Follow-up outcome
+
+The PH3-focused verification/workspace/claims-proof suite passed **19 tests** (`evidence/E-PH3/targeted-followup.log`). A serialized full backend run completed with **826 passed, 1 skipped, 6 failures**; the failures are outside PH3 and are separately filed. The verification live benchmark timed out. The claims live benchmark completed with a 17% resolution figure, but its runner samples routed cases before specialist proof completes; see `CLM-2026-10-11-E-PH3-CLAIMS-BENCHMARK-SAMPLING`. Neither benchmark provides a valid PH3 metric remeasurement. The environment/validation claim remains open.

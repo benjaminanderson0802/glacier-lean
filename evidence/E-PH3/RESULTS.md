@@ -10,6 +10,12 @@ PH3.2 remains in progress. The tester-owned independent adversarial cases and a 
 
 `backend-full-followup.log` records the full command and result: **826 passed, 1 skipped, 6 failed** in 846.80 seconds. The failures are three real-template runtime cases and three Home route tests; the PH3 verification/workspace test files reported no failures. Similar failures recur in earlier committed PH12 logs, so they are recorded as out-of-lane bug claim `CLM-2026-10-10-E-PH3-FULL-BOARD-OUT-OF-LANE-FAILURES` rather than changed here. The full board is not green, and this does not satisfy checkpoint completion.
 
+The PH3-only command `pytest -q tests/test_verification.py tests/test_workspaces.py tests/test_claims_proof.py` passed **19 tests in 28.60s** (`targeted-followup.log`). The benchmark fixture command covering verification validation/runner and claims cases/runner passed **12 tests in 1.72s**. These fixture tests do not establish live metrics.
+
+## Live benchmark follow-up
+
+The verification benchmark timed out (`verification-benchmark-followup.log`) before producing rates. The claims benchmark emitted a **17%** aggregate resolution rate and **0%** false-fixed rate, but inspection shows its polling loop treats `routed` as a terminal observation, before the specialist proof workflow finishes. The figures are invalid for PH3 exit and were filed as `CLM-2026-10-11-E-PH3-CLAIMS-BENCHMARK-SAMPLING`; the tester-owned runner and tests were not edited. No live false-done or claim-resolution metric is asserted by this follow-up.
+
 ## Earlier validation attempts
 
 Implementation: `f644fbf` (`verify.py` only). Protected check files are inspected in the verifier's private copy before any restoration. Symlink/reparse and wrong-file-type paths are refused; modified content fails without writing; saved check file paths/content are validated. No acceptance test, benchmark case, contract, or screen behavior was changed.
