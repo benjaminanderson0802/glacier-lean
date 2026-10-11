@@ -1,0 +1,5 @@
+notice_number,project,advertising_agency,county,municipality,bid_date,prebid_meeting,description,official_url,source_mode,received_at
+PW-2026-017,Oak Creek pump station electrical upgrade,Town of Oak Creek,Mobile,Oak Creek,2026-11-05T10:00:00-05:00,2026-10-22T09:00:00-05:00,Electrical service panel and controls replacement,https://bids.oakcreek.example/notices/PW-2026-017,forwarded_official_notice,2026-10-09
+PW-2026-018,County road shoulder grading,Baldwin County, Baldwin,Bay Minette,2026-11-12T14:00:00-05:00,,Grading and drainage improvements,https://bids.baldwincounty.example/notices/PW-2026-018,owner_supplied_link,2026-10-10
+PW-2026-019,Library roof replacement,City of Oak Creek,Mobile,Oak Creek,2026-11-20T10:00:00-05:00,,Roofing and insulation,https://bids.oakcreek.example/notices/PW-2026-019,forwarded_official_notice,2026-10-10
+PW-2026-020,Electrical generator service,City of Pine Harbor,Escambia,Pine Harbor,,2026-10-27T09:00:00-05:00,Emergency generator testing and service,https://pineharbor.example/notices/PW-2026-020,owner_supplied_link,2026-10-10

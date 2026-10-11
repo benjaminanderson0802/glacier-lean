@@ -1,0 +1,31 @@
+{
+  "slug": "al-bid-triage",
+  "name": "Alabama public works bid triage",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare a weekly, source-linked public-works notice digest for general contractors working in Mobile and Baldwin Counties from official notices the contractor forwards, official exports they supply, or links they choose.",
+    "pilot_scope": "General contracting; Mobile and Baldwin Counties; one weekly digest. Scope is a test hypothesis, not evidence of demand.",
+    "publication": "Local draft only. The owner reviews and sends any customer email; contractors verify controlling notices and submit their own bids.",
+    "billing": "One 30-day paid pilot at a test price of $49; no billing or payment collection is automated."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": ["triage-supplied-notices"],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "send-pilot-pitch",
+      "title": "Send the pilot pitch",
+      "when": "When you are ready to test buyer interest",
+      "detail": "Review PILOT.md and prospects.csv, then personally send the pitch to appropriate businesses using only their published business contact details. Glacier does not send messages, sign anyone up, or collect payment.",
+      "link": "https://theconstructioncenter.org/directory/"
+    }
+  ],
+  "launch_gates": [
+    "Use only official notice emails, official downloadable exports supplied by the customer, or links the customer supplies; do not automate browsing or scraping Alabama Builds.",
+    "Every digest is labeled incomplete and links to the issuing authority's controlling notice.",
+    "Each contractor controls its own registration, vendor profile, credentials, eligibility decisions, and bid submission."
+  ],
+  "dry_run_env_id": "triage-supplied-notices"
+}

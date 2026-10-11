@@ -1,0 +1,4 @@
+notice_number,project,advertising_agency,county,municipality,bid_date,prebid_meeting,description,official_url,source_mode,received_at
+PW-2026-031,Oak Creek public works maintenance building,Oak Creek Public Works Board,Mobile,Oak Creek,2026-11-18T10:00:00-06:00,2026-11-02T09:00:00-06:00,General construction and site improvements,https://notices.oakcreek.example/public-works/PW-2026-031,owner_supplied_link,2026-10-10
+PW-2026-032,Baldwin County operations annex,Baldwin County Commission,Baldwin,Bay Minette,2026-12-03T14:00:00-06:00,,Public works building construction and renovation,https://notices.baldwincounty.example/bids/PW-2026-032,forwarded_official_notice,2026-10-10
+PW-2026-033,Oak Creek park roof replacement,Oak Creek Public Works Board,Mobile,Oak Creek,2026-11-25T10:00:00-06:00,,Roof replacement,https://notices.oakcreek.example/public-works/PW-2026-033,forwarded_official_notice,2026-10-10

@@ -1,0 +1,38 @@
+{
+  "id": "triage-supplied-notices",
+  "name": "Triage supplied public works notices",
+  "description": "Read a customer-supplied CSV of public notice details, create a local weekly digest, and ask the owner to review it. No site access or outbound messages occur.",
+  "goal": "Prepare a local, source-linked public works notice digest from official notice emails, customer-supplied official exports, or links the customer selected.",
+  "nodes": [
+    {
+      "id": "prepare_digest",
+      "type": "command",
+      "config": {
+        "cmd": "{python} ventures/al-bid-triage/scripts/bid_triage.py --input \"$GLACIER_HOME/ventures/al-bid-triage/incoming/notices.csv\" --trade general-contracting --counties Mobile,Baldwin --output \"$GLACIER_HOME/ventures/al-bid-triage/drafts/weekly-digest.md\"",
+        "cwd": "{repo}",
+        "timeout": "60",
+        "retries": "0"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "digest_ready",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "review_digest",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review the local weekly digest at $GLACIER_HOME/ventures/al-bid-triage/drafts/weekly-digest.md. Confirm that every source is official and that deadlines and addenda match the issuing authority. This approval records review only; Glacier does not send email, file bids, or contact agencies."
+      },
+      "position": {"x": 600, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "prepare_digest", "target": "digest_ready", "label": ""},
+    {"id": "e2", "source": "digest_ready", "target": "review_digest", "label": "yes"}
+  ],
+  "max_steps": 4
+}
