@@ -227,6 +227,12 @@ def build_claim_packet(claim: dict[str, Any], *, evidence_dir: str | Path | None
         {"item": item, "provided": False, "customer_confirmed": False}
         for item in guidance["required_evidence"]
     ]
+    if guidance["template_id"] == "manual-review":
+        # Do not treat a packet as ready to file when its source row names a
+        # carrier for which this venture has no verified packet guidance.
+        packet["result"] = "uncertain — please check"
+        packet["customer_email_draft"] = None
+    packet["fileable"] = packet["result"] == "match"
     packet["carrier_claim_guidance"] = guidance
     received_date = claim.get("carrier_received_date")
     packet["response_tracking"] = {
