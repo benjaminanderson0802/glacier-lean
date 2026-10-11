@@ -114,7 +114,8 @@ const mockClaims = new Map([['c0ffee01', {
 const mockSecrets = new Set(['SMTP_PASSWORD'])
 let mockApprovalDone = false
 const mockVentures = new Map([['truck-dispatch', {
-  slug: 'truck-dispatch', name: 'Truck dispatch', status: 'setting_up',
+  slug: 'truck-dispatch', name: 'truck dispatch', status: 'setting_up',
+  description: 'Prepare the dispatch list and wait for your review before sending it.', run_available: true,
   flows: [{ env_id: 'dispatch', dry_run_env_id: 'dispatch-preview' }], schedule: { cron: '0 8 * * *' },
   next_run: new Date(Date.now() + 3600_000).toISOString(), today: { runs: 4, completed: 3, failed: 0 },
   your_steps: [{ id: 'fleet-key', title: 'connect the fleet account', instructions: 'Paste both keys into the fields on this step. Glacier saves them in this computer’s keychain.', link: 'https://fleet.example.test/settings/api', secrets: [{ name: 'FLEET_KEY', label: 'Fleet API key' }, { name: 'FLEET_REGION', label: 'Fleet region key' }], done: false }],
@@ -174,7 +175,12 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname
     let m
     try {
-    if (p === '/api/ventures' && req.method === 'GET') return send(200, [...mockVentures.values()])
+    if (p === '/api/ventures' && req.method === 'GET') return send(200, [...mockVentures.values()].map(venture => {
+      const ids = venture.flows.flatMap(flow => [flow.env_id, flow.dry_run_env_id]).filter(Boolean)
+      const history = [...runs.values()].filter(run => ids.includes(run.env_id)).sort((a, b) => b.started_at.localeCompare(a.started_at))
+      const blockers = [venture.status === 'paused' ? 'paused' : null, venture.your_steps.some(step => !step.done) ? 'owner_steps' : null].filter(Boolean)
+      return { ...venture, blockers, readiness: blockers.length ? 'blocked' : 'ready', last_run: history[0] ?? null, next_run: venture.status === 'paused' ? null : venture.next_run }
+    }))
     if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/(pause|resume)$/)) && req.method === 'POST') {
       const venture = mockVentures.get(m[1]); if (!venture) return send(404, { detail: 'venture not found' })
       venture.status = m[2] === 'pause' ? 'paused' : 'running'

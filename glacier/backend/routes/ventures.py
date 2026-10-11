@@ -5,7 +5,7 @@ import json
 import os
 import re
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 
 import audit_log
 import runner
+import schedule_policy
 import secrets_store
 import store
 import vault
@@ -132,53 +133,19 @@ def _save_progress(slug: str, value: dict) -> None:
 
 
 def _next_cron(cron: str, now: datetime) -> str | None:
-    """Find the next UTC cron match for the numeric 5- or 6-field syntax DBOS uses."""
-    fields = cron.split()
-    if len(fields) not in (5, 6):
+    """Use the same cron interpretation as the engine scheduler."""
+    try:
+        return schedule_policy.next_run(cron, now)
+    except (ValueError, KeyError):
         return None
-    ranges = [(0, 59), (0, 59), (0, 23), (1, 31), (1, 12), (0, 7)] if len(fields) == 6 else [(0, 59), (0, 23), (1, 31), (1, 12), (0, 7)]
-    def values(field: str, low: int, high: int) -> set[int] | None:
-        result: set[int] = set()
-        try:
-            for part in field.split(","):
-                base, slash, step_text = part.partition("/")
-                step = int(step_text) if slash else 1
-                if step < 1:
-                    return None
-                if base == "*":
-                    start, stop = low, high
-                elif "-" in base:
-                    left, right = base.split("-", 1); start, stop = int(left), int(right)
-                else:
-                    start = stop = int(base)
-                if start < low or stop > high or start > stop:
-                    return None
-                result.update(range(start, stop + 1, step))
-        except ValueError:
-            return None
-        return result
-    choices = [values(field, *limits) for field, limits in zip(fields, ranges)]
-    if any(choice is None for choice in choices):
-        return None
-    choices = list(choices)
-    day_index = 5 if len(fields) == 6 else 4
-    if 7 in choices[day_index]:
-        choices[day_index].discard(7); choices[day_index].add(0)
-    current = now.astimezone(timezone.utc).replace(microsecond=0)
-    current += timedelta(seconds=1 if len(fields) == 6 else 60 - current.second)
-    if len(fields) == 5:
-        current = current.replace(second=0)
-    for _ in range(366 * 24 * 60 * (60 if len(fields) == 6 else 1)):
-        parts = [current.second, current.minute, current.hour, current.day, current.month, (current.weekday() + 1) % 7]
-        offset = 0 if len(fields) == 6 else 1
-        matches = [parts[offset + index] in choice for index, choice in enumerate(choices)]
-        if len(fields) == 5 and fields[2] != "*" and fields[4] != "*":
-            day_matches = matches[2] or matches[4]
-            matches[2] = matches[4] = day_matches
-        if all(matches):
-            return current.isoformat()
-        current += timedelta(seconds=1 if len(fields) == 6 else 60)
-    return None
+
+
+def _run_time(row: dict) -> datetime:
+    try:
+        stamp = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
+        return stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None else stamp
+    except ValueError:
+        return datetime.min.replace(tzinfo=timezone.utc)
 
 
 def _venture_row(manifest: dict, now: datetime) -> dict:
@@ -207,19 +174,21 @@ def _venture_row(manifest: dict, now: datetime) -> dict:
     envs, run_rows, next_runs = [], [], []
     flow_ids = _flow_ids(manifest)
     for env_id in flow_ids:
+        # Run history remains useful even if an installed graph was later removed.
+        run_rows.extend(store.list_runs(env_id))
         try:
             graph = runner.load_env(env_id)
         except (FileNotFoundError, ValueError, TypeError):
             continue
         envs.append(graph)
         for node in graph.get("nodes", []):
-            if node.get("type") == "schedule":
+            if node.get("type") == "schedule" and graph.get("enabled", True) and not runner.SCHEDULES_PAUSED:
                 cron = (node.get("config") or {}).get("cron")
                 if cron:
                     upcoming = _next_cron(str(cron), now)
                     if upcoming:
                         next_runs.append(upcoming)
-        run_rows.extend(store.list_runs(env_id))
+                break  # The engine registers the first schedule node only.
     today_key = now.astimezone(timezone.utc).date()
     todays = []
     for row in run_rows:
@@ -239,16 +208,36 @@ def _venture_row(manifest: dict, now: datetime) -> dict:
         status = "setting_up"
     else:
         status = "running"
-    schedule = manifest.get("schedule")
-    schedules = []
-    if isinstance(schedule, str):
-        schedules.append(schedule)
-    elif isinstance(schedule, dict) and isinstance(schedule.get("cron"), str):
-        schedules.append(schedule["cron"])
-    elif isinstance(schedule, list):
-        schedules.extend(item.get("cron") for item in schedule if isinstance(item, dict) and isinstance(item.get("cron"), str))
-    if not next_runs:
-        next_runs.extend(value for value in (_next_cron(cron, now) for cron in schedules) if value)
+    # Manifest schedules describe intent; only installed, enabled graphs schedule work.
+    run_rows.sort(key=_run_time, reverse=True)
+    latest_by_flow = {}
+    for run in run_rows:
+        latest_by_flow.setdefault(run["env_id"], run)
+    installed = {graph["id"]: graph for graph in envs}
+    blockers = []
+    if not flow_ids or len(envs) != len(flow_ids):
+        blockers.append("missing_flows")
+    if any(not step["done"] for step in steps):
+        blockers.append("owner_steps")
+    if any(run["status"] == "waiting" for run in run_rows):
+        blockers.append("waiting")
+    if any(run["status"] in ("failed", "rejected", "cancelled") for run in latest_by_flow.values()):
+        blockers.append("failed_run")
+    if any(graph.get("enabled", True) is False for graph in envs):
+        blockers.append("paused")
+    dry_ids = {ref["dry_run_env_id"] for ref in refs if ref.get("dry_run_env_id")}
+    has_live_run = any(run["status"] in ("done", "running") and env_id not in dry_ids
+                       for env_id, run in latest_by_flow.items())
+    readiness = "blocked" if blockers else "live" if has_live_run else "ready"
+    product = manifest.get("product") if isinstance(manifest.get("product"), dict) else {}
+    description = next((value for value in (
+        manifest.get("what_glacier_does"), manifest.get("description"),
+        product.get("description"), product.get("purpose"), product.get("broker_portal"),
+    ) if isinstance(value, str) and value.strip()), "")
+    if not description:
+        description = "; ".join(str(graph.get("description") or graph.get("name") or graph["id"]) for graph in envs)
+    run_ref = next((ref for ref in refs if ref.get("dry_run_env_id")), None)
+    run_available = bool(run_ref and run_ref["dry_run_env_id"] in installed)
     today = {
         "runs": len(todays),
         "completed": sum(row.get("status") == "done" for row in todays),
@@ -272,7 +261,12 @@ def _venture_row(manifest: dict, now: datetime) -> dict:
     return {
         "slug": slug,
         "name": str(manifest.get("name") or slug).lower(),
-        "status": status,
+        "status": status,  # Retained for existing inbox/API consumers.
+        "readiness": readiness,
+        "blockers": blockers,
+        "description": description,
+        "last_run": run_rows[0] if run_rows else None,
+        "run_available": run_available,
         "flows": refs,
         "schedule": manifest.get("schedule"),
         "next_run": min(next_runs) if next_runs and status != "paused" else None,
