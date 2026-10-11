@@ -1,11 +1,35 @@
 import csv
 import json
 import sys
+from copy import deepcopy
+from datetime import date, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 sys.path.insert(0, str(ROOT.parent / "scripts"))
+import dibbs_supply  # noqa: E402
 from dibbs_supply import prepare_bids  # noqa: E402
+
+SAM_NAICS_CODES = {"423840", "423830", "423710", "423610", "423120"}
+
+
+def sam_fixture():
+    return json.loads((ROOT / "fixtures" / "sam-opportunities-v2.json").read_text(encoding="utf-8"))
+
+
+def sam_row(**overrides):
+    row = deepcopy(sam_fixture()["opportunitiesData"][0])
+    return {**row, **overrides}
+
+
+def parse_sam_date(value):
+    for date_format in ("%Y-%m-%d", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(value, date_format).date()
+        except ValueError:
+            pass
+    raise AssertionError(f"Unexpected date format: {value}")
+
 
 def solicitation(**overrides):
     row = {
@@ -255,3 +279,126 @@ def test_bid_requires_a_source_link_to_the_exact_official_solicitation(tmp_path)
 
     assert result["ranked_bids"] == []
     assert "official DIBBS solicitation link" in " ".join(result["uncertain"][0]["reasons"])
+
+
+def test_sam_v2_queries_each_allowed_naics_with_bounded_dla_solicitation_search():
+    fixture = sam_fixture()
+    calls = []
+
+    def request_json(params, api_key):
+        calls.append((dict(params), api_key))
+        return deepcopy(fixture)
+
+    result = dibbs_supply.fetch_sam_opportunities(
+        api_key="test-sam-key", as_of=date(2026, 10, 10), request_json=request_json
+    )
+
+    assert {params["ncode"] for params, _ in calls} == SAM_NAICS_CODES
+    assert len(calls) == len(SAM_NAICS_CODES)
+    for params, key in calls:
+        assert key == "test-sam-key"
+        assert params["organizationName"] == "DLA"
+        assert params["ptype"] in ("o,k", ["o", "k"])
+        assert int(params["limit"]) > 0
+        assert int(params["offset"]) == 0
+        posted_from = parse_sam_date(params["postedFrom"])
+        posted_to = parse_sam_date(params["postedTo"])
+        assert posted_from <= posted_to <= date(2026, 10, 10)
+        assert params["ncode"] in SAM_NAICS_CODES
+
+
+def test_sam_v2_paginates_until_total_records_for_every_naics():
+    calls = []
+
+    def request_json(params, api_key):
+        params = dict(params)
+        calls.append(params)
+        offset = int(params["offset"])
+        limit = int(params["limit"])
+        rows = [
+            sam_row(noticeId=f"{params['ncode']}-{index}", naicsCode=params["ncode"])
+            for index in range(offset, min(offset + limit, 201))
+        ]
+        return {"totalRecords": 201, "limit": limit, "offset": offset, "opportunitiesData": rows}
+
+    dibbs_supply.fetch_sam_opportunities(
+        api_key="test-sam-key", as_of=date(2026, 10, 10), request_json=request_json
+    )
+
+    assert {params["ncode"] for params in calls} == SAM_NAICS_CODES
+    for ncode in SAM_NAICS_CODES:
+        offsets = [int(params["offset"]) for params in calls if params["ncode"] == ncode]
+        assert offsets == [0, 100, 200]
+
+
+def test_sam_v2_filters_non_dla_and_unapproved_naics_and_keeps_owner_review_link():
+    valid = sam_row()
+    invalid_rows = [
+        sam_row(noticeId="wrong-department", department="DEPARTMENT OF THE INTERIOR"),
+        sam_row(noticeId="wrong-subtier", subTier="NATIONAL PARK SERVICE"),
+        sam_row(noticeId="wrong-office", office="DEFENSE FINANCE AND ACCOUNTING SERVICE"),
+        sam_row(noticeId="wrong-parent", subTier="NATIONAL PARK SERVICE", fullParentPathName="DEPT OF DEFENSE.NATIONAL PARK SERVICE"),
+        sam_row(noticeId="wrong-naics", naicsCode="561210"),
+    ]
+    calls = []
+
+    def request_json(params, api_key):
+        calls.append(dict(params))
+        rows = [valid, *invalid_rows] if params["ncode"] == "423840" else []
+        return {"totalRecords": len(rows), "limit": 100, "offset": 0, "opportunitiesData": rows}
+
+    result = dibbs_supply.fetch_sam_opportunities(
+        api_key="test-sam-key", as_of=date(2026, 10, 10), request_json=request_json
+    )
+
+    ranked = result["ranked_opportunities"]
+    assert [row["notice_id"] for row in ranked] == [valid["noticeId"]]
+    assert ranked[0]["source_url"] == valid["uiLink"]
+    assert all(params["ncode"] in SAM_NAICS_CODES for params in calls)
+
+
+def test_sam_v2_ranks_current_open_solicitations_before_inactive_or_expired_rows():
+    rows = [
+        sam_row(noticeId="expired", responseDeadLine="2026-10-01", active="Yes"),
+        sam_row(noticeId="inactive", responseDeadLine="2026-11-15", active="No"),
+        sam_row(noticeId="current", responseDeadLine="2026-11-15", active="Yes"),
+    ]
+
+    def request_json(params, api_key):
+        page_rows = rows if params["ncode"] == "423840" else []
+        return {"totalRecords": len(page_rows), "limit": 100, "offset": 0, "opportunitiesData": page_rows}
+
+    result = dibbs_supply.fetch_sam_opportunities(
+        api_key="test-sam-key", as_of=date(2026, 10, 10), request_json=request_json
+    )
+
+    ranked_ids = [row["notice_id"] for row in result["ranked_opportunities"]]
+    assert ranked_ids[0] == "current"
+    assert ranked_ids.index("current") < ranked_ids.index("inactive")
+    assert ranked_ids.index("current") < ranked_ids.index("expired")
+
+
+def test_sam_missing_key_is_safe_and_does_not_submit_or_call_network(tmp_path):
+    solicitation_path, quote_path, output_path = write_inputs(tmp_path, [solicitation()], [supplier_quote()])
+    fetches = []
+
+    def missing_key_fetcher(*args, **kwargs):
+        fetches.append((args, kwargs))
+        raise ValueError("SAM.gov is not configured. Add sam_api_key in Glacier Settings > Secrets.")
+
+    result = dibbs_supply.prepare_from_sam(
+        output_path,
+        solicitation_path,
+        quote_path,
+        api_key=None,
+        as_of=date(2026, 10, 10),
+        opportunity_fetcher=missing_key_fetcher,
+    )
+
+    assert len(fetches) == 1
+    assert result["submitted"] is False
+    assert result["sam_feed"]["live_source_checked"] is False
+    assert "uncertain" in result["result"].lower()
+    alert_text = " ".join(result["sam_feed"].get("alerts", []))
+    assert "sam_api_key" in alert_text or "Settings > Secrets" in alert_text
+    assert (output_path / "bid-sheet.json").is_file()

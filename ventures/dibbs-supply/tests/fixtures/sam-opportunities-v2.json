@@ -1,0 +1,49 @@
+{
+  "totalRecords": 3,
+  "limit": 100,
+  "offset": 0,
+  "opportunitiesData": [
+    {
+      "noticeId": "dla-notice-423840-001",
+      "title": "Electrical equipment supply solicitation",
+      "solicitationNumber": "SPE7M1-26-R-0012",
+      "department": "DEPT OF DEFENSE",
+      "subTier": "DEFENSE LOGISTICS AGENCY",
+      "office": "DLA LAND AND MARITIME",
+      "fullParentPathName": "DEPT OF DEFENSE.DEFENSE LOGISTICS AGENCY.DLA LAND AND MARITIME",
+      "postedDate": "2026-10-08",
+      "type": "Solicitation",
+      "baseType": "Solicitation",
+      "responseDeadLine": "2026-11-15",
+      "naicsCode": "423840",
+      "active": "Yes",
+      "uiLink": "https://sam.gov/opp/dla-notice-423840-001/view"
+    },
+    {
+      "noticeId": "other-agency-notice",
+      "title": "Industrial supplies",
+      "solicitationNumber": "OTHER-001",
+      "department": "DEPARTMENT OF THE INTERIOR",
+      "subTier": "NATIONAL PARK SERVICE",
+      "fullParentPathName": "DEPARTMENT OF THE INTERIOR.NATIONAL PARK SERVICE",
+      "postedDate": "2026-10-08",
+      "type": "Solicitation",
+      "responseDeadLine": "2026-11-15",
+      "naicsCode": "423840",
+      "active": "Yes"
+    },
+    {
+      "noticeId": "wrong-naics-notice",
+      "title": "DLA facility maintenance",
+      "solicitationNumber": "DLA-002",
+      "department": "DEPT OF DEFENSE",
+      "subTier": "DEFENSE LOGISTICS AGENCY",
+      "fullParentPathName": "DEPT OF DEFENSE.DEFENSE LOGISTICS AGENCY",
+      "postedDate": "2026-10-08",
+      "type": "Solicitation",
+      "responseDeadLine": "2026-11-15",
+      "naicsCode": "561210",
+      "active": "Yes"
+    }
+  ]
+}

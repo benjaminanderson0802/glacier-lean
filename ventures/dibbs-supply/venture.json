@@ -3,20 +3,17 @@
   "name": "dibbs government supply",
   "status": "in_progress",
   "product": {
-    "purpose": "Prepare a ranked, source-linked bid sheet and solicitation-specific quote files from public DIBBS solicitations and owner-provided manufacturer or authorized-distributor quotes.",
+    "purpose": "Discover DLA opportunities from SAM.gov, then prepare ranked, source-linked bid sheets and solicitation-specific quote files from owner-verified DIBBS details and owner-provided manufacturer or authorized-distributor quotes.",
     "channels": [
-      "DLA DIBBS public solicitations"
+      "SAM.gov Contract Opportunities API v2 public notices filtered for DLA and the owner's NAICS codes",
+      "owner-verified DLA DIBBS solicitation details",
+      "owner-provided manufacturer or authorized-distributor quotes"
     ],
     "publication": "Glacier prepares files only. The owner signs and submits each bid personally through DIBBS.",
     "billing": "No customer billing or customer layer is needed. Parts spending requires the owner's approval."
   },
-  "blocks": [
-    "feeds"
-  ],
-  "block_functions": [
-    "ventures.blocks.feeds.sync('dla_dibbs')",
-    "ventures.blocks.feeds.query('dla_dibbs')"
-  ],
+  "blocks": [],
+  "block_functions": [],
   "flows": [
     "dibbs-owner-registration",
     "dibbs-daily-prep"
@@ -34,13 +31,18 @@
   "your_steps": [
     {
       "id": "sam-cage-registration",
-      "title": "Your step: Complete SAM.gov and CAGE registration",
+      "title": "Your step: Complete SAM.gov and CAGE setup",
       "when": "Before submitting any bid",
-      "detail": "Register the business and complete required identity and entity verification yourself. Glacier does not create an account, enter credentials, or verify identity.",
+      "detail": "Register the business and complete required identity and entity verification yourself. Request a free SAM.gov public API key from Account Details and save it in Glacier Secrets as sam_api_key. Glacier does not create an account, enter credentials, or verify identity.",
       "links": [
         "https://sam.gov/entity-registration",
+        "https://sam.gov/profile/details",
+        "https://open.gsa.gov/api/get-opportunities-public-api/",
         "https://cage.dla.mil/",
         "https://www.dibbs.bsm.dla.mil/rfq/"
+      ],
+      "secrets": [
+        {"name": "sam_api_key", "label": "SAM.gov public API key"}
       ]
     },
     {
@@ -67,7 +69,7 @@
     }
   ],
   "launch_gates": [
-    "Owner completes SAM.gov and CAGE registration.",
+    "Owner completes SAM.gov and CAGE registration and adds the free public API key to Glacier Secrets.",
     "Owner requests quotes only from the original manufacturer or verified authorized distributors and approves parts spending.",
     "Owner signs and submits each bid after reviewing the prepared file; traceability documents are on file before shipping."
   ],
