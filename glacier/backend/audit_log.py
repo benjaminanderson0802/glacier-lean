@@ -14,8 +14,8 @@ def _path(home: str | None = None) -> str:
     return os.path.join(os.path.abspath(home or os.environ.get("GLACIER_HOME", "data")), "audit.sqlite")
 
 
-def record(event_type: str, *, who: str = "owner", what: dict | None = None) -> None:
-    """Record a redacted, structured effect summary; callers must never pass secret values."""
+def record(event_type: str, *, who: str = "owner", what: dict | None = None) -> bool:
+    """Record a redacted effect summary and report whether it was durably stored."""
     path = _path()
     try:
         # Direct runner calls and first-use routes may precede app startup. Create
@@ -36,10 +36,10 @@ def record(event_type: str, *, who: str = "owner", what: dict | None = None) -> 
             )""")
             connection.execute("INSERT INTO glacier_audit(event_type,who,what,happened_at) VALUES (?,?,?,?)",
                                (event_type, who, payload, datetime.now(timezone.utc).isoformat(timespec="milliseconds")))
+        return True
     except Exception:
-        # Audit storage is best-effort at the call boundary: an unavailable
-        # audit database must never turn a successful side effect into failure.
         logging.getLogger(__name__).warning("Could not write audit event %s", event_type, exc_info=True)
+        return False
 
 
 def events(event_type: str | None = None, *, home: str | None = None) -> list[dict]:

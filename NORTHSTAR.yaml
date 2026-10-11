@@ -208,6 +208,7 @@ phases:
     depends_on: [PH0]
     goal: "A durable, inspectable Environment runtime with a live canvas."
     status: in_progress
+    evidence: "evidence/ph1-runtime-audit-boundaries.md; PH1 exit still pending full board (CLM-2026-10-11-F-PH1-FULL-BOARD-UNRELATED-FAILURES)"
     checkpoints:
       - {id: PH1.1, item: "Environment file format in vault, one git commit per save", status: done, evidence: "backend test_save_environment_commits_to_vault"}
       - {id: PH1.2, item: "Node types schedule/command/check/approval/note; crash-safe runs; schedules; approvals across restart", status: done, evidence: "backend tests 1-7 pass in Codespace"}

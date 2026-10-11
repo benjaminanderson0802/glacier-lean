@@ -321,6 +321,7 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
         # run-state database; they still need the default audit identity.
         run_record = {"author": "owner"}
     res = {"state": "done", "output": ""}
+    command_audit_complete = True
     try:
         if kind in ("command", "codex"):
             execution_cfg = dict(cfg)
@@ -341,6 +342,11 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
             timeout = max(1, min(int(cfg.get("timeout") or default_timeout), 24 * 3600))
             for attempt in range(1, retries + 2):
                 if kind == "command":
+                    command_audit_complete = audit_log.record(
+                        "step.command_started", who=run_record.get("author", "owner"),
+                        what={"env_id": env_id, "run_id": run_id, "node_id": nid,
+                              "step_type": kind, "attempt": attempt}) and command_audit_complete
+                if kind == "command":
                     sandbox_setting = execution_cfg.get("sandbox", "off")
                     env_sandbox = os.environ.get("GLACIER_SANDBOX", "off")
                     try:
@@ -352,15 +358,25 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                         res = run_command(execution_cfg, timeout, ws, sandbox_on)
                     except (RuntimeError, NotImplementedError, ValueError) as exc:
                         res = {"state": "failed", "output": str(exc), "exit_code": 1}
+                    except BaseException:
+                        command_audit_complete = audit_log.record(
+                            "step.command_interrupted", who=run_record.get("author", "owner"),
+                            what={"env_id": env_id, "run_id": run_id, "node_id": nid,
+                                  "step_type": kind, "attempt": attempt, "outcome": "unknown"}) and command_audit_complete
+                        raise
                 else:
                     res = run_codex(env_id, run_id, nid, execution_cfg, (last or {}).get("output") or "", timeout, ws)
                 # Failed attempts can still write files or call a model. Record
                 # each outcome before retrying, not only the final attempt.
-                audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
-                                 who=run_record.get("author", "owner"),
-                                 what={"env_id": env_id, "run_id": run_id, "node_id": nid,
-                                       "step_type": kind, "attempt": attempt,
-                                       "exit_code": res.get("exit_code")})
+                outcome = {"env_id": env_id, "run_id": run_id, "node_id": nid,
+                           "step_type": kind, "attempt": attempt,
+                           "exit_code": res.get("exit_code")}
+                if kind == "command":
+                    outcome["outcome"] = "done" if res.get("exit_code") == 0 else "failed"
+                recorded = audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
+                                            who=run_record.get("author", "owner"), what=outcome)
+                if kind == "command":
+                    command_audit_complete = recorded and command_audit_complete
                 res["output"] = secrets_store.redact(str(res.get("output") or ""))
                 if retries:
                     res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
@@ -449,6 +465,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     if isinstance(res.get("usage"), dict):
         store.record_usage(run_id, nid, res["usage"])
     store.set_node(run_id, env_id, nid, res["state"], res["output"])
+    if kind == "command" and not command_audit_complete:
+        res["audit_state"] = "unavailable"
     return res
 
 
