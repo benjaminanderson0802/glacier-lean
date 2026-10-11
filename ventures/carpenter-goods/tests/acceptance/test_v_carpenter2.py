@@ -36,7 +36,24 @@ def test_product_sheet_csv_generates_etsy_shopify_drafts_without_publishing(tmp_
 
 def test_commission_calculator_uses_paid_sales_and_explicit_rate():
     calculate_commissions = load_listing_prep().calculate_commissions
-    sales = [{"order_id": "A-1", "amount": "100.00", "status": "paid"}, {"order_id": "A-2", "amount": "50.00", "status": "unpaid"}]
-    result = calculate_commissions(sales, 0.2)
+    sales = [
+        {"order_id": "A-1", "item_subtotal": "100.00", "discount": "0.00",
+         "shipping": "0.00", "sales_tax": "0.00", "platform_fees": "0.00",
+         "item_refund": "0.00", "status": "paid"},
+        {"order_id": "A-2", "item_subtotal": "50.00", "discount": "0.00",
+         "shipping": "0.00", "sales_tax": "0.00", "platform_fees": "0.00",
+         "item_refund": "0.00", "status": "unpaid"},
+    ]
+    terms = {
+        "signed": True,
+        "rate": "0.20",
+        "eligible_amount": "item subtotal after discounts",
+        "include_shipping": False,
+        "include_sales_tax": False,
+        "deduct_platform_fees": False,
+        "refund_rule": "reduce eligible amount by the refunded item amount",
+        "rounding": "round half up to two currency decimals",
+    }
+    result = calculate_commissions(sales, 0.2, terms)
     assert result["commission_due"] == 20.0
     assert result["eligible_sales"] == 1

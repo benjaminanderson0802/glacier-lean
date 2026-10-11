@@ -125,12 +125,27 @@ def test_platform_export_fixtures_have_real_headers_and_paid_orders_are_counted_
                      tax="7.04", total="95.04", fees="3.12")
     shopify_first = _shopify_row("#2001", subtotal="100.00", shipping="12.00",
                                  taxes="8.96", total="120.96")
+    # Under these signed terms, the platform total fields hold the pre-addition
+    # basis and the separately exported shipping and tax are included below.
+    etsy["Order Total"] = "80.00"
+    shopify_first["Total"] = "100.00"
     shopify_continuation = {header: "" for header in SHOPIFY_HEADERS}
     shopify_continuation.update({"Lineitem quantity": "1", "Lineitem name": "Matching stool",
                                  "Lineitem price": "20.00", "Lineitem requires shipping": "TRUE",
                                  "Lineitem taxable": "TRUE"})
+    terms = {
+        "signed": True,
+        "rate": "0.10",
+        "eligible_amount": "order total",
+        "include_shipping": True,
+        "include_sales_tax": True,
+        "deduct_platform_fees": False,
+        "refund_rule": "exclude refunded orders",
+        "rounding": "round half up to two currency decimals",
+    }
     completed, report = _run_commission(tmp_path, etsy_rows=[etsy],
-                                        shopify_rows=[shopify_first, shopify_continuation])
+                                        shopify_rows=[shopify_first, shopify_continuation],
+                                        terms=terms)
     assert completed.returncode == 0, completed.stderr
     assert report["eligible_sales"] == 2
     assert report["gross_sales"] == 216.0
@@ -141,12 +156,14 @@ def test_platform_export_fixtures_have_real_headers_and_paid_orders_are_counted_
 def test_agreement_terms_control_refunds_fees_shipping_tax_discounts_and_partial_refunds(tmp_path):
     """The signed terms determine the eligible amount; exported totals alone are insufficient."""
     terms = {
+        "signed": True,
         "rate": 0.125,
         "eligible_amount": "item subtotal after discounts, excluding shipping and sales tax",
         "include_shipping": False,
         "include_sales_tax": False,
         "deduct_platform_fees": False,
         "refund_rule": "reduce eligible amount by the refunded item amount",
+        "rounding": "round half up to two currency decimals",
     }
     # Etsy: $120 items - $10 discount - $20 partial item refund = $90.
     etsy = _etsy_row("etsy-partial", order_value="120.00", discount="10.00",
@@ -168,7 +185,18 @@ def test_refunded_or_canceled_orders_do_not_create_commission(tmp_path):
     etsy = _etsy_row("etsy-refunded", status="refunded", total="95.04")
     shopify = _shopify_row("#shop-canceled", status="refunded", total="120.96",
                            refunded="120.96")
-    completed, report = _run_commission(tmp_path, etsy_rows=[etsy], shopify_rows=[shopify])
+    terms = {
+        "signed": True,
+        "rate": "0.10",
+        "eligible_amount": "order total",
+        "include_shipping": False,
+        "include_sales_tax": False,
+        "deduct_platform_fees": False,
+        "refund_rule": "exclude refunded orders",
+        "rounding": "round half up to two currency decimals",
+    }
+    completed, report = _run_commission(tmp_path, etsy_rows=[etsy], shopify_rows=[shopify],
+                                        terms=terms)
     assert completed.returncode == 0, completed.stderr
     assert report["eligible_sales"] == 0
     assert report["commission_due"] == 0
@@ -176,7 +204,16 @@ def test_refunded_or_canceled_orders_do_not_create_commission(tmp_path):
 
 
 def test_commission_rounding_uses_decimal_currency_rules(tmp_path):
-    terms = {"rate": 0.10, "rounding": "round half up to two currency decimals"}
+    terms = {
+        "signed": True,
+        "rate": "0.10",
+        "eligible_amount": "order total",
+        "include_shipping": False,
+        "include_sales_tax": False,
+        "deduct_platform_fees": False,
+        "refund_rule": "exclude refunded orders",
+        "rounding": "round half up to two currency decimals",
+    }
     etsy = _etsy_row("etsy-rounding", order_value="0.05", total="0.05")
     completed, report = _run_commission(tmp_path, etsy_rows=[etsy], terms=terms)
     assert completed.returncode == 0, completed.stderr
