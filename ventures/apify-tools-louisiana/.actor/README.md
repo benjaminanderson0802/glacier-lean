@@ -1,32 +1,58 @@
-# Louisiana Contractor License Status
+# Louisiana Contractor License Lookup — Status and Expiration
 
-## Store listing
+Search Louisiana State Licensing Board for Contractors (LSLBC) public records by license number or business name. Get source-linked JSON with the reported status, expiration date and UTC check time. Use one lookup or a batch of up to 100 queries.
 
-**Short description**
+## Use cases
 
-Check a Louisiana contractor's public license status and expiration from the Louisiana State Licensing Board for Contractors.
+- Add a dated license-record check to subcontractor onboarding.
+- Refresh a list of known license numbers for human review.
+- Feed source links and expiry fields into a procurement spreadsheet or internal workflow.
 
-**Description**
+This tool reports what the source says; the board remains the authority.
 
-Search Louisiana State Licensing Board for Contractors records by license number or company name. Each result includes the license type, literal board status, effective and expiration dates, direct source record, and the time checked. A source outage returns `uncertain — please check`; it is never reported as a clean no-match. Verify directly with the board before relying on a point-in-time status. This independent Actor is not affiliated with or endorsed by the board and does not provide a legal conclusion.
+## Input example
 
-**Search terms**
+```json
+{
+  "license_number": "CL.68755"
+}
+```
 
-Louisiana contractor license; LSLBC license lookup; contractor status; contractor expiration; contractor verification
+Use `name` instead of `license_number` for a business-name substring search. Set `max_results` from 1 to 10 (default 1) for name searches. Louisiana names require at least three characters. For batches, use `{"queries": [{"license_number": "CL.68755"}]}`, up to 100 objects. Each object supplies a license number or name. A batch overrides the top-level single query. Do not treat a truncated name search as a complete roster.
 
-**Pricing**
+## Output example
 
-Pay per event: **$0.02 per completed lookup**. A readable no-match is billed; a source outage is not. Platform usage is included. Suggested maximum run charge: **$2.00** (100 input searches). Configure the `license-lookup` event in Apify Console before publishing and disable the automatic `apify-default-dataset-item` event.
+Recorded local Actor output from 2026-10-11 UTC (October 10 in Alabama); historical example, not a statement of current status.
 
-## Owner steps
+```json
+{
+  "outcome": "match",
+  "verification_state": "verified",
+  "license_number": "CL.68755",
+  "business_name": "09 Construction Services, LLC",
+  "license_type": "Commercial License Certificate",
+  "status": "Active",
+  "effective_date": "07/19/2026",
+  "expiration_date": "2029-07-18",
+  "source_url": "https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=R6DulTdQAO08c2WY3yqQKg%3d%3d&Source=DetailedSearch",
+  "checked_at": "2026-10-11T01:14:40+00:00"
+}
+```
 
-1. **Your step: Set up the Apify account and deploy this Actor.** Use the official Apify CLI, from the repository root: `cd ventures/apify-tools-louisiana && npm exec --yes --package=apify-cli@1.10.0 -- apify push`.
-2. **Your step: Approve and publish this distinct listing.** Review the no-blocking different-engine review in `../REVIEW.md`, then use the separate Glacier publication approval and publish it yourself in Apify Console. The Mississippi approval cannot be reused.
+The default dataset contains one row per returned record, or a dated no-match/uncertain row. Matches include `business_name`, `license_number`, `status`, `expiration_date`, `source_url` and `checked_at`; Louisiana may also include `license_type` and `effective_date`. Export the dataset as JSON or CSV in Apify.
 
-## Source and limitations
+`verification_state: verified` means the source was readable, not that a contractor is approved or suitable. Missing fields can produce `uncertain`; source access failure produces `unverifiable`. A no-match is limited to the search and time shown.
 
-- Official search page: https://lslbc.louisiana.gov/contractor-search/
-- Public search portal: https://arlspublic.lslbc.louisiana.gov/Public/DetailedSearch/ByNumber
-- At most one request per second; company-name searches require 3 or more characters; name searches return at most 10 licenses; each run accepts at most 100 searches.
-- A readable empty search says `no match found in Louisiana State Licensing Board for Contractors public search as of [date]`. Source or parse failures return `uncertain — please check` with `verification_state: unverifiable`.
-- The Actor is not affiliated with or endorsed by the Louisiana State Licensing Board for Contractors.
+## Pricing
+
+Proposed launch price: **$0.02 per input lookup**, event `license-lookup`, with platform usage included. The Store pricing panel is authoritative once published. One lookup returning multiple name matches incurs one event, not one charge per row. A readable no-match is billable; a partial record marked `uncertain` can also be billable. A source failure marked `unverifiable` is not charged by this event.
+
+At this price, 100 billable queries cost $2.00. Use a maximum charge of $2 for a full batch or $0.02 for one query. These are user settings, not a hard-coded dollar cap. No additional startup or automatic dataset-item fee is proposed. Check the displayed event settings before running.
+
+## Limitations and legal notes
+
+Only Louisiana is covered. Source records may be stale, incomplete or unavailable, and a name match may refer to another business. Verify directly with the [official board source](https://arlspublic.lslbc.louisiana.gov/Public/DetailedSearch/ByNumber) before an important decision. This is not a certified license report, insurance check, eligibility decision or legal advice, and is not affiliated with the board.
+
+Requests are rate-limited; login/CAPTCHA or access restrictions must not be bypassed. Automated access permission must remain valid. Do not use this Actor to evade source terms or collect unrelated personal information. No state-wide completeness or uptime guarantee is made.
+
+For a technical problem, use this Actor's Apify Issues tab and share the input and run ID without credentials or private customer data.
