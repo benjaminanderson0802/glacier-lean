@@ -1,0 +1,257 @@
+{
+  "data": {
+    "jobs": {
+      "nodes": [
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MTAx",
+          "jobNumber": 9101,
+          "title": "Carrier Infinity heat pump replacement",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-05-11T16:10:00-05:00",
+          "jobberWebUri": "https://secure.getjobber.com/jobs/9101",
+          "customFields": [
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMTE=",
+              "label": "Equipment Brand",
+              "valueText": "Carrier"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMTI=",
+              "label": "Equipment Model",
+              "valueText": "Infinity 24 25VNA4"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMTM=",
+              "label": "Equipment Serial",
+              "valueText": "2126E12345"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMTQ=",
+              "label": "Install Date",
+              "valueText": "2026-05-11"
+            }
+          ],
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MTAx",
+            "name": "Maya Rivera",
+            "email": "maya.rivera@example.test"
+          },
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMDE",
+            "address": {
+              "city": "Austin",
+              "province": "TX",
+              "postalCode": "78704",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MTAy",
+          "jobNumber": 9102,
+          "title": "Trane furnace and coil installation",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-05-13T14:45:00-05:00",
+          "jobberWebUri": "https://secure.getjobber.com/jobs/9102",
+          "customFields": [
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMjE=",
+              "label": "Brand",
+              "valueText": "Trane"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMjI=",
+              "label": "Model",
+              "valueText": "S9V2B080U4PS"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMjM=",
+              "label": "Serial Number",
+              "valueText": "24351ABC1234"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMjQ=",
+              "label": "Install Date",
+              "valueText": "2026-05-13"
+            }
+          ],
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MTAy",
+            "name": "Jordan Lee",
+            "email": "jordan.lee@example.test"
+          },
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMDI",
+            "address": {
+              "city": "Round Rock",
+              "province": "TX",
+              "postalCode": "78664",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MTAz",
+          "jobNumber": 9103,
+          "title": "Lennox heat pump system replacement",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-05-15T17:25:00-05:00",
+          "jobberWebUri": "https://secure.getjobber.com/jobs/9103",
+          "customFields": [
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMzE=",
+              "label": "Equipment Brand",
+              "valueText": "Lennox"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMzI=",
+              "label": "Equipment Model",
+              "valueText": "EL18XPV-036"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMzM=",
+              "label": "Equipment Serial",
+              "valueText": "5826C01234"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxMzQ=",
+              "label": "Install Date",
+              "valueText": "2026-05-15"
+            }
+          ],
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MTAz",
+            "name": "Sam Patel",
+            "email": "sam.patel@example.test"
+          },
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMDM",
+            "address": {
+              "city": "Georgetown",
+              "province": "TX",
+              "postalCode": "78626",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MTA0",
+          "jobNumber": 9104,
+          "title": "Goodman air conditioner and furnace installation",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-05-18T13:05:00-05:00",
+          "jobberWebUri": "https://secure.getjobber.com/jobs/9104",
+          "customFields": [
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNDE=",
+              "label": "Manufacturer",
+              "valueText": "Goodman"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNDI=",
+              "label": "Model",
+              "valueText": "GSXN403610 / GM9C800804"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNDM=",
+              "label": "Serial",
+              "valueText": "2605123456"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNDQ=",
+              "label": "Installation Date",
+              "valueText": "2026-05-18"
+            }
+          ],
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MTA0",
+            "name": "Taylor Brooks",
+            "email": "taylor.brooks@example.test"
+          },
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMDQ",
+            "address": {
+              "city": "Pflugerville",
+              "province": "TX",
+              "postalCode": "78660",
+              "country": "US"
+            }
+          }
+        },
+        {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi85MTA1",
+          "jobNumber": 9105,
+          "title": "Ruud Endeavor heat pump replacement",
+          "jobStatus": "COMPLETED",
+          "completedAt": "2026-05-20T16:50:00-05:00",
+          "jobberWebUri": "https://secure.getjobber.com/jobs/9105",
+          "customFields": [
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNTE=",
+              "label": "Equipment Brand",
+              "valueText": "Ruud"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNTI=",
+              "label": "Equipment Model",
+              "valueText": "RD17AZ48AJ3CA"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNTM=",
+              "label": "Equipment Serial",
+              "valueText": "W2026A12345"
+            },
+            {
+              "__typename": "CustomFieldText",
+              "id": "Z2lkOi8vSm9iYmVyL0N1c3RvbUZpZWxkVGV4dC85MTAxNTQ=",
+              "label": "Install Date",
+              "valueText": "2026-05-20"
+            }
+          ],
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MTA1",
+            "name": "Avery Morgan",
+            "email": "avery.morgan@example.test"
+          },
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMDU",
+            "address": {
+              "city": "Cedar Park",
+              "province": "TX",
+              "postalCode": "78613",
+              "country": "US"
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    }
+  },
+  "extensions": {
+    "versioning": {
+      "version": "2026-04-16"
+    }
+  }
+}

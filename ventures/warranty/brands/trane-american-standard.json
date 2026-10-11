@@ -1,0 +1,27 @@
+{
+  "id": "trane-american-standard",
+  "brand_names": ["Trane", "American Standard"],
+  "primary_brand": "trane",
+  "queue_window_days": 60,
+  "registration": {
+    "deadline": "60 days after installation for Registered Limited Warranty on eligible residential products; product and jurisdiction exclusions apply.",
+    "who_may_register": "Homeowner/purchaser or installing dealer; official Trane and American Standard homeowner pages say either the owner or dealer may register.",
+    "portal_urls": {
+      "Trane": "https://www.trane.com/residential/en/resources/warranty-and-registration/register/",
+      "American Standard": "https://www.americanstandardair.com/resources/warranty-and-registration/"
+    },
+    "portal_accepts_dealer": "yes - the official homeowner pages explicitly say dealers often register for customers.",
+    "terms_allow_third_party_preparation": "uncertain - please check; ordinary dealer registration is documented, but permission for an outside service or automated preparation is not. Trane website terms require prior written permission for automated page monitoring/copying; confirm applicability to registration workflow."
+  },
+  "date_code": {
+    "status": "uncertain - please check",
+    "format": "No general residential Trane/American Standard HVAC serial-number date-code format was found. Official technical material documents formats for particular components only; do not generalize them to residential equipment."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Trane warranty and registration", "url": "https://www.trane.com/residential/en/resources/warranty-and-registration/"},
+    {"title": "Trane registration", "url": "https://www.trane.com/residential/en/resources/warranty-and-registration/register/"},
+    {"title": "American Standard warranty and registration", "url": "https://www.americanstandardair.com/resources/warranty-and-registration/"},
+    {"title": "Trane website terms of use", "url": "https://www.trane.com/content/dam/Trane/Commercial/global/terms-and-conditions-of-use.pdf"}
+  ]
+}
