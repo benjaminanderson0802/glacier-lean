@@ -420,6 +420,9 @@ const server = http.createServer(async (req, res) => {
         const graph = envs.get(env_id)
         if (graph) fixedMockRuns.set(run_id, { run_id, env_id, status, started_at: base, graph, node_states: { n1: status === 'failed' ? 'failed' : status === 'waiting' ? 'waiting' : status === 'running' ? 'running' : 'pending' }, outputs: {}, waiting_on: status === 'waiting' ? 'n1' : null, usage: {} })
       }
+      const dispatch = { id: 'dispatch', name: 'Dispatch', nodes: [{ id: 'review', type: 'approval', config: { prompt: 'Approve the route before any driver is assigned.' }, position: { x: 80, y: 80 } }], edges: [] }
+      envs.set(dispatch.id, dispatch)
+      fixedMockRuns.set('run-dispatch-waiting', { run_id: 'run-dispatch-waiting', env_id: dispatch.id, status: 'waiting', started_at: base, graph: dispatch, node_states: { review: 'waiting' }, outputs: {}, waiting_on: 'review', usage: {} })
       const claimId = '2026-10-07-calendar-claim-a1b2c3'
       if (!mockClaims.has(claimId)) mockClaims.set(claimId, { meta: { id: claimId, kind: 'capability_gap', summary: 'Need a calendar connection for this workflow.', status: 'proposed', updated: base, run_id: '' }, body: '## Problem\nNeed a calendar connection for this workflow.\n\n## Evidence\n\n## Research\n\n## Resolution\n', summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, updated: this.meta.updated } } })
       return send(200, { seeded: true })

@@ -8,8 +8,8 @@ function Step({ step }: { step: VentureStep }) {
   const links = [...new Set([...(step.links ?? []), step.link, step.url].filter((link): link is string => !!link))]
     .filter(link => /^#\/(settings|automations|memory|home|ask)(\/|$)/.test(link) || /^https?:\/\//i.test(link))
   return <div className="venture-step" data-testid={`your-step-${step.id}`}>
-    <div className="venture-step-copy"><strong>{step.title}</strong><p>{step.instructions || step.detail}</p>
-      {links.map(link => <a key={link} href={link} target={link.startsWith('#') ? undefined : '_blank'} rel="noopener noreferrer">{link.startsWith('#/settings') ? t('settings.title') : link}</a>)}
+    <div className="venture-step-copy"><strong className="venture-user-content">{step.title}</strong><p className="venture-user-content">{step.instructions || step.detail}</p>
+      {links.map(link => <a key={link} href={link} target={link.startsWith('#') ? undefined : '_blank'} rel="noopener noreferrer" className={link.startsWith('#/settings') ? '' : 'venture-user-content'}>{link.startsWith('#/settings') ? t('settings.title') : link}</a>)}
     </div>
   </div>
 }
@@ -43,8 +43,8 @@ export function Ventures({ query }: { query: string }) {
       const steps = venture.your_steps.filter(step => !step.done)
       const last = venture.last_run
       return <article className="venture-card" key={venture.slug} data-testid={`venture-${venture.slug}`}>
-        <header className="venture-card-head"><h2>{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`} title={venture.readiness === 'blocked' ? undefined : t(`ventures.${venture.readiness}Help`)}>{t(`ventures.${venture.readiness}`)}</span></header>
-        <div className="venture-card-copy"><strong>{t('ventures.what')}</strong><p>{venture.description || t('ventures.noDescription')}</p></div>
+        <header className="venture-card-head"><h2 className="venture-user-content">{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`} title={venture.readiness === 'blocked' ? undefined : t(`ventures.${venture.readiness}Help`)}>{t(`ventures.${venture.readiness}`)}</span></header>
+        <div className="venture-card-copy"><strong>{t('ventures.what')}</strong><p className={venture.description ? 'venture-user-content' : undefined}>{venture.description || t('ventures.noDescription')}</p></div>
         {venture.blockers.length > 0 && <ul className="venture-blockers">{venture.blockers.map(reason => <li key={reason}>{t(`ventures.${reason}`)}</li>)}</ul>}
         <div className="venture-card-copy"><strong>{t('ventures.lastRun')}</strong> · {last
           ? <a className="g-link" href={`#/automations/flow/${encodeURIComponent(last.env_id)}/${encodeURIComponent(last.run_id)}`} data-testid={`venture-last-run-${venture.slug}`}>{t('ventures.runResult', { status: t(`ventures.result.${last.status}`), when: new Date(last.started_at).toLocaleString() })}</a>
