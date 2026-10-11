@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -99,15 +100,35 @@ class InstallAllTests(unittest.TestCase):
 
                     env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
                     env["GLACIER_HOME"] = str(home)
-                    result = subprocess.run(
-                        command["cmd"] + " --help",
-                        cwd=flow_workspace,
-                        env=env,
-                        shell=True,
-                        capture_output=True,
-                        text=True,
-                        timeout=10,
-                    )
+                    invocation = command["cmd"] + " --help"
+                    if os.name == "nt":
+                        # Installed flow commands use Git Bash on Windows, as does the engine.
+                        git_bash = (
+                            Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+                            / "Git"
+                            / "bin"
+                            / "bash.exe"
+                        )
+                        bash = str(git_bash) if git_bash.is_file() else shutil.which("bash")
+                        self.assertTrue(bash, "Git Bash is required to run installed flow commands on Windows")
+                        result = subprocess.run(
+                            [bash, "-lc", invocation],
+                            cwd=flow_workspace,
+                            env=env,
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                        )
+                    else:
+                        result = subprocess.run(
+                            invocation,
+                            cwd=flow_workspace,
+                            env=env,
+                            shell=True,
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                        )
                     self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_c_flow_asset_staging_rejects_a_destination_symlink_outside_workspace(self) -> None:
