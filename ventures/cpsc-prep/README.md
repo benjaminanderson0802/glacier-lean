@@ -77,6 +77,11 @@ Use [LAWYER-QUESTIONS.md](LAWYER-QUESTIONS.md) as the counsel checklist. The
 opinion remains a hard launch gate; the document is not legal advice or a
 substitute for the lawyer's written conclusion.
 
+The lawyer-question checklist cites the governing statutes, regulations, and
+CPSC guidance. The `trade-lawyer-opinion` launch gate remains in
+`venture.json`; no paid launch or broker onboarding is enabled by the checklist
+or its automated checks.
+
 ## Your steps
 
 1. Before any paid launch or broker contract, attach and confirm the trade

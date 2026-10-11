@@ -26,7 +26,18 @@ Command, using the project interpreter:
 ~/w/glacier-lean/.venv/bin/python -m pytest ventures/cpsc-prep -q
 ```
 
-Result: `18 passed in 0.08s` on the final run.
+Result: `19 passed, 1 skipped, 1 xpassed in 16.12s` on the final run.
+The independent lawyer-question/launch-gate acceptance check also passed with
+its xfail marker ignored:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest \
+  ventures/cpsc-prep/tests/acceptance/test_v_cpsc2.py::test_lawyer_questions_are_cited_and_launch_remains_gated \
+  -q --runxfail
+```
+
+Result: `1 passed in 0.53s`. The `xpassed` in the full suite is this check
+passing under the suite's normal xfail handling.
 
 Installer validation:
 
