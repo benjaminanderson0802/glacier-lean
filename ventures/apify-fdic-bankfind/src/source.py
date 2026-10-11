@@ -66,9 +66,13 @@ def collect(inputs, client=None):
             offset += len(batch)
             if offset >= total:
                 break
-        return rows or [{'outcome': 'no_match', 'billable': False,
-                         'message': 'No institution matched these filters in this source snapshot.',
-                         **provenance(text, url, headers)}]
+        if rows:
+            return rows
+        source = provenance(text, url, headers)
+        as_of = source['retrieved_at'][:10]
+        return [{'outcome': 'no_match', 'billable': False,
+                 'message': f'No match found in FDIC as of {as_of}; no institution matched these filters in this source snapshot.',
+                 **source}]
     except (ValueError, KeyError, TypeError, RuntimeError, OSError) as exc:
         # Fail the whole snapshot closed rather than sell an incomplete result set.
         return [uncertain(f'FDIC source unavailable or unexpected response ({type(exc).__name__}); retry later.', URL)]

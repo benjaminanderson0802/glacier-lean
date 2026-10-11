@@ -53,7 +53,8 @@ def provenance(text, url, headers):
 
 
 def uncertain(message, source_url, **extra):
-    return {'outcome': 'uncertain', 'billable': False, 'message': message,
+    customer_message = message if 'uncertain - please check' in message.lower() else f'uncertain - please check: {message}'
+    return {'outcome': 'uncertain', 'billable': False, 'message': customer_message,
             'source_url': source_url, 'retrieved_at': stamp(), **extra}
 
 

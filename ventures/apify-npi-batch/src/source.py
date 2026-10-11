@@ -29,9 +29,10 @@ def collect(inputs, client=None):
             if not isinstance(found, list) or len(found) != payload['result_count'] or len(found) > 1:
                 raise SourceError('NPPES count mismatch.')
             if not found:
+                source = provenance(text, url, headers)
                 rows.append({'record_id': npi, 'npi': npi, 'outcome': 'no_match', 'billable': False,
-                    'message': 'No public NPPES record returned for this NPI at retrieval time; not proof of invalid credentials.',
-                    **provenance(text, url, headers)})
+                    'message': f"No match found in NPPES as of {source['retrieved_at'][:10]}; no public record was returned for this NPI. This is not proof of invalid credentials.",
+                    **source})
                 continue
             provider = found[0]
             basic = provider['basic']
