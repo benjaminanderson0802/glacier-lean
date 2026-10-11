@@ -1,0 +1,36 @@
+{
+  "sample_source": "synthetic fixture; no live roster data was retrieved",
+  "source_url": "https://genconbd.alabama.gov/",
+  "source_as_of": "2026-10-01 (fixture date, not a claim about a downloaded board roster)",
+  "generated_at": "2026-10-10T12:00:00+00:00",
+  "results": [
+    {
+      "outcome": "match",
+      "verification_state": "verified",
+      "roster_presence": "listed",
+      "license_number": "AL-EXAMPLE-1042",
+      "business_name": "Example Building Services LLC",
+      "status": "Active",
+      "expiration_date": "2027-12-31",
+      "specialty": "Building Construction",
+      "source_url": "https://genconbd.alabama.gov/",
+      "source_as_of": "2026-10-01",
+      "checked_at": "2026-10-10T12:00:00+00:00",
+      "limitations": "This snapshot only checks the supplied roster as of its stated date. It is not a real-time license determination, identity match, insurance check, or quality endorsement."
+    },
+    {
+      "outcome": "match",
+      "verification_state": "verified",
+      "roster_presence": "listed",
+      "license_number": "AL-EXAMPLE-2088",
+      "business_name": "Sample Electrical Contractors Inc",
+      "status": "Inactive",
+      "expiration_date": "2025-09-30",
+      "specialty": "Electrical",
+      "source_url": "https://genconbd.alabama.gov/",
+      "source_as_of": "2026-10-01",
+      "checked_at": "2026-10-10T12:00:00+00:00",
+      "limitations": "This snapshot only checks the supplied roster as of its stated date. It is not a real-time license determination, identity match, insurance check, or quality endorsement."
+    }
+  ]
+}
