@@ -12,7 +12,7 @@ The category order is a research hypothesis based on Depop's official trend cove
 
 ## Use
 
-The fixture in `tests/fixtures/inventory.csv` documents the input columns. Supply your own private inventory CSV and photo folder; set `photo_origin` to `owner_original` only after taking the photos yourself.
+The fixture in `tests/fixtures/inventory.csv` documents the input columns. Supply your own private inventory CSV and photo folder; `inventory_source` must be one of `thrift_store`, `used_clothing_lot`, `consignment`, or `private_seller`, condition must be `Good` or `Satisfactory`, and set `photo_origin` to `owner_original` only after taking the photos yourself. These source and condition gates keep the draft tool scoped to pre-owned BUY-FIRST stock.
 
 ```bash
 ~/w/glacier-lean/.venv/bin/python ventures/depop-resale/scripts/depop_prep.py listings \

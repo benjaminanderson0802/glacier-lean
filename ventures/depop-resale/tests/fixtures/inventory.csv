@@ -1,2 +1,2 @@
-item_id,category,brand,item_type,style_terms,color,size,condition,flaws,measurements,expected_sale_usd,acquisition_cost_usd,shipping_paid_by_seller_usd,packaging_cost_usd,photo_paths,photo_origin
-JKT-001,denim,uncertain - please check,denim jacket,vintage,blue,Large,Good,Light cuff wear,Chest 22 in; length 25 in,42.00,6.00,0,1.00,photos/jacket-front.jpg|photos/jacket-back.jpg,owner_original
+item_id,inventory_source,category,brand,item_type,style_terms,color,size,condition,flaws,measurements,expected_sale_usd,acquisition_cost_usd,shipping_paid_by_seller_usd,packaging_cost_usd,photo_paths,photo_origin
+JKT-001,thrift_store,denim,uncertain - please check,denim jacket,vintage,blue,Large,Good,Light cuff wear,Chest 22 in; length 25 in,42.00,6.00,0,1.00,photos/jacket-front.jpg|photos/jacket-back.jpg,owner_original

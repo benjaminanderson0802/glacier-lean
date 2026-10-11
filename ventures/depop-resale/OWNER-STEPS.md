@@ -5,7 +5,7 @@ This is the venture's one human-only workflow. Use the research ceilings to choo
 ## Before listing each item
 
 1. Open [RESEARCH.md](RESEARCH.md) and compare your intended purchase against the category ceiling. Open a local thrift store or used-lot listing you chose yourself, inspect the item or lot contents and condition, divide the lot's full landed cost (item price, buyer's premium, inbound shipping, tax, and handling) across the sellable pieces, and only then choose whether to buy. Keep the receipt or lot record. Do not buy a lot if you cannot verify the items are permitted, authentic where branded, and in a condition you can describe honestly.
-2. After the item arrives, put it in your inventory and assign a unique `item_id`. Enter only facts you can verify in `tests/fixtures/inventory.csv`'s column format; keep your live inventory sheet outside the repository. Use `uncertain - please check` for any unknown fact.
+2. After the item arrives, put it in your inventory and assign a unique `item_id`. Enter only facts you can verify in `tests/fixtures/inventory.csv`'s column format; set `inventory_source` to the actual used source and `condition` to `Good` or `Satisfactory`; keep your live inventory sheet outside the repository. Use `uncertain - please check` for any unknown fact.
 3. Take your own clear photos of the exact item, including front, back, brand/size labels, and every flaw. Save them in a private local photo folder. Do not upload someone else's images.
 4. From the repository root, make a local CSV handoff:
 

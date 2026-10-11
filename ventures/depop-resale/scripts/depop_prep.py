@@ -10,7 +10,7 @@ import re
 
 
 INPUT_FIELDS = (
-    "item_id", "category", "brand", "item_type", "style_terms", "color", "size",
+    "item_id", "inventory_source", "category", "brand", "item_type", "style_terms", "color", "size",
     "condition", "flaws", "measurements", "expected_sale_usd", "acquisition_cost_usd",
     "shipping_paid_by_seller_usd", "packaging_cost_usd", "photo_paths", "photo_origin",
 )
@@ -18,7 +18,8 @@ HANDOFF_FIELDS = (
     "item_id", "title", "description", "tags", "size", "condition", "price_usd",
     "category", "brand", "photo_paths",
 )
-CONDITION_VALUES = {"New with tags", "New without tags", "Good", "Satisfactory"}
+CONDITION_VALUES = {"Good", "Satisfactory"}
+USED_SOURCE_VALUES = {"thrift_store", "used_clothing_lot", "consignment", "private_seller"}
 
 # Trend-led sourcing shortlist, not a sales ranking or a promise of demand.
 CATEGORIES = [
@@ -75,6 +76,10 @@ def read_inventory(path: str | Path) -> list[dict[str, str]]:
                     raise ValueError(f"row {line} has a negative {field}")
             if not row["category"]:
                 raise ValueError(f"row {line} needs a category")
+            if row["inventory_source"] not in USED_SOURCE_VALUES:
+                raise ValueError(
+                    f"row {line} inventory_source must be one of: {', '.join(sorted(USED_SOURCE_VALUES))}"
+                )
             rows.append(row)
     return rows
 
@@ -100,6 +105,8 @@ def prepare_listings(rows: list[dict[str, str]], *, photo_root: str | Path) -> l
         seen_ids.add(row["item_id"])
         if row["photo_origin"] != "owner_original":
             raise ValueError(f"{row['item_id']} photo_origin must be owner_original")
+        if row["inventory_source"] not in USED_SOURCE_VALUES:
+            raise ValueError(f"{row['item_id']} must be bought as used inventory from an allowed source")
         photos = [part.strip() for part in row["photo_paths"].split("|") if part.strip()]
         if not photos:
             raise ValueError(f"{row['item_id']} needs at least one owner photo")
