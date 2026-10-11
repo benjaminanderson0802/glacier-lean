@@ -48,7 +48,8 @@ def _is_event_loop_socketpair(sock, address):
     while frame is not None:
         filename = frame.f_code.co_filename.replace("\\", "/")
         found_socketpair |= (
-            frame.f_code.co_name == "socketpair" and filename.endswith("/socket.py")
+            frame.f_code.co_name in {"socketpair", "_fallback_socketpair"}
+            and filename.endswith("/socket.py")
         ) or (
             frame.f_code.co_name in {"socketpair", "_socketpair"}
             and filename.endswith("/asyncio/windows_utils.py")
@@ -106,6 +107,39 @@ def test_windows_asyncio_socketpair_connect_is_allowed(monkeypatch):
             "def windows_socketpair(sock, address):\n"
             "    return socketpair(sock, address)\n",
             r"C:\Python\Lib\asyncio\windows_utils.py",
+            "exec",
+        ),
+        namespace,
+    )
+
+    with socket.socket() as sock:
+        namespace["windows_socketpair"](sock, ("127.0.0.1", 43210))
+
+    assert calls == [("127.0.0.1", 43210)]
+
+
+def test_windows_fallback_socketpair_connect_is_allowed(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_ORIGINAL_SOCKET_CONNECT",
+        lambda sock, address: calls.append(address),
+    )
+    namespace = {"_blocked_connect": _blocked_connect}
+    exec(
+        compile(
+            "def _fallback_socketpair(sock, address):\n"
+            "    return _blocked_connect(sock, address)\n",
+            r"C:\Python313\Lib\socket.py",
+            "exec",
+        ),
+        namespace,
+    )
+    exec(
+        compile(
+            "def windows_socketpair(sock, address):\n"
+            "    return _fallback_socketpair(sock, address)\n",
+            r"C:\Python313\Lib\asyncio\windows_utils.py",
             "exec",
         ),
         namespace,
