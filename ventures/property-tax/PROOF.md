@@ -12,7 +12,11 @@
 
 Checks are listed here only after they have run in this worktree. The venture pytest command covers both fixture behavior and the new self-file guide. Existing live evidence below comes from earlier probes and is not presented as a live end-to-end filing.
 
-- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/property-tax -q` — **7 passed**. The new self-file acceptance test was first run before implementation and failed because `filing_mode` was absent; after implementation the suite passed.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/property-tax/tests/acceptance/test_v_proptax2.py -q --runxfail` — **2 passed**. This includes the previously outstanding homeowner-mode check, which confirms the packet flow itself describes the homeowner self-file guide and leaves filing with the homeowner.
+- `~/w/glacier-lean/.venv/bin/python -m pytest ventures/property-tax -q` — **7 passed, 2 xpassed**. The xpasses are the two `V-PROPTAX2` acceptance checks; their `xfail` marks remain unchanged.
+- `git diff --check` — passed.
+
+- The earlier self-file implementation check and suite run are historical; current results are listed above and include the independent `V-PROPTAX2` acceptance checks.
 - `~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only property-tax --dry-run` — **4 flows validated**.
 - Started a fresh real backend at `127.0.0.1:38423` with a disposable `GLACIER_HOME`; `ventures/install_all.py --only property-tax` installed all four flows (`saved: true`). The packet flow was not run: the known runner-root failure has already repeated three times and is tracked in `CLM-2026-10-10-PROPERTY-TAX-LIVE-FLOW-ROOT`; repeating it would not be a useful independent check.
 - `~/w/glacier-lean/.venv/bin/python -m pytest ventures -q` — collection stopped with 3 import errors because `recall-actor` and `utility-audits` expect their local import roots. Running those suites from their own directories passed: `ventures/recall-actor` **10 passed, 1 skipped, 3 subtests passed**; `ventures/utility-audits` **9 passed**. No other venture files were changed; the broad root invocation does not establish every venture suite as green.
