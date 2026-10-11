@@ -1,5 +1,7 @@
 # FDIC BankFind Institution Normalizer
 
+**SEO description:** Look up FDIC-insured institutions by certificate or state using the official BankFind API. Get normalized records with source dates, data vintage, and bounded pagination.
+
 Normalize official FDIC bank institutions by certificate or state, with source dates, vintage and bounded pagination.
 
 ## Use cases
@@ -10,6 +12,8 @@ For vendor-data joins, institution directories and repeatable state snapshots. F
 
 certificate (string, 1–6 digits) or state (two uppercase letters) is required. Both narrow the search with AND. max_records defaults to 100, maximum 1,000. active_only defaults to false. Internal page_size can be 1–100 for controlled pagination; default 100.
 
+**Example input:**
+
 ```json
 {
   "certificate": "3510"
@@ -17,6 +21,8 @@ certificate (string, 1–6 digits) or state (two uppercase letters) is required.
 ```
 
 ## Output
+
+**Example output:** the source-backed sample below is a recorded local result, not a guarantee of a current record.
 
 One dataset row per one successfully returned institution. `outcome` is `ok`, `no_match` (where the API explicitly reports zero matches), or `uncertain`. Every row includes the official source URL, retrieval time and a plain message. Successful source responses also carry SHA-256 provenance. JSON/CSV/Excel exports are available through Apify dataset downloads; the Output tab includes overview and provenance views.
 

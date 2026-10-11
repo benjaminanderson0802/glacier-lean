@@ -93,4 +93,4 @@ def collect(inputs, client=None):
                 'previous_source_last_modified': old[1]['source_last_modified'], **now[1]})
         return rows
     except Exception as exc:
-        return [uncertain(f'Census release unavailable or unexpected response ({type(exc).__name__}); please check source.', URL)]
+        return [uncertain(f'uncertain - please check: Census release unavailable or unexpected response ({type(exc).__name__}).', URL)]

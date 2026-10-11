@@ -1,0 +1,33 @@
+{
+  "slug": "apify-fdic-bankfind",
+  "name": "FDIC BankFind Institution Normalizer",
+  "status": "ready",
+  "flows": [
+    "apify-fdic-bankfind-owner-publish"
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "publish-existing-actor",
+      "title": "connect, build, price, and publish existing Actor",
+      "when": "In one sitting after this card is integrated into glacier-final",
+      "detail": "Use the Apify account and Store steps once in ventures/apify-portfolio/PUBLISH-CHECKLIST.md. Update existing Actor ChKulAea4wSWntGzN; connect the exact Git URL, build, set bank-record to $0.002, configure no automatic start/dataset-item charge, review and publish it yourself. Payout verification is one-time across all six Actors.",
+      "links": [
+        "https://console.apify.com/account/integrations",
+        "https://console.apify.com/actors/ChKulAea4wSWntGzN"
+      ]
+    }
+  ],
+  "product": {
+    "purpose": "Publish FDIC BankFind Institution Normalizer as a pay-per-event Apify Store Actor.",
+    "actor_name": "fdic-bankfind",
+    "existing_actor_id": "ChKulAea4wSWntGzN",
+    "seo_description": "FDIC BankFind bank institution records normalize certificate state",
+    "pricing": {
+      "model": "pay_per_event",
+      "event": "bank-record",
+      "price_usd": 0.002,
+      "platform_usage_included": true
+    }
+  }
+}

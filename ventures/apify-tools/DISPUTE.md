@@ -1,0 +1,3 @@
+# Acceptance schema shape dispute — 2026-10-11
+
+The independent `tests/acceptance/test_independent_actor_billing.py::test_dataset_output_schema_declares_every_emitted_column` expects output field names directly under `.actor/dataset_schema.json["fields"]`. The requested Apify format for this portfolio is instead a JSON Schema object under `fields`, with `type: object` and names inside `properties`; top-level `properties` are not allowed. The package follows that requested schema. Do not change the acceptance check or add duplicate field-name keys at the `fields` level, because that would make it cease to be the required JSON Schema object.

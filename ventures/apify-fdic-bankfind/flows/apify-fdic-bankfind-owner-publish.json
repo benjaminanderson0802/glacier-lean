@@ -1,0 +1,21 @@
+{
+  "id": "apify-fdic-bankfind-owner-publish",
+  "name": "Your step: publish FDIC BankFind Institution Normalizer",
+  "description": "One owner-only approval that points to the prefilled Apify publication checklist.",
+  "goal": "Complete the owner-only Apify Store publication for the existing FDIC BankFind Institution Normalizer Actor.",
+  "nodes": [
+    {
+      "id": "owner_publish",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: open ventures/apify-portfolio/PUBLISH-CHECKLIST.md. Update existing Actor ChKulAea4wSWntGzN (fdic-bankfind) rather than creating a duplicate. Connect the listed Git URL, build, set only bank-record to $0.002, disable automatic start and default dataset item charges, review the listing and publish yourself."
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [],
+  "max_steps": 3
+}

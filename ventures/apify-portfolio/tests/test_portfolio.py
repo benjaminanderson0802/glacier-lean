@@ -227,6 +227,46 @@ def test_census_late_column_reorder_fails_closed():
     assert row['outcome'] == 'uncertain' and not row['billable']
 
 
+def test_census_source_failure_uses_customer_uncertainty_wording():
+    row = module('census-permits').collect(
+        {'period': '2026-08', 'states': ['01']}, Client(RuntimeError('source unavailable'))
+    )[0]
+    assert row['outcome'] == 'uncertain' and not row['billable']
+    assert 'uncertain - please check' in row['message'].lower()
+
+
+def test_all_six_store_packages_have_complete_actor_schemas_and_listing_assets():
+    packages = {
+        'apify-tools': ('license-lookup', 0.02),
+        'apify-tools-louisiana': ('license-lookup', 0.02),
+        'recall-actor': ('recall-check', 0.01),
+        'apify-census-permits': ('state-comparison', 0.002),
+        'apify-fdic-bankfind': ('bank-record', 0.002),
+        'apify-npi-batch': ('provider-record', 0.003),
+    }
+    for folder, (event, price) in packages.items():
+        root = ROOT / folder
+        actor = json.loads((root / '.actor/actor.json').read_text())
+        input_schema = json.loads((root / '.actor/input_schema.json').read_text())
+        dataset_schema = json.loads((root / '.actor/dataset_schema.json').read_text())
+        pricing = json.loads((root / 'pricing.json').read_text())
+        readme = (root / 'README.md').read_text().lower()
+        assert {'actorSpecification', 'name', 'title', 'description', 'version',
+                'buildTag', 'dockerfile', 'input', 'storages', 'defaultRunOptions'} <= actor.keys()
+        assert actor['input'] == './input_schema.json'
+        assert actor['storages']['dataset'] == './dataset_schema.json'
+        assert input_schema['type'] == 'object' and isinstance(input_schema['properties'], dict)
+        assert 'properties' not in dataset_schema
+        assert dataset_schema['fields']['type'] == 'object'
+        assert isinstance(dataset_schema['fields']['properties'], dict)
+        assert pricing['event'] == event and pricing['eventPriceUsd'] == price
+        assert 'seo description' in readme and 'example input' in readme
+        assert 'example output' in readme and event in readme
+        manifest = json.loads((root / 'venture.json').read_text())
+        assert manifest['status'] == 'ready'
+        assert (root / 'OWNER-STEPS.md').is_file()
+
+
 def test_fdic_contradictory_total_fails_closed():
     payload = json.loads(fixture('fdic-source.txt'))
     payload['meta']['total'] = 0

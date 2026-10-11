@@ -7,7 +7,7 @@
     "properties": {
       "outcome": {
         "type": "string",
-        "description": "match, no_match, or uncertain — please check"
+        "description": "match, no_match, or uncertain \u2014 please check"
       },
       "message": {
         "type": "string",

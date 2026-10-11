@@ -1,6 +1,6 @@
 {
   "slug": "apify-tools",
-  "name": "apify data tools — Mississippi and Louisiana contractor license status",
+  "name": "apify data tools \u2014 Mississippi and Louisiana contractor license status",
   "flows": [
     "apify-ms-license-daily-canary",
     "apify-ms-license-your-step-publish",
@@ -26,21 +26,24 @@
   "secrets_needed": [],
   "your_steps": [
     {
-      "id": "apify-account",
-      "title": "set up your apify account and deploy both actors",
-      "when": "before the first actor listing",
-      "detail": "Open the Apify account page and complete developer and payout setup yourself; Glacier does not create the account or verify your identity. Install Apify's upload tool, then from the repository root run `npm exec --yes --package=apify-cli@1.10.0 -- apify login`. Upload both prepared Actors with `(cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify push)` and `(cd ventures/apify-tools-louisiana && npm exec --yes --package=apify-cli@1.10.0 -- apify push)`. Keep sign-in details inside Apify; do not paste them into Glacier.",
+      "id": "account-and-connect",
+      "title": "verify the account once and connect both Actor sources",
+      "when": "At the start of the one Apify publishing sitting",
+      "detail": "Complete developer/business and payout verification once, then connect the exact Mississippi and Louisiana Git URLs from ventures/apify-portfolio/PUBLISH-CHECKLIST.md to their existing Actors. Do not create duplicates.",
       "links": [
         "https://console.apify.com/account/integrations",
-        "https://docs.apify.com/cli/docs/installation"
+        "https://console.apify.com/actors/cw5iWsfJYZVVqMbe3",
+        "https://console.apify.com/actors/kzpMSf5BYHjaIDWTt"
       ]
     },
     {
-      "id": "apify-publish",
-      "title": "review and publish each listing",
-      "when": "after the Actor is uploaded",
-      "detail": "For each of the first three distinct Actor publications, run a separate Glacier publication approval. Have a different engine review that Actor's code and Store listing, confirm its event price, included platform usage and run limit, then publish it yourself. An earlier approval cannot cover another Actor. The Louisiana approval is not ready until its separate-engine review is recorded. Later publications are not blocked by the first-three approval gate.",
+      "id": "price-and-publish",
+      "title": "build, set each event price, review, and publish both listings",
+      "when": "Continue in the same sitting after connecting sources",
+      "detail": "For the first three distinct Actor publications, build each source, set license-lookup to $0.02 with the shown run cap, include platform usage, and disable automatic start and default-dataset-item charges. The Louisiana different engine review is recorded in ventures/apify-tools-louisiana/REVIEW.md; run its separate Glacier publication approval and distinct owner publication approval and publish both existing Actors yourself. Review each sample output first.",
       "links": [
+        "https://console.apify.com/actors/cw5iWsfJYZVVqMbe3",
+        "https://console.apify.com/actors/kzpMSf5BYHjaIDWTt",
         "https://console.apify.com/actors"
       ]
     }
@@ -71,5 +74,6 @@
       "max_repair_attempts": 2,
       "failure_action": "mark-under-maintenance-and-alert"
     }
-  }
+  },
+  "status": "ready"
 }

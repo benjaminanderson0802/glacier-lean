@@ -1,5 +1,7 @@
 # Census Building Permits State Change Feed
 
+**SEO description:** Compare official monthly Census state residential building permit estimates. Preserve FIPS, reported versus imputed units, valuation units, source vintages, and period changes.
+
 Compare official monthly state residential building permit estimates, preserving FIPS, source snapshots, imputation and dollar units.
 
 ## Use cases
@@ -9,6 +11,8 @@ For construction-market reporting, supplier territory comparisons and recurring 
 ## Input
 
 period is YYYY-MM (2000–2099) or latest (default). previous_period defaults to the preceding calendar month. states is an array of two-digit FIPS strings; empty means 50 states and DC. Example ["01","22","28"] selects Alabama, Louisiana and Mississippi.
+
+**Example input:**
 
 ```json
 {
@@ -23,6 +27,8 @@ period is YYYY-MM (2000–2099) or latest (default). previous_period defaults to
 ```
 
 ## Output
+
+**Example output:** the source-backed sample below is a recorded local result, not a guarantee of a current record.
 
 One dataset row per one state successfully compared across both periods. `outcome` is `ok`, `no_match` (where the API explicitly reports zero matches), or `uncertain`. Every row includes the official source URL, retrieval time and a plain message. Successful source responses also carry SHA-256 provenance. JSON/CSV/Excel exports are available through Apify dataset downloads; the Output tab includes overview and provenance views.
 

@@ -1,0 +1,33 @@
+{
+  "slug": "apify-tools-louisiana",
+  "name": "Louisiana Contractor License Status",
+  "status": "ready",
+  "flows": [
+    "apify-tools-louisiana-owner-publish"
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "publish-existing-actor",
+      "title": "connect, build, price, and publish existing Actor",
+      "when": "In one sitting after this card is integrated into glacier-final",
+      "detail": "Use the Apify account and Store steps once in ventures/apify-portfolio/PUBLISH-CHECKLIST.md. Update existing Actor kzpMSf5BYHjaIDWTt; connect the exact Git URL, build, set license-lookup to $0.02, configure no automatic start/dataset-item charge, review and publish it yourself. Payout verification is one-time across all six Actors.",
+      "links": [
+        "https://console.apify.com/account/integrations",
+        "https://console.apify.com/actors/kzpMSf5BYHjaIDWTt"
+      ]
+    }
+  ],
+  "product": {
+    "purpose": "Publish Louisiana Contractor License Status as a pay-per-event Apify Store Actor.",
+    "actor_name": "louisiana-contractor-license-status",
+    "existing_actor_id": "kzpMSf5BYHjaIDWTt",
+    "seo_description": "Louisiana contractor license lookup status expiration public records",
+    "pricing": {
+      "model": "pay_per_event",
+      "event": "license-lookup",
+      "price_usd": 0.02,
+      "platform_usage_included": true
+    }
+  }
+}

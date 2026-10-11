@@ -1,5 +1,12 @@
 # Product Recall Checker (CPSC, NHTSA, FDA)
 
+**Store title:** Product Recall Checker (CPSC, NHTSA, FDA)
+**SEO description:** Check product names, barcodes, brands, models, and vehicle details against public CPSC, NHTSA, and FDA recall records. Get source links, per-source status, and dated results.
+**Example input:** `{"brand":"Fisher-Price","product_name":"Rock 'n Play Sleeper"}`
+**Example output:** `{"outcome":"uncertain","message":"uncertain — please check (CPSC, FDA-food, FDA-drug, FDA-device unavailable)","query":{"brand":"Fisher-Price","product_name":"Rock 'n Play Sleeper"},"matches":[],"sources_checked":{"CPSC":{"status":"error"},"FDA-food":{"status":"error"},"FDA-drug":{"status":"error"},"FDA-device":{"status":"error"}},"checked_at":"2026-10-11T02:00:00Z"}` (illustrative outage shape, not a current live check).
+**Price:** `$0.01` per `recall-check`; outage-only output is free, partial/source-backed results are charged. Include platform usage and disable automatic start/dataset-item charges. See [publish checklist](../apify-portfolio/PUBLISH-CHECKLIST.md).
+
+
 This Python Apify Actor checks one product or a batch of up to 100 against public recall records from the U.S. Consumer Product Safety Commission (CPSC), National Highway Traffic Safety Administration (NHTSA), and FDA openFDA food, drug, and device enforcement data. It returns a result for each item with links to the source records.
 
 Results use three outcomes:
@@ -47,9 +54,9 @@ The extension defaults to the local Glacier API. In the popup, choose **hosted A
 
 ## Your steps
 
-1. Set up your Apify developer and payout account, then deploy the Actor from this folder.
-2. In Apify Console, set the `recall-check` event to `$0.01`, choose a maximum total run charge, and disable the default dataset-item event.
-3. Review the listing and source behavior before making the Actor public. Check official notices directly when a result matters.
+The standalone Actor package is ready for the owner’s account actions. Update existing Actor `Fpv0233nJE7VxcgfN`; do not create a duplicate. Complete account verification once, then connect this Git subfolder, build it, set `recall-check` to `$0.01`, review the source-status output, and publish in the same sitting as the other five Actors. The exact values and Console links are in the [portfolio publish checklist](../apify-portfolio/PUBLISH-CHECKLIST.md); see [owner steps](OWNER-STEPS.md).
+
+The Git URL targets `glacier-final` and becomes available after this commit is integrated. No account, payout setup, cloud build, charge, or publication was performed for this draft.
 
 ## Verification status
 
@@ -57,4 +64,4 @@ The offline test suite uses recorded response fixtures for CPSC, NHTSA, and FDA 
 
 Current builder verification is recorded in [PROOF.md](PROOF.md), including the exact acceptance and venture-suite commands. The canary was not run for that verification, so it makes no live-source accuracy claim.
 
-Owner update on 2026-10-10: the Recall Actor is deployed, and the Chrome Web Store developer account is registered. Accuracy correction remains in progress; deployment and account registration do not satisfy the required labeled accuracy benchmark or establish a public listing/customer launch. Review official source behavior before enabling public use.
+The standalone Store package has fixture-based behavior checks, but this verification does not claim a 1,000-item accuracy benchmark or a current live-source canary. Review the shown source states and official notices before relying on an individual result. The separate Recall Checker workflow retains its own open source and release gates.

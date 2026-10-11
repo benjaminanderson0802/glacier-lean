@@ -1,5 +1,7 @@
 # NPI Registry Batch Lookup and Normalizer
 
+**SEO description:** Look up exact NPI numbers in the official CMS NPPES registry. Normalize provider name, primary taxonomy, practice location, and source dates with explicit no-match and uncertainty.
+
 Look up exact NPIs in the official CMS NPPES API. Get names, primary taxonomy, practice location and source dates with explicit no-match and uncertainty.
 
 ## Use cases
@@ -10,6 +12,8 @@ For cleaning provider-directory joins, checking exact registry IDs supplied by a
 
 npis is required: an array of 1–50 ten-digit strings. Validate the NPI check digit before requesting the API. Duplicate IDs produce one request and one result. No name search, patient information, customer API key or login is required.
 
+**Example input:**
+
 ```json
 {
   "npis": [
@@ -19,6 +23,8 @@ npis is required: an array of 1–50 ten-digit strings. Validate the NPI check d
 ```
 
 ## Output
+
+**Example output:** the source-backed sample below is a recorded local result, not a guarantee of a current record.
 
 One dataset row per one successfully returned provider. `outcome` is `ok`, `no_match` (where the API explicitly reports zero matches), or `uncertain`. Every row includes the official source URL, retrieval time and a plain message. Successful source responses also carry SHA-256 provenance. JSON/CSV/Excel exports are available through Apify dataset downloads; the Output tab includes overview and provenance views.
 

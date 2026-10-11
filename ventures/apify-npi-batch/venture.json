@@ -1,0 +1,33 @@
+{
+  "slug": "apify-npi-batch",
+  "name": "NPI Registry Batch Lookup and Normalizer",
+  "status": "ready",
+  "flows": [
+    "apify-npi-batch-owner-publish"
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "publish-existing-actor",
+      "title": "connect, build, price, and publish existing Actor",
+      "when": "In one sitting after this card is integrated into glacier-final",
+      "detail": "Use the Apify account and Store steps once in ventures/apify-portfolio/PUBLISH-CHECKLIST.md. Update existing Actor J00ZgCm7qaJu4OXqp; connect the exact Git URL, build, set provider-record to $0.003, configure no automatic start/dataset-item charge, review and publish it yourself. Payout verification is one-time across all six Actors.",
+      "links": [
+        "https://console.apify.com/account/integrations",
+        "https://console.apify.com/actors/J00ZgCm7qaJu4OXqp"
+      ]
+    }
+  ],
+  "product": {
+    "purpose": "Publish NPI Registry Batch Lookup and Normalizer as a pay-per-event Apify Store Actor.",
+    "actor_name": "npi-batch",
+    "existing_actor_id": "J00ZgCm7qaJu4OXqp",
+    "seo_description": "NPPES exact NPI provider batch registry lookup taxonomy address",
+    "pricing": {
+      "model": "pay_per_event",
+      "event": "provider-record",
+      "price_usd": 0.003,
+      "platform_usage_included": true
+    }
+  }
+}
