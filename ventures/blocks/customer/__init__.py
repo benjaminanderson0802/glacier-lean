@@ -70,7 +70,8 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
         );
         CREATE TABLE IF NOT EXISTS checkout_return_tokens (
             token_sha256 TEXT PRIMARY KEY, checkout_session_id TEXT NOT NULL,
-            status TEXT NOT NULL, created_at TEXT NOT NULL, used_at TEXT
+            status TEXT NOT NULL, created_at TEXT NOT NULL, used_at TEXT,
+            expected_customer_id TEXT
         );
         CREATE TABLE IF NOT EXISTS support_messages (
             id TEXT PRIMARY KEY, message_id TEXT, sender TEXT NOT NULL,
@@ -83,6 +84,9 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
         );
         """
     )
+    token_columns = {row["name"] for row in connection.execute("PRAGMA table_info(checkout_return_tokens)")}
+    if "expected_customer_id" not in token_columns:
+        connection.execute("ALTER TABLE checkout_return_tokens ADD COLUMN expected_customer_id TEXT")
     connection.commit()
     return connection
 
@@ -182,6 +186,44 @@ def _stripe_request(path: str, fields: dict[str, str], key: str,
     return data
 
 
+def _stripe_get(path: str, key: str) -> dict[str, Any]:
+    request = Request(_TEST_API_BASE + path, headers={"Authorization": "Bearer " + key}, method="GET")
+    try:
+        with urlopen(request, timeout=20) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except HTTPError:
+        raise CustomerError("Stripe could not verify this checkout session.") from None
+    except (URLError, TimeoutError, json.JSONDecodeError):
+        raise CustomerError("Could not reach Stripe to verify this checkout session.") from None
+    if not isinstance(data, dict):
+        raise CustomerError("Stripe returned an invalid checkout session.")
+    return data
+
+
+def _checkout_return_result(session_id: str, expected_customer_id: str | None,
+                            secret_getter: Callable[[str], str | None] | None = None) -> str:
+    """Return a safe display state based on the exact test-mode checkout and customer."""
+    if not expected_customer_id:
+        return "pending"
+    try:
+        key = _require_test_key(secret_getter)
+        session = _stripe_get("/v1/checkout/sessions/" + session_id, key)
+    except CustomerError:
+        return "pending"
+    metadata = session.get("metadata")
+    if (session.get("id") != session_id
+            or session.get("client_reference_id") != expected_customer_id
+            or not isinstance(metadata, dict)
+            or metadata.get("customer_id") != expected_customer_id
+            or session.get("livemode") is not False):
+        return "pending"
+    if session.get("status") == "expired":
+        return "expired"
+    if session.get("status") == "complete" and session.get("payment_status") == "paid":
+        return "confirmed"
+    return "pending"
+
+
 def _require_test_key(secret_getter: Callable[[str], str | None] | None) -> str:
     key = (secret_getter or _secret)("STRIPE_SECRET_KEY")
     if not key:
@@ -242,9 +284,10 @@ def checkout_link(plan: str, *, secret_getter: Callable[[str], str | None] | Non
         raise CustomerError("Stripe did not return a secure checkout link.")
     with _database(db_path) as db:
         if return_token:
-            db.execute("INSERT INTO checkout_return_tokens VALUES (?, ?, 'pending', ?, NULL)",
+            db.execute("INSERT INTO checkout_return_tokens(token_sha256, checkout_session_id, status, created_at, used_at, expected_customer_id) "
+                       "VALUES (?, ?, 'pending', ?, NULL, ?)",
                        (hashlib.sha256(return_token.encode("ascii")).hexdigest(),
-                        str(response.get("id", "")), _now()))
+                        str(response.get("id", "")), _now(), customer_id))
         db.execute("INSERT INTO audit_events(event, subject_id, details_json, happened_at) VALUES (?, ?, ?, ?)",
                    ("stripe_checkout_created", str(response.get("id", "unknown")),
                     json.dumps({"plan": plan, "customer_id": customer_id, "mode": mode,
@@ -555,7 +598,8 @@ def list_support_drafts(*, db_path: str | Path | None = None) -> list[dict[str, 
              "status": row["status"], "created_at": row["created_at"]} for row in rows]
 
 
-def create_signature_server(data_dir: str | Path | None = None, *, host: str = "127.0.0.1", port: int = 8765):
+def create_signature_server(data_dir: str | Path | None = None, *, host: str = "127.0.0.1", port: int = 8765,
+                            secret_getter: Callable[[str], str | None] | None = None):
     """Create an HTTP server for signature pages; loopback binding is the safe default."""
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     from urllib.parse import parse_qs
@@ -627,7 +671,8 @@ def create_signature_server(data_dir: str | Path | None = None, *, host: str = "
                 with _database(root / "customers.db") as db:
                     db.execute("BEGIN IMMEDIATE")
                     authorized = db.execute(
-                        "SELECT 1 FROM checkout_return_tokens WHERE token_sha256=? AND checkout_session_id=? AND status='pending'",
+                        "SELECT expected_customer_id FROM checkout_return_tokens "
+                        "WHERE token_sha256=? AND checkout_session_id=? AND status='pending'",
                         (token_digest, session_id),
                     ).fetchone()
                     if not authorized:
@@ -635,7 +680,16 @@ def create_signature_server(data_dir: str | Path | None = None, *, host: str = "
                         return
                     db.execute("UPDATE checkout_return_tokens SET status='used', used_at=? WHERE token_sha256=? AND status='pending'",
                                (_now(), token_digest))
-                payload = b"<!doctype html><meta charset=utf-8><title>Checkout returned</title><h1>Checkout returned</h1><p>Return to Glacier to verify your customer status.</p>"
+                result = _checkout_return_result(session_id, authorized["expected_customer_id"], secret_getter)
+                if result == "confirmed":
+                    title, heading, detail = "Payment complete", "Payment complete", "Your test payment was confirmed for this customer."
+                elif result == "expired":
+                    title, heading, detail = "Checkout expired", "Checkout expired", "No payment was completed."
+                else:
+                    title, heading, detail = ("Payment pending verification", "Payment pending verification",
+                                              "Return to Glacier to verify your customer status.")
+                payload = ("<!doctype html><meta charset=utf-8><title>" + title + "</title><h1>" + heading +
+                           "</h1><p>" + detail + "</p>").encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(payload)))
