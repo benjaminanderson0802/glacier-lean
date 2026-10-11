@@ -31,7 +31,6 @@ def test_unverified_brand_serial_patterns_remain_uncertain():
     assert result["portal_automation_allowed"] is False
 
 
-@pytest.mark.xfail(strict=False, reason="awaiting builder V-WARRANTY2")
 def test_jobber_graphql_fixture_maps_completed_job_to_homeowner_draft():
     from ventures.blocks.connectors import JobberClient
     warranty = load_warranty()
