@@ -27,3 +27,12 @@ general home pages rather than a dedicated contact form; owner should identify
 the correct business channel before any manual approach. All contacts remain
 untouched. The kit uses seller-supplied files, and its flow has no account
 login, fee dispute, sending, publishing, payment or automatic charge action.
+
+## Windows portability follow-up — 2026-10-11
+
+The current acceptance and unit checks passed in the combined requested-suite
+run; the earlier split-shipment, uncertain-vocabulary, and malformed-number
+failures recorded above were not reproduced in this checkout. Text assertions
+now specify UTF-8, path checks use POSIX shell form, and the offline guard
+refuses ordinary loopback and non-loopback connects while narrowly allowing
+asyncio's own loopback `socketpair()` call.

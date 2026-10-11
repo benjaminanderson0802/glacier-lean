@@ -21,3 +21,12 @@ or trade-directory records; current HVAC activity is plausible but Jobber use,
 record-export permission and buyer interest remain explicitly unverified. The
 owner's pilot notes correctly require manual owner review and approval before
 any invoice; no test sends, publishes, or charges.
+
+## Windows portability follow-up — 2026-10-11
+
+The current acceptance and unit checks passed in the combined requested-suite
+run; the earlier PDF Unicode, malformed completion, and partial-source failures
+recorded above were not reproduced in this checkout. Text assertions now specify
+UTF-8, path checks use POSIX shell form, and the offline guard refuses ordinary
+loopback and non-loopback connects while narrowly allowing asyncio's own
+loopback `socketpair()` call.

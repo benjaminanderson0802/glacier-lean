@@ -8,6 +8,7 @@ lookup date, although the supplied roster's `roster_as_of` value is
 `ACCEPTANCE.md`: no-match must refer to the dated roster snapshot, because the
 result says nothing about records added after that snapshot.
 
-Corrected assertion: expect `no match found in supplied Alabama roster as of
-2026-10-01`. The implementation follows the roster snapshot date. This check
-was left unchanged under invariant I-04.
+Resolved on the merits: the acceptance contract and implementation are correct.
+The legacy unit assertion was stale, so the independent test owner updated it to
+expect `no match found in supplied Alabama roster as of 2026-10-01`. A no-match
+can only describe the supplied snapshot, not records added by the lookup date.

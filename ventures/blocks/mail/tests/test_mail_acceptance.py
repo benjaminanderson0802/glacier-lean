@@ -39,6 +39,15 @@ class MailAcceptanceTests(unittest.TestCase):
             self.assertEqual(blocked["verdict"], "fail")
             self.assertIn("suppressed", blocked["reason"].lower())
 
+    def test_unicode_suppression_entry_blocks_matching_outreach(self):
+        record = {"id": "prospect-2", "address": "10 Rue de l'Église, Québec", "sender": "Glacier Signs"}
+        with tempfile.TemporaryDirectory() as tmp:
+            suppression = Path(tmp) / "suppression.txt"
+            suppression.write_text("10 Rue de l'Église, Québec\n", encoding="utf-8")
+            result = check_outreach(record, "<p>Glacier Signs</p>", suppression_path=suppression)
+        self.assertEqual(result["verdict"], "fail")
+        self.assertIn("suppressed", result["reason"].lower())
+
     def test_missing_address_is_uncertain_and_test_key_is_required(self):
         self.assertEqual(verify_address({})["verdict"], "uncertain")
         with patch.dict(os.environ, {"LOB_API_KEY": "live_never-send"}):
@@ -55,8 +64,8 @@ class MailAcceptanceTests(unittest.TestCase):
                 "<h1>{{owner}}</h1><p>Assessed at ${{assessed_value}}</p>",
                 output_dir=tmp,
             )
-            first = (Path(site) / "parcel-1.html").read_text()
-            second = (Path(site) / "parcel-2.html").read_text()
+            first = (Path(site) / "parcel-1.html").read_text(encoding="utf-8")
+            second = (Path(site) / "parcel-2.html").read_text(encoding="utf-8")
             self.assertIn("A. Rivera", first)
             self.assertIn("240000", first)
             self.assertIn("B. Chen", second)

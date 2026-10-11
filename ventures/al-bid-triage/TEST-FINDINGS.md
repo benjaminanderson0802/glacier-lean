@@ -22,3 +22,12 @@ office line. No person-specific contact is included and all are marked not
 contacted. The sources establish the businesses, not their interest in Mobile
 or Baldwin public bids. No automated notice collection, bid submission, email,
 publication or payment is performed.
+
+## Windows portability follow-up — 2026-10-11
+
+The current acceptance and unit checks passed in the combined requested-suite
+run; the earlier missing-fact and conflicting-deadline failures recorded above
+were not reproduced in this checkout. Text assertions now specify UTF-8, path
+checks use POSIX shell form, and the offline guard refuses ordinary loopback
+and non-loopback connects while narrowly allowing asyncio's own loopback
+`socketpair()` call.
