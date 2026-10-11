@@ -26,7 +26,7 @@ def main() -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     refresh = commands.add_parser("nightly", help="refresh recall feeds and generate local notice pages")
     refresh.add_argument("--skip-sync", action="store_true")
-    refresh.add_argument("--require-complete", action="store_true", help="refuse page refresh if any recall source is missing or alerts")
+    refresh.add_argument("--require-complete", action="store_true", help="explicitly require every source before refreshing local pages")
     batch = commands.add_parser("batch", help="check inventory CSV and write a flagged copy")
     batch.add_argument("input", type=Path)
     batch.add_argument("--output", type=Path)
@@ -44,14 +44,17 @@ def main() -> int:
         alerts = {source: value["alerts"] for source, value in sync_results.items() if value.get("alerts")}
         output = home() / "pages"
         blocked = bool(missing or alerts)
-        pages = [] if (args.require_complete and blocked) else generate_pages(rows, output)
+        # A partial or alerted feed must never produce fresh pages that could
+        # be mistaken for a complete recall snapshot. Route the nonzero result
+        # to the flow's durable feed-alert step instead.
+        pages = [] if blocked else generate_pages(rows, output)
         result = {"sources": sync_results, "recall_rows": len(rows), "missing_sources": missing, "alerts": alerts, "pages_generated": len(pages), "pages_directory": str(output), "first_fifty_review_required": len(pages) > 0}
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 2 if args.require_complete and blocked else 0
+        return 2 if blocked else 0
     elif args.command == "batch":
         rows, missing = query_recall_feeds()
         out = args.output or home() / "outputs" / f"{args.input.stem}-recall-check.csv"
-        path = process_csv(args.input, out, rows, as_of=date.today().isoformat())
+        path = process_csv(args.input, out, rows, as_of=date.today().isoformat(), missing_sources=missing)
         result = {"output": str(path), "missing_sources": missing, "rows_checked": sum(1 for _ in args.input.open(encoding="utf-8-sig")) - 1}
     else:
         result = check_item({"barcode": args.barcode, "brand": args.brand, "model": args.model})

@@ -1,0 +1,53 @@
+{
+  "run_id": "fc6f85da9fe2",
+  "env_id": "recall-batch-check",
+  "venture": "recall-checker",
+  "dry_run": true,
+  "input_file": "/tmp/glacier-recall-benchmark-home/ventures/recall-checker/incoming/inventory.csv",
+  "synthetic_fixture": true,
+  "input_approval_granted": true,
+  "engine_url": "http://127.0.0.1:18765",
+  "final_state": {
+    "run_id": "fc6f85da9fe2",
+    "env_id": "recall-batch-check",
+    "status": "done",
+    "waiting_on": null,
+    "author": "owner",
+    "node_states": {
+      "check_done": "skipped",
+      "check_inventory": "skipped",
+      "owner_input_ready": "done",
+      "review_note": "skipped",
+      "review_results": "skipped"
+    },
+    "outputs": {
+      "owner_input_ready": "approved"
+    },
+    "usage": {},
+    "verification": [],
+    "workspace": null,
+    "verified": null
+  },
+  "state_log": [
+    {
+      "status": "running",
+      "waiting_on": null,
+      "updated_at": null
+    },
+    {
+      "status": "waiting",
+      "waiting_on": "owner_input_ready",
+      "updated_at": null
+    },
+    {
+      "status": "running",
+      "waiting_on": null,
+      "updated_at": null
+    },
+    {
+      "status": "done",
+      "waiting_on": null,
+      "updated_at": null
+    }
+  ]
+}

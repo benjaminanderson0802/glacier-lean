@@ -39,16 +39,25 @@ def _first(record: dict[str, Any], *names: str) -> str:
 
 def recall_fields(record: dict[str, Any]) -> dict[str, str]:
     data = _data(record)
+    source_id = str(record.get("source_id", ""))
+    # NHTSA's published RCL flat file uses MAKETXT, MODELTXT, YEARTXT and
+    # CAMPNO rather than the names used by the vehicle lookup API.
+    nhtsa = source_id == "nhtsa_recalls" or "CAMPNO" in data
+    campaign = _first(data, "CAMPNO", "NHTSACampaignNumber", "CampaignNumber")
+    official_url = _first(data, "RecallURL", "recall_url", "URL", "url", "link", "web_url", "source_url")
+    if not official_url and campaign:
+        official_url = f"https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber={quote(campaign)}"
     return {
-        "source_id": str(record.get("source_id", "")),
-        "recall_number": _first(data, "RecallNumber", "recall_number", "field_recall_number", "RECORD_ID", "recall_id") or str(record.get("record_id", "")),
+        "source_id": source_id,
+        "recall_number": _first(data, "RecallNumber", "recall_number", "field_recall_number", "CAMPNO", "NHTSACampaignNumber", "RECORD_ID", "recall_id") or str(record.get("record_id", "")),
         "date": _first(data, "RecallDate", "recall_date", "report_date", "recall_initiation_date", "field_recall_date", "RCDATE", "date") or str(record.get("record_date", "")),
-        "title": _first(data, "Title", "title", "product_description", "field_title", "MFGNAME", "product"),
+        "title": _first(data, "Title", "title", "product_description", "field_title", "RecallTitle", "MFGNAME", "product") or " ".join(value for value in (_first(data, "MAKETXT"), _first(data, "MODELTXT"), "vehicle recall") if value),
         "description": _first(data, "Description", "description", "reason_for_recall", "field_summary", "DESC_DEFECT"),
-        "brand": _first(data, "Brand", "brand", "manufacturer", "MFGNAME", "recalling_firm"),
-        "model": _first(data, "Model", "model", "model_number", "model_numbers", "product_model"),
+        "brand": _first(data, "Brand", "brand", "manufacturer", "MAKETXT", "MFGNAME", "recalling_firm"),
+        "model": _first(data, "Model", "model", "model_number", "model_numbers", "product_model", "MODELTXT"),
+        "model_year": _first(data, "model_year", "ModelYear", "YEARTXT"),
         "barcode": _first(data, "UPC", "upc", "barcode", "gtin", "product_upc"),
-        "official_url": _first(data, "RecallURL", "recall_url", "URL", "url", "link", "web_url", "source_url") or str(record.get("source_url", "")),
+        "official_url": official_url or str(record.get("source_url", "")),
         "fetched_at": str(record.get("fetched_at", "")),
     }
 
@@ -59,6 +68,7 @@ def match_item(item: dict[str, Any], recalls: list[dict[str, Any]], *, as_of: st
     barcode = _norm(item.get("barcode") or item.get("upc") or item.get("gtin"))
     model = _norm(item.get("model") or item.get("model_number"))
     brand = _norm(item.get("brand") or item.get("manufacturer"))
+    model_year = _norm(item.get("model_year") or item.get("year"))
     if not barcode and not model and not brand:
         return {"result": "uncertain — please check", "checked_at": as_of, "ruleset": MATCH_RULESET, "recalls": [], "detail": "Provide a barcode, model or brand to check."}
 
@@ -71,12 +81,17 @@ def match_item(item: dict[str, Any], recalls: list[dict[str, Any]], *, as_of: st
         row_model = _norm(fields["model"])
         row_brand = _norm(fields["brand"])
         barcode_match = bool(barcode and (barcode == row_barcode or barcode in blob))
-        model_match = bool(model and (model == row_model or (len(model) >= 4 and model in blob)))
+        is_nhtsa = fields["source_id"] == "nhtsa_recalls" or "CAMPNO" in _data(row)
+        # NHTSA's flat file has a structured model column. Treat the summary's
+        # cross-model prose as a review signal, never as proof for this model.
+        model_match = bool(model and (model == row_model if is_nhtsa and row_model else model == row_model or (len(model) >= 4 and model in blob)))
         brand_match = bool(brand and (brand == row_brand or (len(brand) >= 4 and brand in blob)))
-        if barcode_match or (model_match and (not brand or brand_match)):
+        row_year = _norm(fields["model_year"])
+        year_match = not model_year or model_year == row_year
+        if barcode_match or (model_match and (not brand or brand_match) and year_match):
             exact.append(fields)
             continue
-        if model and brand:
+        if model and brand and year_match:
             model_ratio = difflib.SequenceMatcher(None, model, row_model or blob).ratio()
             brand_ratio = difflib.SequenceMatcher(None, brand, row_brand or blob).ratio()
             if model_ratio >= 0.72 and brand_ratio >= 0.72:
@@ -96,6 +111,33 @@ def match_item(item: dict[str, Any], recalls: list[dict[str, Any]], *, as_of: st
     }
 
 
+def match_items(items: list[dict[str, Any]], recalls: list[dict[str, Any]], *, as_of: str | None = None) -> list[dict[str, Any]]:
+    """Batch lookup with a model-year index for large government recall snapshots."""
+    by_year: dict[str, list[dict[str, Any]]] = {}
+    by_year_brand: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for row in recalls:
+        fields = recall_fields(row)
+        year = _norm(fields["model_year"])
+        by_year.setdefault(year, []).append(row)
+        if year:
+            brand = _norm(fields["brand"])
+            by_year_brand.setdefault(year, {}).setdefault(brand, []).append(row)
+    results = []
+    for item in items:
+        year = _norm(item.get("model_year") or item.get("year"))
+        brand = _norm(item.get("brand") or item.get("manufacturer"))
+        if not year or item.get("barcode") or item.get("upc") or item.get("gtin"):
+            candidates = recalls if not year else by_year.get(year, [])
+        elif brand:
+            groups = by_year_brand.get(year, {})
+            similar = [name for name in groups if name and difflib.SequenceMatcher(None, brand, name).ratio() >= 0.72]
+            candidates = [row for name in similar for row in groups[name]]
+        else:
+            candidates = by_year.get(year, [])
+        results.append(match_item(item, candidates, as_of=as_of))
+    return results
+
+
 def query_recall_feeds(*, feed_query=query_feed) -> tuple[list[dict[str, Any]], list[str]]:
     rows: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -109,30 +151,53 @@ def query_recall_feeds(*, feed_query=query_feed) -> tuple[list[dict[str, Any]], 
 
 def check_item(item: dict[str, Any], *, feed_query=query_feed, as_of: str | None = None) -> dict[str, Any]:
     rows, missing = query_recall_feeds(feed_query=feed_query)
-    if missing:
-        return {"result": "uncertain — please check", "checked_at": as_of or date.today().isoformat(), "ruleset": MATCH_RULESET, "recalls": [], "detail": "Recall feed snapshots unavailable: " + ", ".join(missing)}
-    fetched = [row.get("fetched_at", "") for row in rows if row.get("fetched_at")]
-    try:
-        latest = max(datetime.fromisoformat(value.replace("Z", "+00:00")) for value in fetched)
-        if (datetime.now(timezone.utc) - latest).total_seconds() > 48 * 60 * 60:
-            return {"result": "uncertain — please check", "checked_at": as_of or date.today().isoformat(), "ruleset": MATCH_RULESET, "recalls": [], "detail": "Recall feed data is more than 48 hours old."}
-    except (ValueError, TypeError):
-        return {"result": "uncertain — please check", "checked_at": as_of or date.today().isoformat(), "ruleset": MATCH_RULESET, "recalls": [], "detail": "Recall feed freshness could not be verified."}
+    problem = feed_snapshot_problem(rows, missing)
+    if problem:
+        return {"result": "uncertain — please check", "checked_at": as_of or date.today().isoformat(), "ruleset": MATCH_RULESET, "recalls": [], "detail": problem}
     return match_item(item, rows, as_of=as_of)
 
 
-def process_csv(source: str | Path, destination: str | Path, recalls: list[dict[str, Any]], *, as_of: str | None = None) -> Path:
+def feed_snapshot_problem(rows: list[dict[str, Any]], missing_sources: list[str] | None = None) -> str:
+    if missing_sources:
+        return "Recall feed snapshots unavailable: " + ", ".join(missing_sources)
+    fetched_by_source: dict[str, list[str]] = {}
+    for row in rows:
+        source_id = str(row.get("source_id", ""))
+        fetched_at = str(row.get("fetched_at", ""))
+        if source_id and fetched_at:
+            fetched_by_source.setdefault(source_id, []).append(fetched_at)
+    if not fetched_by_source:
+        return "Recall feed freshness could not be verified."
+    try:
+        latest_by_source = {
+            source_id: max(datetime.fromisoformat(value.replace("Z", "+00:00")) for value in values)
+            for source_id, values in fetched_by_source.items()
+        }
+    except (ValueError, TypeError):
+        return "Recall feed freshness could not be verified."
+    for source_id, latest in latest_by_source.items():
+        if (datetime.now(timezone.utc) - latest).total_seconds() > 48 * 60 * 60:
+            return f"Recall feed data is more than 48 hours old: {source_id}."
+    return ""
+
+
+def process_csv(source: str | Path, destination: str | Path, recalls: list[dict[str, Any]], *, as_of: str | None = None, missing_sources: list[str] | None = None) -> Path:
     source, destination = Path(source), Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     with source.open(newline="", encoding="utf-8-sig") as src:
         reader = csv.DictReader(src)
         fields = list(reader.fieldnames or [])
         out_fields = fields + ["recall_result", "recall_numbers", "official_links", "checked_at"]
+        rows = list(reader)
+        problem = feed_snapshot_problem(recalls, missing_sources)
+        results = (
+            [{"result": "uncertain — please check", "checked_at": as_of or date.today().isoformat(), "recalls": []} for _ in rows]
+            if problem else match_items(rows, recalls, as_of=as_of)
+        )
         with destination.open("w", newline="", encoding="utf-8") as dst:
             writer = csv.DictWriter(dst, fieldnames=out_fields)
             writer.writeheader()
-            for row in reader:
-                result = match_item(row, recalls, as_of=as_of)
+            for row, result in zip(rows, results):
                 row.update({"recall_result": result["result"], "recall_numbers": ",".join(hit["recall_number"] for hit in result["recalls"]), "official_links": " ".join(hit["official_url"] for hit in result["recalls"]), "checked_at": result["checked_at"]})
                 writer.writerow(row)
     return destination

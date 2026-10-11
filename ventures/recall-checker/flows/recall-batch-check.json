@@ -84,7 +84,8 @@
     {
       "id": "i5-owner_input_ready-check_inventory",
       "source": "owner_input_ready",
-      "target": "check_inventory"
+      "target": "check_inventory",
+      "label": "yes"
     }
   ],
   "max_steps": 6

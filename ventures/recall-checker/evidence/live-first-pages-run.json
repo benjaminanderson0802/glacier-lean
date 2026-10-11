@@ -1,0 +1,161 @@
+{
+  "run_id": "86d0aa9abb0d",
+  "env_id": "recall-review-first-pages",
+  "venture": "recall-checker",
+  "live_sources": [
+    "cpsc_recalls",
+    "nhtsa_recalls",
+    "fda_enforcement"
+  ],
+  "missing_sources": [
+    "fsis_recalls"
+  ],
+  "approvals": [
+    {
+      "node_id": "feed_blocked",
+      "approved": true,
+      "reason": "Reviewed the live feed report; FSIS snapshot is unavailable and page generation was blocked."
+    }
+  ],
+  "final_state": {
+    "run_id": "86d0aa9abb0d",
+    "env_id": "recall-review-first-pages",
+    "status": "done",
+    "waiting_on": null,
+    "author": "owner",
+    "node_states": {
+      "approve_pages": "skipped",
+      "feed_blocked": "done",
+      "feed_blocked_note": "done",
+      "page_count": "failed",
+      "pages_ready": "done",
+      "review_record": "skipped"
+    },
+    "outputs": {
+      "feed_blocked": "approved",
+      "feed_blocked_note": "ventures/recall-checker/reports/first-pages-blocked-86d0aa9abb0d.md (commit b34730e4)",
+      "page_count": "{\n  \"sources\": {},\n  \"recall_rows\": 343488,\n  \"missing_sources\": [\n    \"fsis_recalls\"\n  ],\n  \"alerts\": {},\n  \"pages_generated\": 0,\n  \"pages_directory\": \"/tmp/glacier-recall-benchmark-home/ventures/recall-checker/pages\",\n  \"first_fifty_review_required\": false\n}\n",
+      "pages_ready": "no"
+    },
+    "usage": {},
+    "verification": [],
+    "workspace": null,
+    "verified": null
+  },
+  "state_log": [
+    {
+      "status": "running",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "pending",
+        "feed_blocked_note": "pending",
+        "page_count": "pending",
+        "pages_ready": "pending",
+        "review_record": "pending"
+      },
+      "outputs": {}
+    },
+    {
+      "status": "running",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "pending",
+        "feed_blocked_note": "pending",
+        "page_count": "running",
+        "pages_ready": "pending",
+        "review_record": "pending"
+      },
+      "outputs": {}
+    },
+    {
+      "status": "running",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "pending",
+        "feed_blocked_note": "pending",
+        "page_count": "running",
+        "pages_ready": "pending",
+        "review_record": "pending"
+      },
+      "outputs": {}
+    },
+    {
+      "status": "running",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "pending",
+        "feed_blocked_note": "pending",
+        "page_count": "running",
+        "pages_ready": "pending",
+        "review_record": "pending"
+      },
+      "outputs": {}
+    },
+    {
+      "status": "running",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "pending",
+        "feed_blocked_note": "pending",
+        "page_count": "running",
+        "pages_ready": "pending",
+        "review_record": "pending"
+      },
+      "outputs": {}
+    },
+    {
+      "status": "running",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "pending",
+        "feed_blocked_note": "pending",
+        "page_count": "running",
+        "pages_ready": "pending",
+        "review_record": "pending"
+      },
+      "outputs": {}
+    },
+    {
+      "status": "waiting",
+      "waiting_on": "feed_blocked",
+      "node_states": {
+        "approve_pages": "pending",
+        "feed_blocked": "waiting",
+        "feed_blocked_note": "pending",
+        "page_count": "failed",
+        "pages_ready": "done",
+        "review_record": "pending"
+      },
+      "outputs": {
+        "page_count": "{\n  \"sources\": {},\n  \"recall_rows\": 343488,\n  \"missing_sources\": [\n    \"fsis_recalls\"\n  ],\n  \"alerts\": {},\n  \"pages_generated\": 0,\n  \"pages_directory\": \"/tmp/glacier-recall-benchmark-home/ventures/recall-checker/pages\",\n  \"first_fifty_review_required\": false\n}\n",
+        "pages_ready": "no"
+      }
+    },
+    {
+      "status": "done",
+      "waiting_on": null,
+      "node_states": {
+        "approve_pages": "skipped",
+        "feed_blocked": "done",
+        "feed_blocked_note": "done",
+        "page_count": "failed",
+        "pages_ready": "done",
+        "review_record": "skipped"
+      },
+      "outputs": {
+        "feed_blocked": "approved",
+        "feed_blocked_note": "ventures/recall-checker/reports/first-pages-blocked-86d0aa9abb0d.md (commit b34730e4)",
+        "page_count": "{\n  \"sources\": {},\n  \"recall_rows\": 343488,\n  \"missing_sources\": [\n    \"fsis_recalls\"\n  ],\n  \"alerts\": {},\n  \"pages_generated\": 0,\n  \"pages_directory\": \"/tmp/glacier-recall-benchmark-home/ventures/recall-checker/pages\",\n  \"first_fifty_review_required\": false\n}\n",
+        "pages_ready": "no"
+      }
+    }
+  ],
+  "pages_directory": "/tmp/glacier-recall-benchmark-home/ventures/recall-checker/pages",
+  "page_file_count": 0
+}

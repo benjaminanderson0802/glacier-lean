@@ -1,0 +1,7 @@
+run_id=d03998161ce1
+flow=recall-batch-check
+status=done
+approvals=[{"node_id": "owner_input_ready", "approved": true, "reason": "Synthetic fixture input only."}, {"node_id": "review_results", "approved": true, "reason": "Reviewed the synthetic uncertain result only; no inventory side effect."}]
+node_states={"check_done": "done", "check_inventory": "done", "owner_input_ready": "done", "review_note": "done", "review_results": "done"}
+outputs={"check_done": "yes", "check_inventory": "{\n  \"output\": \"/tmp/glacier-recall-benchmark-home/ventures/recall-checker/outputs/inventory-recall-check.csv\",\n  \"missing_sources\": [\n    \"fsis_recalls\"\n  ],\n  \"rows_checked\": 1\n}\n", "owner_input_ready": "approved", "review_note": "ventures/recall-checker/reports/inventory-review-d03998161ce1.md (commit d7356c6e)", "review_results": "approved"}
+output_rows=[{"brand": "Example Brand", "model": "TEST-001", "product_name": "Synthetic sample product", "upc": "000000000001", "recall_result": "uncertain — please check", "recall_numbers": "", "official_links": "", "checked_at": "2026-10-10"}]

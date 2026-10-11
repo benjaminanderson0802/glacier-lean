@@ -1,7 +1,7 @@
 {
   "slug": "recall-checker",
   "name": "recall checker",
-  "status": "in_progress",
+  "status": "blocked",
   "product": {
     "purpose": "Check reseller inventory against current public recalls and provide the official notice for review.",
     "channels": [
@@ -48,20 +48,13 @@
       ]
     },
     {
-      "id": "submit-extension",
-      "title": "Submit the Chrome extension listing",
-      "when": "When the extension package and store listing are ready",
-      "detail": "Review permissions, privacy text and screenshots, then sign in at the direct Chrome Web Store developer page and submit the package. Glacier does not create an account or submit it.",
-      "links": [
-        "https://chrome.google.com/webstore/devconsole"
-      ]
-    },
-    {
-      "id": "configure-plans",
-      "title": "Set up test prices and review plan wording",
+      "id": "launch-setup",
+      "title": "Set prices and submit the extension",
       "when": "Before offering paid plans or API access",
-      "detail": "Create Stripe test-mode prices. Paste the Stripe test secret key into the labeled field on this step; Glacier saves it in this computer's keychain. Review the individual and store plan amounts and choose a metered API price. Use a test key only. Live billing stays off until you configure it yourself.",
+      "detail": "Rename the rebuilt Actor and choose its per-query price in Apify Console. Create Stripe test-mode prices, paste the test secret key into the labeled field on this step, and review the plan wording. Review the extension permissions, privacy text and screenshots, then sign in at the Chrome Web Store developer page and submit the package. Glacier does not create accounts, submit the package or enable live billing for you.",
       "links": [
+        "https://console.apify.com/actors",
+        "https://chrome.google.com/webstore/devconsole",
         "https://dashboard.stripe.com/test/products",
         "#/settings/secrets"
       ],
@@ -74,9 +67,10 @@
     }
   ],
   "launch_gates": [
-    "The labeled 500-known-recalled and 500-known-clean benchmark meets the at-most-1% false-no-match gate before an update is released.",
+    "All four live recall source snapshots are current and alert-free before a no-match result or recall pages are treated as complete.",
+    "The 500-known-recalled and 500-known-clean NHTSA vehicle benchmark remains at or below 1% false no-match before an update is released.",
     "The owner reviews the first 50 recall pages before public hosting.",
-    "The owner submits the first Chrome Web Store listing."
+    "The owner submits the first Chrome Web Store listing and configures the selected test prices."
   ],
   "dry_run_env_id": "recall-batch-check"
 }
