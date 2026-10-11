@@ -1,0 +1,51 @@
+[
+  {
+    "errors": {},
+    "external_actions": "none",
+    "fixture_approvals": [
+      "claim_review"
+    ],
+    "flow_id": "coop-claim-readiness",
+    "node_states": {
+      "claim_review": "done",
+      "create_drafts": "done",
+      "daily": "done",
+      "record_review_only": "done"
+    },
+    "outputs": {
+      "claim_review": "approved",
+      "create_drafts": "{\n  \"dealer\": \"Fixture HVAC\",\n  \"source\": \"fixture\",\n  \"drafts_created\": 1,\n  \"drafts\": [\n    {\n      \"claim_id\": \"jobber-6da7aebabbc94c2d\",\n      \"job_number\": \"2048\",\n      \"brand\": \"carrier\",\n      \"rule_status\": \"unverified\",\n      \"markdown_path\": \"/tmp/glacier-rg-coop-final-20261010/ventures/coop-postcards/claims/jobber-6da7aebabbc94c2d.md\",\n      \"pdf_path\": \"/tmp/glacier-rg-coop-final-20261010/ventures/coop-postcards/claims/jobber-6da7aebabbc94c2d.pdf\",\n      \"deadline_status\": \"scheduled from confirmed expiry\",\n      \"filing_ready\": false,\n      \"external_action\": \"owner only; no filing performed\"\n    }\n  ],\n  \"deadline_reminders_due\": [],\n  \"external_actions\": \"none\"\n}\n",
+      "daily": "",
+      "record_review_only": "{\n  \"status\": \"owner_action_required\",\n  \"detail\": \"Glacier approval recorded the local draft review only. The dealer must authorize, sign, and submit directly; no portal was opened and no claim was filed.\",\n  \"external_actions\": \"none\"\n}\n"
+    },
+    "run_id": "1f4d0b2bae3b",
+    "status": "done",
+    "waiting_on": null
+  },
+  {
+    "errors": {},
+    "external_actions": "none",
+    "fixture_approvals": [
+      "owner_input_ready",
+      "mail_approval"
+    ],
+    "flow_id": "street-postcard-proof",
+    "node_states": {
+      "lob_test": "done",
+      "mail_approval": "done",
+      "november": "done",
+      "owner_input_ready": "done",
+      "proof": "done"
+    },
+    "outputs": {
+      "lob_test": "{\n  \"approval_id\": \"7f7b4ed360a9\",\n  \"status\": \"render_only\",\n  \"front_html\": \"/tmp/glacier-rg-coop-final-20261010/ventures/mail/ace2ed647c3fdb-front.html\",\n  \"back_html\": \"/tmp/glacier-rg-coop-final-20261010/ventures/mail/ace2ed647c3fdb-back.html\",\n  \"proof_pdf\": \"/tmp/glacier-rg-coop-final-20261010/ventures/mail/ace2ed647c3fdb-proof.pdf\",\n  \"address_verification\": {\n    \"verdict\": \"uncertain\",\n    \"detail\": \"not sent; no Lob test key configured\"\n  },\n  \"outreach_check\": {\n    \"verdict\": \"pass\",\n    \"reason\": \"sender is clear, no agency-style wording, and recipient is not suppressed\"\n  }\n}\n",
+      "mail_approval": "approved",
+      "november": "",
+      "owner_input_ready": "approved",
+      "proof": "{\n  \"verdict\": \"pass\",\n  \"issues\": [],\n  \"route\": {\n    \"campaign_id\": \"fixture-eddm-2026-01\",\n    \"town\": \"Fixtureville\",\n    \"route_id\": \"R-0001\",\n    \"fill_by\": \"2026-11-15\",\n    \"from\": {\n      \"name\": \"Fixture HVAC\",\n      \"address_line1\": \"1 Sample Way\"\n    },\n    \"to\": {\n      \"address_line1\": \"2 Test Street\"\n    },\n    \"sender\": \"Fixture HVAC\",\n    \"buyers\": [\n      {\n        \"category\": \"HVAC\",\n        \"written_approval\": true\n      }\n    ],\n    \"street_jobs\": [\n      {\n        \"id\": \"fixture-job-1\",\n        \"address\": \"10 Sample Street\",\n        \"dealer_name\": \"Fixture HVAC\"\n      }\n    ],\n    \"proof_record\": {\n      \"dealer_name\": \"Fixture HVAC\",\n      \"town\": \"Fixtureville\",\n      \"street\": \"10 Sample Street\"\n    },\n    \"mailpiece\": {\n      \"length_inches\": 11.5,\n      \"height_inches\": 6.25,\n      \"thickness_inches\": 0.01,\n      \"weight_ounces\": 3.3\n    }\n  },\n  \"address_check\": {\n    \"verdict\": \"uncertain\",\n    \"address\": {\n      \"address_line1\": \"2 Test Street\"\n    },\n    \"detail\": \"city, state, and ZIP are required for verification\"\n  },\n  \"front\": \"<main style=\\\"width:11.5in;height:6.25in\\\"><h1>Local businesses for Fixtureville</h1><p>Advertising from Glacier Co-op &amp; Street Cards</p><p>Your ad here</p></main>\",\n  \"back\": \"<main style=\\\"width:11.5in;height:6.25in\\\"><h2>Fixture HVAC</h2><p>Serving Fixtureville</p><p>From Glacier Co-op &amp; Street Cards</p><p>Recent work near 10 Sample Street</p><p>Ask us about this offer. No homeowner names are used.</p></main>\",\n  \"landing_pages\": \"/tmp/glacier-rg-coop-final-20261010/ventures/coop-postcards/proofs/landing\",\n  \"proof_pdf\": \"/tmp/glacier-rg-coop-final-20261010/ventures/coop-postcards/proofs/fixture-eddm-2026-01-eddm-proof.pdf\",\n  \"proof_size_inches\": {\n    \"length\": 11.5,\n    \"height\": 6.25\n  },\n  \"render_only\": true,\n  \"external_actions\": \"none\"\n}\n"
+    },
+    "run_id": "7f7b4ed360a9",
+    "status": "done",
+    "waiting_on": null
+  }
+]

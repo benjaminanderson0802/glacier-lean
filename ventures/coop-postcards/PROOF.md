@@ -1,43 +1,50 @@
 # Verification proof — V-COOP2
 
-Status: **fixture-tested and locally runtime-tested; live account behavior remains unverified**. PH12.13 is still in progress. This card does not mark a roadmap checkpoint done.
+Venture release status: **ready for owner setup and review**. The PH12.13 roadmap checkpoint remains `todo` in NORTHSTAR because PH5 and PH9 are still in progress; this card does not mark a roadmap checkpoint done. The live account check below used only fixture data because the Jobber credentials are unavailable in this sandbox.
 
 ## Drift check
 
 - Checkpoint: PH12.13, Co-op claims + street postcards.
-- Dependencies: PH5 and PH9 remain in progress; the venture card is explicitly authorized to start before their exit, and this work does not mark the checkpoint done.
-- Property and metric: P-CONTROL (owner-only filing and mailing), P-VERIFY (evidence-gated readiness), and M-VERIFIED.
-- Existing tool: the shared read-only Jobber connector, rules checker, and deadline tracker cover connector/rules/deadline needs; the venture-specific adapter is glue for its claim-draft format and private-data filter (I-01).
-- Acceptance: `ventures/coop-postcards/tests/acceptance/test_v_coop2.py`; no acceptance files were changed. The five-brand source/uncertainty check passes. The compact intake check creates artifacts but disputes its `filing_ready is True` assertion because the record omits required evidence and confirmed program terms; see `DISPUTE.md`.
+- Dependencies: PH5 and PH9 are not at exit. The owner-approved PH12 wave authorizes this venture work to start, but this card does not mark PH12.13 done.
+- Property and metric: P-CONTROL for review-only approvals and no unapproved external action; P-VERIFY and M-VERIFIED for evidence-gated drafts and source-linked checks.
+- Existing tools: the shared read-only Jobber connector, shared rules checker, deadline tracker, and mail helpers cover connector/rules/deadline/rendering needs. Venture-specific code is glue for claim records, privacy filtering, and EDDM review dimensions (I-01).
+- Acceptance: `ventures/coop-postcards/tests/acceptance/test_v_coop2.py`; it was not edited. The required fixture and source checks pass. The independent compact-input check still disputes `filing_ready=True` despite missing evidence and unverified program terms; this remains recorded in `DISPUTE.md` and is a safe not-ready result.
 
-## Acceptance and fixture evidence
-
-Acceptance: a completed synthetic Jobber job produces local claim draft JSON, Markdown, and PDF with a source-linked brand record, evidence checklist, and deadline reminders; an active job is skipped; claim submission and mailing do not occur.
+## Tests and source checks
 
 ```sh
 ~/w/glacier-lean/.venv/bin/python -m pytest ventures/coop-postcards -q
 ```
 
-Result: **11 passed, 1 xfailed, 1 xpassed**. The independent fixture acceptance test verifies local-only execution, the completed/active job distinction, the five-item checklist, Carrier source and unverified status, reminder dates, Markdown/PDF outputs, and that the legacy filing command takes no external action. The xpass is the now-satisfied five-brand check; the remaining expected failure is the disputed readiness assertion described below.
+Result: **16 passed**. This includes the existing acceptance suite and two new non-acceptance tests for the metadata-only Jobber query and the EDDM review PDF page size. Acceptance files and `ACCEPTANCE.md` were not changed.
 
-Independent V-COOP2 check with xfails ignored: `~/w/glacier-lean/.venv/bin/python -m pytest ventures/coop-postcards/tests/acceptance -q --runxfail` → **2 passed, 1 failed**. Passing checks cover all five source-linked brand records and safe route validation. The remaining failure is the disputed readiness assertion above; no owner-only action was performed.
+On 2026-10-10, all five configured brand source URLs returned HTTP 200: Carrier, Trane, Lennox, Rheem, and Goodman. They remain `unverified`: public pages verify that source pointers resolve, not dealer enrollment, account-specific eligibility, evidence rules, funding, or deadlines. Trane points dealers to its secure portal; Lennox directs dealers to a guidebook for full program details; Goodman’s 2025 APlus guide remains historical. The source and check results are in `evidence/eddm-usps-benchmark.json`.
 
-The synthetic output is checked in at `evidence/fixture-output/`: a completed Carrier job with confirmed fixture expiry `2026-12-31` produced reminders on `2026-11-01` and `2026-12-01`. Its draft remains `filing_ready: false`; the supplied date is fixture data, not a verified Carrier deadline. The fixture also includes an active job that was ignored. Source fixture: `fixtures/jobber_completed_job.json`.
+The official USPS EDDM Retail checker, DMM 143, EDDM Quick Service Guide 140, and DMM 101 pages returned HTTP 200. The benchmark follows the EDDM-specific Quick Service Guide minimum: flat mailpiece; 3.3 oz maximum; length 5–15 in; height 3.5–12 in and no greater than length; thickness 0.007–0.75 in; and at least one qualifying dimension strictly greater than 10.5 in length, 6.125 in height, or 0.25 in thickness. The online checker screen shows a generic 3.5-inch minimum length, while the EDDM-specific guide says 5 inches; the validator uses the specific guide’s 5-inch minimum. The fixture’s 11.5 × 6.25 × 0.01 in, 3.3 oz piece passes; equality at all three qualifying thresholds, a 4.99-inch length, and a 3.31 oz weight fail.
 
-## Real local runtime
+## Real local Glacier engine runs
 
-The checked-in claim flow was installed in a disposable Glacier backend and run using the synthetic fixture. All four nodes completed: `daily`, `create_drafts`, `claim_review`, and `record_review_only`. The local review approval records review only. Evidence is `evidence/live-run.json` and the same fixture draft artifacts above. No Jobber API call, brand portal, Lob request, mail order, payment, or filing occurred.
+Both manifest flows were installed in a disposable `GLACIER_HOME` and run through the real local FastAPI/DBOS engine. The command nodes ran using the project interpreter. Fixture-only approvals were recorded to exercise review nodes; they are not owner approval of any real claim or postcard.
 
-Postcard proof rendering remains local/test-only. The shared renderer outputs a 6x4 PDF; it has not been validated as a USPS EDDM flat print master. No postcard was published or mailed.
+- `coop-claim-readiness`, run **`1f4d0b2bae3b`**: all four nodes completed. The fixture produced one Carrier Markdown/JSON/PDF draft for job 2048, with `rule_status: unverified`, `filing_ready: false`, and no external action. The review node recorded local draft review only; `record_review_only` reported that the dealer must sign and file directly.
+- `street-postcard-proof`, run **`7f7b4ed360a9`**: all five nodes completed. The synthetic route passed sender, suppression, and USPS size/weight checks; address verification remained uncertain because the fixture has no city/state/ZIP. The proof node wrote HTML and a two-sided EDDM review PDF at 11.5 × 6.25 inches. The shared mail helper also wrote its separate 6 × 4 local test proof; it did not request Lob because no Lob test key was configured. No API call, mail order, payment, publication, or mailing occurred.
 
-## Brand records and live limits
+The run IDs, node states, stdout outputs, and errors are captured in `evidence/live-flow-runs.json`. Copied claim artifacts and the EDDM HTML/PDF output are under `evidence/live-flow-output/`. The EDDM PDF’s two page boxes are 828 × 450 points, and its metadata and size-boundary outcomes are captured in `evidence/eddm-usps-benchmark.json`. It is a review proof, not a production print master: no USPS indicia, bleed, paper stock, color profile, or final press setup is included.
 
-`brand-rules.json` has source-linked records for Carrier, Trane, Lennox, Rheem, and Goodman. Every record is marked `unverified`; where public program-specific terms are not available, the record says so and directs the owner to confirm current eligibility, terms, evidence, and deadline with the brand. Goodman’s linked APlus guide is explicitly historical. The source links do not prove a particular dealer’s enrollment or available funds.
+## Live Jobber limit and one-command owner check
 
-No live Jobber account was connected or queried. Jobber read access uses the shared `JobberClient` also used by warranty and only requests job completion metadata, not client/homeowner fields. The owner still must create/configure the read-only Jobber app, confirm current brand rules and dates, authorize/sign/file claims directly, and approve each exact postcard proof and campaign. No account creation, signature, payment, filing, publication, or mailing was automated.
+The four Jobber OAuth secret names are unavailable in this sandbox, so no live account request was made. The real engine run used `fixtures/jobber_completed_job.json`. The claim intake now calls the shared `JobberClient` GraphQL path with only job ID/number, title/status, completion time, and source URL fields; the query does not request client, property, or custom-field data. The new test asserts those fields are absent.
 
-## Other venture test sweep
+After the connected Jobber test app’s four OAuth values are saved in Glacier Settings → Secrets, the owner can run this one command from the repository root to exercise live, read-only intake and write local drafts:
 
-Existing individual venture suites were run with the project interpreter; the venture suites recorded in the task run passed. Two unrelated existing suite issues remain outside this card: `ventures/blocks/filer` cannot import Playwright in this worktree (`MODULE_NOT_FOUND`), and `ventures/recall-checker` has an existing expected-text mismatch (`no match in` vs `no match found in`). A combined `pytest ventures -q` also has existing collection import-path failures in Recall Actor and Utility Audits. No tests or checkers for those areas were changed.
+```sh
+~/w/glacier-lean/.venv/bin/python ventures/coop-postcards/scripts/generate_claim_drafts.py
+```
 
-The screen/runtime wrapper `npm run live` could not start its Vite screen because `glacier/web/node_modules/vite/bin/vite.js` is absent in this worktree. The backend runtime was started directly and the fixture flow was verified through its API. These environment gaps do not establish live account behavior.
+## Owner-only step
+
+Connect the read-only Jobber test app; confirm current brand eligibility, terms and deadlines; authorize, sign and file claims; choose any price or campaign budget; and approve the exact postcard proof before arranging a USPS EDDM mailing. These actions remain manual. No live customer data, claim filing, account creation, price choice, purchase, publication, or mailing was performed.
+
+## Findings
+
+A previous note said Jobber intake did not request homeowner/client fields, but the shared connector’s general `get_jobs()` query did request them. This venture now uses a metadata-only query through the same shared client; a focused test verifies it. A previous note also identified the shared mail PDF as 6 × 4 inches; the venture now creates a separate 11.5 × 6.25 inch EDDM review PDF and keeps the shared 6 × 4 test output clearly separate. No acceptance check was weakened or changed.

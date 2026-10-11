@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from workflow import check_route_card, render_postcard
+from workflow import check_route_card, render_postcard, render_postcard_pdf
 from ventures.blocks.mail import landing_pages, verify_address
 
 
@@ -33,8 +33,14 @@ def main() -> int:
     front, back = render_postcard(sample)
     (out / "front.html").write_text(front, encoding="utf-8")
     (out / "back.html").write_text(back, encoding="utf-8")
+    proof_pdf = render_postcard_pdf(
+        {**sample, "sender": card["from"]["name"]},
+        out / f"{card['campaign_id']}-eddm-proof.pdf",
+    )
     address_check = verify_address(card.get("to", {}))
-    print(json.dumps({**result, "route": card, "address_check": address_check, "front": front, "back": back, "landing_pages": pages}, indent=2))
+    print(json.dumps({**result, "route": card, "address_check": address_check, "front": front, "back": back, "landing_pages": pages,
+                      "proof_pdf": str(proof_pdf), "proof_size_inches": {"length": 11.5, "height": 6.25},
+                      "render_only": True, "external_actions": "none"}, indent=2))
     return 0
 
 

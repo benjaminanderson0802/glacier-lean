@@ -1,0 +1,184 @@
+{
+  "checked_on": "2026-10-10",
+  "rendered_proof": {
+    "external_request": false,
+    "file": "live-flow-output/postcard/fixture-eddm-2026-01-eddm-proof.pdf",
+    "media_box_points": [
+      0,
+      0,
+      828,
+      450
+    ],
+    "page_count": 2,
+    "physical_size_inches": [
+      11.5,
+      6.25
+    ],
+    "production_master": false
+  },
+  "source_links": [
+    {
+      "final_url": "https://adkit.carrier.com/en/us/guidelines",
+      "http_status": 200,
+      "label": "Carrier",
+      "rule_status": "unverified",
+      "url": "https://adkit.carrier.com/en/us/guidelines"
+    },
+    {
+      "final_url": "https://www.trane.com/residential/en/for-dealers/",
+      "http_status": 200,
+      "label": "Trane",
+      "rule_status": "unverified",
+      "url": "https://www.trane.com/residential/en/for-dealers/"
+    },
+    {
+      "final_url": "https://www.lennoxpros.com/partner-resources/marketing/consumer-advertising-program",
+      "http_status": 200,
+      "label": "Lennox",
+      "rule_status": "unverified",
+      "url": "https://www.lennoxpros.com/partner-resources/marketing/consumer-advertising-program"
+    },
+    {
+      "final_url": "https://www.rheem.com/professionals/residential-heating-and-cooling/pro-partner-programs/",
+      "http_status": 200,
+      "label": "Rheem",
+      "rule_status": "unverified",
+      "url": "https://www.rheem.com/professionals/residential-heating-and-cooling/pro-partner-programs/"
+    },
+    {
+      "final_url": "https://www.goodmanmfg.com/become-a-dealer",
+      "http_status": 200,
+      "label": "Goodman",
+      "rule_status": "unverified",
+      "url": "https://www.goodmanmfg.com/become-a-dealer"
+    },
+    {
+      "final_url": "https://eddm.usps.com/eddm/order-confirmation.htm",
+      "http_status": 200,
+      "label": "USPS EDDM Retail size checker",
+      "url": "https://eddm.usps.com/eddm/order-confirmation.htm"
+    },
+    {
+      "final_url": "https://pe.usps.com/text/dmm300/143.htm",
+      "http_status": 200,
+      "label": "USPS DMM 143 EDDM Retail eligibility",
+      "url": "https://pe.usps.com/text/dmm300/143.htm"
+    },
+    {
+      "final_url": "https://pe.usps.com/text/qsg300/Q140.htm",
+      "http_status": 200,
+      "label": "USPS Quick Service Guide 140 EDDM Retail",
+      "url": "https://pe.usps.com/text/qsg300/Q140.htm"
+    },
+    {
+      "final_url": "https://pe.usps.com/text/dmm300/101.htm",
+      "http_status": 200,
+      "label": "USPS DMM 101 retail physical standards",
+      "url": "https://pe.usps.com/text/dmm300/101.htm"
+    }
+  ],
+  "usps_eddm_retail_requirements": {
+    "flat_required": true,
+    "height_inches": {
+      "max": 12,
+      "min": 3.5,
+      "must_not_exceed_length": true
+    },
+    "length_inches": {
+      "max": 15,
+      "min": 5
+    },
+    "max_weight_ounces": 3.3,
+    "minimum_source_note": "The EDDM-specific USPS Quick Service Guide 140 specifies a 5-inch minimum length; this venture follows it although the EDDM online checker screen shows a more permissive generic 3.5-inch minimum.",
+    "not_checked_by_size_validator": [
+      "EDDM saturation and simplified-address eligibility",
+      "postal indicia",
+      "print bleed, stock, color profile, and final press setup"
+    ],
+    "qualifying_dimension": "length > 10.5 inches OR height > 6.125 inches OR thickness > 0.25 inches",
+    "source_urls": [
+      "https://eddm.usps.com/eddm/order-confirmation.htm",
+      "https://pe.usps.com/text/dmm300/143.htm",
+      "https://pe.usps.com/text/qsg300/Q140.htm",
+      "https://pe.usps.com/text/dmm300/101.htm"
+    ],
+    "thickness_inches": {
+      "max": 0.75,
+      "min": 0.007
+    }
+  },
+  "validator_scenarios": [
+    {
+      "case": "release dimensions at max allowed retail weight",
+      "issues": [],
+      "mailpiece": {
+        "height_inches": 6.25,
+        "length_inches": 11.5,
+        "thickness_inches": 0.01,
+        "weight_ounces": 3.3
+      },
+      "verdict": "pass"
+    },
+    {
+      "case": "strict qualification thresholds do not qualify at equality",
+      "issues": [
+        "USPS EDDM Retail mailpiece must be longer than 10.5 inches, higher than 6.125 inches, or thicker than 0.25 inches"
+      ],
+      "mailpiece": {
+        "height_inches": 6.125,
+        "length_inches": 10.5,
+        "thickness_inches": 0.25,
+        "weight_ounces": 3.3
+      },
+      "verdict": "fail"
+    },
+    {
+      "case": "overweight by 0.01 ounces",
+      "issues": [
+        "USPS EDDM Retail weight must be greater than 0 and no more than 3.3 ounces"
+      ],
+      "mailpiece": {
+        "height_inches": 6.25,
+        "length_inches": 11.5,
+        "thickness_inches": 0.01,
+        "weight_ounces": 3.31
+      },
+      "verdict": "fail"
+    },
+    {
+      "case": "maximum physical dimensions",
+      "issues": [],
+      "mailpiece": {
+        "height_inches": 12,
+        "length_inches": 15,
+        "thickness_inches": 0.75,
+        "weight_ounces": 3.3
+      },
+      "verdict": "pass"
+    },
+    {
+      "case": "below EDDM-specific 5-inch minimum",
+      "issues": [
+        "USPS EDDM Retail dimensions must be 5\u201315 inches long and 3.5\u201312 inches high, with height no greater than length"
+      ],
+      "mailpiece": {
+        "height_inches": 3.5,
+        "length_inches": 4.99,
+        "thickness_inches": 0.26,
+        "weight_ounces": 3.3
+      },
+      "verdict": "fail"
+    },
+    {
+      "case": "minimum physical dimensions with qualifying thickness",
+      "issues": [],
+      "mailpiece": {
+        "height_inches": 3.5,
+        "length_inches": 5,
+        "thickness_inches": 0.26,
+        "weight_ounces": 3.3
+      },
+      "verdict": "pass"
+    }
+  ]
+}

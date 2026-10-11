@@ -54,12 +54,37 @@ def load_brand_rules(path: str | Path = BRAND_RULES_PATH) -> dict[str, dict[str,
 
 
 def completed_jobber_jobs(client: JobberClient | None = None) -> tuple[str, list[dict[str, Any]]]:
-    """Read completed jobs from the connected Jobber account without mutations."""
+    """Read completed-job metadata without requesting any client or property fields."""
+    owns_client = client is None
     jobber = client or JobberClient()
-    account = jobber.test_connection()
-    rows = jobber.get_jobs(max_pages=5)
-    complete = [row for row in rows if str(row.get("jobStatus", "")).casefold() in {"completed", "complete"}]
-    return str(account.get("account") or "Jobber dealer"), complete
+    try:
+        account = jobber.test_connection()
+        rows: list[dict[str, Any]] = []
+        cursor: str | None = None
+        query = """query ReadCompletedJobMetadata($first: Int!, $after: String) {
+          jobs(first: $first, after: $after) {
+            nodes { id jobNumber title jobStatus completedAt jobberWebUri }
+            pageInfo { hasNextPage endCursor }
+          }
+        }"""
+        for _ in range(5):
+            data = jobber.graphql(query, {"first": 50, "after": cursor})
+            connection = data.get("jobs") or {}
+            rows.extend(connection.get("nodes") or [])
+            page = connection.get("pageInfo") or {}
+            if not page.get("hasNextPage"):
+                break
+            next_cursor = page.get("endCursor")
+            if not next_cursor or next_cursor == cursor:
+                raise RuntimeError("Jobber returned an invalid pagination cursor.")
+            cursor = next_cursor
+        else:
+            raise RuntimeError("Jobber completed-job read stopped at the five-page limit.")
+        complete = [row for row in rows if str(row.get("jobStatus", "")).casefold() in {"completed", "complete"}]
+        return str(account.get("account") or "Jobber dealer"), complete
+    finally:
+        if owns_client:
+            jobber.close()
 
 
 def _claim_id(job: dict[str, Any]) -> str:
@@ -401,8 +426,8 @@ def check_route_card(card: dict[str, Any]) -> dict[str, Any]:
             height = float(mailpiece["height_inches"])
             thickness = float(mailpiece["thickness_inches"])
             weight = float(mailpiece["weight_ounces"])
-            if not (3.5 <= length <= 15 and 3.5 <= height <= 12 and height <= length):
-                issues.append("USPS EDDM Retail dimensions must be 3.5–15 inches long and 3.5–12 inches high, with height no greater than length")
+            if not (5 <= length <= 15 and 3.5 <= height <= 12 and height <= length):
+                issues.append("USPS EDDM Retail dimensions must be 5–15 inches long and 3.5–12 inches high, with height no greater than length")
             if not 0.007 <= thickness <= 0.75:
                 issues.append("USPS EDDM Retail thickness must be 0.007–0.75 inches")
             if weight <= 0 or weight > 3.3:
@@ -444,6 +469,59 @@ def render_postcard(record: dict[str, Any]) -> tuple[str, str]:
         + '<p>Ask us about this offer. No homeowner names are used.</p></main>'
     )
     return front, back
+
+
+def render_postcard_pdf(record: dict[str, Any], output: str | Path) -> Path:
+    """Render a local two-sided 11.5 x 6.25 inch EDDM Retail flat proof.
+
+    This is a review proof, not a print-ready production master: it has no
+    postal indicia, bleed, paper stock, or color profile and is never sent.
+    """
+    sender = str(record.get("sender") or "Glacier Co-op & Street Cards")
+    dealer = str(record.get("dealer_name") or "local dealer")
+    town = str(record.get("town") or "your neighborhood")
+    street = str(record.get("street") or "")
+    label = "11.5 x 6.25 inch USPS EDDM Retail flat proof"
+    pages = (
+        (label, f"Local businesses for {town}", f"Advertising from {sender}", "Your ad here"),
+        (label, dealer, f"Serving {town}", f"From {sender}", *( (f"Recent work near {street}",) if street else () ), "No homeowner names are used."),
+    )
+
+    def escape_pdf(value: str) -> str:
+        return value.encode("latin-1", "replace").decode("latin-1").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+    objects: list[bytes] = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+    ]
+    for content_id, lines in ((4, pages[0]), (6, pages[1])):
+        commands = ["BT", "/F1 18 Tf", "36 400 Td"]
+        for index, line in enumerate(lines):
+            if index:
+                commands.append("0 -32 Td")
+            commands.append(f"({escape_pdf(line)}) Tj")
+        commands.append("ET")
+        stream = "\n".join(commands).encode("latin-1", "replace")
+        objects.append(
+            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 828 450] /Resources << /Font << /F1 7 0 R >> >> /Contents {content_id} 0 R >>".encode()
+        )
+        objects.append(f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+
+    data = bytearray(b"%PDF-1.4\n% Glacier local EDDM review proof\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for index, body in enumerate(objects, 1):
+        offsets.append(len(data))
+        data.extend(f"{index} 0 obj\n".encode() + body + b"\nendobj\n")
+    xref = len(data)
+    data.extend(f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode())
+    for offset in offsets[1:]:
+        data.extend(f"{offset:010d} 00000 n \n".encode())
+    data.extend(f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode())
+    destination = Path(output)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+    return destination
 
 
 def _escape(value: str) -> str:
