@@ -22,6 +22,7 @@
     {"title": "Carrier warranty and registration", "url": "https://www.carrier.com/us/en/residential/homeowner-resources/warranty/"},
     {"title": "Bryant warranty information", "url": "https://www.bryant.com/en/us/current-owners/warranty-information/"},
     {"title": "Carrier registration portal", "url": "https://productregistration.carrier.com/Public/RegistrationForm_Carrier?brand=carrier"},
-    {"title": "Bryant registration portal", "url": "https://productregistration.bryant.com/Public/RegistrationForm?brand=bryant"}
+    {"title": "Bryant registration portal", "url": "https://productregistration.bryant.com/Public/RegistrationForm?brand=bryant"},
+    {"title": "Carrier terms of use", "url": "https://www.carrier.com/us/en/terms-of-use/"}
   ]
 }

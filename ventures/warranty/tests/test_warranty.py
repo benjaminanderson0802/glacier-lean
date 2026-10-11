@@ -103,19 +103,19 @@ def test_duplicate_units_are_not_prepared_twice():
     assert result["duplicates"] == ["1234567890"]
 
 
-def test_manifest_exposes_jobber_and_brand_fallback_prerequisites():
+def test_manifest_exposes_the_minimal_jobber_setup_without_future_gates():
     root = Path(__file__).resolve().parents[1]
     manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
-    setup = next(step for step in manifest["your_steps"] if step["id"] == "jobber-setup")
-    terms = next(step for step in manifest["your_steps"] if step["id"] == "brand-portal-terms")
-    launch = next(step for step in manifest["your_steps"] if step["id"] == "launch-and-email-review")
+    setup = manifest["your_steps"][0]
 
-    assert "jobber_client_id" in setup["detail"]
-    assert "five eligible test accounts" in setup["detail"]
-    assert "reader and deadline blocks" in setup["detail"]
-    assert "Human fallback" in terms["detail"]
-    assert "uncertain — please check" in terms["detail"]
-    assert "first 20 generated homeowner email drafts" in launch["detail"]
+    assert manifest["status"] == "ready"
+    assert len(manifest["your_steps"]) == 1
+    assert setup["id"] == "jobber-setup"
+    assert "jobber_client_id" in str(setup["secrets"])
+    assert "OWNER-STEPS.md" in setup["detail"]
+    assert "60 minutes" in setup["detail"]
+    assert not manifest["launch_gates"]
+    assert "uncertain" in " ".join(manifest["product"]["future_portal_enablement_gates"])
 
 
 def test_unverified_brand_serial_patterns_remain_disabled():

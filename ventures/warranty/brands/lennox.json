@@ -50,6 +50,7 @@
   "automation": "disabled",
   "sources": [
     {"title": "Lennox product registration", "url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"},
-    {"title": "Lennox ML17XC1 service guide, typical serial format", "url": "https://www.lennox.com/dA/7a43950f24/100049.pdf"}
+    {"title": "Lennox ML17XC1 service guide, typical serial format", "url": "https://www.lennox.com/dA/7a43950f24/100049.pdf"},
+    {"title": "Lennox website terms and conditions", "url": "https://www.lennox.com/es/terms-and-conditions"}
   ]
 }
