@@ -1,0 +1,6 @@
+{
+  "http_status": 502,
+  "response": {
+    "detail": "Could not draft the spec: The assistant could not answer. Please try again.. Try again or switch engine"
+  }
+}

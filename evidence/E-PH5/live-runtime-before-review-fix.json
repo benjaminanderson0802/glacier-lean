@@ -1,0 +1,149 @@
+{
+  "team_id": "3396c0b9d5c84a81",
+  "status": "needs_owner",
+  "vision_path": "visions/d9a50a1f03574bf099fb6303f4f39d6a.md",
+  "plan": {
+    "vision": {
+      "goal": "Create one offline result file",
+      "done": [
+        "result.txt bytes equal Glacier PH5 verified followed by newline"
+      ],
+      "constraints": [
+        "No network, paid services, publishing or edits outside team workspace"
+      ]
+    },
+    "spec": {
+      "requirements": [
+        "The system shall create result.txt after approval"
+      ],
+      "out_of_scope": [
+        "Network or publishing"
+      ],
+      "acceptance": [
+        {
+          "kind": "command",
+          "cmd": "/home/glacier/w/glacier-lean/.venv/bin/python -c \"from pathlib import Path; assert Path('result.txt').read_bytes() == b'Glacier PH5 verified\\n'\""
+        }
+      ]
+    },
+    "features": [
+      {
+        "id": "result",
+        "title": "Exact result file",
+        "description": "Create result.txt containing exactly Glacier PH5 verified followed by one newline. Use only this workspace. Do not add any other files or change checks.",
+        "acceptance": [
+          "Exact byte comparison by independent command"
+        ],
+        "status": "pending"
+      }
+    ],
+    "harness": {
+      "startup_script": "",
+      "smoke_test": "",
+      "checks": [],
+      "progress_log": "",
+      "decision_log": ""
+    },
+    "team": {
+      "engine": "codex",
+      "worker_mode": "parallel",
+      "parallel_limit": 3,
+      "roles": [
+        {
+          "id": "builder",
+          "charter": "Write only result.txt as specified",
+          "supervisor": "lead"
+        },
+        {
+          "id": "evaluator",
+          "charter": "Read and independently inspect result.txt. Do not modify any files.",
+          "supervisor": "lead"
+        },
+        {
+          "id": "lead",
+          "charter": "Review handovers against exact-byte command evidence",
+          "supervisor": null
+        }
+      ],
+      "supervisor": "lead",
+      "governor": "lead"
+    },
+    "tasks": [
+      {
+        "id": "write",
+        "role": "builder",
+        "title": "Create result.txt",
+        "feature_id": "result",
+        "description": "Create only the specified file",
+        "contract": {
+          "pass_criteria": [
+            "result.txt bytes equal Glacier PH5 verified followed by newline"
+          ]
+        },
+        "depends_on": [],
+        "requires_approval": true,
+        "acceptance": [
+          {
+            "kind": "command",
+            "cmd": "/home/glacier/w/glacier-lean/.venv/bin/python -c \"from pathlib import Path; assert Path('result.txt').read_bytes() == b'Glacier PH5 verified\\n'\""
+          }
+        ]
+      },
+      {
+        "id": "evaluate",
+        "role": "evaluator",
+        "title": "Inspect result.txt without edits",
+        "feature_id": "result",
+        "depends_on": [
+          "write"
+        ],
+        "requires_approval": false,
+        "acceptance": [
+          {
+            "kind": "command",
+            "cmd": "/home/glacier/w/glacier-lean/.venv/bin/python -c \"from pathlib import Path; assert Path('result.txt').read_bytes() == b'Glacier PH5 verified\\n'\""
+          }
+        ]
+      }
+    ],
+    "guards": {
+      "max_retries": 2,
+      "task_timeout_seconds": 120
+    }
+  },
+  "tasks": {
+    "write": {
+      "status": "needs_owner",
+      "attempts": 2,
+      "attempt_limit": 3,
+      "replans": 0,
+      "approved": true,
+      "output": "codex exit 0\nCreated [result.txt](/tmp/glacier-e-ph5-live/worktrees/team-3396c0b9d5c84a81/3396c0b9d5c84a81-write/result.txt). Independent byte inspection confirmed it contains `Glacier PH5 verified` followed by exactly one newline (21 bytes).",
+      "review": {
+        "passed": false,
+        "evidence": "supervisor review (codex): fail"
+      },
+      "checks": {
+        "passed": false,
+        "evidence": "supervisor review (codex): fail"
+      },
+      "claim_id": "2026-10-11-team-task-write-is-stuck-ecc262"
+    },
+    "evaluate": {
+      "status": "pending",
+      "attempts": 0,
+      "attempt_limit": 3,
+      "replans": 0
+    }
+  },
+  "features": {
+    "result": {
+      "status": "pending",
+      "evaluator_evidence": null
+    }
+  },
+  "events": [],
+  "workflow_started": true,
+  "control_request": null,
+  "progress_log": "Task write: retry"
+}

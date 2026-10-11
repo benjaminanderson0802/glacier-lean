@@ -29,6 +29,7 @@ _worker_process_lock = threading.RLock()
 _team_state_lock = threading.RLock()
 _engine_call_override = None
 ASK_ENGINES = {"codex", "claude", "gemini", "openai", "anthropic", "local"}
+EARS_REQUIREMENT_PATTERN = r"^(The system shall\b|When\b.+\bthe system shall\b|While\b.+\bthe system shall\b|Where\b.+\bthe system shall\b|If\b.+\bthen the system shall\b)"
 
 
 def init(path: str | None = None) -> None:
@@ -273,14 +274,16 @@ def draft_spec(transcript: str, latest_message: str, engine: str = "codex") -> d
         "required": ["goal", "requirements", "acceptance", "out_of_scope"],
         "properties": {
             "goal": {"type": "string", "maxLength": 300},
-            "requirements": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "requirements": {"type": "array", "minItems": 1,
+                             "items": {"type": "string", "pattern": EARS_REQUIREMENT_PATTERN}},
             "acceptance": {"type": "array", "minItems": 1, "items": {"type": "string"}},
             "out_of_scope": {"type": "array", "items": {"type": "string"}},
         },
     }
     prompt = ("Draft a concise project vision and spec from this interview. Do not copy the owner's raw message. "
               "Write requirements as separate EARS statements (for example 'The system shall ...' or "
-              "'When ..., the system shall ...'). Acceptance items must be separate, observable, testable checks. "
+              "'When ..., the system shall ...'). Every requirement must use the literal subject 'the system shall'; "
+              "describe builder/evaluator duties after that phrase. Acceptance items must be separate, observable, testable checks. "
               "Keep out-of-scope items explicit and concise. Return only the requested JSON object.\n\n"
               "Full interview transcript:\n" + (transcript or "(No earlier turns.)") +
               "\n\nLatest owner message:\n" + latest_message)
@@ -308,7 +311,7 @@ def draft_spec(transcript: str, latest_message: str, engine: str = "codex") -> d
         if any(item.casefold().strip() == raw or item.casefold().strip() == latest_message.casefold().strip()
                for item in [goal, *requirements, *acceptance, *out_of_scope]):
             raise ValueError("the draft repeats the raw owner message instead of summarizing it")
-        if not all(re.match(r"^(the system shall\b|when\b.+\bthe system shall\b|while\b.+\bthe system shall\b|where\b.+\bthe system shall\b|if\b.+\bthen the system shall\b)", item.strip(), re.I)
+        if not all(re.match(EARS_REQUIREMENT_PATTERN, item.strip(), re.I)
                    for item in requirements):
             raise ValueError("requirements must use separate EARS statements")
         vision = {"goal": goal.strip(), "requirements": requirements, "done": acceptance,
@@ -472,6 +475,12 @@ def plan_team(vision: dict, engine: str = "codex") -> dict:
 def save_plan(plan: dict, vision_path: str, workspace: str | None = None) -> dict:
     validate_plan(plan)
     team_id = uuid.uuid4().hex[:16]
+    home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    if plan["team"]["worker_mode"] == "parallel":
+        merged_workspace = runner.workspaces.base(home, f"team-{team_id}")
+        if workspace and os.path.abspath(workspace) != merged_workspace:
+            raise ValueError("parallel teams use their own isolated workspace; omit workspace")
+        workspace = merged_workspace
     path = f"teams/{team_id}.json"
     vault.write_note(path, json.dumps(plan, indent=2), author="owner")
     state = {"status": "approved", "tasks": {task["id"]: {"status": "pending", "attempts": 0,
@@ -481,7 +490,7 @@ def save_plan(plan: dict, vision_path: str, workspace: str | None = None) -> dic
     with _conn() as c:
         c.execute("INSERT INTO glacier_teams(team_id,status,vision_path,plan,state,workspace) VALUES(?,?,?,?,?,?)",
                   (team_id, "approved", vision_path, json.dumps(plan), json.dumps(state),
-                   os.path.abspath(workspace or os.path.join(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), "teams", team_id))))
+                   os.path.abspath(workspace or os.path.join(home, "teams", team_id))))
     return {"team_id": team_id, "status": "approved", "plan_path": path, "plan": plan}
 
 
@@ -645,7 +654,7 @@ def _terminate_worker_processes(team_id: str) -> None:
         _unregister_worker_process(*key)
 
 
-def _review(plan: dict, task: dict, output: str, attempt: int) -> dict:
+def _review(plan: dict, task: dict, output: str, attempt: int, checks: dict | None = None) -> dict:
     role_id = plan["team"].get("supervisor") or plan["tasks"][0]["role"]
     _forbid_planner(role_id, "supervisor")
     role = next((item for item in plan["team"]["roles"] if item["id"] == role_id), None)
@@ -653,12 +662,18 @@ def _review(plan: dict, task: dict, output: str, attempt: int) -> dict:
         return {"passed": False, "evidence": "the plan has no valid supervisor role"}
     import decider
     criteria = "Review the handover against the supervisor charter and task acceptance checks. Reject incomplete, unsupported, or off-plan work."
-    decision = decider.decide(criteria + "\nSupervisor charter: " + role["charter"] + "\nTask: " + task["title"],
-                              ["pass", "fail"], output or "(empty handover)")
+    decision = decider.decide(criteria + "\nSupervisor charter: " + role["charter"] + "\nTask: " + task["title"] +
+                              "\nAcceptance checks: " + json.dumps(task["acceptance"]),
+                              ["pass", "fail"], "Worker handover (not proof):\n" + (output or "(empty handover)") +
+                              "\nIndependent check results:\n" + json.dumps(checks or {}))
     return {"passed": decision.get("choice") == "pass", "evidence": f"supervisor review ({decision.get('engine')}): {decision.get('choice')}"}
 
 
 def _check_task(task: dict, output: str, workspace: str) -> dict:
+    resolved_workspace = os.path.realpath(workspace)
+    unsafe_roots = {os.path.realpath(os.path.abspath(os.sep)), os.path.realpath(tempfile.gettempdir())}
+    if resolved_workspace in unsafe_roots:
+        return {"passed": False, "evidence": f"independent checks refused unsafe workspace root: {resolved_workspace}"}
     evidence = []
     for check in task["acceptance"]:
         result = verify.run_check(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), "team", check, output, workspace)
@@ -674,7 +689,8 @@ def _govern(plan: dict, results: dict) -> dict:
     if done != expected:
         return {"passed": False, "evidence": "some planned tasks are incomplete"}
     import decider
-    outputs = {task_id: item.get("output", "") for task_id, item in results.items()}
+    outputs = {task_id: {"handover": item.get("output", ""), "checks": item.get("checks", {}),
+                         "review": item.get("review", {})} for task_id, item in results.items()}
     decision = decider.decide("Compare the completed results with every item in the Vision done list and the approved plan. "
                               "Pass only when the work clearly meets them. Vision done list: " +
                               json.dumps(plan["vision"].get("done", [])) + "\nPlan results: " + json.dumps(outputs),
@@ -705,6 +721,8 @@ def _objective_check(plan: dict, workspace: str) -> dict:
 
 
 def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: str, state: dict, attempt: int = 1) -> dict:
+    if task.get("requires_approval") and not state.get("tasks", {}).get(task_id, {}).get("approved"):
+        return {"status": "awaiting_approval"}
     role = next(role for role in plan["team"]["roles"] if role["id"] == task["role"])
     _forbid_planner(role["id"], "task role")
     effective_task = dict(task)
@@ -734,16 +752,16 @@ def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: 
                 "checks": {"passed": False, "evidence": "worker did not return a result"}}
     output = str(result.get("output", ""))
     store.broadcaster.publish({"type": "team_handover", "team_id": team_id, "task_id": task_id, "role": role["id"]})
-    review = _review(plan, task, output, attempt)
+    checks = _check_task(task, output, workspace)
+    review = _review(plan, task, output, attempt, checks)
     store.broadcaster.publish({"type": "team_review_result", "team_id": team_id, "task_id": task_id,
                                "passed": bool(review.get("passed")), "evidence": review.get("evidence", "")})
-    checks = _check_task(task, output, workspace) if review.get("passed") else {"passed": False, "evidence": review.get("evidence")}
     if not review.get("passed") or not checks.get("passed") or result.get("exit_code", 1) != 0:
         return {"status": "retry", "output": output, "review": review, "checks": checks}
     if feature and task.get("role") in ("evaluator", "skeptical-evaluator"):
         feature_state = state.setdefault("features", {}).get(feature_id, {})
         feature_state.update(status="passing", evaluator_evidence=json.dumps(checks.get("evidence", [])))
-    return {"status": "awaiting_approval" if task.get("requires_approval") else "done",
+    return {"status": "done",
             "output": output, "review": review, "checks": checks,
             **({"feature_evaluation": {"feature_id": feature_id,
                  "evaluator_evidence": json.dumps(checks.get("evidence", []))}}
@@ -783,6 +801,8 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
         def run_one(task):
             task_id = task["id"]
             item = state["tasks"].setdefault(task_id, {"status": "pending", "attempts": 0})
+            if task.get("requires_approval") and not item.get("approved"):
+                return task, item, {"status": "awaiting_approval"}
             item["status"] = "running"
             item["attempts"] += 1
             persist_task(task_id, item)
@@ -811,12 +831,12 @@ def run_team_local(team_id: str, plan: dict, workspace: str, state: dict | None 
                 continue
             if item["attempts"] >= limit:
                 cid = stuck_claim(team_id, task_id, item["attempts"], json.dumps(result))
-                item.update(status="needs_owner", claim_id=cid, **result)
+                item.update({**result, "status": "needs_owner", "claim_id": cid})
                 persist_task(task_id, item)
                 state["status"] = "needs_owner"
                 store.broadcaster.publish({"type": "team_needs_owner", "team_id": team_id, "task_id": task_id, "claim_id": cid})
                 return state
-            item.update(status="pending", **result)
+            item.update({**result, "status": "pending"})
             persist_task(task_id, item)
         persisted_status = _persisted_status(team_id)
         if persisted_status in {"pausing", "paused", "stopped"}:
@@ -862,6 +882,10 @@ def team_task_step(team_id: str, task_id: str) -> dict:
     plan, state = row["plan"], row["state"]
     task = next(t for t in plan["tasks"] if t["id"] == task_id)
     current = state["tasks"][task_id]
+    if task.get("requires_approval") and not current.get("approved"):
+        current["status"] = "awaiting_approval"
+        _save_task(team_id, task_id, current)
+        return {"status": "awaiting_approval"}
     current["attempts"] = int(current.get("attempts", 0)) + 1
     current["status"] = "running"
     _save_task(team_id, task_id, current)
@@ -874,8 +898,14 @@ def team_task_step(team_id: str, task_id: str) -> dict:
     current.update(result)
     evaluation = result.get("feature_evaluation")
     if plan["team"]["worker_mode"] == "parallel" and result.get("status") == "done":
-        runner.workspaces.finish(os.path.abspath(os.environ.get("GLACIER_HOME", "data")),
-                                 f"team-{team_id}", f"{team_id}-{task_id}", True)
+        merged = runner.workspaces.finish(os.path.abspath(os.environ.get("GLACIER_HOME", "data")),
+                                         f"team-{team_id}", f"{team_id}-{task_id}", True)
+        current["merge"] = merged
+        if not merged.get("merged"):
+            cid = stuck_claim(team_id, task_id, current["attempts"], json.dumps(merged))
+            current.update(status="needs_owner", claim_id=cid)
+            result = {**result, "status": "needs_owner", "claim_id": cid}
+            evaluation = None
     _save_task(team_id, task_id, current)
     if evaluation:
         _save_feature_evaluation(team_id, evaluation)
@@ -958,6 +988,7 @@ def run_team(team_id: str) -> str:
             item = state["tasks"].get(message.get("task_id"))
             if item and item.get("status") == "awaiting_approval":
                 item["status"] = "pending" if message.get("approved") else "rejected"
+                item["approved"] = bool(message.get("approved"))
                 if not message.get("approved"):
                     state["status"] = "needs_owner"
                     _save(team_id, status="needs_owner", state=state)
@@ -969,8 +1000,12 @@ def run_team(team_id: str) -> str:
         for task in batch:
             tid = task["id"]
             current = state["tasks"][tid]
+            if task.get("requires_approval") and not current.get("approved"):
+                current["status"] = "awaiting_approval"
+                _save_task(team_id, tid, current)
+                continue
             current["status"] = "running"
-            _save(team_id, state=state)
+            _save_task(team_id, tid, current)
             child_id = f"{team_id}-{tid}-{int(current.get('attempts', 0)) + 1}"
             with SetWorkflowID(child_id):
                 futures.append(DBOS.start_workflow(team_task_workflow, team_id, tid))
@@ -980,6 +1015,10 @@ def run_team(team_id: str) -> str:
         state = row["state"]
         for task in plan["tasks"]:
             item = state["tasks"][task["id"]]
+            if item.get("status") == "needs_owner":
+                state["status"] = "needs_owner"
+                _save(team_id, status="needs_owner", state=state)
+                return "needs_owner"
             if item.get("status") == "retry":
                 if int(item.get("attempts", 0)) >= max_retries:
                     cid = stuck_claim(team_id, task["id"], item["attempts"], json.dumps(item))
@@ -1002,7 +1041,7 @@ def run_team(team_id: str) -> str:
     state["objective_check"] = objective
     state["status"] = "done" if governed["passed"] and features_passed and objective["passed"] else "needs_owner"
     _save(team_id, status=state["status"], state=state)
-    store.broadcaster.publish({"type": "team_done" if governed["passed"] else "team_needs_owner", "team_id": team_id})
+    store.broadcaster.publish({"type": "team_done" if state["status"] == "done" else "team_needs_owner", "team_id": team_id})
     return state["status"]
 
 

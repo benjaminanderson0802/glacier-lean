@@ -1,0 +1,21 @@
+
+> glacier-web@0.2.0 build
+> tsc -b && vite build
+
+vite v8.3.3 building client environment for production...
+transforming...
+✓ 1181 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                      0.58 kB │ gzip:   0.39 kB
+dist/assets/Nunito-BzFMHfZw.woff2   39.12 kB
+dist/assets/room-z25ywC4x.webp     177.08 kB
+dist/assets/Build-DhyYLglK.css      15.97 kB │ gzip:   3.20 kB
+dist/assets/index-BcABL4OX.css      73.02 kB │ gzip:  12.90 kB
+dist/assets/window-DzyTaDEe.js      15.31 kB │ gzip:   3.84 kB
+dist/assets/tok-D9egIuRC.js         50.03 kB │ gzip:  16.69 kB
+dist/assets/MemoryMap-D1jRpB_D.js  141.01 kB │ gzip:  46.68 kB
+dist/assets/index-CmDuUT6Y.js      486.01 kB │ gzip: 141.61 kB
+dist/assets/Build-B5LIX4fF.js      539.19 kB │ gzip: 149.07 kB
+
+✓ built in 436ms
