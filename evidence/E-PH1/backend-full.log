@@ -1,0 +1,13 @@
+E-PH1 full backend-suite request — 2026-10-10
+
+Command:
+  flock /tmp/glacier-suite.lock bash -c 'cd glacier/backend && /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q tests'
+
+Result: NOT RUN. The request waited 15 minutes for the shared suite lock while
+another worker's backend suite held it and a PH3 full-suite request was queued
+ahead. Process inspection showed the E-PH1 flock wrapper had no pytest child.
+Only the E-PH1 waiting request was stopped; no other worker process was touched.
+
+The focused PH1 backend command completed separately with 59 passed, 1 warning
+in 122.80 seconds. Its real-backend fixtures use the test Server helper, which
+starts uvicorn with DBOS and a temporary GLACIER_HOME.

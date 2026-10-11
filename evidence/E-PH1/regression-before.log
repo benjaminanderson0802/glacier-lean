@@ -1,0 +1,91 @@
+FFFF.                                                                    [100%]
+=================================== FAILURES ===================================
+____________ test_command_attempt_effects_each_have_an_audit_row[2] ____________
+
+runtime_records = PosixPath('/tmp/pytest-of-glacier/pytest-609/test_command_attempt_effects_e0')
+succeed_at = 2
+
+    @pytest.mark.parametrize("succeed_at", [2, 9])
+    def test_command_attempt_effects_each_have_an_audit_row(runtime_records, succeed_at):
+        marks = runtime_records / "attempts"
+        result = runner._run_node_impl("flow", "run", {
+            "id": "command", "type": "command", "config": {
+                "cmd": f'echo tick >> "{marks}"; [ $(wc -l < "{marks}") -ge {succeed_at} ]',
+                "retries": 1,
+            },
+        }, None)
+    
+        assert marks.read_text().splitlines() == ["tick", "tick"]
+        assert result["state"] == ("done" if succeed_at == 2 else "failed")
+        rows = audit_log.events("step.command_executed")
+>       assert len(rows) == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = len([{'event_type': 'step.command_executed', 'who': 'owner', 'what': {'env_id': 'flow', 'exit_code': 0, 'node_id': 'command', 'run_id': 'run', ...}, 'when': '2026-10-11T03:25:09.247+00:00'}])
+
+tests/test_runtime_effect_records.py:34: AssertionError
+____________ test_command_attempt_effects_each_have_an_audit_row[9] ____________
+
+runtime_records = PosixPath('/tmp/pytest-of-glacier/pytest-609/test_command_attempt_effects_e1')
+succeed_at = 9
+
+    @pytest.mark.parametrize("succeed_at", [2, 9])
+    def test_command_attempt_effects_each_have_an_audit_row(runtime_records, succeed_at):
+        marks = runtime_records / "attempts"
+        result = runner._run_node_impl("flow", "run", {
+            "id": "command", "type": "command", "config": {
+                "cmd": f'echo tick >> "{marks}"; [ $(wc -l < "{marks}") -ge {succeed_at} ]',
+                "retries": 1,
+            },
+        }, None)
+    
+        assert marks.read_text().splitlines() == ["tick", "tick"]
+        assert result["state"] == ("done" if succeed_at == 2 else "failed")
+        rows = audit_log.events("step.command_executed")
+>       assert len(rows) == 2
+E       AssertionError: assert 1 == 2
+E        +  where 1 = len([{'event_type': 'step.command_executed', 'who': 'owner', 'what': {'env_id': 'flow', 'exit_code': 1, 'node_id': 'command', 'run_id': 'run', ...}, 'when': '2026-10-11T03:25:19.421+00:00'}])
+
+tests/test_runtime_effect_records.py:34: AssertionError
+_____________________ test_child_start_records_one_effect ______________________
+
+runtime_records = PosixPath('/tmp/pytest-of-glacier/pytest-609/test_child_start_records_one_e0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7492dbdbffe0>
+
+    def test_child_start_records_one_effect(runtime_records, monkeypatch):
+        monkeypatch.setattr(runner, "load_env", lambda _: {"nodes": []})
+        monkeypatch.setattr(store, "create_run", lambda *args: None)
+    
+        assert runner.start_child("parent", "run", "node", "child", "child-run", 0)["state"] == "running"
+    
+        rows = audit_log.events("run.child_started")
+>       assert len(rows) == 1
+E       AssertionError: assert 2 == 1
+E        +  where 2 = len([{'event_type': 'run.child_started', 'who': 'owner', 'what': {'env_id': 'child', 'node_id': 'node', 'parent_run_id': '...: 'child', 'node_id': 'node', 'parent_run_id': 'run', 'run_id': 'child-run'}, 'when': '2026-10-11T03:25:20.301+00:00'}])
+
+tests/test_runtime_effect_records.py:48: AssertionError
+_____________ test_schedule_start_records_only_reserved_run[True] ______________
+
+runtime_records = PosixPath('/tmp/pytest-of-glacier/pytest-609/test_schedule_start_records_on0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7492dbdbfa70>
+reserved = True
+
+    @pytest.mark.parametrize("reserved", [True, False])
+    def test_schedule_start_records_only_reserved_run(runtime_records, monkeypatch, reserved):
+        monkeypatch.setattr(runner, "load_env", lambda _: {"nodes": [{"type": "schedule"}]})
+        monkeypatch.setattr(store, "create_run", lambda *args: reserved)
+    
+        assert runner.snapshot_scheduled_run("scheduled", "run") is reserved
+    
+        rows = audit_log.events("run.started")
+>       assert len(rows) == int(reserved)
+E       assert 0 == 1
+E        +  where 0 = len([])
+E        +  and   1 = int(True)
+
+tests/test_runtime_effect_records.py:61: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_runtime_effect_records.py::test_command_attempt_effects_each_have_an_audit_row[2]
+FAILED tests/test_runtime_effect_records.py::test_command_attempt_effects_each_have_an_audit_row[9]
+FAILED tests/test_runtime_effect_records.py::test_child_start_records_one_effect
+FAILED tests/test_runtime_effect_records.py::test_schedule_start_records_only_reserved_run[True]
+4 failed, 1 passed in 37.98s

@@ -205,7 +205,10 @@ def snapshot_scheduled_run(env_id: str, run_id: str, attempt: int = 0) -> bool:
         return False
     reserved = store.create_run(run_id, env_id, graph, True)
     # Older store doubles return None; the real store reports busy vs reserved.
-    return True if reserved is None else reserved
+    started = True if reserved is None else reserved
+    if started:
+        audit_log.record("run.started", what={"env_id": env_id, "run_id": run_id, "source": "schedule"})
+    return started
 
 
 def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) -> dict:
@@ -351,6 +354,13 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                         res = {"state": "failed", "output": str(exc), "exit_code": 1}
                 else:
                     res = run_codex(env_id, run_id, nid, execution_cfg, (last or {}).get("output") or "", timeout, ws)
+                # Failed attempts can still write files or call a model. Record
+                # each outcome before retrying, not only the final attempt.
+                audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
+                                 who=run_record.get("author", "owner"),
+                                 what={"env_id": env_id, "run_id": run_id, "node_id": nid,
+                                       "step_type": kind, "attempt": attempt,
+                                       "exit_code": res.get("exit_code")})
                 res["output"] = secrets_store.redact(str(res.get("output") or ""))
                 if retries:
                     res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
@@ -358,10 +368,6 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                     break
                 store.set_node(run_id, env_id, nid, "running", res["output"] + "\n[retrying]")
                 time.sleep(min(attempt, 10))
-            audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
-                             who=run_record.get("author", "owner"),
-                             what={"env_id": env_id, "run_id": run_id, "node_id": nid,
-                                   "step_type": kind, "exit_code": res.get("exit_code")})
         elif kind == "check":
             if last is None:
                 raise ValueError("check has no previous command/codex result")
@@ -600,8 +606,6 @@ def start_child(env_id: str, run_id: str, node_id: str, child_env: str, child_ru
         if depth >= MAX_FLOW_DEPTH:
             raise ValueError(f"sub-flows nested more than {MAX_FLOW_DEPTH} deep; stopping")
         store.create_run(child_run, child_env, load_env(child_env))
-        audit_log.record("run.child_started", who=store.get_run(run_id).get("author", "owner"),
-                         what={"env_id": child_env, "run_id": child_run, "parent_run_id": run_id, "node_id": node_id})
         audit_log.record("run.child_started", who=store.get_run(run_id).get("author", "owner"),
                          what={"env_id": child_env, "run_id": child_run, "parent_run_id": run_id, "node_id": node_id})
     except (FileNotFoundError, ValueError) as e:
