@@ -1,0 +1,10 @@
+{"name": "authentication", "unauthenticated_status": 401}
+{"name": "chatgpt import and dedup", "first": {"added": 1, "updated": 0, "unchanged": 0}, "repeat": {"added": 0, "updated": 0, "unchanged": 1}}
+{"name": "claude import and dedup", "first": {"added": 1, "updated": 0, "unchanged": 0}, "repeat": {"added": 0, "updated": 0, "unchanged": 1}}
+{"name": "refresh", "result": {"chatgpt": {"added": 0, "updated": 0, "unchanged": 1}, "claude": {"added": 0, "updated": 0, "unchanged": 1}}}
+{"name": "import search", "paths": ["imports/chatgpt/2023-11-14-ph6-import.md"]}
+{"name": "project text upload", "project": {"name": "PH6 proof", "count": 0}, "note": "files/PH6 proof/meeting.txt.md", "search_found": true}
+{"name": "real image OCR", "note": "files/PH6 proof/receipt.png.md", "search_found": false, "message": "File saved. Text in images can be made searchable by installing Tesseract (free and open source): https://github.com/tesseract-ocr/tesseract"}
+{"name": "rename and search", "result": {"path": "notes/renamed-ph6-meeting.md", "commit": "76d4e6d4"}, "paths": ["notes/renamed-ph6-meeting.md"]}
+{"name": "real session corpus cold", "sessions": 875, "seconds": 126.367, "by_tool": {"codex": 827, "opencode": 48}}
+{"name": "real session corpus warm", "sessions": 876, "seconds": 0.061, "by_tool": {"codex": 828, "opencode": 48}}
