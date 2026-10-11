@@ -1,0 +1,259 @@
+12:10:16 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [67898]
+INFO:     Waiting for application startup.
+12:10:16 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+12:10:16 [    INFO] (dbos:_dbos.py:621) Application version: afb8564599350370d94f67698e9cd913
+12:10:16 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+12:10:16 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/glacier-portable-card-1lws3z5l/glacier-home/glacier.sqlite (schema: dbos)
+12:10:16 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+12:10:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+12:10:16 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version afb8564599350370d94f67698e9cd913
+12:10:16 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+12:10:16 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+12:10:16 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:56029 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58514 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "PUT /api/environments/portable-codex-cli HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "POST /api/environments/portable-codex-cli/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/b5e745ad4209 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "PUT /api/environments/portable-opencode-acp-ollama-qwen2-5-coder-7b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "POST /api/environments/portable-opencode-acp-ollama-qwen2-5-coder-7b/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/e9a2813cf1a3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "PUT /api/environments/portable-opencode-acp-ollama-granite3-3-2b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "POST /api/environments/portable-opencode-acp-ollama-granite3-3-2b/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58530 - "GET /api/runs/69bd7e4c0b21 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+12:11:46 [    INFO] (dbos:_queue.py:888) Stopping queue manager, joining all worker threads...
+12:11:46 [    INFO] (dbos:_dbos.py:444) DBOS successfully shut down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [67898]
