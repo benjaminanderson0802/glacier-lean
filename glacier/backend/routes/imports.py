@@ -41,7 +41,8 @@ async def import_conversations(request: Request):
             try:
                 result = await run_in_threadpool(import_service.import_export, source, upload=file.file,
                                                  filename=file.filename or "export.zip")
-                audit_log.record("memory.imported", what={"source": source, "written": result.get("written", 0)})
+                audit_log.record("memory.imported", what={"source": source,
+                                                         "written": result["added"] + result["updated"]})
                 return result
             except ValueError as exc:
                 raise _error(exc) from exc
@@ -53,7 +54,8 @@ async def import_conversations(request: Request):
         raise HTTPException(400, "Choose ChatGPT or Claude and provide an export file path") from exc
     try:
         result = await run_in_threadpool(import_service.import_export, item.source, item.path)
-        audit_log.record("memory.imported", what={"source": item.source, "written": result.get("written", 0)})
+        audit_log.record("memory.imported", what={"source": item.source,
+                                                 "written": result["added"] + result["updated"]})
         return result
     except ValueError as exc:
         raise _error(exc) from exc
@@ -63,7 +65,9 @@ async def import_conversations(request: Request):
 def refresh_imports():
     try:
         result = import_service.refresh()
-        audit_log.record("memory.imports_refreshed", what={"written": result.get("written", 0)})
+        audit_log.record("memory.imports_refreshed", what={
+            "written": sum(counts["added"] + counts["updated"] for counts in result.values()),
+        })
         return result
     except ValueError as exc:
         raise _error(exc) from exc
