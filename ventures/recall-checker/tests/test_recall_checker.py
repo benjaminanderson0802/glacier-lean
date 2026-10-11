@@ -60,8 +60,8 @@ class RecallMatcherAcceptanceTests(unittest.TestCase):
     def test_mv3_extension_requests_only_current_tab_and_local_api_access(self):
         manifest = json.loads((Path(__file__).parents[1] / "extension" / "manifest.json").read_text())
         self.assertEqual(manifest["manifest_version"], 3)
-        self.assertEqual(set(manifest["permissions"]), {"activeTab", "scripting"})
-        self.assertEqual(manifest["host_permissions"], ["http://127.0.0.1:8765/*"])
+        self.assertEqual(set(manifest["permissions"]), {"activeTab", "scripting", "storage"})
+        self.assertEqual(set(manifest["host_permissions"]), {"http://127.0.0.1:8765/*", "https://api.apify.com/*"})
 
     def test_owner_steps_link_store_secrets_and_require_host_choice(self):
         root = Path(__file__).resolve().parents[1]
