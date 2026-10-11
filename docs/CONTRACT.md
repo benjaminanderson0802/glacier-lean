@@ -9,7 +9,7 @@
 }
 Node types, their settings fields and branch labels are defined once in glacier/contract/node_types.json and served at GET /api/node-types.
 Node configs:
-- schedule: {"cron": "*/1 * * * *"}   (start node; also creates/updates a DBOS schedule named after the environment)
+- schedule: {"cron": "*/1 * * * *", "missed_run": "run_once|skip", "overlap": "queue|skip"} (start node; DBOS persists the schedule; missed occurrences collapse to the latest one by default)
 - command:  {"cmd": "pytest -q", "cwd": "optional"}   (records exit_code + output)
 - codex:    {"prompt": "Fix {prev_output}", "workdir": "optional", "sandbox": "read-only|workspace-write", "model": "optional"}
             Codex worker: runs `codex exec --json --skip-git-repo-check -s <sandbox> -C <workdir> -o <file> [-m model] -- <prompt>`
@@ -33,8 +33,29 @@ Node configs:
             local = Ollama (GLACIER_OLLAMA_URL, GLACIER_LOCAL_MODEL), codex = Codex CLI default model; auto = local, then codex.
             Output "decided: <option> (by <engine>)". 2-12 options.
 - loop:     {"times": "3"}  runs its "again" edges N times (body leads back to the loop node), then follows its "done" edges (max 1000)
+- for_each: {"max_items": "100"}  reads a JSON list from the previous step, sends one item at a time down its "each" edges,
+            and follows "done" after the bounded list is exhausted (maximum 1000 items)
 - flow:     {"env": "<other flow id>"}  runs that saved flow as its own run and waits; output "sub-run <run_id> of <env>: <status>";
             exit_code 0 when the sub-run is done, else 1 (so a check can branch on it); nesting deeper than 5 fails
+- Business plug-in steps (available in Simple, Standard and Full layouts):
+  - `data_table`: keeps a readable JSON source file per table under `GLACIER_HOME/tables/` and rebuilds its SQLite index at
+    `GLACIER_HOME/tables.sqlite`; operations are insert, upsert, query and dedupe. Row values and query matches are JSON objects;
+    insert/upsert require a key field.
+  - `json_transform`: reads the prior step's JSON and can set fields, filter rows by a field/value, merge objects or lists,
+    return an items list, or remove duplicates. Split returns the list as its output for downstream steps.
+  - `csv_file`: reads or writes UTF-8 CSV within the flow's workspace. Writes take a JSON list of row objects; reads return
+    a JSON list. Files above 10 MB and lists above 100,000 rows are refused.
+  - `delay`: waits up to one hour and then returns the previous step's output.
+  - `structured_ai`: sends a prompt through the configured local/free model gateway, then checks the answer against the
+    supplied JSON Schema before returning it. Model usage is recorded per run; secrets are not accepted in prompts.
+  - `email_send`: saves an `.eml` draft inside the flow workspace by default. Sending through SMTP requires the previous
+    step to be an Approval that returned `approved`; account passwords use `{secret:NAME}` from Settings > Secrets.
+  - `email_read`: searches IMAP over TLS in read-only mailbox mode, returning up to 25 message summaries as JSON. It never
+    marks messages read or deletes them; search accepts `ALL`, `UNSEEN`, `SEEN`, `FLAGGED`, `FROM`, `TO`, or `SUBJECT`.
+  - `email_trigger`: polls an IMAP mailbox over TLS every 60 seconds by default. Its first check records current matches;
+    each later matching Message-ID starts one durable run. Polling state is local and survives restarts.
+  - Retry-safe plug-ins expose an optional per-step retry count (0–10) and use a capped backoff. The node catalog marks
+    which plug-ins can be retried; sending email is deliberately excluded because a retry could send a duplicate.
 A failing command/codex/flow node only continues when it feeds a check node. A node with several outgoing unlabelled edges runs them in order. Cycles allowed; max_steps node executions per run (default 500).
 
 ## Plug-ins and further contracts
@@ -42,6 +63,8 @@ New step types and API routes are plug-ins (glacier/backend/plugins.py, docs/con
 
 ## A2A
 The local backend serves an A2A 1.0 JSON-RPC interface at `/a2a` and the Agent Card at `/.well-known/agent-card.json`. Only flows with `share_a2a: true` are discoverable or runnable. Calls require the engine token and local Host/Origin checks; details and task methods are in [A2A.md](A2A.md).
+
+Webhook trigger URLs are local and require Glacier's install token. A remote service can reach one only through a tunnel the owner configures and secures; Glacier does not open a public listener or remove the token check.
 
 ## HTTP API (backend on :8000, all JSON, prefix /api)
 - GET  /api/node-types                        -> [{type,label,description,fields:[{key,label,placeholder,default,optional?,multiline?,options?,picker?}],branches:[a,b]|null,branches_from?:"options"}]
@@ -58,16 +81,17 @@ The local backend serves an A2A 1.0 JSON-RPC interface at `/a2a` and the Agent C
                                                   A deterministic, plain-language explanation from the saved run, node catalog labels,
                                                   outputs, checks and waiting approval. Output snippets are redacted and limited to 120 characters.
                                                   Returns 404 when the run does not exist; never calls an AI model.
-- GET  /api/home                             -> {local_ai:{online,model}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
-                                                  needs_you:[{kind,title,detail,at,ref}],
+- GET  /api/home                             -> {local_ai:{online,model}, health:{date,failed_runs,stuck_runs,waiting_for_owner,data_bytes,note_path}, counts:{running,need_you},  (local_ai.online is null until the first local-AI check finishes, a few seconds after start)
+                                                  needs_you:[{kind,title,detail,at,ref}], venture_steps:[{kind,title,detail,instructions,links,at,ref}],
                                                   running:[{run_id,env_id,name,status,step,steps,started_at}],
-                                                  recent_notes:[{path,summary,at}]}; one read-only Home summary.
+                                                  recent_notes:[{path,summary,at}]}; Home also shows the daily report and writes it to memory.
                                                   Needs-you rows are newest first (up to 20): waiting approvals,
                                                   claims proposed for an owner decision, and failures from the last
                                                   seven days. Running includes running, queued and waiting runs;
                                                   step/steps counts completed/total nodes. Recent committed memory
                                                   notes are newest first (up to 10). Local AI discovery is cached
                                                   for 10 seconds and does not block the response on tool probes.
+- POST /api/scheduler/pause-all              -> toggles scheduled starts; active runs keep going
 - POST /api/runs/{run_id}/approve             body {"node_id": "...", "approved": true} -> {"ok": true}
 - GET  /api/vault/notes                       -> ["runs/x.md", ...];  GET /api/vault/note?path=... -> {"path","body"}
 - WS   /api/events  -> run messages {"run_id","env_id","node_id","state","output"?} on every node state change; memory writes through the vault (owner saves, run notes, undo) publish {"type":"memory","path":"<note path>","change":"created"|"updated","author":"<writer>","run_id":"<run id or empty>"} after the vault git commit succeeds, outside the vault lock (run-written notes follow that run's node events by ~0.1 s).

@@ -1,0 +1,98 @@
+{
+  "slug": "fda-cosmetics",
+  "name": "fda cosmetics listing preparation",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare reader-checked, rules-checked cosmetic product listing packets from Shopify catalog records and brand-confirmed label, ingredient, facility, and exemption data.",
+    "channel": "Shopify App Store draft; local Glacier automation until the owner completes app review.",
+    "billing": "Monthly subscription by product count; checkout is not enabled until the owner configures the customer layer.",
+    "government_submission": "The brand confirms, signs where required, uploads the SPL ZIP to FDA Cosmetics Direct, and submits. Glacier does not submit or sign."
+  },
+  "blocks": [
+    "connectors.shopify",
+    "reader",
+    "rules",
+    "deadlines"
+  ],
+  "block_functions": [
+    "ShopifyClient.get_products",
+    "read_document",
+    "check",
+    "deadlines.add"
+  ],
+  "flows": [
+    "prepare-listing-packet",
+    "daily-deadline-reminders"
+  ],
+  "schedules": [
+    {
+      "flow": "daily-deadline-reminders",
+      "cron": "0 9 * * *",
+      "purpose": "Check local FDA listing deadline reminders each morning.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "shopify_client_id",
+    "shopify_client_secret",
+    "shopify_admin_access_token",
+    "shopify_store_domain"
+  ],
+  "your_steps": [
+    {
+      "id": "connect-shopify",
+      "title": "Connect Shopify and provide product details",
+      "when": "Before the first packet",
+      "detail": "Create a Shopify app with read_products access. Paste the four Shopify values into the labeled fields on this step; Glacier saves them in this computer's keychain. Provide source labels, brand-confirmed product details, facility information, first-marketed and last-listing dates, and the exemption checklist for each product. Records stay marked uncertain until you confirm them.",
+      "links": [
+        "https://shopify.dev/docs/apps",
+        "https://shopify.dev/docs/apps/build"
+      ],
+      "secrets": [
+        {
+          "name": "shopify_client_id",
+          "label": "Shopify app ID"
+        },
+        {
+          "name": "shopify_client_secret",
+          "label": "Shopify app secret"
+        },
+        {
+          "name": "shopify_admin_access_token",
+          "label": "Shopify admin access token"
+        },
+        {
+          "name": "shopify_store_domain",
+          "label": "Shopify store domain"
+        }
+      ]
+    },
+    {
+      "id": "submit-listing",
+      "title": "Review and submit the FDA listing",
+      "when": "After a packet passes local checks",
+      "detail": "Review each field and source. The responsible person signs where needed, uploads the SPL ZIP to Cosmetics Direct, submits it, and forwards the response into the local incoming folder for parsing. Glacier never signs or submits.",
+      "links": [
+        "https://direct.fda.gov/",
+        "https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing"
+      ]
+    },
+    {
+      "id": "monitor-deadlines",
+      "title": "Review listing deadlines and annual updates",
+      "when": "Each day and before an annual update",
+      "detail": "Check local 120-day and annual reminders. The responsible person verifies dates and product changes, signs where needed, and submits any update. Confirm the current process in FDA's Cosmetics Direct guide.",
+      "links": [
+        "https://direct.fda.gov/apex/f?p=100:103:::::P103_GUIDE:26"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "Owner completes Shopify Partner/App Store review.",
+    "Brand confirms the exemption checklist and every extracted ingredient.",
+    "Customer reviews, signs where required, and submits every FDA filing.",
+    "Automated 30-day retention deletion and customer-layer billing are not connected; both remain launch dependencies."
+  ],
+  "dry_run_env_id": "prepare-listing-packet"
+}

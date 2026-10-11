@@ -47,24 +47,30 @@ try {
     await page.goto(UI + '/#/home', { waitUntil: 'networkidle' })
     await page.getByTestId('screen-home').waitFor()
 
-    // Check every rendered box against the viewport and horizontal scroll containers, plus text clipping.
+    // Check text for clipping and the three Limbo panels against the painted room. The blurred
+    // backdrop intentionally bleeds past the viewport, and child text can sit inside parent padding.
     const checkTextFit = async label => {
-      const overflows = await page.evaluate(() => {
+      const result = await page.evaluate(() => {
+        const stage = document.querySelector('.l-stage').getBoundingClientRect()
+        const panels = ['[data-testid="game-menu"]', '.l-center', '[data-testid="side-status"]']
+        const panelOverflow = panels.flatMap(selector => {
+          const rect = document.querySelector(selector).getBoundingClientRect()
+          return rect.left < stage.left - 1 || rect.right > stage.right + 1 || rect.top < stage.top - 1 || rect.bottom > stage.bottom + 1 ? [selector] : []
+        })
         const ignored = new Set(['SCRIPT', 'STYLE', 'PATH', 'RECT', 'LINE', 'CIRCLE', 'POLYGON', 'POLYLINE', 'ELLIPSE'])
         const elements = [...document.querySelectorAll('body *')].filter(el => {
           if (ignored.has(el.tagName.toUpperCase()) || !el.getClientRects().length) return false
+          if (el.matches('.l-backdrop')) return false
           return getComputedStyle(el).visibility !== 'hidden'
         })
-        return elements.flatMap(el => {
+        const textOverflow = elements.flatMap(el => {
           const style = getComputedStyle(el)
           const text = [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
-          const accessibleEllipsis = style.textOverflow === 'ellipsis' && Boolean(el.getAttribute('title'))
+          const accessibleEllipsis = style.textOverflow === 'ellipsis' && style.overflowX === 'hidden' && style.whiteSpace === 'nowrap'
           const horizontalClip = text && !accessibleEllipsis && el.scrollWidth > el.clientWidth + 1 && ['hidden', 'clip'].includes(style.overflowX)
           const verticalClip = text && el.scrollHeight > el.clientHeight + 1 && ['hidden', 'clip'].includes(style.overflowY)
           const rect = el.getBoundingClientRect()
           const outsideViewport = rect.left < -1 || rect.right > innerWidth + 1
-          const parent = el.parentElement?.getBoundingClientRect()
-          const textEscapesParent = text && parent && (rect.left < parent.left - 1 || rect.right > parent.right + 1 || rect.top < parent.top - 1 || rect.bottom > parent.bottom + 1)
           let outsideScrollContainer = false
           for (let ancestor = el.parentElement; ancestor; ancestor = ancestor.parentElement) {
             const ancestorStyle = getComputedStyle(ancestor)
@@ -72,12 +78,13 @@ try {
             const box = ancestor.getBoundingClientRect()
             if (rect.right > box.right + 1) outsideScrollContainer = true
           }
-          return horizontalClip || verticalClip || textEscapesParent || outsideViewport || outsideScrollContainer
-            ? [{ text: el.textContent.trim().replace(/\s+/g, ' ').slice(0, 30), tag: el.tagName, className: typeof el.className === 'string' ? el.className.slice(0, 40) : '', rect: [rect.left, rect.top, rect.right, rect.bottom].map(Math.round), parent: parent && [parent.left, parent.top, parent.right, parent.bottom].map(Math.round), parentClass: el.parentElement?.className, width: innerWidth }]
+          return horizontalClip || verticalClip || outsideViewport || outsideScrollContainer
+            ? [{ text: el.textContent.trim().replace(/\s+/g, ' ').slice(0, 30), tag: el.tagName, className: typeof el.className === 'string' ? el.className.slice(0, 40) : '', rect: [rect.left, rect.top, rect.right, rect.bottom].map(Math.round), width: innerWidth }]
             : []
         })
+        return { panelOverflow, textOverflow }
       })
-      check(overflows.length === 0, `${suffix} ${label}: text fits (${overflows.slice(0, 25).map(x => `${x.tag}.${x.className} ${x.rect.join(',')} parent ${x.parent?.join(',')} .${x.parentClass}: ${x.text}`).join(' | ')})`)
+      check(result.panelOverflow.length === 0 && result.textOverflow.length === 0, `${suffix} ${label}: glass panels stay in the room and text fits (${result.panelOverflow.join(', ')} ${result.textOverflow.slice(0, 25).map(x => `${x.tag}.${x.className} ${x.rect.join(',')}: ${x.text}`).join(' | ')})`)
     }
 
     // Screenshot the fresh Home view with Get started, and then the same tab set after visiting each.

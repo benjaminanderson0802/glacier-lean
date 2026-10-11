@@ -1,0 +1,11 @@
+{
+  "product_id": "walnut-coffee-table-001",
+  "name": "Live edge walnut coffee table",
+  "category": "coffee table",
+  "materials": ["black walnut", "steel"],
+  "dimensions": "48 x 24 x 18 inches",
+  "condition": "new",
+  "description": "Handmade black walnut table with a clear oil finish and steel legs.",
+  "pickup_area": "Madison, Wisconsin",
+  "photos": ["photos/walnut-table-1.jpg"]
+}

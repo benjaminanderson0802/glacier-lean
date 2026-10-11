@@ -1,0 +1,15 @@
+[
+  {
+    "RecallID": 12345,
+    "RecallNumber": "24-123",
+    "RecallDate": "2024-03-01",
+    "Description": "The Example heater, model H-100, can overheat.",
+    "URL": "https://www.cpsc.gov/Recalls/2024/Example-Heater",
+    "Title": "Example heater recall",
+    "Products": {"Product": [{"Name": "Example heater", "Model": "H-100"}]},
+    "Manufacturers": {"Manufacturer": [{"Name": "Example Co."}]},
+    "ProductUPCs": {"ProductUPC": [{"UPC": "012345678905"}]},
+    "Hazards": {"Hazard": [{"Name": "Fire hazard"}]},
+    "Remedies": {"Remedy": [{"Name": "Refund"}]}
+  }
+]

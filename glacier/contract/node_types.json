@@ -7,10 +7,22 @@
    "description": "Starts the flow on a timer.",
    "fields": [
     {
-     "key": "cron",
-     "label": "When (cron)",
-     "placeholder": "*/5 * * * *",
-     "default": "*/5 * * * *"
+      "key": "cron",
+      "label": "When (cron)",
+      "placeholder": "*/5 * * * *",
+      "default": "*/5 * * * *"
+    },
+    {
+      "key": "missed_run",
+      "label": "When Glacier was off",
+      "default": "run_once",
+      "options": ["run_once", "skip"]
+    },
+    {
+      "key": "overlap",
+      "label": "If the last run is still going",
+      "default": "queue",
+      "options": ["queue", "skip"]
     }
    ],
    "branches": null
@@ -240,6 +252,23 @@
     }
    ],
    "branches": null
+  },
+  {
+   "type": "for_each",
+   "label": "For each item",
+   "description": "Run the steps on the 'each' branch once for every item in a JSON list, then follow 'done'.",
+   "fields": [
+    {
+     "key": "max_items",
+     "label": "Maximum items",
+     "placeholder": "100",
+     "default": "100"
+    }
+   ],
+   "branches": [
+    "each",
+    "done"
+   ]
   }
  ]
 }

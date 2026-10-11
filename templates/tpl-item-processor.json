@@ -1,0 +1,48 @@
+{
+  "id": "tpl-item-processor",
+  "name": "Process each item in a list",
+  "description": "Runs the same local table step for each record in a JSON list, with a clear item limit.",
+  "when_to_use": "Use this pattern when a step returns many records and the next step should handle each record separately.",
+  "goal": "Save every sample item from the list in a local table.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "test -s \"$GLACIER_HOME/tables/example_items.json\""
+    }
+  ],
+  "nodes": [
+    {
+      "id": "items",
+      "type": "json_transform",
+      "config": {
+        "operation": "merge",
+        "data": "[{\"id\":\"one\",\"name\":\"Ada\"},{\"id\":\"two\",\"name\":\"Grace\"}]"
+      },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "id": "each",
+      "type": "for_each",
+      "config": { "max_items": "100" },
+      "position": { "x": 300, "y": 0 }
+    },
+    {
+      "id": "save",
+      "type": "data_table",
+      "config": { "table": "example_items", "operation": "upsert", "key": "id" },
+      "position": { "x": 600, "y": 0 }
+    },
+    {
+      "id": "rows",
+      "type": "data_table",
+      "config": { "table": "example_items", "operation": "query" },
+      "position": { "x": 900, "y": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "items", "target": "each", "label": "" },
+    { "id": "e2", "source": "each", "target": "save", "label": "each" },
+    { "id": "e3", "source": "save", "target": "each", "label": "" },
+    { "id": "e4", "source": "each", "target": "rows", "label": "done" }
+  ]
+}

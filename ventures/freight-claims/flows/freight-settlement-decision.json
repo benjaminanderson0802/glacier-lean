@@ -1,0 +1,13 @@
+{
+  "id": "freight-settlement-decision",
+  "name": "Review a carrier settlement offer",
+  "goal": "Show the shipper a carrier settlement with a full release and record an explicit accept or decline decision.",
+  "nodes": [
+    {"id": "offer", "type": "note", "config": {"path": "$GLACIER_HOME/ventures/freight-claims/incoming/settlement-offer.json", "template": "Review the carrier's exact settlement amount and full-release terms. The customer must choose accept or decline in the intake file before proceeding. Glacier does not accept for the customer.\n\n{summary}"}, "position": {"x": 100, "y": 100}},
+    {"id": "customer_choice_gate", "type": "approval", "config": {"prompt": "Your step: verify the shipper's recorded choice. Accepting a full release closes the claim; declining leaves the claim active. The shipper, not Glacier, decides."}, "position": {"x": 400, "y": 100}},
+    {"id": "record_choice", "type": "command", "config": {"cmd": "python ventures/freight-claims/scripts/claims.py settlement --input \"$GLACIER_HOME/ventures/freight-claims/incoming/settlement-offer.json\" --approval {run}", "cwd": "{repo}", "timeout": 30, "retries": 0}, "position": {"x": 700, "y": 100}}
+  ],
+  "edges": [{"id": "e1", "source": "offer", "target": "customer_choice_gate"}, {"id": "e2", "source": "customer_choice_gate", "target": "record_choice", "label": "yes"}],
+  "acceptance": [{"kind": "command", "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/settlement-decision.json'; r=json.loads(p.read_text()); assert r['result'] == 'match' and r['customer_decision'] in ('accept','decline') and r['side_effects'] == []\"", "required": true}],
+  "max_steps": 3
+}

@@ -1,19 +1,25 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ago, api, teamsApi, type Environment, type EnvSummary, type RunSummary } from '../api.ts'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { ago, api, teamsApi, venturesApi, type Environment, type EnvSummary, type HomeItem, type RunSummary, type Venture } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
+import { useRoute } from '../route.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { useAskContext } from '../ui/AskGlacier.tsx'
+import { YourStep } from '../ui/YourStep.tsx'
+import './automations.css'
 
 type Flow = EnvSummary & { last?: RunSummary }
-const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed')] as const
+const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed'), t('ventures.tab')] as const
 const STATUS: Record<string, { kind: StatusKind; label: string }> = {
   done: { kind: 'ok', label: t('automations.success') }, failed: { kind: 'bad', label: t('automations.failed') }, rejected: { kind: 'bad', label: t('automations.rejected') },
   running: { kind: 'run', label: t('automations.running') }, waiting: { kind: 'warn', label: t('automations.needsYou') },
 }
 
 export function AutomationsScreen() {
+  const { rest } = useRoute()
+  useAskContext('automations', rest.join('/'))
   const [flows, setFlows] = useState<Flow[] | null>(null)
   const [filter, setFilter] = useState<typeof FILTERS[number]>(t('automations.all'))
   const [q, setQ] = useState('')
@@ -21,29 +27,37 @@ export function AutomationsScreen() {
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
   const [details, setDetails] = useState<Record<string, Environment>>({})
+  const [expandedTriggers, setExpandedTriggers] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
   const [undo, setUndo] = useState<UndoAction | null>(null)
   const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
+  const [ventures, setVentures] = useState<Venture[] | null>(null)
 
   useEffect(() => {
+    const refreshVentures = () => venturesApi.list().then(rows => setVentures(Array.isArray(rows) ? rows : [])).catch(e => setErr(String(e)))
+    refreshVentures()
     teamsApi.list().then(list => setTeams(Array.isArray(list) ? list : [])).catch(() => {})
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
         const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])
-        const startNodes = detail?.nodes.filter(n => ['schedule', 'file_trigger', 'webhook_trigger'].includes(n.type)) ?? []
-        const triggerRuns = startNodes.length ? await Promise.all([...runs].map(async run => ({ run, state: await api.getRun(run.run_id).catch(() => null) }))) : []
-        const last = startNodes.length && startNodes.every(node => node.type === 'schedule')
-          ? [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
-          : startNodes.length
-          ? triggerRuns.filter(item => startNodes.some(node => item.state?.trigger?.node_id === node.id)).sort((a, b) => b.run.started_at.localeCompare(a.run.started_at))[0]?.run
-          : [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
-        if (detail) setDetails(prev => ({ ...prev, [e.id]: detail }))
+        const mostRecent = [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
+        // Show the newest run, including manual runs on flows with a trigger.
+        const last = mostRecent
+        if (detail) {
+          setDetails(prev => ({ ...prev, [e.id]: detail }))
+          setExpandedTriggers(prev => ({ ...prev, [e.id]: false }))
+        }
         return { ...e, enabled: detail?.enabled, last }
       }))
       setFlows(withRuns)
     }).catch(e => setErr(String(e)))
   }, [])
+
+  const refreshVentures = async () => {
+    const rows = await venturesApi.list()
+    setVentures(Array.isArray(rows) ? rows : [])
+  }
 
   const shown = useMemo(() => (flows ?? []).filter(f => {
     const s = f.last?.status
@@ -66,6 +80,7 @@ export function AutomationsScreen() {
   }
 
   const setStart = async (flow: Environment, choice: string) => {
+    setExpandedTriggers(prev => ({ ...prev, [flow.id]: choice !== 'manual' }))
     const next = structuredClone(flow)
     const oldStartIds = new Set(next.nodes.filter(n => ['schedule', 'file_trigger', 'webhook_trigger'].includes(n.type)).map(n => n.id))
     next.nodes = next.nodes.filter(n => !['schedule', 'file_trigger', 'webhook_trigger'].includes(n.type))
@@ -97,14 +112,37 @@ export function AutomationsScreen() {
       } />
       <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
       <Panel className="automations-window" testid="automations-window">
-        <section className="g-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
+        <section className="g-panel automation-teams-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
-            {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={`filter-${f}`}>{f}</button>)}
+            {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={f === t('ventures.tab') ? 'filter-ventures' : `filter-${f}`}>{f}</button>)}
           </div>
           <input className="g-input" placeholder={t('automations.search')} value={q} onChange={e => setQ(e.target.value)} style={{ maxWidth: 260 }} data-testid="flow-search" />
         </div>
         {err && <div className="g-error">{err}</div>}
+        {filter === t('ventures.tab') ? <div className="venture-list" data-testid="venture-list">
+          {ventures === null && <Empty>{t('home.loading')}</Empty>}
+          {ventures?.map(venture => <article className="venture-card" key={venture.slug} data-testid={`venture-${venture.slug}`}>
+            <header className="venture-card-head"><h2>{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`}>{t(`ventures.status.${venture.status}`)}</span></header>
+            <div className="venture-card-copy"><strong>{t('ventures.today')}</strong> · {t('ventures.todayCounts', venture.today)}</div>
+            {Object.entries(venture.today).filter(([key]) => !['runs', 'completed', 'failed'].includes(key)).map(([key, value]) => <div className="venture-card-copy" key={key}>{key.replaceAll('_', ' ')} · {value}</div>)}
+            <div className="venture-card-copy"><strong>{t('ventures.nextRun')}</strong> · {venture.next_run ? new Date(venture.next_run).toLocaleString() : t('ventures.notScheduled')}</div>
+            <div className="venture-card-actions">
+              <Btn disabled={busy === venture.slug} onClick={async () => { setBusy(venture.slug); setErr(''); try { await (venture.status === 'paused' ? venturesApi.resume(venture.slug) : venturesApi.pause(venture.slug)); await refreshVentures() } catch (error) { setErr(String(error)) } finally { setBusy('') } }} data-testid={`venture-toggle-${venture.slug}`}>
+                {venture.status === 'paused' ? t('ventures.resume') : t('ventures.pause')}
+              </Btn>
+              <Btn primary disabled={busy === venture.slug || !venture.flows.some(flow => flow.dry_run_env_id)} onClick={async () => { setBusy(venture.slug); setErr(''); try { const run = await venturesApi.run(venture.slug, true); go(`automations/flow/${run.env_id}/${run.run_id}`) } catch (error) { setErr(String(error)) } finally { setBusy('') } }} data-testid={`venture-run-${venture.slug}`}>{t('ventures.runDry')}</Btn>
+            </div>
+            <div className="venture-steps"><strong>{t('ventures.yourSteps')} · {t('ventures.stepProgress', { done: venture.your_steps.filter(step => step.done).length, total: venture.your_steps.length })}</strong>
+              {venture.your_steps.map((step, index) => step.done
+                ? <label className="venture-progress" key={step.id ?? index}><input type="checkbox" checked readOnly />{step.title}</label>
+                : <YourStep key={step.id ?? index} item={{ kind: 'your_step', title: step.title, detail: step.instructions ?? step.detail ?? '', instructions: step.instructions ?? step.detail,
+                  links: [...(step.links ?? []), ...(step.link || step.url ? [step.link ?? step.url!] : [])], secret_name: step.secret_name, secrets: step.secrets, at: '', ref: { venture_slug: venture.slug, step_id: step.id } } as HomeItem} onDone={() => { void refreshVentures() }} />)}
+              {venture.your_steps.length === 0 && <span className="g-muted">{t('ventures.noSteps')}</span>}
+            </div>
+          </article>)}
+          {ventures?.length === 0 && <Empty>{t('ventures.empty')}</Empty>}
+        </div> : <>
         <table className="g-table" data-testid="flow-table">
           <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th><th>{t('delete.action')}</th></tr></thead>
           <tbody>
@@ -118,23 +156,17 @@ export function AutomationsScreen() {
               const apiBase = (globalThis as { __GLACIER_API__?: string }).__GLACIER_API__ ?? 'http://127.0.0.1:8000'
               const hook = `${apiBase.replace(/\/$/, '')}/api/hooks/${encodeURIComponent(f.id)}`
               return (
-                <tr key={f.id}>
+                <Fragment key={f.id}>
+                <tr className="automation-summary-row">
                   <td className="g-lead"><button className="g-link" title={f.name} style={{ fontSize: 'inherit', fontWeight: 'inherit' }} onClick={() => go(`automations/flow/${f.id}`)} data-testid={`flow-${f.id}`}>{f.name}</button></td>
-                  <td>{f.last ? ago(f.last.started_at) : t('automations.never')}</td>
+                  <td>{f.last ? <><span>{ago(f.last.started_at)}</span> · <button className="g-link" onClick={() => go(`automations/flow/${f.id}/${f.last!.run_id}`)} data-testid={`last-trigger-run-${f.id}`}>{t('automations.viewRun')}</button></> : t('automations.never')}</td>
                   <td>{st ? <span className="g-status-cell"><StatusIcon kind={st.kind} />{st.label}</span> : <span className="g-muted">{t('automations.notRun')}</span>}</td>
-                  <td><div className="g-trigger-cell" data-testid={`trigger-${f.id}`}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>{t('automations.startsWhen')}</span>
+                  <td><div className="g-trigger-cell automation-trigger-summary" data-testid={`trigger-${f.id}`}>
                       <select className="g-input" aria-label={t('automations.startsWhen')} value={choice} disabled={!detail || busy === f.id} onChange={e => void setStart(detail!, e.target.value)} data-testid={`trigger-choice-${f.id}`}>
                         <option value="manual">{t('automations.byHand')}</option><option value="schedule">{t('automations.onSchedule')}</option><option value="file">{t('automations.whenFile')}</option><option value="webhook">{t('automations.whenRequest')}</option>
                       </select>
-                    </label>
-                    {!active && <div className="g-muted" data-testid={`trigger-disabled-${f.id}`}>{t('automations.willNotStart')}</div>}
-                    {choice === 'schedule' && <label>{t('automations.schedule')} <input className="g-input" value={cfg.cron ?? ''} placeholder={t('automations.scheduleExample')} onChange={e => { const next = structuredClone(detail!); const node = next.nodes.find(n => n.type === 'schedule')!; node.config.cron = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => detail && void save(details[f.id])} data-testid={`trigger-schedule-${f.id}`} /></label>}
-                    {choice === 'file' && <><label>{t('automations.folder')} <input className="g-input" value={cfg.folder ?? ''} placeholder={t('automations.folderExample')} onChange={e => { const next = structuredClone(details[f.id]); next.nodes.find(n => n.type === 'file_trigger')!.config.folder = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => details[f.id] && void save(details[f.id])} data-testid={`trigger-folder-${f.id}`} /></label><label>{t('automations.filePattern')} <input className="g-input" value={cfg.pattern ?? '*'} onChange={e => { const next = structuredClone(details[f.id]); next.nodes.find(n => n.type === 'file_trigger')!.config.pattern = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => details[f.id] && void save(details[f.id])} data-testid={`trigger-pattern-${f.id}`} /></label></>}
-                    {choice === 'webhook' && <div style={{ display: 'grid', gap: 6 }}><span>{t('automations.localAddress')}</span><div style={{ display: 'flex', gap: 6 }}><code>{hook}</code><Btn onClick={() => void copyText(hook, `address-${f.id}`)} data-testid={`copy-hook-${f.id}`}>{copied === `address-${f.id}` ? t('automations.copied') : t('automations.copy')}</Btn></div><span>{t('automations.tokenHidden')}</span><Btn onClick={() => void copyText((globalThis as { __GLACIER_TOKEN__?: string }).__GLACIER_TOKEN__ ?? '', `token-${f.id}`)} data-testid={`copy-token-${f.id}`}>{copied === `token-${f.id}` ? t('automations.copied') : t('automations.copyToken')}</Btn></div>}
-                    <div>{t('automations.lastStart')} {f.last ? <><span>{ago(f.last.started_at)}</span> · <button className="g-link" onClick={() => go(`automations/flow/${f.id}/${f.last!.run_id}`)} data-testid={`last-trigger-run-${f.id}`}>{t('automations.viewRun')}</button></> : t('automations.never')}</div>
-                    {detail && <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={active} onChange={e => void save({ ...detail, enabled: e.target.checked })} data-testid={`trigger-enabled-${f.id}`} />{t('automations.enabled')}</label>}
+                      {detail && <label className="automation-enabled" title={t('automations.enabled')}><input type="checkbox" aria-label={t('automations.enabled')} checked={active} onChange={e => { setExpandedTriggers(prev => ({ ...prev, [f.id]: true })); void save({ ...detail, enabled: e.target.checked }) }} data-testid={`trigger-enabled-${f.id}`} /></label>}
+                      <button type="button" className="g-link automation-trigger-edit" aria-label={t('automations.startsWhen')} title={t('automations.startsWhen')} data-testid={`trigger-edit-${f.id}`} onClick={() => setExpandedTriggers(prev => ({ ...prev, [f.id]: !prev[f.id] }))}>⋯</button>
                   </div></td>
                   <td><DeleteAction label={t('automations.deleteFlow')} impact={t('delete.flowImpact')} testid={`flow-delete-${f.id}`}
                     onDelete={async () => { const result = await api.deleteEnv(f.id); return { title: t('delete.removed'), run: async () => {
@@ -146,11 +178,22 @@ export function AutomationsScreen() {
                     onDeleted={action => { setUndo(action ?? null); setFlows(current => current?.filter(item => item.id !== f.id) ?? null) }}
                     onError={e => setErr(String(e))} /></td>
                 </tr>
+                {expandedTriggers[f.id] && <tr className="automation-trigger-edit-row">
+                  <td colSpan={5}><div className="automation-trigger-editor" data-testid={`trigger-editor-${f.id}`}>
+                    {!active && <div className="g-muted" data-testid={`trigger-disabled-${f.id}`}>{t('automations.willNotStart')}</div>}
+                    {choice === 'schedule' && <label>{t('automations.schedule')} <input className="g-input" value={cfg.cron ?? ''} placeholder={t('automations.scheduleExample')} onChange={e => { const next = structuredClone(detail!); const node = next.nodes.find(n => n.type === 'schedule')!; node.config.cron = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => detail && void save(details[f.id])} data-testid={`trigger-schedule-${f.id}`} /></label>}
+                    {choice === 'file' && <><label>{t('automations.folder')} <input className="g-input" value={cfg.folder ?? ''} placeholder={t('automations.folderExample')} onChange={e => { const next = structuredClone(details[f.id]); next.nodes.find(n => n.type === 'file_trigger')!.config.folder = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => details[f.id] && void save(details[f.id])} data-testid={`trigger-folder-${f.id}`} /></label><label>{t('automations.filePattern')} <input className="g-input" value={cfg.pattern ?? '*'} onChange={e => { const next = structuredClone(details[f.id]); next.nodes.find(n => n.type === 'file_trigger')!.config.pattern = e.target.value; setDetails(prev => ({ ...prev, [f.id]: next })) }} onBlur={() => details[f.id] && void save(details[f.id])} data-testid={`trigger-pattern-${f.id}`} /></label></>}
+                    {choice === 'webhook' && <div style={{ display: 'grid', gap: 6 }}><span>{t('automations.localAddress')}</span><div style={{ display: 'flex', gap: 6 }}><code>{hook}</code><Btn onClick={() => void copyText(hook, `address-${f.id}`)} data-testid={`copy-hook-${f.id}`}>{copied === `address-${f.id}` ? t('automations.copied') : t('automations.copy')}</Btn></div><span>{t('automations.tokenHidden')}</span><Btn onClick={() => void copyText((globalThis as { __GLACIER_TOKEN__?: string }).__GLACIER_TOKEN__ ?? '', `token-${f.id}`)} data-testid={`copy-token-${f.id}`}>{copied === `token-${f.id}` ? t('automations.copied') : t('automations.copyToken')}</Btn></div>}
+                    <div>{t('automations.lastStart')} {f.last ? ago(f.last.started_at) : t('automations.never')}</div>
+                  </div></td>
+                </tr>}
+                </Fragment>
               )
             })}
           </tbody>
         </table>
         {flows && shown.length === 0 && <Empty>{flows.length ? t('automations.noMatches') : t('automations.empty')}</Empty>}
+        </>}
       </Panel>
     </>
   )

@@ -2,9 +2,21 @@
 import { useEffect, useState } from 'react'
 import { releasesApi, settingsApi, system, type Costs, type EffectiveSettings, type SystemCheck, type VaultCompat } from '../api.ts'
 import { Btn, Empty, Panel, Row } from '../ui/kit.tsx'
-import { Icon } from '../ui/Pixel.tsx'
 import { t } from '../i18n/index.ts'
 import './Settings.css'
+
+export function HelpSection() {
+  return (
+    <Panel title={t('settings.help')} testid="settings-help">
+      <dl className="g-kv">
+        <dt>{t('settings.ctrlKShort')}</dt><dd>{t('settings.ctrlK')}</dd>
+        <dt>{t('settings.ctrlTab')}</dt><dd>{t('settings.nextTab')}</dd>
+        <dt>{t('settings.altTabs')}</dt><dd>{t('settings.tabList')}</dd>
+        <dt>{t('settings.f1')}</dt><dd>{t('settings.thisPage')}</dd>
+      </dl>
+    </Panel>
+  )
+}
 
 export function ModelsSection() {
   const [c, setC] = useState<SystemCheck | null>(null)
@@ -23,7 +35,7 @@ export function ModelsSection() {
             <dt>{t('settingsSections.askUses')}</dt><dd data-testid="ask-route">{eff?.ask_route === 'codex' ? t('settingsSections.codexPlan') : eff?.ask_route === 'local' ? t('settingsSections.localRoute', { name: eff.local_model }) : eff?.ask_route === 'unavailable' ? 'Nothing yet' : 'Checking…'}{eff?.ask_route_reason ? <div className="g-muted">{eff.ask_route_reason}</div> : null}</dd>
             <dt>{t('settingsSections.paidModels')}</dt><dd>{t('settingsSections.paidDescription')}</dd>
           </dl>
-          <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.installed')}</h3>
+          <h3 className="g-panel-title settings-section-heading">{t('settingsSections.installed')}</h3>
           <div className="g-rows">
             {c.ollama_models.map(m => <Row key={m} status="ok" lead={m} when={m === (eff?.local_model ?? c.recommended.local_model) ? t('settingsSections.inUse') : ''} />)}
             {c.ollama_models.length === 0 && <Empty>{t('settingsSections.noLocalModels')}</Empty>}
@@ -48,24 +60,24 @@ export function SecretsSection() {
   }
   return (
     <Panel title={t('settingsSections.secrets')} testid="settings-secrets" className="g-scroll">
-      <div className="g-detail" style={{ marginBottom: 8 }}>{t('settingsSections.secretDescription')}</div>
+      <div className="g-detail settings-secret-description">{t('settingsSections.secretDescription')}</div>
       <div className="g-rows">
         {(names ?? []).map(n => (
-          <div key={n} className="g-row" data-testid={`secret-${n}`}>
-            <span className="g-ico"><Icon name="lock" /></span><span className="g-mid"><span className="g-lead">{n}</span><span className="g-detail">••••••••</span></span>
+          <div key={n} className="g-row settings-secret-row" data-testid={`secret-${n}`}>
+            <span className="g-mid"><span className="g-lead">{n}</span><span className="g-detail">••••••••</span></span>
             <span className="g-when">{confirm === n
-              ? <span style={{ display: 'flex', gap: 8 }}><Btn danger onClick={async () => { await settingsApi.deleteSecret(n); setConfirm(null); load() }} data-testid={`secret-del-yes-${n}`}>{t('settingsSections.remove')}</Btn><Btn onClick={() => setConfirm(null)}>{t('settingsSections.keep')}</Btn></span>
+              ? <span className="settings-secret-actions"><Btn danger onClick={async () => { await settingsApi.deleteSecret(n); setConfirm(null); load() }} data-testid={`secret-del-yes-${n}`}>{t('settingsSections.remove')}</Btn><Btn onClick={() => setConfirm(null)}>{t('settingsSections.keep')}</Btn></span>
               : <Btn onClick={() => setConfirm(n)} data-testid={`secret-del-${n}`}>{t('settingsSections.remove')}</Btn>}</span>
           </div>
         ))}
         {names && names.length === 0 && <Empty>{t('settingsSections.noSecrets')}</Empty>}
       </div>
-      <form className="g-ask-row" style={{ marginTop: 12 }} onSubmit={e => { e.preventDefault(); save() }}>
-        <input className="g-input" style={{ width: 220 }} placeholder={t('settingsSections.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} data-testid="secret-name" />
-        <input className="g-input" style={{ flex: 1 }} type="password" autoComplete="new-password" placeholder={t('settingsSections.value')} value={value} onChange={e => setValue(e.target.value)} data-testid="secret-value" />
+      <form className="g-ask-row" onSubmit={e => { e.preventDefault(); save() }}>
+        <input className="g-input" placeholder={t('settingsSections.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} data-testid="secret-name" />
+        <input className="g-input" type="password" autoComplete="new-password" placeholder={t('settingsSections.value')} value={value} onChange={e => setValue(e.target.value)} data-testid="secret-value" />
         <Btn primary type="submit" disabled={!name.trim() || !value} data-testid="secret-save">{t('settingsSections.save')}</Btn>
       </form>
-      {msg && <div className="g-detail" data-testid="secret-msg" style={{ marginTop: 6 }}>{msg}</div>}
+      {msg && <div className="g-detail g-secret-message" data-testid="secret-msg">{msg}</div>}
     </Panel>
   )
 }
@@ -77,7 +89,7 @@ export function UsageSection() {
   useEffect(() => { settingsApi.costs(days).then(setC).catch(e => setErr(String(e))) }, [days])
   const tokens = (g: { tokens_in: number; tokens_out: number }) => (g.tokens_in + g.tokens_out).toLocaleString()
   return (
-    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} style={{ minHeight: 'calc(8 * var(--px))', padding: '0 calc(1 * var(--px))', border: 'var(--px) solid var(--g-navy)', background: d === days ? 'var(--g-navy2)' : 'var(--g-ice0)', color: d === days ? 'var(--g-white)' : 'var(--g-ink)', fontSize: 'calc(4 * var(--px))' }} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="settings-scroll-panel"><div className="settings-scroll-body">
+    <Panel title={t('settingsSections.usage')} aside={<span className="g-seg settings-day-range">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} aria-pressed={d === days} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="settings-scroll-panel"><div className="settings-scroll-body">
       {err && <div className="g-error">{err}</div>}
       {c && (
         <>
@@ -86,9 +98,9 @@ export function UsageSection() {
             <dt>{t('settingsSections.paidLimit')}</dt><dd>${c.paid_cap_usd.toFixed(2)} {c.paid_cap_usd === 0 ? t('settingsSections.freeOnly') : ''}</dd>
             <dt>{t('settingsSections.doneHere')}</dt><dd>{t('settingsSections.localShare', { count: Math.round(c.local_share * 100) })}</dd>
           </dl>
-          <table className="g-table g-usage-table" style={{ marginTop: 12, width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-            <thead><tr>{[t('settingsSections.model'), t('settingsSections.runs'), t('settingsSections.stepsLabel'), t('settingsSections.tokens'), t('settingsSections.cost')].map(label => <th key={label} style={{ background: 'var(--g-ice2)', color: 'var(--g-navy)', borderBottom: 'var(--px) solid var(--g-navy)', padding: 'calc(1 * var(--px))', textAlign: 'left', overflowWrap: 'anywhere' }}>{label}</th>)}</tr></thead>
-            <tbody>{c.by_model.map(g => <tr key={g.model}>{[g.model, String(g.runs), String(g.steps), tokens(g), `$${g.cost_usd.toFixed(2)}`].map((value, i) => <td key={i} className={i === 0 ? 'g-lead' : undefined} style={{ borderBottom: 'var(--px) solid var(--g-ice2)', padding: 'calc(1 * var(--px))', overflowWrap: 'anywhere' }}>{value}</td>)}</tr>)}</tbody>
+          <table className="g-table g-usage-table settings-usage-table">
+            <thead><tr>{[t('settingsSections.model'), t('settingsSections.runs'), t('settingsSections.stepsLabel'), t('settingsSections.tokens'), t('settingsSections.cost')].map(label => <th key={label}>{label}</th>)}</tr></thead>
+            <tbody>{c.by_model.map(g => <tr key={g.model}>{[g.model, String(g.runs), String(g.steps), tokens(g), `$${g.cost_usd.toFixed(2)}`].map((value, i) => <td key={i} className={i === 0 ? 'g-lead' : undefined}>{value}</td>)}</tr>)}</tbody>
           </table>
           {c.by_model.length === 0 && <Empty>{t('settingsSections.noAiSteps')}</Empty>}
         </>
@@ -110,7 +122,7 @@ export function DataSection() {
         <dt>{t('settingsSections.leavesComputer')}</dt><dd>{t('settingsSections.leavesNothing')}</dd>
       </dl>
       {err && <div className="g-error">{err}</div>}
-      <div className="g-rows" style={{ marginTop: 12 }}>
+      <div className="g-rows settings-data-rows">
         {c && <Row status={c.ok ? 'ok' : 'warn'} lead={c.ok ? t('settingsSections.readyObsidian') : t('settingsSections.thingsToFix', { count: c.problems.length, plural: c.problems.length > 1 ? 's' : '' })} detail={t('settingsSections.notesChecked', { count: c.notes_checked })} testid="data-compat" />}
         {c?.problems.slice(0, 8).map((p, i) => <Row key={i} status="warn" lead={p.path} detail={`${p.detail} ${p.fix_hint}`} />)}
       </div>
@@ -156,13 +168,13 @@ export function AboutSection({ version }: { version: string }) {
         <dt>{t('settingsSections.fonts')}</dt><dd>{t('settingsSections.fontsValue')}</dd>
         <dt>{t('settingsSections.source')}</dt><dd>{t('settingsSections.repo')}</dd>
       </dl>
-      <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.whatsNew')}</h3>
+      <h3 className="g-panel-title settings-section-heading">{t('settingsSections.whatsNew')}</h3>
       {releaseError ? <div className="g-detail" data-testid="release-notes-error">{releaseError}</div> : <ReleaseMarkdown markdown={releaseMarkdown} />}
-      <h3 className="g-panel-title" style={{ marginTop: 14 }}>{t('settingsSections.updates')}</h3>
+      <h3 className="g-panel-title settings-section-heading">{t('settingsSections.updates')}</h3>
       {!desktop ? <div className="g-detail" data-testid="update-browser">{t('settingsSections.updateDesktopOnly')}</div> : (
-        <div className="g-stack" style={{ gap: 8 }}>
+        <div className="g-stack settings-update-stack">
           <div className="g-detail">{state === 'checking' && t('settingsSections.updateChecking')}{state === 'current' && <span data-testid="update-current">{t('settingsSections.upToDate')}</span>}{state === 'available' && <span>{t('settingsSections.updateAvailable', { version: update?.version ?? '' })}</span>}{state === 'installing' && t('settingsSections.updateInstalling')}{state === 'restart' && <span data-testid="update-restart">{t('settingsSections.updateRestart')}</span>}{state === 'error' && <span data-testid="update-error">{error}</span>}</div>
-          {state === 'available' && update && <div className="g-detail" data-testid="update-notes" style={{ whiteSpace: 'pre-wrap' }}>{update.notes}</div>}
+          {state === 'available' && update && <div className="g-detail settings-update-notes" data-testid="update-notes">{update.notes}</div>}
           {state === 'available' && <Btn primary onClick={installUpdate} data-testid="update-install">{t('settingsSections.updateInstall')}</Btn>}
           {state !== 'installing' && <Btn onClick={checkForUpdates} disabled={state === 'checking'} data-testid="update-check">{t('settingsSections.updateCheck')}</Btn>}
         </div>

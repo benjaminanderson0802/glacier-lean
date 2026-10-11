@@ -1,0 +1,3 @@
+Order Number,Ship Date,Carrier,Service,Tracking Number,Recipient,Ship To Address,Ship To City,Ship To State,Ship To Postal Code,Ship To Country,Weight,Shipping Cost,Order Total,Items/SKU,Status,Unused Field
+1042,2026-10-08,Parcel Freight,Ground Freight,TRK-FAKE-1042,Avery Example,1200 Sample Road,Madison,WI,53703,US,180.5,42.75,680.00,"Ceramic tile / PALLET-A x4",Exception - damaged pallet,ignored
+1043,2026-10-08,Parcel Freight,Ground Freight,,Jordan Fiction,9 Nowhere Street,Milwaukee,WI,53202,US,90,25.00,200.00,"Crate / CRATE-B x1",Shipped,ignored

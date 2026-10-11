@@ -1,0 +1,10 @@
+
+===== tests/test_claims_research.py::test_gap_with_free_option_goes_to_fixer_with_findings =====
+.                                                                        [100%]
+1 passed in 1.66s
+EXIT 0
+
+===== tests/test_code_undo.py::test_undo_allows_unrelated_later_isolated_run =====
+.                                                                        [100%]
+1 passed in 1.80s
+EXIT 0

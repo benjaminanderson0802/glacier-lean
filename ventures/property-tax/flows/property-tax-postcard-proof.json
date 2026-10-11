@@ -1,0 +1,119 @@
+{
+  "id": "property-tax-postcard-proof",
+  "name": "Review a property-tax postcard proof",
+  "goal": "Render a private local postcard proof for the selected owner and parcel. External mailing remains a separately approved owner action.",
+  "nodes": [
+    {
+      "id": "render_proof",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/property-tax/scripts/property_tax.py postcard-preview --record \"$GLACIER_HOME/ventures/property-tax/incoming/postcard.json\" --output-dir \"$GLACIER_HOME/ventures/property-tax/postcards\"",
+        "timeout": "60",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "proof_ready",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "approve_proof",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review the exact local proof files in $GLACIER_HOME/ventures/property-tax/postcards, the source record, recipient address, sender, and do-not-mail status. This approves review only. Glacier does not send postcards in this flow."
+      },
+      "position": {
+        "x": 600,
+        "y": -120
+      }
+    },
+    {
+      "id": "proof_reviewed",
+      "type": "note",
+      "config": {
+        "path": "ventures/property-tax/reviews/postcard-reviewed-{run}.md",
+        "template": "The local postcard proof was reviewed. No postcard was mailed. Any future external mailing needs a separate approval that shows the exact recipients, design, sender, and approved spend.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": -220
+      }
+    },
+    {
+      "id": "proof_declined",
+      "type": "note",
+      "config": {
+        "path": "ventures/property-tax/reviews/postcard-declined-{run}.md",
+        "template": "The local postcard proof was not approved. No postcard was mailed.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    },
+    {
+      "id": "proof_failed",
+      "type": "note",
+      "config": {
+        "path": "ventures/property-tax/reviews/postcard-failed-{run}.md",
+        "template": "Postcard proof rendering failed. Check sender identity, address fields, and suppression status. No postcard was mailed.\n\n{summary}"
+      },
+      "position": {
+        "x": 600,
+        "y": 200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "render_proof",
+      "target": "proof_ready",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "proof_ready",
+      "target": "approve_proof",
+      "label": "yes"
+    },
+    {
+      "id": "e3",
+      "source": "approve_proof",
+      "target": "proof_reviewed",
+      "label": "yes"
+    },
+    {
+      "id": "e4",
+      "source": "approve_proof",
+      "target": "proof_declined",
+      "label": "no"
+    },
+    {
+      "id": "e5",
+      "source": "proof_ready",
+      "target": "proof_failed",
+      "label": "no"
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" -c \"import json,os,pathlib; d=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'postcards'; assert d.exists()\"",
+      "required": true
+    }
+  ],
+  "max_steps": 7
+}

@@ -16,6 +16,9 @@ import { getLanguage, t } from '../i18n/index.ts'
 import { SIMPLE_STEP_TYPES, useLayout } from '../layout.ts'
 import dagre from '@dagrejs/dagre'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { useAskContext } from '../ui/AskGlacier.tsx'
+import { applyProposal, chat, type ChatProposal } from '../api.ts'
+import { ProposalOverlay } from './ProposalOverlay.tsx'
 import './build.css'
 
 type Selection = { kind: 'node' | 'edge'; id: string } | null
@@ -30,13 +33,13 @@ const nextId = (prefix: string, ids: string[]) => {
 }
 
 const edgeStyle = (label: string) => ({
-  type: 'pixel',
+  type: 'smooth',
   label: label || undefined,
   markerEnd: { type: MarkerType.ArrowClosed, color: tok('--g-line') },
   className: label ? `edge-${label}` : undefined,
 })
 
-function PixelEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, style, selected, label, data }: import('@xyflow/react').EdgeProps) {
+function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, style, selected, label, data }: import('@xyflow/react').EdgeProps) {
   const sourceRight = sourcePosition === 'right'
   const targetLeft = targetPosition === 'left'
   const loopback = Boolean(data?.loopback)
@@ -56,10 +59,10 @@ function PixelEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, tar
     d = `M ${sourceX} ${sourceY} V ${laneY} H ${targetX} V ${targetY}`
     labelX = Math.round((sourceX + targetX) / 2); labelY = laneY
   }
-  return <g className="pixel-edge" shapeRendering="crispEdges">
+  return <g className="flow-edge">
     <path id={`${id}-hit`} d={d} className="react-flow__edge-interaction" />
     <path id={id} d={d} className={`react-flow__edge-path${selected ? ' selected' : ''}`} markerEnd={markerEnd} style={style} />
-    {label && <EdgeLabelRenderer><div data-testid={`rf__edge-${id}`}><div className={`pixel-edge-textwrapper react-flow__edge-textwrapper${selected ? ' selected' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}><div className={`pixel-edge-tag react-flow__edge-text${selected ? ' selected' : ''}`}>{label}</div></div></div></EdgeLabelRenderer>}
+    {label && <EdgeLabelRenderer><div data-testid={`rf__edge-${id}`}><div className={`flow-edge-textwrapper react-flow__edge-textwrapper${selected ? ' selected' : ''}`} style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}><div className={`flow-edge-tag react-flow__edge-text${selected ? ' selected' : ''}`}>{label}</div></div></div></EdgeLabelRenderer>}
   </g>
 }
 
@@ -83,6 +86,41 @@ const HTTP_LABELS: Record<string, string> = {
 const HTTP_PLACEHOLDERS: Record<string, string> = {
   url: 'http.addressPlaceholder', allowed_sites: 'http.allowedSitesPlaceholder',
   headers: 'http.headersPlaceholder', body: 'http.bodyPlaceholder', expect_status: 'http.expectedStatusPlaceholder',
+}
+const BUSINESS_FIELD_LABELS: Record<string, string> = {
+  data_table: 'business.table', json_transform: 'business.json', csv_file: 'business.csv',
+  delay: 'business.delay', structured_ai: 'business.structuredAi', email_send: 'business.email', email_read: 'business.emailRead', email_trigger: 'business.emailTrigger', for_each: 'business.forEach',
+}
+const BUSINESS_NODE_LABELS: Record<string, string> = {
+  data_table: 'business.table.label', json_transform: 'business.json.label', csv_file: 'business.csv.label',
+  delay: 'business.delay.label', structured_ai: 'business.structuredAi.label', email_send: 'business.email.label', email_read: 'business.emailRead.label', email_trigger: 'business.emailTrigger.label', for_each: 'business.forEach.label',
+}
+const BUSINESS_NODE_DESCRIPTIONS: Record<string, string> = {
+  data_table: 'business.table.description', json_transform: 'business.json.description', csv_file: 'business.csv.description',
+  delay: 'business.delay.description', structured_ai: 'business.structuredAi.description', email_send: 'business.email.description', email_read: 'business.emailRead.description', email_trigger: 'business.emailTrigger.description', for_each: 'business.forEach.description',
+}
+const BUSINESS_FIELDS: Record<string, Record<string, string>> = {
+  data_table: { table: 'table', operation: 'operation', key: 'key', record: 'record', match: 'match' },
+  json_transform: { operation: 'operation', fields: 'fields', field: 'field', equals: 'equals', data: 'data', key: 'key' },
+  csv_file: { operation: 'operation', path: 'path', data: 'data' },
+  delay: { seconds: 'seconds' },
+  structured_ai: { prompt: 'prompt', schema: 'schema', engine: 'engine', routes: 'routes', timeout: 'timeout' },
+  email_send: { draft_only: 'draft_only', host: 'host', port: 'port', user: 'user', password: 'password', from: 'from', to: 'to', subject: 'subject', body: 'body', timeout: 'timeout' },
+  email_read: { host: 'host', port: 'port', user: 'user', password: 'password', folder: 'folder', search: 'search', limit: 'limit', timeout: 'timeout' },
+  email_trigger: { host: 'host', port: 'port', user: 'user', password: 'password', folder: 'folder', search: 'search', limit: 'limit' },
+  for_each: { max_items: 'max_items' },
+}
+function businessLabel(type: string, field: string): string | undefined {
+  if (field === 'retries' && BUSINESS_FIELD_LABELS[type]) return t('business.retries')
+  const base = BUSINESS_FIELD_LABELS[type]
+  const name = BUSINESS_FIELDS[type]?.[field]
+  return base && name ? t(`${base}.${name}`) : undefined
+}
+function businessOption(type: string, field: string, value: string): string {
+  if ((type === 'email_send' && field === 'draft_only') || (type === 'http_request' && field === 'allow_private_network')) return t(`business.option.${value.toLowerCase()}`)
+  if (field !== 'operation') return value
+  const key = `business.operation.${value}`
+  return t(key)
 }
 const httpOptionLabel = (field: string, value: string) => {
   const key = field === 'method' ? `http.method.${value.toLowerCase()}`
@@ -134,6 +172,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [unsaved, setUnsaved] = useState<EnvSummary[]>([])
   const [envId, setEnvId] = useState<string | null>(null)
   const [envName, setEnvName] = useState('')
+  useAskContext('automations/build', envId ?? initialEnv ?? newNameProp ?? 'new flow')
   const [nodes, setNodes] = useState<GNode[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [dirty, setDirty] = useState(false)
@@ -161,6 +200,13 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [deleteUndo, setDeleteUndo] = useState<UndoAction | null>(null)
   const [flowRemoved, setFlowRemoved] = useState(false)
   const [flowsOpen, setFlowsOpen] = useState(true)
+  const [proposal, setProposal] = useState<ChatProposal | null>(null)
+  const [proposalBusy, setProposalBusy] = useState(false)
+  const [proposalError, setProposalError] = useState('')
+  const [proposalSaved, setProposalSaved] = useState(false)
+  const [proposalRunAvailable, setProposalRunAvailable] = useState(false)
+  const [proposalUndoId, setProposalUndoId] = useState('')
+  const proposalConversation = useRef<string | null>(null)
   /** Branch labels a node's outgoing edges can carry: a fixed pair, or the node's own options (Decide). */
   const branchLabels = useCallback((n: GNode | undefined): string[] | null => {
     const t = n ? typeInfo(n.type as string) : undefined
@@ -169,7 +215,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     return t.branches_from === 'options' ? splitOptions(n.data.config.options) : null
   }, [typeInfo])
   const flowNodeTypes = useMemo(() => ({ ...baseNodeTypes, ...Object.fromEntries(catalog.map(t => [t.type, GlacierNode])) }), [catalog])
-  const flowEdgeTypes = useMemo(() => ({ pixel: PixelEdge }), [])
+  const flowEdgeTypes = useMemo(() => ({ smooth: FlowEdge }), [])
   const showMinimap = minimapOpen && !canvasShort
   const fitCanvas = useCallback(() => {
     if (connectingRef.current) return
@@ -232,7 +278,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const [versions, setVersions] = useState<MemCommit[]>([])
   const [confirmRestore, setConfirmRestore] = useState('')
   const loadVersions = useCallback((id: string) => {
-    memory.history(`environments/${id}.json`).then(v => setVersions(v.slice(0, 8))).catch(() => setVersions([]))
+    memory.environmentHistory(id).then(v => setVersions(v.slice(0, 8))).catch(() => setVersions([]))
   }, [])
   useEffect(() => { setConfirmRestore(''); if (envId) loadVersions(envId); else setVersions([]) }, [envId, lastCommit, loadVersions])
   const restoreVersion = async (commit: string) => {
@@ -448,6 +494,111 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     } catch (e) { setMsg(String(e)); return false } finally { setBusy(false) }
   }
 
+  const showProposal = (next: ChatProposal, changedIds: string[] = []) => {
+    const flow = next.flow as Environment | undefined
+    if (!flow?.id) { setProposalError('Glacier could not prepare a flow to review.'); return }
+    const mapped = toFlow(flow)
+    const changed = new Set(changedIds)
+    const ghostNodes = mapped.nodes.map(n => ({ ...n, data: { ...n.data, proposalGhost: true, proposalChanged: changed.has(n.id) } }))
+    const ghostEdges = mapped.edges.map(e => ({ ...e, className: `${e.className ?? ''} proposal-ghost-edge` }))
+    setProposal(next); setProposalError(''); setProposalSaved(false); setProposalRunAvailable(false); setProposalUndoId('')
+    setEnvId(flow.id); setEnvName(flow.name || flow.id); setNodes(ghostNodes); setEdges(ghostEdges)
+    setUnsaved(items => items.some(item => item.id === flow.id) ? items : [...items, { id: flow.id, name: flow.name || flow.id }])
+    extras.current = Object.fromEntries(Object.entries(flow).filter(([key]) => !['id', 'name', 'nodes', 'edges'].includes(key)))
+    setSelected(null); setActiveRun(null); setLastCommit(''); setRuns([]); setDirty(false); setTab('canvas')
+    requestAnimationFrame(fitCanvas)
+  }
+
+  const sendProposalMessage = async (message: string, feedback = false) => {
+    setProposalBusy(true); setProposalError('')
+    const id = proposalConversation.current ?? crypto.randomUUID()
+    proposalConversation.current = id
+    const received: ChatProposal[] = []
+    try {
+      await chat(message, id, event => {
+        if (event.type === 'proposal' && event.proposal.flow) received.push(event.proposal)
+        else if (event.type === 'error') setProposalError(event.message)
+      }, { screen: 'automations/build', focus: feedback ? proposal?.flow?.id ?? 'new flow' : 'new flow' })
+      const revised = received.at(-1)
+      if (!revised) { setProposalError('Glacier did not return a flow proposal. Try describing the workflow again.'); return }
+      const before = new Map((proposal?.flow?.nodes ?? []).map((item: any) => [item.id, JSON.stringify(item)]))
+      const changed = (revised.flow?.nodes ?? []).filter((item: any) => !before.has(item.id) || before.get(item.id) !== JSON.stringify(item)).map((item: any) => String(item.id))
+      if (proposal?.id && proposal.id !== revised.id) void applyProposal(proposal.id, false).catch(() => {})
+      showProposal(revised, changed)
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')) }
+    finally { setProposalBusy(false) }
+  }
+
+  const proposeFlow = (prompt: string) => { proposalConversation.current = null; void sendProposalMessage(prompt) }
+  const refineProposal = (feedback: string) => {
+    const goal = proposal?.flow?.goal ?? proposal?.flow?.name ?? 'the proposed workflow'
+    void sendProposalMessage(`Please refine this automation proposal for ${goal}. Keep the existing useful steps and update the plan using this feedback: ${feedback}`, true)
+  }
+
+  const acceptProposal = async () => {
+    if (!proposal?.flow) return
+    setProposalBusy(true); setProposalError('')
+    const flow = proposal.flow as Environment
+    const byId = new Map(nodes.map(node => [node.id, node]))
+    const remaining = new Map(flow.nodes.map((node, index) => [node.id, index]))
+    const order: string[] = []
+    const edgesIn = new Map(flow.nodes.map(node => [node.id, flow.edges.filter(edge => edge.target === node.id).map(edge => edge.source)]))
+    while (remaining.size) {
+      const available = [...remaining.keys()].filter(id => edgesIn.get(id)?.every(source => !remaining.has(source)))
+      const next = available.length ? available : [...remaining.keys()]
+      next.sort((a, b) => (remaining.get(a) ?? 0) - (remaining.get(b) ?? 0))
+      const id = next[0]; order.push(id); remaining.delete(id)
+    }
+    const revealed = new Set<string>()
+    setNodes([]); setEdges([]); setSelected(null)
+    try {
+      for (const id of order) {
+        const node = byId.get(id)
+        if (!node) continue
+        revealed.add(id)
+        setNodes(current => [...current, { ...node, data: { ...node.data, proposalGhost: false, proposalRevealing: true } }])
+        setEdges(current => [...current, ...edges.filter(edge => edge.target === id && revealed.has(edge.source)).map(edge => ({ ...edge, className: `${edge.className ?? ''} proposal-draw` }))])
+        setSelected({ kind: 'node', id })
+        await new Promise(resolve => setTimeout(resolve, 420))
+        setNodes(current => current.map(item => item.id === id ? { ...item, data: { ...item.data, proposalRevealing: false } } : item))
+      }
+      const result = await applyProposal(proposal.id, true) as Awaited<ReturnType<typeof applyProposal>> & { undo_id?: string }
+      await loadEnv(flow.id)
+      setProposalSaved(true); setProposalRunAvailable(true); setProposalUndoId(result.undo_id ?? '')
+      setMsg('Saved. You can undo this change here or from the saved versions.')
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')); setNodes(nodes); setEdges(edges) }
+    finally { setProposalBusy(false) }
+  }
+
+  const discardProposal = async () => {
+    if (proposal?.id) await applyProposal(proposal.id, false).catch(() => {})
+    setProposal(null); setProposalSaved(false); setProposalRunAvailable(false); setProposalError('')
+    setNodes([]); setEdges([]); setEnvId(null); setEnvName(''); setDirty(false)
+  }
+
+  const runAcceptedProposal = async () => {
+    if (!envId) return
+    setProposalBusy(true); setProposalError('')
+    try {
+      const { run_id } = await api.runEnv(envId)
+      setActiveRun({ run_id, env_id: envId, status: 'running', outputs: {}, waiting_on: null, node_states: Object.fromEntries(nodes.map(node => [node.id, 'pending' as const])) })
+      activeRunIdRef.current = run_id; refreshRuns(envId); setProposalRunAvailable(false)
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')) }
+    finally { setProposalBusy(false) }
+  }
+
+  const undoAcceptedProposal = async () => {
+    if (!proposalUndoId) return
+    setProposalBusy(true); setProposalError('')
+    try {
+      await api.undoRun(proposalUndoId)
+      setProposalUndoId(''); setProposalSaved(false); setProposalRunAvailable(false)
+      setProposal(null); setEnvId(null); setEnvName(''); setNodes([]); setEdges([]); setDirty(false)
+      setUnsaved(items => items.filter(item => item.id !== proposal?.flow?.id)); refreshEnvs(); setMsg('The saved proposal was undone.')
+    } catch (error) { setProposalError(String(error).replace(/^Error: /, '')) }
+    finally { setProposalBusy(false) }
+  }
+
   const run = async () => {
     if (!envId) return
     if (dirty && !(await save())) return
@@ -514,7 +665,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
     }
     return edges.map(e => {
       const back = reaches(e.target, e.source)
-      const cls = [typeof e.label === 'string' && e.label ? `edge-${e.label}` : '', back ? 'edge-loopback' : ''].filter(Boolean).join(' ')
+      const cls = [typeof e.label === 'string' && e.label ? `edge-${e.label}` : '', back ? 'edge-loopback' : '', e.className].filter(Boolean).join(' ')
       return { ...e, animated: false, data: { ...e.data, loopback: back }, className: cls || undefined }
     })
   }, [edges])
@@ -594,16 +745,19 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
           {tab === 'canvas' && envId && (
             <div className="palette" data-testid="palette">
               {catalog.filter(item => layout !== 'simple' || SIMPLE_STEP_TYPES.has(item.type)).map(item => (
-                <button key={item.type} className={`pal pal-${item.type}`} data-testid={`palette-${item.type}`} title={item.type === 'http_request' ? t('http.description') : item.description} onClick={() => addNode(item.type)}>+ {item.type === 'http_request' ? t('http.title') : item.label}</button>
+                <button key={item.type} className={`pal pal-${item.type}`} data-testid={`palette-${item.type}`} title={item.type === 'http_request' ? t('http.description') : BUSINESS_NODE_DESCRIPTIONS[item.type] ? t(BUSINESS_NODE_DESCRIPTIONS[item.type]) : item.description} onClick={() => addNode(item.type)}>+ {item.type === 'http_request' ? t('http.title') : BUSINESS_NODE_LABELS[item.type] ? t(BUSINESS_NODE_LABELS[item.type]) : item.label}</button>
               ))}
             </div>
           )}
         </div>
 
         {tab === 'vault' ? <VaultView /> : !envId ? (
-          <div className="empty">{t('build.pickFlow')}</div>
+          <div className="build-proposal-start"><ProposalOverlay proposal={proposal} busy={proposalBusy} error={proposalError} saved={proposalSaved}
+            runAvailable={proposalRunAvailable} undoAvailable={Boolean(proposalUndoId)} onPropose={proposeFlow} onRefine={refineProposal} onAccept={acceptProposal} onDiscard={discardProposal} onRun={runAcceptedProposal} onUndo={undoAcceptedProposal} /></div>
         ) : (
           <div className="canvas-wrap">
+            {proposal && <ProposalOverlay proposal={proposal} busy={proposalBusy} error={proposalError} saved={proposalSaved}
+              runAvailable={proposalRunAvailable} undoAvailable={Boolean(proposalUndoId)} onPropose={proposeFlow} onRefine={refineProposal} onAccept={acceptProposal} onDiscard={discardProposal} onRun={runAcceptedProposal} onUndo={undoAcceptedProposal} />}
             {activeRun && waitingNode && activeRun.status === 'waiting' && (
               <div className="approval-banner" data-testid="approval-banner">
                 <span className="approval-label">{t('build.waitingApproval', { id: waitingNode.id })}</span>
@@ -639,7 +793,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
               >
                 <Background gap={16} size={1} color={tok('--g-ice4')} />
                 <Controls showInteractive={false} position="top-left" />
-                {showMinimap && <MiniMap pannable={false} zoomable={false} nodeColor={tok('--g-navy3')} maskColor={tok('--g-shadow')} style={{ backgroundColor: tok('--g-ice1'), borderColor: tok('--g-navy') }} />}
+                {showMinimap && <MiniMap pannable={false} zoomable={false} nodeColor={tok('--g-navy3')} maskColor={tok('--g-shadow')} style={{ backgroundColor: tok('--g-panel'), borderColor: tok('--g-line') }} />}
               </ReactFlow>
             </div>
           </div>
@@ -717,11 +871,11 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
 
             {selNode && (
               <div className="inspector" data-testid="inspector">
-                <div className="section-head"><span>{layout === 'simple' ? (typeInfo(selNode.type)?.label ?? selNode.type) : t('build.node', { id: selNode.id, type: selNode.type })}</span>
+                <div className="section-head"><span>{layout === 'simple' ? (BUSINESS_NODE_LABELS[selNode.type] ? t(BUSINESS_NODE_LABELS[selNode.type]) : typeInfo(selNode.type)?.label ?? selNode.type) : t('build.node', { id: selNode.id, type: BUSINESS_NODE_LABELS[selNode.type] ? t(BUSINESS_NODE_LABELS[selNode.type]) : selNode.type })}</span>
                   {layout === 'simple' && <button className="ghost" data-testid="more-fields" onClick={() => setMoreFields(m => !m)}>{moreFields ? t('build.fewerSettings') : t('build.moreSettings')}</button>}</div>
                 {(typeInfo(selNode.type)?.fields ?? []).filter(f => layout !== 'simple' || moreFields || !f.optional || (selNode.data.config[f.key] ?? '') !== '').map(f => (
                   <label className="field" key={f.key}>
-                    <span>{selNode.type === 'http_request' && HTTP_LABELS[f.key] ? t(HTTP_LABELS[f.key]) : f.label}{f.optional ? t('build.optional') : ''}</span>
+                    <span>{selNode.type === 'http_request' && HTTP_LABELS[f.key] ? t(HTTP_LABELS[f.key]) : businessLabel(selNode.type, f.key) ?? f.label}{f.optional ? t('build.optional') : ''}</span>
                     {f.picker === 'environment'
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
                           <option value="">{t('build.choose')}</option>
@@ -729,7 +883,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                         </select>
                       : f.options
                       ? <select data-testid={`field-${f.key}`} value={selNode.data.config[f.key] || f.default} onChange={e => setConfig(selNode.id, f.key, e.target.value)}>
-                          {f.options.map(o => <option key={o} value={o}>{selNode.type === 'http_request' ? httpOptionLabel(f.key, o) : o}</option>)}
+                          {f.options.map(o => <option key={o} value={o}>{selNode.type === 'http_request' ? httpOptionLabel(f.key, o) : BUSINESS_FIELD_LABELS[selNode.type] ? businessOption(selNode.type, f.key, o) : o}</option>)}
                         </select>
                       : f.multiline
                       ? <textarea rows={f.key === 'prompt' ? 6 : f.key === 'body' ? 5 : 3} data-testid={`field-${f.key}`} placeholder={selNode.type === 'http_request' && HTTP_PLACEHOLDERS[f.key] ? t(HTTP_PLACEHOLDERS[f.key]) : f.placeholder} value={selNode.data.config[f.key] ?? ''} onChange={e => setConfig(selNode.id, f.key, e.target.value)} />

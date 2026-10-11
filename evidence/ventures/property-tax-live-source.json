@@ -1,0 +1,20 @@
+{
+  "checkpoint": "PH12.17",
+  "source_id": "cook_county_assessor",
+  "recorded_at_utc": "2026-10-10T05:54:23Z",
+  "command": "GLACIER_HOME=/tmp/property-tax-feed-probe-20261010 /home/glacier/w/glacier-lean/.venv/bin/python - <<'PY' (query one row from the registered Cook County Socrata source, normalize/store through ventures.blocks.feeds.core, then query the snapshot)",
+  "result": "one live public record fetched and normalized without schema alerts; this is a one-row probe, not a full roll sync or a release check",
+  "source_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json?$select=pin,year,class,township_code,township_name,zip_code&$limit=1&$order=pin",
+  "row": {
+    "record_id": "01011000020000",
+    "data": {
+      "pin": "01011000020000",
+      "year": "2025",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010"
+    }
+  },
+  "alerts": []
+}

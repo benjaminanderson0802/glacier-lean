@@ -1,0 +1,16 @@
+{
+  "id": "freight-record-carrier-receipt",
+  "name": "Record carrier claim receipt",
+  "goal": "Record the shipper-provided carrier confirmation and start the local 30-day acknowledgment and 120-day resolution reminders.",
+  "nodes": [
+    {"id": "record_receipt", "type": "command", "config": {"cmd": "python ventures/freight-claims/scripts/claims.py receipt --input \"$GLACIER_HOME/ventures/freight-claims/incoming/receipt.json\"", "cwd": "{repo}", "timeout": 30, "retries": 0}, "position": {"x": 100, "y": 100}},
+    {"id": "receipt_note", "type": "note", "config": {"path": "ventures/freight-claims/reports/carrier-receipt-{run}.md", "template": "Customer-provided carrier receipt confirmation recorded. The 30- and 120-day reminders begin from this reported receipt date.\n\n{summary}"}, "position": {"x": 400, "y": 100}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "record_receipt", "target": "receipt_note", "label": ""}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports'; rows=[json.loads(x.read_text()) for x in p.glob('receipt-*.json')]; assert rows and all(r.get('deadline_rule') == '30d|120d' and r.get('carrier_reference') and r.get('side_effects') == [] for r in rows)\"", "required": true}
+  ],
+  "max_steps": 2
+}

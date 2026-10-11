@@ -1,0 +1,1054 @@
+........................................................................ [  8%]
+........................................................................ [ 17%]
+.............F.....F.................................................... [ 25%]
+.......................................................FF.....F......... [ 34%]
+................FFF..................................................... [ 43%]
+........................................................................ [ 51%]
+........................................................................ [ 60%]
+...........................................s............................ [ 69%]
+........................................................................ [ 77%]
+........................................................................ [ 86%]
+........................................................................ [ 95%]
+.........................................                                [100%]
+=================================== FAILURES ===================================
+____________ test_gap_with_free_option_goes_to_fixer_with_findings _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-237/test_gap_with_free_option_goes0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e7f1f097e30>
+
+    def test_gap_with_free_option_goes_to_fixer_with_findings(tmp_path, monkeypatch):
+>       s = _server(tmp_path, monkeypatch, "Option: Tesseract (Apache-2.0, active, 80% fit).\nVERDICT: FREE OPTION FOUND")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_claims_research.py:63:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_claims_research.py:27: in _server
+    return Server(home).start()
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <conftest.Server object at 0x7e7f1f0aad20>
+
+    def start(self):
+        env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
+        options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+        self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
+                                     cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, **options)
+        deadline = time.time() + float(os.environ.get("GLACIER_TEST_START_TIMEOUT", "60"))
+        while time.time() < deadline:  # startup grows with plug-ins; a busy machine can need well over 15 s
+            if self.proc.poll() is not None:
+                break
+            try:
+                if httpx.get(self.url + "/api/environments").status_code == 200:
+                    return self
+            except httpx.HTTPError:
+                pass
+            time.sleep(0.1)
+        log = self.diagnostics()
+        self.stop()
+>       raise RuntimeError(f"server did not start; backend log follows:\n{log}")
+E       RuntimeError: server did not start; backend log follows:
+E       05:04:49 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+
+tests/conftest.py:110: RuntimeError
+________________ test_undo_allows_unrelated_later_isolated_run _________________
+
+server = <conftest.Server object at 0x7e7f1c713e90>
+
+    def test_undo_allows_unrelated_later_isolated_run(server):
+        env_id = "undo-code-unrelated"
+        workspace = os.path.join(server.home, "workspaces", env_id)
+        os.makedirs(workspace)
+        with open(os.path.join(workspace, "answer.txt"), "w", encoding="utf-8") as target:
+            target.write("original\n")
+
+>       run_id = run_code(server, env_id, "printf 'changed\\n' > answer.txt")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_code_undo.py:99:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_code_undo.py:24: in run_code
+    run = server.wait_run(run_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <conftest.Server object at 0x7e7f1c713e90>, run_id = 'c9b7143c7128'
+statuses = ('done', 'failed', 'rejected'), timeout = 30
+
+    def wait_run(self, run_id, statuses=("done", "failed", "rejected"), timeout=30):
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            run = self.get(f"/api/runs/{run_id}")
+            if run["status"] in statuses:
+                return run
+            time.sleep(0.2)
+>       raise AssertionError(f"run {run_id} never reached {statuses}: {run}")
+E       AssertionError: run c9b7143c7128 never reached ('done', 'failed', 'rejected'): {'run_id': 'c9b7143c7128', 'env_id': 'undo-code-unrelated', 'status': 'running', 'waiting_on': None, 'author': 'owner', 'node_states': {'edit': 'done'}, 'outputs': {'edit': ''}, 'usage': {}, 'verification': [{'check': 0, 'kind': 'command', 'passed': True, 'evidence': '`test -f answer.txt` exited 0'}], 'workspace': None, 'verified': None}
+
+tests/conftest.py:158: AssertionError
+- backend server log (stdout/stderr; /tmp/pytest-of-glacier/pytest-237/test_undo_allows_unrelated_lat0) -
+05:06:41 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [328176]
+INFO:     Waiting for application startup.
+05:07:05 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+05:07:05 [    INFO] (dbos:_dbos.py:621) Application version: ca40fd3194c618cd1b3a672d09c004d3
+05:07:05 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+05:07:05 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/pytest-of-glacier/pytest-237/test_undo_allows_unrelated_lat0/glacier.sqlite (schema: dbos)
+05:07:05 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+05:07:05 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+05:07:05 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version ca40fd3194c618cd1b3a672d09c004d3
+05:07:05 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+05:07:05 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+05:07:05 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:57395 (Press CTRL+C to quit)
+INFO:     127.0.0.1:47866 - "GET /api/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47868 - "PUT /api/environments/undo-code-unrelated HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47882 - "POST /api/environments/undo-code-unrelated/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47884 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47894 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47900 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47916 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47930 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47940 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47944 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47946 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47952 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47962 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47974 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47986 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48000 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48006 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48022 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48030 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48042 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48048 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48060 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48064 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48072 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48088 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48100 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48114 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48116 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48132 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48138 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48142 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49710 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49712 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49724 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49728 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49734 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49746 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49748 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49756 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49772 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49774 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49776 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49796 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49800 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49808 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49824 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49830 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49846 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49852 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49868 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49884 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49898 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49910 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49924 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49926 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49936 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49952 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49966 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49972 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49984 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50000 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50010 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50018 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50034 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50048 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50052 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50068 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50070 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50086 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50092 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50108 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50124 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50126 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45766 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45772 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45774 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45778 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45790 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45792 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45794 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45796 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45800 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45812 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45814 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45818 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45834 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45846 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45850 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45852 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45864 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45880 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45886 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45898 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45906 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45922 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45924 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45932 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45938 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45954 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45968 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45976 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45988 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45994 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45998 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46014 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46016 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46018 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46026 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46036 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46038 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46040 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37198 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37214 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37230 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37232 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37236 - "GET /api/runs/c9b7143c7128 HTTP/1.1" 200 OK
+_ test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-inbox-note] _
+
+real_template_backend = (<test_flows_real_runtime.RealCodexServer object at 0x7e7f1f0b3860>, PosixPath('/tmp/pytest-of-glacier/pytest-237/real-template-backend0'))
+template_id = 'tpl-email-inbox-note'
+
+    @pytest.mark.parametrize(
+        "template_id",
+        [entry["id"] for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]],
+    )
+    def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine(real_template_backend, template_id):
+        server, root = real_template_backend
+        templates = {item["id"]: item for item in server.get("/api/templates")}
+        item = templates[template_id]
+        assert item["installable"] is True, f"{template_id} is unavailable: {item['review_status']}"
+        flow = json.loads(json.dumps(item["template"]))
+        env_id = "proof-" + template_id.removeprefix("tpl-")
+        flow["id"], flow["name"] = env_id, "Template proof " + template_id
+        flow.pop("description", None)
+        flow.pop("when_to_use", None)
+        nodes = {node["id"]: node for node in flow["nodes"]}
+        home = Path(server.home)
+        workspace = home / "workspaces" / env_id
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        local_needed = any(node["type"] == "local_ai" for node in nodes.values())
+        if local_needed:
+            _require_ollama()
+
+        for node in nodes.values():
+            cfg = node.get("config", {})
+            if node["type"] == "schedule":
+                cfg["cron"] = "0 0 1 1 *"  # template remains installable, but the proof invokes it manually
+            elif node["type"] == "read_document":
+                source = workspace / "fixture.txt"
+                source.write_text("Meeting: send the agenda to the team. Launch is Friday.", encoding="utf-8")
+                cfg["source"] = str(source)
+            elif node["type"] == "command":
+                cmd = cfg.get("cmd", "")
+                cmd = cmd.replace('"$HOME/Downloads"', f'"{home / "Downloads"}"')
+                cmd = cmd.replace('"$HOME/Backups"', f'"{home / "Backups"}"')
+                cfg["cmd"] = cmd
+            elif node["type"] == "codex":
+                cfg["workdir"] = str(workspace)
+            elif node["type"] == "local_ai":
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "decide":
+                cfg["engine"] = "codex" if not local_needed else "local"
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "flow" and cfg.get("env") == "tpl-daily-report":
+                child = next(json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                             for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+                             if entry["id"] == "tpl-daily-report")
+                child_id = env_id + "-daily-child"
+                child["id"] = child_id
+                child["nodes"][0]["config"]["cron"] = "0 0 1 1 *"
+                child_worker = next(part for part in child["nodes"] if part["type"] == "codex")
+                child_worker["config"]["workdir"] = str(workspace)
+                server.put(f"/api/environments/{child_id}", child)
+                cfg["env"] = child_id
+            elif node["type"] == "approval":
+                cfg["prompt"] = "Approve this test-only action in a temporary folder?"
+
+        if template_id == "tpl-downloads-tidy":
+            downloads = home / "Downloads"
+            downloads.mkdir()
+            old = downloads / "older-fixture.txt"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 10 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-backup-check":
+            backups = home / "Backups"
+            backups.mkdir()
+            old = backups / "old-fixture.zip"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 5 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-web-change-watch":
+            class Page(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    payload = b"<html><body>Glacier local template fixture</body></html>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+
+                def log_message(self, *_args):
+                    pass
+
+            page = socketserver.TCPServer(("127.0.0.1", 0), Page)
+            page_thread = threading.Thread(target=page.serve_forever, daemon=True)
+            page_thread.start()
+            fetch = next(node for node in nodes.values() if node["type"] == "fetch_page")
+            fetch["config"]["url"] = f"http://127.0.0.1:{page.server_address[1]}/"
+            fetch["config"]["allowed_sites"] = "127.0.0.1"
+
+        if template_id == "tpl-website-monitor":
+            next(node for node in nodes.values() if node["type"] == "command")["config"]["cmd"] = "true"
+
+        if template_id == "tpl-inbox-triage":
+            decide_cfg = next(node for node in nodes.values() if node["type"] == "decide")["config"]
+            decide_cfg["engine"] = "codex"
+            decide_cfg.pop("model", None)
+        if template_id == "tpl-test-and-fix":
+            # Exercise the successful verification branch against a real small pytest
+            # project, avoiding a repair request over an intentionally empty workspace.
+            (workspace / "test_sample.py").write_text("def test_template_fixture():\n    assert 'glacier' == 'glacier'\n", encoding="utf-8")
+            python = sys.executable
+            for node in nodes.values():
+                if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
+                    node["config"]["cmd"] = f"'{python}' -m pytest -q"
+        codex_needed = _template_needs_codex(flow)
+        if codex_needed:
+            _require_codex()
+        server.put(f"/api/environments/{env_id}", flow)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        deadline = time.time() + 360
+        try:
+            while time.time() < deadline:
+                run = server.get(f"/api/runs/{run_id}")
+                if run["status"] == "waiting":
+                    server.post(f"/api/runs/{run_id}/approve", {"node_id": run["waiting_on"], "approved": True})
+                elif run["status"] in ("done", "failed", "rejected"):
+                    break
+                time.sleep(0.25)
+        finally:
+            if template_id == "tpl-web-change-watch":
+                page.shutdown()
+                page_thread.join(timeout=2)
+                page.server_close()
+        if run["status"] != "done" and codex_needed and any("not signed in" in str(output).lower() for output in run["outputs"].values()):
+            pytest.skip(f"{template_id} installed; Codex CLI is not signed in for this backend process")
+>       assert run["status"] == "done", f"{template_id} real-backend run failed: {run}"
+E       AssertionError: tpl-email-inbox-note real-backend run failed: {'run_id': '1c451f74cde7', 'env_id': 'proof-email-inbox-note', 'status': 'failed', 'waiting_on': None, 'author': 'owner', 'node_states': {'email': 'failed', 'save': 'skipped'}, 'outputs': {'email': 'error: This step starts when a new email arrives'}, 'usage': {}, 'verification': [], 'workspace': None, 'verified': False}
+E       assert 'failed' == 'done'
+E
+E         - done
+E         + failed
+
+tests/test_flows_real_runtime.py:478: AssertionError
+_ test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-search-note] _
+
+real_template_backend = (<test_flows_real_runtime.RealCodexServer object at 0x7e7f1f0b3860>, PosixPath('/tmp/pytest-of-glacier/pytest-237/real-template-backend0'))
+template_id = 'tpl-email-search-note'
+
+    @pytest.mark.parametrize(
+        "template_id",
+        [entry["id"] for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]],
+    )
+    def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine(real_template_backend, template_id):
+        server, root = real_template_backend
+        templates = {item["id"]: item for item in server.get("/api/templates")}
+        item = templates[template_id]
+        assert item["installable"] is True, f"{template_id} is unavailable: {item['review_status']}"
+        flow = json.loads(json.dumps(item["template"]))
+        env_id = "proof-" + template_id.removeprefix("tpl-")
+        flow["id"], flow["name"] = env_id, "Template proof " + template_id
+        flow.pop("description", None)
+        flow.pop("when_to_use", None)
+        nodes = {node["id"]: node for node in flow["nodes"]}
+        home = Path(server.home)
+        workspace = home / "workspaces" / env_id
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        local_needed = any(node["type"] == "local_ai" for node in nodes.values())
+        if local_needed:
+            _require_ollama()
+
+        for node in nodes.values():
+            cfg = node.get("config", {})
+            if node["type"] == "schedule":
+                cfg["cron"] = "0 0 1 1 *"  # template remains installable, but the proof invokes it manually
+            elif node["type"] == "read_document":
+                source = workspace / "fixture.txt"
+                source.write_text("Meeting: send the agenda to the team. Launch is Friday.", encoding="utf-8")
+                cfg["source"] = str(source)
+            elif node["type"] == "command":
+                cmd = cfg.get("cmd", "")
+                cmd = cmd.replace('"$HOME/Downloads"', f'"{home / "Downloads"}"')
+                cmd = cmd.replace('"$HOME/Backups"', f'"{home / "Backups"}"')
+                cfg["cmd"] = cmd
+            elif node["type"] == "codex":
+                cfg["workdir"] = str(workspace)
+            elif node["type"] == "local_ai":
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "decide":
+                cfg["engine"] = "codex" if not local_needed else "local"
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "flow" and cfg.get("env") == "tpl-daily-report":
+                child = next(json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                             for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+                             if entry["id"] == "tpl-daily-report")
+                child_id = env_id + "-daily-child"
+                child["id"] = child_id
+                child["nodes"][0]["config"]["cron"] = "0 0 1 1 *"
+                child_worker = next(part for part in child["nodes"] if part["type"] == "codex")
+                child_worker["config"]["workdir"] = str(workspace)
+                server.put(f"/api/environments/{child_id}", child)
+                cfg["env"] = child_id
+            elif node["type"] == "approval":
+                cfg["prompt"] = "Approve this test-only action in a temporary folder?"
+
+        if template_id == "tpl-downloads-tidy":
+            downloads = home / "Downloads"
+            downloads.mkdir()
+            old = downloads / "older-fixture.txt"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 10 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-backup-check":
+            backups = home / "Backups"
+            backups.mkdir()
+            old = backups / "old-fixture.zip"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 5 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-web-change-watch":
+            class Page(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    payload = b"<html><body>Glacier local template fixture</body></html>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+
+                def log_message(self, *_args):
+                    pass
+
+            page = socketserver.TCPServer(("127.0.0.1", 0), Page)
+            page_thread = threading.Thread(target=page.serve_forever, daemon=True)
+            page_thread.start()
+            fetch = next(node for node in nodes.values() if node["type"] == "fetch_page")
+            fetch["config"]["url"] = f"http://127.0.0.1:{page.server_address[1]}/"
+            fetch["config"]["allowed_sites"] = "127.0.0.1"
+
+        if template_id == "tpl-website-monitor":
+            next(node for node in nodes.values() if node["type"] == "command")["config"]["cmd"] = "true"
+
+        if template_id == "tpl-inbox-triage":
+            decide_cfg = next(node for node in nodes.values() if node["type"] == "decide")["config"]
+            decide_cfg["engine"] = "codex"
+            decide_cfg.pop("model", None)
+        if template_id == "tpl-test-and-fix":
+            # Exercise the successful verification branch against a real small pytest
+            # project, avoiding a repair request over an intentionally empty workspace.
+            (workspace / "test_sample.py").write_text("def test_template_fixture():\n    assert 'glacier' == 'glacier'\n", encoding="utf-8")
+            python = sys.executable
+            for node in nodes.values():
+                if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
+                    node["config"]["cmd"] = f"'{python}' -m pytest -q"
+        codex_needed = _template_needs_codex(flow)
+        if codex_needed:
+            _require_codex()
+        server.put(f"/api/environments/{env_id}", flow)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        deadline = time.time() + 360
+        try:
+            while time.time() < deadline:
+                run = server.get(f"/api/runs/{run_id}")
+                if run["status"] == "waiting":
+                    server.post(f"/api/runs/{run_id}/approve", {"node_id": run["waiting_on"], "approved": True})
+                elif run["status"] in ("done", "failed", "rejected"):
+                    break
+                time.sleep(0.25)
+        finally:
+            if template_id == "tpl-web-change-watch":
+                page.shutdown()
+                page_thread.join(timeout=2)
+                page.server_close()
+        if run["status"] != "done" and codex_needed and any("not signed in" in str(output).lower() for output in run["outputs"].values()):
+            pytest.skip(f"{template_id} installed; Codex CLI is not signed in for this backend process")
+>       assert run["status"] == "done", f"{template_id} real-backend run failed: {run}"
+E       AssertionError: tpl-email-search-note real-backend run failed: {'run_id': '5836e42eb5f6', 'env_id': 'proof-email-search-note', 'status': 'failed', 'waiting_on': None, 'author': 'owner', 'node_states': {'save': 'skipped', 'search': 'failed'}, 'outputs': {'search': 'error: Unknown secret: EMAIL_APP_PASSWORD'}, 'usage': {}, 'verification': [], 'workspace': None, 'verified': None}
+E       assert 'failed' == 'done'
+E
+E         - done
+E         + failed
+
+tests/test_flows_real_runtime.py:478: AssertionError
+_ test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-local-data-pipeline] _
+
+real_template_backend = (<test_flows_real_runtime.RealCodexServer object at 0x7e7f1f0b3860>, PosixPath('/tmp/pytest-of-glacier/pytest-237/real-template-backend0'))
+template_id = 'tpl-local-data-pipeline'
+
+    @pytest.mark.parametrize(
+        "template_id",
+        [entry["id"] for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]],
+    )
+    def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine(real_template_backend, template_id):
+        server, root = real_template_backend
+        templates = {item["id"]: item for item in server.get("/api/templates")}
+        item = templates[template_id]
+        assert item["installable"] is True, f"{template_id} is unavailable: {item['review_status']}"
+        flow = json.loads(json.dumps(item["template"]))
+        env_id = "proof-" + template_id.removeprefix("tpl-")
+        flow["id"], flow["name"] = env_id, "Template proof " + template_id
+        flow.pop("description", None)
+        flow.pop("when_to_use", None)
+        nodes = {node["id"]: node for node in flow["nodes"]}
+        home = Path(server.home)
+        workspace = home / "workspaces" / env_id
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        local_needed = any(node["type"] == "local_ai" for node in nodes.values())
+        if local_needed:
+            _require_ollama()
+
+        for node in nodes.values():
+            cfg = node.get("config", {})
+            if node["type"] == "schedule":
+                cfg["cron"] = "0 0 1 1 *"  # template remains installable, but the proof invokes it manually
+            elif node["type"] == "read_document":
+                source = workspace / "fixture.txt"
+                source.write_text("Meeting: send the agenda to the team. Launch is Friday.", encoding="utf-8")
+                cfg["source"] = str(source)
+            elif node["type"] == "command":
+                cmd = cfg.get("cmd", "")
+                cmd = cmd.replace('"$HOME/Downloads"', f'"{home / "Downloads"}"')
+                cmd = cmd.replace('"$HOME/Backups"', f'"{home / "Backups"}"')
+                cfg["cmd"] = cmd
+            elif node["type"] == "codex":
+                cfg["workdir"] = str(workspace)
+            elif node["type"] == "local_ai":
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "decide":
+                cfg["engine"] = "codex" if not local_needed else "local"
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "flow" and cfg.get("env") == "tpl-daily-report":
+                child = next(json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                             for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+                             if entry["id"] == "tpl-daily-report")
+                child_id = env_id + "-daily-child"
+                child["id"] = child_id
+                child["nodes"][0]["config"]["cron"] = "0 0 1 1 *"
+                child_worker = next(part for part in child["nodes"] if part["type"] == "codex")
+                child_worker["config"]["workdir"] = str(workspace)
+                server.put(f"/api/environments/{child_id}", child)
+                cfg["env"] = child_id
+            elif node["type"] == "approval":
+                cfg["prompt"] = "Approve this test-only action in a temporary folder?"
+
+        if template_id == "tpl-downloads-tidy":
+            downloads = home / "Downloads"
+            downloads.mkdir()
+            old = downloads / "older-fixture.txt"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 10 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-backup-check":
+            backups = home / "Backups"
+            backups.mkdir()
+            old = backups / "old-fixture.zip"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 5 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-web-change-watch":
+            class Page(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    payload = b"<html><body>Glacier local template fixture</body></html>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+
+                def log_message(self, *_args):
+                    pass
+
+            page = socketserver.TCPServer(("127.0.0.1", 0), Page)
+            page_thread = threading.Thread(target=page.serve_forever, daemon=True)
+            page_thread.start()
+            fetch = next(node for node in nodes.values() if node["type"] == "fetch_page")
+            fetch["config"]["url"] = f"http://127.0.0.1:{page.server_address[1]}/"
+            fetch["config"]["allowed_sites"] = "127.0.0.1"
+
+        if template_id == "tpl-website-monitor":
+            next(node for node in nodes.values() if node["type"] == "command")["config"]["cmd"] = "true"
+
+        if template_id == "tpl-inbox-triage":
+            decide_cfg = next(node for node in nodes.values() if node["type"] == "decide")["config"]
+            decide_cfg["engine"] = "codex"
+            decide_cfg.pop("model", None)
+        if template_id == "tpl-test-and-fix":
+            # Exercise the successful verification branch against a real small pytest
+            # project, avoiding a repair request over an intentionally empty workspace.
+            (workspace / "test_sample.py").write_text("def test_template_fixture():\n    assert 'glacier' == 'glacier'\n", encoding="utf-8")
+            python = sys.executable
+            for node in nodes.values():
+                if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
+                    node["config"]["cmd"] = f"'{python}' -m pytest -q"
+        codex_needed = _template_needs_codex(flow)
+        if codex_needed:
+            _require_codex()
+        server.put(f"/api/environments/{env_id}", flow)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        deadline = time.time() + 360
+        try:
+            while time.time() < deadline:
+                run = server.get(f"/api/runs/{run_id}")
+                if run["status"] == "waiting":
+                    server.post(f"/api/runs/{run_id}/approve", {"node_id": run["waiting_on"], "approved": True})
+                elif run["status"] in ("done", "failed", "rejected"):
+                    break
+                time.sleep(0.25)
+        finally:
+            if template_id == "tpl-web-change-watch":
+                page.shutdown()
+                page_thread.join(timeout=2)
+                page.server_close()
+        if run["status"] != "done" and codex_needed and any("not signed in" in str(output).lower() for output in run["outputs"].values()):
+            pytest.skip(f"{template_id} installed; Codex CLI is not signed in for this backend process")
+>       assert run["status"] == "done", f"{template_id} real-backend run failed: {run}"
+E       AssertionError: tpl-local-data-pipeline real-backend run failed: {'run_id': '9e72ef96df6c', 'env_id': 'proof-local-data-pipeline', 'status': 'failed', 'waiting_on': None, 'author': 'owner', 'node_states': {'ai': 'failed', 'csv': 'skipped', 'email': 'skipped', 'json': 'skipped', 'table': 'skipped', 'wait': 'skipped'}, 'outputs': {'ai': 'The AI answer did not match the requested JSON format: Expecting value: line 1 column 1 (char 0)'}, 'usage': {}, 'verification': [], 'workspace': None, 'verified': False}
+E       assert 'failed' == 'done'
+E
+E         - done
+E         + failed
+
+tests/test_flows_real_runtime.py:478: AssertionError
+____________________________ test_home_empty_state _____________________________
+
+server = <conftest.Server object at 0x7e7f1c75ff80>
+
+    def test_home_empty_state(server):
+        body = server.get("/api/home")
+        assert body["local_ai"]["online"] in (True, False, None)  # None = first probe still running
+        assert body["local_ai"]["model"] is None or isinstance(body["local_ai"]["model"], str)
+>       assert body["counts"] == {"running": 0, "need_you": 0}
+E       AssertionError: assert {'running': 0, 'need_you': 36} == {'running': 0, 'need_you': 0}
+E
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'need_you': 36} != {'need_you': 0}
+E         Use -v to get more diff
+
+tests/test_home_route.py:11: AssertionError
+- backend server log (stdout/stderr; /tmp/pytest-of-glacier/pytest-237/test_home_empty_state0) -
+05:12:33 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [333282]
+INFO:     Waiting for application startup.
+05:12:33 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+05:12:33 [    INFO] (dbos:_dbos.py:621) Application version: ca40fd3194c618cd1b3a672d09c004d3
+05:12:33 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+05:12:33 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/pytest-of-glacier/pytest-237/test_home_empty_state0/glacier.sqlite (schema: dbos)
+05:12:33 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+05:12:33 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+05:12:33 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version ca40fd3194c618cd1b3a672d09c004d3
+05:12:33 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+05:12:33 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+05:12:33 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:34389 (Press CTRL+C to quit)
+INFO:     127.0.0.1:36158 - "GET /api/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36166 - "GET /api/home HTTP/1.1" 200 OK
+____________ test_home_collects_each_need_you_kind_and_counts_steps ____________
+
+server = <conftest.Server object at 0x7e7f1c713620>
+
+    def test_home_collects_each_need_you_kind_and_counts_steps(server):
+        now = datetime.now(timezone.utc)
+        stamp = lambda age: (now - timedelta(minutes=age)).isoformat()
+        _add_run(server, "waiting-run", "approval-env", "Approval environment", "waiting", stamp(-1),
+                 ["a", "approval-node"], ["done", "waiting"])
+        _add_run(server, "failed-run", "failed-env", "Failed environment", "failed", stamp(2), ["bad"], ["failed"])
+        _add_run(server, "running-run", "running-env", "Running environment", "running", stamp(3),
+                 ["a", "b", "c", "d"], ["done", "done", "pending", "pending"])
+        _add_run(server, "queued-run", "queued-env", "Queued environment", "queued", stamp(4), ["a"], ["pending"])
+        with sqlite3.connect(f"{server.home}/glacier.sqlite") as db:
+            db.execute("INSERT INTO glacier_runs VALUES (?, ?, ?, ?, ?, NULL)",
+                       ("old-failure", "old", "failed", stamp(8 * 24 * 60), json.dumps({"name": "Old"})))
+
+        claim_id = "2026-10-07-home-decision-a1b2c3"
+        claim_file = f"{server.home}/vault/claims/{claim_id}.md"
+        os.makedirs(os.path.dirname(claim_file), exist_ok=True)
+        with open(claim_file, "w", encoding="utf-8") as stream:
+            stream.write(f'---\nid: "{claim_id}"\nkind: "bug"\nsummary: "Needs a decision"\n'
+                         f'status: "proposed"\nupdated: "{stamp(0)}"\nrun_id: ""\nnode_id: ""\n---\n')
+        server.put("/api/memory/note", {"path": "recent.md", "body": "# Recent\nA saved note.", "author": "owner"})
+        body = server.get("/api/home")
+
+        assert body["local_ai"]["online"] in (True, False, None)  # None = first probe still running
+>       assert body["counts"] == {"running": 3, "need_you": 3}
+E       AssertionError: assert {'running': 3, 'need_you': 39} == {'running': 3, 'need_you': 3}
+E
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'need_you': 39} != {'need_you': 3}
+E         Use -v to get more diff
+
+tests/test_home_route.py:50: AssertionError
+- backend server log (stdout/stderr; /tmp/pytest-of-glacier/pytest-237/test_home_collects_each_need_y0) -
+05:12:34 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [333340]
+INFO:     Waiting for application startup.
+05:12:35 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+05:12:35 [    INFO] (dbos:_dbos.py:621) Application version: ca40fd3194c618cd1b3a672d09c004d3
+05:12:35 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+05:12:35 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/pytest-of-glacier/pytest-237/test_home_collects_each_need_y0/glacier.sqlite (schema: dbos)
+05:12:35 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+05:12:35 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+05:12:35 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version ca40fd3194c618cd1b3a672d09c004d3
+05:12:35 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+05:12:35 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+05:12:35 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:53267 (Press CTRL+C to quit)
+INFO:     127.0.0.1:45658 - "GET /api/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45668 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45670 - "GET /api/home HTTP/1.1" 200 OK
+__________________ test_home_orders_and_caps_needs_and_notes ___________________
+
+server = <conftest.Server object at 0x7e7f1c7bea80>
+
+    def test_home_orders_and_caps_needs_and_notes(server):
+        now = datetime.now(timezone.utc)
+        with sqlite3.connect(f"{server.home}/glacier.sqlite") as db:
+            for i in range(25):
+                started = (now - timedelta(minutes=i)).isoformat()
+                run_id = f"waiting-{i:02}"
+                graph = {"name": "Environment", "nodes": [{"id": "approval", "type": "approval", "config": {}}]}
+                db.execute("INSERT INTO glacier_runs VALUES (?, ?, 'waiting', ?, ?, 'approval')",
+                           (run_id, f"env-{i}", started, json.dumps(graph)))
+                db.execute("INSERT INTO glacier_nodes VALUES (?, 'approval', 'waiting', NULL)", (run_id,))
+        for i in range(12):
+            server.put("/api/memory/note", {"path": f"notes/{i:02}.md", "body": f"# Note {i}\nSummary {i}", "author": "owner"})
+
+        body = server.get("/api/home")
+        assert len(body["needs_you"]) == 20
+>       assert body["needs_you"][0]["ref"]["run_id"] == "waiting-00"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'run_id'
+
+tests/test_home_route.py:79: KeyError
+- backend server log (stdout/stderr; /tmp/pytest-of-glacier/pytest-237/test_home_orders_and_caps_need0) -
+05:12:36 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [333398]
+INFO:     Waiting for application startup.
+05:12:36 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+05:12:36 [    INFO] (dbos:_dbos.py:621) Application version: ca40fd3194c618cd1b3a672d09c004d3
+05:12:36 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+05:12:36 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/pytest-of-glacier/pytest-237/test_home_orders_and_caps_need0/glacier.sqlite (schema: dbos)
+05:12:36 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+05:12:36 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+05:12:39 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+05:12:39 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version ca40fd3194c618cd1b3a672d09c004d3
+05:12:39 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+05:12:39 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+05:12:39 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:43991 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50496 - "GET /api/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50508 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50518 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50532 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50534 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50542 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50544 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50560 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50570 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50574 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50578 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50592 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50604 - "PUT /api/memory/note HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50608 - "GET /api/home HTTP/1.1" 200 OK
+=============================== warnings summary ===============================
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+  /usr/lib/python3.12/multiprocessing/popen_fork.py:66: DeprecationWarning: This process (pid=321648) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_claims_research.py::test_gap_with_free_option_goes_to_fixer_with_findings
+FAILED tests/test_code_undo.py::test_undo_allows_unrelated_later_isolated_run
+FAILED tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-inbox-note]
+FAILED tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-search-note]
+FAILED tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-local-data-pipeline]
+FAILED tests/test_home_route.py::test_home_empty_state - AssertionError: asse...
+FAILED tests/test_home_route.py::test_home_collects_each_need_you_kind_and_counts_steps
+FAILED tests/test_home_route.py::test_home_orders_and_caps_needs_and_notes - ...
+8 failed, 824 passed, 1 skipped, 5 warnings in 1020.73s (0:17:00)

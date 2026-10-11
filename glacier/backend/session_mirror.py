@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
+import chat_titles
 import secrets_store
 from session_readers import opencode
 from session_readers import claude_code, gemini
@@ -232,7 +233,7 @@ def _load_file(path: Path, *, include_events: bool = True) -> tuple[dict, list[d
     started = _timestamp(meta.get("timestamp")) or first_time or fallback
     updated = max_time or fallback
     summary = {"id": current_id, "tool": "codex", "started": started.isoformat(), "updated": updated.isoformat(),
-               "title": next((event["text"].strip()[:160] for event in events if event["type"] == "user_message" and event["text"].strip()), ""),
+               "title": chat_titles.first_title(event["text"] for event in events if event["type"] == "user_message"),
                "cwd": meta.get("cwd") or "", "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120,
                "truncated": event_count > MAX_EVENTS}
     event_list = list(events) if include_events else []

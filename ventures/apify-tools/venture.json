@@ -1,0 +1,66 @@
+{
+  "slug": "apify-tools",
+  "name": "apify data tools — mississippi contractor license status",
+  "flows": [
+    "apify-ms-license-daily-canary",
+    "apify-ms-license-your-step-publish"
+  ],
+  "schedules": [
+    {
+      "flow": "apify-ms-license-daily-canary",
+      "cron": "0 9 * * *",
+      "purpose": "Check three saved Mississippi license records each morning and alert if a source changes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "apify-account",
+      "title": "set up your apify developer account",
+      "when": "before the first actor listing",
+      "detail": "Open the Apify account page, complete developer and payout setup, then return here. Glacier does not create the account or verify your identity.",
+      "links": [
+        "https://console.apify.com/account/integrations"
+      ]
+    },
+    {
+      "id": "apify-deploy",
+      "title": "deploy the Mississippi license checker",
+      "when": "after account setup",
+      "detail": "Open Apify's setup guide and follow its steps to install the upload tool, sign in to your account, and upload the prepared Mississippi checker from Glacier's project folder. Return when Apify confirms the upload. Keep sign-in details inside Apify; do not paste them into Glacier.",
+      "links": [
+        "https://docs.apify.com/cli/docs/installation"
+      ]
+    },
+    {
+      "id": "apify-publish",
+      "title": "review and publish the first listing",
+      "when": "after the Actor is uploaded",
+      "detail": "For each of the first three distinct Actor publications, use a separate Glacier approval. Have a different engine review that Actor's code and Store listing, confirm its event price, included platform usage and run limit, then publish it yourself. An earlier approval cannot cover another Actor. Later publications are not blocked by this first-three approval gate.",
+      "links": [
+        "https://console.apify.com/actors"
+      ]
+    }
+  ],
+  "dry_run_env_id": "apify-ms-license-daily-canary",
+  "product": {
+    "purpose": "Sell a source-linked, pay-per-use check of Mississippi contractor license status and expiration using the Mississippi State Board of Contractors public lookup.",
+    "source_id": "ms_msboc_contractor_licenses",
+    "source_url": "https://search.msboc.us/ConsolidatedSearch.cfm",
+    "pricing": {
+      "model": "pay_per_event",
+      "event": "license-lookup",
+      "price_usd": 0.02,
+      "run_limit_usd": 2.0,
+      "platform_usage_included": true
+    },
+    "maintenance": {
+      "canary_count": 3,
+      "canary_interval": "daily",
+      "max_repair_attempts": 2,
+      "failure_action": "mark-under-maintenance-and-alert"
+    }
+  }
+}

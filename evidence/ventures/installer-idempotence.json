@@ -1,0 +1,140 @@
+{
+  "result": "passed",
+  "flows": 31,
+  "schedules": 12,
+  "repeat_1_unchanged": 31,
+  "repeat_2_unchanged": 31,
+  "same_flow_ids": true,
+  "flow_ids": [
+    "apify-ms-license-daily-canary",
+    "apify-ms-license-your-step-publish",
+    "carpenter-prepare-listing",
+    "carpenter-track-commissions",
+    "coop-claim-readiness",
+    "street-postcard-proof",
+    "cpsc-batch-prep",
+    "cpsc-broker-launch",
+    "cpsc-feed-refresh",
+    "cpsc-code-pages",
+    "dibbs-owner-registration",
+    "dibbs-daily-prep",
+    "prepare-listing-packet",
+    "daily-deadline-reminders",
+    "freight-watch-shipstation",
+    "freight-check-deadlines",
+    "freight-request-authorization",
+    "freight-prepare-claim",
+    "freight-record-carrier-receipt",
+    "freight-invoice-draft",
+    "property-tax-refresh-roll",
+    "property-tax-prepare-packet",
+    "property-tax-postcard-proof",
+    "property-tax-upload-retention",
+    "recall-nightly",
+    "recall-batch-check",
+    "recall-review-first-pages",
+    "utility-audit-calculator",
+    "hourly-intake",
+    "daily-deadlines",
+    "owner-review"
+  ],
+  "home": "disposable Glacier live home",
+  "schedule_policies": [
+    {
+      "venture": "apify-tools",
+      "flow": "apify-ms-license-daily-canary",
+      "cron": "0 9 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "coop-claim-readiness",
+      "cron": "0 9 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "coop-postcards",
+      "flow": "street-postcard-proof",
+      "cron": "0 9 1 11 *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "cpsc-prep",
+      "flow": "cpsc-feed-refresh",
+      "cron": "0 6 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "dibbs-supply",
+      "flow": "dibbs-daily-prep",
+      "cron": "0 6 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "fda-cosmetics",
+      "flow": "daily-deadline-reminders",
+      "cron": "0 9 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-watch-shipstation",
+      "cron": "0 8 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "freight-claims",
+      "flow": "freight-check-deadlines",
+      "cron": "15 8 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "property-tax",
+      "flow": "property-tax-refresh-roll",
+      "cron": "0 4 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "recall-checker",
+      "flow": "recall-nightly",
+      "cron": "30 2 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "warranty",
+      "flow": "hourly-intake",
+      "cron": "0 * * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "venture": "warranty",
+      "flow": "daily-deadlines",
+      "cron": "0 8 * * *",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "latest_repeat_installs": [
+    {
+      "flows": 31,
+      "unchanged": 31,
+      "saved": 0
+    },
+    {
+      "flows": 31,
+      "unchanged": 31,
+      "saved": 0
+    }
+  ]
+}

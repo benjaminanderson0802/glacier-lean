@@ -1,0 +1,118 @@
+{
+  "slug": "osha-filing",
+  "name": "osha filing preparation",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare customer-reviewed Form 300A drafts for eligible establishments, with the executive certifying and submitting through their own OSHA ITA account.",
+    "customer_output_vocabulary": [
+      "match",
+      "no match found in [sources] as of [date]",
+      "uncertain — please check"
+    ],
+    "government_submission": "Customer reviews all figures, signs and dates the certification, and submits through their own OSHA ITA account. Glacier never certifies or submits.",
+    "mailing": "Render-only postcard proofs and distinct landing pages. No real postcard is sent by this venture build.",
+    "billing": "$49–199 per establishment per year; customer checkout remains disabled until an owner configures Stripe test mode."
+  },
+  "blocks": [
+    "ventures.blocks.feeds",
+    "ventures.blocks.mail",
+    "ventures.blocks.rules",
+    "ventures.blocks.filer",
+    "ventures.blocks.deadlines",
+    "ventures.blocks.customer",
+    "ventures.blocks.connectors.jobber"
+  ],
+  "block_functions": [
+    "feeds.sync('osha_ita') / feeds.query('osha_ita')",
+    "mail.postcard / mail.landing_pages (render-only; test mode required for any test send)",
+    "rules.check (OSHA 300A structural fields) + deterministic totals and hours checks",
+    "filer.prepare through a local-mock-only wrapper; no call to filer.submit",
+    "deadlines.add / deadlines.due with jan2-mar2",
+    "JobberClient.get_jobs (read-only)"
+  ],
+  "flows": [
+    "january-outreach",
+    "prepare-300a",
+    "osha-daily-deadlines",
+    "jobber-channel"
+  ],
+  "schedules": [
+    {
+      "flow": "january-outreach",
+      "cron": "0 10 2 1 *",
+      "purpose": "Refresh OSHA's public ITA submission file and prepare owner-reviewed January postcard proofs.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "osha-daily-deadlines",
+      "cron": "0 9 * * *",
+      "purpose": "Check Jan 2–Mar 2 filing dates and Feb 1–Apr 30 workplace posting dates.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "jobber_client_id",
+    "jobber_client_secret",
+    "jobber_access_token",
+    "jobber_refresh_token"
+  ],
+  "your_steps": [
+    {
+      "id": "jobber-connection",
+      "title": "Connect Jobber and review the first postcard",
+      "when": "Before the Jobber channel is used",
+      "detail": "Set up a Jobber developer app and test account, then save its values in Glacier Settings → Secrets and run the shared read-only connector check. Review the first postcard design, recipient source, and landing page before any launch. This venture does not create accounts, send messages, or change Jobber records.",
+      "links": [
+        "https://developer.getjobber.com/"
+      ],
+      "secrets": [
+        {
+          "name": "jobber_client_id",
+          "label": "Jobber app ID"
+        },
+        {
+          "name": "jobber_client_secret",
+          "label": "Jobber app secret"
+        },
+        {
+          "name": "jobber_access_token",
+          "label": "Jobber access token"
+        },
+        {
+          "name": "jobber_refresh_token",
+          "label": "Jobber refresh token"
+        }
+      ]
+    },
+    {
+      "id": "first-five-reviews",
+      "title": "Review the first five prepared filings",
+      "when": "Before the first five customer filings",
+      "detail": "Review the prepared totals and industry-plausibility checks for the first five packets. This is preparation review only; the customer executive certifies and submits each filing.",
+      "links": [
+        "https://www.osha.gov/recordkeeping/forms"
+      ]
+    },
+    {
+      "id": "customer-certifies-submits",
+      "title": "Review, sign, post, and submit your Form 300A",
+      "when": "After the draft is prepared",
+      "detail": "Compare every field with your OSHA 300 Log and hours/headcount records. Your executive signs and dates the completed form, posts it February 1–April 30, and submits the required data in your OSHA ITA account by March 2. Glacier only prepares a review draft.",
+      "links": [
+        "https://www.osha.gov/recordkeeping/forms",
+        "https://www.osha.gov/injuryreporting/"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "OSHA public file is synchronized and its actual row count/canary are recorded.",
+    "The OSHA 300A arithmetic checks pass; missing data remains uncertain.",
+    "First postcard design and recipient are reviewed; no live outreach is enabled.",
+    "Owner reviews the first five prepared filing packets.",
+    "Owner reviews and submits the Jobber marketplace listing.",
+    "The customer, not Glacier, certifies and submits all government filings."
+  ],
+  "dry_run_env_id": "prepare-300a"
+}

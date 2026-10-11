@@ -17,3 +17,7 @@ Every change to NORTHSTAR.yaml other than checkpoint `status`/`evidence` goes he
 ## 2026-10-08 - D4 API engines
 
 Owner approved Ask/Build supporting OpenAI-compatible and Anthropic APIs alongside the default subscription CLI and local models. Paid use happens only after the owner enables an API engine with their own key and sets a monthly cap; Glacier enforces the cap. Improves P-PORTABLE (more engines).
+
+
+## 2026-10-10 - PH12 Ventures on Glacier (owner-approved)
+Owner instruction (chat, 2026-10-10): build the ventures in the owner's Venture Build Spec as Glacier automations tonight, using Codex workers in waves, changing Glacier as needed and auditing for coherence. Added phase PH12 with one checkpoint per platform card, shared block and in-scope venture. Card mapping: P1-P3 -> PH12.1-12.3, B1-B5 -> PH12.4-12.8, V-* -> PH12.9-12.20, I* -> PH12.22.

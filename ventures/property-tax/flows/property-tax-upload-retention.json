@@ -1,0 +1,139 @@
+{
+  "id": "property-tax-upload-retention",
+  "name": "Review old customer uploads for deletion",
+  "goal": "List customer uploads from cases closed at least 30 days ago, excluding cases the customer asked us to keep. Delete only after an owner reviews the exact plan and approves it.",
+  "nodes": [
+    {
+      "id": "plan_cleanup",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/property-tax/scripts/property_tax.py retention-plan --closed-cases \"$GLACIER_HOME/ventures/property-tax/closed-cases.json\" --output \"$GLACIER_HOME/ventures/property-tax/retention-plan.json\"",
+        "timeout": "30",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "plan_ready",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "approve_cleanup",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review the exact paths and closed dates in $GLACIER_HOME/ventures/property-tax/retention-plan.json. Approving authorizes deletion of only those eligible uploads under the property-tax incoming folder. Reject to keep them and update the customer retention choice."
+      },
+      "position": {
+        "x": 600,
+        "y": -120
+      }
+    },
+    {
+      "id": "delete_approved_uploads",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/property-tax/scripts/property_tax.py execute-cleanup --plan \"$GLACIER_HOME/ventures/property-tax/retention-plan.json\" --approval-id \"{run}\"",
+        "timeout": "30",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 900,
+        "y": -220
+      }
+    },
+    {
+      "id": "cleanup_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/property-tax/reviews/retention-{run}.md",
+        "template": "The reviewed retention plan was executed after approval. Check the command output for the exact approval ID and deleted paths.\n\n{summary}"
+      },
+      "position": {
+        "x": 1200,
+        "y": -220
+      }
+    },
+    {
+      "id": "cleanup_declined",
+      "type": "note",
+      "config": {
+        "path": "ventures/property-tax/reviews/retention-declined-{run}.md",
+        "template": "The retention plan was declined. No customer upload was deleted.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    },
+    {
+      "id": "plan_failed",
+      "type": "note",
+      "config": {
+        "path": "ventures/property-tax/reviews/retention-plan-failed-{run}.md",
+        "template": "The retention plan could not be created. No customer upload was deleted.\n\n{summary}"
+      },
+      "position": {
+        "x": 600,
+        "y": 200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "plan_cleanup",
+      "target": "plan_ready",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "plan_ready",
+      "target": "approve_cleanup",
+      "label": "yes"
+    },
+    {
+      "id": "e3",
+      "source": "approve_cleanup",
+      "target": "delete_approved_uploads",
+      "label": "yes"
+    },
+    {
+      "id": "e4",
+      "source": "delete_approved_uploads",
+      "target": "cleanup_note",
+      "label": ""
+    },
+    {
+      "id": "e5",
+      "source": "approve_cleanup",
+      "target": "cleanup_declined",
+      "label": "no"
+    },
+    {
+      "id": "e6",
+      "source": "plan_ready",
+      "target": "plan_failed",
+      "label": "no"
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && \"${GLACIER_PYTHON:-$HOME/w/glacier-lean/.venv/bin/python}\" -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'retention-plan.json'; d=json.loads(p.read_text()); assert d['deletes_files'] is False\"",
+      "required": true
+    }
+  ],
+  "max_steps": 8
+}

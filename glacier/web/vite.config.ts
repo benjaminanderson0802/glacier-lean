@@ -6,6 +6,7 @@ import { defineConfig, type Plugin, type ProxyOptions } from 'vite'
 
 // Backend (FastAPI) runs on :8000; override with GLACIER_API for the mock server.
 const target = process.env.GLACIER_API ?? 'http://localhost:8000'
+const engineOrigin = new URL(target).origin
 
 // The engine requires its per-install token. In the browser dev setup the proxy adds it, read from GLACIER_TOKEN
 // or <GLACIER_HOME or ~/.glacier>/.engine-token. The mock server ignores it.
@@ -17,9 +18,16 @@ function engineToken(): string {
 const api: ProxyOptions = {
   target, changeOrigin: true, ws: true,
   configure: p => {
-    const add = (req: { setHeader: (k: string, v: string) => void }) => { const t = engineToken(); if (t) req.setHeader('Authorization', `Bearer ${t}`) }
-    p.on('proxyReq', add)
-    p.on('proxyReqWs', add)
+    const configureRequest = (req: { setHeader: (k: string, v: string) => void }) => {
+      const token = engineToken()
+      if (token) req.setHeader('Authorization', `Bearer ${token}`)
+      // `changeOrigin` updates Host, but http-proxy otherwise preserves the
+      // browser's Vite Origin. Present the proxied request as same-origin to
+      // the engine; the token itself stays in the proxy and out of browser JS.
+      req.setHeader('Origin', engineOrigin)
+    }
+    p.on('proxyReq', configureRequest)
+    p.on('proxyReqWs', configureRequest)
   },
 }
 const proxy = { '/api': api }

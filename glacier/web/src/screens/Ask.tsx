@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { ago, api, applyProposal, askSettingsApi, chat, conversationsApi, type AskSettings, type ChatProposal, type ConversationItem, type ProposalCheck } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
-import { Icon, Logo } from '../ui/Pixel.tsx'
+import { Icon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { setDraft } from '../draft.ts'
 import type { Environment } from '../api.ts'
 import { t } from '../i18n/index.ts'
 import { DeleteAction, DeleteUndo, type UndoAction } from '../ui/DeleteAction.tsx'
+import { UiChangeCard, type UiChangeResult } from '../ui/UiChangeCard.tsx'
 
-type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected'; error?: boolean; run?: { id: string; env: string; status: string } }
+type Msg = { who: 'you' | 'glacier'; text: string; at: Date; proposal?: ChatProposal; state?: 'open' | 'approved' | 'rejected' | 'applying' | 'discarded'; uiResult?: UiChangeResult; proposalError?: string; error?: boolean; run?: { id: string; env: string; status: string } }
 
 // Conversation lives for the app session (module scope), so switching tabs does not lose it.
 let saved: { conv: string | null; msgs: Msg[]; title: string } = { conv: null, msgs: [], title: '' }
@@ -68,10 +69,11 @@ export function AskScreen() {
     catch (e) { setErr(String(e)) }
   }
 
-  const send = async () => {
-    const m = text.trim()
+  const send = async (override?: string) => {
+    const m = (override ?? text).trim()
     if (!m || busy) return
-    setText(''); setBusy(true)
+    if (override === undefined) setText('')
+    setBusy(true)
     const id = conv ?? crypto.randomUUID()
     setConv(id)
     if (!title) setTitle(m.replace(/\s+/g, ' ').slice(0, 60))
@@ -82,7 +84,7 @@ export function AskScreen() {
         if (ev.type === 'text') patch(g => ({ ...g, text: g.text + ev.delta }))
         else if (ev.type === 'proposal') patch(g => ({ ...g, proposal: ev.proposal, state: 'open' }))
         else if (ev.type === 'error') patch(g => ({ ...g, text: ev.message, error: true }))
-      })
+      }, { screen: 'ask', focus: view })
     } catch (e) {
       patch(g => ({ ...g, text: t('ask.assistantError', { error: String(e) }), error: true }))
     } finally { setBusy(false) }
@@ -116,6 +118,27 @@ export function AskScreen() {
     }
   }
 
+  const decideUiChange = async (i: number, approve: boolean) => {
+    const proposal = msgs[i].proposal!
+    setMsgs(current => current.map((message, index) => index === i ? { ...message, state: approve ? 'applying' : 'discarded', proposalError: undefined } : message))
+    try {
+      const result = await applyProposal(proposal.id, approve) as unknown as UiChangeResult & { discarded?: boolean }
+      setMsgs(current => current.map((message, index) => index === i ? {
+        ...message,
+        state: approve ? 'approved' : 'discarded',
+        uiResult: approve ? result : undefined,
+      } : message))
+    } catch (error) {
+      setMsgs(current => current.map((message, index) => index === i ? { ...message, state: 'open', proposalError: String(error) } : message))
+    }
+  }
+
+  const refineUiChange = (i: number, feedback: string) => {
+    const proposal = msgs[i].proposal!
+    setMsgs(current => current.map((message, index) => index === i ? { ...message, state: 'open' } : message))
+    void send(`Please refine this UI change proposal (${proposal.id}): ${feedback}`)
+  }
+
   const edit = async (i: number) => {
     const p = msgs[i].proposal!
     const flow = (p.flow ?? {}) as Environment & Record<string, unknown>
@@ -129,9 +152,10 @@ export function AskScreen() {
   return (
     <>
       <PageHead title={t('ask.title')} side={
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 'calc(3 * var(--px))', alignItems: 'center', flexWrap: 'wrap' }}>
         <label className="g-muted" htmlFor="ask-engine">{t('ask.engine')}</label>
-        <select id="ask-engine" className="g-input" value={engineSettings?.active_engine ?? engineSettings?.engine ?? 'codex'} onChange={e => switchEngine(e.target.value)} data-testid="ask-engine">
+        <select id="ask-engine" className="g-input" style={{ minWidth: 'calc(48 * var(--px))', color: 'var(--l-field-ink)' }} value={engineSettings?.active_engine ?? engineSettings?.engine ?? 'codex'} onChange={e => switchEngine(e.target.value)} data-testid="ask-engine">
+          {!(engineSettings?.engines ?? []).some(x => x.available) && <option value="codex">{t('ask.engineCodex')}</option>}
           {(engineSettings?.engines ?? []).filter(x => x.available).map(x => <option key={x.id} value={x.id}>{t(`ask.engine${x.id[0].toUpperCase()}${x.id.slice(1)}`)}</option>)}
         </select>
         {engineSettings && engineSettings.engine !== engineSettings.active_engine && <span className="g-muted" data-testid="ask-engine-fallback">{engineSettings.active_engine ? t('ask.engineFallback', { engine: t(`ask.engine${engineSettings.active_engine[0].toUpperCase()}${engineSettings.active_engine.slice(1)}`) }) : t('ask.noEngineReady')} {t(`ask.engineUnavailable.${engineSettings.fallback_reason_code ?? 'missing'}`)}</span>}
@@ -143,9 +167,9 @@ export function AskScreen() {
       {err && <div className="g-error">{err}</div>}
       <DeleteUndo action={deleteUndo} onDone={() => setDeleteUndo(null)} onError={e => setErr(String(e))} />
       {view === 'past' ? (
-        <Panel title={t('ask.pastChats')} aside={<input className="g-input" style={{ width: 220 }} placeholder={t('ask.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
+        <Panel title={t('ask.pastChats')} aside={<input className="g-input" style={{ width: 'calc(88 * var(--px))' }} placeholder={t('ask.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
           <div className="g-rows">
-            {(past ?? []).map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ flex: 1 }}><Row icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} /></div><DeleteAction label={t('ask.deleteConversation')} impact={t('delete.conversationImpact')} testid={`conversation-delete-${c.id}`}
+            {(past ?? []).map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'calc(2 * var(--px))' }}><div style={{ flex: 1 }}><Row icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} /></div><DeleteAction label={t('ask.deleteConversation')} impact={t('delete.conversationImpact')} testid={`conversation-delete-${c.id}`}
               onDelete={async () => { const result = await conversationsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await conversationsApi.undoDelete(c.id, result.commit); setPast(await conversationsApi.list(q)) } } }}
               onDeleted={action => { setDeleteUndo(action ?? null); setPast(current => current?.filter(item => item.id !== c.id) ?? null); if (conv === c.id) { saved = { conv: null, msgs: [], title: '' }; setConv(null); setMsgs([]); setTitle('') } }}
               onError={e => setErr(String(e))} /></div>)}
@@ -153,15 +177,15 @@ export function AskScreen() {
           </div>
         </Panel>
       ) : (
-      <Panel className="g-chat" testid="chat">
+        <Panel className="g-chat" testid="chat" style={{ background: 'none', border: 0, padding: 0 }}>
         {conv && (
-          <div className="g-chat-title" data-testid="chat-title">
+          <div className="g-chat-title" data-testid="chat-title" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'calc(3 * var(--px))', minWidth: 0 }}>
             {renaming === null ? (
-              <><span className="g-lead">{title || t('ask.thisChat')}</span>
+              <><span className="g-lead" style={{ flex: '1 1 calc(44 * var(--px))', minWidth: 0, overflowWrap: 'anywhere' }}>{title || t('ask.thisChat')}</span>
                 <button className="g-link" onClick={() => setRenaming(title)} data-testid="chat-rename">{t('ask.rename')}</button>
                 <button className="g-link" onClick={fresh} data-testid="chat-new">{t('ask.newChat')}</button></>
             ) : (
-              <form onSubmit={e => { e.preventDefault(); rename() }} style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
+              <form onSubmit={e => { e.preventDefault(); rename() }} style={{ display: 'flex', gap: 'calc(3 * var(--px))', alignItems: 'center', flex: 1 }}>
                 <input className="g-input" style={{ flex: 1 }} value={renaming} maxLength={80} onChange={e => setRenaming(e.target.value)} data-testid="chat-rename-input" autoFocus />
                 <Btn primary type="submit" disabled={!renaming.trim()} data-testid="chat-rename-save">{t('ask.save')}</Btn>
                 <Btn onClick={() => setRenaming(null)}>{t('ask.cancel')}</Btn>
@@ -169,16 +193,26 @@ export function AskScreen() {
             )}
           </div>
         )}
-        <div className="g-chat-log" data-testid="chat-log">
+        <div className="g-chat-log" data-testid="chat-log" style={{ display: 'flex', flex: 1, minHeight: 0, flexDirection: 'column', gap: 'calc(4 * var(--px))', overflow: 'auto', padding: 'calc(2 * var(--px)) 0' }}>
           {msgs.length === 0 && <div className="g-empty">{t('ask.empty')}</div>}
           {msgs.map((m, i) => (
-            <div key={i} className={`g-msg ${m.who}`} data-testid={`msg-${i}`}>
-              <div className="g-msg-av">{m.who === 'glacier' ? <Logo px={1} /> : <span className="g-you">{t('ask.you')}</span>}</div>
+            <div key={i} className={`g-msg ${m.who}`} data-testid={`msg-${i}`} style={{ alignSelf: m.who === 'you' ? 'flex-end' : 'flex-start', width: 'fit-content', maxWidth: '88%', padding: 'calc(3 * var(--px)) calc(5 * var(--px))', border: '1px solid var(--l-edge)', borderRadius: 'var(--l-radius)', background: 'var(--l-glass)', color: 'var(--g-white)', textShadow: 'var(--l-text-shadow)', overflowWrap: 'anywhere' }}>
               <div className="g-msg-body">
-                <div className="g-msg-head"><span className="g-lead">{m.who === 'you' ? t('ask.you') : t('pixel.glacier')}</span><span className="g-muted">{time(m.at)}</span></div>
+                <div className="g-msg-head" style={{ display: 'flex', justifyContent: 'space-between', gap: 'calc(4 * var(--px))' }}><span className="g-lead">{m.who === 'you' ? t('ask.you') : t('pixel.glacier')}</span><span className="g-muted">{time(m.at)}</span></div>
                 <div className={m.error ? 'g-error' : ''}>{m.text || (busy && i === msgs.length - 1 ? '…' : '')}</div>
-                {m.proposal && (
-                  <div className="g-proposal" data-testid="proposal">
+                {m.proposal?.kind === 'ui_change' && (
+                  <UiChangeCard
+                    proposal={m.proposal}
+                    state={m.state === 'applying' || m.state === 'approved' || m.state === 'discarded' || m.state === 'rejected' ? m.state : 'open'}
+                    result={m.uiResult}
+                    error={m.proposalError}
+                    onApprove={() => decideUiChange(i, true)}
+                    onDiscard={() => decideUiChange(i, false)}
+                    onRefine={feedback => refineUiChange(i, feedback)}
+                  />
+                )}
+                {m.proposal && m.proposal.kind !== 'ui_change' && (
+                  <div className="g-proposal" data-testid="proposal" style={{ marginTop: 'calc(3 * var(--px))', background: 'var(--l-glass-deep)', borderColor: 'var(--l-edge)' }}>
                     <div className="g-proposal-head"><Icon name="automations" /><span className="g-lead">{m.proposal.flow?.name ?? m.proposal.flow?.id ?? t('ask.newAutomation')}</span>
                       <span className={`g-chip ${m.state === 'approved' ? 'ok' : m.state === 'rejected' ? 'bad' : ''}`}>{m.state === 'approved' ? t('ask.approved') : m.state === 'rejected' ? t('ask.rejected') : t('ask.proposed')}</span></div>
                     {m.proposal.explanation && <div className="g-detail">{m.proposal.explanation}</div>}
@@ -216,9 +250,9 @@ export function AskScreen() {
           ))}
           <div ref={end} />
         </div>
-        <form className="g-composer" onSubmit={e => { e.preventDefault(); send() }}>
+        <form className="g-composer" style={{ display: 'flex', gap: 'calc(3 * var(--px))', alignItems: 'center' }} onSubmit={e => { e.preventDefault(); send() }}>
           <input className="g-input" placeholder={t('ask.input')} value={text} onChange={e => setText(e.target.value)} data-testid="chat-input" disabled={busy} />
-          <button className="g-btn primary g-send" type="submit" aria-label={t('ask.send')} disabled={busy || !text.trim()} data-testid="chat-send"><Icon name="send" /></button>
+          <button className="g-btn primary g-send" type="submit" aria-label={t('ask.send')} disabled={busy || !text.trim()} data-testid="chat-send">{t('ask.send')}</button>
         </form>
       </Panel>
       )}

@@ -1,0 +1,93 @@
+{
+  "id": "street-postcard-proof",
+  "name": "Street postcard proof and Lob test",
+  "nodes": [
+    {
+      "id": "november",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 1 11 *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "proof",
+      "type": "command",
+      "config": {
+        "cmd": "python3 ventures/coop-postcards/scripts/check_route_card.py",
+        "cwd": ".",
+        "timeout": "60",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "mail_approval",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review the full 11.5 x 6.25 inch postcard proof, recipient list, sender, address checks, suppression result, selected route, piece weight, print quantity, and budget in the preceding run result. Approve this test-mode Lob postcard check? This flow creates a local proof only and does not order or send mail."
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "lob_test",
+      "type": "command",
+      "config": {
+        "cmd": "python3 ventures/coop-postcards/scripts/send_postcard.py --approval {run}",
+        "cwd": ".",
+        "timeout": "120",
+        "retries": "0"
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    },
+    {
+      "id": "owner_input_ready",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: save the customer-approved route card at $GLACIER_HOME/ventures/coop-postcards/intake/route-card.json. Include campaign_id; town, route_id, and November fill_by date; from.name; to.address_line1; mailpiece length/height/thickness in inches and weight in ounces; each buyer category and written_approval; and street_jobs with street addresses only (no homeowner names). Return and approve after the file is ready. Complete Lob test setup in Glacier Settings → Secrets only for the optional test-mode check. This approval does not send mail."
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "november",
+      "target": "proof"
+    },
+    {
+      "id": "e2",
+      "source": "proof",
+      "target": "mail_approval"
+    },
+    {
+      "id": "e3",
+      "source": "mail_approval",
+      "target": "lob_test",
+      "label": "yes"
+    },
+    {
+      "id": "i5-owner_input_ready-proof",
+      "source": "owner_input_ready",
+      "target": "proof"
+    }
+  ],
+  "checks": []
+}

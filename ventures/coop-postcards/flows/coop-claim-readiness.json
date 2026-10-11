@@ -1,0 +1,77 @@
+{
+  "id": "coop-claim-readiness",
+  "name": "Co-op claim readiness",
+  "nodes": [
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "readiness",
+      "type": "command",
+      "config": {
+        "cmd": "python3 ventures/coop-postcards/scripts/check_claim_intake.py",
+        "cwd": ".",
+        "timeout": "60",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "claim_approval",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review the complete dealer claim checklist and proposed fields in the preceding run result. Approving authorizes only this dealer claim under the dealer's account. Do not approve a government filing; the customer must sign and submit those."
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "prepare_and_submit",
+      "type": "command",
+      "config": {
+        "cmd": "python3 ventures/coop-postcards/scripts/run_approved_claim.py --approval {run}",
+        "cwd": ".",
+        "timeout": "120",
+        "retries": "0"
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "readiness"
+    },
+    {
+      "id": "e2",
+      "source": "readiness",
+      "target": "claim_approval"
+    },
+    {
+      "id": "e3",
+      "source": "claim_approval",
+      "target": "prepare_and_submit",
+      "label": "yes"
+    }
+  ],
+  "checks": []
+}

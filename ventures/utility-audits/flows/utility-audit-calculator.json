@@ -1,0 +1,118 @@
+{
+  "id": "utility-audit-calculator",
+  "name": "Estimate an Indiana restaurant electricity exemption",
+  "goal": "Check customer-confirmed statewide Indiana restaurant sales totals, estimate the selected meter's exemption, optionally compare customer-entered published flat rates, and prepare unsigned application fields for review. No filing or utility contact occurs.",
+  "nodes": [
+    {
+      "id": "confirm_state",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Confirm Indiana as the launch state. Indiana is a recommended draft choice only. Continue only after the owner confirms Indiana for this venture. Before approving, save customer-confirmed utility bill and seller/meter records at $GLACIER_HOME/ventures/utility-audits/incoming/audit.json. Include service address, utility, meter IDs, seller-level costs, and usage periods. Use a checked-in synthetic example only for a dry-run. If the file is missing, keep this step waiting and return after providing it."
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "calculate",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/utility-audits/scripts/utility_audit.py calculate --input \"$GLACIER_HOME/ventures/utility-audits/incoming/audit.json\" --output \"$GLACIER_HOME/ventures/utility-audits/drafts/audit-{run}.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "draft_ready",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "review_draft",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review the exact local estimate and ST-200R field draft in the output file. Confirm customer-entered receipts, electricity tax, meter details, and every prefilled field. If a rate scenario is included, check its entered kWh, rates, fixed charges, and links; links and terms were not validated, other tariff charges are excluded, and plan availability remains uncertain until the customer confirms with the utility. Nothing will be signed, sent, or submitted. If the draft is for a customer, they must review, complete missing fields, sign, attach bills, and submit it themselves."
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    },
+    {
+      "id": "approved_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/utility-audits/reviews/audit-{run}.md",
+        "template": "Owner reviewed the local utility audit draft for run {run}. This note is not customer authorization or a filed application.\n\n{summary}"
+      },
+      "position": {
+        "x": 1200,
+        "y": -120
+      }
+    },
+    {
+      "id": "declined_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/utility-audits/reviews/audit-declined-{run}.md",
+        "template": "Owner did not approve the local draft review for run {run}. No filing or external contact occurred.\n\n{summary}"
+      },
+      "position": {
+        "x": 1200,
+        "y": 120
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "confirm_state",
+      "target": "calculate",
+      "label": "yes"
+    },
+    {
+      "id": "e2",
+      "source": "calculate",
+      "target": "draft_ready",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "draft_ready",
+      "target": "review_draft",
+      "label": "yes"
+    },
+    {
+      "id": "e4",
+      "source": "review_draft",
+      "target": "approved_note",
+      "label": "yes"
+    },
+    {
+      "id": "e5",
+      "source": "review_draft",
+      "target": "declined_note",
+      "label": "no"
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python ventures/utility-audits/scripts/utility_audit.py calculate --input \"$GLACIER_HOME/ventures/utility-audits/incoming/audit.json\" --output \"$GLACIER_HOME/ventures/utility-audits/drafts/acceptance.json\" && python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'utility-audits'/'drafts'/'acceptance.json'; d=json.loads(p.read_text()); assert d['result'] == 'match' and d['state_form_draft']['signed'] is False and d['state_form_draft']['submitted'] is False\"",
+      "required": true
+    }
+  ],
+  "max_steps": 5
+}

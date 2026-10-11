@@ -61,4 +61,4 @@ def load_routes(app) -> None:
 
 
 def is_worker(kind: str) -> bool:
-    return kind in ("command", "codex", "flow") or bool(NODES.get(kind, {}).get("catalog", {}).get("worker"))
+    return kind in ("command", "codex", "flow", "for_each") or bool(NODES.get(kind, {}).get("catalog", {}).get("worker"))

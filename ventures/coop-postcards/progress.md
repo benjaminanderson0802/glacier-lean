@@ -1,0 +1,3 @@
+# Progress — Co-op claims and street postcards
+
+PH12.13's integrated-rules test now asserts that valid evidence passes and missing required preapproval fails; the assertion was already corrected in the integrated tree. This card added persisted rejected-claim outcome tracking: a first rejection permits one corrected resubmit, and a second rejection drops the claim. The focused suite passes 9 tests; both venture flows validate in installer dry-run. As directed by the card, shared reader/deadline wiring and EDDM size/weight validation remain with the integrator. No real brand portal, dealer records, paid mailing, or government filing was used. PH12.13 remains unverified.

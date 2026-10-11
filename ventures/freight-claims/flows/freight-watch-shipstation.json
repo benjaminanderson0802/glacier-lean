@@ -1,0 +1,68 @@
+{
+  "id": "freight-watch-shipstation",
+  "name": "Review shipment exceptions",
+  "goal": "Read ShipStation when its API is available; otherwise use the newest shipments CSV in incoming/. Save possible freight exceptions for the shipper to confirm and make no external changes.",
+  "nodes": [
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "0 8 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": "read_shipments",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/freight-claims/scripts/claims.py watch",
+        "cwd": "{repo}",
+        "timeout": 180,
+        "retries": 0
+      },
+      "position": {
+        "x": 400,
+        "y": 100
+      }
+    },
+    {
+      "id": "candidate_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/freight-claims/reports/shipstation-{run}.md",
+        "template": "Shipment exception review. The report names whether it used ShipStation or a CSV export. Possible matches require customer confirmation; no claim was filed and no carrier was contacted.\n\n{summary}"
+      },
+      "position": {
+        "x": 700,
+        "y": 100
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "read_shipments",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "read_shipments",
+      "target": "candidate_note",
+      "label": ""
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/shipstation-candidates.json'; d=json.loads(p.read_text()); assert d.get('result') in ('match','uncertain — please check') or d.get('result','').startswith('no match found in ShipStation as of '); assert d.get('side_effects',[]) == [] and all(x.get('customer_confirmation_required') for x in d.get('candidates',[]))\"",
+      "required": true
+    }
+  ],
+  "max_steps": 3
+}

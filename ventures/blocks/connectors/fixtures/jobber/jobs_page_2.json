@@ -1,0 +1,1 @@
+{"data":{"jobs":{"nodes":[{"id":"job-2","jobNumber":102,"title":"Furnace service"}],"pageInfo":{"hasNextPage":false,"endCursor":"cursor-2"}}},"extensions":{"cost":{"requestedQueryCost":10,"actualQueryCost":4,"throttleStatus":{"maximumAvailable":10000,"currentlyAvailable":9992,"restoreRate":500}}}}

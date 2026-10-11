@@ -1,0 +1,68 @@
+{
+  "id": "freight-check-deadlines",
+  "name": "Check freight claim deadlines",
+  "goal": "Collect one-time reminders for carrier acknowledgment at day 30 and resolution at day 120 after the carrier receipt date is confirmed.",
+  "nodes": [
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "15 8 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": "due_items",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/freight-claims/scripts/claims.py remind",
+        "cwd": "{repo}",
+        "timeout": 30,
+        "retries": 0
+      },
+      "position": {
+        "x": 400,
+        "y": 100
+      }
+    },
+    {
+      "id": "deadline_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/freight-claims/reports/deadlines-{run}.md",
+        "template": "Freight claim deadlines due today. These are tracking reminders, not a legal determination.\n\n{summary}"
+      },
+      "position": {
+        "x": 700,
+        "y": 100
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "due_items",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "due_items",
+      "target": "deadline_note",
+      "label": ""
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/deadlines.json'; d=json.loads(p.read_text()); assert d.get('checked_on') and d.get('side_effects') == [] and all(x.get('rule') == '30d|120d' for x in d.get('reminders',[]))\"",
+      "required": true
+    }
+  ],
+  "max_steps": 3
+}

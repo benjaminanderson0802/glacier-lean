@@ -1,0 +1,14 @@
+{
+  "meta": {"last_updated": "2026-10-02"},
+  "results": [
+    {
+      "recall_number": "D-123-2026",
+      "recall_initiation_date": "20260921",
+      "product_description": "Example pain relief tablets",
+      "reason_for_recall": "Failed dissolution specifications",
+      "classification": "Class II",
+      "recalling_firm": "Example Pharma",
+      "openfda": {"upc": ["009876543210"], "brand_name": ["Example Relief"]}
+    }
+  ]
+}

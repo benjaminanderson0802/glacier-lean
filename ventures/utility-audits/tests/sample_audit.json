@@ -1,0 +1,156 @@
+{
+  "state": "IN",
+  "customer_confirmed_receipts": true,
+  "single_electric_meter": true,
+  "business_name": "Sample Kitchen",
+  "utility_account_name": "Sample Kitchen LLC",
+  "utility_account_number": "SAMPLE-12345",
+  "sales_months": [
+    {
+      "period": "2026-01",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-02",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-03",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-04",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-05",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-06",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-07",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-08",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-09",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-10",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-11",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    },
+    {
+      "period": "2026-12",
+      "prepared_food_line1": 2000,
+      "prepared_food_line2": 3000,
+      "prepared_food_line3": 3000,
+      "total_receipts": 10000
+    }
+  ],
+  "electric_bills": [
+    {
+      "period": "2026-01",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-02",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-03",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-04",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-05",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-06",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-07",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-08",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-09",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-10",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-11",
+      "electricity_sales_tax": 40.0
+    },
+    {
+      "period": "2026-12",
+      "electricity_sales_tax": 40.0
+    }
+  ],
+  "statewide_sales_test": {
+    "tax_year": "2025",
+    "all_indiana_establishments_included": true,
+    "customer_confirmed": true,
+    "prepared_food_sales": 80000,
+    "total_food_sales": 100000
+  },
+  "rate_comparison": {
+    "annual_kwh": 60000,
+    "current_plan": {"name": "Sample current plan", "rate_per_kwh": 0.14, "monthly_fixed_charge": 40, "source_url": "https://utility.example/current"},
+    "alternative_plan": {"name": "Sample alternate plan", "rate_per_kwh": 0.12, "monthly_fixed_charge": 50, "source_url": "https://utility.example/alternate"}
+  }
+}

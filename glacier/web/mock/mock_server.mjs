@@ -24,6 +24,76 @@ const HTTP_NODE = {
     { key: 'allow_private_network', label: 'This API runs on this computer or my network', default: 'No', options: ['No', 'Yes'], optional: true },
   ], branches: null, worker: true, changing_methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
 }
+const BUSINESS_NODES = [
+  { type: 'json_transform', label: 'Change JSON', description: 'Set fields, filter, merge, split, or remove duplicate items.', fields: [
+    { key: 'operation', label: 'Operation', default: 'set_fields', options: ['set_fields', 'filter', 'merge', 'split', 'dedupe'] },
+    { key: 'fields', label: 'Fields to set (JSON)', placeholder: '{"status":"ready"}', default: '{}', multiline: true },
+    { key: 'field', label: 'Field to check', placeholder: 'status', default: '', optional: true },
+    { key: 'equals', label: 'Matches', placeholder: 'ready', default: '', optional: true },
+    { key: 'data', label: 'Extra data (JSON)', placeholder: '{}', default: '{}', optional: true, multiline: true },
+    { key: 'key', label: 'Unique field', placeholder: 'id', default: '', optional: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null },
+  { type: 'data_table', label: 'Local table', description: 'Save, update, find, and deduplicate rows on this computer.', fields: [
+    { key: 'table', label: 'Table name', placeholder: 'customers', default: 'customers' },
+    { key: 'operation', label: 'Operation', default: 'upsert', options: ['insert', 'upsert', 'query', 'dedupe'] },
+    { key: 'key', label: 'Unique field', placeholder: 'email', default: 'id', optional: true },
+    { key: 'record', label: 'Row (JSON)', placeholder: '{"id":1,"name":"Ada"}', default: '{}', optional: true, multiline: true },
+    { key: 'match', label: 'Find rows (JSON)', placeholder: '{"status":"new"}', default: '{}', optional: true, multiline: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null },
+  { type: 'csv_file', label: 'Read or write CSV', description: "Read or write a CSV file inside this flow's folder.", fields: [
+    { key: 'operation', label: 'Operation', default: 'read', options: ['read', 'write'] },
+    { key: 'path', label: 'CSV file', placeholder: 'contacts.csv', default: 'contacts.csv' },
+    { key: 'data', label: 'Rows to write (JSON)', placeholder: '[{"name":"Ada"}]', default: '[]', optional: true, multiline: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null },
+  { type: 'delay', label: 'Wait', description: 'Pause this flow for a chosen time.', fields: [
+    { key: 'seconds', label: 'Seconds', placeholder: '30', default: '30' },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null, worker: true },
+  { type: 'structured_ai', label: 'Ask AI for JSON', description: 'Ask an owner-configured model route or the signed-in Codex CLI for checked JSON data.', fields: [
+    { key: 'prompt', label: 'What should AI do?', placeholder: 'Classify this item: {prev_output}', default: '', multiline: true },
+    { key: 'schema', label: 'Required JSON shape', placeholder: '{"type":"object","properties":{"ok":{"type":"boolean"}},"required":["ok"]}', default: '{"type":"object"}', multiline: true },
+    { key: 'engine', label: 'AI engine', default: 'configured', options: ['configured', 'codex'] },
+    { key: 'routes', label: 'Model routes', placeholder: 'all available free routes', default: '', optional: true },
+    { key: 'timeout', label: 'Time limit (seconds)', placeholder: '600', default: '600', optional: true },
+    { key: 'retries', label: 'Retries if it fails', placeholder: '0', default: '0', optional: true },
+  ], branches: null, worker: true },
+  { type: 'email_send', label: 'Write or send email', description: 'Save a draft on this computer or send through your SMTP account after approval.', fields: [
+    { key: 'draft_only', label: 'Keep as a draft', default: 'Yes', options: ['Yes', 'No'] },
+    { key: 'host', label: 'SMTP server', placeholder: 'smtp.gmail.com', default: '', optional: true },
+    { key: 'port', label: 'SMTP port', default: '587', optional: true },
+    { key: 'user', label: 'Email account', placeholder: 'you@example.com', default: '', optional: true },
+    { key: 'password', label: 'App password from Settings > Secrets', placeholder: '{secret:EMAIL_APP_PASSWORD}', default: '', optional: true },
+    { key: 'from', label: 'From', placeholder: 'you@example.com', default: '' },
+    { key: 'to', label: 'To', placeholder: 'person@example.com', default: '' },
+    { key: 'subject', label: 'Subject', placeholder: 'Hello {env}', default: '' },
+    { key: 'body', label: 'Message', placeholder: 'Write your message here', default: '', multiline: true },
+    { key: 'timeout', label: 'Time limit in seconds', default: '30', optional: true },
+  ], branches: null, worker: true },
+  { type: 'email_read', label: 'Search email', description: 'Find and read recent messages from your IMAP mailbox without marking them as read.', fields: [
+    { key: 'host', label: 'IMAP server', placeholder: 'imap.gmail.com', default: '' },
+    { key: 'port', label: 'IMAP port', default: '993', optional: true },
+    { key: 'user', label: 'Email account', placeholder: 'you@example.com', default: '' },
+    { key: 'password', label: 'App password from Settings > Secrets', placeholder: '{secret:EMAIL_APP_PASSWORD}', default: '' },
+    { key: 'folder', label: 'Mailbox', placeholder: 'INBOX', default: 'INBOX', optional: true },
+    { key: 'search', label: 'Search', placeholder: 'UNSEEN or FROM name@example.com', default: 'UNSEEN' },
+    { key: 'limit', label: 'Maximum messages', default: '10', optional: true },
+    { key: 'timeout', label: 'Time limit in seconds', default: '30', optional: true },
+    { key: 'retries', label: 'Retries if it fails', default: '0', optional: true },
+  ], branches: null, worker: true },
+  { type: 'email_trigger', label: 'When an email arrives', description: 'Poll an IMAP mailbox over TLS and start once for each new matching message.', fields: [
+    { key: 'host', label: 'IMAP server', placeholder: 'imap.gmail.com', default: '' },
+    { key: 'port', label: 'IMAP port', default: '993', optional: true },
+    { key: 'user', label: 'Email account', placeholder: 'you@example.com', default: '' },
+    { key: 'password', label: 'App password from Settings > Secrets', placeholder: '{secret:EMAIL_APP_PASSWORD}', default: '' },
+    { key: 'folder', label: 'Mailbox', placeholder: 'INBOX', default: 'INBOX', optional: true },
+    { key: 'search', label: 'Only match', placeholder: 'UNSEEN or FROM name@example.com', default: 'UNSEEN' },
+    { key: 'limit', label: 'Maximum messages per check', default: '10', optional: true },
+  ], branches: null, worker: true },
+]
+const NODE_CATALOG = [...CATALOG, ...BUSINESS_NODES]
 
 const PORT = Number(process.argv[2] ?? process.env.MOCK_PORT ?? 0)
 const STEP_MS = Number(process.env.STEP_MS ?? 250)
@@ -42,6 +112,13 @@ const mockClaims = new Map([['c0ffee01', {
   summaryRow() { return { id: this.meta.id, kind: this.meta.kind, summary: this.meta.summary, status: this.meta.status, assigned_to: null, updated: this.meta.updated } },
 }]])
 const mockSecrets = new Set(['SMTP_PASSWORD'])
+let mockApprovalDone = false
+const mockVentures = new Map([['truck-dispatch', {
+  slug: 'truck-dispatch', name: 'Truck dispatch', status: 'setting_up',
+  flows: [{ env_id: 'dispatch', dry_run_env_id: 'dispatch-preview' }], schedule: { cron: '0 8 * * *' },
+  next_run: new Date(Date.now() + 3600_000).toISOString(), today: { runs: 4, completed: 3, failed: 0 },
+  your_steps: [{ id: 'fleet-key', title: 'connect the fleet account', instructions: 'Paste both keys into the fields on this step. Glacier saves them in this computer’s keychain.', link: 'https://fleet.example.test/settings/api', secrets: [{ name: 'FLEET_KEY', label: 'Fleet API key' }, { name: 'FLEET_REGION', label: 'Fleet region key' }], done: false }],
+} ]])
 const mockHygiene = [
   { id: 'h1', kind: 'merge', paths: ['ideas/products.md', 'ideas/products-2.md'], reason: 'These two notes say almost the same thing.', status: 'pending' },
   { id: 'h2', kind: 'archive', paths: ['old/chat-log.md'], reason: 'Not opened or linked for over 90 days.', status: 'pending' },
@@ -65,6 +142,14 @@ const assistantProposals = new Map()
 const mockTeams = new Map()
 const deletedItems = new Map()
 const conversations = new Map()  // id -> { title, messages: [{ who, text, at }] }
+const messageSessionRows = [
+  { id: 'codex:mock-codex-session', source: 'codex', title: 'Review the parser', last_text: 'The parser handles empty input.', last_at: '2026-10-08T12:00:00.000Z', unread: false, can_send: true },
+  { id: 'claude-code:mock-claude-session', source: 'claude', title: 'Plan a refactor', last_text: 'I found two small changes.', last_at: '2026-10-08T11:00:00.000Z', unread: false, can_send: true },
+  { id: 'codex:mock-codex-unavailable', source: 'codex', title: 'Unavailable Codex session', last_text: 'Earlier work.', last_at: '2026-10-08T10:30:00.000Z', unread: false, can_send: false, can_send_reason: 'Codex CLI is not installed' },
+  { id: 'opencode:mock-opencode-session', source: 'opencode', title: 'Local model notes', last_text: 'Read-only mirrored session.', last_at: '2026-10-08T10:00:00.000Z', unread: false, can_send: false },
+  { id: 'gemini:mock-gemini-session', source: 'gemini', title: 'Research notes', last_text: 'Read-only mirrored session.', last_at: '2026-10-08T09:00:00.000Z', unread: false, can_send: false },
+]
+const messageHistory = new Map()
 const deletedConversations = new Map()
 const deletedClaims = new Map()
 const uploadedFiles = new Map()
@@ -89,6 +174,38 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname
     let m
     try {
+    if (p === '/api/ventures' && req.method === 'GET') return send(200, [...mockVentures.values()])
+    if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/(pause|resume)$/)) && req.method === 'POST') {
+      const venture = mockVentures.get(m[1]); if (!venture) return send(404, { detail: 'venture not found' })
+      venture.status = m[2] === 'pause' ? 'paused' : 'running'
+      return send(200, { paused: m[2] === 'pause', flows: venture.flows.map(flow => flow.env_id) })
+    }
+    if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/run$/)) && req.method === 'POST') {
+      const venture = mockVentures.get(m[1]); if (!venture) return send(404, { detail: 'venture not found' })
+      const body = await readBody()
+      if (body?.dry_run === false) return send(400, { detail: 'Venture runs from this screen must use the dry-run flow' })
+      const flow = venture.flows.find(item => item.dry_run_env_id) ?? venture.flows[0]
+      const env_id = flow.dry_run_env_id
+      if (!env_id) return send(409, { detail: 'dry-run flow not configured' })
+      const graph = envs.get(env_id) ?? { id: env_id, name: `${venture.name} dry run`, nodes: [
+        { id: 'preview', type: 'command', config: { cmd: 'echo preview only' }, position: { x: 80, y: 80 } },
+      ], edges: [] }
+      envs.set(env_id, graph)
+      venture.today.runs += 1
+      const run_id = startRun(graph)
+      return send(200, { run_id, env_id, dry_run: true })
+    }
+    if ((m = p.match(/^\/api\/ventures\/([a-z0-9-]+)\/steps\/([A-Za-z0-9_.-]+)\/done$/)) && req.method === 'POST') {
+      const venture = mockVentures.get(m[1]), step = venture?.your_steps.find(item => item.id === m[2])
+      if (!step) return send(404, { detail: 'step not found' })
+      const body = await readBody()
+      if (step.secrets?.length) {
+        if (!step.secrets.every(field => body?.values?.[field.name]?.trim())) return send(400, { detail: 'enter each key first' })
+        step.secrets.forEach(field => mockSecrets.add(field.name))
+      } else if (step.secret_name) { if (!body?.value) return send(400, { detail: 'paste the key first' }); mockSecrets.add(step.secret_name) }
+      step.done = true
+      return send(200, { done: true, secret_name: step.secret_name, secret_names: (step.secrets ?? []).map(field => field.name) })
+    }
     if (p === '/api/teams' && req.method === 'GET') return send(200, [...mockTeams.values()].map(team => ({ team_id: team.team_id, name: team.plan.vision.goal, status: team.status, done: Object.values(team.tasks).filter(t => t.status === 'done').length, tasks: Object.keys(team.tasks).length, passing: Object.values(team.features).filter(f => f.status === 'passing').length, feature_count: team.plan.features.length, needs_owner: Object.values(team.tasks).filter(t => t.status === 'awaiting_approval').length })))
     if (p === '/api/build/vision' && req.method === 'POST') { const body = await readBody(); const path = `visions/${crypto.randomUUID()}.md`; vault.set(path, JSON.stringify(body.vision)); return send(200, { confirmed: true, path, vision: body.vision }) }
     if (p === '/api/build/draft-spec' && req.method === 'POST') { const path = `visions/${crypto.randomUUID()}.md`; return send(200, { path, vision: { goal: 'Help freelancers track project deadlines', requirements: ['The system shall list projects and their deadlines', 'When a deadline changes, the system shall save the updated date'], done: ['A freelancer can add a project and see its deadline'], out_of_scope: ['Accounts and subscriptions'] }, spec: { requirements: ['The system shall list projects and their deadlines', 'When a deadline changes, the system shall save the updated date'], acceptance: ['A saved project appears with its deadline after reload'], out_of_scope: ['Accounts and subscriptions'] } }) }
@@ -234,14 +351,26 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/api/home') {
       const now = Date.now()
       const at = minutes => new Date(now - minutes * 60_000).toISOString()
+      const healthDate = new Date(now).toISOString().slice(0, 10)
+      const ventureSteps = [
+        ...[...mockVentures.values()].flatMap(venture => venture.your_steps.filter(step => !step.done).map(step => ({ kind: 'your_step', title: step.title, detail: step.instructions, instructions: step.instructions, links: [step.link], secret_name: step.secret_name, secrets: step.secrets, at: new Date().toISOString(), ref: { venture_slug: venture.slug, step_id: step.id } }))),
+        ...(!mockApprovalDone ? [{ kind: 'your_step', title: 'Your step: review the dispatch list', detail: 'Your step: review the dispatch list', instructions: 'Approve the route before any driver is assigned.', at: at(1), ref: { run_id: 'run-dispatch-waiting', node_id: 'review', env_id: 'dispatch' } }] : []),
+      ]
+      const healthNotePath = `health/glacier-health-${healthDate}.md`
+      if (!vault.has(healthNotePath)) vault.set(healthNotePath, `# Glacier health — ${healthDate}\n\n- Failed runs in the last day: 1\n- Runs timed out after 24 hours: 0\n- Steps waiting on you: 2\n- Data folder size: 5.0 MB\n`)
       return send(200, {
         local_ai: { online: true, model: 'qwen3:0.6b' },
-        counts: { running: 2, need_you: 4 },
+        health: { date: healthDate, failed_runs: 1, stuck_runs: 0, waiting_for_owner: 2, data_bytes: 5242880, note_path: healthNotePath },
+        next_runs: [{ env_id: 'daily-backup', name: 'Daily backup', next_run: new Date(now + 3600_000).toISOString() }],
+        venture_digest: { date: new Date(now).toISOString().slice(0, 10), ventures: mockVentures.size, runs: [...mockVentures.values()].reduce((sum, venture) => sum + venture.today.runs, 0), completed: [...mockVentures.values()].reduce((sum, venture) => sum + venture.today.completed, 0), failed: [...mockVentures.values()].reduce((sum, venture) => sum + venture.today.failed, 0), waiting_for_you: [...mockVentures.values()].reduce((sum, venture) => sum + venture.your_steps.filter(step => !step.done).length, 0) + (mockApprovalDone ? 0 : 1) },
+        venture_steps: ventureSteps,
+        counts: { running: 2, need_you: 6 + ventureSteps.length },
         needs_you: [
           { kind: 'approval', title: 'approval waiting', detail: 'Weekly report', at: at(2), ref: { run_id: 'run-report', node_id: 'approve', env_id: 'weekly-report' } },
           { kind: 'approval', title: 'approval waiting', detail: 'Inbox triage', at: at(9), ref: { run_id: 'run-inbox', node_id: 'confirm', env_id: 'inbox-triage' } },
           { kind: 'claim', title: 'capability_gap', detail: 'Need a calendar connection for this workflow.', at: at(18), ref: { claim_id: '2026-10-07-calendar-claim-a1b2c3' } },
           { kind: 'failed_run', title: 'run failed', detail: 'Nightly checks', at: at(46), ref: { run_id: 'run-tests', env_id: 'nightly-tests' } },
+          ...ventureSteps,
         ],
         running: [
           { run_id: 'run-backup', env_id: 'daily-backup', name: 'Daily backup', status: 'running', step: 2, steps: 4, started_at: at(3) },
@@ -255,12 +384,27 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/e2e/control-fixtures' && req.method === 'POST') {
       const base = new Date().toISOString()
-      vault.set('projects/market-research.md', '# Market research\n\nA note for control audit.')
-      memoryMeta.set('projects/market-research.md', { title: 'Market research', author: 'owner', run_id: '', created: base, updated: base, tags: [] })
-      memoryHistory.set('projects/market-research.md', [
-        { commit: 'fixture-new', author: 'owner', date: base, message: '[owner] write projects/market-research.md', body: '# Market research\n\nA note for control audit.' },
-        { commit: 'fixture-old', author: 'owner', date: base, message: '[owner] write projects/market-research.md', body: '# Market research\n\nFirst version.' },
-      ])
+      const fixtureNotes = [
+        ['projects/market-research.md', '# Market research\n\nThe strongest rise came from short clips with a useful first day. Views rose 35% and saves rose 20% in the first week.\n\nNext: [[decisions/strong-rise-rule]] and [[projects/sponsor-shortlist]]. #research #video', 'owner'],
+        ['projects/sponsor-shortlist.md', '# Sponsor shortlist\n\nStart with the two partners who asked for family travel and outdoor stories. Send the first sample after the next edit review.\n\nUse the backup plan in [[projects/backup-plan]]. #sponsors #video', 'worker:granite3.3:2b'],
+        ['projects/backup-plan.md', '# Backup plan\n\nKeep the original clips on the local drive. Copy finished exports to the external drive every Friday and verify the folder count before clearing camera cards. #backup', 'owner'],
+        ['decisions/strong-rise-rule.md', '# Strong rise rule\n\nA clip counts as a strong rise when first-day views are at least 35% above the channel average and saves are at least 20% higher. Review again after seven days. #decisions', 'owner'],
+        ['ideas/products.md', '# Product ideas\n\nA compact travel journal is promising: several small shops asked for one, and current options are either bulky or hard to personalize.\n\nCompare it with [[ideas/products-2]]. #ideas #research', 'owner'],
+        ['ideas/products-2.md', '# Travel journal notes\n\nA second take on the compact travel journal. Keep the map spread, removable packing list, and space for a few printed photos. #ideas', 'owner'],
+        ['old/chat-log.md', '# Old chat log\n\nThe first brainstorming session is kept for context. The useful decisions were moved into [[decisions/strong-rise-rule]]. #archive', 'owner'],
+        ['runs/daily-backup.md', '# Daily backup\n\nThe latest backup finished successfully. The weekly copy check found all 18 expected folders. #backup', 'run:daily-backup'],
+      ]
+      for (const [path, body, author] of fixtureNotes) {
+        vault.set(path, body)
+        const title = (body.match(/^#\s+(.+)$/m) ?? [])[1]
+        const tags = [...new Set([...body.matchAll(/(?:^|\s)#([\w-]+)/g)].map(x => x[1]))]
+        memoryMeta.set(path, { title, author, run_id: author.startsWith('run:') ? 'run-backup' : '', created: base, updated: base, tags })
+        const id = path.replace(/[^a-z0-9]/gi, '-')
+        memoryHistory.set(path, [
+          { commit: `fixture-${id}`, author, date: base, message: `[${author}] write ${path}`, body },
+          { commit: `fixture-old-${id}`, author, date: base, message: `[${author}] first saved ${path}`, body: `# ${title}\n\nAn earlier draft.` },
+        ])
+      }
       const definitions = [
         ['run-report', 'weekly-report', 'waiting'], ['run-inbox', 'inbox-triage', 'waiting'],
         ['run-tests', 'nightly-tests', 'failed'], ['run-backup', 'daily-backup', 'running'],
@@ -279,7 +423,95 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') return send(200, { enabled: true, model: 'granite3.3:2b', ...(await readBody()) })
     }
     if ((m = p.match(/^\/api\/build\/interviews\/([^/]+)$/)) && req.method === 'DELETE') return send(200, { deleted: true, undo_id: commitId() })
-    if (req.method === 'GET' && p === '/api/node-types') return send(200, [...CATALOG, HTTP_NODE])
+    if (req.method === 'GET' && p === '/api/node-types') return send(200, [...NODE_CATALOG, HTTP_NODE])
+    if (p === '/api/messages/threads' && req.method === 'GET') {
+      const words = (url.searchParams.get('q') ?? '').toLowerCase().match(/\w+/g) ?? []
+      const rows = [
+        ...[...conversations].map(([id, c]) => {
+          const last = c.messages.at(-1) ?? {}
+          return { id: `glacier:${id}`, source: 'glacier', title: c.title || String(c.messages.find(x => x.who === 'you')?.text ?? 'Untitled conversation').slice(0, 60), last_text: last.text ?? '', last_at: last.at ?? '', unread: false, can_send: true }
+        }),
+        ...messageSessionRows,
+        ...[...mockTeams.values()].flatMap(team => Object.entries(team.tasks).map(([taskId, task]) => {
+          const title = `${team.plan.tasks.find(x => x.id === taskId)?.title ?? taskId} · ${team.plan.vision.goal}`
+          const notes = task.owner_notes ?? []
+          return { id: `worker:${team.team_id}:${taskId}`, source: 'worker', title, last_text: notes.at(-1)?.text ?? task.output ?? `Task ${task.status}`, last_at: notes.at(-1)?.at ?? '', unread: false, can_send: !['done', 'stopped'].includes(team.status) }
+        })),
+      ].filter(row => words.every(word => `${row.title} ${row.last_text} ${row.source}`.toLowerCase().includes(word)))
+      return send(200, rows.sort((a, b) => b.last_at.localeCompare(a.last_at)))
+    }
+    if ((m = p.match(/^\/api\/messages\/threads\/([^/]+)$/)) && req.method === 'GET') {
+      const id = decodeURIComponent(m[1])
+      let rows = messageHistory.get(id)
+      if (!rows && id.startsWith('glacier:')) {
+        const conversation = conversations.get(id.slice('glacier:'.length))
+        if (!conversation) return send(404, { detail: 'Conversation not found' })
+        rows = conversation.messages.map((item, index) => ({ id: `${id}:${index}`, from: item.who === 'you' || item.who === 'user' ? 'me' : 'them', author: item.who === 'you' || item.who === 'user' ? 'you' : 'Glacier', text: item.text, at: item.at, kind: 'text' }))
+      }
+      if (!rows && id.startsWith('worker:')) {
+        const [, teamId, taskId] = id.split(':')
+        const team = mockTeams.get(teamId), task = team?.tasks?.[taskId]
+        if (!team || !task) return send(404, { detail: 'Conversation not found' })
+        rows = [...(task.owner_notes ?? []).map((note, index) => ({ id: note.id ?? `${id}:owner:${index}`, from: 'me', author: 'you', text: note.text, at: note.at, kind: 'text' })), ...(task.output ? [{ id: `${id}:output`, from: 'them', author: task.role ?? 'worker', text: task.output, at: '', kind: 'text' }] : []), ...String(team.progress_log ?? '').split('\n').filter(line => line.toLowerCase().includes(taskId.toLowerCase())).map((line, index) => ({ id: `${id}:log:${index}`, from: 'system', author: 'Glacier', text: line, at: '', kind: 'status' }))]
+      }
+      if (!rows) {
+        const session = messageSessionRows.find(row => row.id === id)
+        if (!session) return send(404, { detail: 'Conversation not found' })
+        rows = messageHistory.get(id) ?? [{ id: `${id}:0`, from: 'them', author: session.source, text: session.last_text, at: session.last_at, kind: 'text' }]
+      }
+      const before = url.searchParams.get('before')
+      rows = [...rows].sort((a, b) => b.at.localeCompare(a.at))
+      if (before) {
+        const cursor = rows.find(row => row.id === before)
+        rows = cursor ? rows.filter(row => [row.at, row.id].join('|') < [cursor.at, cursor.id].join('|')) : rows.filter(row => row.at && row.at < before)
+      }
+      const messages = rows.slice(0, 50)
+      return send(200, { id, messages, next_before: messages.length === 50 ? messages.at(-1).id : null })
+    }
+    if ((m = p.match(/^\/api\/messages\/threads\/([^/]+)$/)) && req.method === 'POST') {
+      const id = decodeURIComponent(m[1]), body = await readBody()
+      if (!body?.text || body.text.length > 20000) return send(400, { detail: 'text is required (max 20000 characters)' })
+      const at = new Date().toISOString()
+      if (id.startsWith('glacier:')) {
+        const conversationId = id.slice('glacier:'.length), reply = `I can help with: ${body.text}`
+        const conversation = conversations.get(conversationId) ?? { title: '', messages: [] }
+        conversation.messages.push({ who: 'you', text: body.text, at }, { who: 'glacier', text: reply, at })
+        conversations.set(conversationId, conversation)
+        const message = { id: `${id}:${crypto.randomUUID()}`, from: 'them', author: 'Glacier', text: reply, at, kind: 'text' }
+        broadcast({ type: 'messages.thread_message', thread_id: id, message })
+        return send(200, { thread_id: id, message })
+      }
+      if (id.startsWith('worker:')) {
+        const [, teamId, taskId] = id.split(':'), team = mockTeams.get(teamId), task = team?.tasks?.[taskId]
+        if (!task) return send(404, { detail: 'Worker task not found' })
+        const note = { id: crypto.randomUUID(), text: body.text, at }
+        task.owner_notes ??= []; task.owner_notes.push(note)
+        team.progress_log = `${team.progress_log ?? ''}\nOwner instruction for ${taskId}: ${body.text}`.trim()
+        const message = { id: note.id, from: 'me', author: 'you', text: body.text, at, kind: 'text' }
+        broadcast({ type: 'messages.thread_message', thread_id: id, message })
+        return send(200, { thread_id: id, message })
+      }
+      const session = messageSessionRows.find(row => row.id === id)
+      if (!session) return send(404, { detail: 'Conversation not found' })
+      if (!session.can_send) return send(403, { detail: session.can_send_reason || 'This conversation is read-only' })
+      const message = { id: `${id}:${crypto.randomUUID()}`, from: 'them', author: session.source, text: `${session.source} reply: ${body.text}`, at, kind: 'text' }
+      messageHistory.set(id, [message, ...(messageHistory.get(id) ?? [])])
+      session.last_text = message.text; session.last_at = at
+      broadcast({ type: 'messages.thread_message', thread_id: id, message })
+      return send(200, { thread_id: id, message })
+    }
+    if (p === '/api/messages/threads' && req.method === 'POST') {
+      const body = await readBody()
+      if (!body?.text || !['glacier', 'codex', 'claude'].includes(body.source)) return send(400, { detail: 'source must be glacier, codex, or claude' })
+      const id = body.source === 'glacier' ? crypto.randomUUID() : `mock-${crypto.randomUUID()}`
+      const threadId = body.source === 'glacier' ? `glacier:${id}` : body.source === 'claude' ? `claude-code:${id}` : `codex:${id}`
+      const at = new Date().toISOString(), reply = body.source === 'glacier' ? `I can help with: ${body.text}` : `${body.source} reply: ${body.text}`
+      const message = { id: `${threadId}:${crypto.randomUUID()}`, from: 'them', author: body.source === 'glacier' ? 'Glacier' : body.source, text: reply, at, kind: 'text' }
+      if (body.source === 'glacier') conversations.set(id, { title: '', messages: [{ who: 'you', text: body.text, at }, { who: 'glacier', text: reply, at }] })
+      else { const row = { id: threadId, source: body.source, title: body.text.slice(0, 60), last_text: reply, last_at: at, unread: false, can_send: true }; messageSessionRows.unshift(row); messageHistory.set(threadId, [message]) }
+      broadcast({ type: 'messages.thread_message', thread_id: threadId, message })
+      return send(200, { thread: { id: threadId, source: body.source, title: body.text.slice(0, 60), last_text: reply, last_at: at, unread: false, can_send: true }, thread_id: threadId, message })
+    }
     if (p.startsWith('/api/assistant/conversations')) {
       const titleOf = c => c.title || (c.messages.find(x => x.who === 'you')?.text ?? '').split(/\s+/).join(' ').slice(0, 60) || 'Untitled conversation'
       if (req.method === 'GET' && p === '/api/assistant/conversations') {
@@ -338,15 +570,42 @@ const server = http.createServer(async (req, res) => {
         emit('RUN_FINISHED', { threadId: conversationId, runId })
         return res.end()
       }
-      const automation = /make me|automate|every day|daily/i.test(body.message)
-      let reply = `I can help with: ${body.message}`
+      const automation = /make me|automate|every day|daily|refine this automation proposal/i.test(body.message)
+      const uiChange = /change (?:glacier'?s? )?(?:own )?ui|change this screen|update this screen|update the screen/i.test(body.message)
+      let reply = body.screen
+        ? `You're on ${body.screen}${body.focus ? `, looking at ${body.focus}` : ''}. I can help with this screen. ${body.message}`
+        : `I can help with: ${body.message}`
+      if (uiChange) {
+        const id = crypto.randomUUID()
+        const proposal = { id, conversation_id: conversationId, kind: 'ui_change',
+          explanation: 'I prepared a small screen change for your review.',
+          diff: '--- a/glacier/web/src/App.tsx\n+++ b/glacier/web/src/App.tsx\n@@ -1 +1 @@\n-old\n+new\n',
+          files: ['glacier/web/src/App.tsx'], related_spec: 'glacier/web/e2e/shell.spec.mjs',
+          mock_fail: /fail checks/i.test(body.message) }
+        assistantProposals.set(id, proposal)
+        const toolCallId = crypto.randomUUID()
+        emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+        emit('TOOL_CALL_START', { toolCallId, toolCallName: 'propose_ui_change', parentMessageId: messageId })
+        emit('TOOL_CALL_ARGS', { toolCallId, delta: JSON.stringify(proposal) })
+        emit('TOOL_CALL_END', { toolCallId })
+        reply = `${proposal.explanation} It has not been applied.`
+      }
       if (automation) {
         const id = crypto.randomUUID()
-        const flowId = body.message.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'new-flow'
-        const flow = { id: flowId, name: 'Daily backup', goal: body.message, created_by: 'assistant',
-          nodes: [{ id: 'backup', type: 'command', config: { cmd: 'tar -czf backup.tgz data' }, position: { x: 60, y: 60 } }],
-          edges: [], acceptance: [{ kind: 'human', question: 'Did the backup finish?' }] }
-        const proposal = { id, conversation_id: conversationId, flow, explanation: 'Creates a daily backup flow.', problems: [] }
+        const focusId = String(body.focus || '')
+        const flowId = /^[a-z0-9][a-z0-9-]{0,79}$/.test(focusId) && focusId !== 'new-flow'
+          ? focusId : body.message.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'new-flow'
+        const refined = /refine this automation proposal/i.test(body.message)
+        const flow = { id: flowId, name: 'Inbox summary', goal: 'Make me a daily inbox summary', created_by: 'assistant',
+          nodes: [
+            { id: 'fetch', type: 'command', config: { cmd: 'echo fetch inbox' }, position: { x: 60, y: 60 } },
+            { id: 'summarize', type: 'codex', config: { prompt: 'Summarize the inbox' }, position: { x: 320, y: 60 } },
+            ...(refined ? [{ id: 'review', type: 'approval', config: { prompt: 'Review the summary' }, position: { x: 580, y: 60 } }] : []),
+          ],
+          edges: [ { id: 'e1', source: 'fetch', target: 'summarize', label: '' }, ...(refined ? [{ id: 'e2', source: 'summarize', target: 'review', label: '' }] : []) ],
+          acceptance: [{ kind: 'human', question: 'Is the inbox summary useful?' }] }
+        const proposal = { id, conversation_id: conversationId, flow, explanation: 'A flow for your inbox summary.', problems: [],
+          step_order: flow.nodes.map(node => node.id), step_notes: Object.fromEntries(flow.nodes.map(node => [node.id, Object.values(node.config)[0]])) }
         assistantProposals.set(id, proposal)
         const toolCallId = crypto.randomUUID()
         emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
@@ -355,7 +614,7 @@ const server = http.createServer(async (req, res) => {
         emit('TOOL_CALL_END', { toolCallId })
         reply = proposal.explanation
       }
-      if (!automation) emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
+      if (!automation && !uiChange) emit('TEXT_MESSAGE_START', { messageId, role: 'assistant' })
       if (reply) emit('TEXT_MESSAGE_CONTENT', { messageId, delta: reply })
       emit('TEXT_MESSAGE_END', { messageId })
       const conv = conversations.get(conversationId) ?? { title: '', messages: [] }
@@ -374,6 +633,14 @@ const server = http.createServer(async (req, res) => {
         assistantProposals.delete(proposal.id)
         return send(200, { discarded: true })
       }
+      if (proposal.kind === 'ui_change') {
+        assistantProposals.delete(proposal.id)
+        const passed = !proposal.mock_fail
+        return send(200, { applied: true, branch: `assistant/ui-change/${proposal.id}`,
+          worktree: `/worktrees/ui-changes/${proposal.id}`, changed_files: proposal.files ?? ['glacier/web/src/App.tsx'],
+          checks: ['tsc', 'theme lint', 'build', 'e2e'], passed,
+          check_results: { tsc: { passed }, 'theme lint': { passed: true }, build: { passed: true }, e2e: { passed } } })
+      }
       const flow = proposal.flow
       if (proposal.run_existing) {
         if (!body.run_now) return send(400, { detail: 'Confirm that you want to run this automation' })
@@ -381,15 +648,16 @@ const server = http.createServer(async (req, res) => {
         return send(200, { saved: false, run_id: startRun(envs.get(flow.id)), status: 'running' })
       }
       if (envs.has(flow.id)) return send(409, { detail: 'A flow with this name already exists' })
-      const bad = flow.nodes.map(node => node.type).filter(type => type !== HTTP_NODE.type && !CATALOG.some(item => item.type === type))
+      const bad = flow.nodes.map(node => node.type).filter(type => type !== HTTP_NODE.type && !NODE_CATALOG.some(item => item.type === type))
       if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
       if (flow.goal && !flow.acceptance?.length) return send(400, { detail: 'This goal has no check yet. Add a way to check it is done before running it.' })
       envs.set(flow.id, flow)
       const commit = commitId()
       vault.set(`environments/${flow.id}.json`, JSON.stringify(flow, null, 2))
       assistantProposals.delete(proposal.id)
-      if (body.run_now) return send(200, { saved: true, commit, run_id: startRun(flow), status: 'running' })
-      return send(200, { saved: true, commit })
+      const undo_id = crypto.randomUUID()
+      if (body.run_now) return send(200, { saved: true, commit, undo_id, run_id: startRun(flow), status: 'running' })
+      return send(200, { saved: true, commit, undo_id })
     }
     // ---- settings (screen development only) ----
     if (p === '/api/secrets' && req.method === 'GET') return send(200, [...mockSecrets].sort())
@@ -517,7 +785,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'PUT') {
         const body = await readBody()
         if (!body || !Array.isArray(body.nodes) || !Array.isArray(body.edges)) return send(422, { detail: 'invalid environment' })
-        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !CATALOG.some(c => c.type === t) && !['file_trigger', 'webhook_trigger'].includes(t))
+        const bad = body.nodes.map(n => n.type).filter(t => t !== HTTP_NODE.type && !NODE_CATALOG.some(c => c.type === t) && !['file_trigger', 'webhook_trigger'].includes(t))
         if (bad.length) return send(400, { detail: `unknown node types: ${bad}` })
         envs.set(id, { ...body, id })
         const commit = commitId(), epath = `environments/${id}.json`, text = JSON.stringify({ ...body, id }, null, 2)
@@ -622,11 +890,18 @@ const server = http.createServer(async (req, res) => {
       return send(200, { summary, steps, verified, needs_you })
     }
     if (req.method === 'POST' && (m = p.match(/^\/api\/runs\/([^/]+)\/approve$/))) {
-      const r = runs.get(decodeURIComponent(m[1]))
+      const id = decodeURIComponent(m[1])
+      if (id === 'run-dispatch-waiting') { mockApprovalDone = true; return send(200, { ok: true }) }
+      const r = runs.get(id) ?? fixedMockRuns.get(id)
       if (!r) return send(404, { detail: 'run not found' })
       const body = await readBody()
-      if (!body || r.waiting_on !== body.node_id || !r.resolve) return send(409, { detail: 'run is not waiting on that node' })
-      r.resolve(body.approved === true)
+      if (!body || r.waiting_on !== body.node_id) return send(409, { detail: 'run is not waiting on that node' })
+      if (r.resolve) r.resolve(body.approved === true)
+      else {
+        r.waiting_on = null
+        r.status = body.approved === true ? 'done' : 'rejected'
+        r.node_states[body.node_id] = body.approved === true ? 'done' : 'skipped'
+      }
       return send(200, { ok: true })
     }
     if (req.method === 'GET' && p === '/api/vault/notes') return send(200, [...vault.keys()].sort())
@@ -682,6 +957,8 @@ async function execute(env, r, depth = 0) {
   let execs = 0
   const limit = Number(env.max_steps) || MAX_EXEC
   const loopCounts = new Map()
+  const forEachItems = new Map()
+  const forEachIndex = new Map()
   const handledByCheck = id => out(id).some(e => byId.get(e.target)?.type === 'check')
   let failed = false
   const summary = []
@@ -725,6 +1002,93 @@ async function execute(env, r, depth = 0) {
         const output = `Status: ${status}\n\n${JSON.stringify({ message: 'mock response', saved: true }, null, 2)}\n`
         result = { exit_code: 0, output }
         setState(r, id, 'done', output)
+        break
+      }
+      case 'json_transform': {
+        let value
+        try { value = JSON.parse(prev?.output ?? 'null') } catch { value = null }
+        let outValue = value
+        try {
+          const extra = JSON.parse(c.data || '{}')
+          if (c.operation === 'set_fields') outValue = { ...(value && !Array.isArray(value) ? value : {}), ...JSON.parse(c.fields || '{}') }
+          else if (c.operation === 'filter') outValue = (Array.isArray(value) ? value : []).filter(row => String(row?.[c.field]) === String(c.equals))
+          else if (c.operation === 'merge') outValue = value == null ? extra : Array.isArray(value) && Array.isArray(extra) ? [...value, ...extra] : { ...(value || {}), ...(extra || {}) }
+          else if (c.operation === 'split') outValue = Array.isArray(value) ? value : value?.items ?? []
+          else if (c.operation === 'dedupe') { const seen = new Set(); outValue = (Array.isArray(value) ? value : []).filter(row => { const v = JSON.stringify(c.key ? row?.[c.key] : row); if (seen.has(v)) return false; seen.add(v); return true }) }
+        } catch { outValue = value }
+        result = { exit_code: 0, output: JSON.stringify(outValue) }
+        setState(r, id, 'done', result.output)
+        break
+      }
+      case 'data_table':
+        result = { exit_code: 0, output: c.operation === 'query' ? '[]' : 'Saved one row' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'csv_file':
+        result = { exit_code: 0, output: c.operation === 'write' ? 'Wrote CSV file' : '[]' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'delay':
+        result = { exit_code: 0, output: prev?.output ?? 'Wait finished' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'structured_ai': {
+        const output = JSON.stringify({ mock: true, input: prev?.output ?? '' })
+        result = { exit_code: 0, output }
+        setState(r, id, 'done', output)
+        break
+      }
+      case 'email_send': {
+        if ((c.draft_only ?? 'Yes') === 'Yes') result = { exit_code: 0, output: 'Draft saved in this flow folder' }
+        else if (String(prev?.output ?? '').toLowerCase().includes('approved')) result = { exit_code: 0, output: `Email sent to ${c.to ?? ''}` }
+        else result = { exit_code: 1, output: 'Add an approval step before sending.' }
+        setState(r, id, result.exit_code ? 'failed' : 'done', result.output)
+        if (result.exit_code && !handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+        break
+      }
+      case 'email_read':
+        result = { exit_code: 0, output: '[]' }
+        setState(r, id, 'done', result.output)
+        break
+      case 'email_trigger': {
+        const output = JSON.stringify({ message_id: '<mock@example.test>', from: 'person@example.test', subject: 'Mock email', body: 'Example message' })
+        result = { exit_code: 0, output }
+        setState(r, id, 'done', output)
+        break
+      }
+      case 'for_each': {
+        if (!forEachItems.has(id)) {
+          let items
+          try { items = JSON.parse(prev?.output ?? 'null') } catch { items = null }
+          const maxItems = Math.max(1, Math.min(Number(c.max_items) || 100, MAX_LOOP))
+          if (!Array.isArray(items)) {
+            result = { exit_code: 1, output: 'For each item needs a JSON list from the previous step' }
+            setState(r, id, 'failed', result.output)
+            if (!handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+            break
+          }
+          if (items.length > maxItems) {
+            result = { exit_code: 1, output: `This list has ${items.length} items, above the limit of ${maxItems}` }
+            setState(r, id, 'failed', result.output)
+            if (!handledByCheck(id)) { failed = true; queue.length = 0; next = [] }
+            break
+          }
+          forEachItems.set(id, items)
+          forEachIndex.set(id, 0)
+        }
+        const items = forEachItems.get(id)
+        const index = forEachIndex.get(id)
+        if (index < items.length) {
+          result = { exit_code: 0, output: JSON.stringify(items[index]) }
+          forEachIndex.set(id, index + 1)
+          setState(r, id, 'running', result.output)
+          next = out(id).filter(e => e.label === 'each')
+        } else {
+          result = { exit_code: 0, output: `Processed ${items.length} items` }
+          setState(r, id, 'done', result.output)
+          forEachItems.delete(id); forEachIndex.delete(id)
+          next = out(id).filter(e => e.label === 'done')
+        }
         break
       }
       case 'check': {

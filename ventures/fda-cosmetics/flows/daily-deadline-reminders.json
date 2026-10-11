@@ -1,0 +1,76 @@
+{
+  "id": "daily-deadline-reminders",
+  "name": "Check FDA listing deadlines",
+  "goal": "Check the local deadline tracker and show the brand any 120-day or annual listing reminders due today.",
+  "nodes": [
+    {
+      "id": "morning_schedule",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "read_due_items",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/fda-cosmetics/scripts/listing_prep.py due",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "reminder_check",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "review_reminder",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review the FDA listing deadline reminder and confirm the brand's planned submission date. Glacier does not submit the listing."
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "morning_schedule",
+      "target": "read_due_items",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "read_due_items",
+      "target": "reminder_check",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "reminder_check",
+      "target": "review_reminder",
+      "label": "yes"
+    }
+  ],
+  "max_steps": 4
+}

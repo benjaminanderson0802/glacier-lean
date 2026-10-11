@@ -1,0 +1,106 @@
+{
+  "slug": "warranty",
+  "name": "warranty registration",
+  "status": "in_progress",
+  "product": {
+    "description": "Prepare and track HVAC warranty registration records for contractor review.",
+    "customer_output_vocabulary": [
+      "match",
+      "no match found in [sources] as of [date]",
+      "uncertain — please check"
+    ],
+    "portal_submission": "disabled until an official brand portal policy permits automation and customer authorization is recorded",
+    "email_sending": "not configured; drafts only"
+  },
+  "blocks": [
+    "ventures.blocks.connectors.jobber",
+    "ventures.blocks.filer"
+  ],
+  "block_functions": [
+    "prepare_local_mock (warranty-only localhost guard around filer.prepare)"
+  ],
+  "flows": [
+    "hourly-intake",
+    "daily-deadlines",
+    "owner-review"
+  ],
+  "schedules": [
+    {
+      "flow": "hourly-intake",
+      "cron": "0 * * * *",
+      "purpose": "Read Jobber jobs through its read-only connector; no registration or messages are sent.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "daily-deadlines",
+      "cron": "0 8 * * *",
+      "purpose": "Calculate the local registration queue and identify deadlines within ten days.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "jobber_client_id",
+    "jobber_client_secret",
+    "jobber_access_token",
+    "jobber_refresh_token"
+  ],
+  "your_steps": [
+    {
+      "id": "jobber-setup",
+      "title": "Connect a Jobber test account",
+      "when": "Before the first live read",
+      "detail": "Create the Jobber app and test account in the Jobber Developer Center. Paste jobber_client_id, jobber_client_secret, jobber_access_token, and jobber_refresh_token into the labeled fields on this step; Glacier saves them in this computer's keychain. Then run the read-only connector check. Before launch, the connector must return completed status, install date, homeowner name and email, brand, model, serial, region, and job ID. Use five eligible test accounts; intake also requires the shared reader and deadline blocks. Until those prerequisites are met, use local sample JSON only.",
+      "links": [
+        "https://developer.getjobber.com/",
+        "https://developer.getjobber.com/docs/"
+      ],
+      "secrets": [
+        {
+          "name": "jobber_client_id",
+          "label": "Jobber app ID"
+        },
+        {
+          "name": "jobber_client_secret",
+          "label": "Jobber app secret"
+        },
+        {
+          "name": "jobber_access_token",
+          "label": "Jobber access token"
+        },
+        {
+          "name": "jobber_refresh_token",
+          "label": "Jobber refresh token"
+        }
+      ]
+    },
+    {
+      "id": "brand-portal-terms",
+      "title": "Review each brand's portal terms",
+      "when": "Before adding a brand portal",
+      "detail": "Confirm with each brand whether the exact proposed browser action is allowed and record a source-backed serial format. No serial pattern is verified in this build, so every real brand record remains unavailable to automatic validation and returns uncertain — please check. Human fallback: use that brand's linked official warranty page or contact the brand/dealer, verify the serial manually, and keep registration on owner review. Do not enter a guessed pattern or enable portal automation.",
+      "links": [
+        "https://www.trane.com/residential/en/resources/warranty-and-registration/",
+        "https://www.carrier.com/residential/en/us/products/warranties/"
+      ]
+    },
+    {
+      "id": "launch-and-email-review",
+      "title": "Review the first listing and homeowner emails",
+      "when": "Before marketplace launch and the first 20 homeowner emails",
+      "detail": "Only after five eligible test accounts pass the connector check and the shared reader/deadline blocks are installed: open the generated Jobber marketplace listing for owner review, then inspect the first 20 generated homeowner email drafts one by one. Save corrections before any owner submission. This build does not send email or publish the listing. Email drafts are not generated until the mail block is integrated.",
+      "links": [
+        "https://developer.getjobber.com/"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "Brand-by-brand portal terms allow the proposed automated action.",
+    "Brand-specific serial formats are configured from official sources.",
+    "Jobber shared connector returns completed status, install date, homeowner, and unit fields without writes.",
+    "Shared document reader and deadline tracker are merged and integrated.",
+    "First marketplace listing and first 20 homeowner emails receive owner review."
+  ],
+  "dry_run_env_id": "daily-deadlines"
+}
