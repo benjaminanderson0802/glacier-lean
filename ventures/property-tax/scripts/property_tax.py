@@ -33,6 +33,91 @@ COMPARABLE_SCHEMA = {
     "sale_price": ["Sale Price", "Transfer Price"],
     "square_feet": ["Square Feet", "Building Area"],
 }
+ASSESSOR_APPEALS_URL = "https://www.cookcountyassessoril.gov/online-appeals"
+ASSESSOR_CALENDAR_URL = "https://www.cookcountyassessoril.gov/assessment-calendar-and-deadlines"
+ASSESSOR_RULES_URL = "https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor"
+BOR_RESIDENTIAL_URL = "https://www.cookcountyboardofreview.com/assessment-appeals/residential"
+BOR_RULES_URL = "https://www.cookcountyboardofreview.com/board-review-official-rules"
+
+
+def homeowner_filing_guide() -> dict[str, Any]:
+    """Return current-source links and manual pro se steps for an individual homeowner."""
+    return {
+        "eligibility": (
+            "This self-file guide is for an individual taxpayer filing for themselves. At the Board of Review, "
+            "the property must be titled in the individual taxpayer's own name. An LLC, corporation, or other "
+            "entity must use a licensed attorney there; Glacier does not represent anyone."
+        ),
+        "steps": [
+            {
+                "title": "Check your property and filing window",
+                "detail": (
+                    "Confirm the PIN, township, current assessment year, and official filing dates before preparing "
+                    "a submission. Assessor and Board of Review windows are separate and change by township and year. "
+                    "The notice and current official calendar control."
+                ),
+                "links": [ASSESSOR_CALENDAR_URL, ASSESSOR_RULES_URL],
+            },
+            {
+                "title": "Review the packet and fix anything marked uncertain",
+                "detail": (
+                    "Check every PIN, notice value, comparable sale, source, requested value, and supporting record. "
+                    "Do not submit a packet with unresolved uncertainties. The homeowner decides what evidence to use."
+                ),
+                "links": [ASSESSOR_RULES_URL, BOR_RULES_URL],
+            },
+            {
+                "title": "File with the Assessor if you choose that review stage",
+                "detail": (
+                    "During the open township window, the individual homeowner files their own appeal and evidence "
+                    "through the Assessor's SmartFile portal, completes the county's current form, signs it, and saves "
+                    "the submission receipt. You sign and submit your own appeal. The Assessor's rules allow pro se filing."
+                ),
+                "links": [ASSESSOR_APPEALS_URL, "https://www.cookcountyassessoril.gov/residential-appeals"],
+            },
+            {
+                "title": "File with the Board of Review when you choose or reach that stage",
+                "detail": (
+                    "Use the Board's current residential filing portal and township deadline. An individual taxpayer "
+                    "may represent themselves when the property is titled in their own name. Complete and personally "
+                    "sign the official complaint and submit the required evidence yourself. Do not file a duplicate "
+                    "complaint for the same PIN; the Board's initial valuation complaint controls."
+                ),
+                "links": [BOR_RESIDENTIAL_URL, BOR_RULES_URL, "https://appeals.cookcountyboardofreview.com/"],
+            },
+            {
+                "title": "Keep the receipt and watch for county notices",
+                "detail": (
+                    "Save the portal confirmation and check the county portal and mail for decisions or hearing notices. "
+                    "Glacier does not log in, monitor the county account, sign, submit, or contact the county for you."
+                ),
+                "links": [ASSESSOR_APPEALS_URL, BOR_RESIDENTIAL_URL],
+            },
+        ],
+        "notice": (
+            "This is a filing checklist based on linked county instructions, not legal advice or a county filing. "
+            "You decide whether and where to appeal, verify current rules and deadlines, review all records, and file yourself."
+        ),
+    }
+
+
+def _filing_guide_markdown(packet: dict[str, Any]) -> str:
+    guide = packet["filing_guide"]
+    lines = [
+        f"# Homeowner self-file guide — {packet.get('parcel_id', 'unknown parcel')}",
+        "",
+        f"County: {packet.get('county', COUNTY)}",
+        f"Packet as of: {packet.get('as_of', 'unknown')}",
+        "",
+        "## Who can use this guide",
+        guide["eligibility"],
+        "",
+        "## Steps",
+    ]
+    for index, step in enumerate(guide["steps"], 1):
+        lines += [f"{index}. **{step['title']}** — {step['detail']}", "   Official pages: " + " · ".join(step["links"])]
+    lines += ["", "## Your filing stays yours", guide["notice"], "", "Glacier did not file anything."]
+    return "\n".join(lines) + "\n"
 
 
 def _field_value(fields: dict[str, Any], key: str) -> Any:
@@ -98,6 +183,8 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
         "status": "no_roll_match" if parcel_result["parcel"] is None else "needs_customer_confirmation",
         "as_of": as_of.isoformat(),
         "filing_submitted": False,
+        "filing_mode": "homeowner_self_file",
+        "filing_guide": homeowner_filing_guide(),
         "legal_review_notice": "The customer decides whether the records support an appeal, confirms the requested value, signs, and submits the filing. This packet is not legal advice or a filing.",
         "parcel": parcel_result["parcel"],
         "comparables": [],
@@ -187,6 +274,10 @@ def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today
 def render_packet(packet: dict[str, Any], output_path: str | Path) -> Path:
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
+    packet.setdefault("filing_mode", "homeowner_self_file")
+    packet.setdefault("filing_guide", homeowner_filing_guide())
+    guide_path = target.with_name(f"{target.stem}-filing-guide.md")
+    packet["filing_guide_path"] = str(guide_path)
     target.write_text(json.dumps(packet, indent=2, ensure_ascii=False), encoding="utf-8")
     markdown = [
         f"# Property tax evidence packet — {packet.get('parcel_id', 'unknown parcel')}",
@@ -207,7 +298,9 @@ def render_packet(packet: dict[str, Any], output_path: str | Path) -> Path:
         markdown += ["", "## Please check", *[f"- {item}" for item in packet["uncertainties"]]]
     if packet.get("filing_instructions"):
         markdown += ["", packet["filing_instructions"]]
+    markdown += ["", "---", "", _filing_guide_markdown(packet)]
     target.with_suffix(".md").write_text("\n".join(markdown) + "\n", encoding="utf-8")
+    guide_path.write_text(_filing_guide_markdown(packet), encoding="utf-8")
     return target
 
 
@@ -284,6 +377,7 @@ def prepare_case(case_path: str, output_path: str) -> dict[str, Any]:
     target = Path(output_path)
     packet["packet_path"] = str(target)
     packet["instructions_path"] = str(target.with_suffix(".md"))
+    packet["filing_guide_path"] = str(target.with_name(f"{target.stem}-filing-guide.md"))
     rendered = render_packet(packet, target)
     if case.get("signer"):
         packet["signature_request"] = customer.request_signature(str(rendered.with_suffix(".md")), case["signer"])

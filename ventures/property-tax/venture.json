@@ -4,11 +4,13 @@
   "status": "in_progress",
   "product": {
     "purpose": "Prepare evidence packets and customer-reviewed postcard proofs from county public records and customer supplied notices and comparable sales.",
-    "first_county_choice": "Cook County, Illinois; packet preparation only until the owner confirms the launch scope and current representation rules.",
+    "first_county_choice": "Cook County, Illinois; homeowner self-file assist for an individual taxpayer filing for themselves.",
     "county_scope": [
       "Cook County, Illinois"
     ],
-    "filing_policy": "The customer reviews, signs, and submits every county filing. Glacier only prepares the packet and instructions.",
+    "filing_mode": "homeowner_self_file",
+    "filing_policy": "For Cook County, an individual homeowner reviews the evidence packet, chooses the review stage, signs, and files personally through the county portal. Glacier prepares evidence and instructions only; it does not represent anyone or file.",
+    "mail_policy": "render_only; live mailing is disabled",
     "billing": "Owner confirms a flat packet fee before any checkout is enabled; no contingency billing is enabled."
   },
   "blocks": [
@@ -47,36 +49,37 @@
   "your_steps": [
     {
       "id": "confirm-first-counties",
-      "title": "Keep launch disabled until Cook County rules are confirmed",
-      "when": "Before enabling customer cases or mailing",
-      "detail": "Keep launch disabled. Confirm Cook County, Illinois, as packet-only launch scope and ask counsel to confirm the current agent rules. The venture spec says Cook County needs an attorney; the Assessor's current appeal rules state that a party may file without an attorney or other agent. Resolve this difference before launch. See https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor and https://www.cookcountyassessoril.gov/residential-appeals.",
+      "title": "Confirm the Cook County homeowner self-file scope",
+      "when": "Before enabling customer cases, after the local packet flow is verified",
+      "detail": "Keep launch disabled for new customer cases until a successful end-to-end local packet-flow run is verified and the owner confirms the two-step Cook County scope. Current Assessor rules allow pro se filing; Board rules allow an individual taxpayer to file pro se for property titled in their own name. Glacier prepares the evidence packet and guide; the homeowner files personally. See the official Assessor and Board rules.",
       "links": [
         "https://www.cookcountyassessor.com/appeals"
       ]
     },
     {
       "id": "texas-consultant-registration",
-      "title": "Future Texas expansion (not required for Cook County launch)",
+      "title": "Optional — Future Texas expansion (not required for Cook County launch)",
       "when": "Before adding any Texas county or providing paid representation there",
-      "detail": "Texas consultant registration is an owner action. Review eligibility and current requirements at https://www.tdlr.texas.gov/ptc/, then review the official application at https://www.tdlr.texas.gov/ptc/forms/ptc-lic-001-property-tax-consultant-registration-application.pdf. Pre-filled note: 'Please confirm whether I am eligible for Texas Property Tax Consultant registration, which education/exam and association requirements apply, and the current fee before I add a Texas county.' Do not enable Texas cases until registration and any required association are confirmed. Glacier does not create an account, enter personal information, sign, or pay.",
+      "detail": "Optional future expansion, not needed for Cook County homeowner self-file. Before adding Texas, review eligibility and current requirements at https://www.tdlr.texas.gov/ptc/ and its official application. Do not enable Texas cases until any required registration and association are completed by the owner. Glacier does not create an account, enter personal information, sign, or pay.",
       "links": [
         "https://www.tdlr.texas.gov/ptc/"
       ]
     },
     {
       "id": "approve-first-mailing",
-      "title": "Review the first postcard and mailing list",
+      "title": "Optional: review a local postcard proof",
       "when": "Before the first external mailing in each county or with each new card design",
-      "detail": "Review the exact local proof artifact in $GLACIER_HOME/ventures/property-tax/postcards (the approve_proof step in property-tax-postcard-proof), its recipient address, sender, and do-not-mail status. Then approve any external mailing separately with the exact recipient list, design, sender, and spend. This build only renders local proofs and never sends to real recipients.",
+      "detail": "Optional marketing step, not required for Cook County homeowner self-file. Review the exact local proof under $GLACIER_HOME/ventures/property-tax/postcards and its do-not-mail status. Live mailing remains disabled. Any future external mailing requires a separate owner decision and approval for the exact recipient list, design, sender, and spend. This build only renders local proofs and never sends to real recipients.",
       "links": [
         "https://www.cookcountyassessor.com/appeals"
       ]
     }
   ],
   "launch_gates": [
-    "Keep launch disabled until the owner confirms the initial county selection and resolves the spec/Assessor representation-rule discrepancy.",
-    "Owner confirms flat packet pricing and approves each first mailing list and new postcard design.",
-    "Texas work stays disabled until the owner completes required consultant registration and confirms current requirements.",
+    "Keep launch disabled for new customer cases until a successful end-to-end local packet-flow run is verified and the owner confirms the Cook County homeowner self-file scope.",
+    "Paid checkout stays disabled until the owner confirms packet pricing; it is not required for local packet preparation.",
+    "Live mailing stays disabled; postcard flow renders local proofs only.",
+    "Texas work is optional future expansion and stays disabled until the owner completes any required consultant registration.",
     "Every customer reviews, signs, and submits their own county filing; Glacier does not file appeals."
   ],
   "dry_run_env_id": "property-tax-prepare-packet"
