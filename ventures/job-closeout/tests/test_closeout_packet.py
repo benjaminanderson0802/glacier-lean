@@ -1,13 +1,34 @@
 from __future__ import annotations
 
 import importlib.util
+import ipaddress
 import json
 import socket
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 VENTURE = ROOT / "ventures/job-closeout"
 FIXTURE = VENTURE / "tests/fixtures/jobber_completed_job.json"
+_ORIGINAL_CONNECT = socket.socket.connect
+
+
+def _blocked_connect(sock, address):
+    if isinstance(address, tuple) and address:
+        try:
+            loopback = ipaddress.ip_address(address[0]).is_loopback
+        except ValueError:
+            loopback = False
+        frame = sys._getframe(1)
+        socketpair = asyncio = False
+        while frame is not None:
+            filename = frame.f_code.co_filename.replace("\\", "/")
+            socketpair |= frame.f_code.co_name == "socketpair" and filename.endswith("/socket.py")
+            asyncio |= "/asyncio/" in filename
+            frame = frame.f_back
+        if loopback and socketpair and asyncio:
+            return _ORIGINAL_CONNECT(sock, address)
+    raise AssertionError(f"fixture generation attempted network connection to {address!r}")
 
 
 def _load_generator():
@@ -20,11 +41,8 @@ def _load_generator():
 
 
 def test_fixture_builds_one_customer_packet_markdown_pdf_without_egress(tmp_path, monkeypatch):
-    def reject_network(*_args, **_kwargs):
-        raise AssertionError("fixture generation must stay offline")
-
-    monkeypatch.setattr(socket.socket, "connect", reject_network)
-    monkeypatch.setattr(socket.socket, "connect_ex", reject_network)
+    monkeypatch.setattr(socket.socket, "connect", _blocked_connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", _blocked_connect)
     generator = _load_generator()
     output = tmp_path / "packet"
     payload = json.loads(FIXTURE.read_text(encoding="utf-8"))

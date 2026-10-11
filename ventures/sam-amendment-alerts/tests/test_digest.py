@@ -9,7 +9,7 @@ from digest import build_digest
 
 
 def load_snapshot(name):
-    return json.loads((ROOT / "tests" / "fixtures" / name).read_text())
+    return json.loads((ROOT / "tests" / "fixtures" / name).read_text(encoding="utf-8"))
 
 
 def test_two_snapshots_find_amendments_deadline_changes_and_new_notices():

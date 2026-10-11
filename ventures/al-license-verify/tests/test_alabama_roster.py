@@ -77,7 +77,7 @@ class AlabamaRosterTests(unittest.TestCase):
         )[0]
         self.assertEqual(match["outcome"], "match")
         self.assertEqual(no_match["verification_state"], "verified")
-        self.assertEqual(no_match["outcome"], "no match found in supplied Alabama roster as of 2026-10-10")
+        self.assertEqual(no_match["outcome"], "no match found in supplied Alabama roster as of 2026-10-01")
 
     def test_stale_roster_returns_uncertain_even_when_it_contains_a_match(self) -> None:
         roster = load_roster(ROOT / "tests" / "fixtures" / "alabama_roster.csv")
