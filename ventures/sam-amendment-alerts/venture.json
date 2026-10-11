@@ -22,7 +22,7 @@
       "id": "send-one-pilot-pitch",
       "title": "Your step: Send one pilot invitation",
       "when": "When you are ready to test whether buyers will pay",
-      "detail": "Choose one business from prospects.csv, check its linked SBA profile is still current, personalize the greeting, review the sample and offer, then send the single email in PILOT.md yourself. Do not send it to a list or imply government affiliation.",
+      "detail": "Choose one business from prospects.csv, check its linked first-party contact page is still current, and confirm federal-bidding fit directly; the listed source does not prove registration, active bids, buyer interest, or consent. Personalize the greeting, review the sample and offer, then send the single email in PILOT.md yourself. Do not send it to a list or imply government affiliation.",
       "links": ["https://search.certifications.sba.gov/", "https://open.gsa.gov/api/get-opportunities-public-api/"]
     }
   ],

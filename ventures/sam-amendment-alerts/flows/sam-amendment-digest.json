@@ -44,5 +44,11 @@
     {"id": "e2", "source": "digest_ready", "target": "digest_note", "label": "yes"},
     {"id": "e3", "source": "digest_ready", "target": "digest_failed", "label": "no"}
   ],
-  "max_steps": 3
+  "max_steps": 3,
+  "acceptance": [
+    {
+      "kind": "human",
+      "question": "Review the saved SAM digest, its retrieval date, coverage, and notice links. Are the source snapshots complete and the result accurate enough to keep?"
+    }
+  ]
 }
