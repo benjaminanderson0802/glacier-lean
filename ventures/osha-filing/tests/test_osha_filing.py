@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import csv
+import contextlib
+import io
 import os
 import tempfile
 import unittest
@@ -18,9 +21,64 @@ build_300a_packet = OSHA.build_300a_packet
 eligible_prospects = OSHA.eligible_prospects
 validate_300a = OSHA.validate_300a
 prepare_ita_local_mock = OSHA.prepare_ita_local_mock
+load_customer_csv = OSHA.load_customer_csv
 
 
 class OshaFilingAcceptanceTests(unittest.TestCase):
+    def test_customer_injury_log_csv_builds_review_worksheet(self) -> None:
+        root = Path(__file__).parents[1]
+        fixture = root / "fixtures" / "injury-log.example.csv"
+        fields = load_customer_csv(fixture)
+        packet = build_300a_packet(fields)
+        self.assertEqual(fields["total_cases"], 2)
+        self.assertEqual(fields["cases_with_days_away"], 1)
+        self.assertEqual(fields["cases_with_job_transfer_or_restriction"], 1)
+        self.assertEqual(fields["days_away"], 3)
+        self.assertEqual(fields["job_transfer_or_restriction_days"], 5)
+        self.assertEqual(packet["result"], "match")
+        self.assertEqual(packet["signature"], "customer_signature_required")
+        self.assertEqual(packet["submission"], "customer_submits_in_osha_ita")
+        self.assertIn("posts it at the establishment February 1–April 30", packet["html"])
+        self.assertIn("submits the required data in OSHA ITA by March 2", packet["html"])
+
+    def test_cli_creates_html_worksheet_from_fixture_csv(self) -> None:
+        root = Path(__file__).parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "worksheet.html"
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(OSHA.main(["prepare-300a", "--input", str(root / "fixtures" / "injury-log.example.csv"), "--output", str(output)]), 0)
+            report = json.loads(stdout.getvalue())
+            worksheet = output.read_text(encoding="utf-8")
+        self.assertEqual(report["result"], "match")
+        self.assertEqual(report["signature"], "customer_signature_required")
+        self.assertEqual(report["submission"], "customer_submits_in_osha_ita")
+        self.assertIn("Example Metal Works", worksheet)
+        self.assertIn("Total cases", worksheet)
+
+    def test_csv_template_has_a_zero_injury_row_and_complete_columns(self) -> None:
+        root = Path(__file__).parents[1]
+        template = root / "templates" / "customer-injury-log-template.csv"
+        fields = load_customer_csv(template)
+        self.assertEqual(fields["total_cases"], 0)
+        self.assertEqual(fields["year"], "")
+        self.assertEqual(fields["total_hours_worked"], "")
+
+    def test_deadlines_include_distinct_submission_and_posting_windows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"GLACIER_HOME": tmp}):
+            OSHA.schedule_deadlines("est-300a", 2027, "OSHA Form 300A")
+            from ventures.blocks.deadlines import due
+
+            filing_open = due(date(2027, 1, 2))
+            posting_open = due(date(2027, 2, 1))
+            filing_due = due(date(2027, 3, 2))
+            posting_close = due(date(2027, 4, 30))
+        self.assertEqual(filing_open[0]["milestone"], "window_open")
+        self.assertEqual(filing_due[0]["milestone"], "window_close")
+        self.assertTrue(any("posting period" in row["label"] for row in posting_open))
+        self.assertTrue(any("posting period" in row["label"] for row in posting_close))
+        self.assertTrue(all("customer" in str(step).lower() for row in posting_close for step in row["glacier_steps"]))
+
     def test_300a_totals_and_hours_are_checked_before_packet_creation(self) -> None:
         valid = {
             "establishment_name": "Example Metal Works",
@@ -69,17 +127,25 @@ class OshaFilingAcceptanceTests(unittest.TestCase):
             self.assertEqual(due(date(2027, 3, 2))[0]["milestone"], "window_close")
 
     def test_prospect_scoring_uses_public_data_without_classifying_compliance(self) -> None:
-        rows = [
-            {"establishment_id": "1", "establishment_name": "Large Shop", "industry_code": "332710", "employee_count": 250, "address": "1 Main St", "city": "Town", "state": "IL"},
-            {"establishment_id": "2", "establishment_name": "Small Shop", "industry_code": "332710", "employee_count": 19, "address": "2 Main St", "city": "Town", "state": "IL"},
-            {"establishment_id": "3", "establishment_name": "Unknown Shop", "industry_code": "000000", "employee_count": 45, "address": "3 Main St", "city": "Town", "state": "IL"},
-            {"establishment_id": "4", "establishment_name": "High Hazard Shop", "industry_code": "332710", "employee_count": 45, "address": "4 Main St", "city": "Town", "state": "IL"},
-        ]
+        fixture = Path(__file__).parents[1] / "fixtures" / "ita-establishments.example.csv"
+        with fixture.open(encoding="utf-8", newline="") as source:
+            rows = list(csv.DictReader(source))
         with patch.object(OSHA.feeds, "query", return_value=rows):
             result = eligible_prospects(as_of=date(2027, 1, 3))
         self.assertEqual([row["establishment_id"] for row in result["prospects"]], ["1", "4"])
         self.assertEqual(result["result"], "match")
         self.assertIn("uncertain", result["excluded"][0]["result"])
+
+    def test_ita_fixture_screen_keeps_missing_or_ambiguous_data_uncertain(self) -> None:
+        fixture = Path(__file__).parents[1] / "fixtures" / "ita-establishments.example.csv"
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"GLACIER_HOME": tmp}):
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(OSHA.main(["prospects", "--fixture", str(fixture), "--as-of", "2027-01-03", "--output", str(Path(tmp) / "selected.json")]), 0)
+            report = json.loads(stdout.getvalue())
+        self.assertEqual(report["source_mode"], "synthetic_fixture")
+        self.assertEqual(report["candidate_count"], 2)
+        self.assertEqual(report["uncertain_count"], 2)
 
     def test_flows_gate_outreach_and_keep_customer_submission_explicit(self) -> None:
         root = Path(__file__).parents[1]
@@ -88,6 +154,11 @@ class OshaFilingAcceptanceTests(unittest.TestCase):
         approval_nodes = [node for node in outreach["nodes"] if node["type"] == "approval"]
         self.assertTrue(approval_nodes)
         self.assertTrue(any("postcard" in node["config"]["prompt"].lower() for node in approval_nodes))
+        approval_ids = {node["id"] for node in filing["nodes"] if node["type"] == "approval"}
+        approval_edges = [edge for edge in filing["edges"] if edge["source"] in approval_ids]
+        self.assertTrue(approval_edges)
+        self.assertTrue(all(edge.get("label") == "yes" for edge in approval_edges))
+        self.assertGreaterEqual(filing["max_steps"], len(filing["nodes"]))
         command_nodes = [node for node in filing["nodes"] if node["type"] == "command"]
         self.assertTrue(command_nodes)
         script = " ".join(node["config"]["cmd"] for node in command_nodes)
