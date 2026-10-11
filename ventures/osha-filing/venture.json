@@ -1,7 +1,7 @@
 {
   "slug": "osha-filing",
   "name": "osha filing preparation",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "purpose": "Prepare customer-reviewed Form 300A worksheets from injury-log CSVs for eligible establishments, with the executive certifying and submitting through their own OSHA ITA account.",
     "customer_output_vocabulary": [
@@ -60,39 +60,14 @@
   ],
   "your_steps": [
     {
-      "id": "jobber-connection",
-      "title": "Owner: connect Jobber and review the first postcard",
-      "when": "Before the Jobber channel is used",
-      "detail": "Set up a Jobber developer app and test account, then save its values in Glacier Settings → Secrets and run the shared read-only connector check. Review the first postcard, recipient source, landing page, and marketplace listing; submit the listing yourself only if you choose to publish. This venture does not create accounts, send messages, or change Jobber records.",
+      "id": "owner-source-and-launch-review",
+      "title": "Owner: finish the source check and review launch materials",
+      "when": "Before prospect screening or launch",
+      "detail": "Download the current ITA Summary Data CSV from OSHA's official data page in a normal browser and run the local --source-csv screen to record its row count and establishment-ID canary; this client's feed request currently returns HTTP 403. Review the first postcard, recipient source, landing page, marketplace listing, and first five prepared worksheets. The Jobber test app is already connected; submit or publish its listing yourself only if you choose. Glacier does not send mail or publish listings.",
       "links": [
+        "https://www.osha.gov/itadata",
+        "https://www.osha.gov/recordkeeping/forms",
         "https://developer.getjobber.com/"
-      ],
-      "secrets": [
-        {
-          "name": "jobber_client_id",
-          "label": "Jobber app ID"
-        },
-        {
-          "name": "jobber_client_secret",
-          "label": "Jobber app secret"
-        },
-        {
-          "name": "jobber_access_token",
-          "label": "Jobber access token"
-        },
-        {
-          "name": "jobber_refresh_token",
-          "label": "Jobber refresh token"
-        }
-      ]
-    },
-    {
-      "id": "first-five-reviews",
-      "title": "Owner: review the first five filing worksheets",
-      "when": "Before the first five customer filings",
-      "detail": "Review the prepared totals and industry-plausibility checks for the first five packets. This is preparation review only; the customer executive certifies and submits each filing.",
-      "links": [
-        "https://www.osha.gov/recordkeeping/forms"
       ]
     },
     {
@@ -107,7 +82,7 @@
     }
   ],
   "launch_gates": [
-    "OSHA public file is synchronized and its actual row count/canary are recorded.",
+    "Owner downloads the current OSHA ITA Summary Data CSV if the public feed remains blocked, then records the local screen's actual row count and establishment-ID canary.",
     "The OSHA 300A arithmetic checks pass; missing data remains uncertain.",
     "First postcard design and recipient are reviewed; no live outreach is enabled.",
     "Owner reviews the first five prepared filing packets.",

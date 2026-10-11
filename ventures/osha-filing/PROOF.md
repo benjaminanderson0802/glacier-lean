@@ -1,6 +1,6 @@
 # OSHA filing preparation proof
 
-This card makes the OSHA venture more launch-ready, but it is not live with customers. No customer records or accounts, payment, OSHA portal, signature, filing, mail, listing publication, or public outreach were used. The real-backend walkthrough used only the synthetic fixtures in this folder.
+The OSHA venture is **ready for owner setup**, not live with customers. No customer records or accounts, payment, OSHA portal, signature, filing, mail, listing publication, or public outreach were used. The real-backend walkthrough used only the synthetic fixtures in this folder. The current official public CSV still needs to be downloaded by the owner in a normal browser because the local source request returns HTTP 403.
 
 ## Drift check
 
@@ -57,6 +57,33 @@ $ GLACIER_HOME=/tmp/gf-v-osha3-live-ita ~/w/glacier-lean/.venv/bin/python ventur
 
 The download was not reachable from this client, so this card does not claim a current live-data screen. The previous PH12.16 proof recorded 400,288 rows in an earlier run; that historical result does not override today's 403. No alternate host or access workaround was used. The included ITA CSV fixture supports local screening until the official public download is reachable.
 
+## Release-gate recheck — 2026-10-10
+
+The existing `ventures/osha-filing/tests/test_osha_filing.py` acceptance checks were left unchanged. Five additional venture-owned regression tests now cover the public ITA size field, local CSV row-count/identifier canary reporting, choosing the next filing year for reminders after April, and rendering postcard/landing-page references. The test input for the new CSV case is schema-shaped and synthetic; it is not the official OSHA file.
+
+The current public-source references were checked against OSHA's live pages. OSHA's [ITA data page](https://www.osha.gov/itadata) links the current summary CSV and says records can include establishments that did not have a reporting requirement. OSHA's [summary data dictionary](https://www.osha.gov/sites/default/files/summary_data_dictionary.pdf) defines `size` as the maximum employee-size category reached during the year, separate from `annual_average_employees`; the screener now uses `size` when present (code `3` for 250+, and codes `2`, `21`, or `22` for 20–249). OSHA's [designated-industry table](https://www.osha.gov/recordkeeping/naics-codes-electronic-submission) and [ITA FAQ](https://www.osha.gov/injuryreporting/faqs) support the 20–249 screening rule. This remains lead screening only, not a coverage decision. The [ITA page](https://www.osha.gov/injuryreporting/), [FAQ](https://www.osha.gov/injuryreporting/faqs), and [calendar](https://www.osha.gov/calendar) confirm submission opens January 2, is due March 2, and the signed summary must be posted February 1–April 30. The [recordkeeping forms page](https://www.osha.gov/recordkeeping/forms) provides the official form and explains equivalent formats.
+
+If a downloaded official CSV is available, the new local mode records source filename, row count, establishment-ID canary, candidate count, and uncertain count without exporting the full source file:
+
+```text
+$ ~/w/glacier-lean/.venv/bin/python ventures/osha-filing/scripts/osha_filing.py prospects --source-csv ./2025_summary_data.csv --as-of 2027-01-03
+```
+
+This mode was verified with a synthetic schema-shaped CSV only. A fresh public sync in this card still returned HTTP 403, with `changed=false` and `rows=0`; therefore no current public row count or canary is claimed.
+
+The render-only synthetic postcard preview also ran through the venture CLI. It screened four synthetic establishment rows (two candidate signals and two uncertain), saved one minimum-field sample, produced a postcard PDF and a distinct local landing page, and passed the outreach rule check. The printed proof contains the selected fixture establishment name and a clearly labeled local page reference; it contains no unresolved template variables. Address verification remained uncertain because no test key was configured; no mail was sent. The local landing reference is not a hosted URL.
+
+### Real Glacier engine walkthrough
+
+Started FastAPI/DBOS with `GLACIER_HOME=/tmp/gf-rg-osha-20261010` and installed all four OSHA flows using the project venv. The first install saved the four flow records; the repeat install reported all four unchanged.
+
+- `prepare-300a`, run `6e72d02ec1e5`: used `fixtures/injury-log.example.csv` copied to the temporary home's `incoming/injury-log.csv`. The engine approved the synthetic input-ready and first-five review gates, ran `prepare` successfully, and wrote `packets/300a-review.html` (1,986 bytes). All eight worksheet field/arithmetic checks passed; output reported `result=match`, `signature=customer_signature_required`, and `submission=customer_submits_in_osha_ita`. The run stopped at `customer_review`, with the fixture establishment present and the unsigned/certification disclaimer visible. No customer review, signature, posting, or submission was performed.
+- `osha-daily-deadlines`, run `136bb6ef71b0`: status `done`; both nodes completed and its independent command check passed. On the 2026-10-10 as-of date, output named the next cycle: ITA window `2027-01-02 through 2027-03-02`, due `2027-03-02`; posting window `2027-02-01 through 2027-04-30`. The due list was empty in October, as expected.
+
+The owner-ready state leaves one setup/review step: download the current official summary CSV in a normal browser, run `--source-csv` to record its real row count and canary, then review the first five worksheets and outreach materials. The Jobber test app is already connected; any marketplace publication remains the owner's choice. Customers still review and complete their own filings. No alternate data host or blocked-request workaround was used. PH12.16 remains `todo` in `NORTHSTAR.yaml`; this card did not change the roadmap checkpoint.
+
+Anti-pattern review: the historical 400,288-row count remains explicitly historical, and no current public-feed result is claimed. The first postcard preview exposed unresolved template values; those are now filled or marked as a local unhosted reference, with a new regression test. Acceptance files were not changed. No status claim is based only on this report; the venture tests, installer check, and engine runs are linked above.
+
 Other venture suites were run one project at a time with the repository and project directories on `PYTHONPATH`: 12 venture projects passed, with one optional recall-actor live canary skipped. Recall checker has 10 passing tests and one existing wording assertion failure already recorded in `vault/claims/2026-10-10-ph12-12-recall-output-vocabulary.md`; no other venture files were changed. A single root-level `pytest ventures -q` also has import collisions for recall-actor and utility-audits, so it is not used as the per-venture result above.
 
 ## Limits and owner actions
@@ -66,7 +93,8 @@ Other venture suites were run one project at a time with the repository and proj
 - OSHA's [calendar](https://www.osha.gov/calendar) confirms the Feb 1–Apr 30 posting period and Mar 2 submission deadline; OSHA's [recordkeeping FAQ](https://www.osha.gov/injuryreporting/faqs) describes the Jan 2 submission opening. OSHA rules and coverage can change; the customer checks current requirements.
 - The HTML output is a review worksheet, not the official Form 300A. CSV input requires one row per distinct recordable case, consistent establishment fields, and a single explicit zero-injury row when appropriate.
 - The compact single-row intake adapter may produce an incomplete JSON review worksheet so missing fields can be confirmed by the customer; its `uncertain` result is not an OSHA coverage or compliance decision.
-- The owner still creates the Jobber app/test account, saves secrets, reviews the first postcard and listing, and manually publishes a marketplace listing if desired. The owner also reviews the first five prepared packets.
+- The owner setup/review step is to download the current official OSHA CSV in a normal browser and run the local canary, review the first postcard, listing, and five prepared packets, and publish the marketplace listing only if desired. The Jobber test app is already connected.
+- Current tests after this recheck: `~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing -q` → 22 passed; `~/w/glacier-lean/.venv/bin/python -m pytest ventures/tests -q` → 21 passed; installer dry-run → 4 flows validated.
 - Each establishment's executive checks the worksheet against source records, certifies and signs it, posts it February 1–April 30, and submits required data in its own OSHA ITA account by March 2. Glacier never performs these acts.
 - Lob remains render-only; no live address verification or mailing was attempted. No customer checkout, OSHA credentials, or real prospect data were used.
 - PH12.16 remains `todo` in NORTHSTAR; this card does not update the checkpoint status or evidence.

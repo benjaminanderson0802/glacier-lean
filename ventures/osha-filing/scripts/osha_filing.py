@@ -249,22 +249,33 @@ def eligible_prospects(*, as_of: date | None = None, high_hazard_codes: set[str]
         if not establishment_id or establishment_id in seen:
             continue
         seen.add(establishment_id)
+        size_code = _int_field({"n": _value(record, "size")}, "n")
         count = _int_field({"n": _value(record, "employee_count", "employees", "average_employees", "number_of_employees", "annual_average_employees", "annual_average_number_of_employees", "annual_avg_employees", "average_number_of_employees")}, "n")
+        if size_code == 3:
+            size_class = "250+"
+        elif size_code in (2, 21, 22):
+            size_class = "20-249"
+        elif size_code == 1:
+            size_class = "under-20"
+        else:
+            size_class = None
         industry = str(_value(record, "industry_code", "naics", "naics_code", "industry code", "primary_naics", "primary_naics_code") or "").strip()
-        if count is not None and count >= 250:
+        if size_class == "250+" or (size_class is None and count is not None and count >= 250):
             prospects.append({**record, "establishment_id": establishment_id, "prospect_result": "match", "source": row.get("source_url", OSHA_FORM), "as_of": as_of.isoformat()})
-        elif count is not None and count >= 20 and ((industry in allowed_codes) if allowed_codes is not None else industry.startswith(HIGH_HAZARD_NAICS_PREFIXES)):
+        elif (size_class == "20-249" or (size_class is None and count is not None and count >= 20)) and ((industry in allowed_codes) if allowed_codes is not None else industry.startswith(HIGH_HAZARD_NAICS_PREFIXES)):
             prospects.append({**record, "establishment_id": establishment_id, "prospect_result": "match", "source": OSHA_INDUSTRIES, "as_of": as_of.isoformat()})
         else:
-            excluded.append({"establishment_id": establishment_id, "result": "uncertain — please check", "reason": "employee count or designated high-hazard industry is not established from the available record", "industry_code": industry, "employee_count": count})
+            excluded.append({"establishment_id": establishment_id, "result": "uncertain — please check", "reason": "peak employee-size category or designated high-hazard industry is not established from the available record", "industry_code": industry, "employee_count": count, "employee_size_code": size_code})
     return {"result": "match" if prospects else "no match found in OSHA public submission data as of " + as_of.isoformat(), "prospects": prospects, "excluded": excluded, "sales": "open"}
 
 
 def render_outreach_proof(prospect: dict[str, Any], *, output_dir: str | Path) -> dict[str, Any]:
     """Render one postcard proof and distinct prefilled page; never mail it."""
     record = {**prospect, "id": str(prospect.get("establishment_id", "")), "sender": "Glacier Filing Preparation", "year": date.today().year - 1}
-    front = "<h1>Glacier Filing Preparation</h1><p>Work injury summary preparation</p><p>For {{establishment_name}}</p><p>Private service offer from an independent business.</p>"
-    back = "<p>Prepare your Form 300A with customer review. You complete, certify, and submit your filing.</p><p>Learn more: {{landing_url}}</p><p>Glacier Filing Preparation</p>"
+    establishment_name = html.escape(str(_value(prospect, "establishment_name", "company_name", "company name") or "Customer establishment"))
+    landing_reference = html.escape(f"landing/{record['id']}.html")
+    front = f"<h1>Glacier Filing Preparation</h1><p>Work injury summary preparation</p><p>For {establishment_name}</p><p>Private service offer from an independent business.</p>"
+    back = f"<p>Prepare your Form 300A with customer review. You complete, certify, and submit your filing.</p><p>Local review page: {landing_reference} (not a hosted link).</p><p>Glacier Filing Preparation</p>"
     recipient = {"address_line1": _value(prospect, "address", "address_line1", "street_address") or "", "address_city": _value(prospect, "city") or "", "address_state": _value(prospect, "state") or "", "address_zip": _value(prospect, "zip", "zip_code", "postal_code") or ""}
     postcard_result = postcard(front, back, recipient, {"name": record["sender"], "address_line1": "", "address_city": "", "address_state": "", "address_zip": ""}, output_dir=output_dir)
     pages = landing_pages([record], "<!doctype html><meta charset='utf-8'><title>OSHA preparation</title><h1>Glacier OSHA filing preparation</h1><p>Establishment: {{establishment_name}}</p><p>OSHA establishment ID: {{establishment_id}}</p><p>Industry: {{industry_code}}</p><p>Customer certifies and submits through OSHA ITA; Glacier never acts as OSHA.</p>", output_dir=Path(output_dir) / "landing")
@@ -291,7 +302,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("sync")
     leads = sub.add_parser("prospects")
     leads.add_argument("--as-of", type=date.fromisoformat, default=date.today())
-    leads.add_argument("--fixture", type=Path, help="screen a local synthetic CSV fixture instead of the public feed")
+    source_mode = leads.add_mutually_exclusive_group()
+    source_mode.add_argument("--fixture", type=Path, help="screen a local synthetic CSV fixture instead of the public feed")
+    source_mode.add_argument("--source-csv", type=Path, help="screen an OSHA Summary Data CSV already saved locally; verify its source on the official OSHA page")
     leads.add_argument("--output", type=Path, help="local path for a single address-complete candidate; never writes the full public dataset")
     prepare = sub.add_parser("prepare-300a")
     prepare.add_argument("--input", type=Path, required=True, help="customer-confirmed JSON or injury-log CSV")
@@ -309,12 +322,22 @@ def main(argv: list[str] | None = None) -> int:
         elif args.action == "prospects":
             if args.fixture:
                 with args.fixture.open(encoding="utf-8-sig", newline="") as source:
-                    fixture_records = list(csv.DictReader(source))
-                result = eligible_prospects(as_of=args.as_of, records=fixture_records)
+                    source_records = list(csv.DictReader(source))
+                result = eligible_prospects(as_of=args.as_of, records=source_records)
                 source_mode = "synthetic_fixture"
+            elif args.source_csv:
+                with args.source_csv.open(encoding="utf-8-sig", newline="") as source:
+                    source_records = list(csv.DictReader(source))
+                result = eligible_prospects(as_of=args.as_of, records=source_records)
+                source_mode = "local_csv"
             else:
-                result = eligible_prospects(as_of=args.as_of)
+                source_records = feeds.query(SOURCE_ID)
+                result = eligible_prospects(as_of=args.as_of, records=source_records)
                 source_mode = "public_feed"
+            source_canary_present = any(
+                _value(_row_data(row), "establishment_id", "establishment id", "EstablishmentId")
+                for row in source_records
+            )
             selected = next((row for row in result["prospects"] if all(_value(row, *names) for names in (("street_address", "address", "address_line1"), ("city",), ("state",), ("zip_code", "zip", "postal_code")))), None)
             target = args.output or Path(__import__("os").environ.get("GLACIER_HOME", str(Path.home() / ".glacier"))) / "ventures" / "osha-filing" / "selected-prospect.json"
             selected_path = None
@@ -326,6 +349,7 @@ def main(argv: list[str] | None = None) -> int:
                     "establishment_name": _value(selected, "establishment_name", "company_name", "company name"),
                     "industry_code": _value(selected, "industry_code", "naics_code", "naics"),
                     "employee_count": _value(selected, "annual_average_employees", "employee_count"),
+                    "employee_size_code": _value(selected, "size"),
                     "address": _value(selected, "street_address", "address", "address_line1"),
                     "city": _value(selected, "city"),
                     "state": _value(selected, "state"),
@@ -339,8 +363,9 @@ def main(argv: list[str] | None = None) -> int:
                 selected_path = str(target)
             status_path = target.parent / "prospect-status.json"
             public_result = result["result"] if selected or not result["prospects"] else "uncertain — please check"
-            status_path.write_text(json.dumps({"result": public_result, "as_of": args.as_of.isoformat(), "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "sales": result.get("sales", "open")}, indent=2, ensure_ascii=False), encoding="utf-8")
-            output = {"result": public_result, "source_mode": source_mode, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "detail": "Only a single minimum-field candidate is saved for postcard proof review; no complete mailing list is exported."}
+            source_row_count = len(source_records)
+            status_path.write_text(json.dumps({"result": public_result, "as_of": args.as_of.isoformat(), "source_mode": source_mode, "source_file": args.source_csv.name if args.source_csv else None, "source_row_count": source_row_count, "source_canary_present": source_canary_present, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "sales": result.get("sales", "open")}, indent=2, ensure_ascii=False), encoding="utf-8")
+            output = {"result": public_result, "source_mode": source_mode, "source_row_count": source_row_count, "source_canary_present": source_canary_present, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "detail": "Only a single minimum-field candidate is saved for postcard proof review; no complete mailing list is exported."}
         elif args.action == "prepare-300a":
             if args.input.suffix.casefold() == ".csv":
                 fields = load_customer_csv(args.input)
@@ -365,13 +390,14 @@ def main(argv: list[str] | None = None) -> int:
             output = render_outreach_proof(prospect, output_dir=args.output)
         elif args.action == "deadlines":
             due = due_deadlines(args.as_of)
+            filing_year = args.as_of.year + (1 if args.as_of.month > 4 else 0)
             output = {
                 "due": due,
                 "customer_submits": True,
                 "certification_by_glacier": False,
                 "customer_actions": [
-                    {"action": "post the signed Form 300A summary", "window": f"{args.as_of.year}-02-01 through {args.as_of.year}-04-30", "owner_required": True},
-                    {"action": "submit required data through the customer's OSHA ITA account", "due": f"{args.as_of.year}-03-02", "owner_required": True},
+                    {"action": "submit required data through the customer's OSHA ITA account", "window": f"{filing_year}-01-02 through {filing_year}-03-02", "due": f"{filing_year}-03-02", "owner_required": True},
+                    {"action": "post the signed Form 300A summary", "window": f"{filing_year}-02-01 through {filing_year}-04-30", "owner_required": True},
                 ],
             }
             home = Path(__import__("os").environ.get("GLACIER_HOME", str(Path.home() / ".glacier")))
