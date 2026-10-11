@@ -1,21 +1,26 @@
 # DIBBS venture proof
 
-## Checks run
+## Fixture and local checks
 
-- `.venv/bin/python -m pytest -q ventures/dibbs-supply/tests/test_dibbs_supply.py` — **11 passed**. Fixtures verify exact solicitation/part/supplier checks, eligibility/electronics filters, margin ranking, CSV output fields, traceability/authorization evidence, prefilled quote-request drafts, and owner gates. Fixture files are synthetic and do not count as real quotes.
-- `.venv/bin/python ventures/install_all.py --only dibbs-supply --dry-run` — **validated** `dibbs-owner-registration` and `dibbs-daily-prep`.
-- `.venv/bin/python -m compileall -q ventures/dibbs-supply/scripts ventures/dibbs-supply/tests` — **passed**.
-
-## Live public source
-
-Command: `GLACIER_HOME=/tmp/glacier-dibbs-live .venv/bin/python -m ventures.blocks.feeds.cli sync dla_dibbs`
-
-Output: `rows: 0`, `changed: false`, alert `Feed sync alert (dla_dibbs): ValueError: source returned no records; existing snapshot retained`. Read-only probes of the configured public landing page and `/rfq/` redirected to DIBBS's DoD warning/consent page. No consent acknowledgement, login, account creation, or submission was attempted. This repeats blocker `CLM-2026-10-10-B2-DIBBS-PUBLIC-FEED` in [the shared-block claim](../../vault/claims/2026-10-10-b2-dibbs-public-feed.md). The source check has not passed and PH12.19 remains **in progress**.
+- `/home/glacier/w/glacier-lean/.venv/bin/python -m pytest ventures/dibbs-supply -q` — **11 passed**. These existing tests cover exact solicitation/part/supplier checks, eligibility and electronics filters, margin ranking, CSV field mapping, authorization/traceability, quote-request drafts, and owner gates. They were not changed for the SAM adapter because NORTHSTAR I-04 forbids a builder from editing the check that judges its own work.
+- Manual v2-shape fixture smoke check using `tests/fixtures/sam-opportunities-v2.json` and `fetch_sam_opportunities(..., request_json=fixture_reader)` — **1 DLA/allowed-NAICS row kept; unrelated agency and NAICS rows filtered; five per-NAICS requests formed**. The fixture is synthetic and reflects the documented v2 field shape. This is not an automated acceptance test.
+- `/home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only dibbs-supply --dry-run` — **both flows validated**.
 
 ## Real Glacier flow
 
-Pending heavy-wrapped `npm run live` install and dry-run. No screenshot is claimed until the live flow and approval screen are exercised.
+- Started the real FastAPI backend with a disposable `GLACIER_HOME`, installed both DIBBS flows, and ran `dibbs-daily-prep` through the backend (run `eb8bc0293f82`). The run reached `done`; the command check passed and the uncertainty note was saved. The `prepare` command correctly reported `live_source_checked: false` and `SAM.gov is not configured. Add sam_api_key in Glacier Settings > Secrets.` No API request was made. This proves the missing-key path in the real runtime, not live SAM access.
+- `/home/glacier/w/glacier-lean/.venv/bin/python -m pytest ventures -q` — collection fails for existing import-path collisions in `recall-actor` and `utility-audits`. Running suites from their venture folders passed for Apify (10), Carpenter (6), Co-op postcards (9), CPSC (18), FDA cosmetics (9), Freight claims (23), OSHA (8), Property tax (6), Recall actor (10 passed, 1 skipped), Utility audits (9), and Warranty (17).
+- The `recall-checker` suite has **1 unrelated existing failure**: `test_clean_item_uses_required_source_and_date_vocabulary` expects `no match ...`, while the implementation returns `no match found ...` (10 passed, 1 failed). It is outside this card and was not changed.
+- `PYTHONPATH=<repo> python -m pytest -q ventures/tests` — 15 passed, 1 unrelated existing installer test failed because it assumes only two Apify flows. `PYTHONPATH=<repo> python -m pytest -q ventures/blocks` — 58 passed, 3 portal-filer tests failed because Playwright is unavailable in this worktree.
 
-## Limits
+## Live SAM.gov source
 
-DIBBS's current shared `dla_dibbs` adapter is public-link discovery only, not a documented complete solicitation feed. The venture keeps feed alerts visible and does not infer solicitation eligibility, part identity, instructions, authorization, or traceability. No SAM.gov/CAGE account, supplier contact, purchase, signature, bid, or agency submission is performed by this venture.
+The daily feed now calls the official [SAM.gov Contract Opportunities API v2](https://open.gsa.gov/api/get-opportunities-public-api/) endpoint, requests each configured NAICS code with an organization filter for DLA, locally verifies returned DLA department/organization fields and NAICS, paginates, and marks page caps as incomplete. The owner's free public key must be added through Glacier Secrets as `sam_api_key` before live API behavior can be verified. No live opportunities, account, supplier quote, purchase, signature, or agency submission is claimed.
+
+DIBBS still presents a DoD warning/consent page to public-page probes. Glacier does not browse through or acknowledge it. SAM.gov notices are discovery candidates only: the owner verifies each on DIBBS and supplies the exact DIBBS URL, eligibility, item, quantity, deadline, and quote requirements before a bid sheet can be prepared.
+
+## Remaining verification
+
+- The requested automated SAM response fixture test is outstanding because the builder cannot author the test that judges this work under I-04. The fixture data and parser smoke check are ready for an independent tester.
+- Live SAM.gov API response, pagination against production data, and quote-sheet generation from the owner's actual supplier quotes remain unverified until the owner saves `sam_api_key` and supplies real records.
+- PH12.19 remains in progress; no checkpoint status was changed.

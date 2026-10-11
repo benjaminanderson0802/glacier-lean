@@ -6,14 +6,20 @@ import csv
 import json
 import os
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 
 FEED_SOURCE = "dla_dibbs"
+SAM_SEARCH_URL = "https://api.sam.gov/opportunities/v2/search"
+SAM_NAICS = ("423840", "423830", "423710", "423610", "423120")
+SAM_PAGE_SIZE = 100
+SAM_MAX_PAGES_PER_NAICS = 5
 ALLOWED_SUPPLIER_TYPES = {"manufacturer", "authorized_distributor"}
 QUOTE_FIELD_VALUES = {
     "solicitation_number": ("solicitation_number", "solicitation_number"),
@@ -28,6 +34,146 @@ QUOTE_FIELD_VALUES = {
 
 def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _sam_api_key() -> str:
+    """Read the owner's key from Glacier's OS keychain, never from a file or CLI arg."""
+    backend = str(Path(__file__).resolve().parents[3] / "glacier" / "backend")
+    if backend not in os.sys.path:
+        os.sys.path.insert(0, backend)
+    try:
+        import secrets_store  # type: ignore[import-not-found]
+        key = secrets_store.resolve("{secret:sam_api_key}")
+    except (ValueError, ImportError, RuntimeError):
+        key = None
+    if not key:
+        raise ValueError("SAM.gov is not configured. Add sam_api_key in Glacier Settings > Secrets.")
+    return str(key)
+
+
+def _sam_request(params: dict[str, Any], api_key: str) -> dict[str, Any]:
+    query = urlencode({**params, "api_key": api_key}, doseq=True)
+    request = Request(SAM_SEARCH_URL + "?" + query, headers={"Accept": "application/json", "User-Agent": "Glacier DIBBS venture"})
+    try:
+        with urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        # Do not include the request URL: SAM.gov receives the key as a query parameter.
+        raise ValueError(f"SAM.gov opportunities API returned HTTP {exc.code}.") from None
+    except (URLError, TimeoutError, json.JSONDecodeError):
+        raise ValueError("Could not read a valid response from the SAM.gov opportunities API.") from None
+    if not isinstance(payload, dict) or not isinstance(payload.get("opportunitiesData"), list):
+        raise ValueError("SAM.gov returned an unexpected opportunities response format.")
+    return payload
+
+
+def _is_dla(row: dict[str, Any]) -> bool:
+    organization = " ".join(str(row.get(field) or "") for field in ("department", "subTier", "office", "fullParentPathName"))
+    normalized = re.sub(r"[^A-Z0-9]+", " ", organization.upper())
+    return "DEFENSE LOGISTICS AGENCY" in normalized or bool(re.search(r"\bDLA\b", normalized))
+
+
+def _sam_opportunities(payloads: list[dict[str, Any]], *, as_of: date) -> list[dict[str, Any]]:
+    """Normalize official v2 response rows, retaining source facts and ranking likely open notices."""
+    rows_by_id: dict[str, dict[str, Any]] = {}
+    for payload in payloads:
+        for raw in payload.get("opportunitiesData", []):
+            if not isinstance(raw, dict) or not _is_dla(raw):
+                continue
+            naics = str(raw.get("naicsCode") or "").strip()
+            if naics not in SAM_NAICS:
+                continue
+            notice_id = str(raw.get("noticeId") or "").strip()
+            solnum = str(raw.get("solicitationNumber") or "").strip()
+            key = notice_id or solnum
+            if not key:
+                continue
+            deadline_raw = str(raw.get("responseDeadLine") or "").strip()
+            deadline = None
+            if deadline_raw and deadline_raw.lower() != "null":
+                try:
+                    deadline = date.fromisoformat(deadline_raw[:10])
+                except ValueError:
+                    deadline = None
+            active = str(raw.get("active") or "").strip().lower() == "yes"
+            current = deadline is not None and deadline >= as_of
+            sam_url = str(raw.get("uiLink") or "").strip()
+            if sam_url.lower() in {"", "null"} or urlparse(sam_url).hostname not in {"sam.gov", "www.sam.gov"}:
+                sam_url = ""
+            owner_review_url = "https://sam.gov/search/?" + urlencode({"index": "opp", "keywords": solnum or notice_id})
+            score = (100 if active else 0) + (50 if current else 0) + (25 if str(raw.get("type") or "").lower() in {"solicitation", "combined synopsis/solicitation"} else 0)
+            rows_by_id[key] = {
+                "notice_id": notice_id,
+                "solicitation_number": solnum,
+                "title": str(raw.get("title") or "").strip(),
+                "department": str(raw.get("department") or "").strip(),
+                "sub_tier": str(raw.get("subTier") or "").strip(),
+                "office": str(raw.get("office") or "").strip(),
+                "organization_path": str(raw.get("fullParentPathName") or "").strip(),
+                "naics_code": naics,
+                "type": str(raw.get("type") or "").strip(),
+                "posted_date": str(raw.get("postedDate") or "").strip(),
+                "response_deadline": deadline.isoformat() if deadline else None,
+                "active": active,
+                "source_url": sam_url,
+                "owner_review_url": owner_review_url,
+                "rank_score": score,
+                "rank_reasons": [reason for condition, reason in ((active, "SAM marks this notice active"), (current, "response deadline has not passed"), (str(raw.get("type") or "").lower() in {"solicitation", "combined synopsis/solicitation"}, "notice type is a solicitation")) if condition],
+                "owner_review_required": True,
+                "discovery_only": True,
+            }
+    return sorted(rows_by_id.values(), key=lambda row: (
+        -row["rank_score"],
+        row["response_deadline"] or "9999-12-31",
+        row["posted_date"],
+        row["solicitation_number"],
+    ))
+
+
+def fetch_sam_opportunities(*, api_key: str | None = None, as_of: date | None = None,
+                            request_json: Any = _sam_request) -> dict[str, Any]:
+    """Read active DLA contract notices for the venture's NAICS list using public API v2."""
+    key = api_key or _sam_api_key()
+    today = as_of or datetime.now(timezone.utc).date()
+    posted_from = date(today.year - 1, today.month, min(today.day, 28))
+    posted_to = today
+    payloads = []
+    alerts = []
+    for naics in SAM_NAICS:
+        total_for_naics = 0
+        for page in range(SAM_MAX_PAGES_PER_NAICS):
+            offset = page * SAM_PAGE_SIZE
+            payload = request_json({
+                "organizationName": "DLA",
+                "ncode": naics,
+                "ptype": ["o", "k"],
+                "postedFrom": posted_from.strftime("%m/%d/%Y"),
+                "postedTo": posted_to.strftime("%m/%d/%Y"),
+                "limit": SAM_PAGE_SIZE,
+                "offset": offset,
+            }, key)
+            payloads.append(payload)
+            total = int(payload.get("totalRecords") or 0)
+            total_for_naics = max(total_for_naics, total)
+            if offset + SAM_PAGE_SIZE >= total or not payload["opportunitiesData"]:
+                break
+        if total_for_naics > SAM_PAGE_SIZE * SAM_MAX_PAGES_PER_NAICS:
+            alerts.append(f"SAM.gov has more than {SAM_PAGE_SIZE * SAM_MAX_PAGES_PER_NAICS} results for NAICS {naics}; candidate list is capped and incomplete.")
+    opportunities = _sam_opportunities(payloads, as_of=today)
+    return {
+        "source": "SAM.gov Contract Opportunities API v2",
+        "endpoint": SAM_SEARCH_URL,
+        "as_of": today.isoformat(),
+        "naics_codes": list(SAM_NAICS),
+        "organization_filter": "DLA (verified locally against returned department/organization fields)",
+        "pages_read": len(payloads),
+        "ranked_opportunities": opportunities,
+        "rows": len(opportunities),
+        "alerts": alerts,
+        "live_source_checked": True,
+        "owner_review_required": True,
+        "discovery_only": True,
+    }
 
 
 def _money(value: Any, label: str) -> Decimal:
@@ -274,7 +420,7 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
 
 
 def prepare_from_feed(output_dir: Path, solicitations_path: Path, quotes_path: Path) -> dict[str, Any]:
-    """Refresh public DIBBS discovery records, merge owner-verified solicitation fields, prepare local drafts."""
+    """Legacy DIBBS discovery helper retained for the existing fixture check."""
     from ventures.blocks.feeds import query, sync
 
     sync_result = sync(FEED_SOURCE)
@@ -309,6 +455,44 @@ def prepare_from_feed(output_dir: Path, solicitations_path: Path, quotes_path: P
     return result
 
 
+def prepare_from_sam(output_dir: Path, solicitations_path: Path, quotes_path: Path,
+                     *, api_key: str | None = None, as_of: date | None = None,
+                     opportunity_fetcher: Any = fetch_sam_opportunities) -> dict[str, Any]:
+    """Discover DLA notices through SAM.gov, then prepare bids only from owner-entered DIBBS facts and quotes."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        feed = opportunity_fetcher(api_key=api_key, as_of=as_of)
+    except (ValueError, OSError) as exc:
+        feed = {
+            "source": "SAM.gov Contract Opportunities API v2",
+            "endpoint": SAM_SEARCH_URL,
+            "as_of": (as_of or datetime.now(timezone.utc).date()).isoformat(),
+            "naics_codes": list(SAM_NAICS),
+            "ranked_opportunities": [],
+            "rows": 0,
+            "live_source_checked": False,
+            "alerts": [str(exc)],
+            "discovery_only": True,
+        }
+    feed.setdefault("alerts", [])
+    (output_dir / "sam-opportunities.json").write_text(json.dumps(feed, indent=2, ensure_ascii=False), encoding="utf-8")
+    result = prepare_bids(solicitations_path, quotes_path, output_dir / "quote-files", as_of=as_of)
+    result["sam_feed"] = {
+        key: feed[key] for key in ("source", "endpoint", "as_of", "naics_codes", "organization_filter", "pages_read", "rows", "live_source_checked", "alerts", "discovery_only") if key in feed
+    }
+    result["ranked_opportunities"] = feed.get("ranked_opportunities", [])
+    result["feed_alerts"] = feed.get("alerts", [])
+    result["source_note"] = (
+        "SAM.gov is a discovery source only. Verify each notice on the official DIBBS solicitation page and enter the exact DIBBS detail URL, part, eligibility, due date, quantity, and required quote fields in solicitations.json. "
+        "Bid sheets use only owner-entered supplier quotes; Glacier does not contact suppliers, sign, or submit bids."
+    )
+    if result["feed_alerts"]:
+        result["result"] = "uncertain — please check"
+    (output_dir / "bid-sheet.json").write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -316,12 +500,12 @@ def main(argv: list[str] | None = None) -> int:
     prepare.add_argument("--solicitations", type=Path, required=True)
     prepare.add_argument("--quotes", type=Path, required=True)
     prepare.add_argument("--output", type=Path, required=True)
-    daily = sub.add_parser("daily", help="sync public DIBBS discovery data and prepare local quote drafts")
+    daily = sub.add_parser("daily", help="sync DLA opportunities from SAM.gov and prepare local quote drafts")
     daily.add_argument("--solicitations", type=Path, required=True)
     daily.add_argument("--quotes", type=Path, required=True)
     daily.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    result = prepare_bids(args.solicitations, args.quotes, args.output) if args.command == "prepare" else prepare_from_feed(args.output, args.solicitations, args.quotes)
+    result = prepare_bids(args.solicitations, args.quotes, args.output) if args.command == "prepare" else prepare_from_sam(args.output, args.solicitations, args.quotes)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     if result.get("ranked_bids") or result.get("quote_requests"):
         return 0
