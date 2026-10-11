@@ -1,0 +1,25 @@
+{
+  "card": "V-COOP2",
+  "date": "2026-10-10",
+  "runtime": "real local Glacier backend with disposable GLACIER_HOME; no live Jobber account or real dealer records",
+  "flow": "coop-claim-readiness",
+  "run_id": "18a5dd42b190",
+  "fixture": "ventures/coop-postcards/fixtures/jobber_completed_job.json",
+  "status": "done",
+  "nodes": {
+    "daily": "done",
+    "create_drafts": "done",
+    "claim_review": "done",
+    "record_review_only": "done"
+  },
+  "drafts": {
+    "markdown": "ventures/coop-postcards/evidence/fixture-output/jobber-6da7aebabbc94c2d.md",
+    "pdf": "ventures/coop-postcards/evidence/fixture-output/jobber-6da7aebabbc94c2d.pdf",
+    "filing_ready": false,
+    "external_actions": "none"
+  },
+  "notes": [
+    "The installed flow was temporarily pointed at the fixture for this disposable run, then reinstalled from the checked-in flow file.",
+    "No Jobber API call, brand portal, Lob request, mail order, payment, or filing occurred."
+  ]
+}

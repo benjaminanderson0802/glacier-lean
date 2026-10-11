@@ -15,9 +15,10 @@ def main() -> int:
     parser.add_argument("--claim-id", required=True)
     parser.add_argument("--outcome", required=True, choices=("accepted", "rejected"))
     parser.add_argument("--reason", default="", help="required when rejected")
+    parser.add_argument("--owner-filed", action="store_true", help="confirm you personally filed the first attempt; this records only local outcome state")
     args = parser.parse_args()
     state_dir = Path(os.environ.get("GLACIER_HOME", Path.home() / ".glacier")) / "ventures/coop-postcards/claim-attempts"
-    state = record_claim_outcome(args.claim_id, args.outcome, state_dir, reason=args.reason)
+    state = record_claim_outcome(args.claim_id, args.outcome, state_dir, reason=args.reason, owner_filed=args.owner_filed)
     print(json.dumps(state, indent=2))
     return 0
 

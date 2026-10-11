@@ -1,26 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Co-op claim or postcard intake",
+  "title": "Co-op claim details or postcard proof intake",
   "oneOf": [
     {
       "type": "object",
-      "required": ["claim_id", "dealer_label", "fields", "rules", "portal"],
+        "required": ["claim_id", "dealer_label", "fields", "rules"],
       "properties": {
         "claim_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,100}$"},
         "dealer_label": {"type": "string", "minLength": 1},
         "fields": {"type": "object"},
         "evidence_documents": {"type": "array", "items": {"type": "string", "minLength": 1}},
         "rules": {"type": "object", "required": ["program_year", "expires_on", "required_evidence"]},
-        "portal": {
-          "type": "object",
-          "required": ["portal_id", "base_url", "allowed_domains", "username_secret", "password_secret"],
-          "properties": {
-            "portal_id": {"type": "string"}, "base_url": {"type": "string", "format": "uri"},
-            "allowed_domains": {"type": "array", "items": {"type": "string"}},
-            "username_secret": {"type": "string"}, "password_secret": {"type": "string"},
-            "government_agency": {"type": "boolean"}
-          }
-        }
+        "brand": {"type": "string"},
+        "expires_on": {"type": "string", "format": "date"},
+        "evidence": {"type": "array", "items": {"type": "string"}, "description": "Present checklist keys confirmed by the dealer"}
       }
     },
     {

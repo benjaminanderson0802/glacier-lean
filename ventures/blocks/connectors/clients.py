@@ -90,7 +90,7 @@ class JobberClient(ReadOnlyClient):
         query = """query ReadJobs($first: Int!, $after: String) {
           jobs(first: $first, after: $after) {
             nodes {
-              id jobNumber title jobStatus completedAt
+              id jobNumber title jobStatus completedAt jobberWebUri
               customFields {
                 __typename
                 ... on CustomFieldText { id label valueText }

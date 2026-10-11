@@ -3,13 +3,12 @@
   "name": "co-op claims + street postcards",
   "status": "in_progress",
   "product": {
-    "co_op_claims": "Prepare brand-rule checklists and dealer-authorized claim drafts from ad proofs and invoices. A claim is never filed unless the dealer authorizes it and the approval step is completed.",
-    "street_postcards": "Prepare 6x4 neighborhood postcard proofs for local dealers and shared business cards. Mail runs in Lob test mode only until the owner supplies test credentials and approves the campaign.",
+    "co_op_claims": "Read completed Jobber jobs and prepare source-linked, evidence-checklisted claim drafts with local PDF/Markdown output and confirmed-expiry reminders. The dealer signs and files claims directly.",
+    "street_postcards": "Prepare local neighborhood postcard proofs for owner review. Glacier never mails postcards.",
     "budget_timing": "Open dealer outreach and postcard campaigns in November so dealers can use current year-end co-op budgets; calculate brand claim reminders 60 and 30 days before each program expiry."
   },
   "blocks": [
     "connectors.jobber",
-    "filer",
     "mail",
     "customer",
     "reader",
@@ -41,16 +40,14 @@
     "jobber_client_id",
     "jobber_client_secret",
     "jobber_access_token",
-    "jobber_refresh_token",
-    "lob_test_api_key",
-    "brand_portal_credentials (customer-owned, per brand)"
+    "jobber_refresh_token"
   ],
   "your_steps": [
     {
       "id": "jobber-setup",
       "title": "Connect Jobber for the co-op app",
       "when": "Before the first dealer intake",
-      "detail": "Create the Glacier app in the Jobber Developer Center and request read-only completed-job access. Paste the Jobber values and optional Lob test key into the labeled fields on this step. Glacier saves them in this computer's keychain. Keep brand portal credentials separate for each brand, and add them only after confirming that brand permits portal use. Leave the callback blank until Glacier has its real URL.",
+      "detail": "Create the Glacier app in the Jobber Developer Center and request read-only completed-job access. Paste the four Jobber OAuth values into the labeled fields on this step. Glacier saves them in this computer's keychain. Leave the callback blank until Glacier has its real URL.",
       "links": [
         "https://developer.getjobber.com/"
       ],
@@ -70,39 +67,30 @@
         {
           "name": "jobber_refresh_token",
           "label": "Jobber refresh token"
-        },
-        {
-          "name": "lob_test_api_key",
-          "label": "Lob test key"
         }
       ]
     },
     {
-      "id": "first-brand",
-      "title": "Review the first brand claim",
-      "when": "Before the first claim for each brand",
-      "detail": "Confirm that the brand's program rules are represented correctly, review the evidence checklist, and approve the dealer-authorized claim draft. Any government filing remains for the customer to sign and submit.",
+      "id": "first-owner-review",
+      "title": "Review claims and postcard proofs",
+      "when": "Before the first claim for each brand and each campaign",
+      "detail": "Review current brand program terms and each evidence checklist. The dealer authorizes, signs, and files claims directly with the brand. Review and approve each exact postcard proof and campaign budget; Glacier only renders the proof.",
       "links": [
-        "https://www.jobber.com/"
-      ]
-    },
-    {
-      "id": "first-mail",
-      "title": "Choose routes and approve the first postcard",
-      "when": "Before the first November mail run",
-      "detail": "Choose the towns/routes, approve the exact card proof and budget, and configure Lob test mode plus a printer/post-office plan. The flow never sends live mail.",
-      "links": [
-        "https://dashboard.lob.com/",
+        "https://adkit.carrier.com/en/us/guidelines",
+        "https://www.trane.com/residential/en/for-dealers/",
+        "https://www.lennoxpros.com/partner-resources/marketing/consumer-advertising-program",
+        "https://www.rheem.com/professionals/residential-heating-and-cooling/pro-partner-programs/",
+        "https://www.goodmanmfg.com/become-a-dealer",
         "https://eddm.usps.com/"
       ]
     }
   ],
   "launch_gates": [
-    "First claim per brand is reviewed by the owner; each dealer separately authorizes its claim.",
-    "First postcard design and each list's first send are owner-approved; Lob must use a test_ key.",
+    "Each dealer authorizes, signs, and files its own claim directly; Glacier only prepares drafts.",
+    "First postcard design and any campaign are owner-approved; Glacier renders proofs but never mails them.",
     "No homeowner name is collected or printed on street cards; completed job addresses are street-level only.",
     "A category can appear once per shared route card, and every ad requires written approval.",
-    "No claim with missing required pre-approval or evidence can proceed to the filer."
+    "Unverified brand terms or missing evidence stay visible in the local draft; Glacier never files a claim."
   ],
   "dry_run_env_id": "street-postcard-proof"
 }
