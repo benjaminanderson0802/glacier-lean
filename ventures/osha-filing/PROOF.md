@@ -16,9 +16,19 @@ Focused acceptance suite:
 
 ```text
 $ ~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing -q
-.............                                                            [100%]
-13 passed
+...X.............                                                        [100%]
+16 passed, 1 xpassed
 ```
+
+The independent OSHA acceptance file was run with its `xfail` marker ignored:
+
+```text
+$ ~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing/tests/acceptance/test_v_osha3.py -q --runxfail
+....                                                                     [100%]
+4 passed
+```
+
+The CSV-to-worksheet case exercised `scripts.filing.prepare_from_injury_log_csv` with the synthetic intake fixture and confirmed that a worksheet file is produced while `signed` and `submitted` remain false and customer certification/submission remains required. The worksheet records missing values for customer confirmation. The whole venture suite then reported `16 passed, 1 xpassed`; the extra pass is an independent guide check whose xfail marker is also now satisfied. All of this is fixture/local evidence.
 
 Manifest/flow validation:
 
@@ -55,6 +65,7 @@ Other venture suites were run one project at a time with the repository and proj
 - The ITA prospect fixture is synthetic and cannot be treated as a current lead list. OSHA's [ITA page](https://www.osha.gov/itadata) remains the source for the official download.
 - OSHA's [calendar](https://www.osha.gov/calendar) confirms the Feb 1–Apr 30 posting period and Mar 2 submission deadline; OSHA's [recordkeeping FAQ](https://www.osha.gov/injuryreporting/faqs) describes the Jan 2 submission opening. OSHA rules and coverage can change; the customer checks current requirements.
 - The HTML output is a review worksheet, not the official Form 300A. CSV input requires one row per distinct recordable case, consistent establishment fields, and a single explicit zero-injury row when appropriate.
+- The compact single-row intake adapter may produce an incomplete JSON review worksheet so missing fields can be confirmed by the customer; its `uncertain` result is not an OSHA coverage or compliance decision.
 - The owner still creates the Jobber app/test account, saves secrets, reviews the first postcard and listing, and manually publishes a marketplace listing if desired. The owner also reviews the first five prepared packets.
 - Each establishment's executive checks the worksheet against source records, certifies and signs it, posts it February 1–April 30, and submits required data in its own OSHA ITA account by March 2. Glacier never performs these acts.
 - Lob remains render-only; no live address verification or mailing was attempted. No customer checkout, OSHA credentials, or real prospect data were used.

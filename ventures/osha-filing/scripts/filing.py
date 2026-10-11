@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from datetime import date
 from pathlib import Path
@@ -82,6 +83,106 @@ def prepare_300a(intake: dict[str, Any], output_dir: str | Path, *, as_of: str |
         path = str(target)
         add_deadline(f"osha-annual-{establishment['name']}-{year}", f"{year + 1}-01-02", "0d|30d", f"OSHA 300A filing window for {establishment['name']}")
     return {"result": result, "form_path": path, "customer_must_certify_and_submit": True, "signed": False, "submitted": False, "please_confirm": sorted(set(confirm)), "filing_window": filing_window(today)}
+
+
+def prepare_from_injury_log_csv(input_path: str | Path, output_dir: str | Path, *, as_of: str | date | None = None) -> dict[str, Any]:
+    """Turn a customer injury-log CSV into an unsigned, local review worksheet.
+
+    The compact intake CSV used by this venture stores aggregate categories in
+    one row. Missing identity, coverage, and certification details are recorded
+    for customer confirmation rather than filled with guessed values.
+    """
+    source_path = Path(input_path)
+    with source_path.open("r", encoding="utf-8-sig", newline="") as source:
+        rows = list(csv.DictReader(source))
+    if not rows:
+        raise ValueError("CSV must contain a customer injury-log row")
+
+    row = rows[0]
+
+    def value(*names: str) -> str:
+        for name in names:
+            item = row.get(name)
+            if item is not None and str(item).strip():
+                return str(item).strip()
+        return ""
+
+    def number(*names: str) -> int | None:
+        raw = value(*names)
+        if not raw:
+            return None
+        try:
+            parsed = int(raw)
+        except ValueError:
+            return None
+        return parsed if parsed >= 0 and str(parsed) == raw else None
+
+    year = number("year", "calendar_year")
+    name = value("establishment", "establishment_name", "name")
+    fields = {
+        "establishment": name,
+        "year": year,
+        "average_employees": number("average_employees", "employees"),
+        "hours_worked": number("hours_worked", "total_hours_worked"),
+        "total_cases": number("total_cases"),
+        "total_deaths": number("total_deaths", "deaths"),
+        "days_away": number("days_away"),
+        "job_transfer": number("job_transfer", "cases_with_job_transfer_or_restriction"),
+        "other_recordable": number("other_recordable", "other_recordable_cases"),
+        "address": value("address", "establishment_address"),
+        "industry_code": value("industry_code", "naics_code"),
+        "executive_name": value("executive_name"),
+        "executive_title": value("executive_title"),
+    }
+    required = (
+        "establishment", "year", "average_employees", "hours_worked", "total_cases", "total_deaths",
+        "days_away", "job_transfer", "other_recordable", "address", "industry_code",
+        "executive_name", "executive_title",
+    )
+    please_confirm = [field for field in required if fields[field] in (None, "")]
+    if str(row.get("coverage_confirmed", "")).strip().casefold() != "true":
+        please_confirm.append("customer confirmation of OSHA coverage")
+    if str(row.get("customer_confirmed", "")).strip().casefold() != "true":
+        please_confirm.append("customer confirmation of the injury-log values")
+    as_of_date = date.fromisoformat(as_of) if isinstance(as_of, str) else as_of or date.today()
+    posting_year = year + 1 if year is not None else None
+    record = {
+        "form": "OSHA 300A annual summary review worksheet",
+        "calendar_year": year,
+        "establishment": fields["establishment"],
+        "address": fields["address"],
+        "industry_code": fields["industry_code"],
+        "average_employees": fields["average_employees"],
+        "hours_worked": fields["hours_worked"],
+        "injury_log": {key: fields[key] for key in ("total_cases", "total_deaths", "days_away", "job_transfer", "other_recordable")},
+        "executive_name_for_customer_certification": fields["executive_name"],
+        "executive_title": fields["executive_title"],
+        "missing_values_for_customer_confirmation": sorted(set(please_confirm + ["customer review of totals against the OSHA 300 Log"])),
+        "certified": False,
+        "signed": False,
+        "submitted": False,
+        "posting_period": f"{posting_year}-02-01 through {posting_year}-04-30" if posting_year else None,
+        "submission_deadline": f"{posting_year}-03-02" if posting_year else None,
+        "source_file": source_path.name,
+        "as_of": as_of_date.isoformat(),
+        "instruction": "Customer confirms missing values, checks the totals against its OSHA 300 Log, certifies and signs the form, submits through its OSHA ITA account, and posts the signed copy. This worksheet is not a filing confirmation.",
+    }
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    target = destination / f"osha-300a-{year if year is not None else 'unknown'}-review.json"
+    target.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    if name and year is not None and 2000 <= year < 9999:
+        add_deadline(f"osha-annual-{name}-{year}", f"{year + 1}-01-02", "0d|30d", f"OSHA 300A filing window for {name}")
+    return {
+        "result": "match" if not please_confirm else "uncertain — please check",
+        "form_path": str(target),
+        "customer_must_certify_and_submit": True,
+        "signed": False,
+        "submitted": False,
+        "please_confirm": please_confirm,
+        "filing_window": filing_window(as_of_date),
+        "local_reminder_scheduled": bool(name and year is not None),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

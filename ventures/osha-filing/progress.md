@@ -11,6 +11,7 @@
 ## Implemented
 
 - Customer injury-log CSV template and parser. It counts distinct cases by category, sums days away and restriction days, rejects conflicting establishment details and duplicate case IDs, and creates the same printable customer-review worksheet. Existing JSON input remains supported.
+- Added the acceptance-facing compact CSV adapter in `scripts/filing.py`. It writes an unsigned, unsubmitted review worksheet, lists missing customer confirmations, and uses the local deadline tracker for the annual reminder.
 - Local synthetic ITA CSV screening mode for offline checks. Candidate rows are separated from uncertain rows, and output explicitly says `synthetic_fixture`.
 - Separate customer reminders for Jan 2–Mar 2 ITA submission and Feb 1–Apr 30 workplace posting. The worksheet and approval prompt leave signing, posting, and submission to the establishment executive.
 - Corrected approval routing and step limit in the preparation flow after the real-backend walkthrough showed that approval branches skipped the worksheet command.
@@ -18,7 +19,7 @@
 
 ## Verification status
 
-The requested OSHA test command passes: `~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing -q` → 13 passed. `ventures/install_all.py --only osha-filing --dry-run` validates all four flows. A disposable real Glacier backend installed the flows and ran the synthetic CSV through worksheet generation to the customer-review approval gate; the customer action was not approved or submitted.
+The acceptance check passes with its xfail marker ignored: `~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing/tests/acceptance/test_v_osha3.py -q --runxfail` → 4 passed. The full venture suite passes: `~/w/glacier-lean/.venv/bin/python -m pytest ventures/osha-filing -q` → 16 passed, 1 xpassed. `ventures/install_all.py --only osha-filing --dry-run` validates all four flows. A disposable real Glacier backend installed the flows and ran the synthetic CSV through worksheet generation to the customer-review approval gate; the customer action was not approved or submitted.
 
 The official OSHA ITA feed returned HTTP 403 on this card's sync attempt, so current public-data prospect screening is unverified. The fixture screen returned two synthetic candidates and two uncertain entries. The older PH12.16 proof recorded 400,288 rows, but that result is historical and not evidence of current feed reachability.
 
