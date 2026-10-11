@@ -4,7 +4,38 @@
   "primary_brand": "lennox",
   "queue_window_days": 60,
   "registration": {
-    "deadline": "60 calendar days after installation for eligible homes, or closing date for new construction; California, Florida, Georgia installations on/after 2026-01-01, Quebec, and other jurisdictions may be exempt or have different choices.",
+    "deadline": "Eligible homes outside jurisdictions where registration is prohibited must register within 60 calendar days after installation (existing homes) or closing (new construction). In California, Florida, Georgia for units installed on or after 2026-01-01, Quebec, and other jurisdictions where registration requirements are prohibited, eligible equipment automatically receives the default parts-only Extended Limited Warranty; homeowners may change to the alternative parts-and-labor coverage within 60 days after installation or closing.",
+    "state_windows": {
+      "CA": {
+        "label": "California",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "Eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      },
+      "FL": {
+        "label": "Florida",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "Eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      },
+      "GA": {
+        "label": "Georgia",
+        "effective_on_or_after": "2026-01-01",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "For units installed on or after 2026-01-01, eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      },
+      "QC": {
+        "label": "Quebec",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "Eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      }
+    },
     "who_may_register": "Homeowner; the official portal also has a dealer path that requires the dealer customer number. The exact scope of dealer authority for each registration is product-specific.",
     "portal_urls": {
       "Lennox": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
