@@ -1,18 +1,18 @@
 {
   "slug": "depop-resale",
   "name": "buy-first secondhand clothing resale prep",
-  "status": "blocked",
+  "status": "ready",
   "product": {
     "purpose": "Prepare sourced-category buy ceilings, listing drafts from owner-provided item facts and original photos, and sold-item shipping checklists for owner review.",
     "inventory_model": "BUY-FIRST: the owner purchases and physically possesses each item before any listing; owner takes original photos.",
     "data_access": "Local CSV and local photo paths only. No Depop login, API, browsing, scraping, bot, posting, purchase, or label purchase.",
-    "listing_handoff": "Vendor-neutral CSV; no named crosslisting vendor is claimed as Depop-approved because Depop does not publish a named approved-vendor list.",
+    "listing_handoff": "Local review-only CSV; manual Depop listing is the only provider route verified from current official Depop sources, which do not name approved crosslisting vendors.",
     "pricing_assumption": "Illustrative USD ceilings target 50% contribution margin after US payment processing, seller-paid postage, and packaging; owner verifies current fees and comparable sold prices before purchase.",
     "limitations": [
       "Depop trend coverage is directional, not proof of category sell-through or revenue.",
       "Owner must confirm all listing facts and original-photo ownership; the script cannot infer authenticity or verify photo provenance.",
-      "A Depop-authorized API-connected crosslisting vendor and its import schema must be confirmed by the owner before using the CSV with any external service.",
-      "Owner purchases inventory, chooses final prices, manually approves and publishes listings, buys labels, packs, and ships."
+      "No named crosslisting provider is publicly identified as Depop-approved; manual listing in Depop is the only prepared route.",
+      "Owner purchases inventory, chooses final prices, manually approves/publishes each listing, and later buys labels, packs, and ships sold items."
     ]
   },
   "flows": ["depop-resale-owner-workflow"],
@@ -20,24 +20,37 @@
   "secrets_needed": [],
   "your_steps": [
     {
-      "id": "photograph-list-and-fulfill",
-      "title": "Buy, photograph, review, list, pack, and ship each item",
-      "when": "For each sourcing batch, before listing, and whenever an item sells",
-      "detail": "The owner uses the buy ceilings to choose and purchase inspected used inventory, takes original photos after receiving it, reviews the local draft, manually lists through Depop or a vendor Depop has confirmed as API-authorized, and personally packs and ships any sold order. Before selling, check whether the business meets Georgia's dealer definition and, if so, register for Sales & Use Tax through GTC; registration is free. DOR says online registration is available through GTC and electronic filing is free. Use Georgia Form ST-5 only for qualifying tax-exempt wholesale purchases for resale, not personal-use purchases. No drop-shipped or supplier-catalogue stock is used. Follow OWNER-STEPS.md click by click.",
+      "id": "buy-stock",
+      "title": "Buy inspected used stock within the ceilings",
+      "when": "Before each sourcing batch",
+      "detail": "Use the owner-checked ceiling in RESEARCH.md, inspect the item and its full landed cost, and personally buy only used stock you can verify and physically receive. The example sale prices and ceilings are screening assumptions, not guarantees. Follow the exact steps in OWNER-STEPS.md.",
       "links": [
-        "https://dor.georgia.gov/tax-registration",
-        "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
-        "https://dor.georgia.gov/about-georgia-tax-center",
-        "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"
+        "https://www.goodwill.org/locate-a-thrift-store/",
+        "https://shopgoodwill.com/listing?catIds=&layout=grid"
       ]
+    },
+    {
+      "id": "take-original-photos",
+      "title": "Take original photos and enter verified item facts",
+      "when": "After you physically receive each item",
+      "detail": "Photograph the actual garment yourself, record only verified facts in a private inventory CSV, and run the local draft command. Keep the CSV and photos outside the repository. Never use catalogue stock or supplier photos.",
+      "links": ["README.md", "OWNER-STEPS.md"]
+    },
+    {
+      "id": "approve-and-list",
+      "title": "Approve drafts and list manually in Depop",
+      "when": "Before each item is published",
+      "detail": "Compare every generated field and photo to the physical item. Sign in to Depop, click Sell now, enter the checked draft and original photos, choose accurate item fields and final price, then publish yourself or save a draft. No named crosslisting vendor is asserted as Depop-approved. Later, after a sale, you personally pack, buy the label, dispatch, and track the order.",
+      "links": ["https://www.depop.com/", "https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item"]
     }
   ],
   "launch_gates": [
     "Do not list catalog drop-shipped goods, stock/supplier photos, or items not physically owned and available to ship.",
     "Sell only authentic, legally owned, Depop-permitted used clothing; do not list prohibited items or counterfeit goods.",
     "Use only the owner's original item photos and review all AI/template text for accuracy; no unsupported brand, era, material, or condition claims.",
-    "Do not use bots, scraping, browser automation, or Depop API access. Only a vendor the owner confirms is Depop-authorized for API crosslisting may be used outside this local tool.",
-    "Remove a cross-listed item promptly if it sells elsewhere and personally resolve any double sale.",
+    "Use manual Depop listing only: public official Depop sources reviewed do not name an approved crosslisting vendor, and the public API is not available.",
+    "Do not use bots, scraping, browser automation, or Depop API access.",
+    "Remove an item promptly if you later list it elsewhere and it sells; resolve any double sale yourself.",
     "No buying, account creation, publishing, spending, label purchase, or external write is performed by the venture scripts."
   ]
 }

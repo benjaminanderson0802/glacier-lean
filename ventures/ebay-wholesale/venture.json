@@ -1,7 +1,7 @@
 {
   "slug": "ebay-wholesale",
   "name": "eBay wholesale drop-ship listings",
-  "status": "in_progress",
+  "status": "ready",
   "product": {
     "purpose": "Prepare local eBay Sell Inventory API listing drafts from a wholesale supplier CSV and owner-reviewed supplier purchase order drafts from eBay Fulfillment API orders.",
     "channels": ["eBay"],
@@ -16,26 +16,33 @@
   "secrets_needed": ["ebay_user_access_token"],
   "your_steps": [
     {
-      "id": "accounts-and-suppliers",
-      "title": "Set up eBay and apply to wholesale suppliers",
-      "when": "Before using live eBay Sell APIs or preparing real supplier POs",
-      "detail": "Follow OWNER-STEPS.md to create or verify your eBay seller account and payouts, create your eBay developer keyset, apply in writing through the linked wholesale supplier application pages, and check Georgia Sales & Use Tax registration applicability before physical-goods sales. If Georgia registration applies, register through GTC for free; provide Georgia Form ST-5 only for qualifying tax-exempt wholesale purchases for resale, and provide an EIN only where required. Store only the eBay OAuth user token in Glacier Settings → Secrets. Do not enter credentials in CSVs. These are setup actions; Glacier separately pauses for owner approval before each API write, listing publication, supplier PO, or payment.",
+      "id": "ebay-seller-payouts",
+      "title": "Verify eBay seller account and payouts",
+      "when": "Before using live eBay Sell APIs",
+      "detail": "Open eBay Seller Center, complete identity/business verification with actual records, add a matching bank account or eligible debit card in Seller Hub → Payments → Payout settings, and verify the payout status. Follow OWNER-STEPS.md. Estimated 10–20 minutes when records are ready.",
       "links": [
-        "https://www.ebay.com/sellercenter",
-        "https://developer.ebay.com/my/keys",
-        "https://www.medalequipment.com/pages/distributors",
-        "https://mammothskidsteer.com/pages/become-a-dealer",
-        "https://www.travers.com/wholesale-by-travers-splashpage",
-        "https://voltikpower.com/trade",
-        "https://us.mychway.com/distributor",
-        "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
-        "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"
-      ],
+        "https://www.ebay.com/sellercenter"
+      ]
+    },
+    {
+      "id": "ebay-developer-keys",
+      "title": "Create eBay developer keys",
+      "when": "Before real Sell API use",
+      "detail": "Join/sign in to the eBay Developer Program, create a Sandbox keyset, then a Production keyset when ready; authorize Sell Inventory and Fulfillment scopes via eBay OAuth. Save the user token only in Glacier Settings → Secrets as ebay_user_access_token. Follow OWNER-STEPS.md. Estimated 15–25 minutes.",
+      "links": ["https://developer.ebay.com/my/keys"],
       "secrets": [{"name": "ebay_user_access_token", "label": "eBay OAuth user access token"}]
+    },
+    {
+      "id": "supplier-applications",
+      "title": "Submit the prefilled supplier applications",
+      "when": "Before adding supplier products to listing drafts",
+      "detail": "Use research/SUPPLIER-APPLICATIONS.md to submit written applications/inquiries to Mammoth Attachments, Medal Equipment, and Wholesale By Travers. Replace only OWNER-marked fields using business records; submit each yourself. Wait for written permission for eBay sales, dropship, product-data/images, costs, stock and lead times. For qualifying tax-free resale purchases, provide a completed Georgia Form ST-5 only after valid sales-tax registration, as described in the packet. Estimated 25–35 minutes, plus any required tax registration time.",
+      "links": ["research/SUPPLIER-APPLICATIONS.md", "https://mammothskidsteer.com/pages/become-a-dealer", "https://www.medalequipment.com/pages/distributors", "https://www.travers.com/wholesale-by-travers/inquiry", "https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download"]
     }
   ],
   "launch_gates": [
     "Owner has reviewed current eBay drop-shipping, automation, listing, delivery, and API terms.",
+    "The Apify sold-listings query pack is not run until eBay permission or another documented eBay-approved access basis is recorded; owner authorization of Apify does not grant permission from eBay.",
     "Live Sell API writes are routed through a durable Glacier audit-event writer before the network call.",
     "Every listing has a wholesale supplier agreement permitting marketplace resale and direct-to-buyer shipment.",
     "Supplier lead times, inventory, outbound freight, returns, and warranty terms are verified before listing.",
