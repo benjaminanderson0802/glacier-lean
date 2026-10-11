@@ -225,23 +225,28 @@ def _cpsc_searches(query: Mapping[str, Any]) -> list[dict[str, str]]:
         if candidate not in phrases:
             phrases.append(candidate)
 
-    # CPSC's text search is literal about apostrophes. Spend the remaining
-    # budget on a punctuation-free variant of the shortest useful phrase.
+    # CPSC's text search is literal about apostrophes. Keep the probes
+    # independent and representative: full product name, shortened recall
+    # title, then a shortened ProductName apostrophe variant.
+    # FDA also checks three separate endpoints for each name-only lookup, so
+    # limiting this plan to three requests keeps the whole lookup at six.
     shortest = phrases[-1]
     without_apostrophes = shortest.replace("'", "").replace("’", "")
-    if without_apostrophes != shortest:
-        phrases.append(without_apostrophes)
-    else:
-        with_apostrophe = shortest.replace(" n ", " 'n ").replace(" N ", " 'N ")
-        if with_apostrophe != shortest:
-            phrases.append(with_apostrophe)
-
+    apostrophe_variant = without_apostrophes
+    if apostrophe_variant == shortest:
+        apostrophe_variant = shortest.replace(" n ", " 'n ").replace(" N ", " 'N ")
+    candidates = [
+        ("ProductName", phrase),
+        ("RecallTitle", shortest),
+        ("ProductName", apostrophe_variant),
+    ]
     searches: list[dict[str, str]] = []
-    for candidate in phrases:
-        for field in ("ProductName", "RecallTitle"):
+    seen: set[tuple[str, str]] = set()
+    for field, candidate in candidates:
+        key = (field, candidate)
+        if candidate and key not in seen:
             searches.append({"format": "json", field: candidate})
-            if len(searches) == 6:
-                return searches
+            seen.add(key)
     return searches
 
 
