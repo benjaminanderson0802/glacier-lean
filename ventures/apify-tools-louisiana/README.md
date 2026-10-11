@@ -29,7 +29,9 @@ The [LSLBC contractor search page](https://lslbc.louisiana.gov/contractor-search
 
 The prepared title, description, terms, search words, source note, and support text are in [store_listing.md](store_listing.md). Suggested billing is $0.02 per completed readable lookup, including readable no-match results. Source outages are not charged. Include platform usage and set a $2.00 maximum charge per run. Disable the automatic `apify-default-dataset-item` event.
 
-## Owner-only steps
+## Your steps before publication
 
-1. Set up the Apify developer and payout account, log in with the official Apify CLI, and upload this subfolder yourself.
-2. Run the Louisiana-specific Glacier publication approval after reviewing the no-blocking distinct-engine review in [`REVIEW.md`](REVIEW.md); then publish the Actor yourself in Apify Console. No account, payout setup, upload, or publication was performed for this draft.
+1. **Your step — account, payout setup, and upload:** Set up the Apify developer and payout account yourself, complete any identity verification, install the official Apify CLI, and run `npm exec --yes --package=apify-cli@1.10.0 -- apify login`. From the repository root, upload this Actor with `(cd ventures/apify-tools-louisiana && npm exec --yes --package=apify-cli@1.10.0 -- apify push)`. Keep credentials inside Apify; do not paste them into Glacier.
+2. **Your step — separate approval and publication:** Review the Louisiana-specific code and Store listing review in [`REVIEW.md`](REVIEW.md), confirm the event price, included platform usage, $2.00 run limit, and disabled automatic dataset-item event, then run the Louisiana-specific Glacier publication approval. Publish this Actor yourself in Apify Console only after that approval passes. The Mississippi approval does not cover this Actor. No account, payout setup, upload, or publication has been performed for this draft.
+
+Glacier prepares and verifies the Actor and canary. It does not automatically submit, deploy, or publish the listing; these account, identity, billing, and first-publication actions remain yours.
