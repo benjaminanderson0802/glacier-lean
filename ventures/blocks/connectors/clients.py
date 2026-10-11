@@ -87,8 +87,21 @@ class JobberClient(ReadOnlyClient):
         page_size = min(100, max(1, page_size))
         rows: list[dict[str, Any]] = []
         cursor: str | None = None
+        query = """query ReadJobs($first: Int!, $after: String) {
+          jobs(first: $first, after: $after) {
+            nodes {
+              id jobNumber title jobStatus completedAt
+              customFields {
+                __typename
+                ... on CustomFieldText { id label valueText }
+              }
+              client { id name email }
+              property { id address { city province postalCode country } }
+            }
+            pageInfo { hasNextPage endCursor }
+          }
+        }"""
         for _ in range(max_pages):
-            query = "query ReadJobs($first: Int!, $after: String) { jobs(first: $first, after: $after) { nodes { id jobNumber title } pageInfo { hasNextPage endCursor } } }"
             data = self.graphql(query, {"first": page_size, "after": cursor})
             connection = data.get("jobs") or {}
             rows.extend(connection.get("nodes") or [])
