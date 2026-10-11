@@ -215,10 +215,14 @@ class Ledger:
 
     def queue_submission(self, clip, campaign_name, url):
         with self._connect() as db:
-            db.execute("""INSERT OR IGNORE INTO submit_queue(clip_id,campaign_id,campaign_name,channel,url,
+            cur = db.execute("""INSERT OR IGNORE INTO submit_queue(clip_id,campaign_id,campaign_name,channel,url,
                 required_caption,required_tags,created_at) VALUES(?,?,?,?,?,?,?,?)""",
                 (clip.id, clip.campaign_id, campaign_name, clip.channel_handle, url,
                  clip.description, json.dumps(clip.hashtags), self._now()))
+        if cur.rowcount:
+            self.event("manual_submission_queued", {"clip_id": clip.id,
+                "campaign_id": clip.campaign_id, "channel": clip.channel_handle, "url": url},
+                f"manual-queue:{clip.id}")
         self._render_submit_queue()
 
     def submit_queue(self):

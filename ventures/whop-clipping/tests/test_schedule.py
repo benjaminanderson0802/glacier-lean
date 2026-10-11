@@ -147,7 +147,7 @@ def test_deadline_risk_alert_and_paused_channel_reporting(tmp_path):
     assert any(event["kind"] == "deadline at risk" for event in ledger.events())
 
 
-def test_producer_fake_scout_stocks_library_and_distributor_uses_fake_submitter(tmp_path, monkeypatch):
+def test_producer_stocks_library_and_distributor_queues_whop_manually(tmp_path, monkeypatch):
     import scripts.producer as producer_module
     import scripts.distributor as distributor_module
     probe = {"width": 1080, "height": 1920, "audio_loudness_ok": True}
@@ -185,7 +185,12 @@ def test_producer_fake_scout_stocks_library_and_distributor_uses_fake_submitter(
                      home=tmp_path / "runtime", uploader=Uploader(), submitter=submitter,
                      now_fn=lambda: datetime(2026, 10, 11, 12, tzinfo=timezone.utc),
                      sleep_fn=lambda _: None)
-    assert submitter.items == [(campaign.id, "https://youtu.be/uploaded")]
+    assert submitter.items == []
+    queued = ledger.submit_queue()
+    assert len(queued) == 1
+    assert queued[0]["campaign_id"] == campaign.id
+    assert queued[0]["channel"] == "@first"
+    assert queued[0]["url"] == "https://youtu.be/uploaded"
     assert Ledger(tmp_path / "runtime").library_item("queued")["status"] == "posted"
 
 

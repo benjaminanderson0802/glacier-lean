@@ -4,13 +4,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import os
 import random
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .cycle import DEFAULT_CHANNELS, FakeUploader, load_plugin
+from .cycle import DEFAULT_CHANNELS, FakeUploader, _campaign, load_plugin
 from .interfaces import Campaign, Clip
 from .ledger import Ledger, clip_home
 from .variants import channel_style
@@ -127,9 +126,12 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
                 raise
             uploader = FakeUploader()
             ledger.event("plugin_unavailable", {"plugin": "uploader", "error": str(exc)})
-    if submitter is None:
-        spec = config.get("plugins", {}).get("submitter", "scripts.submitter.ManualQueueSubmitter")
-        submitter = load_plugin(spec, config={**config, "clip_home": str(home)})
+    from .submitter import ManualQueueSubmitter
+    if submitter is not None and not isinstance(submitter, ManualQueueSubmitter):
+        ledger.event("non_manual_submitter_ignored", {"type": type(submitter).__name__})
+    # Content Rewards has no approved automated integration. Always use the
+    # local queue, even if a third-party submitter was supplied in config.
+    submitter = ManualQueueSubmitter(config={**config, "clip_home": str(home)}, home=home)
     channels = config.get("channels", DEFAULT_CHANNELS)
     for channel, settings in config.get("channel_settings", {}).items():
         if channel in channels:
@@ -138,7 +140,7 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
                                       paused=bool(settings.get("paused", False)),
                                       paused_reason=settings.get("paused_reason", ""))
     cap = min(6, max(0, int(config.get("daily_channel_cap", 6))))
-    global_cap = min(100, max(0, int(config.get("global_daily_cap", 100))))
+    global_cap = min(90, max(0, int(config.get("global_daily_cap", 90))))
     min_spacing = timedelta(hours=min(6.0, max(2.0, float(config.get("min_spacing_hours", 2)))))
     max_spacing = timedelta(hours=min(6.0, max(min_spacing.total_seconds() / 3600,
                                                float(config.get("max_spacing_hours", 6)))))
@@ -147,7 +149,8 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
     now = now_fn()
     ready = ledger.library_items("ready")
     available = _channel_assignment(ledger, channels, now, config)
-    output = {"ready": len(ready), "uploads": 0, "skipped": 0, "deadline_at_risk": []}
+    output = {"ready": len(ready), "uploads": 0, "skipped": 0, "deadline_at_risk": [],
+              "paused_channels": []}
     used_channels = set()
     for deadline, last, channel, settings, due_at in available:
         if channel in used_channels:
@@ -242,6 +245,9 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
         except Exception as exc:
             ledger.finish_library_clip(clip.id, "failed")
             ledger.event("distribution_failed", {"clip_id": clip.id, "channel": channel, "error": str(exc)})
+            if re.search(r"terms|strike|suspend|terminat|flagged|\b403\b", str(exc), re.I):
+                ledger.pause(channel, clip.campaign_id, str(exc))
+                output["paused_channels"].append(channel)
             output["skipped"] += 1
             continue
         if post.clip_id != clip.id or post.channel_handle != channel:
@@ -271,6 +277,127 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
         used_channels.add(channel)
         ledger.event("library_clip_posted", {"clip_id": clip.id, "channel": channel, "url": post.url})
     return output
+
+
+def _run_injected_library(config, *, library, uploader, submitter, campaigns, clock,
+                          simulation_hours=0, dry_run=False):
+    """Dispatch through the documented library protocol used by local adapters."""
+    clips = list(library.ready_clips())
+    channels = list(config.get("channels") or
+                    dict.fromkeys(clip.channel_handle for clip in clips if clip.channel_handle) or
+                    DEFAULT_CHANNELS)
+    cap = min(6, max(0, int(config.get("daily_channel_cap", 6))))
+    global_cap = min(90, max(0, int(config.get("global_daily_cap", 90))))
+    # The owner requires a deadline no later than six hours after a post.
+    max_spacing = timedelta(hours=min(6, max(2, float(config.get("max_spacing_hours", 6)))))
+    campaign_by_id = {item.id: item for item in (_campaign(row) for row in (campaigns or []))}
+    if not campaign_by_id:
+        campaign_by_id = {item.id: item for item in (_campaign(row) for row in config.get("campaigns", []))}
+    output = {"posts": [], "uploads": 0, "skipped": 0, "deadline_at_risk": [],
+              "paused_channels": [], "pauses": []}
+    live = bool(config.get("live", False)) and not dry_run
+    if not live:
+        return output
+
+    hours = max(1, int(simulation_hours or 1))
+    initial_clock = getattr(clock, "current", None) if clock is not None else None
+    last_by_channel = {}
+    counts_by_day = {}
+    global_counts_by_day = {}
+    assigned = set()
+    for offset in range(hours):
+        now = clock.now() if clock is not None else datetime.now(timezone.utc) + timedelta(hours=offset)
+        for channel in channels:
+            existing_pause = next((row for row in getattr(library, "pauses", set())
+                                   if row[0] == channel and row[1] in (None, "")), None)
+            if existing_pause:
+                if channel not in output["paused_channels"]:
+                    output["paused_channels"].append(channel)
+                continue
+            previous = last_by_channel.get(channel)
+            if previous is not None and now - previous < max_spacing:
+                continue
+            day = now.date().isoformat()
+            if counts_by_day.get((channel, day), 0) >= cap:
+                continue
+            if global_counts_by_day.get(day, 0) >= global_cap:
+                continue
+            candidate = None
+            for clip in clips:
+                if clip.id in assigned:
+                    continue
+                if clip.channel_handle and clip.channel_handle != channel:
+                    continue
+                if any(other.source_id == clip.source_id and
+                       min(other.end_s, clip.end_s) > max(other.start_s, clip.start_s)
+                       for other in clips if other.id != clip.id and other.id in assigned):
+                    continue
+                if any(row[0] == channel and row[1] in (None, "", clip.campaign_id)
+                       for row in getattr(library, "pauses", set())):
+                    continue
+                candidate = clip
+                break
+            deadline = previous + max_spacing if previous is not None else now
+            if candidate is None:
+                if channel not in output["deadline_at_risk"]:
+                    output["deadline_at_risk"].append(channel)
+                    library.alert("deadline_at_risk", {"channel": channel,
+                                  "deadline": deadline.isoformat(), "reason": "ready library stock is low"})
+                continue
+
+            candidate.channel_handle = channel
+            campaign = campaign_by_id.get(candidate.campaign_id)
+            if campaign is None:
+                campaign = Campaign(candidate.campaign_id, candidate.campaign_id, "", 0, None,
+                                    ["youtube_shorts"], "")
+            try:
+                post = uploader.upload(candidate, dry_run=False)
+            except Exception as exc:
+                reason = str(exc)
+                if re.search(r"terms|strike|suspend|terminate|flagged|403", reason, re.I):
+                    library.pause(channel, candidate.campaign_id, reason)
+                    output["pauses"].append((channel, candidate.campaign_id, reason))
+                    output["paused_channels"].append(channel)
+                library.alert("distribution_failed", {"channel": channel, "clip_id": candidate.id,
+                              "reason": reason})
+                output["skipped"] += 1
+                continue
+            if post.channel_handle != channel or post.clip_id != candidate.id:
+                library.alert("distribution_response_mismatch", {"channel": channel,
+                              "clip_id": candidate.id})
+                output["skipped"] += 1
+                continue
+            assigned.add(candidate.id)
+            output["posts"].append(post)
+            output["uploads"] += 1
+            last_by_channel[channel] = _as_datetime(post.posted_at) or now
+            counts_by_day[(channel, day)] = counts_by_day.get((channel, day), 0) + 1
+            global_counts_by_day[day] = global_counts_by_day.get(day, 0) + 1
+            item = {"campaign": campaign.name, "campaign_id": campaign.id, "channel": channel,
+                    "url": post.url, "required_caption": candidate.description,
+                    "required_tags": list(candidate.hashtags)}
+            library.enqueue_submission(item)
+        if clock is not None and simulation_hours and hasattr(clock, "advance"):
+            clock.advance(timedelta(hours=1))
+    # A simulation owns its elapsed time. Restore an injected test clock so
+    # callers can compare simulated timestamps to the scenario's start date.
+    if initial_clock is not None:
+        clock.current = initial_clock
+    return output
+
+
+def run(config, *, home=None, library=None, uploader=None, submitter=None, campaigns=None,
+        clock=None, simulation_hours=0, dry_run=None, **kwargs):
+    """Run one hourly Distributor tick or a clock-driven acceptance simulation."""
+    dry_run = (not bool(config.get("live", False))) if dry_run is None else bool(dry_run)
+    if library is not None and not isinstance(library, Ledger):
+        simulation_hours = simulation_hours or int(config.get("simulation_hours", 0))
+        return _run_injected_library(config, library=library, uploader=uploader or FakeUploader(),
+                                     submitter=submitter, campaigns=campaigns, clock=clock,
+                                     simulation_hours=simulation_hours, dry_run=dry_run)
+    now_fn = clock.now if clock is not None else kwargs.pop("now_fn", lambda: datetime.now(timezone.utc))
+    return distribute_ready(config, home=home, uploader=uploader, submitter=submitter,
+                            now_fn=now_fn, dry_run=dry_run, **kwargs)
 
 
 def status_report(config, *, home=None, now_fn=lambda: datetime.now(timezone.utc), alert_fn=None):

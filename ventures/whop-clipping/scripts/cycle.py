@@ -86,10 +86,13 @@ def run_cycle(config, *, home=None, scout=None, uploader=None, submitter=None, d
                                    dry_run=dry_run, **{key: value for key, value in kwargs.items()
                                                        if key in {"now_fn", "rng", "sleep_fn", "alert_fn"}})
     from .ledger import Ledger
-    Ledger(home).event("cycle_completed", {"manual_run": True, "dry_run": dry_run, "producer": producer,
+    ledger = Ledger(home)
+    queue_count = len(ledger.submit_queue())
+    ledger.event("cycle_completed", {"manual_run": True, "dry_run": dry_run, "producer": producer,
                                             "distributor": distributor})
     return {"dry_run": dry_run, "campaigns": producer["campaigns"], "clips": producer["produced"],
-            "uploads": distributor["uploads"], "submissions": distributor["uploads"] if not dry_run else 0,
+            "uploads": distributor["uploads"], "submissions": 0,
+            "queued_submissions": queue_count,
             "skipped": max(distributor["skipped"], producer["qa_failures"]),
             "producer": producer, "distributor": distributor}
 

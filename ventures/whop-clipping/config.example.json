@@ -16,7 +16,7 @@
     "@contextclipsdesk"
   ],
   "daily_channel_cap": 6,
-  "global_daily_cap": 100,
+  "global_daily_cap": 90,
   "min_spacing_hours": 2,
   "max_spacing_hours": 6,
   "posting_jitter_minutes": 45,

@@ -219,35 +219,52 @@ def test_unapproved_campaign_and_reached_daily_cap_never_upload(tmp_path):
     assert uploader.uploads == []
 
 
-def test_live_cycle_requires_explicit_config_and_records_side_effects(tmp_path):
+def _make_qa_passing_clip_fixture(tmp_path, monkeypatch, clip):
+    """Give orchestration tests media satisfying Producer and Distributor QA."""
+    media = tmp_path / "qa-passing-clip.mp4"
+    media.write_bytes(b"fixture-media")
+    clip.path = str(media)
+    clip.caption_words = [{"start": 0, "end": 1, "word": "Caption"}]
+    probe = lambda _path: {"width": 1080, "height": 1920, "audio_loudness_ok": True}
+    monkeypatch.setattr("scripts.producer._ffprobe", probe)
+    monkeypatch.setattr("scripts.distributor._ffprobe", probe)
+    monkeypatch.setattr("scripts.distributor._channel_variant", lambda clip, *_args, **_kwargs: clip)
+
+
+def test_live_cycle_requires_explicit_config_and_records_side_effects(tmp_path, monkeypatch):
     config = {"live": True, "channels": ["@frameandmomentdesk"], "daily_channel_cap": 3,
               "global_daily_cap": 100, "min_spacing_hours": 2, "plugins": {}, "campaigns": []}
     config["approved_campaign_ids"] = ["camp-1"]
     uploader, submitter = FakeUploader(), FakeSubmitter()
     clip = Clip("clip1", "camp-1", "source1", 0, 30, "x.mp4", "Title", "#ad", ["#ad"], "@frameandmomentdesk")
+    _make_qa_passing_clip_fixture(tmp_path, monkeypatch, clip)
     result = run_cycle(config, home=tmp_path, scout=FakeScout(), uploader=uploader, submitter=submitter,
                        dry_run=False, campaign_clips={"camp-1": [clip]}, sleep_fn=lambda _: None,
                        now_fn=lambda: __import__("datetime").datetime.fromisoformat("2026-10-11T10:00:00+00:00"))
     assert result["uploads"] == 1
-    assert result["submissions"] == 1
+    assert result["submissions"] == 0
+    assert result["queued_submissions"] == 1
     assert uploader.uploads[0][1] is False
-    assert submitter.submissions[0][2] is False
+    assert submitter.submissions == []
     assert Ledger(tmp_path).posts_today("@frameandmomentdesk", today="2026-10-11") == 1
 
 
-def test_dry_run_reservation_can_be_reused_live_on_same_channel(tmp_path):
+def test_dry_run_reservation_can_be_reused_live_on_same_channel(tmp_path, monkeypatch):
     config = {"live": True, "channels": ["@frameandmomentdesk"], "approved_campaign_ids": ["camp-1"],
               "daily_channel_cap": 3, "global_daily_cap": 100, "plugins": {}}
     clip = Clip("clip1", "camp-1", "source1", 10, 40, "x.mp4", "Title", "#ad", ["#ad"], "@frameandmomentdesk")
     scout = FakeScout([campaign()])
     uploader, submitter = FakeUploader(), FakeSubmitter()
+    _make_qa_passing_clip_fixture(tmp_path, monkeypatch, clip)
     run_cycle(config, home=tmp_path, scout=scout, uploader=uploader, submitter=submitter,
               dry_run=True, campaign_clips={"camp-1": [clip]})
     live_result = run_cycle(config, home=tmp_path, scout=scout, uploader=uploader, submitter=submitter,
                             dry_run=False, campaign_clips={"camp-1": [clip]},
                             sleep_fn=lambda _: None)
     assert live_result["uploads"] == 1
-    assert live_result["submissions"] == 1
+    assert live_result["submissions"] == 0
+    assert live_result["queued_submissions"] == 1
+    assert submitter.submissions == []
 
 
 def test_clipper_can_render_lavfi_video_when_ffmpeg_is_available(tmp_path):

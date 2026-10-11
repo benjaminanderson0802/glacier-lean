@@ -16,6 +16,7 @@ from .ledger import Ledger, clip_home
 from .clipper import candidate_segments, make_clip, transcribe
 from .sources import fetch_source
 from .variants import assign_segments, make_variant
+from .variants import channel_style
 
 
 def parse_campaign_requirements(rules_text: str) -> dict:
@@ -241,6 +242,47 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
     if output["ready"] < target_stock:
         ledger.event("producer_stock_low", {"ready": output["ready"], "target": target_stock})
     return output
+
+
+def run(config, *, home=None, scout=None, library=None, candidates=None, words=None,
+        channels=None, clock=None, **_ignored):
+    """Run Producer, with the small injected interface used by acceptance checks.
+
+    Normal Glacier runs use the durable SQLite library in ``produce_ready``.
+    The optional library/candidate arguments let callers supply another local
+    library without giving Producer any YouTube or Whop write capability.
+    """
+    if library is None:
+        return produce_ready(config, home=home, scout=scout,
+                             target_stock=int(config.get("target_library_stock", 20)))
+
+    scout = scout or FakeScout()
+    campaign_rows = [_campaign(item) for item in scout.list_campaigns()]
+    selected_channels = list(channels or config.get("channels", DEFAULT_CHANNELS))
+    styles = {channel: channel_style(channel) for channel in selected_channels}
+    timed_words = [dict(item) for item in (words or [])]
+    active = styles[selected_channels[0]]["accent_color"] if selected_channels else "&H0000D7FF"
+    for row in timed_words:
+        row.setdefault("active_color", active)
+        row.setdefault("highlight_color", active)
+
+    ready, failures = [], []
+    candidate_rows = list(candidates or [])
+    for candidate in candidate_rows:
+        campaign = next((item for item in campaign_rows if item.id == candidate.campaign_id), None)
+        if campaign is None:
+            failures.append("campaign requirements were not reviewed")
+            continue
+        checklist = parse_campaign_requirements(campaign.rules_text)
+        caption_words = timed_words or candidate.caption_words
+        issues = qa_clip(candidate, checklist, word_times=caption_words)
+        if issues:
+            failures.extend(issues)
+            continue
+        library.add_ready(candidate)
+        ready.append(candidate)
+    return {"campaigns": len(campaign_rows), "produced": len(ready), "ready": ready,
+            "qa_failures": failures, "captions": timed_words, "channel_styles": styles}
 
 
 def main(argv=None):
