@@ -1,0 +1,7 @@
+{
+  "fixture_kind": "current screen-development mock; no template import implementation",
+  "gallery_status": 200,
+  "import_status": 404,
+  "import_body": "{\"detail\":\"not found\"}",
+  "mock_supports_import_approval_api": false
+}
