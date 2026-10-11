@@ -15,8 +15,10 @@ import time
 import venv
 
 try:
+    from . import dependency_inventory
     from . import venture_health
 except ImportError:  # direct execution: python setup/health_check.py
+    import dependency_inventory
     import venture_health
 
 HERE = Path(__file__).resolve().parent
@@ -219,6 +221,26 @@ def print_report(report: dict) -> None:
             print(f"  {item['package']}: {item['installed']} → {item['latest']} (upgrade available)")
     else:
         print("No pinned dependency upgrades found.")
+    inventory = report.get("venture_dependencies", {})
+    entries = inventory.get("entries", [])
+    unpinned = [entry for entry in entries
+                if entry.get("status") == "unpinned"
+                or entry.get("declaration_status") == "unpinned"]
+    ranges = [entry for entry in entries
+              if entry.get("status") == "range"
+              or entry.get("declaration_status") == "range"]
+    exact = sum(entry.get("status") in {"exact pin", "locked exact"} for entry in entries)
+    print(f"Venture dependency inventory (read-only): {len(entries)} entries; "
+          f"{exact} exact pins/locks, {len(ranges)} ranges, {len(unpinned)} unpinned.")
+    if unpinned:
+        print("Unpinned venture dependencies:")
+        for entry in unpinned:
+            declared = entry.get("declared") or "(no version declaration)"
+            print(f"  {entry['package']} ({entry['provenance']}; {declared}) — {entry['path']}")
+    for path in inventory.get("missing_files", []):
+        print(f"Missing dependency lock/manifest: {path}")
+    for error in inventory.get("errors", []):
+        print(f"Could not read dependency inventory {error['path']}: {error['error']}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -228,9 +250,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     sections = run_health_sections(quick=args.quick)
     proposals, upgrade_summary = check_upgrades(current_python())
+    venture_dependencies = dependency_inventory.inventory_venture_dependencies(REPO / "ventures")
     report = {"date": date.today().isoformat(), "python": sys.version.split()[0],
               "passed": all(section["passed"] for section in sections),
-              "sections": sections, "proposals": proposals, "upgrade_summary": upgrade_summary}
+              "sections": sections, "proposals": proposals, "upgrade_summary": upgrade_summary,
+              "venture_dependencies": venture_dependencies}
     report_path = args.report or REPORT
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
