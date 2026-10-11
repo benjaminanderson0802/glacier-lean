@@ -21,18 +21,24 @@ button { cursor: pointer; }
   color: var(--g-ink); text-shadow: var(--l-text-shadow); }
 
 /* side walls: the panel hinges on its edge nearest the corner post and turns away like the wall */
-.l-wall { position: absolute; left: 0; top: 0; z-index: 5; transform-origin: 0 0; display: flex; flex-direction: column; gap: calc(3 * var(--px)); padding: calc(14 * var(--px)) calc(10 * var(--px)); overflow: hidden; }
+.l-wall { position: absolute; left: 0; top: 0; z-index: 5; transform-origin: 0 0; display: flex; flex-direction: column; gap: calc(3 * var(--px)); padding: calc(7 * var(--px)) calc(6 * var(--px)); overflow: hidden; }
 .l-center { position: absolute; left: 19.32%; width: 61.3%; top: 20.3%; height: 46.44%; z-index: 4; display: flex; flex-direction: column; min-height: 0; }
 .l-status { position: absolute; left: 19.32%; width: 61.3%; top: 69.8%; z-index: 4; display: flex; justify-content: space-between; gap: calc(4 * var(--px)); padding: 0 calc(6 * var(--px)); font-size: var(--g-size-small); color: #4b3a2a; text-shadow: none; }
 .l-status .g-key { background: rgba(255,255,255,.55); color: #4b3a2a; border-radius: calc(2 * var(--px)); padding: 0 calc(2 * var(--px)); }
 .l-status .g-ready { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
 
 /* left wall menu */
-.l-brand { display: flex; align-items: center; min-height: calc(19 * var(--px)); padding: 0 calc(7 * var(--px)); border-radius: calc(6 * var(--px)); background: none; font-weight: 700; font-size: calc(14 * var(--px)); letter-spacing: .01em; }
+.l-brand { display: flex; flex: none; align-items: center; min-height: calc(19 * var(--px)); padding: 0 calc(4 * var(--px)); border-radius: calc(6 * var(--px)); background: none; font-weight: 700; font-size: clamp(20px, 1.7cqw, 32px); letter-spacing: .01em; }
 .l-new { justify-content: flex-start; }
-.l-wall .g-menu-list { gap: calc(2 * var(--px)); }
-.l-wall .g-menu-item { min-height: calc(21 * var(--px)); font-size: calc(12 * var(--px)); padding: 0 calc(7 * var(--px)); border-radius: calc(6 * var(--px)); }
+.l-wall .g-menu-list { gap: calc(2 * var(--px)); min-height: 0; overflow-y: auto; padding: 3px; }
+.l-wall .g-menu-item { flex: none; min-height: clamp(30px, 2.8cqw, 50px); font-size: clamp(14px, 1.3cqw, 24px); padding: calc(2 * var(--px)) calc(4 * var(--px)); border-radius: var(--l-radius-sm); white-space: normal; overflow-wrap: anywhere; }
 .l-engines { margin-top: auto; display: flex; flex-direction: column; gap: var(--px); font-size: var(--g-size-small); color: var(--g-ink2); padding: 0 calc(7 * var(--px)); }
+.l-left > .l-engines { flex: none; align-items: flex-start; }
+.l-engines button, .l-live, .l-side-head { text-transform: lowercase; }
+
+/* Focus follows the same wall projection as the label; the double edge stays legible on the painting. */
+.l-stage :is(button, input, textarea, select, summary, a, [tabindex]):focus-visible { outline: 2px solid var(--g-white); outline-offset: 2px; box-shadow: 0 0 0 4px var(--l-pill-ink); }
+.l-wall :is(button, input, textarea, summary):focus-visible { outline-offset: -2px; box-shadow: inset 0 0 0 4px var(--l-pill-ink); }
 
 /* right wall */
 .l-side-head { margin: 0; font-size: calc(12.5 * var(--px)); font-weight: 600; }
@@ -41,6 +47,23 @@ button { cursor: pointer; }
 .l-side-line { font-size: calc(8.5 * var(--px)); color: var(--g-ink2); overflow-wrap: anywhere; background: none; border: 0; padding: 0; text-align: left; }
 button.l-side-line:hover { color: var(--g-white); text-decoration: underline; }
 .l-side-list { display: flex; flex-direction: column; gap: calc(1.5 * var(--px)); overflow: auto; min-height: 0; }
+.l-live { display: flex; flex: none; align-items: center; gap: calc(3 * var(--px)); font-size: var(--g-size-small); }
+.l-overview { flex: 1; min-height: 0; display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: calc(2 * var(--px)); }
+.l-overview .l-side-block { display: block; overflow-y: auto; padding: 2px 3px calc(2 * var(--px)); border-color: var(--g-ice4); scrollbar-gutter: stable; }
+.l-overview .l-side-head { cursor: pointer; font-size: clamp(13px, 1.05cqw, 20px); font-weight: 700; }
+.l-side-head > span { float: right; font-size: var(--g-size-small); font-variant-numeric: tabular-nums; }
+.l-side-empty { margin: calc(1 * var(--px)) 0; font-size: var(--g-size-small); color: var(--g-ink2); }
+.l-overview .l-side-line { display: flex; flex-direction: column; width: 100%; padding: calc(2 * var(--px)) 0; font-size: var(--g-size-small); line-height: 1.35; border-bottom: 1px solid var(--g-ice3); }
+.l-side-line small, .l-workers small { display: block; font-size: inherit; color: var(--g-ink2); }
+.l-workers { padding: 0 0 0 calc(6 * var(--px)); margin: calc(2 * var(--px)) 0; font-size: var(--g-size-small); overflow-wrap: anywhere; }
+.l-worker-task { padding-left: calc(2 * var(--px)); }
+.l-user-text { text-transform: none; }
+.l-right > .messenger { flex: 1.2; gap: calc(2 * var(--px)); border-top: 1px solid var(--g-ice4); padding-top: calc(3 * var(--px)); }
+.l-right .messenger-head h2 { font-size: clamp(14px, 1.2cqw, 22px); }
+.l-right .messenger-sources { display: none; }
+.l-right .messenger-head > div > span { display: none; }
+/* A conversation needs the wall's full height. Status returns when leaving the conversation. */
+.l-right:has(.messenger-chat-head, .messenger-new-label) .l-overview { display: none; }
 
 /* old shell pieces that no longer show */
 .g-topbar, .g-tabs, .g-footer { display: none; }
@@ -201,7 +224,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 *::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
 *::-webkit-scrollbar-thumb { border-radius: 8px; background: rgba(255,255,255,.55); }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 
 .l-run { display: flex; flex-direction: column; gap: calc(2 * var(--px)); width: 100%; }
 /* everything the room itself says is lowercase, like the reference; user content keeps its case */

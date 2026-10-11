@@ -1,5 +1,5 @@
-// Limbo window: a painted room with three frosted panels. Left wall = menu, back wall = active screen, right wall = messenger.
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+// Painted room: menu, current screen, and live team/approval/run status with messages.
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Icon, Logo } from './ui/Pixel.tsx'
 import { go, TABS, useRoute, type Tab } from './route.ts'
 import { HomeScreen } from './screens/Home.tsx'
@@ -49,9 +49,11 @@ function AppShell() {
   const [installedNoticeDismissed, setInstalledNoticeDismissed] = useState(false)
   const stageRef = useRef<HTMLDivElement>(null)
   const [stage, setStage] = useState({ w: 1672, h: 941 })
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = stageRef.current; if (!el) return
-    const ro = new ResizeObserver(() => setStage({ w: el.clientWidth, h: el.clientHeight }))
+    const measure = () => setStage({ w: el.clientWidth, h: el.clientHeight })
+    measure()
+    const ro = new ResizeObserver(measure)
     ro.observe(el); return () => ro.disconnect()
   }, [])
 
@@ -79,12 +81,7 @@ function AppShell() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.startsWith('Arrow') && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
-        const i = TABS.indexOf(tab)
-        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); go(TABS[(i + 1) % TABS.length]) }
-        else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); go(TABS[(i + TABS.length - 1) % TABS.length]) }
-      }
-      else if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) { (document.querySelector('.g-menu-item[aria-current="page"]') as HTMLButtonElement | null)?.click() }
+      if (e.defaultPrevented) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette(p => !p) }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); openAskGlacier(true) }
       else if (e.key === 'F1') { e.preventDefault(); go('settings/help') }
@@ -129,13 +126,23 @@ function AppShell() {
         <aside className="l-wall l-left l-glass g-side" data-testid="game-menu" style={wallStyle(stage.w, stage.h, LEFT_WALL)}>
           <div className="l-brand">glacier</div>
           <button type="button" className="g-menu-item l-new" data-testid="nav-new-task" onClick={() => go('ask')}>{translate('shell.newTask')}</button>
-          <div className="g-menu-list" role="tablist" aria-orientation="vertical">{TABS.map((item) => <button key={item} role="tab" aria-selected={item === tab} data-testid={`nav-${item}`} aria-label={translate(LABEL[item])} title={translate(LABEL[item])} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}>{translate(LABEL[item])}</button>)}</div>
-          <div className="l-engines g-engines"><small>● Codex</small><small>● granite</small></div>
+          <div className="g-menu-list" role="tablist" aria-label="glacier" aria-orientation="vertical" onKeyDown={event => {
+            const keys = ['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End']
+            if (!keys.includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return
+            event.preventDefault()
+            const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+            const current = buttons.indexOf(document.activeElement as HTMLButtonElement)
+            const index = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+              : (current + (event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length
+            buttons[index]?.focus()
+            go(TABS[index])
+          }}>{TABS.map((item) => <button key={item} role="tab" tabIndex={item === tab ? 0 : -1} aria-controls={`screen-${item}`} aria-selected={item === tab} data-testid={`nav-${item}`} aria-label={translate(LABEL[item])} title={translate(LABEL[item])} aria-current={item === tab ? 'page' : undefined} className={`g-menu-item${item === tab ? ' active' : ''}`} onClick={() => go(item)}>{translate(LABEL[item])}</button>)}</div>
+          <div className="l-engines g-engines"><button className="g-link" onClick={() => go('settings/help')}>{translate('shell.help')} <span className="g-key">F1</span></button></div>
         </aside>
         <div className="l-center l-glass">
-          <main className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`}>{screen}</main>
+          <main id={`screen-${tab}`} className={`g-main${building ? ' flush' : ''}`} data-testid={`screen-${tab}`} tabIndex={-1}>{screen}</main>
         </div>
-        <aside className="l-wall l-right l-glass" data-testid="side-status" style={{ ...wallStyle(stage.w, stage.h, RIGHT_WALL), position: 'relative' }}><SideStatus /><AskGlacierPanel /></aside>
+        <aside className="l-wall l-right l-glass" data-testid="side-status" style={wallStyle(stage.w, stage.h, RIGHT_WALL)}><SideStatus /><AskGlacierPanel /></aside>
         <footer className="l-status">
           <span><AskGlacier /> · <span className="g-key">Ctrl+J</span> · <span className="g-key">Ctrl+K</span> {translate('shell.command')} · <span className="g-key">F1</span> {translate('shell.help')}</span>
           <span className="g-ready" data-testid="status-line" title={status}>{status}</span>
