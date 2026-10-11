@@ -2,8 +2,8 @@
 
 ## Fixture and local checks
 
-- `/home/glacier/w/glacier-lean/.venv/bin/python -m pytest ventures/dibbs-supply -q` — **11 passed**. These existing tests cover exact solicitation/part/supplier checks, eligibility and electronics filters, margin ranking, CSV field mapping, authorization/traceability, quote-request drafts, and owner gates. They were not changed for the SAM adapter because NORTHSTAR I-04 forbids a builder from editing the check that judges its own work.
-- Manual v2-shape fixture smoke check using `tests/fixtures/sam-opportunities-v2.json` and `fetch_sam_opportunities(..., request_json=fixture_reader)` — **1 DLA/allowed-NAICS row kept; unrelated agency and NAICS rows filtered; five per-NAICS requests formed**. The fixture is synthetic and reflects the documented v2 field shape. This is not an automated acceptance test.
+- `/home/glacier/w/glacier-lean/.venv/bin/python -m pytest ventures/dibbs-supply -q` — **16 passed**. The existing checks cover exact solicitation/part/supplier checks, eligibility and electronics filters, margin ranking, CSV field mapping, authorization/traceability, quote-request drafts, and owner gates. Five SAM acceptance tests were added by the independent tester, covering request filters and pagination, DLA/NAICS filtering, owner-review links, ranking, and missing-key behavior.
+- Fixture-mode preparation using `tests/fixtures/sam-opportunities-v2.json`, one synthetic DIBBS detail record, and one owner-entered synthetic supplier quote — **1 opportunity ranked, 1 bid ranked, `quote.csv` written, `submitted` false**. The fixture is synthetic and reflects the documented v2 response shape; it is not a live source result.
 - `/home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only dibbs-supply --dry-run` — **both flows validated**.
 
 ## Real Glacier flow
@@ -21,6 +21,5 @@ DIBBS still presents a DoD warning/consent page to public-page probes. Glacier d
 
 ## Remaining verification
 
-- The requested automated SAM response fixture test is outstanding because the builder cannot author the test that judges this work under I-04. The fixture data and parser smoke check are ready for an independent tester.
 - Live SAM.gov API response, pagination against production data, and quote-sheet generation from the owner's actual supplier quotes remain unverified until the owner saves `sam_api_key` and supplies real records.
 - PH12.19 remains in progress; no checkpoint status was changed.

@@ -68,9 +68,25 @@ def _sam_request(params: dict[str, Any], api_key: str) -> dict[str, Any]:
 
 
 def _is_dla(row: dict[str, Any]) -> bool:
-    organization = " ".join(str(row.get(field) or "") for field in ("department", "subTier", "office", "fullParentPathName"))
-    normalized = re.sub(r"[^A-Z0-9]+", " ", organization.upper())
-    return "DEFENSE LOGISTICS AGENCY" in normalized or bool(re.search(r"\bDLA\b", normalized))
+    def names_dla(value: Any) -> bool:
+        normalized = re.sub(r"[^A-Z0-9]+", " ", str(value or "").upper())
+        return "DEFENSE LOGISTICS AGENCY" in normalized or bool(re.search(r"\bDLA\b", normalized))
+
+    department = str(row.get("department") or "").strip()
+    sub_tier = str(row.get("subTier") or "").strip()
+    office = str(row.get("office") or "").strip()
+    parent_path = str(row.get("fullParentPathName") or "").strip()
+    if department and not names_dla(department):
+        normalized_department = re.sub(r"[^A-Z0-9]+", " ", department.upper()).strip()
+        if normalized_department not in {"DEPARTMENT OF DEFENSE", "DEPT OF DEFENSE", "DEFENSE"}:
+            return False
+    if sub_tier and not names_dla(sub_tier):
+        return False
+    if office and not names_dla(office):
+        return False
+    if parent_path:
+        return names_dla(parent_path)
+    return names_dla(department) or names_dla(sub_tier) or names_dla(office)
 
 
 def _sam_opportunities(payloads: list[dict[str, Any]], *, as_of: date) -> list[dict[str, Any]]:
