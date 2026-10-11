@@ -59,12 +59,22 @@ class ListingPrepAcceptanceTests(unittest.TestCase):
 
     def test_commission_tracker_uses_signed_agreed_rate_and_ignores_unpaid_sales(self):
         sales = [
-            {"order_id": "A1", "status": "paid", "amount": 500.0},
-            {"order_id": "A2", "status": "refunded", "amount": 300.0},
-            {"order_id": "A3", "status": "pending", "amount": 200.0},
+            {"order_id": "A1", "status": "paid", "item_subtotal": 500.0, "discount": 0.0},
+            {"order_id": "A2", "status": "refunded", "item_subtotal": 300.0, "discount": 0.0},
+            {"order_id": "A3", "status": "pending", "item_subtotal": 200.0, "discount": 0.0},
         ]
 
-        result = calculate_commissions(sales, commission_rate=0.12)
+        terms = {
+            "signed": True,
+            "rate": 0.12,
+            "eligible_amount": "item subtotal after discounts",
+            "include_shipping": False,
+            "include_sales_tax": False,
+            "deduct_platform_fees": False,
+            "refund_rule": "exclude refunded orders",
+            "rounding": "round half up to two currency decimals",
+        }
+        result = calculate_commissions(sales, commission_rate=0.12, terms=terms)
 
         self.assertEqual(result["eligible_sales"], 1)
         self.assertEqual(result["commission_due"], 60.0)
