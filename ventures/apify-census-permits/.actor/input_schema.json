@@ -23,7 +23,12 @@
       "description": "Two-digit strings, e.g. [\"01\",\"22\",\"28\"]. Empty means all 50 states and DC.",
       "editor": "json",
       "maxItems": 51,
-      "default": []
+      "default": [],
+      "prefill": [
+        "01",
+        "22",
+        "28"
+      ]
     }
   }
 }

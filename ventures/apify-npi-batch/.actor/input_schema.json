@@ -7,10 +7,13 @@
     "npis": {
       "type": "array",
       "title": "NPI numbers",
-      "description": "1\u201350 ten-digit NPI strings with valid check digits. Duplicates are looked up once. Registry presence is not credentialing.",
+      "description": "1–50 ten-digit NPI strings with valid check digits. Duplicates are looked up once. Registry presence is not credentialing.",
       "editor": "json",
       "minItems": 1,
-      "maxItems": 50
+      "maxItems": 50,
+      "prefill": [
+        "1881018208"
+      ]
     }
   },
   "required": [

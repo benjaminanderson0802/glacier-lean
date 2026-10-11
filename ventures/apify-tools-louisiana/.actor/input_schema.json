@@ -9,7 +9,8 @@
       "type": "string",
       "description": "Louisiana contractor license number, such as CL.68755 or RL.883684. Use this or Company name for one lookup.",
       "editor": "textfield",
-      "maxLength": 120
+      "maxLength": 120,
+      "prefill": "CL.68755"
     },
     "name": {
       "title": "Company name",

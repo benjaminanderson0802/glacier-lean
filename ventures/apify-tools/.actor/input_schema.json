@@ -9,7 +9,8 @@
       "type": "string",
       "description": "Mississippi contractor license number (digits only). Use this or Business name for one lookup.",
       "editor": "textfield",
-      "maxLength": 120
+      "maxLength": 120,
+      "prefill": "22649"
     },
     "name": {
       "title": "Business name",

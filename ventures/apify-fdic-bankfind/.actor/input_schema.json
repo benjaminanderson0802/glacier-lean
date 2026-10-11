@@ -8,7 +8,8 @@
       "type": "string",
       "title": "FDIC certificate",
       "description": "Exact FDIC certificate, as a string. Provide certificate or state.",
-      "editor": "textfield"
+      "editor": "textfield",
+      "prefill": "3510"
     },
     "state": {
       "type": "string",
