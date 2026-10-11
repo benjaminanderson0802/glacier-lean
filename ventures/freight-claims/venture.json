@@ -5,10 +5,10 @@
   "product": {
     "purpose": "Prepare source-linked claim packets with carrier-specific evidence checklists, filing windows, and response-date tracking for customer-confirmed freight loss, damage, or shortage.",
     "channels": [
-      "ShipStation app listing",
-      "customer-uploaded claim documents"
+      "ShipStation integration-partner inquiry (listing access unconfirmed)",
+      "customer-provided shipment export and claim documents"
     ],
-    "publication": "The first ShipStation app listing is owner-reviewed. Glacier reads ShipStation only and never submits or sends a carrier claim.",
+    "publication": "ShipStation's public path is an integration-partner inquiry; an app listing, eligibility, review process, and commercial terms are unconfirmed. The owner reviews any written terms and approves any eventual listing. Glacier reads ShipStation only and never submits or sends a carrier claim.",
     "billing": "Prepare a 20–30% contingency invoice draft only after recovery is confirmed; customer agreement and owner approval are required before billing."
   },
   "blocks": [
@@ -56,14 +56,18 @@
   ],
   "your_steps": [
     {
-      "id": "connect-shipstation",
-      "title": "Connect ShipStation or add a shipments export",
-      "when": "Before daily shipment checks",
-      "detail": "Choose either option. For automatic ShipStation reads, the owner checks the Gold plan requirement and current quota, saves the read-only API key in Glacier's keychain, explicitly enables polling, runs the connection check, and reviews the first shipment list. If the account cannot use the API, the owner downloads a Shipments or Orders CSV and places it in this computer's freight-claims/incoming folder; the daily check uses the newest CSV automatically. Before routine use, review and approve the first ten distinct claim packets against source documents, carrier terms, carrier-specific evidence guidance, and insurance status. Glacier never creates accounts, changes shipments, or publishes listings.",
+      "id": "launch-setup",
+      "title": "Submit the inquiry and set up first use",
+      "when": "Before pursuing a listing or routine use (one sitting; about 35–65 minutes)",
+      "detail": "Follow ventures/freight-claims/OWNER-STEPS.md. Submit the prepared integration inquiry using owner-verified details and request written listing eligibility, requirements, and all fees; do not accept unpublished commercial terms or charges. In the same sitting, choose read-only API only if the current plan and quota fit without extra spending, otherwise provide a Shipments/Orders CSV; then review the first ten distinct packets against sources, confirmations, carrier terms, and insurance status. For each claim, the shipper confirms, signs and files with the carrier, records its response, and decides settlements; the owner reviews any invoice draft before sending.",
       "links": [
-        "https://docs.shipstation.com/",
+        "https://info.shipstation.com/become-a-partner-api-and-custom-store-integrations",
         "https://docs.shipstation.com/authentication",
-        "https://docs.shipstation.com/rate-limits"
+        "https://docs.shipstation.com/rate-limits",
+        "https://www.ups.com/us/en/support/file-a-claim",
+        "https://www.fedex.com/en-us/customer-support/claims.html",
+        "https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics",
+        "https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm"
       ],
       "secrets": [
         {
@@ -71,22 +75,10 @@
           "label": "ShipStation API key (only for API access)"
         }
       ]
-    },
-    {
-      "id": "customer-submit-and-billing",
-      "title": "Review, file, and respond to each claim",
-      "when": "After the shipper reviews a prepared packet",
-      "detail": "For each claim, the shipper confirms details, supplies or signs owner-approved authorization, reviews and files the packet with the carrier, then records the carrier receipt/reference and any response or recovery date. Glacier never signs or files for the shipper. If a full-release settlement arrives, the shipper explicitly accepts or declines; acceptance closes the claim and decline leaves it active. The owner approves any invoice draft before it is sent or charged.",
-      "links": [
-        "https://www.ups.com/us/en/support/file-a-claim",
-        "https://www.fedex.com/en-us/customer-support/claims.html",
-        "https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics",
-        "https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm"
-      ]
     }
   ],
   "launch_gates": [
-    "Owner reviews the first ShipStation app listing.",
+    "ShipStation partner eligibility, listing route, and all commercial terms are confirmed in writing before the owner accepts or pays for anything.",
     "Owner reviews the first ten claim packets.",
     "No carrier message, filing, signature, invoice, or payment is sent by Glacier without an exact approval step; real carrier submission remains with the shipper."
   ],

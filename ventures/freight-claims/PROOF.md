@@ -1,5 +1,30 @@
 # Freight claims proof
 
+## Owner preparation and ShipStation channel check (2026-10-11)
+
+The owner handoff is now in [OWNER-STEPS.md](OWNER-STEPS.md), and the application/listing copy is in [listing/SHIPSTATION-PARTNER-PACKAGE.md](listing/SHIPSTATION-PARTNER-PACKAGE.md). The request named `PREP-COMMON`, but a case-insensitive repository search found no file with that name, so no common checklist could be applied. The existing venture guidance and manifest were checked directly instead.
+
+ShipStation's official [partnership-options page](https://www.shipstation.com/partnership-options/) routes integration or technology partners to an application, while the [API/custom-store partner page](https://info.shipstation.com/become-a-partner-api-and-custom-store-integrations) describes an inquiry form. Its public pages do not state that an app-store listing is guaranteed, do not publish listing criteria, and do not publish commercial terms. The separate [partner-account API documentation](https://www.shipstation.com/docs/api/accounts/create/) says account creation is approval-gated and directs prospective direct partners to the integration team. The prepared application text therefore requests written eligibility, review requirements, and fees; it makes no commitment, claims no approval, and leaves the legal business name, website, address, EIN, and phone for owner verification. No form was submitted.
+
+The package's listing description is explicitly a draft for use only after ShipStation confirms its route and the owner approves any terms. It says the current API/live account use is unverified and avoids promising filing, recovery, or an active public listing. No price is set.
+
+Validation after the owner-preparation edits:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m json.tool ventures/freight-claims/venture.json
+# valid JSON
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/freight-claims/tests
+# 41 passed
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/freight-claims/tests/acceptance
+# 10 passed
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/tests
+# 24 passed, 2 subtests passed
+~/w/glacier-lean/.venv/bin/python -m ventures.install_all --dry-run --only freight-claims
+# all seven flows validated
+```
+
+This verifies local documentation/manifest consistency and existing software checks, not ShipStation's acceptance, public listing availability, commercial terms, or live merchant use.
+
 ## Release-gate update (2026-10-10)
 
 The missing CSV-to-packet engine path is now wired: `freight-prepare-claim` runs the existing `prepare-csv` command against `incoming/shipstation-shipments.csv` plus separate customer-confirmed intake. The run still pauses at `owner_input_ready` until the required data is supplied and approved. A temporary fixture-only copy of the installed flow omitted interactive approval and owner-review nodes so its processing path and unchanged acceptance command could be exercised without impersonating the owner.
