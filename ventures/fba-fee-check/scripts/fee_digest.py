@@ -33,7 +33,10 @@ def _money(value: str, *, context: str) -> Decimal:
         # accepting comma decimals/thousands without locale metadata is unsafe.
         raise ValueError(f"{context}: comma-formatted amount is unsupported; use a USD report")
     try:
-        return Decimal(normalized).quantize(CENT, rounding=ROUND_HALF_UP)
+        amount = Decimal(normalized)
+        if not amount.is_finite():
+            raise ValueError
+        return amount.quantize(CENT, rounding=ROUND_HALF_UP)
     except (InvalidOperation, ValueError):
         raise ValueError(f"{context}: invalid amount {value!r}") from None
 
@@ -74,7 +77,7 @@ def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[
     """
     report_path = Path(report_path)
     schedule = _read_expected(Path(schedule_path))
-    sales: dict[tuple[str, str, str], Decimal] = {}
+    sales: dict[tuple[str, str, str, str, str], Decimal] = {}
     source_rows: list[tuple[int, dict[str, str]]] = []
 
     with report_path.open(newline="", encoding="utf-8-sig") as stream:
@@ -87,19 +90,34 @@ def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[
         for line, row in enumerate(reader, start=2):
             if not any((value or "").strip() for value in row.values()):
                 continue
-            if (row.get("currency") or "").strip().upper() != "USD":
-                raise ValueError(f"report line {line}: only USD reports are supported")
             if (row.get("fulfillment-id") or "").strip() != "AFN":
                 continue
             txn = (row.get("transaction-type") or "").strip()
             description = (row.get("amount-description") or "").strip()
             sku = (row.get("sku") or "").strip()
             order = (row.get("order-id") or "").strip()
-            if txn == "Order" and (row.get("amount-type") or "").strip() == "ItemPrice" and description == "Principal" and sku:
+            is_sale = (
+                txn == "Order"
+                and (row.get("amount-type") or "").strip() == "ItemPrice"
+                and description == "Principal"
+                and sku
+            )
+            is_fee = txn == "Order" and description in FBA_FEE_DESCRIPTIONS
+            if not (is_sale or is_fee):
+                continue
+            if (row.get("currency") or "").strip().upper() != "USD":
+                raise ValueError(f"report line {line}: only USD reports are supported")
+            if is_sale:
                 amount = _money(row.get("amount", ""), context=f"report line {line} sale amount")
-                key = ((row.get("settlement-id") or "").strip(), order, sku)
+                key = (
+                    (row.get("settlement-id") or "").strip(),
+                    order,
+                    (row.get("shipment-id") or "").strip(),
+                    (row.get("order-item-code") or "").strip(),
+                    sku,
+                )
                 sales[key] = sales.get(key, Decimal("0")) + amount
-            if txn == "Order" and description in FBA_FEE_DESCRIPTIONS:
+            if is_fee:
                 source_rows.append((line, row))
 
     results: list[dict[str, str]] = []
@@ -112,8 +130,9 @@ def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[
             actual = abs(_money(row.get("amount", ""), context=f"report line {line} fee amount"))
         except ValueError as exc:
             raise ValueError(f"report line {line}: invalid fee amount: {exc}") from None
+        raw_quantity = (row.get("quantity-purchased") or "").strip()
         try:
-            quantity = int((row.get("quantity-purchased") or "").strip())
+            quantity = int(raw_quantity)
         except ValueError:
             quantity = 0
         expected_row = schedule.get(sku)
@@ -135,6 +154,7 @@ def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[
             "observed_unit_margin_usd": "",
             "expected_unit_margin_usd": "",
             "flag": "uncertain_missing_expected_fee",
+            "customer_message": "uncertain - please check: expected fee is missing",
             "disclaimer": DISCLAIMER,
         }
         if expected_row and quantity > 0:
@@ -147,13 +167,28 @@ def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[
             result["flag"] = "within_expected" if abs(variance) <= CENT else (
                 "higher_than_expected" if variance > 0 else "lower_than_expected"
             )
-            sale = sales.get((settlement_id, order, sku))
+            result["customer_message"] = "Review this estimate manually; it is not proof of a fee error or refund."
+            sale_key = (
+                settlement_id,
+                order,
+                (row.get("shipment-id") or "").strip(),
+                (row.get("order-item-code") or "").strip(),
+                sku,
+            )
+            sale = sales.get(sale_key) if all(sale_key[1:4]) else None
             if sale is not None:
                 result["expected_unit_margin_usd"] = _q(sale / quantity - unit_cost - expected_per_unit)
                 result["estimated_unit_margin_usd"] = result["expected_unit_margin_usd"]
                 result["observed_unit_margin_usd"] = _q(sale / quantity - unit_cost - actual / quantity)
-        elif not quantity:
+            else:
+                result["customer_message"] = "uncertain - please check: matching sale item or shipment is missing"
+        elif quantity <= 0:
             result["flag"] = "uncertain_missing_quantity"
+            if raw_quantity and quantity < 0:
+                result["quantity"] = raw_quantity
+                result["customer_message"] = "uncertain - please check: quantity is negative"
+            else:
+                result["customer_message"] = "uncertain - please check: quantity is missing or invalid"
         results.append(result)
     return results
 
@@ -164,6 +199,7 @@ OUTPUT_COLUMNS = [
     "fee_description", "quantity", "expected_fee_usd", "actual_fee_usd",
     "variance_usd", "expected_unit_margin_usd", "estimated_unit_margin_usd",
     "observed_unit_margin_usd", "flag", "disclaimer",
+    "customer_message",
 ]
 
 

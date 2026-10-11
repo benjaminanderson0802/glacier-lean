@@ -24,6 +24,7 @@ Anderson Education LLC
 - Return one CSV digest with fee lines, source report row references, expected-versus-observed fee amounts, possible dollar variance, and expected-versus-observed unit margin where the report has a matching item sale.
 - The seller reviews every row. A difference is not evidence that Amazon made an error or owes a refund. The pilot does not include SP-API, ongoing monitoring, fee-schedule research, bookkeeping, or dispute filing.
 - Agree on a secure file transfer method with the seller before receiving data. Keep data local to the analysis machine, do not use it for another purpose, and delete it when the pilot closes unless the seller explicitly agrees to retention.
+- The $49 is a manual pilot offer, not an automatic charge. An invoice requires the owner's action and the seller's acceptance after a usable digest is produced. Missing, partial, conflicting, invalid, unsupported, unavailable, or rate-limited source data stays uncertain or produces no digest; an outage-only result is never billable. The tool does not invoice or collect payment.
 
 ## Stop rule
 
