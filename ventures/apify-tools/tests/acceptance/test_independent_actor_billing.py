@@ -18,7 +18,7 @@ from src.actor_template import run_lookup_actor
 
 def test_dataset_output_schema_declares_every_emitted_column() -> None:
     schema = json.loads((ROOT / ".actor" / "dataset_schema.json").read_text(encoding="utf-8"))
-    fields = schema["fields"]
+    fields = schema["fields"]["properties"]
     displayed = schema["views"]["overview"]["transformation"]["fields"]
     assert {"outcome", "verification_state", "license_number", "status", "expiration_date", "source_url", "checked_at"} <= fields.keys()
     assert set(displayed) <= fields.keys()
