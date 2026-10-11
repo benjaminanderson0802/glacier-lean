@@ -1,0 +1,2 @@
+Shipment ID,Order Number,Ship Date,Carrier,Service,Tracking Number,Recipient,Ship To Address,Ship To City,Ship To State,Ship To Postal Code,Ship To Country,Weight (lbs),Shipping Cost,Order Total,Items,Status
+SHIP-9001,ORDER-9001,2026-09-20,UPS,Ground,1Z999AA10123456784,Rae Example,1 Main St,Example,IN,46000,US,4.5,12.00,250.00,Heater / EH-2 x1,Delivered
