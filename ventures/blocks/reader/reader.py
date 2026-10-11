@@ -391,7 +391,8 @@ def read_document(path: str | os.PathLike[str], schema: Any = None) -> dict[str,
         first = primary.get(key, {"value": None, "page": None, "confidence": 0.0})
         second = secondary.get(key)
         agrees = bool(second is not None and _normalize(first.get("value")) == _normalize(second.get("value"))
-                      and _normalize(first.get("value")) is not None)
+                      and _normalize(first.get("value")) is not None
+                      and first.get("page") is not None)
         fields[key] = {
             # A disputed candidate must not flow into a prepared filing as if
             # it were usable data. Keep only its source location for review.
