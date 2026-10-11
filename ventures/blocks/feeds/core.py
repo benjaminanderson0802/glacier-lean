@@ -57,6 +57,10 @@ def _connect(path: Path | None = None) -> sqlite3.Connection:
         next_offset INTEGER NOT NULL, row_count INTEGER NOT NULL, fetched_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS feed_watermarks (
         source_id TEXT PRIMARY KEY, watermark TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS feed_imports (
+        source_id TEXT PRIMARY KEY, source_url TEXT NOT NULL, acquired_at TEXT NOT NULL,
+        sha256 TEXT NOT NULL, format TEXT NOT NULL, row_count INTEGER NOT NULL,
+        complete INTEGER NOT NULL, imported_at TEXT NOT NULL);
     """)
     return con
 
@@ -778,7 +782,7 @@ def _failed_refresh(source_id: str, alerts: list[str]) -> dict[str, Any]:
             "alerts": [*alerts, f"Candidate quarantined. {disposition}"]}
 
 
-def store_snapshot(source_id: str, rows: list[dict[str, Any]], *, db_path: Path | None = None, source_total: int | None = None, source_url: str = "", schema_fields: list[str] | None = None) -> int:
+def store_snapshot(source_id: str, rows: list[dict[str, Any]], *, db_path: Path | None = None, source_total: int | None = None, source_url: str = "", schema_fields: list[str] | None = None, import_provenance: dict[str, Any] | None = None) -> int:
     row_digests = [(r, hashlib.sha256(json.dumps(r["data"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()) for r in rows]
     digest = hashlib.sha256("\n".join(sorted(d for _, d in row_digests)).encode()).hexdigest()
     fetched_at = rows[0]["fetched_at"] if rows else datetime.now(timezone.utc).isoformat()
@@ -791,7 +795,38 @@ def store_snapshot(source_id: str, rows: list[dict[str, Any]], *, db_path: Path 
         con.execute("INSERT INTO feed_syncs(source_id, fetched_at, source_total, row_count, digest, status) VALUES (?, ?, ?, ?, ?, 'ok') ON CONFLICT(source_id) DO UPDATE SET fetched_at=excluded.fetched_at, source_total=excluded.source_total, row_count=excluded.row_count, digest=excluded.digest, status='ok'", (source_id, fetched_at, source_total, len(rows), digest))
         if schema_fields is not None:
             _remember_schema(con, source_id, schema_fields)
+        if import_provenance:
+            con.execute("""INSERT INTO feed_imports(source_id,source_url,acquired_at,sha256,format,row_count,complete,imported_at)
+                VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(source_id) DO UPDATE SET
+                source_url=excluded.source_url,acquired_at=excluded.acquired_at,sha256=excluded.sha256,
+                format=excluded.format,row_count=excluded.row_count,complete=excluded.complete,imported_at=excluded.imported_at""", (
+                source_id, import_provenance["source_url"], import_provenance["acquired_at"],
+                import_provenance["sha256"], import_provenance["format"], len(rows),
+                int(import_provenance["complete"]), import_provenance["imported_at"]))
+        else:
+            # Provenance describes the current snapshot. A successful network refresh replaces
+            # an imported snapshot and must not leave stale offline-import metadata attached.
+            con.execute("DELETE FROM feed_imports WHERE source_id=?", (source_id,))
     return int(changed)
+
+
+def import_snapshot_candidate(source_id: str, records: list[dict[str, Any]], *, source_url: str,
+                              acquired_at: str, source_total: int | None, alerts: list[str],
+                              provenance: dict[str, Any]) -> dict[str, Any]:
+    """Validate and atomically promote an offline candidate using the network refresh policy."""
+    with _connect() as con:
+        prior = con.execute("SELECT sha256,row_count FROM feed_imports WHERE source_id=?", (source_id,)).fetchone()
+    if prior and prior[0] == provenance["sha256"]:
+        return {"rows": int(prior[1]), "changed": False, "status": "ok", "snapshot_available": True,
+                "complete": True, "live_fetch": False, "idempotent": True, "alerts": []}
+    fetched_at = acquired_at + "T00:00:00Z"
+    result = _validated_snapshot_candidate(source_id, records, source_url=source_url, fetched_at=fetched_at,
+                                           source_total=source_total, alerts=alerts,
+                                           import_provenance=provenance)
+    result.update({"complete": result["status"] == "ok", "live_fetch": False,
+                   "idempotent": result.get("idempotent", False),
+                   "format": provenance["format"], "sha256": provenance["sha256"]})
+    return result
 
 
 def sync(source_id: str) -> dict[str, Any]:
@@ -804,26 +839,36 @@ def sync(source_id: str) -> dict[str, Any]:
             return _sync_socrata_stream(source_id, config)
         records, source_total, alerts = fetch_source(source_id, config)
         fetched_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        rows, format_alerts = normalize_rows(source_id, records, source_url=config["url"], fetched_at=fetched_at)
-        alerts.extend(format_alerts)
-        if not records:
-            raise ValueError("source returned no records; existing snapshot retained")
-        canary = config.get("canary", {}).get("field")
-        if canary and not any(_first(record, [canary]) is not None for record in records):
-            alerts.append(f"Canary alert: no records included expected identifier field {canary}")
-        if source_total is not None:
-            if len(rows) < source_total:
-                alerts.append(f"Row-count alert: downloaded {len(rows)} of {source_total} source rows")
-            if source_total and abs(len(rows) - source_total) / source_total > 0.01:
-                alerts.append(f"Row-count alert: normalized rows differ from source total by more than 1% ({len(rows)} vs {source_total})")
-        if _is_candidate_alert(alerts):
-            return _failed_refresh(source_id, alerts)
-        schema_fields = sorted({str(field) for record in records if isinstance(record, dict) for field in record})
-        changed = bool(store_snapshot(source_id, rows, source_total=source_total, source_url=config["url"], schema_fields=schema_fields))
-        return {"rows": len(rows), "changed": changed, "status": "ok", "snapshot_available": True, "alerts": alerts}
+        return _validated_snapshot_candidate(source_id, records, source_url=config["url"], fetched_at=fetched_at,
+                                             source_total=source_total, alerts=alerts)
     except Exception as exc:
         alert = f"Feed sync alert ({source_id}): {type(exc).__name__}: {exc}"
         return _failed_refresh(source_id, [alert])
+
+
+def _validated_snapshot_candidate(source_id: str, records: list[dict[str, Any]], *, source_url: str,
+                                  fetched_at: str, source_total: int | None, alerts: list[str],
+                                  import_provenance: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Shared canary/schema/count validation and snapshot promotion for refreshes and imports."""
+    rows, format_alerts = normalize_rows(source_id, records, source_url=source_url, fetched_at=fetched_at)
+    alerts.extend(format_alerts)
+    if not records:
+        alerts.append("Format alert: source returned no records")
+    config = registry()[source_id]
+    canary = config.get("canary", {}).get("field")
+    if canary and not any(_first(record, [canary]) is not None for record in records if isinstance(record, dict)):
+        alerts.append(f"Canary alert: no records included expected identifier field {canary}")
+    if source_total is not None:
+        if len(rows) < source_total:
+            alerts.append(f"Row-count alert: downloaded {len(rows)} of {source_total} source rows")
+        if source_total and abs(len(rows) - source_total) / source_total > 0.01:
+            alerts.append(f"Row-count alert: normalized rows differ from source total by more than 1% ({len(rows)} vs {source_total})")
+    if _is_candidate_alert(alerts):
+        return _failed_refresh(source_id, alerts)
+    schema_fields = sorted({str(field) for record in records if isinstance(record, dict) for field in record})
+    changed = bool(store_snapshot(source_id, rows, source_total=source_total, source_url=source_url,
+                                  schema_fields=schema_fields, import_provenance=import_provenance))
+    return {"rows": len(rows), "changed": changed, "status": "ok", "snapshot_available": True, "alerts": alerts}
 
 
 def sync_all() -> dict[str, dict[str, Any]]:
