@@ -654,7 +654,7 @@ def _terminate_worker_processes(team_id: str) -> None:
         _unregister_worker_process(*key)
 
 
-def _review(plan: dict, task: dict, output: str, attempt: int) -> dict:
+def _review(plan: dict, task: dict, output: str, attempt: int, checks: dict | None = None) -> dict:
     role_id = plan["team"].get("supervisor") or plan["tasks"][0]["role"]
     _forbid_planner(role_id, "supervisor")
     role = next((item for item in plan["team"]["roles"] if item["id"] == role_id), None)
@@ -662,12 +662,18 @@ def _review(plan: dict, task: dict, output: str, attempt: int) -> dict:
         return {"passed": False, "evidence": "the plan has no valid supervisor role"}
     import decider
     criteria = "Review the handover against the supervisor charter and task acceptance checks. Reject incomplete, unsupported, or off-plan work."
-    decision = decider.decide(criteria + "\nSupervisor charter: " + role["charter"] + "\nTask: " + task["title"],
-                              ["pass", "fail"], output or "(empty handover)")
+    decision = decider.decide(criteria + "\nSupervisor charter: " + role["charter"] + "\nTask: " + task["title"] +
+                              "\nAcceptance checks: " + json.dumps(task["acceptance"]),
+                              ["pass", "fail"], "Worker handover (not proof):\n" + (output or "(empty handover)") +
+                              "\nIndependent check results:\n" + json.dumps(checks or {}))
     return {"passed": decision.get("choice") == "pass", "evidence": f"supervisor review ({decision.get('engine')}): {decision.get('choice')}"}
 
 
 def _check_task(task: dict, output: str, workspace: str) -> dict:
+    resolved_workspace = os.path.realpath(workspace)
+    unsafe_roots = {os.path.realpath(os.path.abspath(os.sep)), os.path.realpath(tempfile.gettempdir())}
+    if resolved_workspace in unsafe_roots:
+        return {"passed": False, "evidence": f"independent checks refused unsafe workspace root: {resolved_workspace}"}
     evidence = []
     for check in task["acceptance"]:
         result = verify.run_check(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), "team", check, output, workspace)
@@ -683,7 +689,8 @@ def _govern(plan: dict, results: dict) -> dict:
     if done != expected:
         return {"passed": False, "evidence": "some planned tasks are incomplete"}
     import decider
-    outputs = {task_id: item.get("output", "") for task_id, item in results.items()}
+    outputs = {task_id: {"handover": item.get("output", ""), "checks": item.get("checks", {}),
+                         "review": item.get("review", {})} for task_id, item in results.items()}
     decision = decider.decide("Compare the completed results with every item in the Vision done list and the approved plan. "
                               "Pass only when the work clearly meets them. Vision done list: " +
                               json.dumps(plan["vision"].get("done", [])) + "\nPlan results: " + json.dumps(outputs),
@@ -745,10 +752,10 @@ def execute_task(team_id: str, task_id: str, plan: dict, task: dict, workspace: 
                 "checks": {"passed": False, "evidence": "worker did not return a result"}}
     output = str(result.get("output", ""))
     store.broadcaster.publish({"type": "team_handover", "team_id": team_id, "task_id": task_id, "role": role["id"]})
-    review = _review(plan, task, output, attempt)
+    checks = _check_task(task, output, workspace)
+    review = _review(plan, task, output, attempt, checks)
     store.broadcaster.publish({"type": "team_review_result", "team_id": team_id, "task_id": task_id,
                                "passed": bool(review.get("passed")), "evidence": review.get("evidence", "")})
-    checks = _check_task(task, output, workspace) if review.get("passed") else {"passed": False, "evidence": review.get("evidence")}
     if not review.get("passed") or not checks.get("passed") or result.get("exit_code", 1) != 0:
         return {"status": "retry", "output": output, "review": review, "checks": checks}
     if feature and task.get("role") in ("evaluator", "skeptical-evaluator"):

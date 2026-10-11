@@ -1,0 +1,6 @@
+{
+  "http_status": 502,
+  "response": {
+    "detail": "Could not draft the spec: requirements must use separate EARS statements. Try again or switch engine"
+  }
+}

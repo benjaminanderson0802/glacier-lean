@@ -1,0 +1,9 @@
+{
+  "http_status": 200,
+  "response": {
+    "conversation_id": "da8e6c25-0688-4685-9fc7-aa547a2f487f",
+    "reply": "The exact file contents, offline limits, task roles, approval order, and byte-level checks are clear. What should happen if the approved builder task fails its check, given the two-attempt cap?",
+    "readiness": 95,
+    "conversation_path": "conversations/da8e6c25-0688-4685-9fc7-aa547a2f487f.md"
+  }
+}

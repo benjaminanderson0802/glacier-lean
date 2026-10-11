@@ -1,0 +1,524 @@
+.......................................................F.FFF............ [ 90%]
+....F...                                                                 [100%]
+=================================== FAILURES ===================================
+_____________ test_automation_chat_proposes_flow_and_does_not_save _____________
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:127: in __iter__
+    for part in self._httpcore_stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py:407: in __iter__
+    raise exc from None
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py:403: in __iter__
+    for part in self._stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:342: in __iter__
+    raise exc
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:334: in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:203: in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:217: in _receive_event
+    data = self._network_stream.read(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_backends/sync.py:126: in read
+    with map_exceptions(exc_map):
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ReadTimeout'>, <class 'OSError'>: <class 'httpcore.ReadError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ReadTimeout: timed out
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_exceptions.py:14: ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-596/test_automation_chat_proposes_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e69c84edd60>
+
+    def test_automation_chat_proposes_flow_and_does_not_save(tmp_path, monkeypatch):
+        server = _chat_server(tmp_path, monkeypatch)
+        try:
+>           response = httpx.post(server.url + "/api/assistant/chat", json={"message": "make me a daily backup"}, timeout=30)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_assistant_chat.py:184: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/conftest.py:58: in call
+    return original(url, *args, **(_auth(kw) if str(url).startswith(_LOCAL) else kw))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_api.py:304: in post
+    return request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_api.py:109: in request
+    return client.request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:928: in send
+    raise exc
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:922: in send
+    response.read()
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py:881: in read
+    self._content = b"".join(self.iter_bytes())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py:897: in iter_bytes
+    for raw_bytes in self.iter_raw():
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py:951: in iter_raw
+    for raw_stream_bytes in self.stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:153: in __iter__
+    for chunk in self._stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:126: in __iter__
+    with map_httpcore_exceptions():
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ReadTimeout: timed out
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:118: ReadTimeout
+_____ test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone ______
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:250: in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py:256: in handle_request
+    raise exc from None
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py:236: in handle_request
+    response = connection.handle_request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection.py:103: in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:136: in handle_request
+    raise exc
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:106: in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:177: in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:217: in _receive_event
+    data = self._network_stream.read(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_backends/sync.py:126: in read
+    with map_exceptions(exc_map):
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ReadTimeout'>, <class 'OSError'>: <class 'httpcore.ReadError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ReadTimeout: timed out
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_exceptions.py:14: ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-596/test_approved_proposal_is_save0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e69c830c410>
+
+    def test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone(tmp_path, monkeypatch):
+        server = _chat_server(tmp_path, monkeypatch)
+        try:
+>           proposal = _proposal(server)
+                       ^^^^^^^^^^^^^^^^^
+
+tests/test_assistant_chat.py:211: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_assistant_chat.py:87: in _proposal
+    events = _events(httpx.post(server.url + "/api/assistant/chat", json={"message": "make me a daily backup"}, timeout=30))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/conftest.py:58: in call
+    return original(url, *args, **(_auth(kw) if str(url).startswith(_LOCAL) else kw))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_api.py:304: in post
+    return request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_api.py:109: in request
+    return client.request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:249: in handle_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ReadTimeout: timed out
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:118: ReadTimeout
+____ test_invalid_proposal_is_refused_with_same_message_as_environment_save ____
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-596/test_invalid_proposal_is_refus0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e69e4fbf680>
+
+    def test_invalid_proposal_is_refused_with_same_message_as_environment_save(tmp_path, monkeypatch):
+>       server = _chat_server(tmp_path, monkeypatch)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_assistant_chat.py:245: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_assistant_chat.py:75: in _chat_server
+    return Server(home).start()
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <conftest.Server object at 0x7e69e4f8f3e0>
+
+    def start(self):
+        env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
+        options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+        self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
+                                     cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, **options)
+        deadline = time.time() + float(os.environ.get("GLACIER_TEST_START_TIMEOUT", "60"))
+        while time.time() < deadline:  # startup grows with plug-ins; a busy machine can need well over 15 s
+            if self.proc.poll() is not None:
+                break
+            try:
+                if httpx.get(self.url + "/api/environments").status_code == 200:
+                    return self
+            except httpx.HTTPError:
+                pass
+            time.sleep(0.1)
+        log = self.diagnostics()
+        self.stop()
+>       raise RuntimeError(f"server did not start; backend log follows:\n{log}")
+E       RuntimeError: server did not start; backend log follows:
+E       22:29:07 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+E       INFO:     Started server process [407954]
+E       INFO:     Waiting for application startup.
+E       22:29:16 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+E       22:29:16 [    INFO] (dbos:_dbos.py:621) Application version: 30c48a982ec2b6e0e333e08a0866830c
+E       22:29:16 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+E       22:29:16 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/pytest-of-glacier/pytest-596/test_invalid_proposal_is_refus0/home/glacier.sqlite (schema: dbos)
+E       22:29:16 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+E       22:29:16 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+E       22:29:24 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+E       22:29:26 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version 30c48a982ec2b6e0e333e08a0866830c
+E       22:29:26 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+E       22:29:26 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+E       22:29:26 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+
+tests/conftest.py:110: RuntimeError
+_______________________ test_apply_refuses_existing_flow _______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-596/test_apply_refuses_existing_fl0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e69c831d6a0>
+
+    def test_apply_refuses_existing_flow(tmp_path, monkeypatch):
+>       server = _chat_server(tmp_path, monkeypatch)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_assistant_chat.py:262: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_assistant_chat.py:75: in _chat_server
+    return Server(home).start()
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <conftest.Server object at 0x7e69c831e2d0>
+
+    def start(self):
+        env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
+        options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+        self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
+                                     cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, **options)
+        deadline = time.time() + float(os.environ.get("GLACIER_TEST_START_TIMEOUT", "60"))
+        while time.time() < deadline:  # startup grows with plug-ins; a busy machine can need well over 15 s
+            if self.proc.poll() is not None:
+                break
+            try:
+                if httpx.get(self.url + "/api/environments").status_code == 200:
+                    return self
+            except httpx.HTTPError:
+                pass
+            time.sleep(0.1)
+        log = self.diagnostics()
+        self.stop()
+>       raise RuntimeError(f"server did not start; backend log follows:\n{log}")
+E       RuntimeError: server did not start; backend log follows:
+E       22:30:35 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+
+tests/conftest.py:110: RuntimeError
+____ test_approved_run_now_starts_one_and_lists_run_and_appends_result_once ____
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:127: in __iter__
+    for part in self._httpcore_stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py:407: in __iter__
+    raise exc from None
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py:403: in __iter__
+    for part in self._stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:342: in __iter__
+    raise exc
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:334: in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:203: in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py:217: in _receive_event
+    data = self._network_stream.read(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_backends/sync.py:126: in read
+    with map_exceptions(exc_map):
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ReadTimeout'>, <class 'OSError'>: <class 'httpcore.ReadError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ReadTimeout: timed out
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpcore/_exceptions.py:14: ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-596/test_approved_run_now_starts_o0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e69c84ee7e0>
+
+    def test_approved_run_now_starts_one_and_lists_run_and_appends_result_once(tmp_path, monkeypatch):
+        server = _server(tmp_path, monkeypatch)
+        try:
+>           conv, proposal = _proposal(server)
+                             ^^^^^^^^^^^^^^^^^
+
+tests/test_assistant_chat_runs.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_assistant_chat_runs.py:64: in _proposal
+    events = _events(httpx.post(server.url + "/api/assistant/chat",
+tests/conftest.py:58: in call
+    return original(url, *args, **(_auth(kw) if str(url).startswith(_LOCAL) else kw))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_api.py:304: in post
+    return request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_api.py:109: in request
+    return client.request(
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:928: in send
+    raise exc
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:922: in send
+    response.read()
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py:881: in read
+    self._content = b"".join(self.iter_bytes())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py:897: in iter_bytes
+    for raw_bytes in self.iter_raw():
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py:951: in iter_raw
+    for raw_stream_bytes in self.stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_client.py:153: in __iter__
+    for chunk in self._stream:
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:126: in __iter__
+    with map_httpcore_exceptions():
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ReadTimeout: timed out
+
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/httpx/_transports/default.py:118: ReadTimeout
+=============================== warnings summary ===============================
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_assistant_chat.py::test_automation_chat_proposes_flow_and_does_not_save
+FAILED tests/test_assistant_chat.py::test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone
+FAILED tests/test_assistant_chat.py::test_invalid_proposal_is_refused_with_same_message_as_environment_save
+FAILED tests/test_assistant_chat.py::test_apply_refuses_existing_flow - Runti...
+FAILED tests/test_assistant_chat_runs.py::test_approved_run_now_starts_one_and_lists_run_and_appends_result_once
+5 failed, 75 passed, 1 warning in 1265.05s (0:21:05)

@@ -1,0 +1,12 @@
+interview-confirm 200
+Traceback (most recent call last):
+  File "/tmp/e-ph5-plan-retry.py", line 10, in <module>
+    b=post('draft-retry','/api/build/draft-spec',{'conversation_id':conv,'latest_message':answer,'engine':'codex'})
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/e-ph5-plan-retry.py", line 7, in post
+    r=c.post(path,json=data);(out/f'live-{name}.json').write_text(json.dumps({'http_status':r.status_code,'response':r.json()},indent=2));r.raise_for_status();print(name,r.status_code,flush=True);return r.json()
+                                                                                                                                          ^^^^^^^^^^^^^^^^^^^^
+  File "/home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Server error '502 Bad Gateway' for url 'http://127.0.0.1:38593/api/build/draft-spec'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502

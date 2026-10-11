@@ -134,3 +134,25 @@ def test_spec_generation_schema_requires_same_ears_form_as_validator(monkeypatch
     pattern = captured['properties']['requirements']['items']['pattern']
     assert re.match(pattern, 'The system shall create result.txt')
     assert not re.match(pattern, 'The builder shall create result.txt')
+
+
+def test_supervisor_receives_independent_checks_alongside_handover(monkeypatch):
+    import decider
+    captured = {}
+    def decide(question, options, context=''):
+        captured.update(question=question, context=context)
+        return {'choice': 'pass', 'engine': 'fixture'}
+    monkeypatch.setattr(decider, 'decide', decide)
+    p = plan()
+    p['team']['supervisor'] = 'builder'
+    checks = {'passed': True, 'evidence': ['Independent command verified exact file bytes']}
+    teams._review(p, p['tasks'][0], 'Worker claims success', 1, checks)
+    assert 'test -f result.txt' in captured['question']
+    assert 'Independent command verified exact file bytes' in captured['context']
+
+
+def test_independent_check_refuses_filesystem_roots_without_copying(tmp_path):
+    check = {'kind': 'command', 'cmd': 'true'}
+    result = teams._check_task({'acceptance': [check]}, '', teams.tempfile.gettempdir())
+    assert result['passed'] is False
+    assert 'unsafe workspace root' in result['evidence']
