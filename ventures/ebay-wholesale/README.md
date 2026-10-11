@@ -54,4 +54,4 @@ The niche and supplier memo ranks five segments. It reports public supplier pric
 
 ## Owner steps
 
-Complete the three grouped setup steps in [OWNER-STEPS.md](OWNER-STEPS.md): verify eBay seller/payouts, create developer credentials, and submit the prepared supplier applications. Per-item API writes, each publish action, each supplier PO, and each payment still require separate owner review and approval at run time.
+Complete the two grouped setup steps in [OWNER-STEPS.md](OWNER-STEPS.md): verify eBay seller/payouts and set up developer credentials in one sitting, then submit the prepared supplier applications. Per-item API writes, each publish action, each supplier PO, and each payment still require separate owner review and approval at run time.

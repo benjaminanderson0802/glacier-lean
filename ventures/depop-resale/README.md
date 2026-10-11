@@ -33,7 +33,7 @@ The script checks required item facts and photo files. It cannot verify photo pr
 
 Depop's official [business/API guidance](https://depophelp.zendesk.com/hc/en-gb/articles/4411154329233-Selling-as-a-charity-or-business) says the API is not open to the public and that Depop works with crosslisting tools through API connection. The public official sources reviewed do not name any approved providers or publish a CSV import contract. Therefore this venture prepares **manual Depop listing only**; the neutral CSV is a local review aid, not an upload file. No named provider is represented as approved. Any future provider use requires written Depop confirmation and its own documented import schema.
 
-See [RESEARCH.md](RESEARCH.md) for dated source notes and [OWNER-STEPS.md](OWNER-STEPS.md) for the three owner steps: buy inspected stock within ceilings, take original photos and enter facts, approve drafts and post manually.
+See [RESEARCH.md](RESEARCH.md) for dated source notes and [OWNER-STEPS.md](OWNER-STEPS.md) for the two owner steps: buy inspected stock within ceilings, then prepare, review, and post each item manually in one sitting.
 
 ## Checks
 

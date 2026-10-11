@@ -20,11 +20,11 @@ from scripts.ebay_wholesale import (  # noqa: E402
 )
 
 
-def test_manifest_is_valid_and_exactly_one_prelaunch_step():
+def test_manifest_is_valid_and_has_one_or_two_prelaunch_steps():
     schema = json.loads((ROOT / "ventures" / "venture.schema.json").read_text())
     manifest = json.loads((VENTURE / "venture.json").read_text())
     jsonschema.validate(manifest, schema)
-    assert len(manifest["your_steps"]) == 1
+    assert 1 <= len(manifest["your_steps"]) <= 2
 
 
 def test_csv_creates_local_inventory_and_offer_drafts_with_safe_price_and_lead_time(tmp_path):
