@@ -129,7 +129,10 @@ def _reader_review(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any] |
         # customer review path instead of letting an unreadable label crash a run.
         return ["ingredient label/source document"], {"error": f"{type(exc).__name__}: {exc}"}
     value = parsed.get("fields", {}).get("ingredients", {})
-    if value.get("uncertain") or not value.get("value"):
+    # A matching extraction is not usable filing evidence unless the reader
+    # can cite the label page containing it. Keep the packet gate closed even
+    # if a reader implementation reports agreement without that citation.
+    if value.get("uncertain") or not value.get("value") or value.get("page") is None:
         return ["ingredients"], parsed
     source_ingredients = [part.strip() for part in re.split(r"[,;\n]+", str(value["value"])) if part.strip()]
     supplied = [_s(part) for part in payload.get("ingredients", [])]
