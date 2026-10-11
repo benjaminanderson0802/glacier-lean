@@ -4,13 +4,30 @@ import { t } from '../i18n/index.ts'
 import { go } from '../route.ts'
 import { Btn, Empty } from '../ui/kit.tsx'
 
-function Step({ step }: { step: VentureStep }) {
+function Step({ step, slug, onDone }: { step: VentureStep; slug: string; onDone: () => void }) {
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const links = [...new Set([...(step.links ?? []), step.link, step.url].filter((link): link is string => !!link))]
     .filter(link => /^#\/(settings|automations|memory|home|ask)(\/|$)/.test(link) || /^https?:\/\//i.test(link))
+  const secrets = step.secrets?.length ? step.secrets : step.secret_name ? [{ name: step.secret_name, label: t('ventures.pasteKey') }] : []
+  const canComplete = secrets.every(secret => !!values[secret.name]?.trim())
   return <div className="venture-step" data-testid={`your-step-${step.id}`}>
-    <div className="venture-step-copy"><strong>{step.title}</strong><p>{step.instructions || step.detail}</p>
-      {links.map(link => <a key={link} href={link} target={link.startsWith('#') ? undefined : '_blank'} rel="noopener noreferrer">{link.startsWith('#/settings') ? t('settings.title') : link}</a>)}
+    <div className="venture-step-copy"><strong className="venture-user-content">{step.title}</strong><p className="venture-user-content">{step.instructions || step.detail}</p>
+      {links.map(link => <a key={link} href={link} target={link.startsWith('#') ? undefined : '_blank'} rel="noopener noreferrer" className={link.startsWith('#/settings') ? '' : 'venture-user-content'}>{link.startsWith('#/settings') ? t('settings.title') : link}</a>)}
     </div>
+    {secrets.map(secret => <label className="venture-secret-field" key={secret.name}>{secret.label} · {t('ventures.pasteKey')}
+      <input className="g-input" type="password" autoComplete="new-password" value={values[secret.name] ?? ''} onChange={event => setValues(current => ({ ...current, [secret.name]: event.target.value }))} aria-label={`${secret.label} · ${t('ventures.pasteKey')}`} data-testid={`venture-secret-${secret.name}`} />
+    </label>)}
+    {error && <div className="g-error" role="alert">{error}</div>}
+    <Btn primary disabled={busy || !canComplete} onClick={async () => {
+      setBusy(true); setError('')
+      try {
+        if (step.secrets?.length) await venturesApi.completeStep(slug, step.id ?? '', undefined, values)
+        else await venturesApi.completeStep(slug, step.id ?? '', step.secret_name ? values[step.secret_name] : undefined)
+        setValues({}); onDone()
+      } catch (reason) { setError(String(reason)) } finally { setBusy(false) }
+    }} data-testid={`venture-step-done-${step.id}`}>{busy ? t('ventures.saving') : t('ventures.done')}</Btn>
   </div>
 }
 
@@ -43,8 +60,8 @@ export function Ventures({ query }: { query: string }) {
       const steps = venture.your_steps.filter(step => !step.done)
       const last = venture.last_run
       return <article className="venture-card" key={venture.slug} data-testid={`venture-${venture.slug}`}>
-        <header className="venture-card-head"><h2>{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`} title={venture.readiness === 'blocked' ? undefined : t(`ventures.${venture.readiness}Help`)}>{t(`ventures.${venture.readiness}`)}</span></header>
-        <div className="venture-card-copy"><strong>{t('ventures.what')}</strong><p>{venture.description || t('ventures.noDescription')}</p></div>
+        <header className="venture-card-head"><h2 className="venture-user-content">{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`} title={venture.readiness === 'blocked' ? undefined : t(`ventures.${venture.readiness}Help`)}>{t(`ventures.status.${venture.status}`)}</span></header>
+        <div className="venture-card-copy"><strong>{t('ventures.what')}</strong><p className={venture.description ? 'venture-user-content' : undefined}>{venture.description || t('ventures.noDescription')}</p></div>
         {venture.blockers.length > 0 && <ul className="venture-blockers">{venture.blockers.map(reason => <li key={reason}>{t(`ventures.${reason}`)}</li>)}</ul>}
         <div className="venture-card-copy"><strong>{t('ventures.lastRun')}</strong> · {last
           ? <a className="g-link" href={`#/automations/flow/${encodeURIComponent(last.env_id)}/${encodeURIComponent(last.run_id)}`} data-testid={`venture-last-run-${venture.slug}`}>{t('ventures.runResult', { status: t(`ventures.result.${last.status}`), when: new Date(last.started_at).toLocaleString() })}</a>
@@ -52,6 +69,16 @@ export function Ventures({ query }: { query: string }) {
         <div className="venture-card-copy"><strong>{t('ventures.nextRun')}</strong> · {venture.next_run ? new Date(venture.next_run).toLocaleString() : t('ventures.notScheduled')}</div>
         <div className="venture-card-copy"><strong>{t('ventures.today')}</strong> · {t('ventures.todayCounts', venture.today)}</div>
         <div className="venture-card-actions">
+          <Btn disabled={!!busy} onClick={async () => {
+            setBusy(venture.slug); setError('')
+            try {
+              const paused = venture.status !== 'paused'
+              if (paused) await venturesApi.pause(venture.slug)
+              else await venturesApi.resume(venture.slug)
+              setRows(current => current?.map(row => row.slug === venture.slug ? { ...row, status: paused ? 'paused' : 'running' } : row) ?? null)
+            } catch (reason) { setError(String(reason)) }
+            finally { setBusy('') }
+          }} data-testid={`venture-toggle-${venture.slug}`}>{t(venture.status === 'paused' ? 'ventures.resume' : 'ventures.pause')}</Btn>
           <Btn primary disabled={!!busy || !venture.run_available} onClick={async () => {
             setBusy(venture.slug); setError('')
             try { const run = await venturesApi.run(venture.slug); go(`automations/flow/${encodeURIComponent(run.env_id)}/${encodeURIComponent(run.run_id)}`) }
@@ -61,8 +88,8 @@ export function Ventures({ query }: { query: string }) {
           {!venture.run_available && <span className="g-muted">{t('ventures.runUnavailable')}</span>}
         </div>
         <div className="venture-steps"><strong>{t('ventures.yourSteps')} · {t('ventures.stepProgress', { done: venture.your_steps.length - steps.length, total: venture.your_steps.length })}</strong>
-          {steps.slice(0, 2).map(step => <Step key={step.id} step={step} />)}
-          {steps.length > 2 && <details><summary>{t('ventures.moreSteps', { count: steps.length - 2 })}</summary>{steps.slice(2).map(step => <Step key={step.id} step={step} />)}</details>}
+          {steps.slice(0, 2).map(step => <Step key={step.id} step={step} slug={venture.slug} onDone={() => setReload(value => value + 1)} />)}
+          {steps.length > 2 && <details><summary>{t('ventures.moreSteps', { count: steps.length - 2 })}</summary>{steps.slice(2).map(step => <Step key={step.id} step={step} slug={venture.slug} onDone={() => setReload(value => value + 1)} />)}</details>}
           {steps.length === 0 && <span className="g-muted">{t('ventures.noSteps')}</span>}
         </div>
       </article>
