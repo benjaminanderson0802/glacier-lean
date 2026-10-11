@@ -19,6 +19,27 @@ def _tokens(value: Any) -> set[str]:
     return set(normalize_text(value).split())
 
 
+_GENERIC_PRODUCT_SUFFIXES = {"seat", "sleeper", "toy"}
+
+
+def _query_product_tokens(query: Mapping[str, Any]) -> list[str]:
+    value = query.get("model") or query.get("product_name")
+    tokens = normalize_text(value).split()
+    while len(tokens) > 2 and tokens[-1] in _GENERIC_PRODUCT_SUFFIXES:
+        tokens.pop()
+    return tokens
+
+
+def _contains_phrase(fields: Sequence[Any], phrase_tokens: Sequence[str]) -> bool:
+    if not phrase_tokens:
+        return False
+    for field in fields:
+        tokens = normalize_text(field).split()
+        if any(tokens[start : start + len(phrase_tokens)] == list(phrase_tokens) for start in range(len(tokens))):
+            return True
+    return False
+
+
 def classify_matches(query: Mapping[str, Any], recalls: Sequence[Mapping[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
     barcode = normalize_code(query.get("barcode"))
     if barcode:
@@ -32,7 +53,8 @@ def classify_matches(query: Mapping[str, Any], recalls: Sequence[Mapping[str, An
 
     brand = _tokens(query.get("brand"))
     model = normalize_text(query.get("model")).replace(" ", "")
-    if brand and model:
+    product_tokens = _query_product_tokens(query)
+    if brand and (model or query.get("product_name")):
         exact_model: list[dict[str, Any]] = []
         possible: list[dict[str, Any]] = []
         for recall in recalls:
@@ -42,21 +64,24 @@ def classify_matches(query: Mapping[str, Any], recalls: Sequence[Mapping[str, An
             brand_match = brand.issubset(recall_brand) or brand.issubset(_tokens(" ".join(str(v or "") for v in (recall.get("brand"), recall.get("title")))))
             if brand_match:
                 model_match = False
-                for tokens in model_tokens:
-                    for start in range(len(tokens)):
-                        compact = ""
-                        for token in tokens[start:]:
-                            compact += token
-                            if compact == model:
-                                model_match = True
-                                break
-                            if len(compact) >= len(model):
+                if model:
+                    for tokens in model_tokens:
+                        for start in range(len(tokens)):
+                            compact = ""
+                            for token in tokens[start:]:
+                                compact += token
+                                if compact == model:
+                                    model_match = True
+                                    break
+                                if len(compact) >= len(model):
+                                    break
+                            if model_match:
                                 break
                         if model_match:
                             break
-                    if model_match:
-                        break
-                if model and model_match:
+                else:
+                    model_match = _contains_phrase(model_fields, product_tokens)
+                if model_match:
                     exact_model.append(dict(recall))
                 else:
                     possible.append(dict(recall))

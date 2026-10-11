@@ -11,7 +11,15 @@ from typing import Any
 async def run_actor_queries(actor: Any, queries: Sequence[Mapping[str, Any]], *, check_one: Callable[[Mapping[str, Any]], dict[str, Any]]) -> None:
     for index, query in enumerate(queries):
         result = check_one(query)
-        await actor.push_data(result)
+        dataset_item = {
+            "outcome": result.get("outcome", "uncertain"),
+            "message": result.get("message", "uncertain — please check"),
+            "query": result.get("query", dict(query)),
+            "matches": result.get("matches", []),
+            "sources_checked": result.get("sources_checked", {}),
+            "checked_at": result.get("checked_at", ""),
+        }
+        await actor.push_data(dataset_item)
         sources = result.get("sources_checked", {})
         source_errors = [source for source in sources.values() if source.get("status") == "error"]
         source_ok = any(source.get("status") == "ok" for source in sources.values())
