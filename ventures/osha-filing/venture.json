@@ -1,7 +1,7 @@
 {
   "slug": "osha-filing",
   "name": "osha filing preparation",
-  "status": "ready",
+  "status": "blocked",
   "product": {
     "purpose": "Prepare customer-reviewed Form 300A worksheets from injury-log CSVs for eligible establishments, with the executive certifying and submitting through their own OSHA ITA account.",
     "customer_output_vocabulary": [
@@ -60,21 +60,20 @@
   ],
   "your_steps": [
     {
-      "id": "owner-source-and-launch-review",
-      "title": "Owner: finish the source check and review launch materials",
-      "when": "Before prospect screening or launch",
-      "detail": "Download the current ITA Summary Data CSV from OSHA's official data page in a normal browser and run the local --source-csv screen to record its row count and establishment-ID canary; this client's feed request currently returns HTTP 403. Review the first postcard, recipient source, landing page, marketplace listing, and first five prepared worksheets. The Jobber test app is already connected; submit or publish its listing yourself only if you choose. Glacier does not send mail or publish listings.",
+      "id": "review-first-five-worksheets",
+      "title": "Owner: review the first five source-linked worksheets",
+      "when": "After the automated OSHA source canary passes",
+      "detail": "Open $GLACIER_HOME/ventures/osha-filing/worksheets/first-five-status.json and review the up to five HTML files it names against establishment records. The live OSHA source currently returns HTTP 403 to this script client, so there is no action to take until script access is restored. Cold outreach is not a priority; no postcard is sent or listing published by Glacier.",
       "links": [
         "https://www.osha.gov/itadata",
-        "https://www.osha.gov/recordkeeping/forms",
-        "https://developer.getjobber.com/"
+        "https://www.osha.gov/recordkeeping/forms"
       ]
     },
     {
       "id": "customer-certifies-submits",
       "title": "Customer: review, sign, post, and submit your Form 300A",
-      "when": "After the draft is prepared",
-      "detail": "Compare every field with your OSHA 300 Log and hours/headcount records. Your executive signs and dates the completed form, posts it February 1–April 30, and submits the required data in your OSHA ITA account by March 2 (submission opens January 2). Glacier only prepares a review worksheet.",
+      "when": "After the customer worksheet is prepared",
+      "detail": "Compare every field with the OSHA 300 Log and current hours/headcount records. The establishment executive completes missing current-year values, certifies and signs, posts the signed summary February 1–April 30, and submits required data through the establishment’s own OSHA ITA account by March 2 (submission opens January 2). Glacier only prepares a review worksheet.",
       "links": [
         "https://www.osha.gov/recordkeeping/forms",
         "https://www.osha.gov/injuryreporting/"
@@ -82,12 +81,11 @@
     }
   ],
   "launch_gates": [
-    "Owner downloads the current OSHA ITA Summary Data CSV if the public feed remains blocked, then records the local screen's actual row count and establishment-ID canary.",
+    "The official OSHA ITA Summary Data feed refresh passes the source URL, schema, row-count, and unique establishment-ID canaries; the current script client receives HTTP 403 from both the official page and its direct bulk CSV.",
+    "After source access is restored, Glacier automatically prepares up to five unsigned, source-linked worksheets; owner reviews them against establishment records.",
     "The OSHA 300A arithmetic checks pass; missing data remains uncertain.",
-    "First postcard design and recipient are reviewed; no live outreach is enabled.",
-    "Owner reviews the first five prepared filing packets.",
-    "Owner reviews and submits the Jobber marketplace listing.",
-    "The customer, not Glacier, certifies and submits all government filings."
+    "No live postcard or marketplace publication occurs without the owner action; written outreach remains optional and low priority.",
+    "The customer, not Glacier, certifies, signs, posts, and submits all government filings."
   ],
   "dry_run_env_id": "prepare-300a"
 }

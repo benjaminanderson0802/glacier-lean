@@ -9,6 +9,7 @@ import argparse
 import csv
 import html
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -237,9 +238,15 @@ def build_300a_packet(fields: dict[str, Any]) -> dict[str, Any]:
     )
     provenance = ""
     if fields.get("source_file") or provenance_rows:
+        source_link = ""
+        if fields.get("source_url"):
+            safe_url = html.escape(str(fields["source_url"]), quote=True)
+            source_link = f"<p>Source page: <a href='{safe_url}'>{safe_url}</a></p>"
         provenance = (
             "<h2>CSV source and case details</h2>"
             f"<p>Source file: {html.escape(str(fields.get('source_file') or '').strip() or 'Customer confirmation needed')}</p>"
+            + source_link
+            + "<p>Public source values are historical submissions. Customer must compare every value with current establishment records and enter the correct filing year.</p>"
             "<table><thead><tr><th>Source row</th><th>Source date</th><th>Case ID</th><th>Case type</th>"
             "<th>Days away</th><th>Job transfer or restriction days</th></tr></thead>"
             f"<tbody>{provenance_rows}</tbody></table>"
@@ -280,6 +287,90 @@ def _value(record: dict[str, Any], *names: str) -> Any:
         if value not in (None, ""):
             return value
     return None
+
+
+def _source_canary(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Check the identifier field required to trust a public ITA summary snapshot."""
+    identifiers: list[str] = []
+    for row in records:
+        record = _row_data(row)
+        value = _value(record, "establishment_id", "establishment id", "EstablishmentId")
+        if value is not None and str(value).strip():
+            identifiers.append(str(value).strip())
+    duplicate_count = len(identifiers) - len(set(identifiers))
+    return {
+        "passed": bool(identifiers) and duplicate_count == 0,
+        "records_checked": len(records),
+        "establishment_ids_present": len(identifiers),
+        "duplicate_establishment_ids": duplicate_count,
+    }
+
+
+def _public_300a_fields(record: dict[str, Any], *, source_url: str) -> dict[str, Any]:
+    """Map OSHA-published summary fields into an unsigned customer review worksheet."""
+    deaths = _value(record, "total_deaths")
+    days_away_cases = _value(record, "total_dafw_cases", "cases_with_days_away")
+    transfer_cases = _value(record, "total_djtr_cases", "cases_with_job_transfer_or_restriction")
+    other_cases = _value(record, "total_other_cases", "other_recordable_cases")
+    fields = {
+        "establishment_id": _value(record, "establishment_ID", "establishment_id", "establishment id"),
+        "establishment_name": _value(record, "establishment_name"),
+        "establishment_address": _value(record, "street_address", "establishment_address"),
+        "establishment_city": _value(record, "city"),
+        "establishment_state": _value(record, "state"),
+        "establishment_zip": _value(record, "zip_code", "zip"),
+        "industry_code": _value(record, "naics_code", "industry_code"),
+        "year": _value(record, "year_filing_for", "calendar_year", "year"),
+        "average_employees": _value(record, "annual_average_employees", "average_employees"),
+        "total_hours_worked": _value(record, "total_hours_worked"),
+        "total_deaths": deaths,
+        "cases_with_days_away": days_away_cases,
+        "cases_with_job_transfer_or_restriction": transfer_cases,
+        "other_recordable_cases": other_cases,
+        "total_cases": None,
+        "days_away": _value(record, "total_dafw_days", "days_away"),
+        "job_transfer_or_restriction_days": _value(record, "total_djtr_days", "job_transfer_or_restriction_days"),
+        "executive_name": "",
+        "executive_title": "",
+        "source_file": "OSHA ITA Summary Data",
+        "source_url": source_url,
+    }
+    values = [deaths, days_away_cases, transfer_cases, other_cases]
+    if all(_int_field({"n": value}, "n") is not None for value in values):
+        fields["total_cases"] = sum(int(value) for value in values)
+    return fields
+
+
+def prepare_first_five(*, records: list[dict[str, Any]], output_dir: str | Path, as_of: date,
+                       source_url: str) -> dict[str, Any]:
+    """Prepare up to five source-linked, unsigned 300A review worksheets."""
+    canary = _source_canary(records)
+    if not canary["passed"]:
+        raise ValueError("OSHA source canary failed: unique nonempty establishment IDs are required")
+    screening_date = as_of if (as_of.month, as_of.day) <= (3, 2) else date(as_of.year + 1, 1, 3)
+    selected = eligible_prospects(as_of=screening_date, records=records)["prospects"][:5]
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    worksheets: list[dict[str, Any]] = []
+    for prospect in selected:
+        fields = _public_300a_fields(prospect, source_url=source_url)
+        packet = build_300a_packet(fields)
+        establishment_id = re.sub(r"[^A-Za-z0-9_-]", "_", str(fields.get("establishment_id") or "unknown"))
+        path = target / f"osha-300a-review-{establishment_id}.html"
+        path.write_text(packet["html"], encoding="utf-8")
+        worksheets.append({"establishment_id": fields["establishment_id"], "path": str(path), "result": packet["result"], "signature": packet["signature"], "submission": packet["submission"]})
+    return {
+        "result": "match" if worksheets else "no match found in OSHA public submission data as of " + as_of.isoformat(),
+        "source_url": source_url,
+        "prepared_at": as_of.isoformat(),
+        "screening_window_date": screening_date.isoformat(),
+        "source_canary": canary,
+        "source_row_count": len(records),
+        "worksheets_prepared": len(worksheets),
+        "worksheets": worksheets,
+        "mail_status": "not_sent",
+        "submission_by_glacier": False,
+    }
 
 
 def refresh_public_data() -> dict[str, Any]:
@@ -361,6 +452,11 @@ def main(argv: list[str] | None = None) -> int:
     source_mode.add_argument("--fixture", type=Path, help="screen a local synthetic CSV fixture instead of the public feed")
     source_mode.add_argument("--source-csv", type=Path, help="screen an OSHA Summary Data CSV already saved locally; verify its source on the official OSHA page")
     leads.add_argument("--output", type=Path, help="local path for a single address-complete candidate; never writes the full public dataset")
+    first_five = sub.add_parser("prepare-first-five", help="refresh OSHA ITA data, verify its canary, and prepare up to five unsigned review worksheets")
+    first_five.add_argument("--as-of", type=date.fromisoformat, default=date.today())
+    first_five.add_argument("--output-dir", type=Path, default=Path(__import__("os").environ.get("GLACIER_HOME", str(Path.home() / ".glacier"))) / "ventures" / "osha-filing" / "worksheets")
+    first_five.add_argument("--source-csv", type=Path, help="use a local official OSHA Summary Data CSV when live refresh is unavailable")
+    first_five.add_argument("--source-url", default="https://www.osha.gov/itadata", help="official OSHA page that documents the local CSV source")
     prepare = sub.add_parser("prepare-300a")
     prepare.add_argument("--input", type=Path, required=True, help="customer-confirmed JSON or injury-log CSV")
     prepare.add_argument("--output", type=Path, required=True)
@@ -421,6 +517,38 @@ def main(argv: list[str] | None = None) -> int:
             source_row_count = len(source_records)
             status_path.write_text(json.dumps({"result": public_result, "as_of": args.as_of.isoformat(), "source_mode": source_mode, "source_file": args.source_csv.name if args.source_csv else None, "source_row_count": source_row_count, "source_canary_present": source_canary_present, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "sales": result.get("sales", "open")}, indent=2, ensure_ascii=False), encoding="utf-8")
             output = {"result": public_result, "source_mode": source_mode, "source_row_count": source_row_count, "source_canary_present": source_canary_present, "candidate_count": len(result["prospects"]), "uncertain_count": len(result["excluded"]), "selected_prospect_path": selected_path, "detail": "Only a single minimum-field candidate is saved for postcard proof review; no complete mailing list is exported."}
+        elif args.action == "prepare-first-five":
+            parsed_source_url = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(args.source_url)
+            if parsed_source_url.scheme != "https" or parsed_source_url.hostname not in {"osha.gov", "www.osha.gov"}:
+                raise ValueError("source URL must be an official OSHA HTTPS page")
+            if args.source_csv:
+                with args.source_csv.open(encoding="utf-8-sig", newline="") as source:
+                    source_records = list(csv.DictReader(source))
+                source_url = args.source_url
+                source_mode = "local_official_csv"
+            else:
+                refresh = refresh_public_data()
+                if refresh.get("status") != "ok":
+                    output = {
+                        "result": "blocked — official OSHA ITA summary source did not pass refresh canaries",
+                        "source_mode": "official_live_feed",
+                        "refresh": refresh,
+                        "worksheets_prepared": 0,
+                        "mail_status": "not_sent",
+                        "submission_by_glacier": False,
+                    }
+                    print(json.dumps(output, indent=2, sort_keys=True, default=str))
+                    return 0
+                source_records = feeds.query(SOURCE_ID)
+                source_url = next((str(row.get("source_url")) for row in source_records if row.get("source_url")), "https://www.osha.gov/itadata")
+                source_mode = "official_live_feed"
+            result = prepare_first_five(records=source_records, output_dir=args.output_dir, as_of=args.as_of, source_url=source_url)
+            result["source_mode"] = source_mode
+            manifest = args.output_dir / "first-five-status.json"
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+            result["manifest"] = str(manifest)
+            output = result
         elif args.action == "prepare-300a":
             if args.input.suffix.casefold() == ".csv":
                 fields = load_customer_csv(args.input)
