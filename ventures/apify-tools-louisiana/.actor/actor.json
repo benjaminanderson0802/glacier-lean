@@ -1,0 +1,18 @@
+{
+  "actorSpecification": 1,
+  "name": "louisiana-contractor-license-status",
+  "title": "Louisiana Contractor License Status",
+  "description": "Look up public contractor license status and expiration from the Louisiana State Licensing Board for Contractors.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "dockerfile": "./Dockerfile",
+  "input": "./input_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "defaultRunOptions": {
+    "memoryMbytes": 256,
+    "timeoutSecs": 300,
+    "build": "latest"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "status": "healthy",
+  "checked_at": "2026-10-11T01:19:03+00:00",
+  "consecutive_failed_runs": 0,
+  "repair_attempts": 0,
+  "retire_after_repair_attempts": 2,
+  "reason": "All three Louisiana contractor canaries matched the recorded board values.",
+  "failed_license_numbers": [],
+  "results": [
+    {
+      "license_number": "CL.00001",
+      "ok": true,
+      "actual": {
+        "outcome": "match",
+        "verification_state": "verified",
+        "license_number": "CL.00001",
+        "business_name": "BROWN & ROOT INDUSTRIAL SERVICES, LLC",
+        "license_type": "Commercial License Certificate",
+        "status": "Active",
+        "effective_date": "02/23/2026",
+        "expiration_date": "2027-07-31",
+        "source_url": "https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=%2b5cpDGKqRCNNjSxSHnlFTA%3d%3d&Source=DetailedSearch",
+        "checked_at": "2026-10-11T01:18:57+00:00"
+      }
+    },
+    {
+      "license_number": "CL.68755",
+      "ok": true,
+      "actual": {
+        "outcome": "match",
+        "verification_state": "verified",
+        "license_number": "CL.68755",
+        "business_name": "09 Construction Services, LLC",
+        "license_type": "Commercial License Certificate",
+        "status": "Active",
+        "effective_date": "07/19/2026",
+        "expiration_date": "2029-07-18",
+        "source_url": "https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=R6DulTdQAO08c2WY3yqQKg%3d%3d&Source=DetailedSearch",
+        "checked_at": "2026-10-11T01:18:59+00:00"
+      }
+    },
+    {
+      "license_number": "RL.883684",
+      "ok": true,
+      "actual": {
+        "outcome": "match",
+        "verification_state": "verified",
+        "license_number": "RL.883684",
+        "business_name": "BROWN & ROOT INDUSTRIAL SERVICES, LLC",
+        "license_type": "Residential License Certificate",
+        "status": "Active",
+        "effective_date": "09/13/2026",
+        "expiration_date": "2027-09-12",
+        "source_url": "https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=%2b5cpDGKqRCNNjSxSHnlFTA%3d%3d&Source=DetailedSearch",
+        "checked_at": "2026-10-11T01:19:01+00:00"
+      }
+    }
+  ]
+}

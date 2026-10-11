@@ -1,0 +1,11 @@
+{
+  "id": "apify-la-license-your-step-publish",
+  "name": "Your step: Approve the Louisiana Actor publication",
+  "description": "Separate owner-only publication gate for the Louisiana Actor; publishing is never automated.",
+  "goal": "Show the owner the Louisiana Store listing, source evidence, and reviewed price before any publication.",
+  "nodes": [
+    {"id": "owner_publish", "type": "approval", "config": {"prompt": "Your step: This is the separate publication approval for the Louisiana contractor license Actor, louisiana-contractor-license-status. Have a different engine review ventures/apify-tools-louisiana/src/lookup.py, its tests, .actor schemas, store listing, and the $0.02 event price before approving. Confirm platform usage is included, the run limit is $2.00, and automatic apify-default-dataset-item billing is disabled. Record this Actor's unique name in the owner publication record. Then publish it yourself in Apify Console. Do not reuse the Mississippi approval, and stop if the different-engine review is missing."}, "position": {"x": 0, "y": 0}}
+  ],
+  "edges": [],
+  "max_steps": 3
+}

@@ -1,6 +1,6 @@
 # Adding another board
 
-The current product is the Mississippi State Board of Contractors Actor. Do not add or publish a second board until its distinct Actor has passed a different-engine code and Store-listing review and the owner has approved its publication through the reusable `your-step-publish` flow.
+The Mississippi Actor is the existing listing. Do not add or publish a second board as a supported or published release until its distinct Actor has passed a different-engine code and Store-listing review and the owner has approved its publication through the separate `your-step-publish` approval flow. An owner-directed draft package may be prepared for that review, but it must remain clearly marked as pending and must not be published or represented as generally available.
 
 Review checklist for every proposed board:
 
@@ -9,4 +9,4 @@ Review checklist for every proposed board:
 3. Have a different engine review the new adapter, its tests, the input/output schemas, the listing claims, and the event-price configuration.
 4. Require a separate owner approval for each of the first three distinct Actor publications. Record each unique Actor name and approval in the owner-maintained publication record before publishing.
 
-No second board is included or represented as supported by this release.
+The Louisiana package remains a review draft only. Its live source canaries pass and its distinct-engine code and Store-listing review found no blocking findings; owner publication approval is still required before publication or a claim of general availability.

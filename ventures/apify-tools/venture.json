@@ -1,9 +1,11 @@
 {
   "slug": "apify-tools",
-  "name": "apify data tools — mississippi contractor license status",
+  "name": "apify data tools — Mississippi and Louisiana contractor license status",
   "flows": [
     "apify-ms-license-daily-canary",
-    "apify-ms-license-your-step-publish"
+    "apify-ms-license-your-step-publish",
+    "apify-la-license-daily-canary",
+    "apify-la-license-your-step-publish"
   ],
   "schedules": [
     {
@@ -12,33 +14,32 @@
       "purpose": "Check three saved Mississippi license records each morning and alert if a source changes.",
       "missed_run": "run_once",
       "overlap": "skip"
+    },
+    {
+      "flow": "apify-la-license-daily-canary",
+      "cron": "0 9 * * *",
+      "purpose": "Check three saved Louisiana contractor license records each morning and alert if a source changes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
     }
   ],
   "secrets_needed": [],
   "your_steps": [
     {
       "id": "apify-account",
-      "title": "set up your apify developer account",
+      "title": "set up your apify account and deploy both actors",
       "when": "before the first actor listing",
-      "detail": "Open the Apify account page, complete developer and payout setup, then return here. Glacier does not create the account or verify your identity.",
+      "detail": "Open the Apify account page and complete developer and payout setup yourself; Glacier does not create the account or verify your identity. Install Apify's upload tool, then from the repository root run `npm exec --yes --package=apify-cli@1.10.0 -- apify login`. Upload both prepared Actors with `(cd ventures/apify-tools && npm exec --yes --package=apify-cli@1.10.0 -- apify push)` and `(cd ventures/apify-tools-louisiana && npm exec --yes --package=apify-cli@1.10.0 -- apify push)`. Keep sign-in details inside Apify; do not paste them into Glacier.",
       "links": [
-        "https://console.apify.com/account/integrations"
-      ]
-    },
-    {
-      "id": "apify-deploy",
-      "title": "deploy the Mississippi license checker",
-      "when": "after account setup",
-      "detail": "Open Apify's setup guide and follow its steps to install the upload tool, sign in to your account, and upload the prepared Mississippi checker from Glacier's project folder. Return when Apify confirms the upload. Keep sign-in details inside Apify; do not paste them into Glacier.",
-      "links": [
+        "https://console.apify.com/account/integrations",
         "https://docs.apify.com/cli/docs/installation"
       ]
     },
     {
       "id": "apify-publish",
-      "title": "review and publish the first listing",
+      "title": "review and publish each listing",
       "when": "after the Actor is uploaded",
-      "detail": "For each of the first three distinct Actor publications, use a separate Glacier approval. Have a different engine review that Actor's code and Store listing, confirm its event price, included platform usage and run limit, then publish it yourself. An earlier approval cannot cover another Actor. Later publications are not blocked by this first-three approval gate.",
+      "detail": "For each of the first three distinct Actor publications, run a separate Glacier publication approval. Have a different engine review that Actor's code and Store listing, confirm its event price, included platform usage and run limit, then publish it yourself. An earlier approval cannot cover another Actor. The Louisiana approval is not ready until its separate-engine review is recorded. Later publications are not blocked by the first-three approval gate.",
       "links": [
         "https://console.apify.com/actors"
       ]
@@ -46,9 +47,17 @@
   ],
   "dry_run_env_id": "apify-ms-license-daily-canary",
   "product": {
-    "purpose": "Sell a source-linked, pay-per-use check of Mississippi contractor license status and expiration using the Mississippi State Board of Contractors public lookup.",
+    "purpose": "Sell source-linked, pay-per-use checks of Mississippi and Louisiana contractor license status and expiration using each board's public lookup.",
     "source_id": "ms_msboc_contractor_licenses",
     "source_url": "https://search.msboc.us/ConsolidatedSearch.cfm",
+    "additional_sources": [
+      {
+        "source_id": "la_lslbc_contractor_licenses",
+        "source_url": "https://lslbc.louisiana.gov/contractor-search/",
+        "actor": "louisiana-contractor-license-status",
+        "status": "live-canary-tested; separate-engine review passed; owner publication approval pending"
+      }
+    ],
     "pricing": {
       "model": "pay_per_event",
       "event": "license-lookup",

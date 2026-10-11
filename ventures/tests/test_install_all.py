@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -15,11 +16,9 @@ class InstallAllTests(unittest.TestCase):
     def test_discovery_is_data_driven_and_only_filters_by_slug(self) -> None:
         all_flows = install_all.discover_flows()
         apify_flows = install_all.discover_flows("apify-tools")
-        self.assertEqual(len(all_flows), len(apify_flows))
-        self.assertEqual({flow["id"] for _, flow in apify_flows}, {
-            "apify-ms-license-daily-canary",
-            "apify-ms-license-your-step-publish",
-        })
+        manifest = json.loads((ROOT / "ventures" / "apify-tools" / "venture.json").read_text(encoding="utf-8"))
+        self.assertEqual({flow["id"] for _, flow in apify_flows}, set(manifest["flows"]))
+        self.assertLess(len(apify_flows), len(all_flows))
 
     def test_repository_working_directory_is_resolved_before_registration(self) -> None:
         flow = next(
