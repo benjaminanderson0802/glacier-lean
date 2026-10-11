@@ -1,0 +1,9 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "platformUsageIncluded": true,
+  "event": "recall-check",
+  "eventTitle": "Product recall check",
+  "eventPriceUsd": 0.01,
+  "minimalMaxTotalChargeUsd": 0.01,
+  "instructions": "Configure the recall-check event in Apify Console before publishing. Disable apify-default-dataset-item to avoid duplicate charges. Set a maximum total charge appropriate for up to 100 checks; account and payout settings are owner-only."
+}

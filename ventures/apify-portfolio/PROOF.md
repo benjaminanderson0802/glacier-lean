@@ -27,3 +27,13 @@ Changed paths: `ventures/apify-{census-permits,fdic-bankfind,npi-batch}/`, `vent
 Anti-pattern review: software and live outputs accompany the research; no unsupported revenue/phase-complete claims or governance/framework build. No new runtime dependency or paid service. No protected test was edited. No anti-pattern correction required; docs/AMENDMENTS.md was left untouched outside this card's scope.
 
 The exact deployment URLs target `glacier-final`; commit-only work must first be integrated there by the owner/integrator. All six existing/new package URLs and suggested prices are in [OWNER-START-HERE](../OWNER-START-HERE.md#apify-git-urls-and-prices).
+
+## P-APIFY publish-readiness extension (2026-10-11)
+
+Prepared all six existing Store Actors in place: Mississippi, Louisiana, Recall, Census, FDIC, and NPI. Every package now has an Actor definition, an input object schema, a dataset JSON Schema under `fields` (`type: object`, `properties`), Store README examples and pricing explanation, `pricing.json`, and owner steps. [`PUBLISH-CHECKLIST.md`](PUBLISH-CHECKLIST.md) has the six existing account IDs, exact Git URLs, titles, SEO descriptions, named events/prices, run caps, Console links, clicks, and one-sitting order. Package manifests are marked ready for these owner account actions; the unrelated broader Recall Checker workflow stays blocked by its FSIS feed gate.
+
+Census source failures now use the required `uncertain - please check` customer wording. The Windows-only asyncio socketpair report is recorded in `ventures/apify-census-permits/DISPUTE.md`; no Windows traceback was supplied, and the Linux worker did not reproduce it. Network guards and acceptance files were not changed.
+
+Test command totals and the disputed acceptance assertions are recorded in [`evidence/publish-readiness-tests-2026-10-11.md`](evidence/publish-readiness-tests-2026-10-11.md). Portfolio tests: 33 passed; `ventures/tests`: 24 passed, 2 subtests passed. Census acceptance: 9 passed, 1 skipped. Mississippi/Louisiana schema assertions and the pre-existing FDIC/NPI case assertions remain disputed in their respective `DISPUTE.md` files; no protected acceptance check was modified.
+
+This prepares repository assets only. The owner must integrate the commit into `glacier-final`, verify payouts/business once, connect each existing Actor to Git, build, enter prices, review outputs, and publish. No account login, cloud build, price entry, charge, or publication was performed.

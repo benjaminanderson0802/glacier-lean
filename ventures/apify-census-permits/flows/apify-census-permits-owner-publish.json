@@ -1,0 +1,21 @@
+{
+  "id": "apify-census-permits-owner-publish",
+  "name": "Your step: publish Census Building Permits State Change Feed",
+  "description": "One owner-only approval that points to the prefilled Apify publication checklist.",
+  "goal": "Complete the owner-only Apify Store publication for the existing Census Building Permits State Change Feed Actor.",
+  "nodes": [
+    {
+      "id": "owner_publish",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: open ventures/apify-portfolio/PUBLISH-CHECKLIST.md. Update existing Actor ScF2gWlq9iHoFaJ9F (census-permits) rather than creating a duplicate. Connect the listed Git URL, build, set only state-comparison to $0.002, disable automatic start and default dataset item charges, review the listing and publish yourself."
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [],
+  "max_steps": 3
+}

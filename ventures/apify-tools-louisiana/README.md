@@ -1,5 +1,12 @@
 # Louisiana Contractor License Status
 
+**Store title:** Louisiana Contractor License Status
+**SEO description:** Look up Louisiana contractor license status and expiration from public Louisiana State Licensing Board for Contractors records. Search by license number or company name and export source-linked results.
+**Example input:** `{"license_number":"CL.68755"}`
+**Example output:** `{"outcome":"match","verification_state":"verified","license_number":"CL.68755","business_name":"09 Construction Services, LLC","license_type":"Commercial License Certificate","status":"Active","effective_date":"07/19/2026","expiration_date":"2029-07-18","source_url":"https://arlspublic.lslbc.louisiana.gov/Public/_DisplayOnlineDetails/?key=R6DulTdQAO08c2WY3yqQKg%3d%3d&Source=DetailedSearch","checked_at":"2026-10-11T01:14:40+00:00"}` (recorded local output; historical, not current-status evidence).
+**Price:** `$0.02` per `license-lookup`; readable no-match is billable, source outage is not. Include platform usage and disable automatic start/dataset-item charges. See [publish checklist](../apify-portfolio/PUBLISH-CHECKLIST.md).
+
+
 This standalone Apify Actor checks contractor license records published by the Louisiana State Licensing Board for Contractors. Enter a license number such as `CL.68755` or a company-name substring of at least three characters. Each result includes the license type, literal board status, effective and expiration dates, official detail link, and UTC check time. The Actor repeats the board's wording and does not decide whether a contractor is legally qualified.
 
 The lifecycle uses the reusable runner copied into `src/actor_template.py`; `src/lookup.py` contains only Louisiana source access and parsing. The package is deployable directly from this Git subfolder.
@@ -31,7 +38,6 @@ The prepared title, description, terms, search words, source note, and support t
 
 ## Your steps before publication
 
-1. **Your step — account, payout setup, and upload:** Set up the Apify developer and payout account yourself, complete any identity verification, install the official Apify CLI, and run `npm exec --yes --package=apify-cli@1.10.0 -- apify login`. From the repository root, upload this Actor with `(cd ventures/apify-tools-louisiana && npm exec --yes --package=apify-cli@1.10.0 -- apify push)`. Keep credentials inside Apify; do not paste them into Glacier.
-2. **Your step — separate approval and publication:** Review the Louisiana-specific code and Store listing review in [`REVIEW.md`](REVIEW.md), confirm the event price, included platform usage, $2.00 run limit, and disabled automatic dataset-item event, then run the Louisiana-specific Glacier publication approval. Publish this Actor yourself in Apify Console only after that approval passes. The Mississippi approval does not cover this Actor. No account, payout setup, upload, or publication has been performed for this draft.
+The Louisiana Actor package is ready. Update existing account Actor `kzpMSf5BYHjaIDWTt`; do not create a duplicate. Complete account verification once, then connect this Git subfolder, build it, set `license-lookup` to `$0.02`, review the output, and publish in the same sitting as the other five Actors. The exact values and Console links are in the [portfolio publish checklist](../apify-portfolio/PUBLISH-CHECKLIST.md); see [owner steps](OWNER-STEPS.md).
 
-Glacier prepares and verifies the Actor and canary. It does not automatically submit, deploy, or publish the listing; these account, identity, billing, and first-publication actions remain yours.
+The Git URL targets `glacier-final` and becomes available after this commit is integrated. No account, payout setup, cloud build, charge, or publication was performed for this draft.
