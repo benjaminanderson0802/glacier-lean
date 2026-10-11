@@ -155,7 +155,12 @@ def run_cases(api, cases: list[dict], timeout: float = 180) -> list[dict]:
         claim_id = api.file_claim(case, run_id) if hasattr(api, "home") else api.file_claim(case)
         deadline = time.monotonic() + timeout
         claim = api.get_claim(claim_id)
-        while claim.get("meta", {}).get("status") in {"filed", "researching"} and time.monotonic() < deadline:
+        # A routed status is an intermediate state while the specialist repairs
+        # the workspace and runs the original flow again for proof.
+        while (
+            claim.get("meta", {}).get("status") in {"filed", "researching", "routed"}
+            and time.monotonic() < deadline
+        ):
             time.sleep(0.25)
             claim = api.get_claim(claim_id)
         meta = claim.get("meta", {})
