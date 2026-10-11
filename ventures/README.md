@@ -29,12 +29,12 @@ The current owner-facing steps and direct links are maintained in [OWNER-START-H
 | Carpenter’s goods | Blocked | Focused fixtures pass; real Glacier command run previously failed at the unresolved `{repo}` working-directory issue; no owner sales records. |
 | Co-op claims + street postcards | Blocked | Local acceptance and a synthetic render-only run; claim reader/deadline wiring and USPS EDDM size proof remain. Jobber test app is connected, but live dealer intake is not verified. |
 | CPSC data prep | Blocked | Fixture suite and flow validation pass; source IDs/rules integration and real public-source release checks remain. |
-| DIBBS government supply | Blocked | Fixture suite passes; SAM.gov submitted 2026-10-10 awaiting CAGE, while the public DIBBS source returns a DoD warning page and no rows. |
+| DIBBS government supply | Blocked | Fixture suite passes; SAM.gov was submitted 2026-10-10. An IRS check and CAGE code are pending before DIBBS registration; the public DIBBS source currently returns a DoD warning page and no rows. |
 | FDA cosmetics listing preparation | Blocked | Fixture suite and synthetic SPL schema check pass; Shopify development store is connected, but the reader-contract claim, no live product/label record, and no FDA acceptance remain. |
 | Freight claims | Blocked | Local fixture packet and suite pass; no live ShipStation/customer run, and the shared filer tests lack the Playwright module. |
 | OSHA filing | Blocked | Official feed parsed 400,288 rows and synthetic draft checks pass; complete Jobber field contract and customer-record run remain. |
 | Property tax appeals | Blocked | One live parcel row and an uncertain local packet were checked; county-rule discrepancy, complete roll, and successful real-Glacier run remain. |
-| Recall checker | Blocked | Recall Actor deployed; accuracy fix and required labeled benchmark remain. Chrome Web Store developer account is registered, but no listing is submitted. |
+| Recall checker | Blocked | Recall Actor fixed and rebuilt on Apify; a live Rock 'n Play check returns a match. Rename and pricing remain, as does the required labeled 500-recalled/500-clean benchmark. Chrome Web Store developer account is registered, but no listing is submitted. |
 | Utility audits | Blocked | Synthetic input and fixture tests pass; Indiana launch and pricing/legal basis need owner confirmation, and no customer bills were available. |
 | Warranty registration | Blocked | Fixture checks and a synthetic real-Glacier deadline review pass; connected Jobber test app lacks a verified full field contract, and serial rules/email drafts remain. |
 | Tariff estimator | Blocked | Explicit owner hold; no flow is installed pending counsel approval. |
