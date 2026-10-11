@@ -1,0 +1,20 @@
+{
+  "actor": "blackfalcondata/ebay-sold-listings-scraper",
+  "actor_input_schema_source": "https://apify.com/blackfalcondata/ebay-sold-listings-scraper/api",
+  "inputs": [
+    {"query": "72 inch skid steer grapple bucket", "maxResults": 100},
+    {"query": "78 inch skid steer land planer scarifiers", "maxResults": 100},
+    {"query": "6000 lb skid steer pallet forks 48 inch", "maxResults": 100},
+    {"query": "commercial 2 door reach in refrigerator restaurant", "maxResults": 100},
+    {"query": "commercial convection oven restaurant 208V", "maxResults": 100},
+    {"query": "commercial planetary mixer 60 quart", "maxResults": 100},
+    {"query": "Cummins C60D6 60kW generator A060A345", "maxResults": 100},
+    {"query": "Generac 60kW commercial generator 480V 3 phase", "maxResults": 100},
+    {"query": "commercial automatic transfer switch 400 amp", "maxResults": 100},
+    {"query": "Kurt DX6 6 inch precision milling vise", "maxResults": 100},
+    {"query": "Kurt DX8 8 inch precision milling vise", "maxResults": 100},
+    {"query": "TMX 3-224-006 milling machine vise", "maxResults": 100},
+    {"query": "MYCHWAY 8in1 Aristorm S Shape body contouring machine", "maxResults": 100},
+    {"query": "MYCHWAY FC-23K5-US hydro dermabrasion machine", "maxResults": 100}
+  ]
+}

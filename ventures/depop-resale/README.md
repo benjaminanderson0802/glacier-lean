@@ -29,11 +29,11 @@ The script checks required item facts and photo files. It cannot verify photo pr
   --carrier USPS --output /path/to/private/shipping-checklist.md
 ```
 
-## Crosslisting policy boundary
+## Crosslisting boundary
 
-Depop's Terms of Service allow cross-listing platforms under conditions, and Depop's business help says it works with crosslisting tools through API connections. Depop's public materials reviewed for this build do **not** publish a list of approved vendor names or a CSV import contract. This venture therefore exports a neutral local handoff and does not label Vendoo, Crosslist, List Perfectly, or another vendor as approved. The owner must get Depop's confirmation that a particular provider is API-authorized and match that provider's documented import format before using it. Until then, use the CSV only as a review aid and list manually.
+Depop's official [business/API guidance](https://depophelp.zendesk.com/hc/en-gb/articles/4411154329233-Selling-as-a-charity-or-business) says the API is not open to the public and that Depop works with crosslisting tools through API connection. The public official sources reviewed do not name any approved providers or publish a CSV import contract. Therefore this venture prepares **manual Depop listing only**; the neutral CSV is a local review aid, not an upload file. No named provider is represented as approved. Any future provider use requires written Depop confirmation and its own documented import schema.
 
-See [RESEARCH.md](RESEARCH.md) for dated source notes and [OWNER-STEPS.md](OWNER-STEPS.md) for the single owner workflow.
+See [RESEARCH.md](RESEARCH.md) for dated source notes and [OWNER-STEPS.md](OWNER-STEPS.md) for the three owner steps: buy inspected stock within ceilings, take original photos and enter facts, approve drafts and post manually.
 
 ## Checks
 

@@ -1,41 +1,34 @@
-# Owner step: buy, photograph, review, list, and fulfill used inventory
+# Buy-first Depop resale: three owner steps
 
-## Georgia sales and use tax
+This is a manual-listing workflow. Depop's [official Terms of Service](https://depophelp.zendesk.com/hc/en-gb/articles/360001773148-Terms-of-Service) describes compliant third-party crosslisting platforms in general, and its [business/API page](https://depophelp.zendesk.com/hc/en-gb/articles/4411154329233-Selling-as-a-charity-or-business) says the API is not public and that Depop works with API-connected crosslisting tools. Neither public source identifies an approved provider by name. Until Depop confirms a named provider in writing, **manual listing in Depop is the only verified route prepared here**. The local CSV is a review aid, not an import contract. No crosslisting provider is recommended or called.
 
-Before selling physical goods, check whether this resale activity meets Georgia's dealer definition in the [DOR registration guidance](https://dor.georgia.gov/tax-registration). If it does, register for Sales & Use Tax in the [Georgia Tax Center](https://dor.georgia.gov/how-register-sales-and-use-tax-account); registration is free. DOR's [GTC overview](https://dor.georgia.gov/about-georgia-tax-center) says electronic filing is also free. Complete and submit the registration yourself. Do not assume a marketplace collecting tax replaces any seller registration requirement. If buying qualifying wholesale inventory tax-free for resale, give the supplier a properly completed Georgia [Form ST-5](https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download); it does not cover personal-use purchases.
+## 1. Buy inspected used stock within the ceilings — about 30–60 minutes per batch
 
-This is the venture's one human-only workflow. Use the research ceilings to choose and personally buy used stock, then take your own photos after each item is physically received. Never list catalog drop-shipped goods, and never use stock, supplier, or another seller's photos.
+Open the category table in [RESEARCH.md](RESEARCH.md) → choose a specific piece or small lot from a seller you selected → inspect the item, condition, exact contents, return restrictions, and total cost before paying → compare the full landed acquisition cost per sellable piece against that category's ceiling → buy only if it is permitted, authentic where branded, and a condition you can describe honestly. Keep the dated receipt or lot record. Use the link to [Goodwill's store locator](https://www.goodwill.org/locate-a-thrift-store/) or its [official ShopGoodwill listing site](https://shopgoodwill.com/listing?catIds=&layout=grid) only if useful; this does not recommend or reserve any particular item.
 
-## Before listing each item
+**Value to use:** the owner-checked price ceiling in `RESEARCH.md`; substitute a current comparable sale price you personally verify before purchase. The listed sale prices are screening assumptions, not current quotes or guarantees. No catalogue drop-shipping, stock photos, or items not physically received.
 
-1. Open [RESEARCH.md](RESEARCH.md) and compare your intended purchase against the category ceiling. Open a local thrift store or used-lot listing you chose yourself, inspect the item or lot contents and condition, divide the lot's full landed cost (item price, buyer's premium, inbound shipping, tax, and handling) across the sellable pieces, and only then choose whether to buy. Keep the receipt or lot record. Do not buy a lot if you cannot verify the items are permitted, authentic where branded, and in a condition you can describe honestly.
-2. After the item arrives, put it in your inventory and assign a unique `item_id`. Enter only facts you can verify in `tests/fixtures/inventory.csv`'s column format; set `inventory_source` to the actual used source and `condition` to `Good` or `Satisfactory`; keep your live inventory sheet outside the repository. Use `uncertain - please check` for any unknown fact.
-3. Take your own clear photos of the exact item, including front, back, brand/size labels, and every flaw. Save them in a private local photo folder. Do not upload someone else's images.
-4. From the repository root, make a local CSV handoff:
+## 2. Take original photos and enter item facts — about 10–15 minutes per item
 
-   ```bash
-   ~/w/glacier-lean/.venv/bin/python ventures/depop-resale/scripts/depop_prep.py listings \
-     --input /path/to/your-inventory.csv \
-     --photo-root /path/to/your-photos \
-     --output /path/to/private/depop-listing-handoff.csv
-   ```
+After the item is physically in hand, photograph the exact item yourself (front, back, brand/size labels, and every flaw). Open the private inventory CSV using the columns in the existing input template at `ventures/depop-resale/tests/fixtures/inventory.csv`; keep the live copy outside this repository. Add one row with a unique `item_id`, only verified facts, actual used source, condition `Good` or `Satisfactory`, and `photo_origin` set to `owner_original` only after taking the photos. Save photos in your private photo folder. Do not claim unverified brand, era, material, authenticity, or condition.
 
-5. Open the CSV and compare every title, description, tag, size, condition, price, and photo path against the physical item and your own photos. Correct any mistake in your input and regenerate the file. A draft is a suggestion, not a verified claim.
-6. If you use a crosslisting tool, first verify with Depop that the specific tool has API authorization. Depop's public materials do not name approved vendors. Do not pay for a tool without your approval. Import/map the CSV only if that vendor's documented import format matches; otherwise list manually in Depop. You choose the final price and manually approve and publish the listing.
-7. To list manually on Depop.com, log in yourself, click **Sell now**, add your own item photos, enter the checked title and description, choose the correct category, shipping price, brand, and condition, set your final item price, then click **Post listing** only when the exact item and draft are correct. You can save a draft instead. These are Depop's current [listing steps](https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item).
+From the repo root, create the local draft CSV:
 
-## When an item sells
+```bash
+~/w/glacier-lean/.venv/bin/python ventures/depop-resale/scripts/depop_prep.py listings \
+  --input /path/to/your-inventory.csv \
+  --photo-root /path/to/your-photos \
+  --output /path/to/private/depop-listing-handoff.csv
+```
 
-1. Confirm the sold order in Depop. Check the item ID, shipping address, selected shipping method, parcel size, and dispatch deadline in the live order.
-2. From the repository root, prepare a local checklist without entering a buyer address:
+Use your actual private paths in place of the three path values. The script does not upload files or contact Depop.
 
-   ```bash
-   ~/w/glacier-lean/.venv/bin/python ventures/depop-resale/scripts/depop_prep.py shipping \
-     --item-id JKT-001 --buyer-name "Private order" --sold-at 2026-10-11 \
-     --carrier USPS --output /path/to/private/shipping-checklist.md
-   ```
+## 3. Approve each draft and list manually — about 5–10 minutes per item
 
-3. If you selected Depop Shipping, open the order's Depop-generated label and use that label only. On the web, click your profile picture → **Your selling hub** → **Sold** → the order. If you selected **Other**, arrange tracked shipping yourself, use the buyer address in the receipt, and enter the tracking carefully. Depop's [US shipping instructions](https://depophelp.zendesk.com/hc/en-gb/articles/16523051318033-How-to-ship-US) give the current screen paths.
-4. Pack the item securely, dispatch it, and retain carrier acceptance/tracking proof. On the order, follow the current Depop screen to confirm tracking or mark as shipped. If it sold elsewhere, remove the Depop listing promptly; if there was a double sale, resolve the buyer issue yourself.
+Open the generated private CSV → compare title, description, tags, size, condition, price, category, and each photo path against the physical item and your own photos → correct input and regenerate if anything is wrong → sign in to [Depop](https://www.depop.com/) yourself → click `Sell now` → add your original photos → enter the checked title/description and choose the accurate category, shipping, brand, size, condition, and your final price → review and click `Post listing` only when it exactly matches the item. You can save a draft instead. Follow Depop's [official listing steps](https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item). This approval/publication remains yours; Glacier does not upload or publish.
 
-The tool stores no credentials and makes no network requests. Keep live inventory, photos, buyer names, addresses, labels, and tracking numbers out of this repository.
+Before physical-goods sales, check the [Georgia DOR dealer guidance](https://dor.georgia.gov/tax-registration). If it says registration applies and it is not already active, complete the free [Georgia Tax Center registration](https://dor.georgia.gov/how-register-sales-and-use-tax-account) yourself. Georgia [Form ST-5](https://dor.georgia.gov/document/form/st-5-sales-tax-certificate-exemption/download) is for qualifying tax-exempt wholesale purchases for resale; do not use it for personal-use clothing or assume a secondhand store purchase qualifies. Ask Georgia DOR or your tax professional if applicability is unclear. This is a conditional owner subtask within launch review, not a fourth Depop preparation step.
+
+## After a sale
+
+Packing, buying the shipping label, dispatch, and tracking are physical owner actions when an item sells. Use Depop's current [US shipping instructions](https://depophelp.zendesk.com/hc/en-gb/articles/16523051318033-How-to-ship-US) and the local checklist command in [README.md](README.md). These later fulfillment actions are outside the three-step preparation/onboarding count; they are not automated here.

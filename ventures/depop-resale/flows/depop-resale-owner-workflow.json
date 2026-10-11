@@ -8,7 +8,7 @@
       "id": "owner-review-and-fulfillment",
       "type": "approval",
       "config": {
-        "prompt": "Your step: follow ventures/depop-resale/OWNER-STEPS.md. Use the buy ceilings to select, inspect, and personally purchase used stock; after receiving each item, take your own photos; run and review the local listing CSV; only use Depop directly or a crosslisting provider Depop has confirmed as API-authorized; manually approve listing facts and publish yourself; when sold, follow the local shipping checklist, buy the label yourself, pack and dispatch the item, and confirm tracking. Do not use stock or supplier photos, dropship, bots, scraping, or browser automation."
+        "prompt": "Your steps: follow ventures/depop-resale/OWNER-STEPS.md. Buy inspected used stock within the listed ceilings; after receiving each item, take original photos and enter only verified facts; run and review the local listing CSV; manually approve each draft and list directly in Depop yourself. Depop's public official sources do not name an approved crosslisting provider, so this workflow allows manual Depop listing only. When an item sells, personally pack, buy its shipping label, dispatch it, and confirm tracking. Do not use stock or supplier photos, drop-ship, bots, scraping, or browser automation."
       },
       "position": {"x": 0, "y": 0}
     }
