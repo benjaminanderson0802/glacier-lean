@@ -1,0 +1,33 @@
+..............................F....                                      [100%]
+=================================== FAILURES ===================================
+____ test_duplicate_identifiers_never_promote_or_overwrite_trusted_snapshot ____
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-335/test_duplicate_identifiers_nev0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x723664bef6e0>
+
+    def test_duplicate_identifiers_never_promote_or_overwrite_trusted_snapshot(tmp_path, monkeypatch):
+        monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "glacier"))
+        _trusted_file(tmp_path)
+        before_rows, before_schema, before_provenance = _state(tmp_path)
+        candidate = tmp_path / "duplicate-identifiers.json"
+        duplicate = {
+            "field_recall_number": "SYNTHETIC-DUPLICATE-1",
+            "field_recall_date": "2024-02-06",
+            "field_title": "Synthetic duplicate identifier",
+            "field_summary": "Fixture only",
+        }
+        _write_snapshot(candidate, [duplicate, dict(duplicate)], total=2)
+
+        result = _import(candidate)
+
+        after_rows, after_schema, after_provenance = _state(tmp_path)
+>       assert result["status"] == "failed"
+E       AssertionError: assert 'ok' == 'failed'
+E
+E         - failed
+E         + ok
+
+ventures/blocks/feeds/tests/unit/test_C-FEED-IMPORT-independent.py:193: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/blocks/feeds/tests/unit/test_C-FEED-IMPORT-independent.py::test_duplicate_identifiers_never_promote_or_overwrite_trusted_snapshot
+1 failed, 34 passed in 51.84s
