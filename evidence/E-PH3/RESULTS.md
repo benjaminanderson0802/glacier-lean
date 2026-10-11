@@ -6,6 +6,10 @@ This follow-up adds a durable workflow step that snapshots each protected accept
 
 PH3.2 remains in progress. The tester-owned independent adversarial cases and a green backend board are still required; the two filed claims remain open. No benchmark metric has been remeasured by this change.
 
+## Full backend board follow-up
+
+`backend-full-followup.log` records the full command and result: **826 passed, 1 skipped, 6 failed** in 846.80 seconds. The failures are three real-template runtime cases and three Home route tests; the PH3 verification/workspace test files reported no failures. Similar failures recur in earlier committed PH12 logs, so they are recorded as out-of-lane bug claim `CLM-2026-10-10-E-PH3-FULL-BOARD-OUT-OF-LANE-FAILURES` rather than changed here. The full board is not green, and this does not satisfy checkpoint completion.
+
 ## Earlier validation attempts
 
 Implementation: `f644fbf` (`verify.py` only). Protected check files are inspected in the verifier's private copy before any restoration. Symlink/reparse and wrong-file-type paths are refused; modified content fails without writing; saved check file paths/content are validated. No acceptance test, benchmark case, contract, or screen behavior was changed.
