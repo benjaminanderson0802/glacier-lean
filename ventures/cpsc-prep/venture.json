@@ -70,8 +70,8 @@
     {
       "id": "trade-lawyer-opinion",
       "title": "Your step: Get the trade lawyer's written opinion",
-      "when": "Before any broker contract or broker portal launch",
-      "detail": "Attach the lawyer's written confirmation that the flat-fee broker model is permitted. This approval does not sign a contract or create an account.",
+      "when": "Before any paid launch, broker contract, or broker portal onboarding",
+      "detail": "Use LAWYER-QUESTIONS.md with counsel. Attach the trade lawyer's written confirmation and opinion on the exact service and fee model, including the flat monthly broker fee and direct batch plans. This approval does not sign a contract, create an account, or make a payment.",
       "links": [
         "https://www.cpsc.gov/efiling/importers"
       ]
@@ -80,7 +80,7 @@
       "id": "customer-certification",
       "title": "Your step: Review and certify this CPSC batch",
       "when": "Before a registry upload file is released",
-      "detail": "Review every extracted field beside its source page, resolve uncertain fields, and certify as the importer or licensed customs broker. Glacier never submits to CPSC.",
+      "detail": "Review every extracted field beside its source page and resolve uncertainties. Certify only if you are the legally responsible and authorized certifier for these products; certify as the importer only when that is your legal role. A licensed broker may act only if authorized. If your role is unclear, stop and ask counsel. Glacier does not certify or submit to CPSC.",
       "links": [
         "https://www.cpsc.gov/efiling/importers"
       ]

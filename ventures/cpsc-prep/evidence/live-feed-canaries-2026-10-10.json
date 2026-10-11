@@ -1,0 +1,29 @@
+{
+  "checked_at": "2026-10-10",
+  "purpose": "Read-only CPSC feed canary verification for V-CPSC2",
+  "glacier_home": "/tmp/glacier-cpsc-live-canary-20261010",
+  "user_agent": "Glacier public-data client/1.0 (+https://github.com/benjaminanderson0802/glacier-lean)",
+  "sources": {
+    "cpsc_flagged_tariff_codes": {
+      "endpoint": "https://www.cpsc.gov/eFiling-Document-Library",
+      "first_sync": {"rows": 589, "changed": true, "alerts": []},
+      "repeat_sync": {"rows": 589, "changed": false, "alerts": []}
+    },
+    "cpsc_rule_codes": {
+      "endpoint": "https://www.cpsc.gov/eFiling-Document-Library",
+      "first_sync": {"rows": 130, "changed": true, "alerts": []},
+      "repeat_sync": {"rows": 130, "changed": false, "alerts": []}
+    },
+    "cpsc_registry_template": {
+      "endpoint": "https://www.cpsc.gov/eFiling-Document-Library",
+      "first_sync": {"rows": 1, "changed": true, "alerts": []},
+      "repeat_sync": {"rows": 1, "changed": false, "alerts": []}
+    },
+    "cpsc_recalls": {
+      "endpoint": "https://www.saferproducts.gov/RestWebServices/Recall",
+      "first_sync": {"rows": 10047, "changed": true, "alerts": []},
+      "repeat_sync": {"rows": 10047, "changed": false, "alerts": []}
+    }
+  },
+  "scope": "Official public-source GET requests only. No account, key, customer record, certificate submission, or CPSC filing was used."
+}
