@@ -9,6 +9,7 @@ import ipaddress
 import json
 import os
 import re
+import secrets as _secrets
 import sqlite3
 import sys
 import uuid
@@ -66,6 +67,10 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
             id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT NOT NULL,
             subject_id TEXT NOT NULL, approval_id TEXT, details_json TEXT NOT NULL,
             happened_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS checkout_return_tokens (
+            token_sha256 TEXT PRIMARY KEY, checkout_session_id TEXT NOT NULL,
+            status TEXT NOT NULL, created_at TEXT NOT NULL, used_at TEXT
         );
         CREATE TABLE IF NOT EXISTS support_messages (
             id TEXT PRIMARY KEY, message_id TEXT, sender TEXT NOT NULL,
@@ -212,6 +217,13 @@ def checkout_link(plan: str, *, secret_getter: Callable[[str], str | None] | Non
         local_http = parsed_target.scheme == "http" and parsed_target.hostname in {"localhost", "127.0.0.1", "::1"}
         if not (parsed_target.scheme == "https" or local_http) or not parsed_target.hostname:
             raise CustomerError("Checkout return links must use HTTPS, or localhost HTTP for a local test.")
+    return_token = None
+    success_target = urlsplit(success_url)
+    if (success_target.scheme == "http" and success_target.hostname in {"localhost", "127.0.0.1", "::1"}
+            and success_target.path == "/customer/success" and not success_target.fragment):
+        return_token = _secrets.token_urlsafe(32)
+        separator = "&" if "?" in success_url else "?"
+        success_url = success_url + separator + "_glacier_return=" + return_token
     fields = {
         "mode": mode,
         "line_items[0][price]": price_id,
@@ -229,6 +241,10 @@ def checkout_link(plan: str, *, secret_getter: Callable[[str], str | None] | Non
     if not isinstance(url, str) or not url.startswith("https://"):
         raise CustomerError("Stripe did not return a secure checkout link.")
     with _database(db_path) as db:
+        if return_token:
+            db.execute("INSERT INTO checkout_return_tokens VALUES (?, ?, 'pending', ?, NULL)",
+                       (hashlib.sha256(return_token.encode("ascii")).hexdigest(),
+                        str(response.get("id", "")), _now()))
         db.execute("INSERT INTO audit_events(event, subject_id, details_json, happened_at) VALUES (?, ?, ?, ?)",
                    ("stripe_checkout_created", str(response.get("id", "unknown")),
                     json.dumps({"plan": plan, "customer_id": customer_id, "mode": mode,
@@ -332,6 +348,7 @@ def sign_document(request_id: str, *, typed_name: str, consent: bool,
         raise CustomerError("The signer must enter their full name.")
     root = Path(data_dir) if data_dir else _default_home()
     with _database(root / "customers.db") as db:
+        db.execute("BEGIN IMMEDIATE")
         row = db.execute("SELECT * FROM signature_requests WHERE id = ?", (request_id,)).fetchone()
         if row is None:
             raise CustomerError("This signature request was not found.")
@@ -543,27 +560,99 @@ def create_signature_server(data_dir: str | Path | None = None, *, host: str = "
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     from urllib.parse import parse_qs
 
+    bind_host = str(host).strip().lower()
+    try:
+        bind_address = ipaddress.ip_address(bind_host)
+    except ValueError:
+        bind_address = None
+    if bind_host != "localhost" and (bind_address is None or not bind_address.is_loopback):
+        raise CustomerError("The signature server may bind only to a loopback address.")
+
     root = Path(data_dir) if data_dir else _default_home()
 
     class SignaturePageHandler(BaseHTTPRequestHandler):
+        def _reject_untrusted_request(self, *, allow_external_origin: bool = False) -> bool:
+            host_header = self.headers.get("Host", "")
+            host = urlsplit("")
+            try:
+                host = urlsplit("http://" + host_header)
+                host_name = (host.hostname or "").lower()
+                host_port = host.port or 80
+            except ValueError:
+                host_name, host_port = "", -1
+            if (host.username or host.password or host.path or host.query or host.fragment
+                    or host_name not in {"localhost", "127.0.0.1", "::1"}
+                    or host_port != self.server.server_address[1]):
+                self.send_error(403)
+                return True
+
+            origin = self.headers.get("Origin")
+            if origin is not None and not allow_external_origin:
+                try:
+                    parsed_origin = urlsplit(origin)
+                    origin_port = parsed_origin.port or (443 if parsed_origin.scheme == "https" else 80)
+                except ValueError:
+                    parsed_origin = urlsplit("")
+                    origin_port = -1
+                if (parsed_origin.scheme != "http" or parsed_origin.username or parsed_origin.password
+                        or parsed_origin.path or parsed_origin.query or parsed_origin.fragment
+                        or (parsed_origin.hostname or "").lower() != host_name or origin_port != host_port):
+                    self.send_error(403)
+                    return True
+            fetch_site = self.headers.get("Sec-Fetch-Site", "").lower()
+            if fetch_site in {"cross-site", "same-site"} and not allow_external_origin:
+                self.send_error(403)
+                return True
+            return False
+
+        def _secure_headers(self):
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "DENY")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Security-Policy", "default-src 'none'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
+
         def do_GET(self):
-            if self.path.startswith("/customer/success"):
-                payload = b"<!doctype html><meta charset=utf-8><title>Payment complete</title><h1>Payment complete</h1><p>Return to Glacier to view your customer status.</p>"
+            parsed_path = urlsplit(self.path)
+            if self._reject_untrusted_request(allow_external_origin=parsed_path.path == "/customer/success"):
+                return
+            if parsed_path.path == "/customer/success":
+                query = parse_qs(parsed_path.query, strict_parsing=False)
+                token = query.get("_glacier_return", [""])[0]
+                session_id = query.get("session_id", [""])[0]
+                if not token or not session_id:
+                    self.send_error(403)
+                    return
+                token_digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+                with _database(root / "customers.db") as db:
+                    db.execute("BEGIN IMMEDIATE")
+                    authorized = db.execute(
+                        "SELECT 1 FROM checkout_return_tokens WHERE token_sha256=? AND checkout_session_id=? AND status='pending'",
+                        (token_digest, session_id),
+                    ).fetchone()
+                    if not authorized:
+                        self.send_error(403)
+                        return
+                    db.execute("UPDATE checkout_return_tokens SET status='used', used_at=? WHERE token_sha256=? AND status='pending'",
+                               (_now(), token_digest))
+                payload = b"<!doctype html><meta charset=utf-8><title>Checkout returned</title><h1>Checkout returned</h1><p>Return to Glacier to verify your customer status.</p>"
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(payload)))
+                self._secure_headers()
                 self.end_headers()
                 self.wfile.write(payload)
                 return
-            if self.path == "/customer/cancelled":
+            if parsed_path.path == "/customer/cancelled":
                 payload = b"<!doctype html><meta charset=utf-8><title>Checkout cancelled</title><h1>Checkout cancelled</h1><p>No payment was completed.</p>"
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(payload)))
+                self._secure_headers()
                 self.end_headers()
                 self.wfile.write(payload)
                 return
-            match = re.fullmatch(r"/signature/([a-f0-9-]{36})", self.path)
+            match = re.fullmatch(r"/signature/([a-f0-9-]{36})", parsed_path.path)
             if not match:
                 self.send_error(404)
                 return
@@ -577,17 +666,19 @@ def create_signature_server(data_dir: str | Path | None = None, *, host: str = "
             except OSError:
                 self.send_error(404)
                 return
-            page = page.replace("http://127.0.0.1:8765/sign/", f"http://{self.server.server_address[0]}:{self.server.server_address[1]}/sign/")
+            page = page.replace("http://127.0.0.1:8765/sign/", f"http://{self.headers['Host']}/sign/")
             payload = page.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))
-            self.send_header("X-Content-Type-Options", "nosniff")
+            self._secure_headers()
             self.end_headers()
             self.wfile.write(payload)
 
         def do_POST(self):
-            match = re.fullmatch(r"/sign/([a-f0-9-]{36})", self.path)
+            if self._reject_untrusted_request():
+                return
+            match = re.fullmatch(r"/sign/([a-f0-9-]{36})", urlsplit(self.path).path)
             if not match:
                 self.send_error(404)
                 return
@@ -615,7 +706,7 @@ def create_signature_server(data_dir: str | Path | None = None, *, host: str = "
                 self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))
-            self.send_header("X-Content-Type-Options", "nosniff")
+            self._secure_headers()
             self.end_headers()
             self.wfile.write(payload)
 
