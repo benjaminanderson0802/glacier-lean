@@ -21,10 +21,12 @@ commit only, no push, no paid services, no owner-only actions.
    refused reservation does not. These added tests are builder regressions,
    not independent acceptance or proof of the whole phase exit.
 
-## PH1 exit inventory at task start
+## PH1 exit inventory and current verification boundary
 
 Exit: PH1.1–PH1.7 done; M-AUDIT = 100% for runtime side effects.
-All seven checkpoints are already marked done with historical evidence:
+NORTHSTAR currently marks all seven checkpoints done with linked historical
+evidence, but this Linux backend card does not renew the UI or Windows checks.
+The checkpoint evidence on record is:
 
 - PH1.1: environment files and one git commit per save.
 - PH1.2: core node types, crash recovery, schedules, restart-safe approvals.
@@ -34,11 +36,17 @@ All seven checkpoints are already marked done with historical evidence:
 - PH1.6: shutdown within five seconds with live clients.
 - PH1.7: Windows core; owner-PC result recorded for 2026-10-08.
 
-No checkpoint is labeled unverified, but this checkout has not yet been
-revalidated. The overall phase remains in progress without phase-exit evidence.
-This Linux backend card cannot renew owner-PC or screen acceptance. Runtime
-audit completeness needs renewed measurement; historical recovery benchmarks
-cover a subset of side effects, not all runtime paths.
+The backend checkpoints not revalidated before this card's work are PH1.1
+(vault save + git commit), PH1.2 (durable runs/schedules/restart approvals),
+PH1.4 (bounded loops/sub-environments), PH1.5 (retry/timeout/alert policy),
+and PH1.6 (shutdown with live clients). PH1.3's live canvas and PH1.7's Windows
+core are outside this backend lane and remain supported only by their linked
+historical screen and owner-PC evidence. The focused tests below revalidate
+audit coverage and schedules, plus several core paths; they do not re-prove each
+checkpoint acceptance contract. PH1 remains in progress because the phase exit
+still requires current evidence that M-AUDIT is 100% across runtime side effects.
+The historical 66/66 recovery audit covers selected effects, not all runtime
+paths, and cannot close that gate.
 
 ## Reproduced / suspected gaps before implementation
 
@@ -48,3 +56,18 @@ snapshot step. Reproduce via the unit regressions before editing the runner.
 Assumptions: command attempts may each cause effects even when they fail;
 an unchanged event type with added attempt metadata preserves consumers;
 DBOS remains responsible for replay of completed steps.
+
+## Verification outcome
+
+- Focused backend run:
+  `~/w/glacier-lean/.venv/bin/python -m pytest -q tests/test_runtime_effect_records.py tests/test_audit_coverage.py tests/test_audit_log_resilience.py tests/test_reliable_schedules.py tests/test_schedule_removed.py tests/test_core.py`
+  — 59 passed, 1 warning, 122.80s. The `Server` fixture starts the real
+  FastAPI/uvicorn backend with DBOS and isolated temporary homes; checks are not
+  mock-server-only.
+- Full backend suite: not run. Its fresh request waited 15 minutes for the
+  shared suite lock and was stopped before a pytest child started. See
+  `backend-full.log` and CLM-2026-10-10-E-PH1-BACKEND-VERIFICATION-LOAD.
+- The interrupted standalone live probe did not reach the API. No dedicated
+  manual live walkthrough or browser run was completed in this backend lane.
+- No PH1 checkpoint status changed. PH1 remains `in_progress` because M-AUDIT
+  still lacks independent all-runtime-path evidence for its 100% exit gate.

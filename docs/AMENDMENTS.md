@@ -21,3 +21,14 @@ Owner approved Ask/Build supporting OpenAI-compatible and Anthropic APIs alongsi
 
 ## 2026-10-10 - PH12 Ventures on Glacier (owner-approved)
 Owner instruction (chat, 2026-10-10): build the ventures in the owner's Venture Build Spec as Glacier automations tonight, using Codex workers in waves, changing Glacier as needed and auditing for coherence. Added phase PH12 with one checkpoint per platform card, shared block and in-scope venture. Card mapping: P1-P3 -> PH12.1-12.3, B1-B5 -> PH12.4-12.8, V-* -> PH12.9-12.20, I* -> PH12.22.
+
+## 2026-10-10 - E-PH1 evidence boundary (no rule change)
+
+Re-read the anti-patterns after the runtime audit fix. The historical 66/66
+recovery audit result covers selected effects; treating it as proof of all PH1
+runtime effects would be a status claim without matching evidence. Correction:
+keep PH1 in progress, preserve all independently owned checks, and file
+CLM-2026-10-10-E-PH1-AUDIT-EXIT-PROOF for missing crash/storage coverage.
+The implementation fixes event placement using existing DBOS/SQLite services;
+no replacement engine or governance layer was introduced. No amendment to the
+mission, invariants, exits or decisions is proposed or applied.
