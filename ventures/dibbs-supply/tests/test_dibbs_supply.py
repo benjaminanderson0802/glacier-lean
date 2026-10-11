@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import sys
 from copy import deepcopy
@@ -67,6 +68,23 @@ def supplier_quote(**overrides):
     return {**row, **overrides}
 
 
+def confirm_fixture_record(record, evidence_path, acquired_at="2026-10-10"):
+    evidence = evidence_path.read_bytes()
+    record["source_provenance"] = {
+        "path": str(evidence_path),
+        "sha256": hashlib.sha256(evidence).hexdigest(),
+        "acquired_at": acquired_at,
+    }
+    record["superseded"] = False
+    record["owner_confirmation"] = {
+        "confirmed_by": "synthetic fixture owner",
+        "confirmed_at": "2026-10-10",
+    }
+    digest_record = {key: value for key, value in record.items() if key != "owner_confirmation"}
+    encoded = json.dumps(digest_record, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    record["owner_confirmation"]["record_sha256"] = hashlib.sha256(encoded).hexdigest()
+
+
 def write_inputs(tmp_path, solicitations, quotes):
     solicitation_path = tmp_path / "solicitations.json"
     quote_path = tmp_path / "quotes.json"
@@ -77,6 +95,15 @@ def write_inputs(tmp_path, solicitations, quotes):
                 evidence = tmp_path / f"evidence-{index}-{field}.pdf"
                 evidence.write_bytes(b"fixture evidence")
                 quote[field] = str(evidence)
+    for index, record in enumerate(solicitations):
+        source = tmp_path / f"solicitation-source-{index}.html"
+        source.write_bytes(f"synthetic DIBBS detail {index}".encode("utf-8"))
+        confirm_fixture_record(record, source)
+    for index, quote in enumerate(quotes):
+        quote.setdefault("quote_revision", "R1")
+        source = tmp_path / f"supplier-quote-source-{index}.pdf"
+        source.write_bytes(f"synthetic supplier quote {index}".encode("utf-8"))
+        confirm_fixture_record(quote, source)
     solicitation_path.write_text(json.dumps(solicitations), encoding="utf-8")
     quote_path.write_text(json.dumps(quotes), encoding="utf-8")
     return solicitation_path, quote_path, output_path
@@ -205,6 +232,26 @@ def test_daily_feed_alert_stays_visible_even_when_a_local_quote_matches(tmp_path
     assert result["feed_alerts"] == ["DIBBS discovery feed is incomplete"]
     assert result["submitted"] is False
     assert (tmp_path / "drafts" / "bid-sheet.json").is_file()
+
+
+def test_daily_feed_alert_stays_visible_when_solicitation_is_unverified(tmp_path, monkeypatch):
+    from ventures.blocks import feeds
+    from dibbs_supply import prepare_from_feed
+
+    solicitation_path, quote_path, _ = write_inputs(tmp_path, [solicitation()], [supplier_quote()])
+    rows = json.loads(solicitation_path.read_text(encoding="utf-8"))
+    rows[0].pop("owner_confirmation")
+    solicitation_path.write_text(json.dumps(rows), encoding="utf-8")
+    monkeypatch.setattr(feeds, "sync", lambda source: {"rows": 1, "changed": False, "alerts": ["DIBBS discovery feed is incomplete"]})
+    monkeypatch.setattr(feeds, "query", lambda source: [])
+
+    result = prepare_from_feed(tmp_path / "drafts", solicitation_path, quote_path)
+
+    assert result["ranked_bids"] == []
+    assert result["feed_alerts"] == ["DIBBS discovery feed is incomplete"]
+    assert result["result"] == "uncertain — please check"
+    saved = json.loads((tmp_path / "drafts" / "bid-sheet.json").read_text(encoding="utf-8"))
+    assert saved["feed_alerts"] == ["DIBBS discovery feed is incomplete"]
 
 
 def test_prepares_supplier_contact_drafts_for_owner_review_without_sending(tmp_path):

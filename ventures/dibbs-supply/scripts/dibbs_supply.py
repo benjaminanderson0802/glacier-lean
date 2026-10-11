@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import re
@@ -249,6 +250,74 @@ def _find_quote(solicitation: dict[str, Any], quotes: list[dict[str, Any]]) -> d
     return exact[0] if len(exact) == 1 else None
 
 
+def _record_sha256(record: dict[str, Any]) -> str:
+    bound_record = {key: value for key, value in record.items() if key != "owner_confirmation"}
+    encoded = json.dumps(bound_record, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _validated_provenance(record: dict[str, Any], label: str, *, require_revision: bool = False) -> tuple[dict[str, Any] | None, list[str]]:
+    """Verify local source bytes and the owner's confirmation for the exact entered record."""
+    issues: list[str] = []
+    source = record.get("source_provenance")
+    if not isinstance(source, dict):
+        return None, [f"{label} source provenance is missing"]
+
+    source_path_value = source.get("path")
+    source_path = Path(source_path_value.strip()) if isinstance(source_path_value, str) and source_path_value.strip() else None
+    if source_path is not None and not source_path.is_absolute():
+        source_path = Path(os.environ.get("GLACIER_HOME", ".")) / "ventures" / "dibbs-supply" / "incoming" / source_path
+    declared_source_hash = source.get("sha256")
+    actual_source_hash = None
+    if source_path is None or not source_path.is_file():
+        issues.append(f"{label} source file is missing")
+    else:
+        try:
+            actual_source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        except OSError:
+            issues.append(f"{label} source file cannot be read")
+        else:
+            if not isinstance(declared_source_hash, str) or declared_source_hash.lower() != actual_source_hash:
+                issues.append(f"{label} source hash does not match the supplied file")
+    try:
+        acquired_at = date.fromisoformat(str(source.get("acquired_at", ""))).isoformat()
+    except ValueError:
+        acquired_at = None
+        issues.append(f"{label} acquisition date is missing or invalid")
+
+    confirmation = record.get("owner_confirmation")
+    if not isinstance(confirmation, dict):
+        confirmation = {}
+    if not str(confirmation.get("confirmed_by", "")).strip():
+        issues.append(f"{label} owner confirmation is missing")
+    try:
+        confirmed_at = date.fromisoformat(str(confirmation.get("confirmed_at", ""))).isoformat()
+    except ValueError:
+        confirmed_at = None
+        issues.append(f"{label} owner confirmation date is missing or invalid")
+    declared_record_hash = confirmation.get("record_sha256")
+    current_record_hash = _record_sha256(record)
+    if not isinstance(declared_record_hash, str) or declared_record_hash.lower() != current_record_hash:
+        issues.append(f"{label} owner confirmation does not match this record")
+
+    if record.get("superseded") is not False or record.get("superseded_by"):
+        issues.append(f"{label} record is superseded or its current status is unconfirmed")
+    if require_revision and not str(record.get("quote_revision", "")).strip():
+        issues.append("supplier quote revision is missing")
+
+    if issues:
+        return None, issues
+    return {
+        "source_path": str(source_path),
+        "source_sha256": actual_source_hash,
+        "acquired_at": acquired_at,
+        "record_sha256": current_record_hash,
+        "confirmed_by": str(confirmation["confirmed_by"]).strip(),
+        "confirmed_at": confirmed_at,
+        **({"quote_revision": str(record["quote_revision"]).strip()} if require_revision else {}),
+    }, []
+
+
 def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, *, as_of: date | None = None) -> dict[str, Any]:
     """Validate quote and solicitation facts, then write only fully matched CSV quote batches."""
     solicitations = _read_json(Path(solicitations_path))
@@ -265,6 +334,7 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
     quote_request_uncertain: list[dict[str, Any]] = []
     excluded: list[dict[str, Any]] = []
     output_rows: dict[str, list[dict[str, Any]]] = {}
+    output_provenance: dict[str, list[dict[str, Any]]] = {}
     for solicitation in solicitations:
         number = str(solicitation.get("solicitation_number", "")).strip()
         for source in solicitation.get("quote_sources", []) if isinstance(solicitation.get("quote_sources", []), list) else []:
@@ -329,6 +399,8 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
                     "sent": False,
                 })
         issues: list[str] = []
+        solicitation_provenance, provenance_issues = _validated_provenance(solicitation, "DIBBS detail")
+        issues.extend(provenance_issues)
         if not number:
             issues.append("solicitation number is missing")
         source_url = str(solicitation.get("source_url", "")).strip()
@@ -363,9 +435,12 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
             issues.append("solicitation quantity is missing or invalid")
 
         quote = _find_quote(solicitation, quotes)
+        quote_provenance = None
         if quote is None:
             issues.append("no quote exactly matches this solicitation and part number")
         else:
+            quote_provenance, provenance_issues = _validated_provenance(quote, "supplier quote", require_revision=True)
+            issues.extend(provenance_issues)
             if quote.get("supplier_type") not in ALLOWED_SUPPLIER_TYPES:
                 issues.append("supplier is not identified as the original manufacturer or an authorized distributor")
             if not quote.get("supplier_name") or not _evidence_on_file(quote.get("authorization_evidence")):
@@ -418,10 +493,25 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
             "source_url": solicitation.get("source_url", ""),
             "authorization_evidence": quote["authorization_evidence"],
             "traceability_evidence": quote["traceability_evidence"],
+            "input_provenance": {
+                "solicitation": solicitation_provenance,
+                "quote": quote_provenance,
+            },
             "result": "match",
         }
         accepted.append(row)
         output_rows.setdefault(filename, []).append({field: _quote_value(field, solicitation, quote) for field in required_fields})
+        output_provenance.setdefault(filename, []).append({
+            "csv_data_row": len(output_provenance.get(filename, [])) + 1,
+            "solicitation_number": number,
+            "solicitation_record_sha256": solicitation_provenance["record_sha256"],
+            "solicitation_source_sha256": solicitation_provenance["source_sha256"],
+            "solicitation_acquired_at": solicitation_provenance["acquired_at"],
+            "quote_record_sha256": quote_provenance["record_sha256"],
+            "quote_source_sha256": quote_provenance["source_sha256"],
+            "quote_acquired_at": quote_provenance["acquired_at"],
+            "quote_revision": quote_provenance["quote_revision"],
+        })
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -431,6 +521,9 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
             writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
+    (output_dir / "quote-provenance.json").write_text(
+        json.dumps(output_provenance, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
     accepted.sort(key=lambda row: (-row["gross_margin_percent"], row["return_by_date"], row["solicitation_number"]))
     status = "match" if accepted else "uncertain — please check" if uncertain or quote_request_uncertain else f"no match found in DLA DIBBS and supplier quotes as of {today.isoformat()}"
@@ -441,6 +534,7 @@ def prepare_bids(solicitations_path: Path, quotes_path: Path, output_dir: Path, 
         "uncertain": uncertain,
         "excluded": excluded,
         "quote_files": sorted(output_rows),
+        "provenance_file": "quote-provenance.json",
         "quote_requests": quote_requests,
         "quote_request_uncertain": quote_request_uncertain,
         "quote_requests_sent": False,
@@ -459,19 +553,13 @@ def prepare_from_feed(output_dir: Path, solicitations_path: Path, quotes_path: P
     owner_rows = _read_json(solicitations_path)
     if not isinstance(owner_rows, list):
         raise ValueError("solicitations input must be a JSON array")
-    public_by_number = {str(row.get("record_id", "")): row for row in feed_rows}
     merged = []
     for supplied in owner_rows:
         if not isinstance(supplied, dict):
             raise ValueError("solicitations input must contain JSON objects")
-        public = public_by_number.get(str(supplied.get("solicitation_number", "")))
-        row = dict(supplied)
-        if public:
-            row["source_url"] = public["data"].get("source_url") or public.get("source_url")
-            row["public_description"] = public["data"].get("description", "")
-        else:
-            row["source_url"] = row.get("source_url", "")
-        merged.append(row)
+        # Discovery rows are informational; mutating a confirmed record here
+        # would invalidate its owner-confirmation digest and could misbind a bid.
+        merged.append(dict(supplied))
     temporary = Path(output_dir) / "solicitations-from-feed.json"
     temporary.parent.mkdir(parents=True, exist_ok=True)
     temporary.write_text(json.dumps(merged, indent=2), encoding="utf-8")
