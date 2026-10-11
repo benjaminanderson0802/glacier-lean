@@ -1,0 +1,69 @@
+{
+  "source": "FSIS",
+  "checked_at": "2026-10-11T20:25:22Z",
+  "status": "available",
+  "complete_snapshot": true,
+  "api": {
+    "url": "https://www.fsis.usda.gov/fsis/api/recall/v/1",
+    "http_status": 200,
+    "content_type": "application/json",
+    "records": 2030,
+    "identifier_canary_records": 2030,
+    "unique_recall_records": 1241,
+    "duplicate_or_translation_rows_removed": 789,
+    "sample_record_fields": [
+      "field_active_notice",
+      "field_archive_recall",
+      "field_closed_year",
+      "field_company_media_contact",
+      "field_distro_list",
+      "field_en_press_release",
+      "field_establishment",
+      "field_has_spanish",
+      "field_labels",
+      "field_last_modified_date",
+      "field_media_contact",
+      "field_press_release",
+      "field_processing",
+      "field_product_items",
+      "field_qty_recovered",
+      "field_recall_classification",
+      "field_recall_date",
+      "field_recall_number",
+      "field_recall_number_export",
+      "field_recall_reason",
+      "field_recall_type",
+      "field_recall_url",
+      "field_related_to_outbreak",
+      "field_risk_level",
+      "field_states",
+      "field_summary",
+      "field_title",
+      "field_year",
+      "langcode"
+    ],
+    "usable": true
+  },
+  "rss": {
+    "fsis_url": "https://www.fsis.usda.gov/RSS/usdarss.xml",
+    "cdc_combined_url": "https://www2c.cdc.gov/podcasts/createrss.asp?c=146",
+    "fsis": {
+      "url": "https://www.fsis.usda.gov/RSS/usdarss.xml",
+      "http_status": 200,
+      "content_type": "application/rss+xml; charset=utf-8",
+      "usable_fsis_records": 0,
+      "items": 10,
+      "items_sampled": true
+    },
+    "cdc_combined": {
+      "url": "https://www2c.cdc.gov/podcasts/createrss.asp?c=146",
+      "http_status": 200,
+      "content_type": "text/xml; charset=utf-8",
+      "usable_fsis_records": 0,
+      "items": 20,
+      "items_sampled": true
+    }
+  },
+  "usable_fsis_rss_records": 0,
+  "explanation": "Documented FSIS API returned recall records with identifiers."
+}

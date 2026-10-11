@@ -40,35 +40,30 @@
   "your_steps": [
     {
       "id": "review-first-pages",
-      "title": "Review the first 50 recall pages",
-      "when": "Before placing any recall pages on a public site",
-      "detail": "Open and review the first 50 generated local pages, verify the recall number, date and official source link, then approve or correct them. Choose and configure a public host yourself only after this review; Glacier generates local pages but does not publish them.",
+      "title": "Review the first 50 recall pages and choose a host",
+      "when": "Ready now; before any public release",
+      "detail": "Review the prepared first 50 source-linked local pages in evidence/first-50-pages/, verify each recall number, date and official notice link, and record corrections. Choose and configure a public host only if you want the pages public. Public release remains gated on the independent fuzzy-match review. Exact steps and time estimate are in OWNER-STEPS.md.",
       "links": [
-        "https://www.cpsc.gov/Recalls"
+        "#/ventures"
       ]
     },
     {
       "id": "launch-setup",
-      "title": "Set prices and submit the extension",
-      "when": "Before offering paid plans or API access",
-      "detail": "Rename the rebuilt Actor and choose its per-query price in Apify Console. Create Stripe test-mode prices, paste the test secret key into the labeled field on this step, and review the plan wording. Review the extension permissions, privacy text and screenshots, then sign in at the Chrome Web Store developer page and submit the package. Glacier does not create accounts, submit the package or enable live billing for you.",
+      "title": "Publish the prepared Actor and extension listings",
+      "when": "After the source and verification gates pass",
+      "detail": "Rename the deployed Product Recall Checker Actor to Glacier Product Recall Checker, review its run limit and choose its final price (the prepared portfolio table suggests $0.01 per recall-check), then publish the Actor listing. Upload the prepared extension ZIP, paste the copy-ready listing and privacy disclosures, review the permissions and submit it for Chrome Web Store review. Exact clicks and the prepared assets are in OWNER-STEPS.md and store/STORE-LISTING.md. Paid plans and Stripe setup are deferred until you choose exact plan prices.",
       "links": [
         "https://console.apify.com/actors",
         "https://chrome.google.com/webstore/devconsole",
-        "https://dashboard.stripe.com/test/products",
+        "https://github.com/benjaminanderson0802/glacier-lean/blob/main/ventures/recall-checker/store/STORE-LISTING.md",
         "#/settings/secrets"
-      ],
-      "secrets": [
-        {
-          "name": "STRIPE_SECRET_KEY",
-          "label": "Stripe test secret key"
-        }
       ]
     }
   ],
   "launch_gates": [
-    "All four live recall source snapshots are current and alert-free before a no-match result or recall pages are treated as complete.",
+    "The official FSIS JSON API canary returns records with the expected recall identifier and all four live recall snapshots are current and alert-free before a no-match result or recall pages are treated as complete.",
     "The 500-known-recalled and 500-known-clean NHTSA vehicle benchmark remains at or below 1% false no-match before an update is released.",
+    "Independent second-engine review for fuzzy matches is complete; borderline outcomes remain uncertain until then.",
     "The owner reviews the first 50 recall pages before public hosting.",
     "The owner submits the first Chrome Web Store listing and configures the selected test prices."
   ],

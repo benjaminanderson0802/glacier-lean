@@ -1,0 +1,78 @@
+{
+  "fsis_sync": {
+    "rows": 1241,
+    "changed": true,
+    "status": "ok",
+    "snapshot_available": true,
+    "alerts": [],
+    "source_records": 2030,
+    "translation_or_duplicate_rows_removed": 789
+  },
+  "source_counts": {
+    "cpsc_recalls": 193,
+    "nhtsa_recalls": 245855,
+    "fda_enforcement": 87586,
+    "fsis_recalls": 1241
+  },
+  "missing_sources": [],
+  "snapshot_problem": "",
+  "pages_generated": 50,
+  "pages_directory": "ventures/recall-checker/evidence/first-50-pages",
+  "review_required": true,
+  "feed_syncs": [
+    {
+      "source_id": "cpsc_recalls",
+      "fetched_at": "2026-10-11T20:07:37Z",
+      "rows": 193,
+      "status": "ok"
+    },
+    {
+      "source_id": "fda_enforcement",
+      "fetched_at": "2026-10-11T20:11:48Z",
+      "rows": 87586,
+      "status": "ok"
+    },
+    {
+      "source_id": "fsis_recalls",
+      "fetched_at": "2026-10-11T20:18:04Z",
+      "rows": 1241,
+      "status": "ok"
+    },
+    {
+      "source_id": "nhtsa_recalls",
+      "fetched_at": "2026-10-11T20:07:41Z",
+      "rows": 245855,
+      "status": "ok"
+    }
+  ],
+  "review_packet_cli_command": "GLACIER_HOME=/tmp/recall-checker-live-20261011 ~/w/glacier-lean/.venv/bin/python ventures/recall-checker/scripts/recall.py nightly --skip-sync --require-complete --limit-pages 50",
+  "review_packet_path": "ventures/recall-checker/evidence/first-50-pages/",
+  "owner_review_status": "pending",
+  "cli_result": {
+    "sources": {},
+    "recall_rows": 334875,
+    "missing_sources": [],
+    "freshness_problem": "",
+    "alerts": {},
+    "pages_generated": 50,
+    "pages_directory": "/tmp/recall-checker-live-20261011/ventures/recall-checker/pages",
+    "first_fifty_review_required": true
+  },
+  "page_source_counts": {
+    "cpsc": 0,
+    "nhtsa": 21,
+    "fda": 27,
+    "fsis": 2
+  },
+  "page_links": {
+    "count": 50,
+    "distinct": 50,
+    "https_only": true,
+    "record_specific": true,
+    "destination_types": {
+      "FDA": 27,
+      "FSIS": 2,
+      "NHTSA": 21
+    }
+  }
+}
