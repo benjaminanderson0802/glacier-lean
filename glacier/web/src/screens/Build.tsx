@@ -219,7 +219,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const showMinimap = minimapOpen && !canvasShort
   const fitCanvas = useCallback(() => {
     if (connectingRef.current) return
-    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.34, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.3, bottom: 0.16, left: 0.16 }, duration: 0, minZoom: 0.6 })
+    void fitView({ padding: showMinimap ? { top: 0.24, right: 0.34, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.3, bottom: 0.16, left: 0.16 }, duration: 0, minZoom: 0.15 })
   }, [fitView, showMinimap])
 
   useEffect(() => {
@@ -457,7 +457,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
       return { ...node, position: { x: Math.round((p.x - 105) / 20) * 20, y: Math.round((p.y - 45) / 20) * 20 } }
     }))
     setDirty(true)
-    requestAnimationFrame(() => { if (!connectingRef.current) void reactFlow.fitView({ padding: 0.18, minZoom: 0.6 }) })
+    requestAnimationFrame(() => { if (!connectingRef.current) void reactFlow.fitView({ padding: 0.18, minZoom: 0.15 }) })
   }, [nodes, edges, reactFlow])
 
   const nudgeOverlaps = useCallback((draggedId: string, position: { x: number; y: number }) => {
@@ -685,7 +685,7 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
   const allEnvs = [...envs, ...unsaved.filter(u => !envs.some(e => e.id === u.id))]
 
   return (
-    <div className={`app${envId ? ' flow-open' : ''}${envId && !flowsOpen ? ' flows-hidden' : ''}`}>
+    <div onKeyDown={event => { if (event.key.startsWith("Arrow") || event.key === "Enter") event.stopPropagation() }} className={`app${envId ? ' flow-open' : ''}${envId && !flowsOpen ? ' flows-hidden' : ''}`}>
       {/* ---------- left ---------- */}
       <aside className={`left${envId && !flowsOpen ? ' flows-collapsed' : ' flows-open'}`}>
         <div className="build-head"><a className="ghost-link" href="#/automations">{t('build.allFlows')}</a><span className="live-label">{wsUp ? t('build.live') : t('build.offline')}</span><span className={`ws-dot ${wsUp ? 'up' : ''}`} data-testid="ws-status" data-connected={wsUp} title={wsUp ? t('build.liveConnected') : t('build.liveDisconnected')} /></div>
@@ -787,12 +787,12 @@ function Shell({ initialEnv, initialRun, newName: newNameProp, onStatus }: Build
                 snapGrid={[20, 20]}
                 onNodeDragStop={(_, node) => { nudgeOverlaps(node.id, node.position); setDirty(true) }}
                 fitView
-                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.34, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.3, bottom: 0.16, left: 0.16 }, minZoom: 0.6 }}
+                fitViewOptions={{ padding: showMinimap ? { top: 0.24, right: 0.34, bottom: 0.28, left: 0.16 } : { top: 0.2, right: 0.3, bottom: 0.16, left: 0.16 }, minZoom: 0.15 }}
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
               >
                 <Background gap={16} size={1} color={tok('--g-ice4')} />
-                <Controls showInteractive={false} position="top-left" />
+                <Controls showInteractive={false} position="top-right" />
                 {showMinimap && <MiniMap pannable={false} zoomable={false} nodeColor={tok('--g-navy3')} maskColor={tok('--g-shadow')} style={{ backgroundColor: tok('--g-panel'), borderColor: tok('--g-line') }} />}
               </ReactFlow>
             </div>

@@ -250,6 +250,9 @@
   min-height: 0;
 }
 
+.g-memory .g-map-picker { display: grid; gap: calc(2 * var(--px)); margin-bottom: calc(3 * var(--px)); }
+.g-memory [data-testid="memory-stats"] { overflow: auto; }
+
 .g-memory .g-map-panel {
   padding: calc(4 * var(--px));
 }

@@ -22,11 +22,11 @@ export function ModelsSection() {
   const [c, setC] = useState<SystemCheck | null>(null)
   const [eff, setEff] = useState<EffectiveSettings | null>(null)
   const [err, setErr] = useState('')
-  useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(() => {}) }, [])
+  useEffect(() => { system.check().then(setC).catch(e => setErr(String(e))); system.settings().then(setEff).catch(e => setErr(String(e))) }, [])
   return (
     <Panel title={t('settingsSections.models')} testid="settings-models" className="settings-scroll-panel"><div className="settings-scroll-body">
       {err && <div className="g-error">{err}</div>}
-      {!c ? <Empty>{t('settingsSections.checking')}</Empty> : (
+      {!c ? !err && <Empty>{t('settingsSections.checking')}</Empty> : (
         <>
           <dl className="g-kv">
             <dt>{t('settingsSections.usingNow')}</dt><dd data-testid="model-in-use">{eff?.local_model ?? c.recommended.local_model}</dd>
@@ -66,11 +66,11 @@ export function SecretsSection() {
           <div key={n} className="g-row settings-secret-row" data-testid={`secret-${n}`}>
             <span className="g-mid"><span className="g-lead">{n}</span><span className="g-detail">••••••••</span></span>
             <span className="g-when">{confirm === n
-              ? <span className="settings-secret-actions"><Btn danger onClick={async () => { await settingsApi.deleteSecret(n); setConfirm(null); load() }} data-testid={`secret-del-yes-${n}`}>{t('settingsSections.remove')}</Btn><Btn onClick={() => setConfirm(null)}>{t('settingsSections.keep')}</Btn></span>
+              ? <span className="settings-secret-actions"><Btn danger onClick={async () => { try { await settingsApi.deleteSecret(n); setConfirm(null); load() } catch (e) { setMsg(String(e)) } }} data-testid={`secret-del-yes-${n}`}>{t('settingsSections.remove')}</Btn><Btn onClick={() => setConfirm(null)}>{t('settingsSections.keep')}</Btn></span>
               : <Btn onClick={() => setConfirm(n)} data-testid={`secret-del-${n}`}>{t('settingsSections.remove')}</Btn>}</span>
           </div>
         ))}
-        {names && names.length === 0 && <Empty>{t('settingsSections.noSecrets')}</Empty>}
+        {names === null && !msg && <Empty>{t('home.loading')}</Empty>}{names && names.length === 0 && <Empty>{t('settingsSections.noSecrets')}</Empty>}
       </div>
       <form className="g-ask-row" onSubmit={e => { e.preventDefault(); save() }}>
         <input className="g-input" placeholder={t('settingsSections.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} data-testid="secret-name" />
@@ -86,11 +86,17 @@ export function UsageSection() {
   const [c, setC] = useState<Costs | null>(null)
   const [days, setDays] = useState(30)
   const [err, setErr] = useState('')
-  useEffect(() => { settingsApi.costs(days).then(setC).catch(e => setErr(String(e))) }, [days])
+  useEffect(() => {
+    let live = true
+    setC(null); setErr('')
+    settingsApi.costs(days).then(value => { if (live) setC(value) }).catch(e => { if (live) setErr(String(e)) })
+    return () => { live = false }
+  }, [days])
   const tokens = (g: { tokens_in: number; tokens_out: number }) => (g.tokens_in + g.tokens_out).toLocaleString()
   return (
     <Panel title={t('settingsSections.usage')} aside={<span className="g-seg settings-day-range">{[7, 30, 90].map(d => <button key={d} className={`g-seg-btn${d === days ? ' active' : ''}`} aria-pressed={d === days} onClick={() => setDays(d)}>{d}{t('settingsSections.daysSuffix')}</button>)}</span>} testid="settings-usage" className="settings-scroll-panel"><div className="settings-scroll-body">
       {err && <div className="g-error">{err}</div>}
+      {!c && !err && <Empty>{t('home.loading')}</Empty>}
       {c && (
         <>
           <dl className="g-kv">
@@ -112,7 +118,7 @@ export function UsageSection() {
 export function DataSection() {
   const [c, setC] = useState<VaultCompat | null>(null)
   const [err, setErr] = useState('')
-  const load = () => { setC(null); settingsApi.compat().then(setC).catch(e => setErr(String(e))) }
+  const load = () => { setC(null); setErr(''); settingsApi.compat().then(setC).catch(e => setErr(String(e))) }
   useEffect(load, [])
   return (
     <Panel title={t('settingsSections.data')} aside={<Btn onClick={load}>{t('settingsSections.checkAllKeys')}</Btn>} testid="settings-data" className="g-scroll">
@@ -123,6 +129,7 @@ export function DataSection() {
       </dl>
       {err && <div className="g-error">{err}</div>}
       <div className="g-rows settings-data-rows">
+        {!c && !err && <Empty>{t('home.loading')}</Empty>}
         {c && <Row status={c.ok ? 'ok' : 'warn'} lead={c.ok ? t('settingsSections.readyObsidian') : t('settingsSections.thingsToFix', { count: c.problems.length, plural: c.problems.length > 1 ? 's' : '' })} detail={t('settingsSections.notesChecked', { count: c.notes_checked })} testid="data-compat" />}
         {c?.problems.slice(0, 8).map((p, i) => <Row key={i} status="warn" lead={p.path} detail={`${p.detail} ${p.fix_hint}`} />)}
       </div>

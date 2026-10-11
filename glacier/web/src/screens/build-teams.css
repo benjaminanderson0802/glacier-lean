@@ -42,3 +42,9 @@
 .bt-contract { overflow:auto; }
 .bt-line,.bt-engine,.bt-stage label,.bt-roles article,.bt-understood input,.bt-feature,.bt-step-panel .g-menu-item { overflow-wrap:anywhere; }
 @media(max-width:800px) { .bt-workspace { grid-template-columns:1fr; overflow:auto; }.bt-team-grid { grid-template-columns:1fr; grid-template-rows:none; overflow:auto; }.bt-team-grid > .g-panel { min-height:calc(45 * var(--px)); } }
+
+.is-building .l-center:has(.bt-workspace) { left: 19.32%; width: 61.3%; top: 20.3%; height: 46.44%; z-index: 4; }
+.bt-workspace { gap: calc(3 * var(--px)); }
+.bt-composer { flex: none; }
+.bt-composer textarea { max-height: calc(40 * var(--px)); }
+.bt-engine, .bt-understood > p, .bt-workspace .g-hintbar { text-transform: lowercase; }
