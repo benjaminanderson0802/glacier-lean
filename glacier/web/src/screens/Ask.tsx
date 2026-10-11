@@ -46,10 +46,12 @@ export function AskScreen() {
   }, [])
   useEffect(() => {
     if (view !== 'past') return
-    const t = setTimeout(() => conversationsApi.list(q).then(setPast).catch(e => setErr(String(e))), q ? 250 : 0)
-    return () => clearTimeout(t)
+    let live = true
+    setPast(null); setErr('')
+    const timer = setTimeout(() => conversationsApi.list(q).then(value => { if (live) setPast(value) }).catch(e => { if (live) setErr(String(e)) }), q ? 250 : 0)
+    return () => { live = false; clearTimeout(timer) }
   }, [view, q])
-  useEffect(() => { askSettingsApi.get().then(setEngineSettings).catch(() => {}) }, [])
+  useEffect(() => { askSettingsApi.get().then(setEngineSettings).catch(e => setErr(String(e))) }, [])
   const switchEngine = async (engine: string) => {
     try { setEngineSettings(await askSettingsApi.save({ engine })) }
     catch (e) { setErr(String(e)) }
@@ -169,7 +171,7 @@ export function AskScreen() {
       {view === 'past' ? (
         <Panel title={t('ask.pastChats')} aside={<input className="g-input" style={{ width: 'calc(88 * var(--px))' }} placeholder={t('ask.search')} value={q} onChange={e => setQ(e.target.value)} data-testid="past-search" />} testid="past-chats" className="g-scroll">
           <div className="g-rows">
-            {(past ?? []).map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'calc(2 * var(--px))' }}><div style={{ flex: 1 }}><Row icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} /></div><DeleteAction label={t('ask.deleteConversation')} impact={t('delete.conversationImpact')} testid={`conversation-delete-${c.id}`}
+            {past === null && !err && <Empty>{t('home.loading')}</Empty>}{(past ?? []).map(c => <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 'calc(2 * var(--px))' }}><div style={{ flex: 1 }}><Row icon="ask" lead={c.title} detail={`${c.messages} message${c.messages === 1 ? '' : 's'}`} when={c.updated ? ago(c.updated) : undefined} onClick={() => reopen(c.id)} testid={`past-${c.id}`} /></div><DeleteAction label={t('ask.deleteConversation')} impact={t('delete.conversationImpact')} testid={`conversation-delete-${c.id}`}
               onDelete={async () => { const result = await conversationsApi.delete(c.id); return { title: t('delete.removed'), run: async () => { await conversationsApi.undoDelete(c.id, result.commit); setPast(await conversationsApi.list(q)) } } }}
               onDeleted={action => { setDeleteUndo(action ?? null); setPast(current => current?.filter(item => item.id !== c.id) ?? null); if (conv === c.id) { saved = { conv: null, msgs: [], title: '' }; setConv(null); setMsgs([]); setTitle('') } }}
               onError={e => setErr(String(e))} /></div>)}

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { ago, api, teamsApi, venturesApi, type Environment, type EnvSummary, type HomeItem, type RunSummary, type Venture } from '../api.ts'
 import { Btn, Empty, PageHead, Panel, Row } from '../ui/kit.tsx'
 import { StatusIcon, type StatusKind } from '../ui/Pixel.tsx'
@@ -14,7 +14,7 @@ type Flow = EnvSummary & { last?: RunSummary }
 const FILTERS = [t('automations.all'), t('automations.running'), t('automations.needsYou'), t('automations.failed'), t('ventures.tab')] as const
 const STATUS: Record<string, { kind: StatusKind; label: string }> = {
   done: { kind: 'ok', label: t('automations.success') }, failed: { kind: 'bad', label: t('automations.failed') }, rejected: { kind: 'bad', label: t('automations.rejected') },
-  running: { kind: 'run', label: t('automations.running') }, waiting: { kind: 'warn', label: t('automations.needsYou') },
+  queued: { kind: 'warn', label: t('automations.running') }, running: { kind: 'run', label: t('automations.running') }, waiting: { kind: 'warn', label: t('automations.needsYou') },
 }
 
 export function AutomationsScreen() {
@@ -31,16 +31,17 @@ export function AutomationsScreen() {
   const [busy, setBusy] = useState('')
   const [copied, setCopied] = useState('')
   const [undo, setUndo] = useState<UndoAction | null>(null)
-  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
+  const [teams, setTeams] = useState<{ team_id: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[] | null>(null)
   const [ventures, setVentures] = useState<Venture[] | null>(null)
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
+    setErr(''); setFlows(null); setTeams(null); setVentures(null)
     const refreshVentures = () => venturesApi.list().then(rows => setVentures(Array.isArray(rows) ? rows : [])).catch(e => setErr(String(e)))
     refreshVentures()
-    teamsApi.list().then(list => setTeams(Array.isArray(list) ? list : [])).catch(() => {})
+    teamsApi.list().then(list => setTeams(Array.isArray(list) ? list : [])).catch(e => setErr(String(e)))
     api.listEnvs().then(async envs => {
       const withRuns = await Promise.all(envs.map(async e => {
-        const [runs, detail] = await Promise.all([api.listRuns(e.id).catch(() => [] as RunSummary[]), api.getEnv(e.id).catch(() => null)])
+        const [runs, detail] = await Promise.all([api.listRuns(e.id), api.getEnv(e.id)])
         const mostRecent = [...runs].sort((a, b) => (b.started_at ?? '').localeCompare(a.started_at ?? ''))[0]
         // Show the newest run, including manual runs on flows with a trigger.
         const last = mostRecent
@@ -53,6 +54,7 @@ export function AutomationsScreen() {
       setFlows(withRuns)
     }).catch(e => setErr(String(e)))
   }, [])
+  useEffect(refresh, [refresh])
 
   const refreshVentures = async () => {
     const rows = await venturesApi.list()
@@ -61,7 +63,7 @@ export function AutomationsScreen() {
 
   const shown = useMemo(() => (flows ?? []).filter(f => {
     const s = f.last?.status
-    if (filter === t('automations.running') && s !== 'running') return false
+    if (filter === t('automations.running') && !['running', 'queued'].includes(s ?? '')) return false
     if (filter === t('automations.needsYou') && s !== 'waiting') return false
     if (filter === t('automations.failed') && s !== 'failed' && s !== 'rejected') return false
     return !q || f.name.toLowerCase().includes(q.toLowerCase())
@@ -96,7 +98,7 @@ export function AutomationsScreen() {
   }
 
   const copyText = async (value: string, id: string) => {
-    await navigator.clipboard.writeText(value); setCopied(id); window.setTimeout(() => setCopied(''), 1600)
+    try { await navigator.clipboard.writeText(value); setCopied(id); window.setTimeout(() => setCopied(''), 1600) } catch (e) { setErr(String(e)) }
   }
 
   return (
@@ -108,11 +110,11 @@ export function AutomationsScreen() {
               <Btn primary type="submit" data-testid="flow-new-create">{t('automations.create')}</Btn>
               <Btn onClick={() => setNaming(false)}>{t('automations.cancel')}</Btn>
             </form>
-          : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
+          : <span style={{ display: 'flex', gap: 10 }}><Btn onClick={refresh} data-testid="flows-refresh">{t('build.refresh')}</Btn><Btn onClick={() => go('automations/templates')} data-testid="flow-templates">{t('automations.templates')}</Btn><Btn primary icon="plus" onClick={() => setNaming(true)} data-testid="flow-new">{t('automations.new')}</Btn></span>
       } />
       <DeleteUndo action={undo} onDone={() => setUndo(null)} onError={e => setErr(String(e))} />
       <Panel className="automations-window" testid="automations-window">
-        <section className="g-panel automation-teams-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
+        <section className="g-panel automation-teams-panel" data-testid="automation-teams"><h2 className="g-panel-title">{t('team.automationTeams')}</h2><div className="g-rows">{teams === null && !err && <Empty>{t('home.loading')}</Empty>}{teams?.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams?.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={`${t('team.teamCard')} ${team.team_id}`} detail={team.status} when={`${team.done}/${team.tasks}`} onClick={() => go(`automations/team/${team.team_id}`)} testid={`automation-team-${team.team_id}`} />)}</div></section>
         <div className="g-toolbar">
           <div className="g-seg" role="tablist">
             {FILTERS.map(f => <button key={f} className={`g-seg-btn${f === filter ? ' active' : ''}`} onClick={() => setFilter(f)} data-testid={f === t('ventures.tab') ? 'filter-ventures' : `filter-${f}`}>{f}</button>)}
@@ -121,7 +123,7 @@ export function AutomationsScreen() {
         </div>
         {err && <div className="g-error">{err}</div>}
         {filter === t('ventures.tab') ? <div className="venture-list" data-testid="venture-list">
-          {ventures === null && <Empty>{t('home.loading')}</Empty>}
+          {ventures === null && !err && <Empty>{t('home.loading')}</Empty>}
           {ventures?.map(venture => <article className="venture-card" key={venture.slug} data-testid={`venture-${venture.slug}`}>
             <header className="venture-card-head"><h2>{venture.name}</h2><span className="venture-status" data-testid={`venture-status-${venture.slug}`}>{t(`ventures.status.${venture.status}`)}</span></header>
             <div className="venture-card-copy"><strong>{t('ventures.today')}</strong> · {t('ventures.todayCounts', venture.today)}</div>
@@ -143,6 +145,7 @@ export function AutomationsScreen() {
           </article>)}
           {ventures?.length === 0 && <Empty>{t('ventures.empty')}</Empty>}
         </div> : <>
+        {flows === null && !err && <Empty>{t('home.loading')}</Empty>}
         <table className="g-table" data-testid="flow-table">
           <thead><tr><th>{t('automations.name')}</th><th>{t('automations.lastRun')}</th><th>{t('automations.status')}</th><th>{t('automations.startsWhen')}</th><th>{t('delete.action')}</th></tr></thead>
           <tbody>
@@ -165,8 +168,8 @@ export function AutomationsScreen() {
                       <select className="g-input" aria-label={t('automations.startsWhen')} value={choice} disabled={!detail || busy === f.id} onChange={e => void setStart(detail!, e.target.value)} data-testid={`trigger-choice-${f.id}`}>
                         <option value="manual">{t('automations.byHand')}</option><option value="schedule">{t('automations.onSchedule')}</option><option value="file">{t('automations.whenFile')}</option><option value="webhook">{t('automations.whenRequest')}</option>
                       </select>
-                      {detail && <label className="automation-enabled" title={t('automations.enabled')}><input type="checkbox" aria-label={t('automations.enabled')} checked={active} onChange={e => { setExpandedTriggers(prev => ({ ...prev, [f.id]: true })); void save({ ...detail, enabled: e.target.checked }) }} data-testid={`trigger-enabled-${f.id}`} /></label>}
-                      <button type="button" className="g-link automation-trigger-edit" aria-label={t('automations.startsWhen')} title={t('automations.startsWhen')} data-testid={`trigger-edit-${f.id}`} onClick={() => setExpandedTriggers(prev => ({ ...prev, [f.id]: !prev[f.id] }))}>⋯</button>
+                      {detail && <label className="automation-enabled" title={t('automations.enabled')}><input type="checkbox" aria-label={t('automations.enabled')} checked={active} disabled={busy === f.id} onChange={e => { setExpandedTriggers(prev => ({ ...prev, [f.id]: true })); void save({ ...detail, enabled: e.target.checked }) }} data-testid={`trigger-enabled-${f.id}`} /></label>}
+                      <button type="button" className="g-link automation-trigger-edit" aria-label={t('automations.startsWhen')} title={t('automations.startsWhen')} data-testid={`trigger-edit-${f.id}`} disabled={!detail} onClick={() => setExpandedTriggers(prev => ({ ...prev, [f.id]: !prev[f.id] }))}>⋯</button>
                   </div></td>
                   <td><DeleteAction label={t('automations.deleteFlow')} impact={t('delete.flowImpact')} testid={`flow-delete-${f.id}`}
                     onDelete={async () => { const result = await api.deleteEnv(f.id); return { title: t('delete.removed'), run: async () => {

@@ -28,7 +28,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
   const [startupSupported, setStartupSupported] = useState(false)
   const [startAtLogon, setStartAtLogon] = useState(false)
   const [startupError, setStartupError] = useState('')
-  const load = () => { setCheck(null); system.check().then(setCheck).catch(e => setErr(String(e))) }
+  const load = () => { setCheck(null); setErr(''); system.check().then(setCheck).catch(e => setErr(String(e))) }
   useEffect(load, [])
   useEffect(() => {
     const invoke = (globalThis as { __TAURI__?: { core?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> } } }).__TAURI__?.core?.invoke
@@ -52,7 +52,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
         {cur.id === 'general' && (
           <Panel title={t('settings.general')} testid="settings-general" className="g-scroll">
             {err && <div className="g-error">{err}</div>}
-            {!check ? <Empty>{t('settings.checkingComputer')}</Empty> : (
+            {!check ? !err && <Empty>{t('settings.checkingComputer')}</Empty> : (
               <dl className="g-kv">
                 <dt>{t('settings.mode')}</dt><dd>{check.recommended.mode === 'low' ? t('settings.light') : t('settings.standard')}</dd>
                 <dt>{t('settings.localModel')}</dt><dd>{check.recommended.local_model}</dd>
@@ -87,7 +87,7 @@ export function SettingsScreen({ section = 'general' }: { section?: string }) {
         {cur.id === 'system' && (
           <Panel title={t('settings.system')} aside={<Btn onClick={load} data-testid="system-recheck">{t('settings.runCheckAgain')}</Btn>} testid="settings-system" className="g-scroll">
             {err && <div className="g-error">{err}</div>}
-            {!check ? <Empty>{t('settings.checking')}</Empty> : (
+            {!check ? !err && <Empty>{t('settings.checking')}</Empty> : (
               <div className="g-rows">
                 <Row status={check.ollama_models.length ? 'ok' : 'warn'} lead={t('settings.localModels')} detail={check.ollama_models.join(', ') || t('settings.noneInstalled')} when={check.ollama_models.length ? t('settings.ready') : t('settings.missing')} />
                 {Object.entries(check.tools).map(([k, tool]) => <Row key={k} status={tool.found ? 'ok' : 'warn'} lead={k} detail={tool.version || t('settings.notFound')} when={tool.found ? t('settings.ready') : t('settings.missing')} />)}
