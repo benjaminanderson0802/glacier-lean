@@ -69,8 +69,9 @@ def _all(include_graph_data: bool = False) -> list[dict]:
     return result
 
 
-def _link_index(items: list[dict]) -> tuple[dict[str, list[dict[str, str]]], LinkResolver]:
-    paths = [item["path"].removesuffix(".md") for item in items]
+def _link_index(items: list[dict], paths: list[str] | None = None) -> tuple[dict[str, list[dict[str, str]]], LinkResolver]:
+    if paths is None:
+        paths = [item["path"].removesuffix(".md") for item in items]
     attachments = []
     for root, dirs, files in os.walk(vault.VAULT):
         dirs[:] = [name for name in dirs if name != ".git"]
@@ -174,10 +175,13 @@ def graph(limit: int | None = None):
     nodes, edges = [], []
     known = set()
     items = _all(include_graph_data=True)
+    # Limit the displayed source notes, not the resolver's knowledge of the vault.
+    # A short link may point to an older note outside the selected slice.
+    paths = [item["path"].removesuffix(".md") for item in items]
     items.sort(key=lambda item: item["_mtime"], reverse=True)
     if limit is not None:
         items = items[:limit]
-    links, _ = _link_index(items)
+    links, _ = _link_index(items, paths)
     for item in items:
         path = item["path"].removesuffix(".md")
         known.add(path)
