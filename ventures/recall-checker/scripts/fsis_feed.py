@@ -56,6 +56,20 @@ def sync_fsis_feed() -> dict:
             source_total=None,
             alerts=list(alerts),
         )
+        if result.get("status") == "ok":
+            # Keep the official API endpoint in the source registry, while
+            # presenting the per-record official notice as the result citation.
+            with core._connect() as connection:
+                for record in canonical:
+                    notice_url = str(record.get("field_recall_url", ""))
+                    if not notice_url.startswith("https://www.fsis.usda.gov/"):
+                        continue
+                    record_id = core._first(record, config.get("id_fields", []))
+                    if record_id:
+                        connection.execute(
+                            "UPDATE feed_rows SET source_url=? WHERE source_id=? AND record_id=?",
+                            (notice_url, source_id, str(record_id)),
+                        )
         result["source_records"] = len(records)
         result["translation_or_duplicate_rows_removed"] = len(records) - len(canonical)
         return result

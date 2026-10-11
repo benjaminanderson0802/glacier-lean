@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 from ventures.blocks.feeds import query
+from ventures.recall_checker import recall_fields
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "fsis_canary.py"
@@ -104,3 +105,5 @@ def test_fsis_sync_promotes_deduplicated_official_snapshot(tmp_path, monkeypatch
     assert len(saved) == 1
     assert saved[0]["data"]["field_title"] == "English notice"
     assert saved[0]["data"]["field_recall_url"].startswith("https://")
+    assert saved[0]["source_url"] == "https://www.fsis.usda.gov/recalls-alerts/example"
+    assert recall_fields(saved[0])["official_url"] == saved[0]["source_url"]

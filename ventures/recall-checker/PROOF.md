@@ -6,7 +6,7 @@ The venture remains **blocked** because the independent fuzzy-match release revi
 
 ## Official FSIS source canary
 
-The official [FSIS Recall API documentation](https://www.fsis.usda.gov/science-data/developer-resources/recall-api) identifies `https://www.fsis.usda.gov/fsis/api/recall/v/1` as its GET JSON endpoint. The live probe also requested the official FSIS RSS and the HHS/CDC combined food-safety RSS. The API returned 2,030 records with recognized identifiers; FSIS RSS returned HTTP 200 and 10 recent notices; CDC RSS returned HTTP 200 and 20 items but no FSIS-linked item. The canary data is in `evidence/fsis-official-source-canary.json`.
+The official [FSIS Recall API documentation](https://www.fsis.usda.gov/science-data/developer-resources/recall-api) identifies `https://www.fsis.usda.gov/fsis/api/recall/v/1` as its GET JSON endpoint. The live probe also requested the official FSIS RSS and the HHS/CDC combined food-safety RSS. The API returned 2,030 records with recognized identifiers; FSIS RSS returned HTTP 200 and 10 recent notices; CDC RSS returned HTTP 200 and 20 items but no FSIS-linked item. The card-specific adapter keeps one English record per recall number and puts each official FSIS notice URL on its feed row, so a product match cites the direct notice. The canary data is in `evidence/fsis-official-source-canary.json`.
 
 The canary is deliberately conservative: only the documented JSON API can establish a complete snapshot. RSS records are partial coverage, and an unavailable API plus no FSIS-linked RSS record yields `status=unavailable`, `complete_snapshot=false`, and exit code 2. Tests cover API identifier parsing, partial RSS, and unavailable sources; they do not alter any independent acceptance checks.
 
