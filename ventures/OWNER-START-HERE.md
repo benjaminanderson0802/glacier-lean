@@ -33,3 +33,14 @@ The per-venture test suites are fixture/software checks; they do not verify cust
 - The recall Actor was fixed and rebuilt on Apify; a live Rock 'n Play check returns a match. Rename and pricing remain. The Chrome Web Store developer account is registered; its extension listing is not submitted.
 
 Owner-only actions stay with the owner or customer: account/identity verification, payout setup, price choices, spending, publication, customer approval, signatures, government filings, claim submission, and mail. For fuller evidence, see each linked README and `PROOF.md`; fixture or sandbox evidence is labeled as such.
+
+## Pilot kits (new ideas from the research)
+
+Each kit has a working prototype, a sample built from public data, a pitch email in PILOT.md and a prospect list. Status: **ready** for a paid-pilot test.
+
+| Pilot | Status | What Glacier does | Your steps |
+| --- | --- | --- | --- |
+| [Alabama public works bid triage](al-bid-triage/README.md) | **ready** | Builds a dated, source-linked digest of Alabama public-works bids for one trade from official notices. | 1. Send the pitch in [al-bid-triage/PILOT.md](al-bid-triage/PILOT.md) to a few prospects from its prospects.csv. 2. If someone agrees to the paid pilot, tell Glacier and it prepares their first deliverable. |
+| [Alabama contractor roster verifier](al-license-verify/README.md) | **ready** | Checks contractors against the Alabama board's published roster (or a roster file you supply) and flags status issues. | 1. Send the pitch in [al-license-verify/PILOT.md](al-license-verify/PILOT.md) to a few prospects from its prospects.csv. 2. If someone agrees to the paid pilot, tell Glacier and it prepares their first deliverable. |
+| [Job closeout packet builder](job-closeout/README.md) | **ready** | Turns a completed Jobber job into a customer-ready closeout packet (work summary, equipment, warranty reminders). | 1. Send the pitch in [job-closeout/PILOT.md](job-closeout/PILOT.md) to a few prospects from its prospects.csv. 2. If someone agrees to the paid pilot, tell Glacier and it prepares their first deliverable. |
+| [SAM amendment and deadline alerts](sam-amendment-alerts/README.md) | **ready** | Compares SAM.gov opportunity snapshots and sends a dated digest of new amendments and moved deadlines. | 1. Send the pitch in [sam-amendment-alerts/PILOT.md](sam-amendment-alerts/PILOT.md) to a few prospects from its prospects.csv. 2. If someone agrees to the paid pilot, tell Glacier and it prepares their first deliverable. |
