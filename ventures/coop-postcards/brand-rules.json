@@ -1,0 +1,68 @@
+[
+  {
+    "brand": "Carrier",
+    "country": "US",
+    "program": "Carrier cooperative advertising / Ad Kit",
+    "rule_status": "unverified",
+    "public_program_page": true,
+    "source_url": "https://adkit.carrier.com/en/us/guidelines",
+    "source_title": "Carrier Brand Guidelines and Co-op Guidelines",
+    "source_checked": "2026-10-10",
+    "program_summary": "Carrier publishes brand and co-op guidelines, but this public landing page does not establish this dealer's current eligibility, claim window, eligible expenses, or required documents",
+    "required_evidence": ["dealer_authorization", "program_preapproval", "ad_proof", "itemized_invoice", "proof_of_payment"],
+    "must_confirm_with_brand": ["dealer eligibility", "current program year and expiry", "eligible media and expense categories", "claim deadline", "required invoice and proof-of-payment documents"]
+  },
+  {
+    "brand": "Trane",
+    "country": "US",
+    "program": "Trane dealer marketing support",
+    "rule_status": "unverified",
+    "public_program_page": false,
+    "source_url": "https://www.trane.com/residential/en/for-dealers/",
+    "source_title": "Trane Resources for Dealers and Distributors",
+    "source_checked": "2026-10-10",
+    "program_summary": "Trane describes dealer programs publicly but directs dealers to the secure Comfortsite portal for benefits and program details",
+    "required_evidence": ["dealer_authorization", "program_preapproval", "ad_proof", "itemized_invoice", "proof_of_payment"],
+    "must_confirm_with_brand": ["whether an active co-op program applies", "dealer eligibility", "current program year and expiry", "eligible media and expense categories", "claim deadline", "required evidence"]
+  },
+  {
+    "brand": "Lennox",
+    "country": "US",
+    "program": "Consumer Advertising and Promotions (CAP) / co-op marketing funds",
+    "rule_status": "unverified",
+    "public_program_page": true,
+    "source_url": "https://www.lennoxpros.com/partner-resources/marketing/consumer-advertising-program",
+    "source_title": "LennoxPros Consumer Advertising and Promotions Program",
+    "source_checked": "2026-10-10",
+    "program_summary": "Lennox publicly describes CAP and co-op marketing funds, while full program terms are supplied in a dealer guidebook and can vary by package",
+    "required_evidence": ["dealer_authorization", "program_preapproval", "ad_proof", "itemized_invoice", "proof_of_payment"],
+    "must_confirm_with_brand": ["dealer enrollment and package", "current guidebook and program year", "eligible media and expense categories", "claim deadline", "required evidence"]
+  },
+  {
+    "brand": "Rheem",
+    "country": "US",
+    "program": "Rheem Pro Partner marketing support and co-op funds",
+    "rule_status": "unverified",
+    "public_program_page": true,
+    "source_url": "https://www.rheem.com/professionals/residential-heating-and-cooling/pro-partner-programs/",
+    "source_title": "Rheem Residential Pro Partner Programs",
+    "source_checked": "2026-10-10",
+    "program_summary": "Rheem publicly describes contractor marketing support and incentives, but current account-specific co-op reimbursement terms and claim deadlines are not on this page",
+    "required_evidence": ["dealer_authorization", "program_preapproval", "ad_proof", "itemized_invoice", "proof_of_payment"],
+    "must_confirm_with_brand": ["dealer enrollment and program tier", "current program year and expiry", "eligible media and expense categories", "claim deadline", "required evidence"]
+  },
+  {
+    "brand": "Goodman",
+    "country": "US",
+    "program": "Goodman APlus Dealer accrual and marketing support",
+    "rule_status": "unverified",
+    "public_program_page": true,
+    "source_url": "https://www.goodmanmfg.com/become-a-dealer",
+    "source_title": "Goodman Become a Dealer",
+    "source_checked": "2026-10-10",
+    "program_summary": "Goodman publicly describes dealer support; its 2025 APlus guide is historical and the current APlus program terms, accruals, eligibility, and usage deadlines require confirmation against the current dealer guide and account",
+    "historical_program_source_url": "https://apps.goodmanmfg.com/brochures/files/66db23c7cfdd6DB-APLUS%20-POD_08-24_Final.pdf",
+    "required_evidence": ["dealer_authorization", "program_preapproval", "ad_proof", "itemized_invoice", "proof_of_payment"],
+    "must_confirm_with_brand": ["APlus enrollment and current guide", "dealer eligibility and available accrual", "current program year and expiry", "eligible media and expense categories", "claim deadline", "required evidence"]
+  }
+]

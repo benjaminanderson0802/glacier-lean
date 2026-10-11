@@ -1,0 +1,28 @@
+{
+  "dealer_label": "Fixture HVAC",
+  "jobs": [
+    {
+      "id": "fixture-job-2026-001",
+      "jobNumber": 2048,
+      "title": "Carrier heat pump installation",
+      "jobStatus": "COMPLETED",
+      "completedAt": "2026-10-02T16:30:00Z",
+      "jobberWebUri": "https://secure.getjobber.com/jobs/fixture-job-2026-001"
+    },
+    {
+      "id": "fixture-job-open-002",
+      "jobNumber": 2049,
+      "title": "Open service call",
+      "jobStatus": "ACTIVE",
+      "completedAt": null,
+      "jobberWebUri": "https://secure.getjobber.com/jobs/fixture-job-open-002"
+    }
+  ],
+  "details_by_job_id": {
+    "fixture-job-2026-001": {
+      "brand": "Carrier",
+      "expires_on": "2026-12-31",
+      "evidence": ["ad_proof", "itemized_invoice"]
+    }
+  }
+}

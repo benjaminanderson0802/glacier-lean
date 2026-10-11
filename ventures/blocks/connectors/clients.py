@@ -88,7 +88,10 @@ class JobberClient(ReadOnlyClient):
         rows: list[dict[str, Any]] = []
         cursor: str | None = None
         for _ in range(max_pages):
-            query = "query ReadJobs($first: Int!, $after: String) { jobs(first: $first, after: $after) { nodes { id jobNumber title } pageInfo { hasNextPage endCursor } } }"
+            # Completion metadata is read-only and useful to the warranty and
+            # co-op ventures. Avoid client/property fields here because those
+            # can contain homeowner data that these local previews do not need.
+            query = "query ReadJobs($first: Int!, $after: String) { jobs(first: $first, after: $after) { nodes { id jobNumber title jobStatus completedAt jobberWebUri } pageInfo { hasNextPage endCursor } } }"
             data = self.graphql(query, {"first": page_size, "after": cursor})
             connection = data.get("jobs") or {}
             rows.extend(connection.get("nodes") or [])

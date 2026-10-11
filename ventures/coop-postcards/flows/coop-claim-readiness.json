@@ -16,10 +16,10 @@
       }
     },
     {
-      "id": "readiness",
+      "id": "create_drafts",
       "type": "command",
       "config": {
-        "cmd": "python3 ventures/coop-postcards/scripts/check_claim_intake.py",
+        "cmd": "python3 ventures/coop-postcards/scripts/generate_claim_drafts.py",
         "cwd": ".",
         "timeout": "60",
         "retries": "0"
@@ -30,10 +30,10 @@
       }
     },
     {
-      "id": "claim_approval",
+      "id": "claim_review",
       "type": "approval",
       "config": {
-        "prompt": "Your step: review the complete dealer claim checklist and proposed fields in the preceding run result. Approving authorizes only this dealer claim under the dealer's account. Do not approve a government filing; the customer must sign and submit those."
+        "prompt": "Your step: review the local claim draft, current brand program terms, and evidence checklist. This records your review only. The dealer must authorize, sign, and submit the claim directly with the brand; Glacier does not file it."
       },
       "position": {
         "x": 600,
@@ -41,12 +41,12 @@
       }
     },
     {
-      "id": "prepare_and_submit",
+      "id": "record_review_only",
       "type": "command",
       "config": {
         "cmd": "python3 ventures/coop-postcards/scripts/run_approved_claim.py --approval {run}",
         "cwd": ".",
-        "timeout": "120",
+        "timeout": "30",
         "retries": "0"
       },
       "position": {
@@ -59,17 +59,17 @@
     {
       "id": "e1",
       "source": "daily",
-      "target": "readiness"
+      "target": "create_drafts"
     },
     {
       "id": "e2",
-      "source": "readiness",
-      "target": "claim_approval"
+      "source": "create_drafts",
+      "target": "claim_review"
     },
     {
       "id": "e3",
-      "source": "claim_approval",
-      "target": "prepare_and_submit",
+      "source": "claim_review",
+      "target": "record_review_only",
       "label": "yes"
     }
   ],

@@ -9,8 +9,22 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 import re
+import hashlib
+import textwrap
+import zlib
 
 from ventures.blocks.mail import postcard
+from ventures.blocks.connectors import JobberClient
+
+
+BRAND_RULES_PATH = Path(__file__).resolve().parent / "brand-rules.json"
+EVIDENCE_CHECKLIST = (
+    ("dealer_authorization", "Dealer authorization for this specific claim"),
+    ("program_preapproval", "Brand pre-approval, if required by the confirmed current program"),
+    ("ad_proof", "Final advertisement proof showing brand and dealer attribution"),
+    ("itemized_invoice", "Itemized invoice for the advertising expense"),
+    ("proof_of_payment", "Proof the invoice was paid"),
+)
 
 
 def _parse_date(value: str) -> date:
@@ -20,6 +34,151 @@ def _parse_date(value: str) -> date:
 def claim_reminder_dates(expires_on: str) -> list[date]:
     expiry = _parse_date(expires_on)
     return [expiry - timedelta(days=60), expiry - timedelta(days=30)]
+
+
+def load_brand_rules(path: str | Path = BRAND_RULES_PATH) -> dict[str, dict[str, Any]]:
+    """Load source-linked program records; unverified records never authorize filing."""
+    records = json.loads(Path(path).read_text(encoding="utf-8"))
+    return {str(record["brand"]).casefold(): record for record in records}
+
+
+def completed_jobber_jobs(client: JobberClient | None = None) -> tuple[str, list[dict[str, Any]]]:
+    """Read completed jobs from the connected Jobber account without mutations."""
+    jobber = client or JobberClient()
+    account = jobber.test_connection()
+    rows = jobber.get_jobs(max_pages=5)
+    complete = [row for row in rows if str(row.get("jobStatus", "")).casefold() in {"completed", "complete"}]
+    return str(account.get("account") or "Jobber dealer"), complete
+
+
+def _claim_id(job: dict[str, Any]) -> str:
+    raw = str(job.get("id") or job.get("jobNumber") or "")
+    if not raw:
+        raise ValueError("Jobber job needs an id or job number")
+    return "jobber-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _claim_markdown(draft: dict[str, Any]) -> str:
+    checklist = "\n".join(
+        f"- [{'x' if item['present'] else ' '}] {item['label']}"
+        for item in draft["evidence_checklist"]
+    )
+    reminders = draft.get("reminder_dates") or []
+    reminder_text = ", ".join(reminders) if reminders else "Pending confirmation of current program expiry"
+    source = draft.get("brand_rule") or {}
+    rule_url = source.get("source_url", "")
+    rule_status = source.get("rule_status", "unverified")
+    return (
+        f"# Co-op claim draft — {draft['claim_id']}\n\n"
+        "**Draft only. Not filed, not approved by the brand, and not proof of eligibility.**\n\n"
+        f"- Dealer account: {draft['dealer_label']}\n"
+        f"- Jobber job: {draft['job_number']} — {draft['job_title']}\n"
+        f"- Completed: {draft.get('completed_at') or 'not supplied by Jobber'}\n"
+        f"- Brand: {draft.get('brand') or 'needs dealer confirmation'}\n"
+        f"- Rule status: {rule_status}\n"
+        f"- Rule source: {rule_url or 'no brand selected'}\n"
+        f"- Program expiry: {draft.get('expires_on') or 'needs dealer confirmation'}\n"
+        f"- Reminder dates: {reminder_text}\n"
+        f"- Job source: {draft.get('job_source') or 'Jobber read-only connector'}\n\n"
+        "## Evidence checklist\n\n" + checklist + "\n\n"
+        "## Brand rule notes\n\n"
+        f"{source.get('program_summary', 'Select and confirm the applicable brand program.')}.\n\n"
+        "**The evidence checklist is a starting point. Exact brand requirements are unverified until the owner confirms the current dealer program terms.**\n\n"
+        "## Owner steps\n\n"
+        "1. Confirm the applicable current program terms, eligibility, deadline, and required evidence with the brand.\n"
+        "2. Obtain dealer authorization and complete/sign/file the claim yourself. Glacier does not submit it.\n"
+    )
+
+
+def _write_claim_pdf(markdown: str, path: Path) -> None:
+    """Create a one-page, US-letter PDF using the standard library only."""
+    lines: list[str] = []
+    for paragraph in markdown.splitlines():
+        stripped = paragraph.replace("**", "").replace("`", "").replace("#", "").strip()
+        lines.extend(textwrap.wrap(stripped, width=92) or ([""] if not stripped else []))
+    lines = lines[:54]
+    commands = ["BT", "/F1 9 Tf", "48 744 Td"]
+    for i, line in enumerate(lines):
+        if i:
+            commands.append("0 -13 Td")
+        escaped = line.encode("latin-1", "replace").decode("latin-1").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        commands.append(f"({escaped}) Tj")
+    commands.append("ET")
+    stream = zlib.compress("\n".join(commands).encode("latin-1", "replace"))
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+        f"<< /Length {len(stream)} /Filter /FlateDecode >>\nstream\n".encode() + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    # A binary marker follows the header as recommended by the PDF format;
+    # this also keeps valid xref padding from appearing as text whitespace.
+    data = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for index, body in enumerate(objects, 1):
+        offsets.append(len(data))
+        data.extend(f"{index} 0 obj\n".encode() + body + b"\nendobj\n")
+    xref = len(data)
+    data.extend(f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode())
+    for offset in offsets[1:]:
+        data.extend(f"{offset:010d} 00000 n \n".encode())
+    data.extend(f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode())
+    path.write_bytes(data)
+
+
+def generate_claim_draft(
+    job: dict[str, Any], dealer_label: str, *, details: dict[str, Any] | None = None,
+    output_dir: str | Path, rules_path: str | Path = BRAND_RULES_PATH,
+) -> dict[str, Any]:
+    """Write a local markdown/PDF draft from one completed Jobber job; never files it."""
+    if str(job.get("jobStatus", "")).casefold() not in {"completed", "complete"}:
+        raise ValueError("only completed Jobber jobs can start a co-op claim draft")
+    details = details or {}
+    brand = str(details.get("brand") or "").strip().casefold()
+    rule = load_brand_rules(rules_path).get(brand) if brand else None
+    expiry = str(details.get("expires_on") or (rule or {}).get("expires_on") or "").strip()
+    try:
+        reminders = [day.isoformat() for day in claim_reminder_dates(expiry)] if expiry else []
+    except ValueError:
+        reminders = []
+        expiry = ""
+    docs = set(str(item) for item in details.get("evidence", []))
+    checklist = [{"key": key, "label": label, "present": key in docs} for key, label in EVIDENCE_CHECKLIST]
+    claim_id = _claim_id(job)
+    root = Path(output_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    draft = {
+        "claim_id": claim_id,
+        "dealer_label": dealer_label or "Jobber dealer",
+        "job_id": str(job.get("id") or ""),
+        "job_number": str(job.get("jobNumber") or "(unknown)"),
+        "job_title": str(job.get("title") or "Completed job"),
+        "completed_at": str(job.get("completedAt") or ""),
+        "job_source": str(job.get("jobberWebUri") or "Jobber read-only connector"),
+        "brand": brand or None,
+        "brand_rule": rule,
+        "rule_status": (rule or {}).get("rule_status", "unverified"),
+        "expires_on": expiry or None,
+        "reminder_dates": reminders,
+        "deadline_status": "scheduled from confirmed expiry" if expiry else "pending confirmation of current program expiry",
+        "evidence_checklist": checklist,
+        "filing_ready": False,
+        "external_action": "owner only; no filing performed",
+    }
+    markdown = _claim_markdown(draft)
+    md_path = root / f"{claim_id}.md"
+    pdf_path = root / f"{claim_id}.pdf"
+    json_path = root / f"{claim_id}.json"
+    md_path.write_text(markdown, encoding="utf-8")
+    _write_claim_pdf(markdown, pdf_path)
+    draft.update({"markdown_path": str(md_path), "pdf_path": str(pdf_path), "record_path": str(json_path)})
+    json_path.write_text(json.dumps(draft, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if expiry:
+        from ventures.blocks.deadlines import add as add_deadline
+        first_reminder = claim_reminder_dates(expiry)[0]
+        add_deadline(claim_id, first_reminder.isoformat(), "0d|30d", f"{brand.title()} co-op claim expiry")
+    return draft
 
 
 def _claim_state_path(claim_id: str, state_dir: str | Path) -> Path:
@@ -49,12 +208,15 @@ def begin_claim_attempt(claim_id: str, state_dir: str | Path) -> dict[str, Any]:
     return state
 
 
-def record_claim_outcome(claim_id: str, outcome: str, state_dir: str | Path, *, reason: str = "") -> dict[str, Any]:
-    """Record customer-reported portal outcome and allow at most one correction."""
+def record_claim_outcome(claim_id: str, outcome: str, state_dir: str | Path, *, reason: str = "", owner_filed: bool = False) -> dict[str, Any]:
+    """Record an owner-reported portal outcome and allow at most one correction."""
     path = _claim_state_path(claim_id, state_dir)
-    if not path.is_file():
-        raise ValueError("claim has no recorded submission attempt")
-    state = json.loads(path.read_text(encoding="utf-8"))
+    if path.is_file():
+        state = json.loads(path.read_text(encoding="utf-8"))
+    elif owner_filed:
+        state = {"claim_id": claim_id, "attempts": 1, "status": "in_progress", "owner_reported_filing": True}
+    else:
+        raise ValueError("no recorded attempt; confirm --owner-filed after you personally submit the claim")
     if state["status"] != "in_progress":
         raise ValueError(f"claim is {state['status']}; no outcome can be recorded")
     if outcome == "accepted":
