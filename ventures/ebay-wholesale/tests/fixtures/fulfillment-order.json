@@ -1,0 +1,29 @@
+{
+  "orderId": "12-34567-89012",
+  "orderFulfillmentStatus": "NOT_STARTED",
+  "lineItems": [
+    {
+      "lineItemId": "LI-ATS-1",
+      "sku": "VOL-ATS-100",
+      "title": "Commercial transfer switch",
+      "quantity": 1,
+      "lineItemFulfillmentStatus": "NOT_STARTED"
+    }
+  ],
+  "fulfillmentStartInstructions": [
+    {
+      "shippingStep": {
+        "shipTo": {
+          "fullName": "Fixture Buyer",
+          "contactAddress": {
+            "addressLine1": "123 Example Street",
+            "city": "Atlanta",
+            "stateOrProvince": "GA",
+            "postalCode": "30303",
+            "countryCode": "US"
+          }
+        }
+      }
+    }
+  ]
+}

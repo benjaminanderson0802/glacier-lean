@@ -1,0 +1,2 @@
+sku,supplier_sku,title,description,category_id,brand,mpn,condition,quantity,unit_cost,shipping_cost,supplier_lead_days,image_urls,aspects_json,merchant_location_key,supplier_name,supplier_email
+VOL-ATS-100,ATS-100,Commercial transfer switch,Fixture only; new 100A transfer switch.,26221,FixturePower,ATS-100,NEW,3,500.00,75.00,7,https://supplier.example/ats.jpg,"{""Brand"":[""FixturePower""],""Type"":[""Automatic Transfer Switch""],""Current Rating"":[""100 A""]}",supplier-warehouse-fixture,Fixture Supply,orders@supplier.example

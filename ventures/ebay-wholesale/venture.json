@@ -1,0 +1,43 @@
+{
+  "slug": "ebay-wholesale",
+  "name": "eBay wholesale drop-ship listings",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare local eBay Sell Inventory API listing drafts from a wholesale supplier CSV and owner-reviewed supplier purchase order drafts from eBay Fulfillment API orders.",
+    "channels": ["eBay"],
+    "policy": "Only direct fulfillment by a wholesale supplier with seller responsibility for on-time delivery and buyer satisfaction. No retailer or marketplace sourcing.",
+    "publication": "Inventory and offer API writes require explicit owner approval and a durable Glacier audit-event writer. Publishing each offer requires a separate explicit owner approval. This build never calls the publish endpoint.",
+    "billing": "No spending or subscription is authorized. Every supplier PO remains an unsent owner-approved draft."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": ["ebay-listing-drafts", "ebay-order-po-review"],
+  "schedules": [],
+  "secrets_needed": ["ebay_user_access_token"],
+  "your_steps": [
+    {
+      "id": "accounts-and-suppliers",
+      "title": "Set up eBay and apply to wholesale suppliers",
+      "when": "Before using live eBay Sell APIs or preparing real supplier POs",
+      "detail": "Follow OWNER-STEPS.md to create or verify your eBay seller account and payouts, create your eBay developer keyset, and apply in writing through the linked wholesale supplier application pages. Provide a resale certificate/EIN where the supplier requires one. Store only the eBay OAuth user token in Glacier Settings → Secrets. Do not enter credentials in CSVs. These are setup actions; Glacier separately pauses for owner approval before each API write, listing publication, supplier PO, or payment.",
+      "links": [
+        "https://www.ebay.com/sellercenter",
+        "https://developer.ebay.com/my/keys",
+        "https://www.medalequipment.com/pages/distributors",
+        "https://mammothskidsteer.com/pages/become-a-dealer",
+        "https://www.travers.com/wholesale-by-travers-splashpage",
+        "https://voltikpower.com/trade",
+        "https://us.mychway.com/distributor"
+      ],
+      "secrets": [{"name": "ebay_user_access_token", "label": "eBay OAuth user access token"}]
+    }
+  ],
+  "launch_gates": [
+    "Owner has reviewed current eBay drop-shipping, automation, listing, delivery, and API terms.",
+    "Live Sell API writes are routed through a durable Glacier audit-event writer before the network call.",
+    "Every listing has a wholesale supplier agreement permitting marketplace resale and direct-to-buyer shipment.",
+    "Supplier lead times, inventory, outbound freight, returns, and warranty terms are verified before listing.",
+    "Every eBay inventory/offer write, listing publication, supplier PO, and payment is separately approved by the owner."
+  ],
+  "dry_run_env_id": "ebay-listing-drafts"
+}

@@ -1,0 +1,37 @@
+{
+  "id": "ebay-listing-drafts",
+  "name": "Prepare eBay listing drafts",
+  "goal": "Turn the owner-provided wholesale supplier catalog and current eBay configuration into local Inventory API request drafts for owner review.",
+  "nodes": [
+    {
+      "id": "build_drafts",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/ebay-wholesale/scripts/ebay_wholesale.py listings --catalog \"$GLACIER_HOME/ventures/ebay-wholesale/incoming/supplier-catalog.csv\" --rules \"$GLACIER_HOME/ventures/ebay-wholesale/incoming/pricing-rules.json\" --policies \"$GLACIER_HOME/ventures/ebay-wholesale/incoming/fulfillment-policy-ids.json\" --location-key OWNER_CONFIGURE_SHIP_FROM_LOCATION --allowed-handling-days 0,1,2,3,4,5,10,15,20 --output \"$GLACIER_HOME/ventures/ebay-wholesale/drafts/listing-payloads.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "drafts_ok",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 300, "y": 0}
+    },
+    {
+      "id": "owner_review",
+      "type": "approval",
+      "config": {
+        "prompt": "Review each item, item specifics, category, stock, wholesale authority, freight, current fees, seller shipping/return policies, handling time, and price. No API write or publication happened. Approve any later API action separately."
+      },
+      "position": {"x": 600, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "build_drafts", "target": "drafts_ok", "label": ""},
+    {"id": "e2", "source": "drafts_ok", "target": "owner_review", "label": "yes"}
+  ],
+  "max_steps": 3
+}
