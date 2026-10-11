@@ -20,6 +20,23 @@ Glacier prepares checks, drafts, reminders, and packets. You or the customer sti
 | [Warranty registration](warranty/README.md) | **blocked** | Builds a local HVAC registration queue and unsent homeowner drafts from Jobber. The Jobber test app is connected, but five eligible records, field mapping, portal terms, and serial rules are not verified. | 1. Verify the Jobber test fields and five eligible records; review each brand’s portal terms and official serial format at [Trane](https://www.trane.com/residential/en/resources/warranty-and-registration/) and [Carrier](https://www.carrier.com/residential/en/us/products/warranties/). 2. Review the first marketplace listing and first 20 homeowner drafts; no email is sent and no portal registration is submitted. |
 | Tariff estimator (on hold; no manifest) | **blocked** | No flow is installed while the owner’s legal hold remains. | 1. Ask trade counsel to confirm the fee model and remaining deadlines before requesting any build; see the [Venture Build Spec](SPEC.md). |
 
+## Apify Git URLs and prices
+
+These URLs use the requested `glacier-final` branch. A commit on the worker branch is not yet available there; the owner/integrator must integrate it first. Three existing Actors are already in the owner's account; three new packages are prepared for the same-day build/publication workflow after verification. Local tests do not prove cloud builds or paid demand.
+
+For each listed Actor: **Develop new → Connect Git → paste this exact URL → Build → set the listed price → Publish**. For an Actor already in the account, update its Git source/build instead of creating a duplicate listing. Review each package's README and output before publication.
+
+| Actor | Exact Git URL | Suggested pay-per-event price |
+| --- | --- | --- |
+| [Mississippi contractor licenses](apify-tools/README.md) | `https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/apify-tools` | $0.02 per completed readable lookup |
+| [Louisiana contractor licenses](apify-tools-louisiana/README.md) | `https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/apify-tools-louisiana` | $0.02 per completed readable lookup |
+| [Product Recall Checker](recall-actor/README.md) | `https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/recall-actor` | $0.01 per `recall-check` |
+| [Census Building Permits State Change Feed](apify-census-permits/README.md) | `https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/apify-census-permits` | $0.002 per `state-comparison` |
+| [FDIC BankFind Institution Normalizer](apify-fdic-bankfind/README.md) | `https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/apify-fdic-bankfind` | $0.002 per `bank-record` |
+| [NPI Registry Batch Lookup and Normalizer](apify-npi-batch/README.md) | `https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/apify-npi-batch` | $0.003 per `provider-record` |
+
+For the three new Actors, configure **only the named custom event**, with no automatic Actor-start or default-dataset-item charges, and set a maximum total run charge. Their no-match and uncertain rows are free; source-outage-only results never trigger a custom charge. Prices remain the owner's choice; the code and `pricing.json` files do not change Console pricing automatically. [Selection and competitor evidence](apify-portfolio/CHOICES.md), [verification and remaining limits](apify-portfolio/PROOF.md).
+
 ## Known limits and remaining test failures
 
 The per-venture test suites are fixture/software checks; they do not verify customer records, account permissions, government acceptance, signed filings, or public operation. Check each linked `PROOF.md` for the evidence and limits specific to that venture. The latest isolated run record in [OWNER-GUIDE-TESTS.md](OWNER-GUIDE-TESTS.md) lists the two remaining suite failures and their causes: filer browser checks cannot import the missing Playwright package, and a recall-checker assertion expects “no match in …” while the implementation follows its documented “no match found in …” contract. Both checks remain unchanged. An earlier combined pytest collection also encountered generic `src`/`scripts` import collisions; the installer discovery suite passes in the latest run.

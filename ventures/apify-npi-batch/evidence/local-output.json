@@ -1,0 +1,41 @@
+{
+  "started_at": "2026-10-11T03:03:38.624902+00:00",
+  "finished_at": "2026-10-11T03:03:41.606140+00:00",
+  "command": "/home/glacier/w/glacier-lean/.venv/bin/python -m src",
+  "cwd": "/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-npi-batch",
+  "mode": "real SDK main; isolated local storage; no cloud billing",
+  "input": {
+    "npis": [
+      "1881018208"
+    ]
+  },
+  "exit_code": 0,
+  "rows": [
+    {
+      "record_id": "1881018208",
+      "npi": "1881018208",
+      "outcome": "ok",
+      "billable": true,
+      "message": "Public NPPES registry record only; not license, exclusion or credential verification.",
+      "name": "MAYO CLINIC",
+      "enumeration_type": "NPI-2",
+      "registry_status": "A",
+      "source_updated_at": "2021-04-12",
+      "enumeration_date": "2014-02-05",
+      "taxonomy_code": "261QM1300X",
+      "taxonomy_description": "Clinic/Center, Multi-Specialty",
+      "address": "200 1ST ST SW",
+      "address_2": null,
+      "city": "ROCHESTER",
+      "state": "MN",
+      "postal_code": "559050001",
+      "country_code": "US",
+      "warnings": [],
+      "record_url": "https://npiregistry.cms.hhs.gov/provider-view/1881018208",
+      "source_url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&number=1881018208",
+      "retrieved_at": "2026-10-11T03:03:41.402163+00:00",
+      "source_last_modified": null,
+      "source_sha256": "7ad3d449131f7d8407348e11b2e4d901b7900acf411bd34b072514d6c03a15ac"
+    }
+  ]
+}

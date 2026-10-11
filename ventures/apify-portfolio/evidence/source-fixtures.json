@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-10",
+  "fixtures": {
+    "fdic-source.txt": "https://api.fdic.gov/banks/institutions?filters=CERT%3A3510&fields=CERT,NAME,ACTIVE,STALP,CITY,ZIP,DATEUPDT,WEBADDR&limit=1&format=json",
+    "npi-example.json": "https://npiregistry.cms.hhs.gov/api/?version=2.1&organization_name=Mayo%20Clinic&limit=1",
+    "npi-source.txt": "https://npiregistry.cms.hhs.gov/api/?version=2.1&number=1235218064",
+    "census-directory-source.txt": "https://www2.census.gov/econ/bps/State/",
+    "st2607c.txt": "https://www2.census.gov/econ/bps/State/st2607c.txt",
+    "st2608c.txt": "https://www2.census.gov/econ/bps/State/st2608c.txt"
+  },
+  "note": "Decoded response bodies captured during source reconnaissance; line endings and trailing whitespace normalized for git without changing fields or values. HTTP 200 for each. Per-main exact UTC times/URLs/hashes are in each Actor evidence/local-output.json; those hashes refer to responses before this whitespace normalization."
+}

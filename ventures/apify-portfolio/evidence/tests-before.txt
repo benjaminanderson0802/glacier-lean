@@ -1,0 +1,637 @@
+FFFFFFFFFFFFFFFFFFFFFF                                                   [100%]
+=================================== FAILURES ===================================
+_____________________ test_fdic_real_shape_and_provenance ______________________
+
+    def test_fdic_real_shape_and_provenance():
+>       rows = module('fdic-bankfind').collect({'certificate': '3510'}, Client(fixture('fdic-source.txt')))
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:42:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ventures/apify-portfolio/tests/test_portfolio.py:21: in module
+    spec.loader.exec_module(obj)
+<frozen importlib._bootstrap_external>:991: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1128: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x7cd17bbbd6a0>
+path = '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-fdic-bankfind/src/__init__.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-fdic-bankfind/src/__init__.py'
+
+<frozen importlib._bootstrap_external>:1186: FileNotFoundError
+__________________ test_fdic_pagination_cap_and_deduplication __________________
+
+    def test_fdic_pagination_cap_and_deduplication():
+        base = json.loads(fixture('fdic-source.txt'))
+        base['meta']['total'] = 3
+        second = copy.deepcopy(base)
+        second['data'][0]['data']['CERT'] = 999
+        c = Client(json.dumps(base), json.dumps(second))
+>       rows = module('fdic-bankfind').collect({'state': 'NC', 'max_records': 2, 'page_size': 1}, c)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:57:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'fdic-bankfind', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_fdic_bankfind.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+__________________ test_census_real_two_header_csv_and_delta ___________________
+
+    def test_census_real_two_header_csv_and_delta():
+        c = Client(fixture('st2608c.txt'), fixture('st2607c.txt'))
+>       row = module('census-permits').collect({'period': '2026-08', 'previous_period': '2026-07', 'states': ['01']}, c)[0]
+              ^^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:69:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ventures/apify-portfolio/tests/test_portfolio.py:21: in module
+    spec.loader.exec_module(obj)
+<frozen importlib._bootstrap_external>:991: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1128: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x7cd17bbf76e0>
+path = '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-census-permits/src/__init__.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-census-permits/src/__init__.py'
+
+<frozen importlib._bootstrap_external>:1186: FileNotFoundError
+_______________ test_census_missing_state_is_uncertain_not_zero ________________
+
+    def test_census_missing_state_is_uncertain_not_zero():
+        c = Client(fixture('st2608c.txt'), fixture('st2607c.txt'))
+>       rows = module('census-permits').collect({'period': '2026-08', 'previous_period': '2026-07', 'states': ['72']}, c)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:81:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'census-permits', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_census_permits.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+__________ test_npi_real_shape_deduplicates_and_only_practice_address __________
+
+    def test_npi_real_shape_deduplicates_and_only_practice_address():
+        c = Client(fixture('npi-example.json'))
+>       row = module('npi-batch').collect({'npis': ['1881018208', '1881018208']}, c)[0]
+              ^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:88:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+ventures/apify-portfolio/tests/test_portfolio.py:21: in module
+    spec.loader.exec_module(obj)
+<frozen importlib._bootstrap_external>:991: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1128: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x7cd17bc06090>
+path = '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-npi-batch/src/__init__.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-npi-batch/src/__init__.py'
+
+<frozen importlib._bootstrap_external>:1186: FileNotFoundError
+_____________________ test_npi_empty_and_api_error_differ ______________________
+
+    def test_npi_empty_and_api_error_differ():
+>       source = module('npi-batch')
+                 ^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:99:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'npi-batch', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_npi_batch.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+______ test_outages_never_bill[<html>outage</html>-fdic-bankfind-inputs0] ______
+
+name = 'fdic-bankfind', inputs = {'certificate': '3510'}
+response = '<html>outage</html>'
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'fdic-bankfind', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_fdic_bankfind.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+_____ test_outages_never_bill[<html>outage</html>-census-permits-inputs1] ______
+
+name = 'census-permits', inputs = {'period': '2026-08', 'states': ['01']}
+response = '<html>outage</html>'
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'census-permits', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_census_permits.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+________ test_outages_never_bill[<html>outage</html>-npi-batch-inputs2] ________
+
+name = 'npi-batch', inputs = {'npis': ['1881018208']}
+response = '<html>outage</html>'
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'npi-batch', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_npi_batch.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+______________ test_outages_never_bill[{}-fdic-bankfind-inputs0] _______________
+
+name = 'fdic-bankfind', inputs = {'certificate': '3510'}, response = '{}'
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'fdic-bankfind', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_fdic_bankfind.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+______________ test_outages_never_bill[{}-census-permits-inputs1] ______________
+
+name = 'census-permits', inputs = {'period': '2026-08', 'states': ['01']}
+response = '{}'
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'census-permits', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_census_permits.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+________________ test_outages_never_bill[{}-npi-batch-inputs2] _________________
+
+name = 'npi-batch', inputs = {'npis': ['1881018208']}, response = '{}'
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'npi-batch', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_npi_batch.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+___________ test_outages_never_bill[response2-fdic-bankfind-inputs0] ___________
+
+name = 'fdic-bankfind', inputs = {'certificate': '3510'}
+response = RuntimeError('timeout')
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'fdic-bankfind', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_fdic_bankfind.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+__________ test_outages_never_bill[response2-census-permits-inputs1] ___________
+
+name = 'census-permits', inputs = {'period': '2026-08', 'states': ['01']}
+response = RuntimeError('timeout')
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'census-permits', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_census_permits.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+_____________ test_outages_never_bill[response2-npi-batch-inputs2] _____________
+
+name = 'npi-batch', inputs = {'npis': ['1881018208']}
+response = RuntimeError('timeout')
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'certificate': '3510'}), ('census-permits', {'period': '2026-08', 'states': ['01']}), ('npi-batch', {'npis': ['1881018208']})])
+    @pytest.mark.parametrize('response', ['<html>outage</html>', '{}', RuntimeError('timeout')])
+    def test_outages_never_bill(name, inputs, response):
+>       rows = module(name).collect(inputs, Client(response))
+               ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:109:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'npi-batch', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_npi_batch.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+__________ test_invalid_input_precedes_network[fdic-bankfind-inputs0] __________
+
+name = 'fdic-bankfind', inputs = {'state': 'NC OR *'}
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'state': 'NC OR *'}), ('census-permits', {'period': '../../secret'}), ('npi-batch', {'npis': ['123']})])
+    def test_invalid_input_precedes_network(name, inputs):
+        c = Client()
+        with pytest.raises(ValueError):
+>           module(name).collect(inputs, c)
+            ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:117:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'fdic-bankfind', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_fdic_bankfind.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+_________ test_invalid_input_precedes_network[census-permits-inputs1] __________
+
+name = 'census-permits', inputs = {'period': '../../secret'}
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'state': 'NC OR *'}), ('census-permits', {'period': '../../secret'}), ('npi-batch', {'npis': ['123']})])
+    def test_invalid_input_precedes_network(name, inputs):
+        c = Client()
+        with pytest.raises(ValueError):
+>           module(name).collect(inputs, c)
+            ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:117:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'census-permits', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_census_permits.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+____________ test_invalid_input_precedes_network[npi-batch-inputs2] ____________
+
+name = 'npi-batch', inputs = {'npis': ['123']}
+
+    @pytest.mark.parametrize('name,inputs', [('fdic-bankfind', {'state': 'NC OR *'}), ('census-permits', {'period': '../../secret'}), ('npi-batch', {'npis': ['123']})])
+    def test_invalid_input_precedes_network(name, inputs):
+        c = Client()
+        with pytest.raises(ValueError):
+>           module(name).collect(inputs, c)
+            ^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:117:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'npi-batch', part = 'source'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_npi_batch.source'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+__________ test_billing_only_success_and_stops_at_cap[fdic-bankfind] ___________
+
+name = 'fdic-bankfind'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cd17bb0d3d0>
+
+    @pytest.mark.parametrize('name', ['fdic-bankfind', 'census-permits', 'npi-batch'])
+    def test_billing_only_success_and_stops_at_cap(name, monkeypatch):
+>       runner = module(name, 'runtime')
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:123:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'fdic-bankfind', part = 'runtime'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_fdic_bankfind.runtime'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+__________ test_billing_only_success_and_stops_at_cap[census-permits] __________
+
+name = 'census-permits'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cd17bc05a90>
+
+    @pytest.mark.parametrize('name', ['fdic-bankfind', 'census-permits', 'npi-batch'])
+    def test_billing_only_success_and_stops_at_cap(name, monkeypatch):
+>       runner = module(name, 'runtime')
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:123:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'census-permits', part = 'runtime'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_census_permits.runtime'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+____________ test_billing_only_success_and_stops_at_cap[npi-batch] _____________
+
+name = 'npi-batch'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cd17bc07470>
+
+    @pytest.mark.parametrize('name', ['fdic-bankfind', 'census-permits', 'npi-batch'])
+    def test_billing_only_success_and_stops_at_cap(name, monkeypatch):
+>       runner = module(name, 'runtime')
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:123:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'npi-batch', part = 'runtime'
+
+    def module(name, part='source'):
+        package = 'portfolio_' + name.replace('-', '_')
+        root = ROOT / ('apify-' + name) / 'src'
+        if package not in sys.modules:
+            spec = importlib.util.spec_from_file_location(package, root / '__init__.py', submodule_search_locations=[str(root)])
+            obj = importlib.util.module_from_spec(spec)
+            sys.modules[package] = obj
+            spec.loader.exec_module(obj)
+>       return __import__(package + '.' + part, fromlist=[part])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ModuleNotFoundError: No module named 'portfolio_npi_batch.runtime'
+
+ventures/apify-portfolio/tests/test_portfolio.py:22: ModuleNotFoundError
+________________ test_self_contained_packaging_and_shared_code _________________
+
+    def test_self_contained_packaging_and_shared_code():
+        common = []
+        for name in ['fdic-bankfind', 'census-permits', 'npi-batch']:
+            root = ROOT / ('apify-' + name)
+>           assert (root / 'requirements.txt').read_bytes() == (ROOT / 'apify-tools/requirements.txt').read_bytes()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/apify-portfolio/tests/test_portfolio.py:145:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/usr/lib/python3.12/pathlib.py:1021: in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = PosixPath('/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-fdic-bankfind/requirements.txt')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/glacier/w/workers/gf-A-APIFY3/ventures/apify-fdic-bankfind/requirements.txt'
+
+/usr/lib/python3.12/pathlib.py:1015: FileNotFoundError
+=========================== short test summary info ============================
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_fdic_real_shape_and_provenance
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_fdic_pagination_cap_and_deduplication
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_census_real_two_header_csv_and_delta
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_census_missing_state_is_uncertain_not_zero
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_npi_real_shape_deduplicates_and_only_practice_address
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_npi_empty_and_api_error_differ
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[<html>outage</html>-fdic-bankfind-inputs0]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[<html>outage</html>-census-permits-inputs1]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[<html>outage</html>-npi-batch-inputs2]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[{}-fdic-bankfind-inputs0]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[{}-census-permits-inputs1]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[{}-npi-batch-inputs2]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[response2-fdic-bankfind-inputs0]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[response2-census-permits-inputs1]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_outages_never_bill[response2-npi-batch-inputs2]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_invalid_input_precedes_network[fdic-bankfind-inputs0]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_invalid_input_precedes_network[census-permits-inputs1]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_invalid_input_precedes_network[npi-batch-inputs2]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_billing_only_success_and_stops_at_cap[fdic-bankfind]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_billing_only_success_and_stops_at_cap[census-permits]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_billing_only_success_and_stops_at_cap[npi-batch]
+FAILED ventures/apify-portfolio/tests/test_portfolio.py::test_self_contained_packaging_and_shared_code
+22 failed in 0.14s

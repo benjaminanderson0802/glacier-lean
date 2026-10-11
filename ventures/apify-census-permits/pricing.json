@@ -1,0 +1,6 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "event": "state-comparison",
+  "eventPriceUsd": 0.002,
+  "instructions": "Manual Console setup only. Configure this custom event ONLY; no Actor-start or automatic dataset-item events. No-match/uncertain rows are free. This file does not configure platform pricing."
+}
