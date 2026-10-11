@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 from urllib.parse import quote
 
@@ -107,7 +108,41 @@ class ShipStationClient(ReadOnlyClient):
         super().__init__(secret_name=secret_name, api_key=api_key, **kwargs)
 
     def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        return self._json(self._request("GET", SHIPSTATION_API_URL + path, headers={"API-Key": self._credential(), "Accept": "application/json"}, params=params))
+        response = self._request("GET", SHIPSTATION_API_URL + path, headers={"API-Key": self._credential(), "Accept": "application/json"}, params=params)
+        try:
+            payload = response.json()
+        except ValueError:
+            return self._json(response)
+        if isinstance(payload, dict):
+            details = json.dumps(payload, ensure_ascii=False).casefold()
+            if any(term in details for term in (
+                "permission", "plan required", "plan level", "api access denied", "access denied", "forbidden"
+            )):
+                raise ConnectorError(
+                    "This ShipStation account can't use the API (ShipStation requires the Gold plan or higher). "
+                    "Upload a ShipStation shipments export (CSV) instead."
+                )
+        return self._json(response)
+
+    def _raise_http_error(self, response: httpx.Response) -> None:
+        """Give an owner a usable export fallback when the account cannot call the API."""
+        if response.status_code in {401, 403}:
+            raise ConnectorError(
+                "This ShipStation account can't use the API (ShipStation requires the Gold plan or higher). "
+                "Upload a ShipStation shipments export (CSV) instead."
+            )
+        try:
+            body = response.text.lower()
+        except Exception:
+            body = ""
+        if any(term in body for term in (
+            "permission", "plan required", "plan level", "api access denied", "access denied", "forbidden"
+        )):
+            raise ConnectorError(
+                "This ShipStation account can't use the API (ShipStation requires the Gold plan or higher). "
+                "Upload a ShipStation shipments export (CSV) instead."
+            )
+        super()._raise_http_error(response)
 
     def test_connection(self) -> dict[str, Any]:
         response = self._get("/shipments", {"page": 1, "page_size": 1})

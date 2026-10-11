@@ -47,6 +47,54 @@ def test_shipstation_reads_all_pages_and_uses_api_key_header():
     client.close()
 
 
+@pytest.mark.parametrize("status,body", [
+    (401, {"message": "Unauthorized"}),
+    (403, {"message": "API access requires Gold plan"}),
+    (400, {"error": "permission denied for API access"}),
+    (200, {"errors": [{"message": "Permission required to access shipments"}]}),
+    (200, {"message": "API access denied by account permissions"}),
+])
+def test_shipstation_plan_or_permission_errors_have_plain_csv_fallback_message(status, body):
+    from ventures.blocks.connectors.common import ConnectorError
+
+    secret = "must-never-appear-in-error"
+    client = ShipStationClient(
+        api_key=secret,
+        transport=httpx.MockTransport(lambda _: httpx.Response(status, json=body)),
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(ConnectorError) as caught:
+        client.test_connection()
+
+    assert str(caught.value) == (
+        "This ShipStation account can't use the API (ShipStation requires the Gold plan or higher). "
+        "Upload a ShipStation shipments export (CSV) instead."
+    )
+    assert secret not in str(caught.value)
+    client.close()
+
+
+def test_shipstation_read_only_connection_check_prints_plan_error(monkeypatch, capsys):
+    from ventures.blocks.connectors import __main__ as connector_cli
+
+    message = (
+        "This ShipStation account can't use the API (ShipStation requires the Gold plan or higher). "
+        "Upload a ShipStation shipments export (CSV) instead."
+    )
+
+    class NoApiAccess:
+        def test_connection(self):
+            raise ConnectorError(message)
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(connector_cli, "ShipStationClient", NoApiAccess)
+    assert connector_cli.main(["shipstation"]) == 1
+    assert capsys.readouterr().err.strip() == message
+
+
 def test_shopify_reads_products_with_cursor_pagination():
     pages = [fixture_json("shopify", "products_page_1.json"), fixture_json("shopify", "products_page_2.json")]
     requests = []

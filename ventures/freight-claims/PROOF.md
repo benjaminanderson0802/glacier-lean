@@ -2,6 +2,38 @@
 
 Checkpoint: PH12.14. Test data in the real-runtime attempt was synthetic and local-only. No ShipStation account was connected, no carrier was contacted, and no claim, invoice, or payment was submitted.
 
+## ShipStation API plan handling and CSV intake (this card)
+
+The shared read-only connector now converts ShipStation HTTP 401/403 responses and plan/permission error bodies into this owner-facing message: “This ShipStation account can't use the API (ShipStation requires the Gold plan or higher). Upload a ShipStation shipments export (CSV) instead.” The connection-check CLI prints the same message; tests verify that a fake API key never appears in the error. No real ShipStation key or account was used.
+
+The local parser accepts Shipments and Orders CSV fixtures with common column-name variants, ignores extra/missing optional columns, maps available shipment/order/address/weight/item/status fields into shipment records, and reports skipped row numbers and reasons. When enabled API reads fail, the daily watch flow uses the newest `.csv` in `incoming/`; an explicit file can be selected with `claims.py watch --csv PATH`. A working API remains preferred. The fixtures contain invented data.
+
+Commands and results:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest -q ventures/freight-claims/tests/test_csv_intake.py ventures/blocks/connectors/tests/test_connectors.py
+# 23 passed
+
+~/w/glacier-lean/.venv/bin/python -m ventures.install_all --dry-run --only freight-claims
+# Seven flows validated
+
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/freight-claims ventures/blocks -q --ignore=ventures/blocks/filer/tests/test_filer_acceptance.py
+# 81 passed
+```
+
+The exact requested combined command was also run:
+
+```sh
+~/w/glacier-lean/.venv/bin/python -m pytest ventures/freight-claims ventures/blocks -q
+# 80 passed, 3 failed (at the time of this combined run)
+```
+
+After that combined run, one more connector fixture case was added for a permission message in an HTTP 200 response. The final focused run is 23 passed and the final run excluding the known filer blocker is 81 passed.
+
+All three failures are existing `ventures/blocks/filer/tests/test_filer_acceptance.py` cases. They stop before exercising the filer because Node cannot resolve its Playwright dependency (`MODULE_NOT_FOUND` from `ventures/blocks/filer/runner.mjs`). This is recorded in [the shared-block environment claim](../../vault/claims/2026-10-10-ph12-14-filer-playwright-missing.md); the filer lane and dependencies were not changed. Therefore the complete requested suite is not green yet.
+
+All results above are fixture/local-only proof. No live ShipStation account/API plan, real export, live shipment, claim, carrier contact, invoice, or payment was exercised. Live connection and live customer-data checks remain pending.
+
 ## Focused acceptance suite
 
 Command:

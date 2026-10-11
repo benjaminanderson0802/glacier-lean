@@ -133,13 +133,17 @@ class ReadOnlyClient:
                 if attempt + 1 < self._max_attempts:
                     self._sleep(_retry_delay(response, attempt))
                     continue
-            if response.status_code == 401:
-                raise UnauthorizedError("The platform rejected the saved credential (HTTP 401).")
             if response.is_error:
-                raise ConnectorError(f"The platform returned HTTP {response.status_code}.")
+                self._raise_http_error(response)
             return response
         status = last_response.status_code if last_response is not None else "unknown"
         raise ConnectorError(f"The platform remained unavailable after bounded retries (HTTP {status}).")
+
+    def _raise_http_error(self, response: httpx.Response) -> None:
+        """Raise a safe error for an HTTP failure without exposing response content."""
+        if response.status_code == 401:
+            raise UnauthorizedError("The platform rejected the saved credential (HTTP 401).")
+        raise ConnectorError(f"The platform returned HTTP {response.status_code}.")
 
     @staticmethod
     def _json(response: httpx.Response) -> Any:
