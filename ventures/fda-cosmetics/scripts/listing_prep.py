@@ -8,7 +8,7 @@ import re
 import sys
 import uuid
 import zipfile
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -33,9 +33,12 @@ def _s(value: Any) -> str:
     return str(value).strip() if value is not None else ""
 
 
-def _field(value: Any, *, uncertain: bool = False) -> dict[str, Any]:
-    return {"value": value, "page": None, "confidence": 1.0 if value not in (None, "", []) else 0.0,
-            "uncertain": uncertain or value in (None, "", [])}
+def _field(value: Any, *, source: str, uncertain: bool = False, confidence: float | None = None,
+           page: int | None = None) -> dict[str, Any]:
+    needs_confirmation = uncertain or value in (None, "", [])
+    return {"value": value, "source": source, "page": page,
+            "confidence": confidence if confidence is not None else (0.0 if value in (None, "", []) else (0.5 if needs_confirmation else 1.0)),
+            "uncertain": needs_confirmation}
 
 
 def _first(items: list[dict[str, Any]], path: str) -> ET.Element:
@@ -79,7 +82,7 @@ def _build_spl(payload: dict[str, Any], root_id: str, submitted_on: date) -> byt
                 characteristic = ET.SubElement(subject, f"{{{NS}}}characteristic", {"classCode": "OBS"})
                 ET.SubElement(characteristic, f"{{{NS}}}code", {"code": "SPLSMALLBUSINESS", "codeSystem": "2.16.840.1.113883.1.11.19255"})
                 ET.SubElement(characteristic, f"{{{NS}}}value", {f"{{{XSI}}}type": "BL", "value": "true"})
-        role = _s(payload.get("responsible_person_role", "manufacturer"))
+        role = _s(payload["responsible_person_role"])
         role_codes = {"manufacturer": ("C43360", "manufacture"), "packer": ("C84731", "pack"), "distributor": ("C201565", "distribute")}
         code, display = role_codes[role]
         performance = ET.SubElement(facility_entity, f"{{{NS}}}performance")
@@ -140,7 +143,7 @@ def _rules_fields(payload: dict[str, Any], *, unresolved: list[str]) -> dict[str
     facility_fei = payload.get("facility_fei") or []
     if not facility_fei and payload.get("facility_exempt") is True and payload.get("facility_exemption_confirmed") is True:
         facility_fei = ["brand-confirmed exempt facility"]
-    product_name = payload.get("product_name") or payload.get("shopify_title")
+    product_name = payload.get("product_name")
     values = {
         "responsible_person_name": payload.get("responsible_person_name"),
         "responsible_person_phone": payload.get("responsible_person_phone"),
@@ -151,11 +154,38 @@ def _rules_fields(payload: dict[str, Any], *, unresolved: list[str]) -> dict[str
         "ingredients": ingredients,
         "ingredient_products": {item: [product_name] for item in ingredients or []} if product_name else {},
     }
-    return {name: _field(value, uncertain=name in unresolved) for name, value in values.items()}
+    source_root = _s(payload.get("_source_root")) or "brand-details.json"
+    source_map = payload.get("_field_sources") or {}
+    fields = {
+        name: _field(value, source=source_map.get(name, f"{source_root}#/{name}"), uncertain=name in unresolved)
+        for name, value in values.items()
+    }
+    facilities = payload.get("facilities") or []
+    supplement = {
+        "responsible_person_role": payload.get("responsible_person_role"),
+        "facilities": facilities,
+        "first_market_date": payload.get("first_market_date"),
+        "last_listing_date": payload.get("last_listing_date"),
+        "exemption_checklist": payload.get("exemption_checklist"),
+        "customer_confirmed": payload.get("customer_confirmed"),
+        "shopify_title": payload.get("shopify_title"),
+    }
+    for name, value in supplement.items():
+        field_source = source_map.get(name, f"{source_root}#/{name}")
+        # Shopify's title is useful cross-reference data, but is not the label identity required by Form 5067.
+        field_uncertain = name == "shopify_title" or name in unresolved
+        if name == "customer_confirmed" and value is not True:
+            field_uncertain = True
+        if name in {"responsible_person_role", "first_market_date", "last_listing_date", "exemption_checklist"} and value in (None, "", {}):
+            field_uncertain = True
+        if name == "facilities" and not value:
+            field_uncertain = True
+        fields[name] = _field(value, source=field_source, uncertain=field_uncertain)
+    return fields
 
 
 def _validate_payload(payload: dict[str, Any], as_of: date, reader_uncertain: list[str]) -> dict[str, Any]:
-    product_name = _s(payload.get("product_name") or payload.get("shopify_title"))
+    product_name = _s(payload.get("product_name"))
     ingredients = payload.get("ingredients")
     unresolved = list(reader_uncertain)
     checklist = payload.get("exemption_checklist") or {}
@@ -164,13 +194,17 @@ def _validate_payload(payload: dict[str, Any], as_of: date, reader_uncertain: li
         unresolved.append("brand-confirmed exemption checklist")
     if payload.get("customer_confirmed") is not True:
         unresolved.append("customer checklist")
+        unresolved.extend(("responsible_person_name", "responsible_person_phone", "product_category_codes",
+                          "product_name", "fragrance_or_flavor", "facility_fei", "ingredients",
+                          "responsible_person_role", "facilities", "first_market_date", "last_listing_date",
+                          "exemption_checklist"))
     if not product_name or not ingredients or not payload.get("facilities"):
         unresolved.append("product, ingredients, or facilities")
     if any(not _s(value) for value in ingredients or []):
         unresolved.append("ingredients")
     if any(not (facility.get("fei") or (facility.get("name") and facility.get("exempt_confirmed") is True)) for facility in payload.get("facilities", [])):
         unresolved.append("facility identifier or customer-confirmed small business exemption")
-    role = payload.get("responsible_person_role", "manufacturer")
+    role = payload.get("responsible_person_role")
     if role not in {"manufacturer", "packer", "distributor"}:
         unresolved.append("responsible person business type")
     if any(not re.fullmatch(r"\d{7}|\d{10}", _s(facility.get("fei"))) for facility in payload.get("facilities", []) if facility.get("fei")):
@@ -184,6 +218,41 @@ def _validate_payload(payload: dict[str, Any], as_of: date, reader_uncertain: li
     if unresolved:
         rules["verdict"] = "uncertain" if not any(r["verdict"] == "fail" for r in rules["results"]) else "fail"
     return {"rules": rules, "fields": fields, "please_confirm": sorted(set(unresolved)), "product_name": product_name}
+
+
+def _ingredient_checklist(payload: dict[str, Any], reader_data: dict[str, Any] | None) -> list[dict[str, Any]]:
+    ingredient_field = (reader_data or {}).get("fields", {}).get("ingredients", {})
+    label_path = payload.get("ingredient_document")
+    reader_value = ingredient_field.get("value")
+    supplied = [_s(part) for part in payload.get("ingredients", [])]
+    extracted = [part.strip() for part in re.split(r"[,;\n]+", str(reader_value or "")) if part.strip()]
+    order_matches = bool(extracted) and [part.casefold() for part in extracted] == [part.casefold() for part in supplied]
+    brand_confirmed = payload.get("customer_confirmed") is True
+    label_source = str(label_path) if label_path else None
+    return [
+        {"field": "ingredient_order", "checked": order_matches, "uncertain": not (order_matches and brand_confirmed),
+         "source": label_source or "missing: brand label/source document", "detail": "Compare the ingredient sequence with the package label."},
+        {"field": "label_source", "checked": bool(label_source and ingredient_field and not ingredient_field.get("uncertain") and brand_confirmed),
+         "uncertain": not bool(label_source and ingredient_field and not ingredient_field.get("uncertain") and brand_confirmed),
+         "source": label_source or "missing: brand label/source document", "detail": "Confirm this is the current product label and the extracted text is readable."},
+        {"field": "brand_confirmation", "checked": brand_confirmed,
+         "uncertain": not brand_confirmed, "source": "brand-details.json#/customer_confirmed",
+         "detail": "The responsible person confirms every ingredient and its label order."},
+    ]
+
+
+def _reminder_dates(payload: dict[str, Any]) -> dict[str, str | None]:
+    first_market = _s(payload.get("first_market_date"))
+    last_listing = _s(payload.get("last_listing_date"))
+    try:
+        initial_due = (date.fromisoformat(first_market) + timedelta(days=120)).isoformat() if first_market else None
+    except ValueError:
+        initial_due = None
+    try:
+        annual_review = (date.fromisoformat(last_listing) + timedelta(days=365)).isoformat() if last_listing else None
+    except ValueError:
+        annual_review = None
+    return {"first_marketed": first_market or None, "initial_listing_due": initial_due, "annual_update_review": annual_review}
 
 
 def _write_packet(payload: dict[str, Any], output_dir: Path, as_of: date) -> tuple[str, str]:
@@ -201,6 +270,24 @@ def prepare_listing(payload: dict[str, Any], output_dir: str | Path, *, as_of: s
     today = date.fromisoformat(as_of) if isinstance(as_of, str) else as_of or date.today()
     reader_uncertain, reader_data = _reader_review(payload)
     review = _validate_payload(payload, today, reader_uncertain)
+    source_map = payload.get("_field_sources") or {}
+    if "ingredients" in review["fields"]:
+        reader_ingredient = (reader_data or {}).get("fields", {}).get("ingredients", {})
+        label_path = payload.get("ingredient_document")
+        review["fields"]["ingredients"]["source"] = source_map.get(
+            "ingredients", f"label:{label_path or 'missing source document'}"
+        )
+        review["fields"]["ingredients"]["page"] = reader_ingredient.get("page")
+        if reader_ingredient.get("confidence") is not None:
+            review["fields"]["ingredients"]["confidence"] = reader_ingredient["confidence"]
+        if reader_ingredient.get("uncertain"):
+            review["fields"]["ingredients"]["uncertain"] = True
+    for checklist_item in payload.get("exemption_checklist", {}) or {}:
+        review["fields"][f"exemption_{checklist_item}"] = _field(
+            payload["exemption_checklist"][checklist_item],
+            source=f"{payload.get('_source_root', 'brand-details.json')}#/exemption_checklist/{checklist_item}",
+            uncertain=not isinstance(payload["exemption_checklist"][checklist_item], bool) or payload.get("customer_confirmed") is not True,
+        )
     if review["please_confirm"] or review["rules"]["verdict"] != "pass":
         result = "uncertain — please check"
     elif not payload.get("exemption_checklist", {}).get("customer_wants_listing"):
@@ -225,6 +312,8 @@ def prepare_listing(payload: dict[str, Any], output_dir: str | Path, *, as_of: s
         "spl_xml": xml_name,
         "rules": review["rules"],
         "fields": review["fields"],
+        "ingredient_checklist": _ingredient_checklist(payload, reader_data),
+        "reminders": _reminder_dates(payload),
         "please_confirm": review["please_confirm"],
         "reader": reader_data,
         "sources": {"fda_form": FDA_FORM, "fda_spl_validation_guide": FDA_SPL_GUIDE},
@@ -277,7 +366,13 @@ def _prepare_from_shopify(shop: str, details_path: Path, output: Path, as_of: st
         if not extra:
             results.append({"shopify_id": product.get("id"), "shopify_title": product.get("title"), "result": "uncertain — please check", "please_confirm": ["product ingredients, label name, category codes, facilities, and customer checklist"]})
             continue
-        payload = {**details.get("brand", {}), **extra, "shopify_id": product.get("id"), "shopify_title": product.get("title")}
+        source_root = details_path.name
+        source_map = {key: f"{source_root}#/brand/{key}" for key in details.get("brand", {})}
+        source_map.update({key: f"{source_root}#/products/{product.get('id')}/{key}" for key in extra})
+        source_map["shopify_title"] = f"Shopify GraphQL products.edges[].node.title ({product.get('id')})"
+        source_map["ingredients"] = f"label:{extra.get('ingredient_document') or 'missing source document'}"
+        payload = {**details.get("brand", {}), **extra, "shopify_id": product.get("id"), "shopify_title": product.get("title"),
+                   "_source_root": source_root, "_field_sources": source_map}
         results.append(prepare_listing(payload, output / re.sub(r"[^a-zA-Z0-9-]+", "-", product.get("handle") or product.get("id", "product")), as_of=as_of))
     summary = {"shop": shop, "products_read": len(products), "products": results, "submitted": False, "ready": bool(results) and all(item.get("result") == "match" for item in results)}
     output.mkdir(parents=True, exist_ok=True)

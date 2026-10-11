@@ -1,0 +1,19 @@
+{
+  "data": {
+    "products": {
+      "edges": [
+        {
+          "node": {
+            "id": "gid://shopify/Product/123456789",
+            "title": "Daily Glow Lotion",
+            "handle": "daily-glow-lotion",
+            "vendor": "Example Beauty",
+            "productType": "Moisturizer"
+          },
+          "cursor": "cursor-product-1"
+        }
+      ],
+      "pageInfo": {"hasNextPage": false, "endCursor": "cursor-product-1"}
+    }
+  }
+}

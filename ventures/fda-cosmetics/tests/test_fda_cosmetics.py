@@ -20,6 +20,7 @@ def listing_payload(label_path: Path, **updates):
     payload = {
         "responsible_person_name": "Example Beauty LLC",
         "responsible_person_phone": "+1-555-0101",
+        "responsible_person_role": "manufacturer",
         "product_category_codes": ["06A2"],
         "product_name": "Daily Conditioner",
         "fragrance_or_flavor": ["fragrance"],
@@ -128,6 +129,86 @@ def test_shopify_connector_products_merge_with_brand_confirmed_details(tmp_path,
     assert result["submitted"] is False
 
 
+def test_shopify_graphql_fixture_produces_source_linked_uncertain_cosmetics_packet(tmp_path, monkeypatch):
+    """Acceptance: Shopify catalog data never substitutes for brand-confirmed FDA fields."""
+    from ventures.blocks.connectors import ShopifyClient
+
+    graphql_fixture = json.loads((Path(__file__).parents[1] / "fixtures" / "shopify-products.graphql.json").read_text(encoding="utf-8"))
+    monkeypatch.setattr(ShopifyClient, "__init__", lambda self, _shop: None)
+    monkeypatch.setattr(ShopifyClient, "graphql", lambda self, _query, _variables=None: graphql_fixture["data"])
+    monkeypatch.setattr(ShopifyClient, "close", lambda self: None)
+
+    client = ShopifyClient("fixture-store.myshopify.com")
+    products = client.get_products()
+    assert products[0]["id"] == "gid://shopify/Product/123456789"
+    assert products[0]["title"] == "Daily Glow Lotion"
+
+    label = tmp_path / "label.pdf"
+    label.write_bytes(b"synthetic fixture; reader is mocked below")
+    monkeypatch.setattr(listing_prep, "read_document", lambda *_args, **_kwargs: {
+        "fields": {"ingredients": {"value": "Water, Glycerin", "page": 1, "confidence": 0.99, "uncertain": False}},
+        "text": "Ingredients: Water, Glycerin",
+    })
+    details = tmp_path / "brand-details.json"
+    details.write_text(json.dumps({
+        "brand": {"responsible_person_name": "Example Beauty LLC", "responsible_person_phone": "+1-555-0101", "customer_confirmed": True},
+        "products": {products[0]["id"]: {
+            "product_name": "Daily Glow Lotion", "product_category_codes": ["06A2"],
+            "ingredients": ["Water", "Glycerin"], "ingredient_document": str(label),
+            "first_market_date": "2026-10-01", "last_listing_date": "2026-10-01",
+        }},
+    }), encoding="utf-8")
+    result = listing_prep._prepare_from_shopify(
+        "fixture-store.myshopify.com", details, tmp_path / "out", "2026-10-10"
+    )
+
+    packet = result["products"][0]
+    assert packet["result"] == "uncertain — please check"
+    assert packet["spl_zip"] is None
+    assert packet["submitted"] is False
+    assert packet["fields"]["product_name"]["source"].startswith("brand-details.json#")
+    assert packet["fields"]["product_name"]["uncertain"] is False
+    assert packet["fields"]["ingredients"]["source"].startswith("label:")
+    assert packet["fields"]["facility_fei"]["uncertain"] is True
+    assert packet["fields"]["facility_fei"]["value"] == []
+    assert all(field.get("source") and isinstance(field.get("uncertain"), bool) for field in packet["fields"].values())
+    assert {item["field"] for item in packet["ingredient_checklist"]} >= {"ingredient_order", "label_source", "brand_confirmation"}
+    assert packet["reminders"] == {"first_marketed": "2026-10-01", "initial_listing_due": "2027-01-29", "annual_update_review": "2027-10-01"}
+
+    details_without_label_name = json.loads(details.read_text(encoding="utf-8"))
+    details_without_label_name["products"][products[0]["id"]].pop("product_name")
+    details.write_text(json.dumps(details_without_label_name), encoding="utf-8")
+    uncertain = listing_prep._prepare_from_shopify(
+        "fixture-store.myshopify.com", details, tmp_path / "out-no-label-name", "2026-10-10"
+    )["products"][0]
+    assert uncertain["fields"]["product_name"]["value"] is None
+    assert uncertain["fields"]["product_name"]["uncertain"] is True
+    assert uncertain["fields"]["shopify_title"]["uncertain"] is True
+
+
+def test_shopify_owner_check_is_read_only(monkeypatch, capsys):
+    """Owner connection check may inspect the store but cannot mutate it."""
+    from ventures.blocks.connectors import ShopifyClient
+    owner_check_path = Path(__file__).parents[1] / "scripts" / "shopify_owner_check.py"
+    owner_check_spec = importlib.util.spec_from_file_location("fda_shopify_owner_check", owner_check_path)
+    shopify_owner_check = importlib.util.module_from_spec(owner_check_spec)
+    assert owner_check_spec and owner_check_spec.loader
+    owner_check_spec.loader.exec_module(shopify_owner_check)
+
+    calls = []
+    monkeypatch.setattr(ShopifyClient, "__init__", lambda self, _shop: None)
+    monkeypatch.setattr(ShopifyClient, "test_connection", lambda self: calls.append("connection") or {"connected": True, "shop": "fixture-store.myshopify.com"})
+    monkeypatch.setattr(ShopifyClient, "get_products", lambda self: calls.append("read_products") or [{"id": "gid://shopify/Product/1", "title": "Test"}])
+    monkeypatch.setattr(ShopifyClient, "close", lambda self: None)
+
+    assert shopify_owner_check.main(["fixture-store.myshopify.com"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["connected"] is True
+    assert report["products_read"] == 1
+    assert report["read_only"] is True
+    assert calls == ["connection", "read_products"]
+
+
 def test_missing_shopify_connection_is_a_setup_step_not_a_failed_command(tmp_path, monkeypatch, capsys):
     from ventures.blocks.connectors import ConnectorError, ShopifyClient
 
@@ -188,3 +269,10 @@ def test_manifest_and_flow_keep_fda_submission_as_customer_step():
     assert approvals[0]["config"]["prompt"].startswith("Your step:")
     assert "FDA" in approvals[0]["config"]["prompt"]
     assert all(node["type"] != "command" or "submit" not in node["config"]["cmd"].lower() for node in flow["nodes"])
+
+
+def test_owner_steps_are_limited_to_connection_and_review_submission():
+    root = Path(__file__).parents[1]
+    manifest = json.loads((root / "venture.json").read_text(encoding="utf-8"))
+    assert [step["id"] for step in manifest["your_steps"]] == ["connect-shopify", "submit-listing"]
+    assert "reminder" in manifest["your_steps"][1]["detail"].lower()
