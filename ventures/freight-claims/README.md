@@ -14,7 +14,9 @@ Carrier-specific packet guidance now covers UPS, FedEx, USPS, and LTL/Carmack re
 
 ## Owner step
 
-Before routine use, the owner creates or publishes the ShipStation app listing if needed, connects a read-only ShipStation account or provides an export, and approves the first ten packets against their sources and terms. For each claim, the shipper confirms the details, signs any owner-approved authorization, files with the carrier, records the receipt and responses, and decides any full-release settlement; the owner approves any invoice draft before it is sent. Glacier does not sign, file, contact carriers, send invoices, or charge payments.
+The ShipStation channel is not a confirmed public app listing. ShipStation's official route is an integration-partner inquiry; eligibility, listing review, and commercial terms are not published. The prepared copy and exact inquiry steps are in [OWNER-STEPS.md](OWNER-STEPS.md) and [the partner package](listing/SHIPSTATION-PARTNER-PACKAGE.md). Submit the inquiry only if the written terms and any fees are acceptable. A paid integration partnership is not approved by this preparation.
+
+In the same setup sitting, connect ShipStation read-only only if the current plan and quota fit without extra spending, or put its Shipments/Orders CSV export in the local incoming folder; then review the first ten distinct packets against their sources, customer confirmations, exact carrier terms, and insurance status. For each actual claim, the shipper confirms, signs and files with the carrier, then records its receipt and responses and decides settlements. The owner reviews any invoice draft before sending. Glacier does not sign, file, contact carriers, send invoices, or charge payments.
 
 ## Run locally
 
