@@ -1,0 +1,18 @@
+{
+  "id": "fba-fee-check-csv-pilot",
+  "name": "Your step: Send one FBA fee pilot pitch",
+  "description": "One manually sent business pitch. Glacier does not browse for prospects or send email.",
+  "goal": "Let Benjamin manually test the $49 CSV fee variance pilot with one qualified business prospect.",
+  "nodes": [
+    {
+      "id": "send_pitch",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: choose one prospect in ventures/fba-fee-check/prospects.csv, confirm that it is a business you may contact and that current FBA use is qualified, then manually send the pitch from PILOT.md. Fill in your true reply-to email and business mailing address and include the opt-out sentence. Do not use an automated sender, scrape a site, or ask for Amazon credentials or reports by email. Glacier does not send anything. Record that the manual pitch was sent or dismiss this step."
+      },
+      "position": {"x": 0, "y": 0}
+    }
+  ],
+  "edges": [],
+  "max_steps": 1
+}

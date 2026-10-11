@@ -1,0 +1,31 @@
+{
+  "slug": "fba-fee-check",
+  "name": "amazon fba fee variance digest",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Compare FBA per-unit fulfillment-fee lines in a seller's own Amazon Settlement Report V2 with a seller-supplied expectation by SKU and size tier; estimate variance and margin effect for manual review.",
+    "inputs": ["seller-downloaded Settlement Report V2 TSV", "seller-provided SKU, size-tier, expected-fee, and unit-cost CSV"],
+    "outputs": ["local CSV digest with source row, expected and actual fee, estimated variance, and margin estimate"],
+    "data_access": "Local CSV files only. No SP-API, Amazon login, scraping, or outbound customer-data transfer.",
+    "pricing_hypothesis": "$49 one-time paid pilot for one report and fee schedule; unvalidated hypothesis.",
+    "limitations": ["USD only", "expected fee schedule is supplied by the seller", "estimates are not guarantees or refund claims", "margin omits other costs and fees"]
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": ["fba-fee-check-csv-pilot"],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "send-pilot-pitch",
+      "title": "Send the pilot pitch to one business",
+      "when": "When ready to test buyer interest",
+      "detail": "Choose one business lead, personalize and manually send the email in PILOT.md from Anderson Education LLC. Complete the sender signature, business mailing address, and opt-out line before sending. Do not attach reports or request a seller login; ask the prospect to send only their own downloaded CSVs if they accept the pilot."
+    }
+  ],
+  "launch_gates": [
+    "Never request Amazon credentials or access another seller's account; the pilot uses the seller's own downloaded reports and fee schedule.",
+    "Do not promise fee refunds, fee errors, or guaranteed savings; the seller manually verifies each flagged row.",
+    "Manually send business outreach only; honor any opt-out and do not automate prospect browsing or email."
+  ]
+}
