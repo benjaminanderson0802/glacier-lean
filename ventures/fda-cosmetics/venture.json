@@ -44,7 +44,7 @@
       "id": "connect-shopify",
       "title": "Connect Shopify and provide product details",
       "when": "Before the first packet",
-      "detail": "Create a Shopify app with read_products access. Paste the four Shopify values into the labeled fields on this step; Glacier saves them in this computer's keychain. Provide source labels, brand-confirmed product details, facility information, first-marketed and last-listing dates, and the exemption checklist for each product. Records stay marked uncertain until you confirm them.",
+      "detail": "Create a Shopify app with read_products access. Paste the four Shopify values into the labeled fields on this step; Glacier saves them in this computer's keychain. Provide source labels, brand-confirmed product details, facility information, first-marketed and last-listing dates, and the exemption checklist for each product. Records stay marked uncertain until you confirm them. If you choose public Shopify App Store distribution, you complete the Partner/App Store review yourself; Glacier does not publish the app.",
       "links": [
         "https://shopify.dev/docs/apps",
         "https://shopify.dev/docs/apps/build"
