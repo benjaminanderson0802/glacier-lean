@@ -1,0 +1,1 @@
+No backend output was captured before teardown. The proof runner made one API request immediately after launching Uvicorn, received Connection refused, then terminated the child in cleanup without polling for readiness or capturing its exit status. Startup success or failure is therefore unknown.

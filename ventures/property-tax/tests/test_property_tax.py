@@ -82,7 +82,7 @@ def test_uncertain_reader_result_never_becomes_a_match(tmp_path, monkeypatch):
 
 
 def test_missing_roll_parcel_reports_no_match_and_does_not_prepare_packet(tmp_path):
-    result = property_tax.find_roll_parcel("999", [])
+    result = property_tax.find_roll_parcel("999", [], on_date=date(2026, 10, 10))
     assert result["result"] == "no match found in Cook County Assessor parcel roll as of 2026-10-10"
     assert result["parcel"] is None
 
@@ -131,13 +131,18 @@ def test_manifest_and_flows_gate_outbound_actions_and_keep_owner_steps_bounded()
     base = ROOT / "ventures" / "property-tax"
     manifest = json.loads((base / "venture.json").read_text())
     assert manifest["slug"] == "property-tax"
-    assert len(manifest["your_steps"]) <= 3
+    assert len(manifest["your_steps"]) == 1
     assert manifest["your_steps"][0]["id"] == "confirm-first-counties"
-    assert "keep launch disabled" in manifest["your_steps"][0]["detail"].lower()
-    assert any("keep launch disabled" in gate.lower() for gate in manifest["launch_gates"])
-    assert "Future Texas expansion" in manifest["your_steps"][1]["title"]
-    assert "$GLACIER_HOME/ventures/property-tax/postcards" in manifest["your_steps"][2]["detail"]
-    assert manifest["your_steps"][2]["links"] == ["https://www.cookcountyassessor.com/appeals"]
+    assert manifest["your_steps"][0]["links"] == [
+        "https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor",
+        "https://www.cookcountyboardofreview.com/board-review-official-rules",
+    ]
+    assert manifest["launch_gates"] == [
+        "Confirm the Cook County individual-homeowner self-file scope once before the first case.",
+        "For each case, the homeowner reviews the packet, resolves uncertainty, signs, and files personally; Glacier never files.",
+        "Paid checkout stays disabled until the owner confirms packet pricing; it is not required for local packet preparation.",
+        "Live mailing stays disabled; postcard flow renders local proofs only.",
+    ]
     for flow_name in manifest["flows"]:
         flow = json.loads((base / "flows" / f"{flow_name}.json").read_text())
         assert flow["nodes"] and flow["edges"]
@@ -146,3 +151,13 @@ def test_manifest_and_flows_gate_outbound_actions_and_keep_owner_steps_bounded()
             target = next(node for node in flow["nodes"] if node["id"] == edge["target"])
             if target["type"] == "command" and any(word in target["config"]["cmd"].lower() for word in ("send", "submit", "checkout", "postcard")):
                 assert source["type"] == "approval"
+
+
+def test_packet_input_approval_routes_to_preparation_on_yes():
+    flow_path = ROOT / "ventures" / "property-tax" / "flows" / "property-tax-prepare-packet.json"
+    flow = json.loads(flow_path.read_text())
+    edge = next(
+        edge for edge in flow["edges"]
+        if edge["source"] == "owner_input_ready" and edge["target"] == "prepare_packet"
+    )
+    assert edge["label"] == "yes"
