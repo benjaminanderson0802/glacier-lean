@@ -14,6 +14,6 @@ Both suite failures are the new independent test `test_uncertain_or_unverifiable
 - The suite live canaries rechecked the three stored known records for each state, with matching names/statuses/expirations and UTC check timestamps; the Louisiana test also verifies direct official detail URLs. Mississippi's live-name lookup and both boards' rate-limit, no-match, and outage cases passed.
 - Existing stale-canary tests passed: a changed/unverifiable canary sets maintenance state without an automatic repair attempt.
 - New checks confirmed each Actor dataset schema declares its overview output columns.
-- The Louisiana actor local output fixture contains the expected source URL, board status, expiration, verification state, and UTC timestamp. The existing proof records the local SDK run for Mississippi. These local SDK results are not paid or published runs.
+- Fresh local Apify SDK entrypoint runs completed with exit code 0 for both packages using temporary local storage, `APIFY_IS_AT_HOME` unset, and `ACTOR_TEST_PAY_PER_EVENT` unset. Mississippi emitted a verified match for `22649`; Louisiana emitted a verified match for `CL.68755`. Output rows are saved in `mississippi-local-sdk-output.json` and `louisiana-local-sdk-output.json`.
 
 No NORTHSTAR checkpoint status was changed: PH12.10 remains in progress, and a billing-boundary claim is open.
