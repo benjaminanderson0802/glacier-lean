@@ -83,6 +83,111 @@ class JobberClient(ReadOnlyClient):
             raise ConnectorError("Jobber did not return the connected account.")
         return {"connected": True, "account": account.get("name", "(name unavailable)")}
 
+    @staticmethod
+    def _normalize_jobs(response: dict[str, Any]) -> list[dict[str, Any]]:
+        """Flatten Jobber GraphQL job nodes into records usable by warranty intake."""
+        if not isinstance(response, dict):
+            return []
+        data = response.get("data")
+        if not isinstance(data, dict):
+            data = response
+        connection = data.get("jobs") or {}
+        if not isinstance(connection, dict):
+            return []
+
+        nodes = connection.get("nodes")
+        if nodes is None:
+            nodes = [edge.get("node") for edge in connection.get("edges") or [] if isinstance(edge, dict)]
+        if not isinstance(nodes, list):
+            return []
+
+        def collection(value: Any) -> list[dict[str, Any]]:
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+            if isinstance(value, dict):
+                edges = value.get("edges")
+                if isinstance(edges, list):
+                    return [edge["node"] for edge in edges if isinstance(edge, dict) and isinstance(edge.get("node"), dict)]
+                node_list = value.get("nodes")
+                if isinstance(node_list, list):
+                    return [item for item in node_list if isinstance(item, dict)]
+            return []
+
+        def custom_field_value(fields: dict[str, str], *labels: str) -> str:
+            wanted = {"".join(ch for ch in label.casefold() if ch.isalnum()) for label in labels}
+            return next((value for label, value in fields.items() if label in wanted), "")
+
+        jobs: list[dict[str, Any]] = []
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            raw_fields = collection(node.get("customFields"))
+            fields: dict[str, str] = {}
+            for item in raw_fields:
+                label = str(item.get("label") or item.get("name") or "").strip()
+                value = item.get("valueText", item.get("value"))
+                if label and value is not None:
+                    fields["".join(ch for ch in label.casefold() if ch.isalnum())] = str(value).strip()
+
+            raw_client = node.get("client") if isinstance(node.get("client"), dict) else {}
+            first_name = str(raw_client.get("firstName") or "").strip()
+            last_name = str(raw_client.get("lastName") or "").strip()
+            client_name = str(raw_client.get("name") or " ".join(part for part in (first_name, last_name) if part)).strip()
+            email = str(raw_client.get("email") or "").strip()
+            if not email:
+                emails = collection(raw_client.get("emails"))
+                if emails:
+                    email = str(emails[0].get("address") or "").strip()
+            client = {**raw_client, "name": client_name, "email": email}
+
+            raw_property = node.get("property") if isinstance(node.get("property"), dict) else {}
+            address = raw_property.get("address") if isinstance(raw_property.get("address"), dict) else {}
+            address_parts = [address.get(key) for key in ("city", "province", "state", "postalCode", "country")]
+            property_address = ", ".join(str(part).strip() for part in address_parts if part)
+
+            custom_fields = [
+                {**item, "valueText": str(item.get("valueText", item.get("value", "")) or "").strip()}
+                for item in raw_fields
+            ]
+            status = str(node.get("jobStatus") or "").strip()
+            completed_at = node.get("completedAt")
+            brand = custom_field_value(fields, "Equipment Brand", "Brand", "Manufacturer")
+            model = custom_field_value(fields, "Equipment Model", "Model")
+            serial = custom_field_value(fields, "Equipment Serial", "Serial", "Serial Number")
+            installed_on = custom_field_value(fields, "Install Date", "Installation Date", "Installed On")
+            province = str(address.get("province") or address.get("state") or "").strip()
+            job_id = str(node.get("id") or "")
+            jobs.append({
+                # Keep the source aliases used by existing Jobber consumers while exposing
+                # the flat warranty intake fields directly for prepare_batch.
+                **node,
+                "id": job_id,
+                "job_id": job_id,
+                "jobStatus": status,
+                "completedAt": completed_at,
+                "completed_at": completed_at,
+                "completed": bool(completed_at) or status.upper() in {"COMPLETED", "COMPLETE"},
+                "customFields": custom_fields,
+                "client": client,
+                "property": {**raw_property, "address": address},
+                "property_address": property_address,
+                "property_city": str(address.get("city") or ""),
+                "property_province": province,
+                "property_postal_code": str(address.get("postalCode") or ""),
+                "property_country": str(address.get("country") or ""),
+                "brand": brand,
+                "model_reading": model,
+                "model_confirmation": "",
+                "serial_reading": serial,
+                "serial_confirmation": "",
+                "serial_format_validated": False,
+                "installed_on": installed_on,
+                "region": custom_field_value(fields, "Region", "State", "Province") or province,
+                "homeowner_name": client_name,
+                "homeowner_email": email,
+            })
+        return jobs
+
     def get_jobs(self, *, page_size: int = 50, max_pages: int = 100) -> list[dict[str, Any]]:
         page_size = min(100, max(1, page_size))
         rows: list[dict[str, Any]] = []
@@ -103,8 +208,9 @@ class JobberClient(ReadOnlyClient):
         }"""
         for _ in range(max_pages):
             data = self.graphql(query, {"first": page_size, "after": cursor})
-            connection = data.get("jobs") or {}
-            rows.extend(connection.get("nodes") or [])
+            payload = data.get("data") if isinstance(data.get("data"), dict) else data
+            connection = payload.get("jobs") or {}
+            rows.extend(self._normalize_jobs(data))
             page = connection.get("pageInfo") or {}
             if not page.get("hasNextPage"):
                 return rows
