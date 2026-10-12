@@ -1,0 +1,133 @@
+{
+  "uuid": "13276873-a542-4fb4-bacd-665789e253fb",
+  "name": "Arena Club x ClipFarm",
+  "brand": "Arena Club",
+  "cpm_usd": 2,
+  "budget_left_usd": 4600,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": null,
+  "max_len_s": null,
+  "required_tags": [],
+  "banned": [
+    "gambling/probability/odds/chances framing",
+    "competitor mentions",
+    "money/profit/guaranteed pulls/misleading packs",
+    "player/team trash talk",
+    "outside/broadcast footage",
+    "lazy/raw/reposted edits",
+    "spam/story boosting/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Confirm YouTube CPM ($1 in brief versus $2 page snapshot) and that 50K IG follower gate is IG-only.",
+    "Share audience demographics proving 40% US."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://drive.google.com/drive/folders/1DhJJXnKeLXgW6VB2kU2b269cP7_kirdb?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 5,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:48Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 5,
+        "files": 0,
+        "names": [
+          "_06 and Socials",
+          "_15",
+          "_30",
+          "_90 ",
+          "BTS"
+        ]
+      },
+      "response_sha256": "e9f8918400c618164409d39449723e2906d8d20a25ff98f435ef42a92e496701",
+      "recursive_inventory": {
+        "files_observed": 18,
+        "video_files_observed": 18,
+        "known_file_bytes": 1375838982,
+        "known_video_bytes": 1375838982,
+        "folders_probed": 6,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/1DhJJXnKeLXgW6VB2kU2b269cP7_kirdb?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:48Z",
+            "sha256": "e9f8918400c618164409d39449723e2906d8d20a25ff98f435ef42a92e496701",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1hWSHuZm-41Slbp1OM2XtOkH_L998rxR0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:55Z",
+            "sha256": "25a7d8eb45233eba6cd36bb32a228514a71124af1058a538b73e0877d51b4d20",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/10n_WA8SAftqbg5gCWFlB4F38WJnUW5qo",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:55Z",
+            "sha256": "77b616bac1775fdffbff82dd1a7941aebb75a7cae96100e1c4d28a943e4020bd",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1F_VwmVgzLMjReL9dZP3ex4h5xnBnELPg",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:55Z",
+            "sha256": "dafce337c809e66a6fff8e3a3bf22e638113b4da4fe87cf3c6bcb9ee29b4d8ac",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1BMmnV_-Qg5d6leYna13zhA3hlwXxH-dp",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:55Z",
+            "sha256": "ae85bf82f6c46ad36cbdcbe0021c56f82edeb23f454c3062c46b3f8d51dc8dd2",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Oqf9aQ6QjU8jTKpj80NVqbFskq_ekV6R",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:55Z",
+            "sha256": "5cc2e9343e91334aedf00722605a5202546910663e33a2b28e2aa123bcc27bb1",
+            "direct_items": 7
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1kb22wyQDjefC2tWxyC2vy7rILk-1x7QlCoecXPBjZLY/export?format=txt",
+      "checked_at": "2026-10-12T02:23:41Z",
+      "http_status": 200,
+      "sha256": "a4d9f0c4d185d2a838b80c73754cacb58cd149df4c3217fb485692e0cc97cd20",
+      "html_links_export": "https://docs.google.com/document/d/1kb22wyQDjefC2tWxyC2vy7rILk-1x7QlCoecXPBjZLY/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "caption_alternatives": [
+    "Arena Club",
+    "@ArenaClubOfficial",
+    "CLIP (20% off first purchase)"
+  ],
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}

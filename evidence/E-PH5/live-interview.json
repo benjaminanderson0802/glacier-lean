@@ -1,0 +1,9 @@
+{
+  "http_status": 200,
+  "response": {
+    "conversation_id": "da8e6c25-0688-4685-9fc7-aa547a2f487f",
+    "reply": "The deliverable and exact byte-level success check are clear, as are the offline constraints, task roles, approval gate, and limits. Should the evaluator run only after the builder\u2019s write has received your approval?",
+    "readiness": 95,
+    "conversation_path": "conversations/da8e6c25-0688-4685-9fc7-aa547a2f487f.md"
+  }
+}

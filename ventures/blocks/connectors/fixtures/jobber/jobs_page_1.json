@@ -1,0 +1,1 @@
+{"data":{"jobs":{"nodes":[{"id":"job-1","jobNumber":101,"title":"Heat pump installation"}],"pageInfo":{"hasNextPage":true,"endCursor":"cursor-1"}}},"extensions":{"cost":{"requestedQueryCost":10,"actualQueryCost":4,"throttleStatus":{"maximumAvailable":10000,"currentlyAvailable":9996,"restoreRate":500}}}}

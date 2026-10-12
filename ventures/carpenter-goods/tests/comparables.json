@@ -1,0 +1,5 @@
+[
+  {"source_url": "https://example.test/sales/1", "category": "coffee table", "completed": true, "sold_price": 400.0, "sold_date": "2026-09-01"},
+  {"source_url": "https://example.test/sales/2", "category": "coffee table", "completed": true, "sold_price": 425.0, "sold_date": "2026-09-15"},
+  {"source_url": "https://example.test/sales/3", "category": "coffee table", "completed": true, "sold_price": 450.0, "sold_date": "2026-10-01"}
+]

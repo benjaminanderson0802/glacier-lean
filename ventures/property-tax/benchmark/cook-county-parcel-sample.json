@@ -1,0 +1,476 @@
+{
+  "checkpoint": "PH12.17",
+  "source": "Cook County Assessor Parcel Universe, Socrata dataset nj4t-kc8j",
+  "source_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json",
+  "query_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json?%24select=pin,year,class,township_code,township_name,zip_code,:updated_at&%24where=year='2026'&%24order=pin&%24limit=50",
+  "fetched_at_utc": "2026-10-11T02:46:39+00:00",
+  "tax_year": "2026",
+  "requested_rows": 50,
+  "rows_received": 50,
+  "fields": [
+    "pin",
+    "year",
+    "class",
+    "township_code",
+    "township_name",
+    "zip_code",
+    ":updated_at"
+  ],
+  "limitations": [
+    "Official parcel metadata sample only; not a full county roll.",
+    "The feed does not include owner mailing addresses, assessed values, or comparable-sale prices.",
+    "PIN/township/ZIP values are public parcel metadata and do not establish ownership or overassessment."
+  ],
+  "records": [
+    {
+      "pin": "01011000020000",
+      "year": "2026.0",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000030000",
+      "year": "2026.0",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000040000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000050000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000060000",
+      "year": "2026.0",
+      "class": "212",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000080000",
+      "year": "2026.0",
+      "class": "EX",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000090000",
+      "year": "2026.0",
+      "class": "212",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000120000",
+      "year": "2026.0",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000170000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000180000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000190000",
+      "year": "2026.0",
+      "class": "202",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000200000",
+      "year": "2026.0",
+      "class": "211",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000230000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000240000",
+      "year": "2026.0",
+      "class": "EX",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000250000",
+      "year": "2026.0",
+      "class": "203",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000410000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000420000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000430000",
+      "year": "2026.0",
+      "class": "203",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000440000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000450000",
+      "year": "2026.0",
+      "class": "203",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000460000",
+      "year": "2026.0",
+      "class": "204",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000470000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000520000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000530000",
+      "year": "2026.0",
+      "class": "204",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000550000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000560000",
+      "year": "2026.0",
+      "class": "204",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000570000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000580000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000590000",
+      "year": "2026.0",
+      "class": "201",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000600000",
+      "year": "2026.0",
+      "class": "204",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000630000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000690000",
+      "year": "2026.0",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000700000",
+      "year": "2026.0",
+      "class": "203",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000710000",
+      "year": "2026.0",
+      "class": "278",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000720000",
+      "year": "2026.0",
+      "class": "211",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000730000",
+      "year": "2026.0",
+      "class": "EX",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000750000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000760000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000790000",
+      "year": "2026.0",
+      "class": "592",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000800000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000840000",
+      "year": "2026.0",
+      "class": "517",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000890000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000900000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000920000",
+      "year": "2026.0",
+      "class": "212",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000970000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011000990000",
+      "year": "2026.0",
+      "class": "204",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011001010000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011001020000",
+      "year": "2026.0",
+      "class": "211",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011001030000",
+      "year": "2026.0",
+      "class": "206",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    },
+    {
+      "pin": "01011001060000",
+      "year": "2026.0",
+      "class": "205",
+      "township_code": "10",
+      "township_name": "Barrington",
+      "zip_code": "60010",
+      ":updated_at": "2026-10-01T14:09:41.080Z"
+    }
+  ]
+}

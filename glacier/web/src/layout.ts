@@ -21,4 +21,7 @@ export function useLayout(): Layout {
 }
 
 /** Step types shown in Simple: the everyday ones. */
-export const SIMPLE_STEP_TYPES = new Set(['schedule', 'command', 'local_ai', 'note', 'approval', 'check', 'read_document', 'fetch_page', 'web_search', 'http_request'])
+export const SIMPLE_STEP_TYPES = new Set([
+  'schedule', 'command', 'local_ai', 'note', 'approval', 'check', 'read_document', 'fetch_page',
+  'web_search', 'http_request', 'data_table', 'json_transform', 'csv_file', 'delay', 'structured_ai', 'email_send', 'email_read', 'email_trigger', 'for_each',
+])

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Co-op claim details or postcard proof intake",
+  "oneOf": [
+    {
+      "type": "object",
+        "required": ["claim_id", "dealer_label", "fields", "rules"],
+      "properties": {
+        "claim_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,100}$"},
+        "dealer_label": {"type": "string", "minLength": 1},
+        "fields": {"type": "object"},
+        "evidence_documents": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "rules": {"type": "object", "required": ["program_year", "expires_on", "required_evidence"]},
+        "brand": {"type": "string"},
+        "expires_on": {"type": "string", "format": "date"},
+        "evidence": {"type": "array", "items": {"type": "string"}, "description": "Present checklist keys confirmed by the dealer"}
+      }
+    },
+    {
+      "type": "object",
+      "required": ["campaign_id", "town", "route_id", "fill_by", "from", "to", "buyers", "street_jobs", "mailpiece"],
+      "properties": {
+        "campaign_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,100}$"},
+        "town": {"type": "string"}, "route_id": {"type": "string"}, "fill_by": {"type": "string", "format": "date"},
+        "from": {"type": "object", "required": ["name", "address_line1"]},
+        "to": {"type": "object", "required": ["address_line1", "address_city", "address_state", "address_zip"]},
+        "buyers": {"type": "array", "items": {"type": "object", "required": ["category", "written_approval"]}},
+        "street_jobs": {"type": "array", "items": {"type": "object", "required": ["address"]}},
+        "proof_record": {"type": "object"},
+        "mailpiece": {
+          "type": "object", "required": ["length_inches", "height_inches", "thickness_inches", "weight_ounces"],
+          "properties": {
+            "length_inches": {"type": "number"}, "height_inches": {"type": "number"},
+            "thickness_inches": {"type": "number"}, "weight_ounces": {"type": "number"}
+          }
+        }
+      }
+    }
+  ]
+}

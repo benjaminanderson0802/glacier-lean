@@ -1,0 +1,58 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_csv_values_reach_unsigned_worksheet_with_source_row_and_date_provenance _
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-33/test_csv_values_reach_unsigned0')
+
+    def test_csv_values_reach_unsigned_worksheet_with_source_row_and_date_provenance(tmp_path):
+        source = tmp_path / "synthetic-injury-log.csv"
+        write_csv(source, [
+            sample_row(),
+            sample_row(
+                case_id="SYN-002", case_type="job_transfer_or_restriction", days_away="0",
+                job_transfer_or_restriction_days="5", source_date="2025-02-03",
+            ),
+        ])
+        fields = OSHA.load_customer_csv(source)
+        packet = OSHA.build_300a_packet(fields)
+        worksheet = packet["html"]
+
+        # Only supported worksheet values are mapped; category cases and day counts
+        # remain distinct and totals are derived from the source rows.
+        assert fields["year"] == "2025"
+        assert fields["establishment_name"] == "Synthetic Machine Works"
+        assert fields["establishment_id"] == "000012345"
+        assert fields["total_cases"] == 2
+        assert fields["cases_with_days_away"] == 1
+        assert fields["cases_with_job_transfer_or_restriction"] == 1
+        assert fields["days_away"] == 3
+        assert fields["job_transfer_or_restriction_days"] == 5
+        assert "DO-NOT-MAP-THIS-SENTINEL" not in worksheet
+
+        # The review copy must let a reviewer trace each supplied case back to its
+        # CSV line and supplied date, rather than only showing aggregated totals.
+>       assert "synthetic-injury-log.csv" in worksheet
+E       assert 'synthetic-injury-log.csv' in "<!doctype html><html lang='en'><meta charset='utf-8'><title>Form 300A preparation draft</title><style>body{font:16px ...tps://www.osha.gov/injuryreporting/'>OSHA ITA</a>.</div><p>Review status: Customer must review and certify.</p></html>"
+
+ventures/osha-filing/tests/acceptance/test_C_worksheet.py:93: AssertionError
+________ test_missing_values_stay_explicit_and_the_review_is_uncertain _________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-33/test_missing_values_stay_expli0')
+
+    def test_missing_values_stay_explicit_and_the_review_is_uncertain(tmp_path):
+        source = tmp_path / "synthetic-incomplete-injury-log.csv"
+        write_csv(source, [sample_row(
+            average_employees="", total_hours_worked="", establishment_zip="",
+        )])
+        fields = OSHA.load_customer_csv(source)
+        packet = OSHA.build_300a_packet(fields)
+
+        assert packet["result"] == "uncertain — please check"
+>       assert "Customer confirmation needed" in packet["html"]
+E       assert 'Customer confirmation needed' in "<!doctype html><html lang='en'><meta charset='utf-8'><title>Form 300A preparation draft</title><style>body{font:16px ...https://www.osha.gov/injuryreporting/'>OSHA ITA</a>.</div><p>Review status: Customer confirmation required.</p></html>"
+
+ventures/osha-filing/tests/acceptance/test_C_worksheet.py:112: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/osha-filing/tests/acceptance/test_C_worksheet.py::test_csv_values_reach_unsigned_worksheet_with_source_row_and_date_provenance
+FAILED ventures/osha-filing/tests/acceptance/test_C_worksheet.py::test_missing_values_stay_explicit_and_the_review_is_uncertain
+2 failed, 1 passed in 0.07s

@@ -1,0 +1,622 @@
+11:55:11 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [6579]
+INFO:     Waiting for application startup.
+11:55:11 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+11:55:11 [    INFO] (dbos:_dbos.py:621) Application version: afb8564599350370d94f67698e9cd913
+11:55:11 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+11:55:11 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/glacier-ph9-maint-bhyo77/home/glacier.sqlite (schema: dbos)
+11:55:11 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 1
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 2
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 3
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 4
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 5
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 6
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 7
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 8
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 9
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 10
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 11
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 12
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 13
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 14
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 15
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 16
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 17
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 18
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 19
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 20
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 21
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 22
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 23
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 24
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 25
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 26
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 27
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 28
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 29
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 30
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 31
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 32
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 33
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 34
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 35
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 36
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 37
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 38
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 39
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 40
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 100
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 101
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 102
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 103
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 104
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 106
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 107
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 108
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 109
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 110
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 111
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 112
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 114
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 115
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 116
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 117
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 118
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 119
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 120
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 121
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 122
+11:55:11 [    INFO] (dbos:_sys_db_sqlite.py:109) Applying DBOS SQLite system database schema migration 123
+11:55:11 [    INFO] (dbos:_dbos.py:708) No workflows to recover from application version afb8564599350370d94f67698e9cd913
+11:55:11 [    INFO] (dbos:_queue.py:950) Listening to 0 queues:
+11:55:11 [    INFO] (dbos:_dbos.py:819) DBOS launched!
+11:55:11 [    INFO] (dbos:_dbos.py:827) To view and manage workflows, connect to DBOS Conductor at: https://console.dbos.dev/self-host?appname=glacier
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:36573 (Press CTRL+C to quit)
+INFO:     127.0.0.1:33968 - "GET /api/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "PUT /api/environments/self-maintenance HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "POST /api/environments/self-maintenance/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33968 - "GET /api/runs/3c367c743cca HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+12:13:56 [    INFO] (dbos:_queue.py:888) Stopping queue manager, joining all worker threads...
+12:13:56 [    INFO] (dbos:_dbos.py:444) DBOS successfully shut down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [6579]

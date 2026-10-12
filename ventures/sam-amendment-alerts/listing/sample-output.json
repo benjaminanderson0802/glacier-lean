@@ -1,0 +1,16 @@
+{
+  "outcome": "match",
+  "verification_state": "verified",
+  "event_kind": "amendment_and_deadline_change",
+  "notice_id": "b33e3d6f41c743bc8e3f8d8b6a460001",
+  "solicitation_number": "SPE4A7-26-Q-1234",
+  "title": "Illustrative industrial maintenance supplies notice",
+  "naics_code": "423840",
+  "previous_deadline": "2026-10-22T14:00:00-04:00",
+  "response_deadline": "2026-10-28T14:00:00-04:00",
+  "previous_amendment": "1",
+  "amendment": "2",
+  "source_url": "https://sam.gov/opp/b33e3d6f41c743bc8e3f8d8b6a460001/view",
+  "checked_at": "2026-10-11T12:00:00Z",
+  "limitations": "Illustrative fixture only. Changes are observed between saved snapshots only. Confirm current terms on SAM.gov."
+}

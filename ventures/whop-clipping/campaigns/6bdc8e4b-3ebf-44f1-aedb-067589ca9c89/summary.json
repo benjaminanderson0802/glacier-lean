@@ -1,0 +1,69 @@
+{
+  "uuid": "6bdc8e4b-3ebf-44f1-aedb-067589ca9c89",
+  "name": "ClipFarm x Solved w/ Mark Manson",
+  "brand": "Solved with Mark Manson",
+  "cpm_usd": 1.25,
+  "budget_left_usd": 19900,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels"
+  ],
+  "min_len_s": null,
+  "max_len_s": null,
+  "required_tags": [
+    "@solvedpodcast",
+    "@iammarkmanson"
+  ],
+  "banned": [
+    "other Mark podcasts",
+    "ads/sponsor reads/other brands in frame",
+    "meaning distortion/misleading quotes",
+    "mid-thought cuts",
+    "NSFW/violent/off-topic",
+    "spam/reposts/boosts/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Provide account/video demographic evidence after analytics load and open the required written support approval ticket."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://www.youtube.com/show/VLPLkkA1LPpvlkjbuctKTaViIeIiZljzbqxW?sbp=KgtPRUtMdFA0ZmoxSUAB",
+      "kind": "youtube_playlist",
+      "reachable": true,
+      "approx_items": 45,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "show",
+      "duration_s": null,
+      "response_sha256": "bfa37d6b65911437edcc69ee703a4349793d40228df835c45f9e486e89ca505f"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/172GauJh-FqD7uralyek4MTdYZf7PEld6-sJdsoAaoD4/export?format=txt",
+      "checked_at": "2026-10-12T02:23:38Z",
+      "http_status": 200,
+      "sha256": "fe9f9742811638601da9e9e6ac4b226b4af52205cd4b52eb8eb1dbdbeb244a66",
+      "html_links_export": "https://docs.google.com/document/d/172GauJh-FqD7uralyek4MTdYZf7PEld6-sJdsoAaoD4/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1.25,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "recommended_length_s": [
+    20,
+    60
+  ],
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}

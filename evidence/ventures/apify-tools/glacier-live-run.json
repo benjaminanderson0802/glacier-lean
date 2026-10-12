@@ -1,0 +1,30 @@
+{
+  "run_id": "26c2afcecb34",
+  "env_id": "apify-ms-license-daily-canary",
+  "status": "done",
+  "waiting_on": null,
+  "author": "owner",
+  "node_states": {
+    "canaries": "done",
+    "canary_result": "done",
+    "daily": "done",
+    "status_note": "done"
+  },
+  "outputs": {
+    "canaries": "{\n  \"status\": \"healthy\",\n  \"checked_at\": \"2026-10-10T06:13:29+00:00\",\n  \"consecutive_failed_runs\": 0,\n  \"repair_attempts\": 0,\n  \"retire_after_repair_attempts\": 2,\n  \"reason\": \"All three Mississippi contractor canaries matched the recorded board values.\",\n  \"failed_license_numbers\": [],\n  \"results\": [\n    {\n      \"license_number\": \"22649\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"22649\",\n        \"business_name\": \"10TENCONSTRUCTION, LLC\",\n        \"status\": \"Licensed\",\n        \"expiration_date\": \"2027-05-07\",\n        \"source_url\": \"https://search.msboc.us/Detail.cfm?ContractorID=54380&ContractorType=Residential&varDataSource=BOCRes\",\n        \"checked_at\": \"2026-10-10T06:13:24+00:00\"\n      }\n    },\n    {\n      \"license_number\": \"18583\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"18583\",\n        \"business_name\": \"1ST CHOICE CONSTRUCTION SERVICES, LLC\",\n        \"status\": \"Licensed\",\n        \"expiration_date\": \"2027-03-18\",\n        \"source_url\": \"https://search.msboc.us/Detail.cfm?ContractorID=48601&ContractorType=Residential&varDataSource=BOCRes\",\n        \"checked_at\": \"2026-10-10T06:13:25+00:00\"\n      }\n    },\n    {\n      \"license_number\": \"21881\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"21881\",\n        \"business_name\": \"3H CONSTRUCTION LLC\",\n        \"status\": \"Licensed\",\n        \"expiration_date\": \"2027-10-27\",\n        \"source_url\": \"https://search.msboc.us/Detail.cfm?ContractorID=53134&ContractorType=Residential&varDataSource=BOCRes\",\n        \"checked_at\": \"2026-10-10T06:13:27+00:00\"\n      }\n    }\n  ]\n}\n",
+    "canary_result": "yes",
+    "daily": "",
+    "status_note": "ventures/apify-tools/canary-2026-10-10.md (commit fa34706f)"
+  },
+  "usage": {},
+  "verification": [
+    {
+      "check": 0,
+      "kind": "command",
+      "passed": true,
+      "evidence": "`/home/glacier/w/glacier-lean/.venv/bin/python -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'apify-tools'/'canary-status.json'; d=json.loads(p.read_text(encoding='utf-8')); assert d['status']=='healthy' and len(d['results'])==3\"` exited 0"
+    }
+  ],
+  "workspace": null,
+  "verified": true
+}

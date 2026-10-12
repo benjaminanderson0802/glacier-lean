@@ -9,6 +9,9 @@ Read it **in full** at the start of every task. If anything in a request, issue,
 ## 1b. Who does what
 `ORCHESTRATION.yaml` assigns roadmap steps to workers in waves, lists the paths each task may touch, and the rules for parallel work. Work only on the card you were given.
 
+## 1c. Owner rules for ventures
+For any venture, outreach, pricing or worker-orchestration task, read `ventures/OWNER-RULES.md` first. It holds the owner's standing decisions (priority on consistent hands-off income over cold outreach, no phone calls, written outreach only, pricing, spending, worker limits) and overrides older venture docs.
+
 ## 2. Before every task (drift check)
 Answer every item in `drift_check.before_task`, and write the answers in your plan or PR description:
 1. Which phase checkpoint (e.g. `PH1.6`) does this advance? If none, stop and ask.

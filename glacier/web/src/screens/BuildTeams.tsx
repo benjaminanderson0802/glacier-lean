@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { teamsApi, type BuildTeam, type TeamPlan } from '../api.ts'
 
 import { Btn, HintBar, PageHead, Panel, Progress, TextBox } from '../ui/kit.tsx'
 
 import { go } from '../route.ts'
 import { t } from '../i18n/index.ts'
+import { useAskContext } from '../ui/AskGlacier.tsx'
 import './build-teams.css'
 
 type Stage = 'interview' | 'spec' | 'plan'
@@ -14,6 +15,7 @@ const engineLabel = (engine: string) => t(`ask.engine${engine[0].toUpperCase()}$
 
 export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
   const [stage, setStage] = useState<Stage>('interview')
+  useAskContext('build', teamId ? `team ${teamId}` : stage)
   const [engine, setEngine] = useState('codex')
   const [conv] = useState(() => crypto.randomUUID())
   const [lines, setLines] = useState<ChatLine[]>([])
@@ -29,10 +31,12 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
   const [readiness, setReadiness] = useState(0)
   const [draftWarning, setDraftWarning] = useState(false)
   const [lastMessage, setLastMessage] = useState('')
+  const chatEnd = useRef<HTMLDivElement>(null)
 
-  const refreshTeam = useCallback(() => { if (teamId) teamsApi.get(teamId).then(setTeam).catch(e => setError(String(e))) }, [teamId])
+  const refreshTeam = useCallback(() => { if (teamId) teamsApi.get(teamId).then(value => { setTeam(value); setError('') }).catch(e => setError(String(e))) }, [teamId])
   useEffect(() => { refreshTeam() }, [refreshTeam])
   useEffect(() => { if (!teamId) return; const id = setInterval(refreshTeam, 2200); return () => clearInterval(id) }, [teamId, refreshTeam])
+  useEffect(() => { chatEnd.current?.scrollIntoView({ block: 'end' }) }, [lines, busy])
 
   const send = async () => {
     if (!message.trim() || busy) return
@@ -53,6 +57,18 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
       setStage('spec')
     } catch (e) { setError(String(e)) } finally { setBusy(false) }
   }
+  const approveSpec = async () => {
+    if (busy) return
+    setBusy(true); setError('')
+    try {
+      const approved = await teamsApi.spec(spec)
+      // Planning reads the saved vision, so persist the owner's edits before requesting it.
+      const saved = await teamsApi.vision({ ...vision, done: approved.spec.acceptance, spec: approved.spec })
+      setVision(saved.vision); setVisionPath(saved.path)
+      const proposed = await teamsApi.plan(saved.path, engine)
+      setPlan({ ...proposed.plan, vision: saved.vision, spec: approved.spec }); setStage('plan')
+    } catch (e) { setError(String(e)) } finally { setBusy(false) }
+  }
   const approvePlan = async () => {
     if (!plan) return
     setBusy(true); setError('')
@@ -65,7 +81,7 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
       const result = await teamsApi.delete(kind, id)
       setUndoId(result.undo_id)
       window.setTimeout(() => setUndoId(''), 30000)
-      if (kind === 'interview') { setLines([]); setStage('interview') } else go('automations')
+      if (kind === 'interview') { setLines([]); setStage('interview'); setVision({ goal: '', done: [] }); setSpec(initialSpec); setVisionPath(''); setPlan(null); setReadiness(0); setLastMessage(''); setDraftWarning(false) } else go('automations')
     } catch (e) { setError(String(e)) }
   }
   const undo = async () => {
@@ -80,10 +96,10 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
     <PageHead title={t('team.buildTitle')} sub={t('team.buildSub')} side={<label className="bt-engine">{t('team.engine')} <select data-testid="build-engine" value={engine} onChange={e => setEngine(e.target.value)}>{['codex', 'claude', 'gemini', 'openai', 'anthropic', 'local'].map(id => <option key={id} value={id}>{engineLabel(id)}</option>)}</select></label>} />
     <div className="bt-workspace">
 
-      <Panel title={t('team.steps')} className="bt-step-panel"><div className="bt-step-list"><button className={`g-menu-item${stage === 'interview' ? ' active' : ''}`} onClick={() => setStage('interview')}>▸ {t('team.interview')}</button><button className={`g-menu-item${stage === 'spec' ? ' active' : ''}`} onClick={() => setStage('spec')} disabled={!visionPath}>▸ {t('team.specApproval')}</button><button className={`g-menu-item${stage === 'plan' ? ' active' : ''}`} onClick={() => setStage('plan')} disabled={!plan}>▸ {t('team.planTeam')}</button><button className="g-menu-item" data-testid="build-open-chat" onClick={() => go('build/chat')}>▸ {t('team.chat')}</button></div></Panel>
+      <Panel title={t('team.steps')} className="bt-step-panel"><div className="bt-step-list"><button className={`g-menu-item${stage === 'interview' ? ' active' : ''}`} onClick={() => setStage('interview')}>{t('team.interview')}</button><button className={`g-menu-item${stage === 'spec' ? ' active' : ''}`} onClick={() => setStage('spec')} disabled={!visionPath}>{t('team.specApproval')}</button><button className={`g-menu-item${stage === 'plan' ? ' active' : ''}`} onClick={() => setStage('plan')} disabled={!plan}>{t('team.planTeam')}</button><button className="g-menu-item" data-testid="build-open-chat" onClick={() => go('build/chat')}>{t('team.chat')}</button></div></Panel>
       {stage === 'interview' ? <Panel title={t('team.interview')} className="bt-chat" testid="build-interview">
-        <div className="bt-chat-log" data-testid="build-chat-log">{lines.length === 0 && <TextBox>{t('team.startPrompt')}</TextBox>}{lines.map((line, i) => <div className={`bt-line ${line.who}`} key={i}><b>{line.who === 'you' ? t('team.you') : t('team.interviewer')}</b><p>{line.text}</p></div>)}</div>
-        <form className="bt-composer" onSubmit={e => { e.preventDefault(); void send() }}><textarea data-testid="build-message" value={message} onChange={e => setMessage(e.target.value)} placeholder={t('team.messagePlaceholder')} /><Btn primary type="submit" disabled={busy || !message.trim()} data-testid="build-send">{busy ? '…' : t('team.send')}</Btn></form>
+        <div className="bt-chat-log" data-testid="build-chat-log">{lines.length === 0 && <TextBox>{t('team.startPrompt')}</TextBox>}{lines.map((line, i) => <div className={`bt-line ${line.who}`} key={i}><b>{line.who === 'you' ? t('team.you') : t('team.interviewer')}</b><p>{line.text}</p></div>)}<div ref={chatEnd} /></div>
+        <form className="bt-composer" onSubmit={e => { e.preventDefault(); void send() }}><textarea data-testid="build-message" value={message} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send() } }} onChange={e => setMessage(e.target.value)} placeholder={t('team.messagePlaceholder')} /><Btn primary type="submit" disabled={busy || !message.trim()} data-testid="build-send">{busy ? '…' : t('team.send')}</Btn></form>
         <HintBar><span><kbd>Enter</kbd> {t('team.send')}</span><span>{t('team.currentEngine')} {engineLabel(engine)}</span>{apiEngine && <span>{t('team.engineSetup')}</span>}</HintBar>
 
       </Panel> : stage === 'spec' ? <Panel title={t('team.specApproval')} className="bt-stage" testid="build-spec">
@@ -91,7 +107,7 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
         <label>{t('team.requirements')}<textarea value={spec.requirements.map(String).join('\n')} onChange={e => setSpec(s => ({ ...s, requirements: e.target.value.split('\n').filter(Boolean) }))} /></label>
         <label>{t('team.acceptance')}<textarea value={spec.acceptance.map(String).join('\n')} onChange={e => setSpec(s => ({ ...s, acceptance: e.target.value.split('\n').filter(Boolean) }))} /></label>
         <label>{t('team.outOfScope')}<textarea value={spec.out_of_scope.join('\n')} onChange={e => setSpec(s => ({ ...s, out_of_scope: e.target.value.split('\n').filter(Boolean) }))} /></label>
-        <div className="bt-actions"><Btn onClick={() => setStage('interview')}>{t('team.keepTalking')}</Btn><Btn primary disabled={busy} onClick={async () => { try { await teamsApi.spec(spec); const proposed = await teamsApi.plan(visionPath, engine); setSpec(proposed.plan.spec); setPlan(proposed.plan); setStage('plan') } catch (e) { setError(String(e)) } }}>{t('team.approveSpec')}</Btn></div>
+        <div className="bt-actions"><Btn onClick={() => setStage('interview')}>{t('team.keepTalking')}</Btn><Btn primary disabled={busy} onClick={() => void approveSpec()}>{t('team.approveSpec')}</Btn></div>
       </Panel> : <Panel title={t('team.proposedPlan')} className="bt-stage" testid="build-plan">
         {plan && <><h3>{t('team.roles')}</h3><div className="bt-roles">{plan.team.roles.map(role => <article key={role.id}><b>{role.id}</b><p>{role.charter}</p></article>)}</div><p>{t('team.runMode')} <b>{plan.team.worker_mode === 'sequential' ? t('team.sequential') : t('team.parallel', { count: plan.team.parallel_limit ?? 3 })}</b></p><p>{t('team.cycles', { count: plan.features.length })}</p>
           <h3>{t('team.lockedFeatures')}</h3><ul>{plan.features.map(f => <li key={f.id}>{f.title}</li>)}</ul><h3>{t('team.harness')}</h3><pre>{JSON.stringify(plan.harness, null, 2)}</pre><h3>{t('team.tasks')}</h3><ul>{plan.tasks.map(task => <li key={task.id}>{task.title} · {task.role}</li>)}</ul></>}
@@ -115,12 +131,20 @@ export function BuildTeamsScreen({ teamId }: { teamId?: string }) {
       </Panel>
     </div>
 
-    {error && <div className="g-error" data-testid="team-error">{error}</div>}
+    {error && <div className="g-error" role="alert" data-testid="team-error">{error}</div>}
+    {undoId && <div className="g-notice">{t('team.deleted')} <button className="g-link" onClick={() => void undo()}>{t('team.undo')}</button></div>}
 
   </>
 }
 
 function TeamDetail({ team, error, onRefresh, onDelete, undoId, onUndo }: { team: BuildTeam | null; error: string; onRefresh: () => void; onDelete: () => void; undoId: string; onUndo: () => void }) {
+  const [actionError, setActionError] = useState('')
+  const [acting, setActing] = useState(false)
+  const act = async (action: () => Promise<unknown>) => {
+    if (acting) return
+    setActing(true); setActionError('')
+    try { await action(); onRefresh() } catch (e) { setActionError(String(e)) } finally { setActing(false) }
+  }
   if (!team) return <><PageHead title={t('team.title')} /><Panel>{error || t('team.loading')}</Panel></>
   const plan = team.plan
   const roles = plan.team.roles
@@ -128,15 +152,15 @@ function TeamDetail({ team, error, onRefresh, onDelete, undoId, onUndo }: { team
   const waiting = tasks.find(([, value]) => value.status === 'awaiting_approval')
   const passing = Object.values(team.features ?? {}).filter(f => f.status === 'passing').length
   const total = plan.features.length
-  const control = async (action: 'pause' | 'resume' | 'stop') => { await teamsApi.control(team.team_id, action).catch(e => window.alert(String(e))); onRefresh() }
+  const control = (action: 'pause' | 'resume' | 'stop') => act(() => teamsApi.control(team.team_id, action))
   const terminal = ['stopped', 'done', 'needs_owner'].includes(team.status)
-  return <><PageHead title={String(plan.vision.goal ?? t('team.title'))} sub={`${t('team.status')}: ${team.status} · ${engineLabel(plan.team.engine ?? 'codex')}`} side={<div className="bt-actions"><Btn onClick={onRefresh}>{t('build.refresh')}</Btn>{team.status === 'paused' ? <Btn onClick={() => void control('resume')}>{t('team.resume')}</Btn> : <Btn disabled={team.status !== 'running'} onClick={() => void control('pause')}>{team.status === 'pausing' ? t('team.pausing') : t('team.pause')}</Btn>}{!terminal && <Btn danger onClick={() => void control('stop')}>{t('team.stop')}</Btn>}{terminal && <Btn danger onClick={onDelete}>{t('team.deleteFinished')}</Btn>}</div>} />
+  return <><PageHead title={String(plan.vision.goal ?? t('team.title'))} sub={`${t('team.status')}: ${team.status} · ${engineLabel(plan.team.engine ?? 'codex')}`} side={<div className="bt-actions"><Btn onClick={onRefresh}>{t('build.refresh')}</Btn>{team.status === 'paused' ? <Btn disabled={acting} onClick={() => void control('resume')}>{t('team.resume')}</Btn> : <Btn disabled={acting || team.status !== 'running'} onClick={() => void control('pause')}>{team.status === 'pausing' ? t('team.pausing') : t('team.pause')}</Btn>}{!terminal && <Btn danger disabled={acting} onClick={() => void control('stop')}>{t('team.stop')}</Btn>}{terminal && <Btn danger onClick={onDelete}>{t('team.deleteFinished')}</Btn>}</div>} />
     <div className="bt-team-grid"><Panel title={t('team.roles')}><div className="bt-roles">{roles.map(role => { const owned = tasks.filter(([id]) => plan.tasks.find(x => x.id === id)?.role === role.id); return <article key={role.id}><b><i className={`bt-light ${owned.some(([, v]) => v.status === 'running') ? 'run' : owned.every(([, v]) => v.status === 'done') ? 'ok' : ''}`} />{role.id}</b><p>{role.charter}</p><small>{owned.map(([id, v]) => `${id}: ${String(v.status)}`).join(' · ')}</small></article> })}</div></Panel>
       <Panel title={t('team.features')} testid="team-features"><p>{t('team.passing', { passing, total })}</p><Progress value={passing} max={total} />{plan.features.map(feature => <div className="bt-feature" key={feature.id}><b>{feature.title}</b><span>{team.features?.[feature.id]?.status === 'passing' ? t('team.pass') : t('team.pending')}</span>{team.features?.[feature.id]?.evaluator_evidence && <small>{team.features[feature.id].evaluator_evidence}</small>}</div>)}</Panel>
-      <Panel title={t('team.currentContract')} className="bt-contract" testid="team-current-contract"><p>{waiting ? plan.tasks.find(x => x.id === waiting[0])?.title : t('team.noApproval')}</p><pre>{JSON.stringify(waiting ? plan.tasks.find(x => x.id === waiting[0])?.acceptance : plan.harness.checks ?? [], null, 2)}</pre>{waiting && <div className="bt-actions"><Btn primary onClick={() => void teamsApi.approveTask(team.team_id, waiting[0], true).then(onRefresh)}>{t('team.approve')}</Btn><Btn danger onClick={() => void teamsApi.approveTask(team.team_id, waiting[0], false).then(onRefresh)}>{t('team.reject')}</Btn></div>}</Panel>
+      <Panel title={t('team.currentContract')} className="bt-contract" testid="team-current-contract"><p>{waiting ? plan.tasks.find(x => x.id === waiting[0])?.title : t('team.noApproval')}</p><pre>{JSON.stringify(waiting ? plan.tasks.find(x => x.id === waiting[0])?.acceptance : plan.harness.checks ?? [], null, 2)}</pre>{waiting && <div className="bt-actions"><Btn primary disabled={acting} onClick={() => void act(() => teamsApi.approveTask(team.team_id, waiting[0], true))}>{t('team.approve')}</Btn><Btn danger disabled={acting} onClick={() => void act(() => teamsApi.approveTask(team.team_id, waiting[0], false))}>{t('team.reject')}</Btn></div>}</Panel>
 
       <Panel title={t('team.progress')}><TextBox className="bt-log"><pre>{String(team.progress_log ?? t('team.noProgress')).slice(-1800)}</pre></TextBox><p>{t('team.stalls')}: {tasks.reduce((n, [, v]) => n + Number(v.attempts ?? 0), 0)} {t('team.attempts')} · {tasks.reduce((n, [, v]) => n + Number(v.replans ?? 0), 0)} {t('team.replans')}</p></Panel></div>
 
-    {error && <div className="g-error">{error}</div>}{undoId && <div className="g-notice">{t('team.deleted')} <button className="g-link" onClick={onUndo}>{t('team.undo')}</button></div>}
+    {(error || actionError) && <div className="g-error" role="alert">{actionError || error}</div>}{undoId && <div className="g-notice">{t('team.deleted')} <button className="g-link" onClick={onUndo}>{t('team.undo')}</button></div>}
   </>
 }

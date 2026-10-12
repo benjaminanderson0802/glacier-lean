@@ -1,0 +1,91 @@
+{
+  "slug": "osha-filing",
+  "name": "osha filing preparation",
+  "status": "blocked",
+  "product": {
+    "purpose": "Prepare customer-reviewed Form 300A worksheets from injury-log CSVs for eligible establishments, with the executive certifying and submitting through their own OSHA ITA account.",
+    "customer_output_vocabulary": [
+      "match",
+      "no match found in [sources] as of [date]",
+      "uncertain — please check"
+    ],
+    "government_submission": "Customer reviews all figures, signs and dates the certification, and submits through their own OSHA ITA account. Glacier never certifies or submits.",
+    "mailing": "Render-only postcard proofs and distinct landing pages. No real postcard is sent by this venture build.",
+    "billing": "$49–199 per establishment per year; customer checkout remains disabled until an owner configures Stripe test mode."
+  },
+  "blocks": [
+    "ventures.blocks.feeds",
+    "ventures.blocks.mail",
+    "ventures.blocks.rules",
+    "ventures.blocks.filer",
+    "ventures.blocks.deadlines",
+    "ventures.blocks.customer",
+    "ventures.blocks.connectors.jobber"
+  ],
+  "block_functions": [
+    "feeds.sync('osha_ita') / feeds.query('osha_ita')",
+    "mail.postcard / mail.landing_pages (render-only; test mode required for any test send)",
+    "rules.check (OSHA 300A structural fields) + deterministic totals and hours checks",
+    "filer.prepare through a local-mock-only wrapper; no call to filer.submit",
+    "deadlines.add / deadlines.due with jan2-mar2",
+    "JobberClient.get_jobs (read-only)"
+  ],
+  "flows": [
+    "january-outreach",
+    "prepare-300a",
+    "osha-daily-deadlines",
+    "jobber-channel"
+  ],
+  "schedules": [
+    {
+      "flow": "january-outreach",
+      "cron": "0 10 2 1 *",
+      "purpose": "Refresh OSHA's public ITA submission file and prepare owner-reviewed January postcard proofs.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "osha-daily-deadlines",
+      "cron": "0 9 * * *",
+      "purpose": "Remind the customer that ITA submission opens Jan 2 and is due Mar 2, and the signed Form 300A must be posted Feb 1–Apr 30.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "jobber_client_id",
+    "jobber_client_secret",
+    "jobber_access_token",
+    "jobber_refresh_token"
+  ],
+  "your_steps": [
+    {
+      "id": "review-first-five-worksheets",
+      "title": "Owner: review the first five source-linked worksheets",
+      "when": "After the automated OSHA source canary passes",
+      "detail": "Open $GLACIER_HOME/ventures/osha-filing/worksheets/first-five-status.json and review the up to five HTML files it names against establishment records. The live OSHA source currently returns HTTP 403 to this script client, so there is no action to take until script access is restored. Cold outreach is not a priority; no postcard is sent or listing published by Glacier.",
+      "links": [
+        "https://www.osha.gov/itadata",
+        "https://www.osha.gov/recordkeeping/forms"
+      ]
+    },
+    {
+      "id": "customer-certifies-submits",
+      "title": "Customer: review, sign, post, and submit your Form 300A",
+      "when": "After the customer worksheet is prepared",
+      "detail": "Compare every field with the OSHA 300 Log and current hours/headcount records. The establishment executive completes missing current-year values, certifies and signs, posts the signed summary February 1–April 30, and submits required data through the establishment’s own OSHA ITA account by March 2 (submission opens January 2). Glacier only prepares a review worksheet.",
+      "links": [
+        "https://www.osha.gov/recordkeeping/forms",
+        "https://www.osha.gov/injuryreporting/"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "The official OSHA ITA Summary Data feed refresh passes the source URL, schema, row-count, and unique establishment-ID canaries; the current script client receives HTTP 403 from both the official page and its direct bulk CSV.",
+    "After source access is restored, Glacier automatically prepares up to five unsigned, source-linked worksheets; owner reviews them against establishment records.",
+    "The OSHA 300A arithmetic checks pass; missing data remains uncertain.",
+    "No live postcard or marketplace publication occurs without the owner action; written outreach remains optional and low priority.",
+    "The customer, not Glacier, certifies, signs, posts, and submits all government filings."
+  ],
+  "dry_run_env_id": "prepare-300a"
+}

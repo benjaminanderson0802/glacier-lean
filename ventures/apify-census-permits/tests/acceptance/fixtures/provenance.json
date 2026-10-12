@@ -1,0 +1,14 @@
+{
+  "august.txt": {
+    "source_url": "https://www2.census.gov/econ/bps/State/st2608c.txt",
+    "retrieved_at": "2026-10-11T03:41:51.506786+00:00",
+    "sha256": "029fe001b8ff893a5b053e9511f86fb90d18bc9e390ad9488fcd271c7e37bc86",
+    "last_modified": "Thu, 24 Sep 2026 11:46:16 GMT"
+  },
+  "july.txt": {
+    "source_url": "https://www2.census.gov/econ/bps/State/st2607c.txt",
+    "retrieved_at": "2026-10-11T03:41:51.904677+00:00",
+    "sha256": "1d708a0915a80f1814356d851cd781fdb39151782ee1c893bf2d1ada51a7a24f",
+    "last_modified": "Tue, 25 Aug 2026 12:00:45 GMT"
+  }
+}

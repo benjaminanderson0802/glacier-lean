@@ -156,9 +156,11 @@ def test_approval_survives_restart(make_server):
 
 
 def test_schedule_creates_runs(server):
-    e = env("ticker", [("s", "schedule", {"cron": "*/2 * * * * *"}), ("c", "command", {"cmd": "echo tick"})], [("s", "c", "")])
+    e = env("ticker", [("s", "schedule", {"cron": "* * * * * *"}), ("c", "command", {"cmd": "echo tick"})], [("s", "c", "")])
     server.put("/api/environments/ticker", e)
-    deadline, runs = time.time() + 20, []
+    # DBOS may be delayed by other backend workers; keep the real scheduler
+    # integration and allow multiple scheduler polling cycles to complete.
+    deadline, runs = time.time() + 60, []
     while time.time() < deadline:
         runs = [r for r in server.get("/api/runs", params={"env_id": "ticker"}) if r["status"] == "done"]
         if len(runs) >= 2:

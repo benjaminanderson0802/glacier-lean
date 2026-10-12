@@ -1,0 +1,8 @@
+ok   real backend events socket connected through the Vite proxy
+ok   canvas flow saved to the real engine
+ok   run state reached done and command output appeared in the terminal
+ok   Ask chat write completed against the real backend fake engine
+ok   right-wall messenger reply arrived in a real backend live event
+ok   messenger shows the sent Glacier message
+
+All live real-backend checks passed.

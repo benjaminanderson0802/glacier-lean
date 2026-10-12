@@ -1,0 +1,22 @@
+{
+  "checkpoint": "PH12.17",
+  "backend": "real local Glacier via npm run live",
+  "home": "/tmp/glacier-property-tax-live-20261010",
+  "api": "http://127.0.0.1:34335",
+  "install_command": "GLACIER_HOME=/tmp/glacier-property-tax-live-20261010 GLACIER_API=http://127.0.0.1:34335 /home/glacier/w/glacier-lean/.venv/bin/python ventures/install_all.py --only property-tax",
+  "installed_flows": {
+    "property-tax-refresh-roll": {"saved": true, "commit": "e4c19bc2"},
+    "property-tax-prepare-packet": {"saved": true, "commit": "eb24b988"},
+    "property-tax-postcard-proof": {"saved": true, "commit": "31a71f1b"},
+    "property-tax-upload-retention": {"saved": true, "commit": "aaa3cd56"}
+  },
+  "packet_flow_runs": [
+    {"run_id": "cbb70696e52d", "status": "failed", "error": "No such file or directory: '/tmp/glacier-property-tax-live-20261010/workspaces/property-tax-prepare-packet/{repo}'"},
+    {"run_id": "229a5a729228", "status": "failed", "error": "fatal: not a git repository (or any of the parent directories): .git"},
+    {"run_id": "98e0ea2c5227", "status": "failed", "error": "cd: can't cd to /home/glacier/w/workers/gf-V-PROPTAX/ventures/property-tax/scripts/property_tax.py"},
+    {"run_id": "a43f0883bc53", "status": "failed", "error": "cd: can't cd to /home/glacier/w/workers/gf-V-PROPTAX/ventures/property-tax/scripts/property_tax.py"}
+  ],
+  "screenshot": null,
+  "result": "Flow installation passed; end-to-end packet run did not pass because the runner does not expose the repository root to command nodes.",
+  "no_external_effects": true
+}

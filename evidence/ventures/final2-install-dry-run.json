@@ -1,0 +1,172 @@
+[
+  {
+    "venture": "apify-tools",
+    "flow": "apify-ms-license-daily-canary",
+    "validated": true
+  },
+  {
+    "venture": "apify-tools",
+    "flow": "apify-ms-license-your-step-publish",
+    "validated": true
+  },
+  {
+    "venture": "carpenter-goods",
+    "flow": "carpenter-prepare-listing",
+    "validated": true
+  },
+  {
+    "venture": "carpenter-goods",
+    "flow": "carpenter-track-commissions",
+    "validated": true
+  },
+  {
+    "venture": "coop-postcards",
+    "flow": "coop-claim-readiness",
+    "validated": true
+  },
+  {
+    "venture": "coop-postcards",
+    "flow": "street-postcard-proof",
+    "validated": true
+  },
+  {
+    "venture": "cpsc-prep",
+    "flow": "cpsc-batch-prep",
+    "validated": true
+  },
+  {
+    "venture": "cpsc-prep",
+    "flow": "cpsc-broker-launch",
+    "validated": true
+  },
+  {
+    "venture": "cpsc-prep",
+    "flow": "cpsc-feed-refresh",
+    "validated": true
+  },
+  {
+    "venture": "cpsc-prep",
+    "flow": "cpsc-code-pages",
+    "validated": true
+  },
+  {
+    "venture": "dibbs-supply",
+    "flow": "dibbs-owner-registration",
+    "validated": true
+  },
+  {
+    "venture": "dibbs-supply",
+    "flow": "dibbs-daily-prep",
+    "validated": true
+  },
+  {
+    "venture": "fda-cosmetics",
+    "flow": "prepare-listing-packet",
+    "validated": true
+  },
+  {
+    "venture": "fda-cosmetics",
+    "flow": "daily-deadline-reminders",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-watch-shipstation",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-check-deadlines",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-request-authorization",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-prepare-claim",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-record-carrier-receipt",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-invoice-draft",
+    "validated": true
+  },
+  {
+    "venture": "freight-claims",
+    "flow": "freight-settlement-decision",
+    "validated": true
+  },
+  {
+    "venture": "osha-filing",
+    "flow": "prepare-300a",
+    "validated": true
+  },
+  {
+    "venture": "osha-filing",
+    "flow": "annual-deadline-reminders",
+    "validated": true
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-refresh-roll",
+    "validated": true
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-prepare-packet",
+    "validated": true
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-postcard-proof",
+    "validated": true
+  },
+  {
+    "venture": "property-tax",
+    "flow": "property-tax-upload-retention",
+    "validated": true
+  },
+  {
+    "venture": "recall-checker",
+    "flow": "recall-nightly",
+    "validated": true
+  },
+  {
+    "venture": "recall-checker",
+    "flow": "recall-batch-check",
+    "validated": true
+  },
+  {
+    "venture": "recall-checker",
+    "flow": "recall-review-first-pages",
+    "validated": true
+  },
+  {
+    "venture": "utility-audits",
+    "flow": "utility-audit-calculator",
+    "validated": true
+  },
+  {
+    "venture": "warranty",
+    "flow": "hourly-intake",
+    "validated": true
+  },
+  {
+    "venture": "warranty",
+    "flow": "daily-deadlines",
+    "validated": true
+  },
+  {
+    "venture": "warranty",
+    "flow": "owner-review",
+    "validated": true
+  }
+]

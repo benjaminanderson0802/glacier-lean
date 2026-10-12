@@ -1,0 +1,12 @@
+Error: Timed out waiting for http://127.0.0.1:41547/
+    at waitHttp (file:///home/glacier/w/workers/gf-E-PH9/glacier/web/e2e/live_real_backend.spec.mjs:38:9)
+    at async file:///home/glacier/w/workers/gf-E-PH9/glacier/web/e2e/live_real_backend.spec.mjs:85:3
+Live session output:
+22:29:15 [    INFO] (dbos:_dbos.py:537) Initializing DBOS (v3.2.0)
+INFO:     Started server process [408255]
+INFO:     Waiting for application startup.
+22:29:48 [    INFO] (dbos:_dbos.py:620) Executor ID: local
+22:29:48 [    INFO] (dbos:_dbos.py:621) Application version: ca40fd3194c618cd1b3a672d09c004d3
+22:29:48 [    INFO] (dbos:_dbos.py:622) Application name: glacier
+22:29:49 [    INFO] (dbos:_sys_db.py:709) Initializing DBOS system database with URL: sqlite:////tmp/glacier-live-e2e-y37ikF/glacier.sqlite (schema: dbos)
+22:29:49 [    INFO] (dbos:_sys_db.py:713) Using SQLite as a system database. The SQLite system database is for development and testing. PostgreSQL is recommended for production use.

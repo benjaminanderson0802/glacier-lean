@@ -1,0 +1,2 @@
+Full backend command: flock /tmp/glacier-suite.lock ~/w/glacier-lean/.venv/bin/python -m pytest -q tests
+BLOCKED: waited more than 11 minutes behind shared suite lock; no pytest child started. Cancelled only this card's queued flock process after filing environment claim. No running test suite or other worker process was stopped. Full suite remains unverified.

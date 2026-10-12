@@ -16,10 +16,15 @@ def command_invocation(command: str):
         return command, True, ""
 
     bash = shutil.which("bash")
-    if not bash:
-        candidate = r"C:\Program Files\Git\bin\bash.exe"
-        if os.path.isfile(candidate):
-            bash = candidate
+    # Prefer Git for Windows over the Windows Subsystem for Linux bash.exe
+    # alias, which can exist earlier on PATH but cannot run without a distro.
+    candidate = r"C:\Program Files\Git\bin\bash.exe"
+    if os.path.isfile(candidate):
+        bash = candidate
+    elif bash and os.path.normcase(os.path.abspath(bash)) == os.path.normcase(
+        r"C:\Windows\System32\bash.exe"
+    ):
+        bash = None
     if bash:
         def windows_path(match):
             drive = match.group(1).lower()
@@ -52,7 +57,40 @@ def executable_invocation(executable: str, *args: str) -> list[str]:
                 executable = found
         if executable.lower().endswith(".py"):
             return [sys.executable, executable, *args]
+        if executable.lower().endswith((".cmd", ".bat")):
+            direct = npm_shim_command(executable)
+            if direct:
+                return [*direct, *args]
     return [executable, *args]
+
+
+_NPM_SHIM_SCRIPT = re.compile(r'"%dp0%\\([^"]+\.(?:js|cjs|mjs))"', re.IGNORECASE)
+
+
+def npm_shim_command(shim: str) -> list[str] | None:
+    """Return [node, script] for an npm-generated .cmd shim, or None.
+
+    Windows starts a .cmd through cmd.exe, which cuts every argument at its first newline, so a
+    multi-line prompt passed to ``codex.cmd`` or ``claude.cmd`` reached the model as only its first
+    line ("Shared context pack:"). Starting node on the shim's script directly keeps arguments whole.
+    """
+    try:
+        with open(shim, encoding="utf-8", errors="replace") as handle:
+            text = handle.read(8192)
+    except OSError:
+        return None
+    match = _NPM_SHIM_SCRIPT.search(text)
+    if not match:
+        return None
+    folder = os.path.dirname(os.path.abspath(shim))
+    script = os.path.join(folder, match.group(1).replace("/", os.sep).replace("\\", os.sep))
+    if not os.path.isfile(script):
+        return None
+    bundled = os.path.join(folder, "node.exe")
+    node = bundled if os.path.isfile(bundled) else (shutil.which("node") or "")
+    if not node:
+        return None
+    return [node, script]
 
 
 _RUNNABLE_WINDOWS = (".exe", ".cmd", ".bat", ".com")

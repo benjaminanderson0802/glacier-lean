@@ -1,0 +1,77 @@
+{
+  "id": "coop-claim-readiness",
+  "name": "Co-op claim readiness",
+  "nodes": [
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "0 9 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "create_drafts",
+      "type": "command",
+      "config": {
+        "cmd": "if [ -f \"$GLACIER_HOME/ventures/coop-postcards/intake/jobber.json\" ]; then python ventures/coop-postcards/scripts/generate_claim_drafts.py --fixture \"$GLACIER_HOME/ventures/coop-postcards/intake/jobber.json\"; else python ventures/coop-postcards/scripts/generate_claim_drafts.py; fi",
+        "cwd": ".",
+        "timeout": "60",
+        "retries": "0"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "claim_review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review the local claim draft, current brand program terms, and evidence checklist. This records your review only. The dealer must authorize, sign, and submit the claim directly with the brand; Glacier does not file it."
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "record_review_only",
+      "type": "command",
+      "config": {
+        "cmd": "python3 ventures/coop-postcards/scripts/run_approved_claim.py --approval {run}",
+        "cwd": ".",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {
+        "x": 900,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "create_drafts"
+    },
+    {
+      "id": "e2",
+      "source": "create_drafts",
+      "target": "claim_review"
+    },
+    {
+      "id": "e3",
+      "source": "claim_review",
+      "target": "record_review_only",
+      "label": "yes"
+    }
+  ],
+  "checks": []
+}

@@ -23,6 +23,21 @@ def test_api_needs_the_token(server):
     assert right.status_code == 200
 
 
+def test_cookie_does_not_authenticate_api(server):
+    response = raw_httpx["get"](server.url + "/api/environments",
+                                 headers={"Cookie": f"glacier-token={TEST_TOKEN}"}, timeout=30)
+    assert response.status_code == 401
+    assert response.json()["detail"] == NOT_OURS
+
+
+def test_token_extraction_supports_proxy_authorization_and_websocket_protocol():
+    import local_token
+
+    assert local_token.from_headers_or_protocol({"authorization": f"Bearer {TEST_TOKEN}"}) == TEST_TOKEN
+    assert local_token.from_headers_or_protocol({"sec-websocket-protocol": f"glacier-events, {TEST_TOKEN}"}) == TEST_TOKEN
+    assert local_token.from_headers_or_protocol({"cookie": f"glacier-token={TEST_TOKEN}"}) is None
+
+
 def test_state_changing_call_without_token_changes_nothing(server):
     env = {"id": "sneaky", "name": "sneaky", "nodes": [], "edges": []}
     assert raw_httpx["put"](server.url + "/api/environments/sneaky", json=env, timeout=30).status_code == 401

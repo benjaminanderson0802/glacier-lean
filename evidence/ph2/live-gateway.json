@@ -1,0 +1,13 @@
+{
+  "note": "Direct live adapter calls, supplemental observations; acceptance is the unchanged test board.",
+  "default": {
+    "state": "failed",
+    "exit_code": 1,
+    "output": "No free model is available right now. Check that a model is running and try again. local could not be reached."
+  },
+  "unavailable_primary": {
+    "state": "failed",
+    "exit_code": 1,
+    "output": "No free model is available right now. Check that a model is running and try again. local could not be reached."
+  }
+}

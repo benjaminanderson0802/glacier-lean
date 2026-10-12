@@ -1,0 +1,31 @@
+{
+  "input": {
+    "certificate": "3510",
+    "active_only": false,
+    "max_records": 100
+  },
+  "rows": [
+    {
+      "record_id": "3510",
+      "outcome": "ok",
+      "billable": true,
+      "message": "Official institution record; not a bank safety or deposit coverage determination.",
+      "certificate": "3510",
+      "name": "Bank of America, National Association",
+      "active": true,
+      "state": "NC",
+      "city": "Charlotte",
+      "postal_code": "28202",
+      "website": "www.bankofamerica.com",
+      "source_updated_at": "2026-06-29",
+      "source_vintage": "institutions_20261009090008",
+      "source_total": 1,
+      "truncated": false,
+      "record_url": "https://banks.data.fdic.gov/bankfind-suite/bankfind/details/3510",
+      "source_url": "https://api.fdic.gov/banks/institutions?filters=CERT%3A3510&fields=CERT%2CNAME%2CACTIVE%2CSTALP%2CCITY%2CZIP%2CDATEUPDT%2CWEBADDR&format=json&sort_by=CERT&sort_order=ASC&limit=100&offset=0",
+      "retrieved_at": "2026-10-11T04:31:05.809647+00:00",
+      "source_last_modified": null,
+      "source_sha256": "9a185b5ff6750b7b11b53351d5190212af5c7d5fe3cf76cca72d36dd88fbb489"
+    }
+  ]
+}

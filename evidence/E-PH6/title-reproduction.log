@@ -1,0 +1,26 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_______________ test_original_title_survives_event_preview_limit _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-611/test_original_title_survives_e0')
+
+    def test_original_title_survives_event_preview_limit(tmp_path):
+        path = tmp_path / "long.jsonl"
+        records = [
+            {"type": "session_meta", "payload": {"id": "long"}},
+            {"type": "event_msg", "payload": {"type": "user_message", "message": "<environment_context>injected</environment_context>"}},
+            {"type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"text": "Find the missing invoices"}]}},
+        ]
+        records.extend({"type": "event_msg", "payload": {"type": "agent_message", "message": f"Step {i}"}}
+                       for i in range(session_mirror.MAX_EVENTS + 1))
+        path.write_text("".join(json.dumps(row) + "\n" for row in records))
+        summary, events, _, _ = session_mirror._load_file(path, include_events=False)
+>       assert summary["title"] == "Find the missing invoices"
+E       AssertionError: assert '' == 'Find the missing invoices'
+E         
+E         - Find the missing invoices
+
+tests/test_session_summary_units.py:18: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_session_summary_units.py::test_original_title_survives_event_preview_limit
+1 failed, 1 passed in 0.59s

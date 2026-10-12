@@ -1,22 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ago, loadHome, subscribeEvents, type HomeItem, type HomeSummary } from '../api.ts'
-import { Empty, PageHead, Panel, Progress, Row } from '../ui/kit.tsx'
+import { Btn, Empty, PageHead, Panel, Progress, Row } from '../ui/kit.tsx'
 import { StatusIcon } from '../ui/Pixel.tsx'
 import { go } from '../route.ts'
 import { StarterPanel } from './Starter.tsx'
 import { t } from '../i18n/index.ts'
 import { teamsApi } from '../api.ts'
+import { YourStep } from '../ui/YourStep.tsx'
+import './home.css'
 
-const KIND_TITLE: Record<HomeItem['kind'], string> = { approval: t('home.kindApproval'), claim: t('home.kindClaim'), failed_run: t('home.kindFailedRun') }
+const KIND_TITLE: Record<HomeItem['kind'], string> = { approval: t('home.kindApproval'), your_step: t('ventures.yourStep'), claim: t('home.kindClaim'), failed_run: t('home.kindFailedRun') }
 
 export function HomeScreen() {
   const [data, setData] = useState<HomeSummary | null>(null)
   const [err, setErr] = useState('')
-  const [teams, setTeams] = useState<{ team_id: string; name: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[]>([])
-  const refresh = useCallback(() => { loadHome().then(d => { setData(d); setErr('') }).catch(e => setErr(String(e))) }, [])
+  const [teams, setTeams] = useState<{ team_id: string; name: string; status: string; done: number; tasks: number; passing: number; feature_count: number; needs_owner: number }[] | null>(null)
+  const [teamError, setTeamError] = useState('')
+  const refresh = useCallback(() => {
+    loadHome().then(d => { setData(d); setErr('') }).catch(e => setErr(String(e)))
+    teamsApi.list().then(rows => { setTeams(rows); setTeamError('') }).catch(e => setTeamError(String(e)))
+  }, [])
   useEffect(() => {
     refresh()
-    teamsApi.list().then(setTeams).catch(() => {})
     let t: ReturnType<typeof setTimeout> | undefined
     const off = subscribeEvents(() => { clearTimeout(t); t = setTimeout(refresh, 400) }, () => {})
     const iv = setInterval(refresh, 15000)
@@ -39,26 +44,28 @@ export function HomeScreen() {
             return <span className={`g-online${cls}`} title={data?.local_ai.model ?? undefined} data-testid="local-ai"><i className="g-dot" />{label}</span>
           })()}</div>
           <div>
-            <span data-testid="count-running">{data?.counts.running ?? 0} {t('home.runningCount')}</span>
-            <span data-testid="count-need-you">{data?.counts.need_you ?? 0} {t('home.needYouCount')}</span>
+            <span data-testid="count-running">{data?.counts.running ?? '—'} {t('home.runningCount')}</span>
+            <span data-testid="count-need-you">{data?.counts.need_you ?? '—'} {t('home.needYouCount')}</span>
           </div>
         </div>
       } />
-      {err && <div className="g-error">{err}</div>}
-      <div className="g-grid-2 g-home-grid" style={{ flex: 1, minHeight: 0, gridColumn: '1 / -1', gridRow: '2 / 4', display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)', gap: 'calc(2 * var(--px))' }}>
+      {err && <div className="g-error" role="alert">{err} <Btn onClick={refresh}>{t('build.refresh')}</Btn></div>}
+      <div className="g-grid-2 g-home-grid" style={{ flex: 1, minHeight: 0, gridColumn: '1 / -1', gridRow: '2 / 4', display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)', gap: 'calc(4 * var(--px))' }}>
         <div className="g-stack" style={{ gridColumn: 1, gridRow: 1, minHeight: 0 }}>
         <StarterPanel />
-        <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you" style={{ flex: 1 }}>
+        <Panel title={t('home.needsYou')} aside={<button className="g-link" onClick={() => go('home/claims')} data-testid="all-claims">{t('home.allClaims')}</button>} testid="needs-you" style={{ flex: 1, background: 'none', border: 0, padding: 0 }}>
           <div className="g-rows">
             {data?.needs_you.length === 0 && <Empty>{t('home.noItemsNeedAttention')}</Empty>}
             {data?.needs_you.map((it, i) => (
-              <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} leadTitle={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
+              it.kind === 'your_step'
+                ? <YourStep key={`${it.ref.venture_slug ?? it.ref.run_id}:${it.ref.step_id ?? it.ref.node_id}`} item={it} onDone={refresh} />
+                : <Row key={i} status="bad" lead={`1 ${KIND_TITLE[it.kind] ?? it.title}`} leadTitle={`1 ${KIND_TITLE[it.kind] ?? it.title}`} detail={it.detail} when={ago(it.at)} onClick={() => open(it)} testid={`need-${i}`} />
             ))}
           </div>
         </Panel>
         </div>
         <div className="g-stack" style={{ gridColumn: 2, gridRow: 1, minHeight: 0 }}>
-          <Panel title={t('home.runningNow')} testid="running-now" style={{ flex: '0 0 30%' }}>
+          <Panel title={t('home.runningNow')} testid="running-now" style={{ flex: '0 0 20%', background: 'none', border: 0, padding: 0 }}>
             <div className="g-rows">
               {data?.running.length === 0 && <Empty>{t('home.nothingRunning')}</Empty>}
               {data?.running.map(r => (
@@ -69,10 +76,20 @@ export function HomeScreen() {
               ))}
             </div>
           </Panel>
-          <Panel title={t('team.homeTeams')} testid="home-teams" style={{ flex: '0 0 30%' }}>
-            <div className="g-rows">{teams.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={team.name || team.team_id} detail={team.needs_owner ? t('team.ownerWaiting', { count: team.needs_owner }) : t('team.homeTeam', { passing: team.passing, total: team.feature_count })} when={<Progress value={team.passing} max={team.feature_count} />} onClick={() => go(`automations/team/${team.team_id}`)} testid={`home-team-${team.team_id}`} />)}</div>
+          <Panel title={t('home.health')} testid="daily-health" style={{ flex: '0 0 30%', background: 'none', border: 0, padding: 0 }}>
+            <div className="g-rows" data-testid="health-report">
+              <Row status="run" lead={t('home.ventureDigest')} detail={data?.venture_digest ? t('home.ventureDigestCounts', { ...data.venture_digest }) : '—'} when={data?.venture_digest?.date ?? ''} testid="venture-daily-digest" />
+              <Row status="run" lead={t('home.healthFailed')} detail={String(data?.health?.failed_runs ?? '—')} when={data?.health?.date ?? ''} testid="health-failed" />
+              <Row status="warn" lead={t('home.healthStuck')} detail={String(data?.health?.stuck_runs ?? '—')} testid="health-stuck" />
+              <Row status="warn" lead={t('home.healthWaiting')} detail={String(data?.health?.waiting_for_owner ?? '—')} testid="health-waiting" />
+              <Row status="run" lead={t('home.healthSize')} detail={data?.health ? `${(data.health.data_bytes / (1024 * 1024)).toFixed(1)} MB` : '—'} onClick={data?.health?.note_path ? () => go(`memory/${encodeURIComponent(data.health!.note_path)}`) : undefined} testid="health-size" />
+              {data?.next_runs?.slice(0, 3).map(item => <Row key={item.env_id} status="run" lead={item.name} detail={new Date(item.next_run).toLocaleString()} when="next" testid={`next-run-${item.env_id}`} />)}
+            </div>
           </Panel>
-          <Panel title={t('home.recentNotes')} testid="recent-notes" style={{ flex: 1 }}>
+          <Panel title={t('team.homeTeams')} testid="home-teams" style={{ flex: '0 0 20%', background: 'none', border: 0, padding: 0 }}>
+            <div className="g-rows">{teamError && <div className="g-error" role="alert">{teamError}</div>}{teams === null && !teamError && <Empty>{t('home.loading')}</Empty>}{teams?.length === 0 && <Empty>{t('team.noTeams')}</Empty>}{teams?.map(team => <Row key={team.team_id} status={team.needs_owner ? 'warn' : 'run'} lead={team.name || team.team_id} detail={team.needs_owner ? t('team.ownerWaiting', { count: team.needs_owner }) : t('team.homeTeam', { passing: team.passing, total: team.feature_count })} when={<Progress value={team.passing} max={team.feature_count} />} onClick={() => go(`automations/team/${team.team_id}`)} testid={`home-team-${team.team_id}`} />)}</div>
+          </Panel>
+          <Panel title={t('home.recentNotes')} testid="recent-notes" style={{ flex: 1, background: 'none', border: 0, padding: 0 }}>
             <div className="g-rows">
               {data?.recent_notes.length === 0 && <Empty>{t('home.noNotes')}</Empty>}
               {data?.recent_notes.map(n => (

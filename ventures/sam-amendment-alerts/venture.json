@@ -1,0 +1,34 @@
+{
+  "slug": "sam-amendment-alerts",
+  "name": "SAM amendment and deadline alerts",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Prepare a dated, source-linked digest of new SAM.gov contract notices and observed version or response-deadline changes between two saved Opportunities API v2 snapshots for industrial supplies merchant wholesalers (NAICS 423840).",
+    "customers": "Small industrial supplies wholesalers and federal contracting teams that monitor SAM.gov notices themselves.",
+    "channels": [
+      "SAM.gov Contract Opportunities API v2 public notices",
+      "Owner-reviewed direct pilot invitation to businesses in SBA Small Business Search"
+    ],
+    "publication": "Glacier prepares a local digest only. The owner reviews and sends any pitch; customers verify each live notice and decide whether and how to bid.",
+    "billing": "Price hypothesis: $49 for a four-week paid pilot, then $29 per month for one NAICS watch. This is unvalidated; do not charge until the owner offers and approves it.",
+    "coverage_limit": "Only changes observed between saved snapshots are reported. The API returns the latest active version and does not reconstruct amendments published before the first saved snapshot. No eligibility advice, award prediction, or government affiliation is claimed."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": ["sam-amendment-digest"],
+  "secrets_needed": ["sam_api_key"],
+  "your_steps": [
+    {
+      "id": "send-one-pilot-pitch",
+      "title": "Your step: Send one pilot invitation",
+      "when": "When you are ready to test whether buyers will pay",
+      "detail": "Choose one business from prospects.csv, check its linked first-party contact page is still current, and confirm federal-bidding fit directly; the listed source does not prove registration, active bids, buyer interest, or consent. Personalize the greeting, review the sample and offer, then send the single email in PILOT.md yourself. Do not send it to a list or imply government affiliation.",
+      "links": ["https://search.certifications.sba.gov/", "https://open.gsa.gov/api/get-opportunities-public-api/"]
+    }
+  ],
+  "launch_gates": [
+    "Before a live customer run, the owner obtains and enters their own free SAM.gov public API key as sam_api_key in Glacier Secrets; no key belongs in files, fixtures, or command arguments.",
+    "Confirm current SAM.gov API key, rate, and terms requirements before any scheduled production polling.",
+    "No outbound email, signup, charge, purchase, bid, signature, or government submission is automated."
+  ]
+}

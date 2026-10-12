@@ -1,0 +1,53 @@
+{
+  "status": "healthy",
+  "checked_at": "2026-10-10T05:29:55+00:00",
+  "consecutive_failed_runs": 0,
+  "repair_attempts": 0,
+  "retire_after_repair_attempts": 2,
+  "reason": "All three Mississippi contractor canaries matched the recorded board values.",
+  "failed_license_numbers": [],
+  "results": [
+    {
+      "license_number": "22649",
+      "ok": true,
+      "actual": {
+        "outcome": "match",
+        "verification_state": "verified",
+        "license_number": "22649",
+        "business_name": "10TENCONSTRUCTION, LLC",
+        "status": "Licensed",
+        "expiration_date": "2027-05-07",
+        "source_url": "https://search.msboc.us/Detail.cfm?ContractorID=54380&ContractorType=Residential&varDataSource=BOCRes",
+        "checked_at": "2026-10-10T05:29:50+00:00"
+      }
+    },
+    {
+      "license_number": "18583",
+      "ok": true,
+      "actual": {
+        "outcome": "match",
+        "verification_state": "verified",
+        "license_number": "18583",
+        "business_name": "1ST CHOICE CONSTRUCTION SERVICES, LLC",
+        "status": "Licensed",
+        "expiration_date": "2027-03-18",
+        "source_url": "https://search.msboc.us/Detail.cfm?ContractorID=48601&ContractorType=Residential&varDataSource=BOCRes",
+        "checked_at": "2026-10-10T05:29:51+00:00"
+      }
+    },
+    {
+      "license_number": "21881",
+      "ok": true,
+      "actual": {
+        "outcome": "match",
+        "verification_state": "verified",
+        "license_number": "21881",
+        "business_name": "3H CONSTRUCTION LLC",
+        "status": "Licensed",
+        "expiration_date": "2027-10-27",
+        "source_url": "https://search.msboc.us/Detail.cfm?ContractorID=53134&ContractorType=Residential&varDataSource=BOCRes",
+        "checked_at": "2026-10-10T05:29:53+00:00"
+      }
+    }
+  ]
+}

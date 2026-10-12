@@ -1,0 +1,56 @@
+{
+  "slug": "carpenter-goods",
+  "name": "carpenter's goods",
+  "status": "ready",
+  "product": {
+    "purpose": "Prepare Etsy and Shopify product drafts and track agreed commissions from owner-exported sales.",
+    "channels": [
+      "Etsy",
+      "Shopify site with local pickup"
+    ],
+    "publication": "Manual publication only after owner approval; no platform write connector is used.",
+    "billing": "Commission per sale, with the rate agreed in writing with the carpenter."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": [
+    "carpenter-prepare-listing",
+    "carpenter-track-commissions"
+  ],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "agree-commission",
+      "title": "Agree, sign, and provide the source files",
+      "when": "One working session with the carpenter, before preparing listings or calculating commission",
+      "detail": "Follow OWNER-STEPS.md step 1 and OWNER-DATA-REQUEST.md. Fill the prepared commission agreement together, resolve every marked term, and both sign it yourselves. Provide maker-confirmed product facts, original local photo paths, three current source-linked completed sales, and (if calculating earned commission) the official Etsy/Shopify order CSVs plus matching signed terms. The CLI supports legacy paid-sales.json input, but test fixtures are synthetic and must not be used as merchant data. Before the first physical-goods sale, check the linked Georgia DOR guidance to see whether registration applies; applicability is uncertain and Glacier makes no legal determination. Glacier does not sign, connect to either shop, or access accounts.",
+      "links": [
+        "OWNER-STEPS.md",
+        "OWNER-DATA-REQUEST.md",
+        "agreement/commission-agreement.md",
+        "https://www.etsy.com/your/shops/me/dashboard",
+        "https://admin.shopify.com/",
+        "https://dor.georgia.gov/tax-registration",
+        "https://dor.georgia.gov/how-register-sales-and-use-tax-account",
+        "https://gtc.dor.ga.gov/"
+      ]
+    },
+    {
+      "id": "approve-first-listing",
+      "title": "Review the prepared drafts and publish only if approved",
+      "when": "After Glacier prepares the local drafts",
+      "detail": "Follow OWNER-STEPS.md step 2. Check every maker-confirmed fact and original photo, review the three-source comparable median, choose the final price yourself, then manually publish the Etsy listing only if approved. For Shopify, save as Draft first; change to Active and save only when you approve publication. Any commission report has a separate owner verification prompt: compare it to the signed terms and platform settlements before any payment. Glacier does not create accounts, publish, invoice, send messages, charge, or transfer money.",
+      "links": [
+        "https://www.etsy.com/your/shops/me/dashboard",
+        "https://admin.shopify.com/"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "Owner agrees commission terms in writing with the carpenter.",
+    "Owner approves the first product listing before manual publication.",
+    "Any paid production or order is approved by the owner."
+  ],
+  "dry_run_env_id": "carpenter-prepare-listing"
+}

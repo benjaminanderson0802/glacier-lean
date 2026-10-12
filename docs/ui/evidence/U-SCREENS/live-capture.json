@@ -1,0 +1,267 @@
+{
+  "backend": "disposable real FastAPI engine via npm run live",
+  "viewport": {
+    "width": 1680,
+    "height": 900
+  },
+  "layout": [
+    {
+      "route": "home",
+      "width": 980.796875,
+      "height": 417.953125
+    },
+    {
+      "route": "automations",
+      "width": 980.796875,
+      "height": 417.953125
+    },
+    {
+      "route": "automations/build/centre-panel-live-proof",
+      "width": 980.796875,
+      "height": 417.953125
+    },
+    {
+      "route": "ask/chat",
+      "width": 980.796875,
+      "height": 417.953125
+    },
+    {
+      "route": "memory/~map",
+      "width": 980.796875,
+      "height": 417.953125
+    },
+    {
+      "route": "settings/general",
+      "width": 980.796875,
+      "height": 417.953125
+    },
+    {
+      "route": "build",
+      "width": 980.796875,
+      "height": 417.953125
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "url": "/api/releases/installed/seen",
+      "status": 200
+    },
+    {
+      "url": "/api/teams",
+      "status": 200
+    },
+    {
+      "url": "/api/releases/installed/seen",
+      "status": 200
+    },
+    {
+      "url": "/api/teams",
+      "status": 200
+    },
+    {
+      "url": "/api/releases/installed/seen",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/teams",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/starter",
+      "status": 200
+    },
+    {
+      "url": "/api/starter",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/messages/threads",
+      "status": 200
+    },
+    {
+      "url": "/api/teams",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/environments",
+      "status": 200
+    },
+    {
+      "url": "/api/teams",
+      "status": 200
+    },
+    {
+      "url": "/api/environments",
+      "status": 200
+    },
+    {
+      "url": "/api/teams",
+      "status": 200
+    },
+    {
+      "url": "/api/ventures",
+      "status": 200
+    },
+    {
+      "url": "/api/ventures",
+      "status": 200
+    },
+    {
+      "url": "/api/environments",
+      "status": 200
+    },
+    {
+      "url": "/api/node-types",
+      "status": 200
+    },
+    {
+      "url": "/api/secrets",
+      "status": 200
+    },
+    {
+      "url": "/api/node-types",
+      "status": 200
+    },
+    {
+      "url": "/api/environments",
+      "status": 200
+    },
+    {
+      "url": "/api/secrets",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/history",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/environments/centre-panel-live-proof",
+      "status": 200
+    },
+    {
+      "url": "/api/environments",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/history",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/notes",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/notes",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/note",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/notes",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/note",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/history",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/graph",
+      "status": 200
+    },
+    {
+      "url": "/api/memory/graph",
+      "status": 200
+    },
+    {
+      "url": "/api/system/check",
+      "status": 200
+    },
+    {
+      "url": "/api/system/check",
+      "status": 200
+    },
+    {
+      "url": "/api/releases/installed/seen",
+      "status": 200
+    },
+    {
+      "url": "/api/releases/installed/seen",
+      "status": 200
+    },
+    {
+      "url": "/api/releases/installed/seen",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/home",
+      "status": 200
+    },
+    {
+      "url": "/api/messages/threads",
+      "status": 200
+    }
+  ],
+  "environment": {
+    "flow_id": "centre-panel-live-proof",
+    "note_path": "centre-panel-live-proof.md"
+  },
+  "screenshots": [
+    "live-home.png",
+    "live-ask.png",
+    "live-build.png",
+    "live-automations.png",
+    "live-canvas.png",
+    "live-memory.png",
+    "live-graph.png",
+    "live-settings.png",
+    "live-settings-system.png"
+  ],
+  "api_failures": 0
+}

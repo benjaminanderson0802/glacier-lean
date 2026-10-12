@@ -1,0 +1,28 @@
+{
+  "id": "carrier-bryant",
+  "brand_names": ["Carrier", "Bryant"],
+  "primary_brand": "carrier",
+  "queue_window_days": 90,
+  "registration": {
+    "deadline": "90 days after installation for the cited eligible U.S. residential enhanced/Consumer Choice coverage; exceptions and product terms apply. Verify the unit certificate.",
+    "who_may_register": "Homeowner/customer or dealer/contractor; the official Carrier and Bryant registration forms each present both roles.",
+    "portal_urls": {
+      "Carrier": "https://productregistration.carrier.com/Public/RegistrationForm_Carrier?brand=carrier",
+      "Bryant": "https://productregistration.bryant.com/Public/RegistrationForm?brand=bryant"
+    },
+    "portal_accepts_dealer": "yes - both official registration forms offer `Customer/Equipment Owner` and `Dealer/Contractor` as registrant choices.",
+    "terms_allow_third_party_preparation": "uncertain - please check; dealer registration is explicitly supported in the portal, but the reviewed public pages do not specify whether an outside service may prepare data for a dealer."
+  },
+  "date_code": {
+    "status": "uncertain - please check",
+    "format": "No general Carrier/Bryant HVAC serial-number date-code format was found in the official pages reviewed. Carrier says a serial number often contains manufacture date; do not parse it without model-specific manufacturer guidance."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Carrier warranty and registration", "url": "https://www.carrier.com/us/en/residential/homeowner-resources/warranty/"},
+    {"title": "Bryant warranty information", "url": "https://www.bryant.com/en/us/current-owners/warranty-information/"},
+    {"title": "Carrier registration portal", "url": "https://productregistration.carrier.com/Public/RegistrationForm_Carrier?brand=carrier"},
+    {"title": "Bryant registration portal", "url": "https://productregistration.bryant.com/Public/RegistrationForm?brand=bryant"},
+    {"title": "Carrier terms of use", "url": "https://www.carrier.com/us/en/terms-of-use/"}
+  ]
+}

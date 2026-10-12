@@ -1,0 +1,171 @@
+{
+  "id": "dibbs-daily-prep",
+  "name": "Prepare DIBBS quote files",
+  "goal": "Read DLA contract-opportunity notices from SAM.gov, rank candidates for owner review, match exact owner-verified DIBBS solicitation details with manufacturer or authorized-distributor quotes, and prepare local quote files. Glacier does not contact suppliers, spend money, sign, or submit bids.",
+  "nodes": [
+    {
+      "id": "daily",
+      "type": "schedule",
+      "config": {
+        "cron": "0 6 * * *",
+        "missed_run": "run_once",
+        "overlap": "skip"
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "prepare",
+      "type": "command",
+      "config": {
+        "cmd": "GLACIER_PROJECT_ROOT=\"$PWD\" python ventures/dibbs-supply/scripts/dibbs_supply.py daily --solicitations \"$GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json\" --quotes \"$GLACIER_HOME/ventures/dibbs-supply/incoming/quotes.json\" --output \"$GLACIER_HOME/ventures/dibbs-supply/drafts\"",
+        "timeout": "180",
+        "retries": "0",
+        "cwd": "{repo}"
+      },
+      "position": {
+        "x": 300,
+        "y": 0
+      }
+    },
+    {
+      "id": "ready",
+      "type": "check",
+      "config": {
+        "expr": "exit_code == 0"
+      },
+      "position": {
+        "x": 600,
+        "y": 0
+      }
+    },
+    {
+      "id": "owner_review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review ranked DLA candidates in sam-opportunities.json and verify each notice on the official DIBBS solicitation search. Enter its exact DIBBS detail URL, solicitation number, part number, NSN, quantity, eligibility, due date and required quote fields in incoming/solicitations.json. Review quote-request drafts and the bid sheet in drafts; confirm every supplier is an original manufacturer or verified authorized distributor. Contact suppliers manually, approve parts spending separately before any purchase, and personally sign and submit each bid in DIBBS. Glacier does not contact suppliers, spend money, sign, or submit."
+      },
+      "position": {
+        "x": 900,
+        "y": -120
+      }
+    },
+    {
+      "id": "parts_spend_approval",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Approve or decline this exact parts commitment before any purchase: verify the supplier, exact part number, quantity, quoted unit cost, total spend, delivery terms, and related solicitation. This approval records your decision only; Glacier does not place an order or spend money. Do not purchase until this step is approved."
+      },
+      "position": {
+        "x": 1200,
+        "y": -120
+      }
+    },
+    {
+      "id": "review_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/reviews/prepared-{run}.md",
+        "template": "The owner reviewed the locally prepared DIBBS bid sheet in run {run}. This note is not a signature or submission receipt. The owner remains responsible for signing and submitting each bid and approving parts spending.\n\n{summary}"
+      },
+      "position": {
+        "x": 1200,
+        "y": -120
+      }
+    },
+    {
+      "id": "uncertain_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/reviews/uncertain-{run}.md",
+        "template": "DIBBS preparation needs review in run {run}. Missing, unmatched or conflicting solicitation, supplier, quote, or traceability facts remain uncertain. No bid was submitted.\n\n{summary}"
+      },
+      "position": {
+        "x": 900,
+        "y": 120
+      }
+    },
+    {
+      "id": "purchase_declined",
+      "type": "note",
+      "config": {
+        "path": "ventures/dibbs-supply/reviews/parts-purchase-declined-{run}.md",
+        "template": "The owner declined the parts commitment in run {run}. No purchase was placed by Glacier. Do not buy these parts for this solicitation.\n\n{summary}"
+      },
+      "position": {
+        "x": 1500,
+        "y": 120
+      }
+    },
+    {
+      "id": "owner_input_ready",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: after reviewing SAM.gov candidates on the DIBBS solicitation search, save exact DIBBS solicitation details at $GLACIER_HOME/ventures/dibbs-supply/incoming/solicitations.json and returned manufacturer or authorized-distributor quotes at $GLACIER_HOME/ventures/dibbs-supply/incoming/quotes.json. Include exact part numbers, quantities, due dates, quote prices, and supplier authorization and traceability evidence. Return and approve after both files are ready."
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "daily",
+      "target": "prepare",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "prepare",
+      "target": "ready",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "ready",
+      "target": "owner_review",
+      "label": "yes"
+    },
+    {
+      "id": "e4",
+      "source": "owner_review",
+      "target": "parts_spend_approval",
+      "label": "yes"
+    },
+    {
+      "id": "e4a",
+      "source": "parts_spend_approval",
+      "target": "review_note",
+      "label": "yes"
+    },
+    {
+      "id": "e4b",
+      "source": "parts_spend_approval",
+      "target": "purchase_declined",
+      "label": "no"
+    },
+    {
+      "id": "e5",
+      "source": "ready",
+      "target": "uncertain_note",
+      "label": "no"
+    },
+    {
+      "id": "i5-owner_input_ready-prepare",
+      "source": "owner_input_ready",
+      "target": "prepare"
+    }
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "PYTHONPATH=. .venv/bin/python -c \"import json,os,pathlib; root=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'dibbs-supply'/'drafts'; p=root/'bid-sheet.json'; d=json.loads(p.read_text()); f=json.loads((root/'sam-opportunities.json').read_text()); assert d['submitted'] is False and d['owner_must_sign_and_submit'] is True and d['result'] in ('match','uncertain — please check','no match found in DLA DIBBS and supplier quotes as of '+d['as_of']) and isinstance(f['ranked_opportunities'],list) and f['discovery_only'] is True\"",
+      "required": true
+    }
+  ],
+  "max_steps": 6
+}

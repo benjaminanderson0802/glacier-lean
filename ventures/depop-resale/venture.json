@@ -1,0 +1,49 @@
+{
+  "slug": "depop-resale",
+  "name": "buy-first secondhand clothing resale prep",
+  "status": "ready",
+  "product": {
+    "purpose": "Prepare sourced-category buy ceilings, listing drafts from owner-provided item facts and original photos, and sold-item shipping checklists for owner review.",
+    "inventory_model": "BUY-FIRST: the owner purchases and physically possesses each item before any listing; owner takes original photos.",
+    "data_access": "Local CSV and local photo paths only. No Depop login, API, browsing, scraping, bot, posting, purchase, or label purchase.",
+    "listing_handoff": "Local review-only CSV; manual Depop listing is the only provider route verified from current official Depop sources, which do not name approved crosslisting vendors.",
+    "pricing_assumption": "Illustrative USD ceilings target 50% contribution margin after US payment processing, seller-paid postage, and packaging; owner verifies current fees and comparable sold prices before purchase.",
+    "limitations": [
+      "Depop trend coverage is directional, not proof of category sell-through or revenue.",
+      "Owner must confirm all listing facts and original-photo ownership; the script cannot infer authenticity or verify photo provenance.",
+      "No named crosslisting provider is publicly identified as Depop-approved; manual listing in Depop is the only prepared route.",
+      "Owner purchases inventory, chooses final prices, manually approves/publishes each listing, and later buys labels, packs, and ships sold items."
+    ]
+  },
+  "flows": ["depop-resale-owner-workflow"],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "buy-stock",
+      "title": "Buy inspected used stock within the ceilings",
+      "when": "Before each sourcing batch",
+      "detail": "Use the owner-checked ceiling in RESEARCH.md, inspect the item and its full landed cost, and personally buy only used stock you can verify and physically receive. The example sale prices and ceilings are screening assumptions, not guarantees. Follow the exact steps in OWNER-STEPS.md. After a sale, you personally pack, buy the shipping label, dispatch, and track the order.",
+      "links": [
+        "https://www.goodwill.org/locate-a-thrift-store/",
+        "https://shopgoodwill.com/listing?catIds=&layout=grid"
+      ]
+    },
+    {
+      "id": "prepare-and-list-item",
+      "title": "Photograph, prepare, review, and list each item",
+      "when": "After you physically receive each item",
+      "detail": "In one per-item sitting, photograph the actual garment, record verified facts in a private inventory CSV, run the local draft command, compare every field and photo with the physical item, then enter the checked draft and original photos in Depop and publish or save it yourself. Keep the CSV and photos outside the repository. Never use catalogue stock or supplier photos; no named crosslisting vendor is asserted as Depop-approved.",
+      "links": ["README.md", "OWNER-STEPS.md", "https://www.depop.com/", "https://depophelp.zendesk.com/hc/en-gb/articles/360032716413-How-to-list-an-item"]
+    }
+  ],
+  "launch_gates": [
+    "Do not list catalog drop-shipped goods, stock/supplier photos, or items not physically owned and available to ship.",
+    "Sell only authentic, legally owned, Depop-permitted used clothing; do not list prohibited items or counterfeit goods.",
+    "Use only the owner's original item photos and review all AI/template text for accuracy; no unsupported brand, era, material, or condition claims.",
+    "Use manual Depop listing only: public official Depop sources reviewed do not name an approved crosslisting vendor, and the public API is not available.",
+    "Do not use bots, scraping, browser automation, or Depop API access.",
+    "Remove an item promptly if you later list it elsewhere and it sells; resolve any double sale yourself.",
+    "No buying, account creation, publishing, spending, label purchase, or external write is performed by the venture scripts."
+  ]
+}

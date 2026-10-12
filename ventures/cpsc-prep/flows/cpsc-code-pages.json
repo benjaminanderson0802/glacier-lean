@@ -1,0 +1,14 @@
+{
+  "id": "cpsc-code-pages",
+  "name": "Prepare CPSC tariff-code pages",
+  "nodes": [
+    {"id": "build-preview", "type": "command", "config": {"cmd": "python3 scripts/build_code_pages.py --preview --out code-pages-preview.json", "cwd": "ventures/cpsc-prep", "timeout": "300"}, "position": {"x": 0, "y": 0}},
+    {"id": "first-listing-review", "type": "approval", "config": {"prompt": "Your step: Review the exact code-page data saved in code-pages-preview.json and approve the first public CPSC code pages. Each page names its source and says it is an independent service, not a government notice. The approval applies to that saved preview only."}, "position": {"x": 360, "y": 0}},
+    {"id": "publish-pages", "type": "command", "config": {"cmd": "python3 scripts/build_code_pages.py --publish-from code-pages-preview.json", "cwd": "ventures/cpsc-prep", "timeout": "300"}, "position": {"x": 720, "y": 0}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "build-preview", "target": "first-listing-review", "label": ""},
+    {"id": "e2", "source": "first-listing-review", "target": "publish-pages", "label": "yes"}
+  ],
+  "max_steps": 10
+}

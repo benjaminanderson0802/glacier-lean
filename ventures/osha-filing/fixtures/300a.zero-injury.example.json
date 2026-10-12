@@ -1,0 +1,21 @@
+{
+  "establishment_id": "example-osha-id",
+  "establishment_name": "Example Fabrication Shop",
+  "establishment_address": "100 Example Avenue",
+  "establishment_city": "Sampletown",
+  "establishment_state": "IL",
+  "establishment_zip": "60000",
+  "industry_code": "332710",
+  "year": 2025,
+  "average_employees": 25,
+  "total_hours_worked": 48000,
+  "total_deaths": 0,
+  "cases_with_days_away": 0,
+  "cases_with_job_transfer_or_restriction": 0,
+  "other_recordable_cases": 0,
+  "total_cases": 0,
+  "days_away": 0,
+  "job_transfer_or_restriction_days": 0,
+  "executive_name": "Jordan Example",
+  "executive_title": "Owner"
+}

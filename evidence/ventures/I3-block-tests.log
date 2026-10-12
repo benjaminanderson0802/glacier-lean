@@ -1,0 +1,139 @@
+### /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/connectors/tests
+...........                                                              [100%]
+11 passed in 0.14s
+### /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/customer/tests
+..........                                                               [100%]
+10 passed in 3.33s
+### /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/deadlines/tests
+......                                                                   [100%]
+6 passed in 0.14s
+### /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/feeds/tests
+.........                                                                [100%]
+9 passed in 0.13s
+### /home/glacier/w/glacier-lean/.venv/bin/python -m unittest ventures.blocks.filer.tests.test_filer_acceptance -v
+test_approved_submit_saves_confirmation_and_replay_does_not_double_file (ventures.blocks.filer.tests.test_filer_acceptance.PortalFilerAcceptanceTests.test_approved_submit_saves_confirmation_and_replay_does_not_double_file) ... ok
+test_prepare_fills_multistep_form_and_never_submits (ventures.blocks.filer.tests.test_filer_acceptance.PortalFilerAcceptanceTests.test_prepare_fills_multistep_form_and_never_submits) ... ok
+test_submit_requires_approval (ventures.blocks.filer.tests.test_filer_acceptance.PortalFilerAcceptanceTests.test_submit_requires_approval) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 3.070s
+
+OK
+### /home/glacier/w/glacier-lean/.venv/bin/python -m unittest ventures.blocks.mail.tests.test_mail_acceptance -v
+test_landing_pages_are_distinct_and_show_real_source_values (ventures.blocks.mail.tests.test_mail_acceptance.MailAcceptanceTests.test_landing_pages_are_distinct_and_show_real_source_values) ... ok
+test_missing_address_is_uncertain_and_test_key_is_required (ventures.blocks.mail.tests.test_mail_acceptance.MailAcceptanceTests.test_missing_address_is_uncertain_and_test_key_is_required) ... ok
+test_no_key_is_render_only_and_produces_print_proof (ventures.blocks.mail.tests.test_mail_acceptance.MailAcceptanceTests.test_no_key_is_render_only_and_produces_print_proof) ... ok
+test_outreach_rules_and_suppression_prevent_send (ventures.blocks.mail.tests.test_mail_acceptance.MailAcceptanceTests.test_outreach_rules_and_suppression_prevent_send) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.002s
+
+OK
+### /home/glacier/w/glacier-lean/.venv/bin/python -m ventures.blocks.reader.benchmark ventures/blocks/reader/samples/manifest.json
+{
+  "agreement": 1.0,
+  "agreement_percent": 100.0,
+  "labeled_value_accuracy": 1.0,
+  "labeled_value_accuracy_percent": 100.0,
+  "fields": 7,
+  "known_value_fields": 7,
+  "documents": [
+    {
+      "id": "cpsc-quick-start",
+      "sha256": "06bc1bb03cced5f2f9d31b65fd1a3a5dd1343f82a1ac35bbd599886aa10ad4db",
+      "fields": {
+        "certifier_id": {
+          "expected": "ABCCo",
+          "actual": "ABCCo",
+          "page": 9,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        },
+        "product_id": {
+          "expected": "A1234567",
+          "actual": "A1234567",
+          "page": 9,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        },
+        "version_id": {
+          "expected": "V1",
+          "actual": "V1",
+          "page": 9,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        }
+      }
+    },
+    {
+      "id": "cpsc-registry-guide",
+      "sha256": "3ee0f00a7279f612d4f61e40a07573756e3e8c37b5f75e6241df38b6c4a2c966",
+      "fields": {}
+    },
+    {
+      "id": "fda-cosmetic-labeling-guide",
+      "sha256": "dd1a9a676b6900e5e3f538a17d86e33bd7078a5dab791d59bc03551ffc2307b1",
+      "fields": {
+        "example_ingredient": {
+          "expected": "castor oil",
+          "actual": "castor oil",
+          "page": 21,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        }
+      }
+    },
+    {
+      "id": "fda-form-5067",
+      "sha256": "b7d48413be069a5c12d7af4ee0cb4e6225b71ea2ad1249a22e01ab1618b6efef",
+      "fields": {}
+    },
+    {
+      "id": "gsa-bill-of-lading",
+      "sha256": "b9ba2e02a3287ba070d5ec73a1704289042fe9eba86417d5a842620ebce5794c",
+      "fields": {}
+    },
+    {
+      "id": "epa-energy-bill",
+      "sha256": "fa93ad0040856aac866d4fbe09192f21f91ff9f92a25ddc1007c37020cb38b19",
+      "fields": {}
+    },
+    {
+      "id": "wisconsin-property-tax-bill",
+      "sha256": "47cd9dac82e0724243b07f726327d57cceb8a187bc89f6a135dd27143074bd42",
+      "fields": {
+        "parcel_number": {
+          "expected": "12-116-0029-0000",
+          "actual": "12-116-0029-0000",
+          "page": 1,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        },
+        "owner_name": {
+          "expected": "BILL AND SUE HOMEOWNER",
+          "actual": "BILL AND SUE HOMEOWNER",
+          "page": 1,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        },
+        "assessed_value": {
+          "expected": "98,900",
+          "actual": "98,900",
+          "page": 1,
+          "confidence": 0.65,
+          "uncertain": false,
+          "matches_label": true
+        }
+      }
+    }
+  ]
+}
+### /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q ventures/blocks/rules/tests
+...                                                                      [100%]
+3 passed in 0.02s

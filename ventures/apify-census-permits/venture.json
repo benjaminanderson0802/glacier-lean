@@ -1,0 +1,33 @@
+{
+  "slug": "apify-census-permits",
+  "name": "Census Building Permits State Change Feed",
+  "status": "ready",
+  "flows": [
+    "apify-census-permits-owner-publish"
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "publish-existing-actor",
+      "title": "connect, build, price, and publish existing Actor",
+      "when": "In one sitting after this card is integrated into glacier-final",
+      "detail": "Use the Apify account and Store steps once in ventures/apify-portfolio/PUBLISH-CHECKLIST.md. Update existing Actor ScF2gWlq9iHoFaJ9F; connect the exact Git URL, build, set state-comparison to $0.002, configure no automatic start/dataset-item charge, review and publish it yourself. Payout verification is one-time across all six Actors.",
+      "links": [
+        "https://console.apify.com/account/integrations",
+        "https://console.apify.com/actors/ScF2gWlq9iHoFaJ9F"
+      ]
+    }
+  ],
+  "product": {
+    "purpose": "Publish Census Building Permits State Change Feed as a pay-per-event Apify Store Actor.",
+    "actor_name": "census-permits",
+    "existing_actor_id": "ScF2gWlq9iHoFaJ9F",
+    "seo_description": "Census state building permits monthly change feed estimates",
+    "pricing": {
+      "model": "pay_per_event",
+      "event": "state-comparison",
+      "price_usd": 0.002,
+      "platform_usage_included": true
+    }
+  }
+}

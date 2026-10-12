@@ -1,0 +1,75 @@
+{
+  "brand": "carrier",
+  "brand_rule": {
+    "brand": "Carrier",
+    "country": "US",
+    "must_confirm_with_brand": [
+      "dealer eligibility",
+      "current program year and expiry",
+      "eligible media and expense categories",
+      "claim deadline",
+      "required invoice and proof-of-payment documents"
+    ],
+    "program": "Carrier cooperative advertising / Ad Kit",
+    "program_summary": "Carrier publishes brand and co-op guidelines, but this public landing page does not establish this dealer's current eligibility, claim window, eligible expenses, or required documents",
+    "public_program_page": true,
+    "required_evidence": [
+      "dealer_authorization",
+      "program_preapproval",
+      "ad_proof",
+      "itemized_invoice",
+      "proof_of_payment"
+    ],
+    "rule_status": "unverified",
+    "source_checked": "2026-10-10",
+    "source_title": "Carrier Brand Guidelines and Co-op Guidelines",
+    "source_url": "https://adkit.carrier.com/en/us/guidelines"
+  },
+  "claim_id": "jobber-6da7aebabbc94c2d",
+  "completed_at": "2026-10-02T16:30:00Z",
+  "deadline_status": "scheduled from confirmed expiry",
+  "dealer_label": "Fixture HVAC",
+  "evidence_checklist": [
+    {
+      "key": "dealer_authorization",
+      "label": "Dealer authorization for this specific claim",
+      "present": false
+    },
+    {
+      "key": "program_preapproval",
+      "label": "Brand pre-approval, if required by the confirmed current program",
+      "present": false
+    },
+    {
+      "key": "ad_proof",
+      "label": "Final advertisement proof showing brand and dealer attribution",
+      "present": true
+    },
+    {
+      "key": "itemized_invoice",
+      "label": "Itemized invoice for the advertising expense",
+      "present": true
+    },
+    {
+      "key": "proof_of_payment",
+      "label": "Proof the invoice was paid",
+      "present": false
+    }
+  ],
+  "expires_on": "2026-12-31",
+  "external_action": "owner only; no filing performed",
+  "filing_ready": false,
+  "intake_source": "fixture",
+  "job_id": "fixture-job-2026-001",
+  "job_number": "2048",
+  "job_source": "https://secure.getjobber.com/jobs/fixture-job-2026-001",
+  "job_title": "Carrier heat pump installation",
+  "markdown_path": "ventures/coop-postcards/evidence/fixture-output/jobber-6da7aebabbc94c2d.md",
+  "pdf_path": "ventures/coop-postcards/evidence/fixture-output/jobber-6da7aebabbc94c2d.pdf",
+  "record_path": "ventures/coop-postcards/evidence/fixture-output/jobber-6da7aebabbc94c2d.json",
+  "reminder_dates": [
+    "2026-11-01",
+    "2026-12-01"
+  ],
+  "rule_status": "unverified"
+}

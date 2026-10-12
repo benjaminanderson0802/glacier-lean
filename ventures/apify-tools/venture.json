@@ -1,0 +1,79 @@
+{
+  "slug": "apify-tools",
+  "name": "apify data tools \u2014 Mississippi and Louisiana contractor license status",
+  "flows": [
+    "apify-ms-license-daily-canary",
+    "apify-ms-license-your-step-publish",
+    "apify-la-license-daily-canary",
+    "apify-la-license-your-step-publish"
+  ],
+  "schedules": [
+    {
+      "flow": "apify-ms-license-daily-canary",
+      "cron": "0 9 * * *",
+      "purpose": "Check three saved Mississippi license records each morning and alert if a source changes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "apify-la-license-daily-canary",
+      "cron": "0 9 * * *",
+      "purpose": "Check three saved Louisiana contractor license records each morning and alert if a source changes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "account-and-connect",
+      "title": "verify the account once and connect both Actor sources",
+      "when": "At the start of the one Apify publishing sitting",
+      "detail": "Complete developer/business and payout verification once, then connect the exact Mississippi and Louisiana Git URLs from ventures/apify-portfolio/PUBLISH-CHECKLIST.md to their existing Actors. Do not create duplicates.",
+      "links": [
+        "https://console.apify.com/account/integrations",
+        "https://console.apify.com/actors/cw5iWsfJYZVVqMbe3",
+        "https://console.apify.com/actors/kzpMSf5BYHjaIDWTt"
+      ]
+    },
+    {
+      "id": "price-and-publish",
+      "title": "build, set each event price, review, and publish both listings",
+      "when": "Continue in the same sitting after connecting sources",
+      "detail": "For the first three distinct Actor publications, build each source, set license-lookup to $0.02 with the shown run cap, include platform usage, and disable automatic start and default-dataset-item charges. The Louisiana different engine review is recorded in ventures/apify-tools-louisiana/REVIEW.md; run its separate Glacier publication approval and distinct owner publication approval and publish both existing Actors yourself. Review each sample output first.",
+      "links": [
+        "https://console.apify.com/actors/cw5iWsfJYZVVqMbe3",
+        "https://console.apify.com/actors/kzpMSf5BYHjaIDWTt",
+        "https://console.apify.com/actors"
+      ]
+    }
+  ],
+  "dry_run_env_id": "apify-ms-license-daily-canary",
+  "product": {
+    "purpose": "Sell source-linked, pay-per-use checks of Mississippi and Louisiana contractor license status and expiration using each board's public lookup.",
+    "source_id": "ms_msboc_contractor_licenses",
+    "source_url": "https://search.msboc.us/ConsolidatedSearch.cfm",
+    "additional_sources": [
+      {
+        "source_id": "la_lslbc_contractor_licenses",
+        "source_url": "https://lslbc.louisiana.gov/contractor-search/",
+        "actor": "louisiana-contractor-license-status",
+        "status": "live-canary-tested; separate-engine review passed; owner publication approval pending"
+      }
+    ],
+    "pricing": {
+      "model": "pay_per_event",
+      "event": "license-lookup",
+      "price_usd": 0.02,
+      "run_limit_usd": 2.0,
+      "platform_usage_included": true
+    },
+    "maintenance": {
+      "canary_count": 3,
+      "canary_interval": "daily",
+      "max_repair_attempts": 2,
+      "failure_action": "mark-under-maintenance-and-alert"
+    }
+  },
+  "status": "ready"
+}

@@ -1,0 +1,15 @@
+# Approved source URLs only; no examples, product pages, tag accounts or downloader services.
+# Source restrictions are in rules.txt. Metadata probe results are in summary.json.
+https://www.dropbox.com/scl/fo/7m1kfi47bvek5z6olsowr/AALoorpEe_0FPDVT3f1WD3k?rlkey=znhjqkclsyp37cf0qlf4bfucn&st=esjd61y5&dl=0
+# Expiring link: expiry not stated; recheck before use
+https://we.tl/t-oRoQENFFbvri9C36
+https://www.dropbox.com/scl/fo/mocmuleuj3k7t76jee10b/AIiQLQtJZyQU6Iuh-PFB3gQ?rlkey=rnr1gbx5lae72ix0m6nlc22z1&st=g591xo1e&dl=0
+https://www.dropbox.com/scl/fo/r1c85bg5x8uyrozw4ht9o/AF69jqGzxePRNpOa1SHaazU?rlkey=gkxfu8w0bwzwh1dupsu5c9qoi&st=0d0zi3ce&dl=0
+https://www.dropbox.com/scl/fo/inrlltucfw668qkbga48f/AHFQLOHLpw8uQw5kAwODK2A?rlkey=1gz92kytga7n74xk4rsl3r47u&st=d9sg638e&dl=0
+# BOXED-sponsored segments only, not the whole channel.
+https://www.twitch.tv/islandgrown
+# BOXED-sponsored segments only, not the whole channel.
+https://www.twitch.tv/timmeh
+https://www.youtube.com/watch?v=AKnCeyI-bv8
+https://www.dropbox.com/scl/fo/30qkc8of7zlx1145pwu1x/AHFqYs4rhUKcwcK1NQPUMUs/Sack%20Summit%20July%202026/All%20Player%20Social%20Cuts?rlkey=oum7k7fdtvka05502chm7lyrg&subfolder_nav_tracking=1&st=kfad9u8r&dl=0
+https://www.dropbox.com/scl/fo/30qkc8of7zlx1145pwu1x/AFJ2VcXLna-V96j_dk745mM?rlkey=oum7k7fdtvka05502chm7lyrg&st=9giezj09&dl=0

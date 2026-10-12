@@ -1,0 +1,39 @@
+{
+  "manifest_version": 1,
+  "frozen_at": "2026-10-11",
+  "dataset": "ventures/recall-checker/bench/recall_benchmark.csv",
+  "sha256": "ed7a535affa39817c39d106d4dca5f8e4f6e16e8d9d8a47e7e9832317a958ba4",
+  "case_count": 1000,
+  "counts": {
+    "recalled": 500,
+    "synthetic_clean": 500
+  },
+  "expected_outcomes": {
+    "recalled": "match",
+    "synthetic_clean": "no_match"
+  },
+  "recalled_source": {
+    "source_id": "nhtsa_recalls",
+    "name": "NHTSA Office of Defects Investigation post-2010 recall flat file",
+    "url": "https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip",
+    "source_archive_sha256": "252e3fa6479744a3a15386f47e6969507be2f4b06dcc9e5bf86a5a1cbc720d28",
+    "source_archive_bytes": 14900803,
+    "archive_member": "FLAT_RCL_POST_2010.txt",
+    "campaign_lookup": "https://api.nhtsa.gov/recalls/campaignNumber?campaignNumber={CAMPNO}",
+    "record_id_field": "RECORD_ID",
+    "campaign_field": "CAMPNO",
+    "date_field": "RCDATE",
+    "download_checked_on": "2026-10-11",
+    "selection": "Rows with a 2010–2026 model year, non-empty manufacturer/model/campaign, numeric RECORD_ID and YYYYMMDD RCDATE; deterministic SHA-256 ordering by RECORD_ID; duplicate normalized make/model/year keys skipped; first 500 unique inventory items. No checker output used for inclusion or labels.",
+    "license_terms": "NHTSA sources.json identifies the feed as U.S. government public data. Source content is U.S. government data; API endpoints are public. Attribution and source links retained in every recalled row."
+  },
+  "synthetic_clean_source": {
+    "source_id": "synthetic_clean_inventory_v1",
+    "source_record_ids": "SYN-CLEAN-0001 through SYN-CLEAN-0500",
+    "created_on": "2026-10-11",
+    "method": "Fictitious reserved brand/model values generated solely as synthetic inventory negatives. No real brand, model, or product is represented; expected no_match assigned by construction before checker evaluation.",
+    "license_terms": "Original synthetic labels and rows; no third-party content."
+  },
+  "scope_limit": "This set tests NHTSA vehicle make/model/year matching plus synthetic no-match handling. It does not establish accuracy for CPSC, FDA, FSIS, barcodes, individual VINs, or real-world clean products.",
+  "borderline_second_engine_check": "Separate matcher route review remains outside this data-only card and is tracked by claim claim-ph12-12-recall-benchmark-engine; no borderline-route result is claimed here."
+}

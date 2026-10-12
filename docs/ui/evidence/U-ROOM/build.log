@@ -1,0 +1,4 @@
+`npm run build` — PASS (TypeScript and Vite production build).
+`npx tsc -b` — PASS.
+`node e2e/theme_lint.mjs` — PASS (57 files).
+`node scripts/check-i18n.mjs --fail` — PASS (965 keys).

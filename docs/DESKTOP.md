@@ -1,28 +1,30 @@
-# Glacier desktop app scaffold
+# Glacier desktop app
 
-This is a desktop scaffold until the existing screen adopts the desktop API-origin requirement below. Do not treat the desktop app as ready for users until that screen change is complete.
+The desktop shell and screen integration are implemented. Current Linux verification and remaining installer/PC checks are recorded in [PH8 evidence](../evidence/PH8/2026-10-10/README.md); this is not a release-readiness claim.
 
 The desktop shell uses Tauri 2. The `desktop/src-tauri/` directory is the Tauri application. Its `frontendDist` points at `desktop/dist`. Tauri's `beforeBuildCommand` builds the existing screen from `glacier/web` and assembles it with the bundled first-run page; `desktop/dist/` is generated and ignored by git. The screen source is maintained separately and is not copied into or edited by the desktop project.
 
-The shell reserves an available loopback port, starts the Python backend as a child process, waits for `GET /api/node-types`, and then opens the bundled screen. The backend does not serve the screen at `/`. The desktop shell injects `window.__GLACIER_API__` into bundled pages with the local backend URL (for example, `http://127.0.0.1:43127`); the screen must use this value for API requests and its events WebSocket. Tauri's content security policy allows that loopback port and the Tauri app origin. All API traffic stays on this computer.
+The shell reserves an available loopback port, starts the Python backend as a child process, waits for `GET /api/health`, and then opens the bundled screen. The backend does not serve the screen at `/`. The desktop shell injects `window.__GLACIER_API__` into bundled pages with the local backend URL (for example, `http://127.0.0.1:43127`); the screen uses this value for API requests and its events WebSocket. Tauri's content security policy allows that loopback port and the Tauri app origin. All API traffic stays on this computer.
 
 The Tauri shell uses the pinned `tauri-plugin-single-instance` plugin. Launching Glacier again restores, shows and focuses the existing main window; the second process exits without starting another backend. The live events WebSocket sends the install token as a `Sec-WebSocket-Protocol` value (`glacier-events`, followed by the token). Older installed screens may still use `?token=` during the desktop update transition; the backend scrubs that query before Uvicorn logs it, and its access-log filter redacts token values as a second safeguard.
 
 ## Screen requirements
 
-The screen must prefix every API request and the events WebSocket URL with `window.__GLACIER_API__`, falling back to the current page's origin when that value is undefined. The desktop shell injects the local backend address into bundled pages. Until the screen implements and verifies this behavior, this remains a scaffold.
+The screen prefixes API requests and the events WebSocket URL with `window.__GLACIER_API__`, falling back to the current page's origin when that value is undefined. The desktop shell also injects `window.__GLACIER_TOKEN__` for authenticated requests. See `glacier/web/src/api.ts` for the shared API client.
 
-The backend will allow only `tauri://localhost`, `http://tauri.localhost`, and `https://tauri.localhost` as cross-origin callers; the integrator will add this backend policy. Do not edit the screen or backend as part of this desktop card.
+The backend recognizes `tauri://localhost`, `http://tauri.localhost`, and `https://tauri.localhost` as desktop origins; development origins require explicit development mode. See [local security](LOCAL_SECURITY.md).
 
-The first window shows the bundled first-run page while the backend starts. It checks for Codex, Ollama, OpenCode, Gemini, and Git through a Tauri command. Missing tools do not prevent continuing, and the list is never sent to the backend or elsewhere. The page explains the check in plain language. If the engine cannot start or does not become ready within 45 seconds, the page explains that in plain language and points to `backend.log` in the app's local data folder. Backend output is written to that log. Closing the desktop app stops the sidecar.
+The first window shows the bundled first-run page while the backend starts. It checks for Codex, Ollama, OpenCode, Gemini, and Git through a Tauri command. The AI tools are optional, but the current backend requires Git for vault history. The installer does not bundle a Git executable; see [the clean-machine prerequisite claim](../vault/claims/2026-10-10-e-ph8-git-prerequisite.md). The tool list is never sent to the backend or elsewhere. The page explains the check in plain language. If the engine cannot start or does not become ready within 45 seconds, the page explains that in plain language and points to `backend.log` in the app's local data folder. Backend output is written to that log. Closing the window hides it in the tray so automations can continue. Choosing **Quit Glacier** stops the sidecar. Python starts with `-s` and `PYTHONNOUSERSITE=1` to exclude unrelated packages from the user profile.
 
 ## Low-resource mode
 
-`desktop/sidecar.json` enables low-resource mode. The sidecar sets `GLACIER_LOCAL_MODEL=qwen3:0.6b` and `GLACIER_MAX_PARALLEL_RUNS=1` for the backend. The data location is user-local application data. The backend binds only to `127.0.0.1`.
+`desktop/sidecar.json` enables low-resource mode. The sidecar sets `GLACIER_LOCAL_MODEL=granite3.3:2b` and `GLACIER_MAX_PARALLEL_RUNS=1` for the backend. The data location is user-local application data. The backend binds only to `127.0.0.1`.
+
+The loading page uses the same room artwork, Nunito font, and colour tokens as the main screen. `desktop/test_first_run_theme.sh` checks that the bundled tokens and fonts match.
 
 ## Linux packages
 
-Linux release packages contain the Glacier backend, its requirements file, the node type catalog, and a private CPython 3.12 runtime with the pinned backend packages. Users do not need to install Python or connect to the internet to start Glacier.
+Linux release packages contain the Glacier backend, its requirements file, the node type catalog, and a private CPython 3.12 runtime with the pinned backend packages. Users do not need a separate Python installation. Startup currently also requires a system Git executable; a package smoke run on a developer machine does not prove a clean-machine install without Git.
 
 On Debian 12/Ubuntu 24.04 or a compatible distribution, install the Tauri Linux build prerequisites and build both packages from the repository checkout:
 
@@ -85,7 +87,7 @@ The standalone runtime includes `LICENSE.txt` under the PSF License. The builder
 
 ## Windows installer check in GitHub Actions
 
-The `desktop` workflow runs on pull requests that change `desktop/`, `glacier/`, `setup/pybundle/`, or the workflow itself, and can also be started manually from the repository's Actions page. It builds the pinned Windows Python runtime, packages the NSIS installer, and smoke-tests installation, backend readiness, and the engine token on a temporary CI runner. The workflow is marked non-blocking while its first Windows runs are reviewed. It does not install anything on the owner's PC.
+The `desktop` workflow runs on pull requests that change `desktop/`, `glacier/`, `setup/pybundle/`, or the workflow itself, and has a manual release dispatch. **Do not dispatch it merely to verify a build:** the same workflow can publish a signed Windows release when signing secrets are configured. Release dispatch and version tags remain owner steps. It builds the pinned Windows Python runtime, packages the NSIS installer, and smoke-tests installation, backend readiness, and the engine token on a temporary CI runner. The workflow is marked non-blocking while its first Windows runs are reviewed. It does not install anything on the owner's PC.
 
 To download the installer, open the completed `desktop` workflow run on GitHub and download the `glacier-windows-installer` artifact from its Artifacts section. The artifact is retained for 7 days. The Windows runner smoke test does not replace the owner's later install and first-run check on his PC.
 
@@ -99,3 +101,12 @@ To download a build, open the completed **desktop** workflow run on GitHub and c
 - `glacier-macos-dmg` contains the `.dmg` disk image.
 
 These artifacts are kept for 7 days. Download them from the Actions run's **Artifacts** section before they expire.
+
+## Remaining owner PC checks
+
+- After the Git prerequisite claim is resolved, on a clean Windows account, double-click the installer and launch Glacier without developer Python/Node/Rust/Git. Confirm the loading page, tool detection, and main screen; run an offline starter to a saved, verified result. Preserve installer version, run id and output as evidence.
+- Confirm a second launch focuses the existing window, closing keeps scheduled work running, and **Quit Glacier** stops its backend. Check logon startup separately.
+- After the owner approves a later signed release, use the installed 0.2.0 app's Settings > About to check, review the version/notes, and click **Install update**. Restart and confirm the new version plus preserved vault/settings. Linux fixture tests do not prove this upgrade.
+- Windows trust prompts and signing/distribution remain owner concerns; this card does not change machine security settings, generate signing keys, or publish a release.
+
+PH8.1 remains in progress until the actual Windows update proof exists. The phase exit additionally requires the clean-machine installer-to-first-automation proof. Current macOS packaging must be verified on macOS; historical CI evidence is not a fresh run.

@@ -1,0 +1,505 @@
+{
+  "mode": "drafts_only",
+  "sends_enabled": false,
+  "sender": {
+    "name": "Benjamin Anderson",
+    "email": "ben@andersoneducation.us"
+  },
+  "email_drafts": [
+    {
+      "venture": "sam-amendment-alerts",
+      "business": "ATEK Distribution",
+      "to": "info@atekdistribution.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://atekdistribution.com/contact-us/",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about ATEK Distribution",
+      "body_text": "Hello ATEK Distribution team,\n\nYour contact page lists circuit breakers and industrial fuses among your electrical distribution products. I offer a $49 for four weeks, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/sam-amendment-alerts.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the SAM change digest pilot",
+        "body_text": "Hello ATEK Distribution team,\n\nOne polite follow-up on the $49 for four weeks, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/sam-amendment-alerts.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "sam-amendment-alerts",
+      "business": "Evco Partners LP dba Burgoon Company",
+      "to": "office@burgooncompany.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.burgooncompany.com/contactus",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Evco Partners LP dba Burgoon Company",
+      "body_text": "Hello Evco Partners LP dba Burgoon Company team,\n\nYour contact page offers help navigating state and government procurement. I offer a $49 for four weeks, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/sam-amendment-alerts.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the SAM change digest pilot",
+        "body_text": "Hello Evco Partners LP dba Burgoon Company team,\n\nOne polite follow-up on the $49 for four weeks, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/sam-amendment-alerts.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "sam-amendment-alerts",
+      "business": "P & C Industrial Supplies",
+      "to": "sales@pcindustrialsupplies.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.pcindustrialsupplies.com/contact_us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about P & C Industrial Supplies",
+      "body_text": "Hello P & C Industrial Supplies team,\n\nYour catalog lists anti-seize compounds and firearm maintenance products. I offer a $49 for four weeks, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/sam-amendment-alerts.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the SAM change digest pilot",
+        "body_text": "Hello P & C Industrial Supplies team,\n\nOne polite follow-up on the $49 for four weeks, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/sam-amendment-alerts.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-bid-triage",
+      "business": "Rogers & Willard Inc.",
+      "to": "info@rogerswillard.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.rogerswillard.com/contact",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Rogers & Willard Inc.",
+      "body_text": "Hello Rogers & Willard Inc. team,\n\nYour site lists construction services and project work, and gives your Mobile office address. I offer a $49 once for a 30-day pilot, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/al-bid-triage.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the public works bid digest pilot",
+        "body_text": "Hello Rogers & Willard Inc. team,\n\nOne polite follow-up on the $49 once for a 30-day pilot, with four weekly digests and no renewal. Details: https://ventures.andersonfactory.com/pilots/al-bid-triage.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "City of Adamsville",
+      "to": "Permits@CityofAdamsville.org",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.cityofadamsville.org/contact-us/",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about City of Adamsville",
+      "body_text": "Hello City of Adamsville team,\n\nYour city site lists business licenses and permits alongside planning and zoning services. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello City of Adamsville team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "Town of Akron",
+      "to": "townofakron2013@gmail.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10935",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Town of Akron",
+      "body_text": "Hello Town of Akron team,\n\nThe Alabama Municipal League profile lists a public Town of Akron office contact and its Akron mailing address. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello Town of Akron team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "City of Alabaster",
+      "to": "cityhall@cityofalabaster.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10936",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about City of Alabaster",
+      "body_text": "Hello City of Alabaster team,\n\nYour official site has a Business / Construction section with bid openings. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello City of Alabaster team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "Alexander City",
+      "to": "cityclerk@alexandercityal.gov",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10938",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Alexander City",
+      "body_text": "Hello Alexander City team,\n\nThe Alabama Municipal League profile lists the City Clerk as a public contact for Alexander City. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello Alexander City team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "Town of Allgood",
+      "to": "townofallgood@gmail.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10939",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Town of Allgood",
+      "body_text": "Hello Town of Allgood team,\n\nThe Alabama Municipal League profile lists a public Town of Allgood office contact and its mailing address. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello Town of Allgood team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "Town of Altoona",
+      "to": "altoonaclerk@yahoo.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10943",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Town of Altoona",
+      "body_text": "Hello Town of Altoona team,\n\nThe Alabama Municipal League profile lists a Clerk contact and main Town office number. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello Town of Altoona team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "Town of Anderson",
+      "to": "townofanderson@gmail.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10947",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Town of Anderson",
+      "body_text": "Hello Town of Anderson team,\n\nThe Alabama Municipal League profile lists the Town of Anderson\u2019s public office contact and phone. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello Town of Anderson team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "City of Anniston",
+      "to": "citymanager@annistonal.gov",
+      "contact_form_url": "",
+      "contact_source_url": "https://annistonal.gov/contact-center/",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about City of Anniston",
+      "body_text": "Hello City of Anniston team,\n\nYour city site has a Business / Construction section and publishes bid openings. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello City of Anniston team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "City of Arab",
+      "to": "arab@arabcity.org",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10949",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about City of Arab",
+      "body_text": "Hello City of Arab team,\n\nThe Alabama Municipal League profile lists a public City of Arab email and main office number. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello City of Arab team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "al-license-verify",
+      "business": "Town of Ardmore",
+      "to": "townofardmore@ardmore.net",
+      "contact_form_url": "",
+      "contact_source_url": "https://alm.imiscloud.com/ALALM/ALALM/About/ORGpublicProfileRoster.aspx?ID=10950",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Town of Ardmore",
+      "body_text": "Hello Town of Ardmore team,\n\nThe Alabama Municipal League profile lists a public Town of Ardmore office email and phone. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello Town of Ardmore team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "1818 Farms",
+      "to": "info@1818farms.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://1818farms.com/pages/contact-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about 1818 Farms",
+      "body_text": "Hello 1818 Farms team,\n\nYour shop lists shea creme alongside handcrafted soap and candles. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello 1818 Farms team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Herb & Root",
+      "to": "service@herbandroot.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://herbandroot.com/pages/contact-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Herb & Root",
+      "body_text": "Hello Herb & Root team,\n\nYour catalog includes attar of roses and frankincense-and-myrrh fragrances. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Herb & Root team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Ranch Junkie",
+      "to": "ranchjunkie@ranchjunkie.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.ranchjunkie.com/pages/contact-information-and-refund-policy-ranch-junkie",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Ranch Junkie",
+      "body_text": "Hello Ranch Junkie team,\n\nYour shop offers farmhouse decor and leather bags. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Ranch Junkie team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Ezra Coffee Company",
+      "to": "hello@ezracoffeeco.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://ezracoffeeco.com/",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Ezra Coffee Company",
+      "body_text": "Hello Ezra Coffee Company team,\n\nYour site describes Ezra Coffee Company as a coffee shop for premium beans and brewed coffee. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Ezra Coffee Company team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Funky Junque",
+      "to": "custsvc@funky-junque.net",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.funky-junque.net/pages/about-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Funky Junque",
+      "body_text": "Hello Funky Junque team,\n\nYour shop carries seasonal beanies, gloves, and headbands. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Funky Junque team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "StoveShelf",
+      "to": "support@stoveshelf.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://stoveshelf.com/pages/contact",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about StoveShelf",
+      "body_text": "Hello StoveShelf team,\n\nYour contact page offers help with the magnetic shelf and dispenser set. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello StoveShelf team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "BenShot",
+      "to": "whiskeyhelps@benshot.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://benshot.com/pages/find-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about BenShot",
+      "body_text": "Hello BenShot team,\n\nYour shop lists glassware designs with musket balls, fishing, and sports themes. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello BenShot team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Heirloom Traditions Paint",
+      "to": "orders@htpaint.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.allinonepaint.com/order-terms-privacy",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Heirloom Traditions Paint",
+      "body_text": "Hello Heirloom Traditions Paint team,\n\nYour shop offers All-in-One Paint and Lime Wash products. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Heirloom Traditions Paint team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Maven",
+      "to": "customerservice@mavenbuilt.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://mavenbuilt.com/pages/contact-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Maven",
+      "body_text": "Hello Maven team,\n\nYour outdoor optics catalog includes binoculars, rangefinders, and riflescopes. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Maven team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Hemlock Park",
+      "to": "support@hemlockpark.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://hemlockpark.com/pages/support",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Hemlock Park",
+      "body_text": "Hello Hemlock Park team,\n\nYour catalog includes botanical candles and living-room and linen sprays. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Hemlock Park team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Maisonovo",
+      "to": "support@maisonovo.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://www.maisonovo.com/pages/faqs",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Maisonovo",
+      "body_text": "Hello Maisonovo team,\n\nYour site sells home products including soap dispensers and home organization items. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Maisonovo team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Spread The Love",
+      "to": "hello@SpreadTheLoveFoods.com",
+      "contact_form_url": "",
+      "contact_source_url": "https://spreadthelovefoods.com/pages/contact-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Spread The Love",
+      "body_text": "Hello Spread The Love team,\n\nYour site describes your products as nut butters and other spreadables. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Spread The Love team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    }
+  ],
+  "contact_form_queue": [
+    {
+      "venture": "al-license-verify",
+      "business": "City of Aliceville",
+      "to": "",
+      "contact_form_url": "https://www.thecityofaliceville.com/contact",
+      "contact_source_url": "https://www.thecityofaliceville.com/contact",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about City of Aliceville",
+      "body_text": "Hello City of Aliceville team,\n\nYour city site lists Street & Sanitation and Water Board among its municipal services. I offer a $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the dated Alabama roster check pilot",
+        "body_text": "Hello City of Aliceville team,\n\nOne polite follow-up on the $49 for one customer-supplied roster and up to 100 exact checks. Details: https://ventures.andersonfactory.com/pilots/al-license-verify.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Coolhorse",
+      "to": "",
+      "contact_form_url": "https://www.coolhorse.com/pages/contact-us",
+      "contact_source_url": "https://www.coolhorse.com/pages/contact-us",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Coolhorse",
+      "body_text": "Hello Coolhorse team,\n\nYour shop has dedicated categories for arena supplies and saddle pads. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Coolhorse team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    },
+    {
+      "venture": "fba-fee-check",
+      "business": "Nebraska Star Beef",
+      "to": "",
+      "contact_form_url": "https://nebraskastarbeef.com/contact/",
+      "contact_source_url": "https://nebraskastarbeef.com/contact/",
+      "from_name": "Benjamin Anderson",
+      "from_email": "ben@andersoneducation.us",
+      "subject": "Question about Nebraska Star Beef",
+      "body_text": "Hello Nebraska Star Beef team,\n\nYour shop lists steaks, jerky, and sausage among its products. I offer a $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+      "followup": {
+        "subject": "Following up on the FBA fee variance review pilot",
+        "body_text": "Hello Nebraska Star Beef team,\n\nOne polite follow-up on the $49 once for one seller-downloaded Settlement Report V2 and one seller-prepared fee schedule. Details: https://ventures.andersonfactory.com/pilots/fba-fee-check.html. Reply \"yes\" to get a free sample; if it is not relevant, no reply is needed.\n\nBenjamin Anderson | Anderson Education LLC\n{{POSTAL_ADDRESS}}\nReply 'stop' and I won't email again.",
+        "not_before_day": 5,
+        "requires_manual_review": true
+      }
+    }
+  ]
+}

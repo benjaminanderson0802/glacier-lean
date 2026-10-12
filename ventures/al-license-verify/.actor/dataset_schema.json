@@ -1,0 +1,31 @@
+{
+  "actorSpecification": 1,
+  "title": "Alabama contractor roster checks",
+  "description": "Dated exact-match results from the roster file supplied by the Actor user.",
+  "fields": {
+    "type": "object",
+    "properties": {
+      "outcome": {"type": "string", "description": "match, dated no-match, or uncertain — please check"},
+      "verification_state": {"type": "string", "description": "verified for an exact comparison within the supplied snapshot, otherwise uncertain or unverifiable"},
+      "roster_presence": {"type": "string", "description": "listed, not_listed, or uncertain in the supplied snapshot"},
+      "license_number": {"type": "string", "description": "License identifier from the query or supplied roster"},
+      "business_name": {"type": "string", "description": "Business name from the query or supplied roster"},
+      "status": {"type": "string", "description": "Literal status column, if present in the supplied export"},
+      "expiration_date": {"type": "string", "description": "Literal expiration value normalized to ISO date where possible"},
+      "specialty": {"type": "string", "description": "Classification or specialty from the supplied export"},
+      "source_url": {"type": "string", "description": "Official source URL provided by the Actor user; not fetched"},
+      "source_as_of": {"type": "string", "description": "Date supplied for the snapshot"},
+      "checked_at": {"type": "string", "description": "UTC time the comparison ran"},
+      "limitations": {"type": "string", "description": "Point-in-time limitations and any uncertainty reason"},
+      "field_provenance": {"type": "string", "description": "JSON object mapping normalized fields to original populated CSV headers"},
+      "conflicting_fields": {"type": "string", "description": "Comma-separated fields with conflicting or invalid source values"}
+    }
+  },
+  "views": {
+    "overview": {
+      "title": "Roster checks",
+      "transformation": {"fields": ["outcome", "verification_state", "license_number", "business_name", "status", "expiration_date", "source_url", "source_as_of", "checked_at"]},
+      "display": {"component": "table", "columns": ["outcome", "verification_state", "license_number", "business_name", "status", "expiration_date", "source_url", "source_as_of", "checked_at"]}
+    }
+  }
+}

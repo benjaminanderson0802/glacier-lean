@@ -214,6 +214,11 @@ def test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone(tmp_path
                               json={"approve": True}, timeout=30)
         assert response.status_code == 200 and response.json()["saved"] is True
         undo_id = response.json()["undo_id"]
+        history = httpx.get(server.url + "/api/memory/history",
+                            params={"path": path}, timeout=30)
+        assert history.status_code == 200, history.text
+        assert history.json()[0]["author"] == "assistant"
+        assert history.json()[0]["commit"]
         repo = server.home + "/vault"
         commits = subprocess.run(["git", "log", "--format=%H", "--", path], cwd=repo,
                                  capture_output=True, text=True, check=True).stdout.splitlines()
@@ -229,6 +234,9 @@ def test_approved_proposal_is_saved_once_as_assistant_and_can_be_undone(tmp_path
         undo = httpx.post(server.url + f"/api/runs/{undo_id}/undo", timeout=30)
         assert undo.status_code == 200
         assert server.get("/api/environments") == []
+        after_undo = httpx.get(server.url + "/api/memory/history",
+                               params={"path": path}, timeout=30)
+        assert after_undo.status_code == 200 and len(after_undo.json()) == 2
     finally:
         server.stop()
 

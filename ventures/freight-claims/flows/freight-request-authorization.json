@@ -1,0 +1,18 @@
+{
+  "id": "freight-request-authorization",
+  "name": "Prepare a shipper authorization signature request",
+  "goal": "Use the owner-provided authorization document and signer details to create a local customer-block signature request; do not sign or send it.",
+  "nodes": [
+    {"id": "prepare_signature", "type": "command", "config": {"cmd": "python ventures/freight-claims/scripts/claims.py signature --document \"$GLACIER_HOME/ventures/freight-claims/incoming/owner-approved-authorization.pdf\" --signer \"$GLACIER_HOME/ventures/freight-claims/incoming/signer.json\" --output \"$GLACIER_HOME/ventures/freight-claims/reports/signature-request.json\"", "cwd": "{repo}", "timeout": 30, "retries": 0}, "position": {"x": 100, "y": 100}},
+    {"id": "signature_note", "type": "note", "config": {"path": "ventures/freight-claims/reports/signature-request-{run}.md", "template": "Local signature request prepared from the owner-provided document. Glacier did not sign or send it. The link is available only on this Glacier machine unless the owner has configured an approved secure host.\n\n{summary}"}, "position": {"x": 400, "y": 100}},
+    {"id": "approve_signature_request", "type": "approval", "config": {"prompt": "Your step: confirm the signer and owner-approved document, then give the exact signature link above to the shipper through your approved channel. Glacier has not contacted the shipper or signed anything."}, "position": {"x": 700, "y": 100}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "prepare_signature", "target": "signature_note", "label": ""},
+    {"id": "e2", "source": "signature_note", "target": "approve_signature_request", "label": ""}
+  ],
+  "acceptance": [
+    {"kind": "command", "cmd": "python -c \"import os,json,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures/freight-claims/reports/signature-request.json'; d=json.loads(p.read_text()); assert d.get('url') and d.get('document_sha256') and 'signed' not in d\"", "required": true}
+  ],
+  "max_steps": 3
+}

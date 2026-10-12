@@ -1,0 +1,95 @@
+{
+  "uuid": "c00aa458-8719-4d92-9bbf-c48614ce29b5",
+  "name": "Ridge Wallet x 4FUN x ClipFarm",
+  "brand": "Ridge",
+  "cpm_usd": 1,
+  "budget_left_usd": 6400,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": 10,
+  "max_len_s": 60,
+  "required_tags": [
+    "@RidgeWalletYT"
+  ],
+  "banned": [
+    "outside/Batman-film/old-ad footage",
+    "wrong product names",
+    "invented prices/sold out/limited/exclusivity",
+    "AI/fake footage/quotes",
+    "ad copy/shop now/link in bio CTA",
+    "hidden watermark",
+    "copyrighted music",
+    "NSFW/off-topic/spam/reposts/boosts/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Obtain footage before 2026-11-08 expiry and use the required full-length watermark.",
+    "Provide screen-recorded demographics and written post-approval ticket."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://wetransfer.com/downloads/2bb746a22dcf52d09dd7e0667b33ca0a20261009195212/54394d31fb67a71917307b7330b093ae20261009195234/a12b55",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": 179860786,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:48Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": "2026-11-08T19:52:59Z",
+      "files": [
+        {
+          "name": "ridge v2.mov",
+          "size_bytes": 179860786
+        }
+      ],
+      "response_sha256": "ecc7822a7680d47128e0471a159bad1aa6821563f0951c43bfd679d39e8fb66e"
+    },
+    {
+      "url": "https://we.tl/t-4GR8tq0W7C0Rdb8V",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": 63183005,
+      "role": "required_watermark",
+      "checked_at": "2026-10-12T02:24:48Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": null,
+      "files": [
+        {
+          "name": "RIDGE BATMAN CORRECTION.gif",
+          "size_bytes": 63183005
+        }
+      ],
+      "response_sha256": "c659fc9181dd10921cd141fe97c21b42d1226665e3cadb56d9519cccf9b92b65"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1AnX31aCtVx7iew5cK2DaoS8MDvPiWktZ7gaBTM7zK3g/export?format=txt",
+      "checked_at": "2026-10-12T02:23:41Z",
+      "http_status": 200,
+      "sha256": "81410f685487674c4f57d73e5b554da5813d0e31cb9fa514b85c1e39eafa912c",
+      "html_links_export": "https://docs.google.com/document/d/1AnX31aCtVx7iew5cK2DaoS8MDvPiWktZ7gaBTM7zK3g/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}

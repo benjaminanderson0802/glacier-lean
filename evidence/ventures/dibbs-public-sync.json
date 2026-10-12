@@ -1,0 +1,16 @@
+{
+  "checkpoint": "PH12.19",
+  "checked_at": "2026-10-10T00:51:16-05:00",
+  "command": "GLACIER_HOME=/tmp/glacier-dibbs-live .venv/bin/python -m ventures.blocks.feeds.cli sync dla_dibbs",
+  "source_url": "https://www.dibbs.bsm.dla.mil/Solicitations/",
+  "result": {
+    "dla_dibbs": {
+      "rows": 0,
+      "changed": false,
+      "alerts": ["Feed sync alert (dla_dibbs): ValueError: source returned no records; existing snapshot retained"]
+    }
+  },
+  "read_only_probe": "The configured landing page and /rfq/ redirected to the DIBBS DoD warning/consent page. No consent acknowledgement, login, or account access was attempted.",
+  "related_claim": "vault/claims/2026-10-10-b2-dibbs-public-feed.md",
+  "checkpoint_effect": "Live DIBBS solicitation data could not be verified, so PH12.19 remains in progress."
+}

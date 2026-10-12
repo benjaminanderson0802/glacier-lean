@@ -1,0 +1,33 @@
+{
+  "captured_at_local": "2026-10-10T22:08:50.819305-05:00",
+  "backend": "real Glacier FastAPI/DBOS runtime at 127.0.0.1:38542",
+  "glacier_home": "/tmp/gf-warranty-engine-20261010",
+  "flow_id": "hourly-intake",
+  "fixture": "ventures/warranty/fixtures/jobber-warranty-jobs-five.json",
+  "fixture_is_synthetic": true,
+  "flow_installation": "installed via ventures/install_all.py --only warranty; disposable installed hourly-intake command points to the local fixture",
+  "run_command": "POST /api/environments/hourly-intake/run",
+  "run_id": "584683af2c47",
+  "run_api_record": {
+    "status": "done",
+    "waiting_on": null,
+    "node_states": {
+      "hourly": "done",
+      "read_jobber": "done"
+    },
+    "verified": null,
+    "author": "owner"
+  },
+  "output_artifact": {
+    "path": "engine-output-2026-10-10.json",
+    "sha256": "836081c80d85c704d140c0298240c283212aba54bc9ecd049252be9d6966b009",
+    "job_count": 5,
+    "draft_count": 5,
+    "all_queue_records_held_as_uncertain": true,
+    "all_drafts_unsent": true,
+    "all_portal_automation_disabled": true,
+    "pending_units_count": 5,
+    "engine_captured_stdout_characters": 15735
+  },
+  "result": "The actual Glacier engine completed both schedule and command nodes. Five synthetic Jobber-shaped completed jobs produced five held review queue entries with family guidance and five unsent drafts. No Jobber or OEM portal request was made."
+}

@@ -1,0 +1,35 @@
+{
+  "run_id": "852c69c6fed4",
+  "run": {
+    "run_id": "852c69c6fed4",
+    "env_id": "property-tax-prepare-packet",
+    "status": "failed",
+    "waiting_on": null,
+    "author": "owner",
+    "node_states": {
+      "owner_input_ready": "done",
+      "packet_failed": "skipped",
+      "packet_handoff": "skipped",
+      "packet_not_approved": "skipped",
+      "packet_ready": "skipped",
+      "prepare_packet": "skipped",
+      "review_packet": "skipped"
+    },
+    "outputs": {
+      "owner_input_ready": "approved"
+    },
+    "usage": {},
+    "verification": [
+      {
+        "check": 0,
+        "kind": "command",
+        "passed": false,
+        "evidence": "`repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && '/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'packets'/'case.json'; d=json.loads(p.read_text()); assert d['result'] in ('match', 'no match found in Cook County Assessor parcel roll as of '+d['as_of'], 'uncertain — please check') and d['filing_submitted'] is False\"` exited non-zero\n/bin/sh: 1: cd: can't cd to /home/glacier/w/workers/gf-B-FILER-RECOVERY/ventures/property-tax/scripts/property_tax.py\n"
+      }
+    ],
+    "workspace": null,
+    "verified": false
+  },
+  "packet_exists": false,
+  "packet": null
+}

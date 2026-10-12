@@ -1,0 +1,41 @@
+{
+  "id": "tpl-email-inbox-note",
+  "name": "Save new emails as notes",
+  "description": "Checks an IMAP mailbox for new matching email and saves each message on this computer.",
+  "when_to_use": "Choose this when you want a local note for each new email. Add your IMAP app password in Settings > Secrets before enabling the flow.",
+  "goal": "Save each new matching email as a local note.",
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "find \"$GLACIER_HOME/vault/inbox\" -type f -name '*.md' -mmin -10 -print0 | xargs -0 grep -q 'message_id'"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "email",
+      "type": "email_trigger",
+      "config": {
+        "host": "imap.gmail.com",
+        "port": "993",
+        "user": "you@example.com",
+        "password": "{secret:EMAIL_APP_PASSWORD}",
+        "folder": "INBOX",
+        "search": "UNSEEN",
+        "limit": "10"
+      },
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "id": "save",
+      "type": "note",
+      "config": {
+        "path": "inbox/{date}-{run}.md",
+        "template": "New email received:\n\n{prev_output}"
+      },
+      "position": { "x": 300, "y": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "email", "target": "save", "label": "" }
+  ]
+}

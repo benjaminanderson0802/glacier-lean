@@ -1,0 +1,92 @@
+.F...F...F...........FF..                                                [100%]
+=================================== FAILURES ===================================
+_______________ test_absence_uses_snapshot_date_not_lookup_date ________________
+
+    def test_absence_uses_snapshot_date_not_lookup_date():
+        result = lookup(api.load_roster_text(ROSTER), {"license_number": "99999"})
+>       assert result["outcome"] == "no match found in supplied Alabama roster as of 2026-10-09"
+E       AssertionError: assert 'no match fou...of 2026-10-10' == 'no match fou...of 2026-10-09'
+E
+E         Skipping 46 identical leading characters in diff, use -v to show
+E         - f 2026-10-09
+E         ?            -
+E         + f 2026-10-10
+E         ?           +
+
+tests/acceptance/test_al_license_verify.py:65: AssertionError
+___________ test_unicode_names_do_not_collapse_to_empty_matching_key ___________
+
+    def test_unicode_names_do_not_collapse_to_empty_matching_key():
+        roster = api.load_roster_text("License Number,Name\n54321,李氏建设\n")
+        assert lookup(roster, {"name": "李氏建设"})["outcome"] == "match"
+        result = lookup(roster, {"name": "王氏建工"})
+>       assert result["outcome"] != "match", "Different Unicode names were treated as identical"
+E       AssertionError: Different Unicode names were treated as identical
+E       assert 'match' != 'match'
+
+tests/acceptance/test_al_license_verify.py:82: AssertionError
+___________________ test_invalid_expiry_is_not_verified_fact ___________________
+
+    def test_invalid_expiry_is_not_verified_fact():
+        roster = api.load_roster_text(ROSTER.replace("12/31/2026", "not-a-date"))
+        result = lookup(roster, {"license_number": "54321"})
+>       assert uncertain(result) or result["expiration_date"] is None
+E       AssertionError: assert (False or 'not-a-date' is None)
+E        +  where False = uncertain({'outcome': 'match', 'verification_state': 'verified', 'roster_presence': 'listed', 'license_number': '54321', ...})
+
+tests/acceptance/test_al_license_verify.py:92: AssertionError
+_____________ test_mock_actor_outage_has_customer_uncertainty[429] _____________
+
+actor = (<module 'accept_actor' from '/home/glacier/w/workers/gf-T-PILOTS/ventures/al-license-verify/src/__main__.py'>, <test_al_license_verify.actor.<locals>.FakeActor object at 0x7f448d91eb40>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f448d91ea50>
+code = 429
+
+    @pytest.mark.parametrize("code", [429, 503])
+    def test_mock_actor_outage_has_customer_uncertainty(actor, monkeypatch, code):
+        import asyncio
+        wrapper, fake = actor
+        def unavailable(_): raise api.SourceUnavailable(f"HTTP {code}")
+        monkeypatch.setattr(wrapper, "read_roster_file", unavailable)
+        try:
+            asyncio.run(wrapper.main())
+        except api.SourceUnavailable:
+            pass
+>       assert uncertain(fake.rows + fake.status), "Actor aborts without customer-facing uncertain result"
+E       AssertionError: Actor aborts without customer-facing uncertain result
+E       assert False
+E        +  where False = uncertain(([] + []))
+E        +    where [] = <test_al_license_verify.actor.<locals>.FakeActor object at 0x7f448d91eb40>.rows
+E        +    and   [] = <test_al_license_verify.actor.<locals>.FakeActor object at 0x7f448d91eb40>.status
+
+tests/acceptance/test_al_license_verify.py:180: AssertionError
+_____________ test_mock_actor_outage_has_customer_uncertainty[503] _____________
+
+actor = (<module 'accept_actor' from '/home/glacier/w/workers/gf-T-PILOTS/ventures/al-license-verify/src/__main__.py'>, <test_al_license_verify.actor.<locals>.FakeActor object at 0x7f448d91e390>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f448da7b1a0>
+code = 503
+
+    @pytest.mark.parametrize("code", [429, 503])
+    def test_mock_actor_outage_has_customer_uncertainty(actor, monkeypatch, code):
+        import asyncio
+        wrapper, fake = actor
+        def unavailable(_): raise api.SourceUnavailable(f"HTTP {code}")
+        monkeypatch.setattr(wrapper, "read_roster_file", unavailable)
+        try:
+            asyncio.run(wrapper.main())
+        except api.SourceUnavailable:
+            pass
+>       assert uncertain(fake.rows + fake.status), "Actor aborts without customer-facing uncertain result"
+E       AssertionError: Actor aborts without customer-facing uncertain result
+E       assert False
+E        +  where False = uncertain(([] + []))
+E        +    where [] = <test_al_license_verify.actor.<locals>.FakeActor object at 0x7f448d91e390>.rows
+E        +    and   [] = <test_al_license_verify.actor.<locals>.FakeActor object at 0x7f448d91e390>.status
+
+tests/acceptance/test_al_license_verify.py:180: AssertionError
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_al_license_verify.py::test_absence_uses_snapshot_date_not_lookup_date
+FAILED tests/acceptance/test_al_license_verify.py::test_unicode_names_do_not_collapse_to_empty_matching_key
+FAILED tests/acceptance/test_al_license_verify.py::test_invalid_expiry_is_not_verified_fact
+FAILED tests/acceptance/test_al_license_verify.py::test_mock_actor_outage_has_customer_uncertainty[429]
+FAILED tests/acceptance/test_al_license_verify.py::test_mock_actor_outage_has_customer_uncertainty[503]
+5 failed, 20 passed, 1 deselected in 0.06s

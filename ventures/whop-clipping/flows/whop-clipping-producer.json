@@ -1,0 +1,10 @@
+{
+  "id": "whop-clipping-producer",
+  "name": "Whop clipping Producer",
+  "nodes": [
+    {"id": "producer_schedule", "type": "schedule", "config": {"cron": "0 * * * *", "missed_run": "skip", "overlap": "skip"}, "position": {"x": 0, "y": 0}},
+    {"id": "produce", "type": "command", "config": {"cmd": "python -m scripts.producer", "cwd": "ventures/whop-clipping", "timeout": "7200", "retries": "1"}, "position": {"x": 360, "y": 0}}
+  ],
+  "edges": [{"id": "schedule_to_producer", "source": "producer_schedule", "target": "produce"}],
+  "checks": []
+}

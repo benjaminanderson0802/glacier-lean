@@ -1,0 +1,451 @@
+........................................................................ [  8%]
+........................................................................ [ 17%]
+........................................................................ [ 25%]
+.......................................................FF.....F......... [ 34%]
+........................................................................ [ 43%]
+........................................................................ [ 51%]
+........................................................................ [ 60%]
+...........................................s............................ [ 69%]
+........................................................................ [ 77%]
+........................................................................ [ 86%]
+........................................................................ [ 95%]
+........................................                                 [100%]
+=================================== FAILURES ===================================
+_ test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-inbox-note] _
+
+real_template_backend = (<test_flows_real_runtime.RealCodexServer object at 0x7abbd2219880>, PosixPath('/tmp/pytest-of-glacier/pytest-173/real-template-backend0'))
+template_id = 'tpl-email-inbox-note'
+
+    @pytest.mark.parametrize(
+        "template_id",
+        [entry["id"] for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]],
+    )
+    def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine(real_template_backend, template_id):
+        server, root = real_template_backend
+        templates = {item["id"]: item for item in server.get("/api/templates")}
+        item = templates[template_id]
+        assert item["installable"] is True, f"{template_id} is unavailable: {item['review_status']}"
+        flow = json.loads(json.dumps(item["template"]))
+        env_id = "proof-" + template_id.removeprefix("tpl-")
+        flow["id"], flow["name"] = env_id, "Template proof " + template_id
+        flow.pop("description", None)
+        flow.pop("when_to_use", None)
+        nodes = {node["id"]: node for node in flow["nodes"]}
+        home = Path(server.home)
+        workspace = home / "workspaces" / env_id
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        local_needed = any(node["type"] == "local_ai" for node in nodes.values())
+        if local_needed:
+            _require_ollama()
+
+        for node in nodes.values():
+            cfg = node.get("config", {})
+            if node["type"] == "schedule":
+                cfg["cron"] = "0 0 1 1 *"  # template remains installable, but the proof invokes it manually
+            elif node["type"] == "read_document":
+                source = workspace / "fixture.txt"
+                source.write_text("Meeting: send the agenda to the team. Launch is Friday.", encoding="utf-8")
+                cfg["source"] = str(source)
+            elif node["type"] == "command":
+                cmd = cfg.get("cmd", "")
+                cmd = cmd.replace('"$HOME/Downloads"', f'"{home / "Downloads"}"')
+                cmd = cmd.replace('"$HOME/Backups"', f'"{home / "Backups"}"')
+                cfg["cmd"] = cmd
+            elif node["type"] == "codex":
+                cfg["workdir"] = str(workspace)
+            elif node["type"] == "local_ai":
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "decide":
+                cfg["engine"] = "codex" if not local_needed else "local"
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "flow" and cfg.get("env") == "tpl-daily-report":
+                child = next(json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                             for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+                             if entry["id"] == "tpl-daily-report")
+                child_id = env_id + "-daily-child"
+                child["id"] = child_id
+                child["nodes"][0]["config"]["cron"] = "0 0 1 1 *"
+                child_worker = next(part for part in child["nodes"] if part["type"] == "codex")
+                child_worker["config"]["workdir"] = str(workspace)
+                server.put(f"/api/environments/{child_id}", child)
+                cfg["env"] = child_id
+            elif node["type"] == "approval":
+                cfg["prompt"] = "Approve this test-only action in a temporary folder?"
+
+        if template_id == "tpl-downloads-tidy":
+            downloads = home / "Downloads"
+            downloads.mkdir()
+            old = downloads / "older-fixture.txt"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 10 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-backup-check":
+            backups = home / "Backups"
+            backups.mkdir()
+            old = backups / "old-fixture.zip"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 5 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-web-change-watch":
+            class Page(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    payload = b"<html><body>Glacier local template fixture</body></html>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+
+                def log_message(self, *_args):
+                    pass
+
+            page = socketserver.TCPServer(("127.0.0.1", 0), Page)
+            page_thread = threading.Thread(target=page.serve_forever, daemon=True)
+            page_thread.start()
+            fetch = next(node for node in nodes.values() if node["type"] == "fetch_page")
+            fetch["config"]["url"] = f"http://127.0.0.1:{page.server_address[1]}/"
+            fetch["config"]["allowed_sites"] = "127.0.0.1"
+
+        if template_id == "tpl-website-monitor":
+            next(node for node in nodes.values() if node["type"] == "command")["config"]["cmd"] = "true"
+
+        if template_id == "tpl-inbox-triage":
+            decide_cfg = next(node for node in nodes.values() if node["type"] == "decide")["config"]
+            decide_cfg["engine"] = "codex"
+            decide_cfg.pop("model", None)
+        if template_id == "tpl-test-and-fix":
+            # Exercise the successful verification branch against a real small pytest
+            # project, avoiding a repair request over an intentionally empty workspace.
+            (workspace / "test_sample.py").write_text("def test_template_fixture():\n    assert 'glacier' == 'glacier'\n", encoding="utf-8")
+            python = sys.executable
+            for node in nodes.values():
+                if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
+                    node["config"]["cmd"] = f"'{python}' -m pytest -q"
+        codex_needed = _template_needs_codex(flow)
+        if codex_needed:
+            _require_codex()
+        server.put(f"/api/environments/{env_id}", flow)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        deadline = time.time() + 360
+        try:
+            while time.time() < deadline:
+                run = server.get(f"/api/runs/{run_id}")
+                if run["status"] == "waiting":
+                    server.post(f"/api/runs/{run_id}/approve", {"node_id": run["waiting_on"], "approved": True})
+                elif run["status"] in ("done", "failed", "rejected"):
+                    break
+                time.sleep(0.25)
+        finally:
+            if template_id == "tpl-web-change-watch":
+                page.shutdown()
+                page_thread.join(timeout=2)
+                page.server_close()
+        if run["status"] != "done" and codex_needed and any("not signed in" in str(output).lower() for output in run["outputs"].values()):
+            pytest.skip(f"{template_id} installed; Codex CLI is not signed in for this backend process")
+>       assert run["status"] == "done", f"{template_id} real-backend run failed: {run}"
+E       AssertionError: tpl-email-inbox-note real-backend run failed: {'run_id': '61a866849752', 'env_id': 'proof-email-inbox-note', 'status': 'failed', 'waiting_on': None, 'author': 'owner', 'node_states': {'email': 'failed', 'save': 'skipped'}, 'outputs': {'email': 'error: This step starts when a new email arrives'}, 'usage': {}, 'verification': [], 'workspace': None, 'verified': False}
+E       assert 'failed' == 'done'
+E
+E         - done
+E         + failed
+
+tests/test_flows_real_runtime.py:478: AssertionError
+_ test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-search-note] _
+
+real_template_backend = (<test_flows_real_runtime.RealCodexServer object at 0x7abbd2219880>, PosixPath('/tmp/pytest-of-glacier/pytest-173/real-template-backend0'))
+template_id = 'tpl-email-search-note'
+
+    @pytest.mark.parametrize(
+        "template_id",
+        [entry["id"] for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]],
+    )
+    def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine(real_template_backend, template_id):
+        server, root = real_template_backend
+        templates = {item["id"]: item for item in server.get("/api/templates")}
+        item = templates[template_id]
+        assert item["installable"] is True, f"{template_id} is unavailable: {item['review_status']}"
+        flow = json.loads(json.dumps(item["template"]))
+        env_id = "proof-" + template_id.removeprefix("tpl-")
+        flow["id"], flow["name"] = env_id, "Template proof " + template_id
+        flow.pop("description", None)
+        flow.pop("when_to_use", None)
+        nodes = {node["id"]: node for node in flow["nodes"]}
+        home = Path(server.home)
+        workspace = home / "workspaces" / env_id
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        local_needed = any(node["type"] == "local_ai" for node in nodes.values())
+        if local_needed:
+            _require_ollama()
+
+        for node in nodes.values():
+            cfg = node.get("config", {})
+            if node["type"] == "schedule":
+                cfg["cron"] = "0 0 1 1 *"  # template remains installable, but the proof invokes it manually
+            elif node["type"] == "read_document":
+                source = workspace / "fixture.txt"
+                source.write_text("Meeting: send the agenda to the team. Launch is Friday.", encoding="utf-8")
+                cfg["source"] = str(source)
+            elif node["type"] == "command":
+                cmd = cfg.get("cmd", "")
+                cmd = cmd.replace('"$HOME/Downloads"', f'"{home / "Downloads"}"')
+                cmd = cmd.replace('"$HOME/Backups"', f'"{home / "Backups"}"')
+                cfg["cmd"] = cmd
+            elif node["type"] == "codex":
+                cfg["workdir"] = str(workspace)
+            elif node["type"] == "local_ai":
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "decide":
+                cfg["engine"] = "codex" if not local_needed else "local"
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "flow" and cfg.get("env") == "tpl-daily-report":
+                child = next(json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                             for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+                             if entry["id"] == "tpl-daily-report")
+                child_id = env_id + "-daily-child"
+                child["id"] = child_id
+                child["nodes"][0]["config"]["cron"] = "0 0 1 1 *"
+                child_worker = next(part for part in child["nodes"] if part["type"] == "codex")
+                child_worker["config"]["workdir"] = str(workspace)
+                server.put(f"/api/environments/{child_id}", child)
+                cfg["env"] = child_id
+            elif node["type"] == "approval":
+                cfg["prompt"] = "Approve this test-only action in a temporary folder?"
+
+        if template_id == "tpl-downloads-tidy":
+            downloads = home / "Downloads"
+            downloads.mkdir()
+            old = downloads / "older-fixture.txt"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 10 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-backup-check":
+            backups = home / "Backups"
+            backups.mkdir()
+            old = backups / "old-fixture.zip"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 5 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-web-change-watch":
+            class Page(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    payload = b"<html><body>Glacier local template fixture</body></html>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+
+                def log_message(self, *_args):
+                    pass
+
+            page = socketserver.TCPServer(("127.0.0.1", 0), Page)
+            page_thread = threading.Thread(target=page.serve_forever, daemon=True)
+            page_thread.start()
+            fetch = next(node for node in nodes.values() if node["type"] == "fetch_page")
+            fetch["config"]["url"] = f"http://127.0.0.1:{page.server_address[1]}/"
+            fetch["config"]["allowed_sites"] = "127.0.0.1"
+
+        if template_id == "tpl-website-monitor":
+            next(node for node in nodes.values() if node["type"] == "command")["config"]["cmd"] = "true"
+
+        if template_id == "tpl-inbox-triage":
+            decide_cfg = next(node for node in nodes.values() if node["type"] == "decide")["config"]
+            decide_cfg["engine"] = "codex"
+            decide_cfg.pop("model", None)
+        if template_id == "tpl-test-and-fix":
+            # Exercise the successful verification branch against a real small pytest
+            # project, avoiding a repair request over an intentionally empty workspace.
+            (workspace / "test_sample.py").write_text("def test_template_fixture():\n    assert 'glacier' == 'glacier'\n", encoding="utf-8")
+            python = sys.executable
+            for node in nodes.values():
+                if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
+                    node["config"]["cmd"] = f"'{python}' -m pytest -q"
+        codex_needed = _template_needs_codex(flow)
+        if codex_needed:
+            _require_codex()
+        server.put(f"/api/environments/{env_id}", flow)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        deadline = time.time() + 360
+        try:
+            while time.time() < deadline:
+                run = server.get(f"/api/runs/{run_id}")
+                if run["status"] == "waiting":
+                    server.post(f"/api/runs/{run_id}/approve", {"node_id": run["waiting_on"], "approved": True})
+                elif run["status"] in ("done", "failed", "rejected"):
+                    break
+                time.sleep(0.25)
+        finally:
+            if template_id == "tpl-web-change-watch":
+                page.shutdown()
+                page_thread.join(timeout=2)
+                page.server_close()
+        if run["status"] != "done" and codex_needed and any("not signed in" in str(output).lower() for output in run["outputs"].values()):
+            pytest.skip(f"{template_id} installed; Codex CLI is not signed in for this backend process")
+>       assert run["status"] == "done", f"{template_id} real-backend run failed: {run}"
+E       AssertionError: tpl-email-search-note real-backend run failed: {'run_id': '78d8439e6020', 'env_id': 'proof-email-search-note', 'status': 'failed', 'waiting_on': None, 'author': 'owner', 'node_states': {'save': 'skipped', 'search': 'failed'}, 'outputs': {'search': 'error: Unknown secret: EMAIL_APP_PASSWORD'}, 'usage': {}, 'verification': [], 'workspace': None, 'verified': None}
+E       assert 'failed' == 'done'
+E
+E         - done
+E         + failed
+
+tests/test_flows_real_runtime.py:478: AssertionError
+_ test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-local-data-pipeline] _
+
+real_template_backend = (<test_flows_real_runtime.RealCodexServer object at 0x7abbd2219880>, PosixPath('/tmp/pytest-of-glacier/pytest-173/real-template-backend0'))
+template_id = 'tpl-local-data-pipeline'
+
+    @pytest.mark.parametrize(
+        "template_id",
+        [entry["id"] for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]],
+    )
+    def test_each_installable_template_installs_and_runs_or_skips_for_missing_engine(real_template_backend, template_id):
+        server, root = real_template_backend
+        templates = {item["id"]: item for item in server.get("/api/templates")}
+        item = templates[template_id]
+        assert item["installable"] is True, f"{template_id} is unavailable: {item['review_status']}"
+        flow = json.loads(json.dumps(item["template"]))
+        env_id = "proof-" + template_id.removeprefix("tpl-")
+        flow["id"], flow["name"] = env_id, "Template proof " + template_id
+        flow.pop("description", None)
+        flow.pop("when_to_use", None)
+        nodes = {node["id"]: node for node in flow["nodes"]}
+        home = Path(server.home)
+        workspace = home / "workspaces" / env_id
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        local_needed = any(node["type"] == "local_ai" for node in nodes.values())
+        if local_needed:
+            _require_ollama()
+
+        for node in nodes.values():
+            cfg = node.get("config", {})
+            if node["type"] == "schedule":
+                cfg["cron"] = "0 0 1 1 *"  # template remains installable, but the proof invokes it manually
+            elif node["type"] == "read_document":
+                source = workspace / "fixture.txt"
+                source.write_text("Meeting: send the agenda to the team. Launch is Friday.", encoding="utf-8")
+                cfg["source"] = str(source)
+            elif node["type"] == "command":
+                cmd = cfg.get("cmd", "")
+                cmd = cmd.replace('"$HOME/Downloads"', f'"{home / "Downloads"}"')
+                cmd = cmd.replace('"$HOME/Backups"', f'"{home / "Backups"}"')
+                cfg["cmd"] = cmd
+            elif node["type"] == "codex":
+                cfg["workdir"] = str(workspace)
+            elif node["type"] == "local_ai":
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "decide":
+                cfg["engine"] = "codex" if not local_needed else "local"
+                cfg["model"] = "granite3.3:2b"
+            elif node["type"] == "flow" and cfg.get("env") == "tpl-daily-report":
+                child = next(json.loads((ROOT / "templates" / entry["file"]).read_text(encoding="utf-8"))
+                             for entry in json.loads(MANIFEST.read_text(encoding="utf-8"))["templates"]
+                             if entry["id"] == "tpl-daily-report")
+                child_id = env_id + "-daily-child"
+                child["id"] = child_id
+                child["nodes"][0]["config"]["cron"] = "0 0 1 1 *"
+                child_worker = next(part for part in child["nodes"] if part["type"] == "codex")
+                child_worker["config"]["workdir"] = str(workspace)
+                server.put(f"/api/environments/{child_id}", child)
+                cfg["env"] = child_id
+            elif node["type"] == "approval":
+                cfg["prompt"] = "Approve this test-only action in a temporary folder?"
+
+        if template_id == "tpl-downloads-tidy":
+            downloads = home / "Downloads"
+            downloads.mkdir()
+            old = downloads / "older-fixture.txt"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 10 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-backup-check":
+            backups = home / "Backups"
+            backups.mkdir()
+            old = backups / "old-fixture.zip"
+            old.write_text("safe test fixture", encoding="utf-8")
+            stamp = time.time() - 5 * 86400
+            os.utime(old, (stamp, stamp))
+        elif template_id == "tpl-web-change-watch":
+            class Page(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    payload = b"<html><body>Glacier local template fixture</body></html>"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+
+                def log_message(self, *_args):
+                    pass
+
+            page = socketserver.TCPServer(("127.0.0.1", 0), Page)
+            page_thread = threading.Thread(target=page.serve_forever, daemon=True)
+            page_thread.start()
+            fetch = next(node for node in nodes.values() if node["type"] == "fetch_page")
+            fetch["config"]["url"] = f"http://127.0.0.1:{page.server_address[1]}/"
+            fetch["config"]["allowed_sites"] = "127.0.0.1"
+
+        if template_id == "tpl-website-monitor":
+            next(node for node in nodes.values() if node["type"] == "command")["config"]["cmd"] = "true"
+
+        if template_id == "tpl-inbox-triage":
+            decide_cfg = next(node for node in nodes.values() if node["type"] == "decide")["config"]
+            decide_cfg["engine"] = "codex"
+            decide_cfg.pop("model", None)
+        if template_id == "tpl-test-and-fix":
+            # Exercise the successful verification branch against a real small pytest
+            # project, avoiding a repair request over an intentionally empty workspace.
+            (workspace / "test_sample.py").write_text("def test_template_fixture():\n    assert 'glacier' == 'glacier'\n", encoding="utf-8")
+            python = sys.executable
+            for node in nodes.values():
+                if node["type"] == "command" and "pytest" in node["config"].get("cmd", ""):
+                    node["config"]["cmd"] = f"'{python}' -m pytest -q"
+        codex_needed = _template_needs_codex(flow)
+        if codex_needed:
+            _require_codex()
+        server.put(f"/api/environments/{env_id}", flow)
+        run_id = server.post(f"/api/environments/{env_id}/run")["run_id"]
+        deadline = time.time() + 360
+        try:
+            while time.time() < deadline:
+                run = server.get(f"/api/runs/{run_id}")
+                if run["status"] == "waiting":
+                    server.post(f"/api/runs/{run_id}/approve", {"node_id": run["waiting_on"], "approved": True})
+                elif run["status"] in ("done", "failed", "rejected"):
+                    break
+                time.sleep(0.25)
+        finally:
+            if template_id == "tpl-web-change-watch":
+                page.shutdown()
+                page_thread.join(timeout=2)
+                page.server_close()
+        if run["status"] != "done" and codex_needed and any("not signed in" in str(output).lower() for output in run["outputs"].values()):
+            pytest.skip(f"{template_id} installed; Codex CLI is not signed in for this backend process")
+>       assert run["status"] == "done", f"{template_id} real-backend run failed: {run}"
+E       AssertionError: tpl-local-data-pipeline real-backend run failed: {'run_id': '6fcc356df61d', 'env_id': 'proof-local-data-pipeline', 'status': 'failed', 'waiting_on': None, 'author': 'owner', 'node_states': {'ai': 'failed', 'csv': 'skipped', 'email': 'skipped', 'json': 'skipped', 'table': 'skipped', 'wait': 'skipped'}, 'outputs': {'ai': 'The AI answer did not match the requested JSON format: Expecting value: line 1 column 1 (char 0)'}, 'usage': {}, 'verification': [], 'workspace': None, 'verified': False}
+E       assert 'failed' == 'done'
+E
+E         - done
+E         + failed
+
+tests/test_flows_real_runtime.py:478: AssertionError
+=============================== warnings summary ===============================
+../../../../glacier-lean/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /home/glacier/w/glacier-lean/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+tests/test_teams.py::test_parallel_api_workers_reserve_monthly_budget_across_processes
+  /usr/lib/python3.12/multiprocessing/popen_fork.py:66: DeprecationWarning: This process (pid=206011) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-inbox-note]
+FAILED tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-search-note]
+FAILED tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-local-data-pipeline]
+3 failed, 828 passed, 1 skipped, 5 warnings in 868.68s (0:14:28)

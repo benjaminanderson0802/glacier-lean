@@ -1,0 +1,23 @@
+E-PH8 continuation checks, 2026-10-10
+
+PASS: bash desktop/test_first_run_theme.sh
+first-run theme ok
+
+PASS: node --check desktop/first-run/app.js
+(exit 0; no output)
+
+PASS: ~/w/glacier-lean/.venv/bin/python -m pytest -q setup/pybundle/test_build_runtime.py desktop/test_updater_config.py
+..........                                                               [100%]
+10 passed in 0.05s
+
+PASS: (cd glacier/backend && ~/w/glacier-lean/.venv/bin/python -m pytest -q tests/test_install_layout.py tests/test_starter.py tests/test_system_check.py)
+30 passed, 1 warning in 20.94s
+
+BLOCKED: (cd glacier/web && node scripts/check-i18n.mjs --fail)
+ERR_MODULE_NOT_FOUND: package 'typescript' imported from scripts/check-i18n.mjs (Node.js v22.23.3)
+
+BLOCKED: (cd glacier/web && npx --no-install tsc -b)
+No local TypeScript compiler; npx reports that the requested tsc command is unavailable.
+
+BLOCKED: (cd glacier/web && node e2e/updates.spec.mjs)
+ERR_MODULE_NOT_FOUND: package 'playwright' imported from e2e/updates.spec.mjs (Node.js v22.23.3)

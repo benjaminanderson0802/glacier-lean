@@ -1,0 +1,34 @@
+{
+  "id": "carpenter-track-commissions",
+  "name": "Track agreed furniture commissions",
+  "goal": "Calculate commission due from paid sales in the owner's exported order file using the written rate. This flow does not charge, invoice or transfer money.",
+  "nodes": [
+    {
+      "id": "calculate_commission",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/carpenter-goods/scripts/listing_prep.py commissions --etsy-csv \"$GLACIER_HOME/ventures/carpenter-goods/incoming/etsy-orders.csv\" --shopify-csv \"$GLACIER_HOME/ventures/carpenter-goods/incoming/shopify-orders.csv\" --rate-file \"$GLACIER_HOME/ventures/carpenter-goods/incoming/commission-terms.json\" --output \"$GLACIER_HOME/ventures/carpenter-goods/reports/commission-{run}.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "commission_result",
+      "type": "note",
+      "config": {"path": "ventures/carpenter-goods/reports/commission-summary-{run}.md", "template": "Commission tracking for run {run}. This is a calculation from imported paid Etsy and Shopify orders only; compare the export totals with the written agreement and platform settlements before any invoice or payment. No money was moved.\n\n{summary}"},
+      "position": {"x": 300, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "calculate_commission", "target": "commission_result", "label": ""}
+  ],
+  "acceptance": [
+    {
+      "kind": "human",
+      "question": "Compare this local commission summary with the fully signed agreement and the Etsy/Shopify settlement records. Confirm eligible orders, exclusions, basis, refunds, fees, currency, and rounding. If any term or export field is missing or unsupported, leave the result uncertain and do not approve an amount for payment. This review does not authorize Glacier to invoice, send, charge, or transfer money."
+    }
+  ],
+  "max_steps": 2
+}

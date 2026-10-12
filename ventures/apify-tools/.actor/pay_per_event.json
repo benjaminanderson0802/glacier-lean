@@ -1,0 +1,15 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "platformUsageIncluded": true,
+  "actorChargeEvents": {
+    "license-lookup": {
+      "eventTitle": "License lookup",
+      "eventDescription": "One source-backed Mississippi contractor license-number or business-name lookup; source outages are not charged.",
+      "eventPriceUsd": 0.02,
+      "isPrimaryEvent": true,
+      "isOneTimeEvent": false
+    }
+  },
+  "minimalMaxTotalChargeUsd": 0.02,
+  "pricingNote": "Set this pay-per-event configuration in Apify Console before publishing. Disable the automatic apify-default-dataset-item event so each completed lookup is charged once by the custom license-lookup event. Account and payout settings are owner-only."
+}

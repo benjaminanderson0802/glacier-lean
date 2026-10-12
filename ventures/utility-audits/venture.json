@@ -1,0 +1,61 @@
+{
+  "slug": "utility-audits",
+  "name": "utility audits",
+  "status": "ready",
+  "product": {
+    "purpose": "Prepare customer-reviewed Indiana restaurant electricity exemption estimates and predominant-use utility study estimates with unsigned application data.",
+    "launch_state": "Indiana (recommended; owner confirmation required before launch)",
+    "scope": "Indiana restaurant electricity sales tax and customer-provided electricity or natural-gas predominant-use study estimates. Customer-entered flat-rate comparisons do not fetch tariffs or establish availability.",
+    "billing": "Disabled. Do not charge a share of refunds or first-year savings until the owner records the approved model and legal basis."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": [
+    "utility-audit-calculator",
+    "utility-predominant-use"
+  ],
+  "schedules": [],
+  "secrets_needed": [],
+  "your_steps": [
+    {
+      "id": "confirm-and-provide-records",
+      "title": "Choose a launch state and provide a case's records",
+      "when": "Before offering this venture to customers",
+      "detail": "Choose Indiana or an alternative state before launch; Indiana is only the current recommendation. For restaurant cases, provide the seller's annual statewide prepared-food calculation and 12 months of meter records. For a predominant-use case, provide 12 monthly bills plus the documented exempt-use allocation for each meter; bills alone do not show exempt-use allocation. Keep records local. Bulletin #29 remains relevant to prepared-food sales calculations; Bulletin #55 governs the utility use exemption and ST-200 process.",
+      "links": [
+        "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/",
+        "https://www.in.gov/dor/files/reference/sib11.pdf",
+        "https://www.in.gov/dor/files/sib11.pdf",
+        "https://www.in.gov/dor/files/reference/sib29.pdf",
+        "https://www.in.gov/dor/files/sib29.pdf",
+        "https://www.in.gov/dor/files/sib55.pdf",
+        "https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html",
+        "https://forms.in.gov/Download.aspx?id=16301",
+        "https://forms.in.gov/Download.aspx?id=14085"
+      ]
+    },
+    {
+      "id": "review-sign-submit",
+      "title": "Review, sign, and submit the application",
+      "when": "After a draft is prepared",
+      "detail": "Review every field against the applicable official form (ST-200R for the restaurant election or ST-200 for a utility study), complete missing details, attach bills and the study, sign as the customer, and submit it to Indiana DOR yourself. Glacier never signs or submits it. The customer sends any certificate issued by DOR to the utility after approval.",
+      "links": [
+        "https://forms.in.gov/Download.aspx?id=14085",
+        "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/"
+      ]
+    },
+    {
+      "id": "approve-fee-model",
+      "title": "Approve a fee model before enabling billing",
+      "when": "Before charging customers",
+      "detail": "Get any legal opinion you need, choose the price and fee model, and record its legal basis. Billing stays disabled until you approve it.",
+      "links": []
+    }
+  ],
+  "launch_gates": [
+    "Owner confirms Indiana as the launch state.",
+    "Billing remains disabled until the owner records approval of the model and its legal basis.",
+    "Customer reviews, signs, and submits all state applications and sends any issued certificate to the utility."
+  ],
+  "dry_run_env_id": "utility-audit-calculator"
+}

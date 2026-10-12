@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Glacier Recall Checker",
+  "version": "0.1.0",
+  "description": "Check the item in your current tab against local or hosted public recall data.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:8765/*", "https://api.apify.com/*"],
+  "action": {"default_title": "Check this item", "default_popup": "popup.html"}
+}

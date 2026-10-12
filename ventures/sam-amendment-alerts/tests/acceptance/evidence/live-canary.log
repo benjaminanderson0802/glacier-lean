@@ -1,0 +1,170 @@
+...FFFFFF....LIVE document: 200 https://open.gsa.gov/api/get-opportunities-public-api/; marker=opportunitiesData
+...
+=================================== FAILURES ===================================
+______________ test_notice_link_does_not_require_customer_api_key ______________
+
+notice = {'noticeId': '11111111111111111111111111111111', 'title': 'Válvulas – industrial supplies', 'solicitationNumber': 'TEST-26-001', 'naicsCode': '423840', ...}
+
+    def test_notice_link_does_not_require_customer_api_key(notice):
+        event = digest(snapshot([]), snapshot([notice]))["events"][0]
+>       assert event["source_url"] == notice["uiLink"], "API self link requires a key; preserve supplied notice UI link"
+E       AssertionError: API self link requires a key; preserve supplied notice UI link
+E       assert 'https://api....1111111111111' == 'https://sam....11111111/view'
+E
+E         - https://sam.gov/opp/11111111111111111111111111111111/view
+E         + https://api.sam.gov/opportunities/v2/search?noticeid=11111111111111111111111111111111
+
+tests/acceptance/test_sam_amendment_alerts.py:85: AssertionError
+____________ test_partial_data_rejected_or_uncertain[partial_page] _____________
+
+notice = {'noticeId': '11111111111111111111111111111111', 'title': 'Válvulas – industrial supplies', 'solicitationNumber': 'TEST-26-001', 'naicsCode': '423840', ...}
+case = 'partial_page'
+
+    @pytest.mark.parametrize("case", ["partial_page", "missing_retrieval", "malformed_row", "missing_deadline", "duplicate_conflict"])
+    def test_partial_data_rejected_or_uncertain(notice, case):
+        after = snapshot([notice])
+        if case == "partial_page":
+            after["totalRecords"] = 101
+        elif case == "missing_retrieval":
+            after.pop("retrieved_at")
+        elif case == "malformed_row":
+            after["opportunitiesData"] = [None]
+        elif case == "missing_deadline":
+            notice.pop("responseDeadLine")
+        else:
+            after["opportunitiesData"].append(dict(notice, responseDeadLine="2026-11-01T10:00:00Z"))
+            after["totalRecords"] = 2
+        try:
+            result = digest(snapshot([]), after)
+        except ValueError:
+            return
+>       assert uncertain(result), "Incomplete source cannot support a confident match/no-match"
+E       AssertionError: Incomplete source cannot support a confident match/no-match
+E       assert False
+E        +  where False = uncertain({'status': 'match', 'trade': 'industrial supplies merchant wholesalers', 'naics_codes': ['423840'], 'snapshot_date': '2026-10-10', ...})
+
+tests/acceptance/test_sam_amendment_alerts.py:105: AssertionError
+__________ test_partial_data_rejected_or_uncertain[missing_retrieval] __________
+
+notice = {'noticeId': '11111111111111111111111111111111', 'title': 'Válvulas – industrial supplies', 'solicitationNumber': 'TEST-26-001', 'naicsCode': '423840', ...}
+case = 'missing_retrieval'
+
+    @pytest.mark.parametrize("case", ["partial_page", "missing_retrieval", "malformed_row", "missing_deadline", "duplicate_conflict"])
+    def test_partial_data_rejected_or_uncertain(notice, case):
+        after = snapshot([notice])
+        if case == "partial_page":
+            after["totalRecords"] = 101
+        elif case == "missing_retrieval":
+            after.pop("retrieved_at")
+        elif case == "malformed_row":
+            after["opportunitiesData"] = [None]
+        elif case == "missing_deadline":
+            notice.pop("responseDeadLine")
+        else:
+            after["opportunitiesData"].append(dict(notice, responseDeadLine="2026-11-01T10:00:00Z"))
+            after["totalRecords"] = 2
+        try:
+            result = digest(snapshot([]), after)
+        except ValueError:
+            return
+>       assert uncertain(result), "Incomplete source cannot support a confident match/no-match"
+E       AssertionError: Incomplete source cannot support a confident match/no-match
+E       assert False
+E        +  where False = uncertain({'status': 'match', 'trade': 'industrial supplies merchant wholesalers', 'naics_codes': ['423840'], 'snapshot_date': 'unknown date', ...})
+
+tests/acceptance/test_sam_amendment_alerts.py:105: AssertionError
+____________ test_partial_data_rejected_or_uncertain[malformed_row] ____________
+
+notice = {'noticeId': '11111111111111111111111111111111', 'title': 'Válvulas – industrial supplies', 'solicitationNumber': 'TEST-26-001', 'naicsCode': '423840', ...}
+case = 'malformed_row'
+
+    @pytest.mark.parametrize("case", ["partial_page", "missing_retrieval", "malformed_row", "missing_deadline", "duplicate_conflict"])
+    def test_partial_data_rejected_or_uncertain(notice, case):
+        after = snapshot([notice])
+        if case == "partial_page":
+            after["totalRecords"] = 101
+        elif case == "missing_retrieval":
+            after.pop("retrieved_at")
+        elif case == "malformed_row":
+            after["opportunitiesData"] = [None]
+        elif case == "missing_deadline":
+            notice.pop("responseDeadLine")
+        else:
+            after["opportunitiesData"].append(dict(notice, responseDeadLine="2026-11-01T10:00:00Z"))
+            after["totalRecords"] = 2
+        try:
+            result = digest(snapshot([]), after)
+        except ValueError:
+            return
+>       assert uncertain(result), "Incomplete source cannot support a confident match/no-match"
+E       AssertionError: Incomplete source cannot support a confident match/no-match
+E       assert False
+E        +  where False = uncertain({'status': 'no match found in SAM.gov as of 2026-10-10', 'trade': 'industrial supplies merchant wholesalers', 'naics_codes': ['423840'], 'snapshot_date': '2026-10-10', ...})
+
+tests/acceptance/test_sam_amendment_alerts.py:105: AssertionError
+__________ test_partial_data_rejected_or_uncertain[missing_deadline] ___________
+
+notice = {'noticeId': '11111111111111111111111111111111', 'title': 'Válvulas – industrial supplies', 'solicitationNumber': 'TEST-26-001', 'naicsCode': '423840', ...}
+case = 'missing_deadline'
+
+    @pytest.mark.parametrize("case", ["partial_page", "missing_retrieval", "malformed_row", "missing_deadline", "duplicate_conflict"])
+    def test_partial_data_rejected_or_uncertain(notice, case):
+        after = snapshot([notice])
+        if case == "partial_page":
+            after["totalRecords"] = 101
+        elif case == "missing_retrieval":
+            after.pop("retrieved_at")
+        elif case == "malformed_row":
+            after["opportunitiesData"] = [None]
+        elif case == "missing_deadline":
+            notice.pop("responseDeadLine")
+        else:
+            after["opportunitiesData"].append(dict(notice, responseDeadLine="2026-11-01T10:00:00Z"))
+            after["totalRecords"] = 2
+        try:
+            result = digest(snapshot([]), after)
+        except ValueError:
+            return
+>       assert uncertain(result), "Incomplete source cannot support a confident match/no-match"
+E       AssertionError: Incomplete source cannot support a confident match/no-match
+E       assert False
+E        +  where False = uncertain({'status': 'match', 'trade': 'industrial supplies merchant wholesalers', 'naics_codes': ['423840'], 'snapshot_date': '2026-10-10', ...})
+
+tests/acceptance/test_sam_amendment_alerts.py:105: AssertionError
+_________ test_partial_data_rejected_or_uncertain[duplicate_conflict] __________
+
+notice = {'noticeId': '11111111111111111111111111111111', 'title': 'Válvulas – industrial supplies', 'solicitationNumber': 'TEST-26-001', 'naicsCode': '423840', ...}
+case = 'duplicate_conflict'
+
+    @pytest.mark.parametrize("case", ["partial_page", "missing_retrieval", "malformed_row", "missing_deadline", "duplicate_conflict"])
+    def test_partial_data_rejected_or_uncertain(notice, case):
+        after = snapshot([notice])
+        if case == "partial_page":
+            after["totalRecords"] = 101
+        elif case == "missing_retrieval":
+            after.pop("retrieved_at")
+        elif case == "malformed_row":
+            after["opportunitiesData"] = [None]
+        elif case == "missing_deadline":
+            notice.pop("responseDeadLine")
+        else:
+            after["opportunitiesData"].append(dict(notice, responseDeadLine="2026-11-01T10:00:00Z"))
+            after["totalRecords"] = 2
+        try:
+            result = digest(snapshot([]), after)
+        except ValueError:
+            return
+>       assert uncertain(result), "Incomplete source cannot support a confident match/no-match"
+E       AssertionError: Incomplete source cannot support a confident match/no-match
+E       assert False
+E        +  where False = uncertain({'status': 'match', 'trade': 'industrial supplies merchant wholesalers', 'naics_codes': ['423840'], 'snapshot_date': '2026-10-10', ...})
+
+tests/acceptance/test_sam_amendment_alerts.py:105: AssertionError
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_sam_amendment_alerts.py::test_notice_link_does_not_require_customer_api_key
+FAILED tests/acceptance/test_sam_amendment_alerts.py::test_partial_data_rejected_or_uncertain[partial_page]
+FAILED tests/acceptance/test_sam_amendment_alerts.py::test_partial_data_rejected_or_uncertain[missing_retrieval]
+FAILED tests/acceptance/test_sam_amendment_alerts.py::test_partial_data_rejected_or_uncertain[malformed_row]
+FAILED tests/acceptance/test_sam_amendment_alerts.py::test_partial_data_rejected_or_uncertain[missing_deadline]
+FAILED tests/acceptance/test_sam_amendment_alerts.py::test_partial_data_rejected_or_uncertain[duplicate_conflict]
+6 failed, 10 passed in 0.94s

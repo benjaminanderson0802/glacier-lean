@@ -1,0 +1,101 @@
+{
+  "uuid": "a7c23f43-86c9-4c48-ba4c-171a95ea2fff",
+  "name": "ATC App Clipping 2.0",
+  "brand": "ATC - Live Air Traffic Radio",
+  "cpm_usd": 1,
+  "budget_left_usd": 7700,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": 10,
+  "max_len_s": null,
+  "required_tags": [],
+  "banned": [
+    "public access codes including DMs",
+    "non-ATC page content",
+    "fake emergencies/crashes",
+    "unmatched event audio/footage",
+    "app only at end",
+    "recycled/reposted edits",
+    "spam/story boosting/bots/auto-posters"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Use iPhone/iPad to supply genuine ATC recordings; listed transfers are end cards, not a footage library.",
+    "Set up dedicated page, link/CTA and warm-up; resolve no-auto-poster restriction and link timing before participation.",
+    "Provide 40% US analytics; keep private access code out of all content."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://we.tl/t-GRWyF2bduEik7BGF",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": 632519,
+      "role": "required_end_card",
+      "checked_at": "2026-10-12T02:24:48Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": null,
+      "files": [
+        {
+          "name": "ATC VERTICAL CORRECTION.mov",
+          "size_bytes": 632519
+        }
+      ],
+      "response_sha256": "3ad25829a1349ecbf1bb736d6093732d69558a4bfffb808499ad28f1fbd56ad3"
+    },
+    {
+      "url": "https://we.tl/t-9SgSrMpYT7JkidN2",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": 176905,
+      "role": "required_end_card",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": null,
+      "files": [
+        {
+          "name": "ATC 1 SEC 2.mov",
+          "size_bytes": 176905
+        }
+      ],
+      "response_sha256": "7fa725c25e96751a776f984001922c593f1f49b310dcf3742a256d7d8d9c36ef"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1WUsX2h5oSczZD4hhJoiQumWV83--nvnWPxLKRjZdqs8/export?format=txt",
+      "checked_at": "2026-10-12T02:23:40Z",
+      "http_status": 200,
+      "sha256": "e0e43f3269b167e7dac6af3dfe181d4ecd109f6e8e947a6243fa4d7e20d9212f",
+      "html_links_export": "https://docs.google.com/document/d/1WUsX2h5oSczZD4hhJoiQumWV83--nvnWPxLKRjZdqs8/export?format=html"
+    },
+    {
+      "url": "https://docs.google.com/document/d/12gGZ0sysAUjiNg3Zd84EhefN1B-suJbF0BKqn2n7klo/export?format=txt",
+      "checked_at": "2026-10-12T02:23:40Z",
+      "http_status": 200,
+      "sha256": "1ae82f8e519373eb5b79d9d69743dd6295f47832ac4428106f5da450fcc8963a",
+      "html_links_export": "https://docs.google.com/document/d/12gGZ0sysAUjiNg3Zd84EhefN1B-suJbF0BKqn2n7klo/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise. ATC sources.txt lists approved end-card media with explicit warnings, because no public story-footage bank is supplied.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "eligibility_conditions": "Explicitly welcomes a fresh dedicated page after required setup/warm-up. One-page instruction and prohibition on auto-posters prevent immediate use across ten automated channels.",
+  "automated_posting_explicitly_prohibited": true
+}

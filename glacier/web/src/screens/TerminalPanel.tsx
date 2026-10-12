@@ -12,7 +12,7 @@ export function TerminalPanel({ text }: { text: string }) {
       convertEol: true,
       disableStdin: true,
       rows: 12,
-      theme: { background: tok('--g-void'), foreground: tok('--g-text'), cursor: tok('--g-void') }, fontFamily: tok('--g-font-body'), fontSize: 18,
+      theme: { background: tok('--g-bar'), foreground: tok('--g-white'), cursor: tok('--g-white') }, fontFamily: tok('--g-font-body'), fontSize: Number.parseFloat(tok('--g-size-small')),
     })
     t.open(host.current!)
     term.current = t

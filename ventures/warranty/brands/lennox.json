@@ -1,0 +1,56 @@
+{
+  "id": "lennox",
+  "brand_names": ["Lennox"],
+  "primary_brand": "lennox",
+  "queue_window_days": 60,
+  "registration": {
+    "deadline": "Eligible homes outside jurisdictions where registration is prohibited must register within 60 calendar days after installation (existing homes) or closing (new construction). In California, Florida, Georgia for units installed on or after 2026-01-01, Quebec, and other jurisdictions where registration requirements are prohibited, eligible equipment automatically receives the default parts-only Extended Limited Warranty; homeowners may change to the alternative parts-and-labor coverage within 60 days after installation or closing.",
+    "state_windows": {
+      "CA": {
+        "label": "California",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "Eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      },
+      "FL": {
+        "label": "Florida",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "Eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      },
+      "GA": {
+        "label": "Georgia",
+        "effective_on_or_after": "2026-01-01",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "For units installed on or after 2026-01-01, eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      },
+      "QC": {
+        "label": "Quebec",
+        "window_days": 60,
+        "window_type": "coverage-change window",
+        "description": "Eligible equipment automatically receives the default parts-only Extended Limited Warranty; the homeowner may change to the alternative parts-and-labor coverage within 60 days after installation (existing homes) or closing (new construction).",
+        "source_url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+      }
+    },
+    "who_may_register": "Homeowner; the official portal also has a dealer path that requires the dealer customer number. The exact scope of dealer authority for each registration is product-specific.",
+    "portal_urls": {
+      "Lennox": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"
+    },
+    "portal_accepts_dealer": "dealer path is present; the official page says dealers need their customer number.",
+    "terms_allow_third_party_preparation": "uncertain - please check; dealer portal access is documented, but the reviewed terms do not expressly authorize an unrelated third party to prepare registrations."
+  },
+  "date_code": {
+    "status": "published for specific model series; verify by unit",
+    "format": "Lennox's 2023 ML17XC1 service guide gives typical serial `58 21 C 05716`: location code (e.g. 58=Marshalltown, IA), 2-digit year code, month letter (A=Jan, B=Feb, C=Mar in the cited guide), then a 5- or 6-digit unique number. The guide is model-series-specific; do not apply this layout to every Lennox generation."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Lennox product registration", "url": "https://www.lennox.com/residential/owners/register-and-review/product-registration/index"},
+    {"title": "Lennox ML17XC1 service guide, typical serial format", "url": "https://www.lennox.com/dA/7a43950f24/100049.pdf"},
+    {"title": "Lennox website terms and conditions", "url": "https://www.lennox.com/es/terms-and-conditions"}
+  ]
+}

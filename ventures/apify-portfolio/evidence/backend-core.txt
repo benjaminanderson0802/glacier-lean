@@ -1,0 +1,44 @@
+.........E......................                                         [100%]
+==================================== ERRORS ====================================
+____________ ERROR at setup of test_websocket_receives_node_events _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-558/test_websocket_receives_node_e0')
+request = <SubRequest 'server' for <Function test_websocket_receives_node_events>>
+
+    @pytest.fixture
+    def server(tmp_path, request):
+        s = Server(tmp_path)
+        _track_server(request, s)
+>       s.start()
+
+tests/conftest.py:172:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <conftest.Server object at 0x7c6dc1be3f20>
+
+    def start(self):
+        env = dict(os.environ, GLACIER_HOME=self.home, CODEX_BIN=FAKE_CODEX)
+        options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+        self.proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--port", str(self.port)],
+                                     cwd=BACKEND, env=env, stdout=self.log, stderr=subprocess.STDOUT, **options)
+        deadline = time.time() + float(os.environ.get("GLACIER_TEST_START_TIMEOUT", "60"))
+        while time.time() < deadline:  # startup grows with plug-ins; a busy machine can need well over 15 s
+            if self.proc.poll() is not None:
+                break
+            try:
+                if httpx.get(self.url + "/api/environments").status_code == 200:
+                    return self
+            except httpx.HTTPError:
+                pass
+            time.sleep(0.1)
+        log = self.diagnostics()
+        self.stop()
+>       raise RuntimeError(f"server did not start; backend log follows:\n{log}")
+E       RuntimeError: server did not start; backend log follows:
+
+tests/conftest.py:110: RuntimeError
+- backend server log (stdout/stderr; /tmp/pytest-of-glacier/pytest-558/test_websocket_receives_node_e0) -
+
+=========================== short test summary info ============================
+ERROR tests/test_core.py::test_websocket_receives_node_events - RuntimeError:...
+31 passed, 1 error in 255.19s (0:04:15)

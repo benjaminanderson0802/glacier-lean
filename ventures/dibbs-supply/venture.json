@@ -1,0 +1,82 @@
+{
+  "slug": "dibbs-supply",
+  "name": "dibbs government supply",
+  "status": "in_progress",
+  "product": {
+    "purpose": "Discover DLA opportunities from SAM.gov, then prepare ranked, source-linked bid sheets and solicitation-specific quote files from owner-verified DIBBS details and owner-provided manufacturer or authorized-distributor quotes.",
+    "channels": [
+      "SAM.gov Contract Opportunities API v2 public notices filtered for DLA and the owner's NAICS codes",
+      "owner-verified DLA DIBBS solicitation details",
+      "owner-provided manufacturer or authorized-distributor quotes"
+    ],
+    "publication": "Glacier prepares files only. The owner signs and submits each bid personally through DIBBS.",
+    "billing": "No customer billing or customer layer is needed. Parts spending requires the owner's approval."
+  },
+  "blocks": [],
+  "block_functions": [],
+  "flows": [
+    "dibbs-owner-registration",
+    "dibbs-daily-prep"
+  ],
+  "schedules": [
+    {
+      "flow": "dibbs-daily-prep",
+      "cron": "0 6 * * *",
+      "purpose": "Refresh public DIBBS solicitation links and prepare a local, owner-reviewed bid sheet from available supplier quotes.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "sam_api_key"
+  ],
+  "your_steps": [
+    {
+      "id": "sam-cage-registration",
+      "title": "Your step: Complete SAM.gov and CAGE setup",
+      "when": "Before submitting any bid",
+      "detail": "Register the business and complete required identity and entity verification yourself. Request a free SAM.gov public API key from Account Details and save it in Glacier Secrets as sam_api_key. Glacier does not create an account, enter credentials, or verify identity.",
+      "links": [
+        "https://sam.gov/entity-registration",
+        "https://sam.gov/profile/details",
+        "https://open.gsa.gov/api/get-opportunities-public-api/",
+        "https://cage.dla.mil/",
+        "https://www.dibbs.bsm.dla.mil/rfq/"
+      ],
+      "secrets": [
+        {
+          "name": "sam_api_key",
+          "label": "SAM.gov public API key"
+        }
+      ]
+    },
+    {
+      "id": "request-quotes-and-approve-spending",
+      "title": "Your step: Request supplier quotes and approve parts spending",
+      "when": "After reviewing a solicitation",
+      "detail": "Contact only the original manufacturer or a distributor whose authorization you have verified. Save the exact quote and authorization/traceability records in the venture input folder. Approve every parts purchase yourself; Glacier never contacts suppliers or spends money.",
+      "links": [
+        "https://www.dibbs.bsm.dla.mil/rfq/",
+        "https://sam.gov/entity-registration",
+        "https://cage.dla.mil/"
+      ]
+    },
+    {
+      "id": "sign-and-submit-bids",
+      "title": "Your step: Sign and submit each bid",
+      "when": "After reviewing a prepared batch quote file",
+      "detail": "Check the solicitation, exact part number, supplier, price, margin, required fields, and certifications. You personally sign and submit every bid in your DIBBS account; Glacier never submits. Keep traceability documents on file before shipping.",
+      "links": [
+        "https://www.dibbs.bsm.dla.mil/rfq/",
+        "https://sam.gov/entity-registration",
+        "https://cage.dla.mil/"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "Owner completes SAM.gov and CAGE registration and adds the free public API key to Glacier Secrets.",
+    "Owner requests quotes only from the original manufacturer or verified authorized distributors and approves parts spending.",
+    "Owner signs and submits each bid after reviewing the prepared file; traceability documents are on file before shipping."
+  ],
+  "dry_run_env_id": "dibbs-daily-prep"
+}

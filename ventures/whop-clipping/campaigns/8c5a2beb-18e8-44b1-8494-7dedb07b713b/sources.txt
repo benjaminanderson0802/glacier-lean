@@ -1,0 +1,64 @@
+# Approved source URLs only; no examples, product pages, tag accounts or downloader services.
+# Source restrictions are in rules.txt. Metadata probe results are in summary.json.
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/itsKatchii/
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/penta
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/tminnzy
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/pikabooirl
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/Awake
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/akanemsko
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/esfandtv/
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/coopertv
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/Nagzz
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/frodan
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/varsitygaming
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/arteezy
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/Thijs
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/Juliakins
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/Syanne
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/qojqva
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2886720293
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2886543710
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2887102242
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2887359701
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2888145528
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2888048627
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2888061622
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2888942909
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2889735221
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2892624762
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2893364729
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2894284899
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2894337167
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2894231830
+# PTL trading segments only; excludes unrelated games/sponsors.
+https://www.twitch.tv/videos/2895966379

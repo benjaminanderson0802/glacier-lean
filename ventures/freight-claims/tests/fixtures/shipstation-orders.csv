@@ -1,0 +1,2 @@
+Order #,Ship Date,Carrier Name,Shipping Service,Tracking #,Ship To Name,Ship To,Ship To City,Ship To State,Ship To Zip,Ship To Country,Weight (lb),Shipping Cost,Order Total,Items,Shipment Status
+2051,2026-10-07,Example Haulage,LTL Economy,TRK-FAKE-2051,Morgan Sample,55 Fictional Ave,Des Moines,IA,50309,US,42,18.90,311.20,"Packing gear / GEAR-9 x2",Delivered

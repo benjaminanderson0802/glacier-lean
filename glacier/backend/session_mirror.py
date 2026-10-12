@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
+import chat_titles
 import secrets_store
 from session_readers import opencode
 from session_readers import claude_code, gemini
@@ -207,6 +208,7 @@ def _load_file(path: Path, *, include_events: bool = True) -> tuple[dict, list[d
     digest = ""
     max_time = None
     first_time = None
+    title = ""
     for line_number, (record, final_digest) in enumerate(_records(path), 1):
         if final_digest:
             digest = final_digest
@@ -218,10 +220,28 @@ def _load_file(path: Path, *, include_events: bool = True) -> tuple[dict, list[d
         created = _timestamp(record.get("timestamp"))
         if created and (first_time is None or created < first_time):
             first_time = created
-        event = _event(record, created)
-        if event:
-            events.append(event)
-            event_count += 1
+        # Lists need a title, not formatted command output or a transcript.
+        # Keep the first useful user title separately from the bounded preview:
+        # a long conversation must not lose its name as older events roll off.
+        payload = record.get("payload")
+        if not include_events:
+            outer = str(record.get("type") or "other")
+            kind = str(payload.get("type") or outer) if isinstance(payload, dict) else outer
+            if kind not in ("session_meta", "turn_context"):
+                event_count += 1
+        is_user = isinstance(payload, dict) and (
+            payload.get("type") in ("user_message", "user_input")
+            or (record.get("type") == "response_item"
+                and payload.get("type") == "message" and payload.get("role") == "user")
+        )
+        if include_events or (not title and is_user):
+            event = _event(record, created)
+            if event:
+                if not title and event["type"] == "user_message":
+                    title = chat_titles.clean_title(event["text"])
+                if include_events:
+                    events.append(event)
+                    event_count += 1
         if created and (max_time is None or created > max_time):
             max_time = created
     try:
@@ -232,7 +252,7 @@ def _load_file(path: Path, *, include_events: bool = True) -> tuple[dict, list[d
     started = _timestamp(meta.get("timestamp")) or first_time or fallback
     updated = max_time or fallback
     summary = {"id": current_id, "tool": "codex", "started": started.isoformat(), "updated": updated.isoformat(),
-               "title": next((event["text"].strip()[:160] for event in events if event["type"] == "user_message" and event["text"].strip()), ""),
+               "title": title,
                "cwd": meta.get("cwd") or "", "active": (datetime.now(timezone.utc) - updated).total_seconds() <= 120,
                "truncated": event_count > MAX_EVENTS}
     event_list = list(events) if include_events else []

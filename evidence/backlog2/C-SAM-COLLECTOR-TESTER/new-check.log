@@ -1,0 +1,58 @@
+.F........                                                               [100%]
+=================================== FAILURES ===================================
+____________ test_collector_snapshot_hands_unchanged_rows_to_digest ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-297/test_collector_snapshot_hands_0')
+
+    def test_collector_snapshot_hands_unchanged_rows_to_digest(tmp_path):
+        """The collector's output is directly consumable; row contents must be preserved."""
+        before = _collect(
+            {0: _api_page(0, [_notice("N-1")], total=1)},
+            tmp_path / "before.json", page_size=2, max_pages=2, max_records=2,
+        )
+        after_pages = {
+            0: _api_page(0, [_notice("N-1"), _notice("N-2")], total=3),
+            2: _api_page(2, [_notice("N-3")], total=3),
+        }
+        after = _collect(
+            after_pages, tmp_path / "after.json", page_size=2, max_pages=2, max_records=3,
+        )
+    
+        assert after["opportunitiesData"] == after_pages[0]["opportunitiesData"] + after_pages[2]["opportunitiesData"]
+>       result = digest.build_digest(before, after, naics_codes={"423840"})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ventures/sam-amendment-alerts/tests/acceptance/test_C_sam_collection.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ventures/sam-amendment-alerts/scripts/digest.py:181: in build_digest
+    _validate_scope_and_coverage(before, naics_codes, "Earlier")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+snapshot = {'source': 'SAM.gov Contract Opportunities API v2', 'source_url': 'https://api.sam.gov/opportunities/v2/search', 'query_scope': {'naics_codes': ['423840']}, 'retrieved_at': '2026-10-11T14:30:00Z', ...}
+naics_codes = {'423840'}, name = 'Earlier'
+
+    def _validate_scope_and_coverage(snapshot: dict[str, Any], naics_codes: set[str], name: str) -> None:
+        """Check local query scope and that the saved rows cover the v2 result count."""
+        source_url = snapshot.get("source_url")
+        if not isinstance(source_url, str) or not source_url.strip():
+            raise ValueError(f"{name} snapshot is missing local source_url metadata.")
+        for key in ("naics_codes", "selected_naics_codes"):
+            if key in snapshot:
+                recorded = snapshot[key]
+                if not isinstance(recorded, (list, tuple, set)) or {str(code) for code in recorded} != naics_codes:
+                    raise ValueError(f"{name} snapshot NAICS scope does not match the requested comparison scope.")
+                break
+    
+        total = snapshot.get("totalRecords")
+        limit = snapshot.get("limit")
+        offset = snapshot.get("offset")
+        if (isinstance(total, bool) or not isinstance(total, int) or total < 0
+                or isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0
+                or isinstance(offset, bool) or not isinstance(offset, int) or offset < 0):
+>           raise ValueError(f"{name} snapshot is missing valid v2 pagination metadata.")
+E           ValueError: Earlier snapshot is missing valid v2 pagination metadata.
+
+ventures/sam-amendment-alerts/scripts/digest.py:122: ValueError
+=========================== short test summary info ============================
+FAILED ventures/sam-amendment-alerts/tests/acceptance/test_C_sam_collection.py::test_collector_snapshot_hands_unchanged_rows_to_digest
+1 failed, 9 passed in 0.05s

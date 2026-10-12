@@ -1,0 +1,30 @@
+{
+  "id": "closeout-packet",
+  "name": "Prepare job closeout packets",
+  "nodes": [
+    {
+      "id": "read-completed-job",
+      "type": "command",
+      "config": {
+        "cmd": "if [ -f \"$GLACIER_HOME/ventures/job-closeout/incoming/jobber.json\" ]; then python ventures/job-closeout/scripts/generate_packet.py --fixture \"$GLACIER_HOME/ventures/job-closeout/incoming/jobber.json\" --output-dir \"$GLACIER_HOME/ventures/job-closeout/packets\"; else python ventures/job-closeout/scripts/generate_packet.py --jobber --output-dir \"$GLACIER_HOME/ventures/job-closeout/packets\"; fi",
+        "cwd": "{repo}",
+        "timeout": 180,
+        "retries": 0
+      }
+    },
+    {
+      "id": "owner-review",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: review the local Markdown and PDF closeout packets. Confirm customer name, work, equipment, photos, and invoice reference before you share them yourself. Nothing is sent by Glacier."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "packet-review",
+      "source": "read-completed-job",
+      "target": "owner-review"
+    }
+  ]
+}

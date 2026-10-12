@@ -1,0 +1,13 @@
+{
+  "id": "owner-review",
+  "name": "Warranty setup checks",
+  "nodes": [
+    {"id": "review_jobber", "type": "approval", "config": {"prompt": "Your step: connect and verify a Jobber test account. Save the required OAuth values in Glacier Settings → Secrets, then run the shared read-only connection check. No Jobber records are changed by this flow."}, "position": {"x": 0, "y": 0}},
+    {"id": "review_portal_terms", "type": "approval", "config": {"prompt": "Your step: check the current terms for the selected brand portal and provide its official serial format. Do not enable a brand unless its terms allow the exact automated action. Daikin is excluded because its terms prohibit automated systems."}, "position": {"x": 300, "y": 0}},
+    {"id": "review_launch", "type": "approval", "config": {"prompt": "Your step: review and submit the first Jobber marketplace listing after five eligible test accounts, and review each of the first 20 homeowner email drafts. Nothing is published or sent by this flow."}, "position": {"x": 600, "y": 0}}
+  ],
+  "edges": [
+    {"id": "jobber-terms", "source": "review_jobber", "target": "review_portal_terms", "label": "yes"},
+    {"id": "terms-launch", "source": "review_portal_terms", "target": "review_launch", "label": "yes"}
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "slug": "freight-claims",
+  "name": "freight claims",
+  "status": "ready",
+  "product": {
+    "purpose": "Prepare source-linked claim packets with carrier-specific evidence checklists, filing windows, and response-date tracking for customer-confirmed freight loss, damage, or shortage.",
+    "channels": [
+      "ShipStation integration-partner inquiry (listing access unconfirmed)",
+      "customer-provided shipment export and claim documents"
+    ],
+    "publication": "ShipStation's public path is an integration-partner inquiry; an app listing, eligibility, review process, and commercial terms are unconfirmed. The owner reviews any written terms and approves any eventual listing. Glacier reads ShipStation only and never submits or sends a carrier claim.",
+    "billing": "Prepare a 20–30% contingency invoice draft only after recovery is confirmed; customer agreement and owner approval are required before billing."
+  },
+  "blocks": [
+    "connectors",
+    "reader",
+    "deadlines",
+    "filer",
+    "customer"
+  ],
+  "block_functions": [
+    "ventures.blocks.connectors.ShipStationClient.get_shipments",
+    "ventures.blocks.reader.read_document",
+    "ventures.blocks.deadlines.add",
+    "ventures.blocks.deadlines.due",
+    "ventures.blocks.filer.prepare (loopback mock only)",
+    "ventures.blocks.customer.request_signature (owner-provided authorization only)"
+  ],
+  "flows": [
+    "freight-watch-shipstation",
+    "freight-check-deadlines",
+    "freight-request-authorization",
+    "freight-prepare-claim",
+    "freight-record-carrier-receipt",
+    "freight-invoice-draft",
+    "freight-settlement-decision"
+  ],
+  "schedules": [
+    {
+      "flow": "freight-watch-shipstation",
+      "cron": "0 8 * * *",
+      "purpose": "Read ShipStation shipment records daily and save possible exceptions for customer confirmation.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "freight-check-deadlines",
+      "cron": "15 8 * * *",
+      "purpose": "Collect local 30- and 120-day claim-status follow-ups from customer-confirmed carrier receipt dates; LTL regulatory milestones are noted only when 49 CFR Part 370 applies.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "shipstation_api_key"
+  ],
+  "your_steps": [
+    {
+      "id": "launch-setup",
+      "title": "Submit the inquiry and set up first use",
+      "when": "Before pursuing a listing or routine use (one sitting; about 35–65 minutes)",
+      "detail": "Follow ventures/freight-claims/OWNER-STEPS.md. Submit the prepared integration inquiry using owner-verified details and request written listing eligibility, requirements, and all fees; do not accept unpublished commercial terms or charges. In the same sitting, choose read-only API only if the current plan and quota fit without extra spending, otherwise provide a Shipments/Orders CSV; then review the first ten distinct packets against sources, confirmations, carrier terms, and insurance status. For each claim, the shipper confirms, signs and files with the carrier, records its response, and decides settlements; the owner reviews any invoice draft before sending.",
+      "links": [
+        "https://info.shipstation.com/become-a-partner-api-and-custom-store-integrations",
+        "https://docs.shipstation.com/authentication",
+        "https://docs.shipstation.com/rate-limits",
+        "https://www.ups.com/us/en/support/file-a-claim",
+        "https://www.fedex.com/en-us/customer-support/claims.html",
+        "https://faq.usps.com/articles/Knowledge/Domestic-Claims-The-Basics",
+        "https://www.govinfo.gov/content/pkg/USCODE-2024-title49/html/USCODE-2024-title49-subtitleIV-partB-chap147-sec14706.htm"
+      ],
+      "secrets": [
+        {
+          "name": "shipstation_api_key",
+          "label": "ShipStation API key (only for API access)"
+        }
+      ]
+    }
+  ],
+  "launch_gates": [
+    "ShipStation partner eligibility, listing route, and all commercial terms are confirmed in writing before the owner accepts or pays for anything.",
+    "Owner reviews the first ten claim packets.",
+    "No carrier message, filing, signature, invoice, or payment is sent by Glacier without an exact approval step; real carrier submission remains with the shipper."
+  ],
+  "dry_run_env_id": "freight-prepare-claim"
+}

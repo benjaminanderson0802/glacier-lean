@@ -1,0 +1,20 @@
+{
+  "id": "recall-review-first-pages",
+  "name": "Review the first recall pages",
+  "nodes": [
+    {"id": "page_count", "type": "command", "config": {"cmd": "python ventures/recall-checker/scripts/recall.py nightly --skip-sync --require-complete --limit-pages 50", "cwd": "{repo}", "timeout": "300", "retries": "0"}, "position": {"x": 0, "y": 0}},
+    {"id": "pages_ready", "type": "check", "config": {"expr": "exit_code == 0"}, "position": {"x": 300, "y": 0}},
+    {"id": "approve_pages", "type": "approval", "config": {"prompt": "Your step: Review the first 50 generated recall pages. Verify each recall number, date and official notice link. This approval is for review only; it does not publish pages."}, "position": {"x": 600, "y": 0}},
+    {"id": "review_record", "type": "note", "config": {"path": "ventures/recall-checker/reports/first-pages-reviewed-{run}.md", "template": "Owner reviewed the first recall pages in run {run}. Any public hosting is a separate owner action.\n\n{prev_output}"}, "position": {"x": 900, "y": 0}},
+    {"id": "feed_blocked", "type": "approval", "config": {"prompt": "Your step: Review the feed completeness report. Missing or stale sources make every unmatched item uncertain; do not host any recall pages until the source gap is resolved."}, "position": {"x": 600, "y": 180}},
+    {"id": "feed_blocked_note", "type": "note", "config": {"path": "ventures/recall-checker/reports/first-pages-blocked-{run}.md", "template": "Recall page review was blocked because one or more required feeds are missing, stale, or alerted. No pages were published.\n\n{prev_output}"}, "position": {"x": 900, "y": 180}}
+  ],
+  "edges": [
+    {"id": "e1", "source": "page_count", "target": "pages_ready", "label": ""},
+    {"id": "e4", "source": "pages_ready", "target": "feed_blocked", "label": "no"},
+    {"id": "e5", "source": "feed_blocked", "target": "feed_blocked_note", "label": "yes"},
+    {"id": "e2", "source": "pages_ready", "target": "approve_pages", "label": "yes"},
+    {"id": "e3", "source": "approve_pages", "target": "review_record", "label": "yes"}
+  ],
+  "max_steps": 6
+}

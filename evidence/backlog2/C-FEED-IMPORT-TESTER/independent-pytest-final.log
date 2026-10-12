@@ -1,0 +1,34 @@
+....F                                                                    [100%]
+=================================== FAILURES ===================================
+____ test_duplicate_identifiers_never_promote_or_overwrite_trusted_snapshot ____
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-341/test_duplicate_identifiers_nev0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72581491e210>
+
+    def test_duplicate_identifiers_never_promote_or_overwrite_trusted_snapshot(tmp_path, monkeypatch):
+        monkeypatch.setenv("GLACIER_HOME", str(tmp_path / "glacier"))
+        _trusted_file(tmp_path)
+        before_rows, before_schema, before_provenance = _state(tmp_path)
+        candidate = tmp_path / "duplicate-identifiers.json"
+        duplicate = {
+            "field_recall_number": "SYNTHETIC-DUPLICATE-1",
+            "field_recall_date": "2024-02-06",
+            "field_title": "Synthetic duplicate identifier",
+            "field_summary": "Fixture only",
+        }
+        _write_snapshot(candidate, [duplicate, dict(duplicate)], total=2)
+
+        result = _import(candidate)
+
+        after_rows, after_schema, after_provenance = _state(tmp_path)
+>       assert after_rows == before_rows
+E       AssertionError: assert [{'source_id'...00:00Z', ...}] == [{'source_id'...00:00Z', ...}]
+E
+E         At index 0 diff: {'source_id': 'fsis_recalls', 'record_id': 'SYNTHETIC-DUPLICATE-1', 'record_date': '2024-02-06', 'fetched_at': '2026-10-11T00:00:00Z', 'source_url': 'https://www.fsis.usda.gov/news-events/news-feeds-subscriptions', 'data': {'field_recall_number': 'SYNTHETIC-DUPLICATE-1', 'field_recall_date': '2024-02-06', 'field_title': 'Synthetic duplicate identifier', 'field_summary': 'Fixture only'}} != {'source_id': 'fsis_recalls', 'record_id': 'SYNTHETIC-TRUSTED-1', 'record_date': '2024-02-03', 'fetched_at': '2026-10-11T00:00:00Z', 'source_url': 'https://www.fsis.u...
+E
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+ventures/blocks/feeds/tests/unit/test_C-FEED-IMPORT-independent.py:193: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/blocks/feeds/tests/unit/test_C-FEED-IMPORT-independent.py::test_duplicate_identifiers_never_promote_or_overwrite_trusted_snapshot
+1 failed, 4 passed in 35.80s

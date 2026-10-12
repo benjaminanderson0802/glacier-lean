@@ -1,0 +1,128 @@
+{
+  "captured_at_local_date": "2026-10-10",
+  "backend": "real Glacier FastAPI/DBOS runtime on 127.0.0.1:38541",
+  "glacier_home": "/tmp/glacier-utility-run-20261010",
+  "venture_install_command": "GLACIER_HOME=<temp> GLACIER_API=http://127.0.0.1:38541 ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only utility-audits",
+  "installed_flows": [
+    "utility-audit-calculator",
+    "utility-predominant-use"
+  ],
+  "flow_id": "utility-predominant-use",
+  "run_id": "c878d6046ac4",
+  "flow_run_command": "POST /api/environments/utility-predominant-use/run",
+  "first_approval": "Temporary test-only prompt in disposable GLACIER_HOME allowed the synthetic fixture only; it did not confirm launch state or authorize customer work. The committed flow remains unchanged.",
+  "run_api_record": {
+    "run_id": "c878d6046ac4",
+    "env_id": "utility-predominant-use",
+    "status": "waiting",
+    "waiting_on": "review_draft",
+    "author": "owner",
+    "node_states": {
+      "confirm_state": "done",
+      "draft_ready": "done",
+      "estimate": "done",
+      "review_draft": "waiting",
+      "review_note": "pending"
+    },
+    "outputs": {
+      "confirm_state": "approved",
+      "draft_ready": "yes",
+      "estimate": "{\n  \"result\": \"predominant-use threshold met \\u2014 DOR review required\",\n  \"output\": \"/tmp/glacier-utility-run-20261010/ventures/utility-audits/drafts/st200-study-c878d6046ac4.json\"\n}\n"
+    },
+    "usage": {},
+    "verification": [],
+    "workspace": null,
+    "verified": null,
+    "waiting_prompt": "Your step: Review the exact local predominant-use estimate and unsigned ST-200 application data. Confirm the meter, utility, 12 bill periods, and each equipment/use allocation against source records. A passing numeric screen is not DOR approval. Complete any missing official form details, attach the bills and study, then sign and submit ST-200 yourself. Glacier does not certify a study, sign, pay, contact the utility, or file."
+  },
+  "output_artifact": {
+    "path": "/tmp/glacier-utility-run-20261010/ventures/utility-audits/drafts/st200-study-c878d6046ac4.json",
+    "sha256": "6104e6f4e7de1fcb3694bf2ccca75d2d2892586b803a0f00525851635f33033a",
+    "content": {
+      "result": "predominant-use threshold met \u2014 DOR review required",
+      "as_of": "2026-10-10",
+      "rule_source": "Indiana DOR Utility Sales Tax Exemption and Sales Tax Information Bulletin #55",
+      "detail": "This fixture calculation only screens the customer-provided usage study. Indiana DOR reviews the application and study; this is not a certificate, approved exemption, or refund calculation.",
+      "study": {
+        "period_count": 12,
+        "periods": [
+          "2025-01",
+          "2025-02",
+          "2025-03",
+          "2025-04",
+          "2025-05",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2025-09",
+          "2025-10",
+          "2025-11",
+          "2025-12"
+        ],
+        "meter_id": "SYNTHETIC-METER-01",
+        "utility_type": "electricity",
+        "total_usage_units": 12000.0,
+        "exempt_use_units": 7680.0,
+        "exempt_use_percentage": 64.0,
+        "threshold": "more than 50% on each meter",
+        "evidence_note": "exempt_use_units must come from a documented customer or qualified study, not from the bill alone."
+      },
+      "estimate": {
+        "estimated_annual_tax_exemption_after_approval": 840.0,
+        "basis": "100% of reported sales tax on this meter, only if DOR approves the exemption",
+        "estimate_type": "future exemption estimate after approval",
+        "currency": "USD"
+      },
+      "application_data": {
+        "form": "ST-200",
+        "title": "Utility Sales Tax Exemption Application",
+        "source_url": "https://www.in.gov/dor/tax-forms/business/sales-tax-forms/index.html",
+        "fields": {
+          "meter_id": "SYNTHETIC-METER-01",
+          "utility_type": "electricity",
+          "study_periods": [
+            "2025-01",
+            "2025-02",
+            "2025-03",
+            "2025-04",
+            "2025-05",
+            "2025-06",
+            "2025-07",
+            "2025-08",
+            "2025-09",
+            "2025-10",
+            "2025-11",
+            "2025-12"
+          ],
+          "annual_usage_units": 12000.0,
+          "annual_exempt_use_units": 7680.0,
+          "estimated_exempt_use_percentage": 64.0,
+          "reported_annual_sales_tax": 840.0,
+          "business_name": "",
+          "service_address": "",
+          "utility_provider": "",
+          "account_number": "",
+          "customer_signature": "",
+          "signature_date": ""
+        },
+        "missing_fields": [
+          "business_name",
+          "service_address",
+          "utility_provider",
+          "account_number",
+          "customer_signature",
+          "signature_date"
+        ],
+        "attachments_to_add": [
+          "12 monthly utility bills",
+          "documented utility usage study and equipment inventory"
+        ],
+        "signed": false,
+        "submitted": false,
+        "note": "Unsigned application data only. The customer reviews the study, completes the official ST-200, and signs and submits it. Indiana DOR determines eligibility."
+      },
+      "next_step": "Customer and qualified study preparer review the underlying usage allocation; customer completes, signs, and submits ST-200 to Indiana DOR."
+    }
+  },
+  "result": "The real engine ran the CSV command and draft check; run is waiting at the final customer-review approval. No signing, filing, utility contact, account creation, or external write occurred."
+}

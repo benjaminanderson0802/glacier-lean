@@ -49,6 +49,20 @@ def test_memory_notes_metadata_links_search_history_undo_and_graph(server):
     assert "Glacier helper" in server.get("/api/memory/note", params={"path": "projects/beta.md"})["body"]
 
 
+def test_undo_of_first_note_version_removes_note_and_can_be_undone(server):
+    path = "undo-first-create.md"
+    saved = server.put("/api/memory/note", {"path": path, "body": "# Created", "author": "owner"})
+
+    undone = server.post("/api/memory/undo", {"path": path, "commit": saved["commit"]})
+    assert undone["path"] == path and undone["commit"]
+    missing = httpx.get(server.url + "/api/memory/note", params={"path": path}, timeout=30)
+    assert missing.status_code == 404
+
+    restored = server.post("/api/memory/undo", {"path": path, "commit": undone["commit"]})
+    assert restored["path"] == path and restored["commit"]
+    assert server.get("/api/memory/note", params={"path": path})["body"] == "# Created"
+
+
 def test_memory_meaning_search_falls_back_to_keyword(server):
     server.put("/api/memory/note", {"path": "meaning.md", "body": "# Meaning\n\nA glacier fallback phrase.", "author": "owner"})
     result = server.get("/api/memory/search", params={"q": "glacier", "mode": "meaning"})

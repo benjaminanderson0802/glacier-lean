@@ -1,0 +1,28 @@
+{
+  "shipment": {
+    "shipment_id": "ss-demo-001",
+    "carrier": "Example Test Freight",
+    "tracking_number": "DEMO-TRACK-001",
+    "delivered_date": "2026-09-01",
+    "weight_lb": 100
+  },
+  "damaged_items": [
+    {"description": "widget A", "quantity": 2, "invoice_unit_price": "125.00", "damaged": true, "customer_confirmed": true},
+    {"description": "widget B", "quantity": 1, "invoice_unit_price": "80.00", "damaged": false}
+  ],
+  "documents": {
+    "delivery_receipt": ["ventures/freight-claims/tests/fixtures/delivery-receipt.txt"],
+    "photos": ["ventures/freight-claims/tests/fixtures/damage-photo-note.txt"],
+    "commercial_invoice": ["ventures/freight-claims/tests/fixtures/commercial-invoice.txt"],
+    "bill_of_lading": ["ventures/blocks/reader/samples/documents/sample-bill-of-lading.pdf"]
+  },
+  "carrier_terms": {
+    "liability_per_lb": "2.00",
+    "source_url": "https://carrier.example.test/terms",
+    "effective_date": "2026-01-01",
+    "customer_confirmed": true
+  },
+  "carrier_claim_email": "claims@carrier.example.test",
+  "separate_insurance": false,
+  "customer_requests_claim": false
+}

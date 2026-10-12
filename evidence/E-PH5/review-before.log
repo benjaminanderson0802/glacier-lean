@@ -1,0 +1,23 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_supervisor_receives_independent_checks_alongside_handover ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x70467501d160>
+
+    def test_supervisor_receives_independent_checks_alongside_handover(monkeypatch):
+        import decider
+        captured = {}
+        def decide(question, options, context=''):
+            captured.update(question=question, context=context)
+            return {'choice': 'pass', 'engine': 'fixture'}
+        monkeypatch.setattr(decider, 'decide', decide)
+        p = plan()
+        p['team']['supervisor'] = 'builder'
+        checks = {'passed': True, 'evidence': ['Independent command verified exact file bytes']}
+>       teams._review(p, p['tasks'][0], 'Worker claims success', 1, checks)
+E       TypeError: _review() takes 4 positional arguments but 5 were given
+
+tests/test_team_execution_regressions.py:149: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_team_execution_regressions.py::test_supervisor_receives_independent_checks_alongside_handover
+1 failed in 1.94s

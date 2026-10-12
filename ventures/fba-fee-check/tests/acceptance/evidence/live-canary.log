@@ -1,0 +1,217 @@
+.FF.FFFF.........LIVE document: 200 https://developer-docs.amazon/sp-api/docs/report-type-values-settlement; marker=quantity-purchased
+...
+=================================== FAILURES ===================================
+_____________ test_split_shipments_do_not_double_count_sale_margin _____________
+
+files = <function files.<locals>.make at 0x77b762e989a0>
+
+    def test_split_shipments_do_not_double_count_sale_margin(files):
+        sale = row(**{"amount-type": "ItemPrice", "amount-description": "Principal", "amount": "40.00"})
+        second_sale = dict(sale, **{"shipment-id": "ship-2", "order-item-code": "item-2", "amount": "60.00", "quantity-purchased": "3"})
+        second_fee = row(**{"shipment-id": "ship-2", "order-item-code": "item-2", "amount": "-15.00", "quantity-purchased": "3"})
+        results = api.analyze_reports(*files([sale, row(), second_sale, second_fee]))
+>       assert [r["expected_unit_margin_usd"] for r in results] == ["8.00", "8.00"]
+E       AssertionError: assert ['38.00', '21.33'] == ['8.00', '8.00']
+E
+E         At index 0 diff: '38.00' != '8.00'
+E         Use -v to get more diff
+
+tests/acceptance/test_fba_fee_check.py:90: AssertionError
+____________ test_settlement_header_currency_applies_to_detail_rows ____________
+
+files = <function files.<locals>.make at 0x77b762e98e00>
+
+    def test_settlement_header_currency_applies_to_detail_rows(files):
+        summary = {key: "" for key in FIELDS}
+        summary.update({"settlement-id": "100001", "settlement-start-date": "2026-10-01", "settlement-end-date": "2026-10-09", "deposit-date": "2026-10-10", "total-amount": "29.50", "currency": "USD"})
+>       result = api.analyze_reports(*files([summary, row(currency="")]))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/acceptance/test_fba_fee_check.py:95:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+report_path = PosixPath('/tmp/pytest-of-glacier/pytest-13/test_settlement_header_currenc0/settlement.tsv')
+schedule_path = PosixPath('/tmp/pytest-of-glacier/pytest-13/test_settlement_header_currenc0/expected.csv')
+
+    def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[dict[str, str]]:
+        """Return one row per FBA fulfillment-fee line in a USD Settlement V2 TSV.
+
+        The expected fee and item cost are supplied by the seller in a separate CSV.
+        No fee table is inferred from an Amazon product listing or third-party data.
+        """
+        report_path = Path(report_path)
+        schedule = _read_expected(Path(schedule_path))
+        sales: dict[tuple[str, str, str], Decimal] = {}
+        source_rows: list[tuple[int, dict[str, str]]] = []
+
+        with report_path.open(newline="", encoding="utf-8-sig") as stream:
+            reader = csv.DictReader(stream, dialect="excel-tab")
+            columns = set(reader.fieldnames or [])
+            missing = REQUIRED_REPORT_COLUMNS - columns
+            if missing:
+                raise ValueError(f"Settlement V2 TSV is missing columns: {', '.join(sorted(missing))}")
+
+            for line, row in enumerate(reader, start=2):
+                if not any((value or "").strip() for value in row.values()):
+                    continue
+                if (row.get("currency") or "").strip().upper() != "USD":
+>                   raise ValueError(f"report line {line}: only USD reports are supported")
+E                   ValueError: report line 3: only USD reports are supported
+
+scripts/fee_digest.py:91: ValueError
+_______ test_partial_data_uses_uncertain_vocabulary[missing_expectation] _______
+
+files = <function files.<locals>.make at 0x77b762e99580>
+case = 'missing_expectation'
+
+    @pytest.mark.parametrize("case", ["missing_expectation", "missing_quantity", "negative_quantity"])
+    def test_partial_data_uses_uncertain_vocabulary(files, case):
+        fee = row()
+        if case == "missing_quantity": fee["quantity-purchased"] = ""
+        if case == "negative_quantity": fee["quantity-purchased"] = "-2"
+        result = api.analyze_reports(*files([fee], expectations=case != "missing_expectation"))
+>       assert uncertain(result)
+E       AssertionError: assert False
+E        +  where False = uncertain([{'settlement_id': '100001', 'source_report_row': '2', 'source_order_id': '111-1234567-1234567', 'source_shipment_id': 'ship-1', ...}])
+
+tests/acceptance/test_fba_fee_check.py:107: AssertionError
+________ test_partial_data_uses_uncertain_vocabulary[missing_quantity] _________
+
+files = <function files.<locals>.make at 0x77b762e99440>
+case = 'missing_quantity'
+
+    @pytest.mark.parametrize("case", ["missing_expectation", "missing_quantity", "negative_quantity"])
+    def test_partial_data_uses_uncertain_vocabulary(files, case):
+        fee = row()
+        if case == "missing_quantity": fee["quantity-purchased"] = ""
+        if case == "negative_quantity": fee["quantity-purchased"] = "-2"
+        result = api.analyze_reports(*files([fee], expectations=case != "missing_expectation"))
+>       assert uncertain(result)
+E       AssertionError: assert False
+E        +  where False = uncertain([{'settlement_id': '100001', 'source_report_row': '2', 'source_order_id': '111-1234567-1234567', 'source_shipment_id': 'ship-1', ...}])
+
+tests/acceptance/test_fba_fee_check.py:107: AssertionError
+________ test_partial_data_uses_uncertain_vocabulary[negative_quantity] ________
+
+files = <function files.<locals>.make at 0x77b762e99760>
+case = 'negative_quantity'
+
+    @pytest.mark.parametrize("case", ["missing_expectation", "missing_quantity", "negative_quantity"])
+    def test_partial_data_uses_uncertain_vocabulary(files, case):
+        fee = row()
+        if case == "missing_quantity": fee["quantity-purchased"] = ""
+        if case == "negative_quantity": fee["quantity-purchased"] = "-2"
+        result = api.analyze_reports(*files([fee], expectations=case != "missing_expectation"))
+>       assert uncertain(result)
+E       AssertionError: assert False
+E        +  where False = uncertain([{'settlement_id': '100001', 'source_report_row': '2', 'source_order_id': '111-1234567-1234567', 'source_shipment_id': 'ship-1', ...}])
+
+tests/acceptance/test_fba_fee_check.py:107: AssertionError
+_______________ test_nonfinite_or_malformed_amount_rejected[NaN] _______________
+
+files = <function files.<locals>.make at 0x77b762e99940>, amount = 'NaN'
+
+    @pytest.mark.parametrize("amount", ["NaN", "Infinity", "not-money", "10,50"])
+    def test_nonfinite_or_malformed_amount_rejected(files, amount):
+        with pytest.raises(ValueError):
+>           api.analyze_reports(*files([row(amount=amount)]))
+
+tests/acceptance/test_fba_fee_check.py:112:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+report_path = PosixPath('/tmp/pytest-of-glacier/pytest-13/test_nonfinite_or_malformed_am0/settlement.tsv')
+schedule_path = PosixPath('/tmp/pytest-of-glacier/pytest-13/test_nonfinite_or_malformed_am0/expected.csv')
+
+    def analyze_reports(report_path: str | Path, schedule_path: str | Path) -> list[dict[str, str]]:
+        """Return one row per FBA fulfillment-fee line in a USD Settlement V2 TSV.
+
+        The expected fee and item cost are supplied by the seller in a separate CSV.
+        No fee table is inferred from an Amazon product listing or third-party data.
+        """
+        report_path = Path(report_path)
+        schedule = _read_expected(Path(schedule_path))
+        sales: dict[tuple[str, str, str], Decimal] = {}
+        source_rows: list[tuple[int, dict[str, str]]] = []
+
+        with report_path.open(newline="", encoding="utf-8-sig") as stream:
+            reader = csv.DictReader(stream, dialect="excel-tab")
+            columns = set(reader.fieldnames or [])
+            missing = REQUIRED_REPORT_COLUMNS - columns
+            if missing:
+                raise ValueError(f"Settlement V2 TSV is missing columns: {', '.join(sorted(missing))}")
+
+            for line, row in enumerate(reader, start=2):
+                if not any((value or "").strip() for value in row.values()):
+                    continue
+                if (row.get("currency") or "").strip().upper() != "USD":
+                    raise ValueError(f"report line {line}: only USD reports are supported")
+                if (row.get("fulfillment-id") or "").strip() != "AFN":
+                    continue
+                txn = (row.get("transaction-type") or "").strip()
+                description = (row.get("amount-description") or "").strip()
+                sku = (row.get("sku") or "").strip()
+                order = (row.get("order-id") or "").strip()
+                if txn == "Order" and (row.get("amount-type") or "").strip() == "ItemPrice" and description == "Principal" and sku:
+                    amount = _money(row.get("amount", ""), context=f"report line {line} sale amount")
+                    key = ((row.get("settlement-id") or "").strip(), order, sku)
+                    sales[key] = sales.get(key, Decimal("0")) + amount
+                if txn == "Order" and description in FBA_FEE_DESCRIPTIONS:
+                    source_rows.append((line, row))
+
+        results: list[dict[str, str]] = []
+        for line, row in source_rows:
+            sku = (row.get("sku") or "").strip()
+            order = (row.get("order-id") or "").strip()
+            settlement_id = (row.get("settlement-id") or "").strip()
+            description = (row.get("amount-description") or "").strip()
+            try:
+                actual = abs(_money(row.get("amount", ""), context=f"report line {line} fee amount"))
+            except ValueError as exc:
+                raise ValueError(f"report line {line}: invalid fee amount: {exc}") from None
+            try:
+                quantity = int((row.get("quantity-purchased") or "").strip())
+            except ValueError:
+                quantity = 0
+            expected_row = schedule.get(sku)
+            result = {
+                "settlement_id": settlement_id,
+                "source_report_row": str(line),
+                "source_order_id": order,
+                "source_shipment_id": (row.get("shipment-id") or "").strip(),
+                "source_order_item_code": (row.get("order-item-code") or "").strip(),
+                "source_transaction_type": "Order",
+                "sku": sku,
+                "size_tier": expected_row["size_tier"] if expected_row else "",
+                "fee_description": description,
+                "quantity": quantity if quantity else "",
+                "expected_fee_usd": "",
+                "actual_fee_usd": _q(actual),
+                "variance_usd": "",
+                "estimated_unit_margin_usd": "",
+                "observed_unit_margin_usd": "",
+                "expected_unit_margin_usd": "",
+                "flag": "uncertain_missing_expected_fee",
+                "disclaimer": DISCLAIMER,
+            }
+            if expected_row and quantity > 0:
+                expected_per_unit = _money(expected_row["expected_fee_usd_per_unit"], context=f"expected-fee CSV SKU {sku} fee")
+                unit_cost = _money(expected_row["unit_cost_usd"], context=f"expected-fee CSV SKU {sku} unit cost")
+                expected_total = expected_per_unit * quantity
+                variance = actual - expected_total
+                result["expected_fee_usd"] = _q(expected_total)
+                result["variance_usd"] = _q(variance)
+>               result["flag"] = "within_expected" if abs(variance) <= CENT else (
+                                                      ^^^^^^^^^^^^^^^^^^^^^
+                    "higher_than_expected" if variance > 0 else "lower_than_expected"
+                )
+E               decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+
+scripts/fee_digest.py:147: InvalidOperation
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_fba_fee_check.py::test_split_shipments_do_not_double_count_sale_margin
+FAILED tests/acceptance/test_fba_fee_check.py::test_settlement_header_currency_applies_to_detail_rows
+FAILED tests/acceptance/test_fba_fee_check.py::test_partial_data_uses_uncertain_vocabulary[missing_expectation]
+FAILED tests/acceptance/test_fba_fee_check.py::test_partial_data_uses_uncertain_vocabulary[missing_quantity]
+FAILED tests/acceptance/test_fba_fee_check.py::test_partial_data_uses_uncertain_vocabulary[negative_quantity]
+FAILED tests/acceptance/test_fba_fee_check.py::test_nonfinite_or_malformed_amount_rejected[NaN]
+6 failed, 14 passed in 1.27s

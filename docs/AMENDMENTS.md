@@ -1,5 +1,14 @@
 # NORTHSTAR amendments log
 
+## 2026-10-10 - E-PH2 evidence audit
+
+Observed anti-pattern: PH2's `done` checkpoint evidence still describes simulated
+local/second-machine checks, while the linked three-backend benchmark reports
+failure. E-PH2 keeps live and fixture results separate in evidence/ph2 and leaves
+phase closure to the integrator after independent verification. The gateway's
+old model default is corrected to the owner's already approved Granite choice;
+no invariant, exit criterion or open decision changes are proposed.
+
 Every change to NORTHSTAR.yaml other than checkpoint `status`/`evidence` goes here first, and is applied only after the owner approves it.
 
 | Date | Proposed by | Section | Change | Reason | Owner decision |
@@ -17,3 +26,26 @@ Every change to NORTHSTAR.yaml other than checkpoint `status`/`evidence` goes he
 ## 2026-10-08 - D4 API engines
 
 Owner approved Ask/Build supporting OpenAI-compatible and Anthropic APIs alongside the default subscription CLI and local models. Paid use happens only after the owner enables an API engine with their own key and sets a monthly cap; Glacier enforces the cap. Improves P-PORTABLE (more engines).
+
+
+## 2026-10-10 - PH12 Ventures on Glacier (owner-approved)
+Owner instruction (chat, 2026-10-10): build the ventures in the owner's Venture Build Spec as Glacier automations tonight, using Codex workers in waves, changing Glacier as needed and auditing for coherence. Added phase PH12 with one checkpoint per platform card, shared block and in-scope venture. Card mapping: P1-P3 -> PH12.1-12.3, B1-B5 -> PH12.4-12.8, V-* -> PH12.9-12.20, I* -> PH12.22.
+
+## 2026-10-10 - E-PH1 evidence boundary (no rule change)
+
+Re-read the anti-patterns after the runtime audit fix. The historical 66/66
+recovery audit result covers selected effects; treating it as proof of all PH1
+runtime effects would be a status claim without matching evidence. Correction:
+keep PH1 in progress, preserve all independently owned checks, and file
+CLM-2026-10-10-E-PH1-AUDIT-EXIT-PROOF for missing crash/storage coverage.
+The implementation fixes event placement using existing DBOS/SQLite services;
+no replacement engine or governance layer was introduced. No amendment to the
+mission, invariants, exits or decisions is proposed or applied.
+## 2026-10-10 — E-PH8 verification drift (no policy amendment)
+
+The desktop first-run page still shipped the superseded pixel theme; the existing theme check failed. Restored the current room artwork, Nunito and exact screen tokens; the unchanged check now passes. Desktop/update docs also described completed integration as pending. Corrected them and separated Linux fixture/live-resource evidence from the still-open Windows installer/update proofs in `evidence/PH8/2026-10-10/README.md`. The packaging check's literal command expectation predates Python user-site isolation; filed `CLM-2026-10-10-E-PH8-VALIDATION` for the independent tester rather than changing that check or weakening isolation. This addresses the anti-pattern of status claims without current passing artifacts. No invariant or exit criterion changed.
+## 2026-10-10 - E-PH3 verification evidence correction
+
+Anti-pattern review found that protected-file restoration followed worker-provided links before rejecting changed content; a failed verdict alone did not prove that verification preserved outside files. The narrow `verify.py` correction inspects all protected paths/content before restoration. See `evidence/E-PH3/before-symlink.json` and `after-protected-files.json` (builder diagnostics only). Independent adversarial coverage and generic-flow deletion provenance remain under `CLM-2026-10-10-E-PH3-INDEPENDENT-PROTECTION`; the existing self-build protected guard already checks deletions against a baseline but is separate from generic acceptance verification.
+
+The legacy live script can print `LIVE_DONE` and exit zero after a failed worker; `evidence/E-PH3/live-codex.log` reports `STATUS failed` and `database is locked`. Script completion is not successful-work evidence. Current benchmark startup/API timeouts and missing shared TypeScript dependencies are recorded in `CLM-2026-10-10-E-PH3-VALIDATION-ENVIRONMENT`. No acceptance checks, invariants, exit criteria, or owner decisions were changed. This records an observed evidence gap and correction, not a proposed weakening of the rules.

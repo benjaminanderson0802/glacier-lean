@@ -1,0 +1,15 @@
+{
+  "pricingModel": "PAY_PER_EVENT",
+  "platformUsageIncluded": true,
+  "actorChargeEvents": {
+    "license-lookup": {
+      "eventTitle": "Verified roster match",
+      "eventDescription": "One verified exact match in the roster CSV supplied by the Actor user. No-match, stale, uncertain, malformed, and unavailable-file results are not charged.",
+      "eventPriceUsd": 0.001,
+      "isPrimaryEvent": true,
+      "isOneTimeEvent": false
+    }
+  },
+  "minimalMaxTotalChargeUsd": 0.001,
+  "pricingNote": "Proposed price. Before publication, confirm the event price and platform-usage handling, use a run limit no greater than $0.10 for 100 queries, and disable automatic Actor-start and dataset-item charges in Apify Console. No listing has been published."
+}

@@ -1,0 +1,18 @@
+{
+  "campaign_id": "fixture-eddm-2026-01",
+  "town": "Fixtureville",
+  "route_id": "R-0001",
+  "fill_by": "2026-11-15",
+  "from": {"name": "Fixture HVAC", "address_line1": "1 Sample Way"},
+  "to": {"address_line1": "2 Test Street"},
+  "sender": "Fixture HVAC",
+  "buyers": [{"category": "HVAC", "written_approval": true}],
+  "street_jobs": [{"id": "fixture-job-1", "address": "10 Sample Street", "dealer_name": "Fixture HVAC"}],
+  "proof_record": {"dealer_name": "Fixture HVAC", "town": "Fixtureville", "street": "10 Sample Street"},
+  "mailpiece": {
+    "length_inches": 11.5,
+    "height_inches": 6.25,
+    "thickness_inches": 0.01,
+    "weight_ounces": 3.3
+  }
+}

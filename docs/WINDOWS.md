@@ -62,3 +62,17 @@ The unmasked Windows run reported **66 failed, 239 passed, 13 skipped**. Portabi
 Linux-only behavior remains limited to OS sandbox enforcement and POSIX process-group signals. Windows must receive a plain explanation when the user requests a Linux-only sandbox. The earlier Linux acceptance run passed **311 tests with 1 skip** on 2026-10-07. Two consecutive Windows backend runs passed on GitHub on 2026-10-07 (396 passed, 0 failed), so the Windows job is now blocking.
 
 Compatibility tests account for Windows filename rules: backslashes in links resolve to nested notes, and events may include memory changes alongside node changes, so node-event checks select messages with `node_id`.
+# Keep the source checkout running at sign-in
+
+For the from-source development copy that uses `C:\Users\benja\glacier-dev-run.ps1` to launch
+`glacier/web/scripts/live.mjs`, copy `setup/register_dev_logon.ps1` into the checkout or run it
+from the repository root. It registers a Task Scheduler task for the current Windows user only;
+it does not need administrator access. The task starts at the next sign-in and ignores a second
+start if the first copy is still running.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\register_dev_logon.ps1
+```
+
+To remove it, open Task Scheduler, select **Task Scheduler Library → Glacier Dev Backend**, and
+choose **Delete**. This keeps the development copy independent of the installer's startup setting.

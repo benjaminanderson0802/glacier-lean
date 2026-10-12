@@ -1,0 +1,4 @@
+# Approved source URLs only; no examples, product pages, tag accounts or downloader services.
+# Source restrictions are in rules.txt. Metadata probe results are in summary.json.
+# Expiring link: 2026-11-08T19:52:59Z
+https://wetransfer.com/downloads/2bb746a22dcf52d09dd7e0667b33ca0a20261009195212/54394d31fb67a71917307b7330b093ae20261009195234/a12b55

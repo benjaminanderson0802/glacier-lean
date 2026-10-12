@@ -1,0 +1,22 @@
+{
+  "title": "NPI Registry Batch Lookup and Normalizer",
+  "description": "Look up exact NPIs in the official CMS NPPES API. Get names, primary taxonomy, practice location and source dates with explicit no-match and uncertainty.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "npis": {
+      "type": "array",
+      "title": "NPI numbers",
+      "description": "1–50 ten-digit NPI strings with valid check digits. Duplicates are looked up once. Registry presence is not credentialing.",
+      "editor": "json",
+      "minItems": 1,
+      "maxItems": 50,
+      "prefill": [
+        "1881018208"
+      ]
+    }
+  },
+  "required": [
+    "npis"
+  ]
+}

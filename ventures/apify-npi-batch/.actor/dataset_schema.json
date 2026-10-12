@@ -1,0 +1,84 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "type": "object",
+    "properties": {
+      "outcome": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "no_match",
+          "uncertain"
+        ]
+      },
+      "billable": {
+        "type": "boolean"
+      },
+      "message": {
+        "type": "string"
+      },
+      "source_url": {
+        "type": "string"
+      },
+      "retrieved_at": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "outcome",
+      "billable",
+      "message",
+      "source_url",
+      "retrieved_at"
+    ]
+  },
+  "views": {
+    "overview": {
+      "title": "NPI Registry Batch Lookup and Normalizer",
+      "transformation": {
+        "fields": [
+          "outcome",
+          "npi",
+          "name",
+          "enumeration_type",
+          "registry_status",
+          "taxonomy_code",
+          "taxonomy_description",
+          "city",
+          "state",
+          "source_updated_at",
+          "source_url",
+          "retrieved_at",
+          "message"
+        ]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "source_url": {
+            "label": "Official source",
+            "format": "link"
+          }
+        }
+      }
+    },
+    "provenance": {
+      "title": "Source evidence",
+      "transformation": {
+        "fields": [
+          "record_id",
+          "outcome",
+          "billable",
+          "source_url",
+          "source_sha256",
+          "source_last_modified",
+          "retrieved_at",
+          "message"
+        ]
+      },
+      "display": {
+        "component": "table"
+      }
+    }
+  }
+}

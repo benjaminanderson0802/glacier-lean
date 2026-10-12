@@ -1,0 +1,14 @@
+FlyQuest PTL Clipping
+Researched 2026-10-11 America/Chicago (2026-10-12 UTC).
+Brief/supporting document: https://docs.google.com/document/d/1mJs2DfeI6wrJfnV0rxk9tUz8zBCK6oIyhdFiz7LyunU/export?format=txt
+
+Any page you own; TikTok, Instagram, YouTube Shorts. Only listed PTL creators' live streams/VODs or official folder. The brief mentions an official folder but provides no footage-folder URL; do not invent one. All 16 creator URLs and 15 named VODs are in sources.txt. Clip ONLY PTL trading segments, never unrelated gaming/other stream portions. Listed VODs can contain unrelated sponsors/gambling/games; filter at segment level.
+Optional B-roll only when relevant and matching the clip; maximum 3 seconds PER B-roll. Do not repost the linked X style example. Schedule artifact is supporting material; season finale stated as December 11 in Fort Lauderdale, top 8 companies on stage.
+Mandatory supplied watermark on EVERY clip: do not cover, crop out or change its size. Download URL is in asset_inventory/source_inventory, not a footage source.
+Caption must be relevant, positive and organic, name the source streamer, include premiertradingleague.com, and direct people there. Required tags: YouTube @TradeifyTV @JoinPTL; TikTok @tradeifytv @joinptl; Instagram @tradeifyfunding @joinptl. No mandatory hashtag or title copy.
+Favor sports-like stakes/reactions, profit swings, close races, creator/pro dynamics and finale qualification; avoid long chart footage without payoff. No trading tips/advice or easy-money promises, no non-PTL creators, other sponsors/brands, rude/NSFW/hateful chat or voice, other people's edits.
+40%+ US/UK/Canada/Australia views. Submit account/video demographics at minimum payout; open Whop/Discord ticket after analytics/audience load for post approval.
+Keep posts up at least 30 days; likes must remain visible; each post needs at least 0.20% engagement. Submit account/video demographics when requested and wait for post-submission approval. No NSFW, violent/off-topic content, spam (the same video on many pages), paid ads/boost/promote tools, fake views/bots, unrelated viral bait, stealing or reposting another creator's edit.
+Fresh edited moments required; no numerical duration bounds, bio link, disclosure tag or draft pre-approval stated. Max $250/clip; minimum $1.50. Schedule artifact fetched but rendered data not exposed in static HTML; do not infer future stream dates.
+
+Interpretation: silence is not permission or a platform-law exemption. Draft pre-approval is distinguished from post-submission review. Campaign requirements above are publisher rules, not proof of payment or algorithm behavior. Whop submission remains owner/manual under repository policy.

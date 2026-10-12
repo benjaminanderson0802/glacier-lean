@@ -1,0 +1,12 @@
+{
+  "actorSpecification": 1,
+  "name": "alabama-contractor-roster-check",
+  "title": "Alabama Contractor Roster Check",
+  "description": "Check exact contractor license numbers or business names against a dated Alabama roster CSV you are authorized to use. No board scraping; no-match and uncertain results are free.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "dockerfile": "./Dockerfile",
+  "input": "./input_schema.json",
+  "storages": {"dataset": "./dataset_schema.json"},
+  "defaultRunOptions": {"memoryMbytes": 256, "timeoutSecs": 300, "build": "latest"}
+}

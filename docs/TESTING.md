@@ -1,5 +1,19 @@
 # Running the tests
 
+## Real backend and browser development check
+
+From `glacier/web`, `npm run live` starts the real FastAPI engine and Vite development screen together. It uses the project backend venv (`~/w/glacier-lean/.venv`, or `GLACIER_PYTHON`), a disposable `GLACIER_HOME`, and the Vite proxy's engine-token and same-origin handling. Open the URL printed by the script; Ctrl+C stops the two processes and removes the disposable home.
+
+To verify the real browser path after building the screen:
+
+```sh
+cd glacier/web
+npm run build
+node e2e/live_real_backend.spec.mjs
+```
+
+The live spec skips with a message if the backend venv is missing. It runs a real backend and Vite, saves and runs a canvas flow, checks node/run state and terminal output, sends an Ask chat message through a test CLI, and checks a right-wall messenger reply delivered over the events WebSocket.
+
 ## Backend suite
 
 Install the pinned dependencies from the repository root, then run the backend suite from `glacier/backend`:

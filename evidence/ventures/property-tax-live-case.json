@@ -1,0 +1,24 @@
+{
+  "checkpoint": "PH12.17",
+  "command": "GLACIER_HOME=/tmp/property-tax-feed-probe-20261010 /home/glacier/w/glacier-lean/.venv/bin/python ventures/property-tax/scripts/property_tax.py prepare-case --case /tmp/property-tax-feed-probe-20261010/ventures/property-tax/incoming/case.json --output /tmp/property-tax-feed-probe-20261010/ventures/property-tax/packets/case.json",
+  "exit_code": 0,
+  "result": "uncertain — please check",
+  "status": "needs_customer_confirmation",
+  "as_of": "2026-10-10",
+  "county": "Cook County",
+  "parcel_id": "01011000020000",
+  "parcel_match": {
+    "class": "592",
+    "township": "Barrington",
+    "zip_code": "60010",
+    "tax_year": "2025"
+  },
+  "uncertainties": [
+    "Customer's current assessment notice is missing.",
+    "At least three recent, source-linked, customer-confirmed arm's-length sales are required.",
+    "Subject property square footage is missing or uncertain.",
+    "Customer has not supplied the value they want the county to consider."
+  ],
+  "filing_submitted": false,
+  "classification": "Live parcel-record smoke check only; no customer records, real mailing, signature, payment, or county filing."
+}

@@ -1,4 +1,4 @@
-// Shell test: exactly five top-level options, each screen renders on-theme, keyboard shortcuts work.
+// Shell test: exactly five top-level options, Limbo glass panels fit the room, keyboard shortcuts work.
 // Run after `npx vite build` (check:ui does this). Uses the same mock backend as core.spec.mjs.
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -43,20 +43,43 @@ try {
   await page.getByTestId('starter-hide').click()
   check(await page.getByTestId('starter').count() === 0, 'Get started can be closed')
 
-  const tabIds = await page.locator('.g-menu-item').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
+  const tabIds = await page.locator('[role="tab"]').evaluateAll(els => els.map(el => el.getAttribute('data-testid')))
   const tabs = await Promise.all(['home', 'ask', 'automations', 'memory', 'settings'].map(id => page.getByTestId(`nav-${id}`).textContent()))
   check(tabIds.join(',') === 'nav-home,nav-ask,nav-automations,nav-memory,nav-settings' && tabs.map(x => x.trim()).join(',') === 'Home,Build,Automations,Memory,Settings', `exactly five English menu options (got ${tabs.join(',')})`)
   for (const t of ['home', 'ask', 'automations', 'memory', 'settings']) {
     await page.getByTestId(`nav-${t}`).click()
     await page.getByTestId(`screen-${t}`).waitFor()
+    await page.waitForFunction(() => {
+      const stage = document.querySelector('.l-stage').getBoundingClientRect()
+      return ['[data-testid="game-menu"]', '.l-center', '[data-testid="side-status"]'].every(selector => {
+        const rect = document.querySelector(selector).getBoundingClientRect()
+        return rect.left >= stage.left && rect.right <= stage.right && rect.top >= stage.top && rect.bottom <= stage.bottom
+      })
+    })
     const active = await page.getByTestId(`nav-${t}`).getAttribute('aria-current')
-    const font = await page.getByTestId('page-title').evaluate(el => getComputedStyle(el).fontFamily)
-    check(active === 'page' && /Press Start 2P/.test(font), `${t}: opens, menu active, title in Press Start 2P`)
+    const room = await page.evaluate(() => {
+      const stage = document.querySelector('.l-stage').getBoundingClientRect()
+      const panels = ['[data-testid="game-menu"]', '.l-center', '[data-testid="side-status"]'].map(selector => {
+        const rect = document.querySelector(selector).getBoundingClientRect()
+        return rect.left >= stage.left && rect.right <= stage.right && rect.top >= stage.top && rect.bottom <= stage.bottom
+      })
+      const title = document.querySelector('.g-title')
+      return {
+        panels,
+        background: getComputedStyle(document.querySelector('.l-stage')).backgroundImage,
+        glass: getComputedStyle(document.querySelector('.l-center')).backdropFilter,
+        font: getComputedStyle(title).fontFamily,
+        titleFits: title.scrollWidth <= title.clientWidth + 2 && title.scrollHeight <= title.clientHeight + 2,
+        chromeCase: getComputedStyle(document.querySelector('.l-brand')).textTransform === 'lowercase',
+      }
+    })
+    check(active === 'page' && room.panels.length === 3 && room.panels.every(Boolean) && /room.*\.webp/.test(room.background), `${t}: active menu item and panels inside room (${JSON.stringify({ active, panels: room.panels, background: room.background })})`)
+    check(/blur\(/.test(room.glass) && /Nunito/i.test(room.font) && room.titleFits && room.chromeCase, `${t}: readable Limbo title (${JSON.stringify({ glass: room.glass, font: room.font, titleFits: room.titleFits, chromeCase: room.chromeCase })})`)
   }
   const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
-  check(/Press Start 2P/.test(bodyFont), 'body text uses Press Start 2P')
-  const fontsOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('16px "Press Start 2P"') })
-  check(fontsOk, 'bundled Press Start 2P font loaded (offline)')
+  check(/Nunito/i.test(bodyFont), 'body text uses Nunito')
+  const fontsOk = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('16px Nunito') })
+  check(fontsOk, 'bundled Nunito font loaded (offline)')
 
   await page.getByTestId('nav-automations').click()
   await page.getByTestId('flow-new').click()
@@ -191,12 +214,12 @@ try {
   // Ask > Edit: proposed automation opens in the builder; its goal and checks survive saving
   await page.getByTestId('nav-ask').click()
   await page.getByTestId('build-open-chat').click()
-  await page.getByTestId('chat-input').fill('make me a daily backup')
+  await page.getByTestId('chat-input').fill('make me a daily inbox summary')
   await page.getByTestId('chat-send').click()
   await page.getByTestId('proposal-checks').waitFor()
-  check(/You confirm: Did the backup finish\?/.test(await page.getByTestId('proposal-checks').textContent()), 'Ask shows how a proposed automation will be checked before it runs')
+  check(/You confirm: Is the inbox summary useful\?/.test(await page.getByTestId('proposal-checks').textContent()), 'Ask shows how a proposed automation will be checked before it runs')
   await page.getByTestId('chat-title').waitFor()
-  check(/make me a daily backup/.test(await page.getByTestId('chat-title').textContent()), 'a new chat is titled from the first question')
+  check(/make me a daily inbox summary/.test(await page.getByTestId('chat-title').textContent()), 'a new chat is titled from the first question')
   await page.getByTestId('chat-rename').click()
   await page.getByTestId('chat-rename-input').fill('Backup planning')
   await page.getByTestId('chat-rename-save').click()
@@ -209,7 +232,7 @@ try {
   await page.getByTestId('past-search').fill('backup')
   await page.getByText('Backup planning').click()
   await page.getByTestId('proposal-checks').waitFor({ state: 'detached' }).catch(() => {})
-  check(/I can help|Creates a daily backup flow/.test(await page.getByTestId('chat-log').textContent()), 'Past chats: search finds a chat and reopening it shows its messages')
+  check(/make me a daily inbox summary|A flow for your inbox summary/.test(await page.getByTestId('chat-log').textContent()), 'Past chats: search finds a chat and reopening it shows its messages')
   await page.getByTestId('chat-new').click()
   check(await page.getByTestId('chat-title').count() === 0, 'New chat starts empty')
   await fetch(`http://localhost:${MOCK_PORT}/api/environments/ask-run-demo`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -220,22 +243,22 @@ try {
   await page.getByTestId('proposal-run-status').waitFor()
   check(await page.getByTestId('proposal-view-run').count() === 1, 'Ask: "run my ... now" asks first, then starts the run and links to it')
   await page.getByTestId('chat-new').click()
-  await page.getByTestId('chat-input').fill('make me a daily backup')
+  await page.getByTestId('chat-input').fill('make me a daily inbox summary')
   await page.getByTestId('chat-send').click()
   await page.getByTestId('proposal-checks').waitFor()
   await page.getByTestId('proposal-edit').click()
-  const drafted = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Daily backup', null, { timeout: 8000 }).then(() => true, () => false)
-  check(drafted && await page.getByTestId('node-backup').count() === 1, 'Ask > Edit opens the proposed flow in the builder')
+  const drafted = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Inbox summary', null, { timeout: 8000 }).then(() => true, () => false)
+  check(drafted && await page.getByTestId('node-fetch').count() === 1 && await page.getByTestId('node-summarize').count() === 1, 'Ask > Edit opens the proposed flow in the builder')
   await page.getByTestId('save').click()
   await page.waitForFunction(() => document.querySelector('[data-testid=last-commit]')?.textContent !== '-')
-  const savedFlow = await (await fetch(`http://localhost:${MOCK_PORT}/api/environments/daily-backup`)).json()
-  check(savedFlow.goal && Array.isArray(savedFlow.acceptance) && savedFlow.acceptance.length === 1, 'saving keeps the goal and checks the builder does not show')
+  const savedFlow = await (await fetch(`http://localhost:${MOCK_PORT}/api/environments/inbox-summary`)).json()
+  check(savedFlow.goal === 'Make me a daily inbox summary' && Array.isArray(savedFlow.acceptance) && savedFlow.acceptance.length === 1, 'saving keeps the goal and checks the builder does not show')
   await page.getByTestId('env-name').fill('Daily backup renamed')
   await page.getByTestId('save').click()
   await page.getByTestId('version-restore-1').waitFor()
   await page.getByTestId('version-restore-1').click()
   await page.getByTestId('version-restore-yes-1').click()
-  const restored = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Daily backup', null, { timeout: 8000 }).then(() => true, () => false)
+  const restored = await page.waitForFunction(() => document.querySelector('[data-testid=env-name]')?.value === 'Inbox summary', null, { timeout: 8000 }).then(() => true, () => false)
   check(restored && /Restored the version/.test(await page.getByTestId('message').textContent()), 'Saved versions: Restore brings back an earlier version of a flow')
 
   // Detail level: Simple hides advanced step types and technical fields; Full shows raw step settings

@@ -1,0 +1,31 @@
+{
+  "actorSpecification": 1,
+  "title": "SAM.gov opportunity changes",
+  "description": "Dated changes observed between complete official API snapshots. Every notice row links to its public SAM.gov notice.",
+  "fields": {
+    "type": "object",
+    "properties": {
+      "outcome": {"type": "string", "description": "match, dated no-change result, or uncertain — please check"},
+      "verification_state": {"type": "string", "description": "verified for a complete dated comparison; uncertain or unverifiable otherwise"},
+      "event_kind": {"type": "string", "description": "new_notice, amendment, deadline_change, amendment_and_deadline_change, baseline_saved, no_change, or uncertain"},
+      "notice_id": {"type": "string", "description": "Official SAM.gov notice identifier"},
+      "solicitation_number": {"type": "string", "description": "Solicitation number when present in SAM.gov"},
+      "title": {"type": "string", "description": "Notice title from SAM.gov"},
+      "naics_code": {"type": "string", "description": "Watched NAICS code associated with the notice"},
+      "previous_deadline": {"type": "string", "description": "Response deadline observed in the earlier snapshot"},
+      "response_deadline": {"type": "string", "description": "Response deadline observed in the latest snapshot"},
+      "previous_amendment": {"type": "string", "description": "Amendment or version in the earlier snapshot"},
+      "amendment": {"type": "string", "description": "Amendment or version in the latest snapshot"},
+      "source_url": {"type": "string", "description": "Public SAM.gov notice URL or official API endpoint"},
+      "checked_at": {"type": "string", "description": "UTC timestamp from the latest completed snapshot"},
+      "limitations": {"type": "string", "description": "Coverage and uncertainty notes for this result"}
+    }
+  },
+  "views": {
+    "overview": {
+      "title": "Opportunity changes",
+      "transformation": {"fields": ["outcome", "verification_state", "event_kind", "solicitation_number", "title", "naics_code", "previous_deadline", "response_deadline", "previous_amendment", "amendment", "source_url", "checked_at"]},
+      "display": {"component": "table", "columns": ["outcome", "event_kind", "solicitation_number", "title", "naics_code", "previous_deadline", "response_deadline", "previous_amendment", "amendment", "source_url", "checked_at"]}
+    }
+  }
+}

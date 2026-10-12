@@ -1,0 +1,14 @@
+{
+  "meta": {"last_updated": "2026-10-01"},
+  "results": [
+    {
+      "recall_number": "F-1234-2026",
+      "recall_initiation_date": "20260920",
+      "product_description": "Example oat drink, UPC 012345678905",
+      "reason_for_recall": "Undeclared allergen",
+      "classification": "Class II",
+      "recalling_firm": "Example Foods",
+      "openfda": {"upc": ["012345678905"], "brand_name": ["Example"]}
+    }
+  ]
+}

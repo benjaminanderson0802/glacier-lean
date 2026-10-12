@@ -1,0 +1,3 @@
+sku,size_tier,expected_fee_usd_per_unit,unit_cost_usd
+MUG-12OZ,Large standard-size,5.00,12.00
+LAMP-LED,Large standard-size,5.25,19.00

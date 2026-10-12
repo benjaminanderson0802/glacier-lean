@@ -1,0 +1,63 @@
+{
+  "id": "utility-predominant-use",
+  "name": "Prepare Indiana utility study estimate",
+  "goal": "Screen a customer-provided 12-month utility bill and documented usage-study CSV, then prepare unsigned ST-200 application data. No filing or utility contact occurs.",
+  "nodes": [
+    {
+      "id": "confirm_state",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Confirm Indiana as the launch state before customer work. For a dry-run, use the checked-in synthetic CSV. For a customer case, save the customer-provided 12 consecutive monthly utility bills and documented study allocations at $GLACIER_HOME/ventures/utility-audits/incoming/indiana-utility-study.csv. exempt_use_units must come from a documented equipment and usage study; it is not present on a utility bill. Keep original records on the customer's device."
+      },
+      "position": {"x": 0, "y": 0}
+    },
+    {
+      "id": "estimate",
+      "type": "command",
+      "config": {
+        "cmd": "python ventures/utility-audits/scripts/utility_audit.py study --input \"$GLACIER_HOME/ventures/utility-audits/incoming/indiana-utility-study.csv\" --output \"$GLACIER_HOME/ventures/utility-audits/drafts/st200-study-{run}.json\"",
+        "cwd": "{repo}",
+        "timeout": "30",
+        "retries": "0"
+      },
+      "position": {"x": 320, "y": 0}
+    },
+    {
+      "id": "draft_ready",
+      "type": "check",
+      "config": {"expr": "exit_code == 0"},
+      "position": {"x": 640, "y": 0}
+    },
+    {
+      "id": "review_draft",
+      "type": "approval",
+      "config": {
+        "prompt": "Your step: Review the exact local predominant-use estimate and unsigned ST-200 application data. Confirm the meter, utility, 12 bill periods, and each equipment/use allocation against source records. A passing numeric screen is not DOR approval. Complete any missing official form details, attach the bills and study, then sign and submit ST-200 yourself. Glacier does not certify a study, sign, pay, contact the utility, or file."
+      },
+      "position": {"x": 960, "y": 0}
+    },
+    {
+      "id": "review_note",
+      "type": "note",
+      "config": {
+        "path": "ventures/utility-audits/reviews/st200-study-{run}.md",
+        "template": "Owner reviewed the local study estimate for run {run}. This is not a signed or filed application, a DOR determination, or a utility exemption certificate.\n\n{summary}"
+      },
+      "position": {"x": 1280, "y": 0}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "confirm_state", "target": "estimate", "label": "yes"},
+    {"id": "e2", "source": "estimate", "target": "draft_ready", "label": ""},
+    {"id": "e3", "source": "draft_ready", "target": "review_draft", "label": "yes"},
+    {"id": "e4", "source": "review_draft", "target": "review_note", "label": "yes"}
+  ],
+  "acceptance": [
+    {
+      "kind": "command",
+      "cmd": "python ventures/utility-audits/scripts/utility_audit.py study --input ventures/utility-audits/tests/fixtures/indiana_predominant_use_bills.csv --output /tmp/utility-audit-st200-study.json && python -c \"import json; d=json.load(open('/tmp/utility-audit-st200-study.json')); assert d['application_data']['form'] == 'ST-200' and d['application_data']['signed'] is False and d['application_data']['submitted'] is False\"",
+      "required": true
+    }
+  ],
+  "max_steps": 5
+}

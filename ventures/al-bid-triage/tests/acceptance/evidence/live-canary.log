@@ -1,0 +1,84 @@
+.FFFFF.......LIVE document: 200 https://alabamabuilds.gov/; marker=Alabama Builds
+...
+=================================== FAILURES ===================================
+__________________ test_empty_has_source_and_date_vocabulary ___________________
+
+    def test_empty_has_source_and_date_vocabulary():
+        text = api.render_markdown(digest([]))
+>       assert "no match found in" in text.lower() and "as of 2026-10-10" in text.lower()
+E       AssertionError: assert ('no match found in' in '# alabama public works bid triage\n\nprepared: 2026-10-10\nfilter: general-contracting | baldwin, mobile counties\nin...adlines, addenda, qualifications, and instructions at the source before acting.\n\nno notices matched these filters.\n')
+E        +  where '# alabama public works bid triage\n\nprepared: 2026-10-10\nfilter: general-contracting | baldwin, mobile counties\nin...adlines, addenda, qualifications, and instructions at the source before acting.\n\nno notices matched these filters.\n' = <built-in method lower of str object at 0x785edbc37290>()
+E        +    where <built-in method lower of str object at 0x785edbc37290> = '# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...adlines, addenda, qualifications, and instructions at the source before acting.\n\nNo notices matched these filters.\n'.lower
+
+tests/acceptance/test_al_bid_triage.py:75: AssertionError
+____________ test_missing_facts_use_uncertain_vocabulary[bid_date] _____________
+
+notice = {'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': 'Synthetic City', 'county': 'Mobile', ...}
+field = 'bid_date'
+
+    @pytest.mark.parametrize("field", ["bid_date", "advertising_agency", "prebid_meeting"])
+    def test_missing_facts_use_uncertain_vocabulary(notice, field):
+        notice[field] = ""
+>       assert uncertain(api.render_markdown(digest([notice])))
+E       AssertionError: assert False
+E        +  where False = uncertain('# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...eadline, addenda, eligibility, and bid instructions.\n- Official notice: https://alabamabuilds.gov/AdvertisementBids\n')
+E        +    where '# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...eadline, addenda, eligibility, and bid instructions.\n- Official notice: https://alabamabuilds.gov/AdvertisementBids\n' = <function render_markdown at 0x785edb215da0>({'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...})
+E        +      where <function render_markdown at 0x785edb215da0> = api.render_markdown
+E        +      and   {'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...} = digest([{'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': 'Synthetic City', 'county': 'Mobile', ...}])
+
+tests/acceptance/test_al_bid_triage.py:80: AssertionError
+_______ test_missing_facts_use_uncertain_vocabulary[advertising_agency] ________
+
+notice = {'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': '', 'county': 'Mobile', ...}
+field = 'advertising_agency'
+
+    @pytest.mark.parametrize("field", ["bid_date", "advertising_agency", "prebid_meeting"])
+    def test_missing_facts_use_uncertain_vocabulary(notice, field):
+        notice[field] = ""
+>       assert uncertain(api.render_markdown(digest([notice])))
+E       AssertionError: assert False
+E        +  where False = uncertain('# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...eadline, addenda, eligibility, and bid instructions.\n- Official notice: https://alabamabuilds.gov/AdvertisementBids\n')
+E        +    where '# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...eadline, addenda, eligibility, and bid instructions.\n- Official notice: https://alabamabuilds.gov/AdvertisementBids\n' = <function render_markdown at 0x785edb215da0>({'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...})
+E        +      where <function render_markdown at 0x785edb215da0> = api.render_markdown
+E        +      and   {'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...} = digest([{'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': '', 'county': 'Mobile', ...}])
+
+tests/acceptance/test_al_bid_triage.py:80: AssertionError
+_________ test_missing_facts_use_uncertain_vocabulary[prebid_meeting] __________
+
+notice = {'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': 'Synthetic City', 'county': 'Mobile', ...}
+field = 'prebid_meeting'
+
+    @pytest.mark.parametrize("field", ["bid_date", "advertising_agency", "prebid_meeting"])
+    def test_missing_facts_use_uncertain_vocabulary(notice, field):
+        notice[field] = ""
+>       assert uncertain(api.render_markdown(digest([notice])))
+E       AssertionError: assert False
+E        +  where False = uncertain('# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...eadline, addenda, eligibility, and bid instructions.\n- Official notice: https://alabamabuilds.gov/AdvertisementBids\n')
+E        +    where '# Alabama public works bid triage\n\nPrepared: 2026-10-10\nFilter: general-contracting | Baldwin, Mobile counties\nIn...eadline, addenda, eligibility, and bid instructions.\n- Official notice: https://alabamabuilds.gov/AdvertisementBids\n' = <function render_markdown at 0x785edb215da0>({'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...})
+E        +      where <function render_markdown at 0x785edb215da0> = api.render_markdown
+E        +      and   {'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...} = digest([{'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': 'Synthetic City', 'county': 'Mobile', ...}])
+
+tests/acceptance/test_al_bid_triage.py:80: AssertionError
+__________ test_conflicting_duplicate_deadlines_not_silently_dropped ___________
+
+notice = {'notice_number': 'SYN-2026-001', 'project': 'Public works – José community hall', 'advertising_agency': 'Synthetic City', 'county': 'Mobile', ...}
+
+    def test_conflicting_duplicate_deadlines_not_silently_dropped(notice):
+        other = dict(notice, bid_date="2026-10-30")
+        try:
+            result = digest([notice, other])
+        except ValueError:
+            return
+>       assert uncertain(result), "Conflicting versions need human review"
+E       AssertionError: Conflicting versions need human review
+E       assert False
+E        +  where False = uncertain({'as_of': '2026-10-10', 'trade': 'general-contracting', 'counties': ['Baldwin', 'Mobile'], 'source_mode': 'user_supplied', ...})
+
+tests/acceptance/test_al_bid_triage.py:88: AssertionError
+=========================== short test summary info ============================
+FAILED tests/acceptance/test_al_bid_triage.py::test_empty_has_source_and_date_vocabulary
+FAILED tests/acceptance/test_al_bid_triage.py::test_missing_facts_use_uncertain_vocabulary[bid_date]
+FAILED tests/acceptance/test_al_bid_triage.py::test_missing_facts_use_uncertain_vocabulary[advertising_agency]
+FAILED tests/acceptance/test_al_bid_triage.py::test_missing_facts_use_uncertain_vocabulary[prebid_meeting]
+FAILED tests/acceptance/test_al_bid_triage.py::test_conflicting_duplicate_deadlines_not_silently_dropped
+5 failed, 11 passed in 0.41s

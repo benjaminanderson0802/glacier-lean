@@ -1,0 +1,16 @@
+Command:
+  flock /tmp/glacier-suite.lock bash -c 'cd glacier/backend && /home/glacier/w/glacier-lean/.venv/bin/python -m pytest -q tests'
+
+Pytest result:
+  6 failed, 826 passed, 1 skipped, 5 warnings in 846.80s (0:14:06)
+  Exit code: 1
+
+Failed cases:
+  tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-inbox-note]
+  tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-email-search-note]
+  tests/test_flows_real_runtime.py::test_each_installable_template_installs_and_runs_or_skips_for_missing_engine[tpl-local-data-pipeline]
+  tests/test_home_route.py::test_home_empty_state
+  tests/test_home_route.py::test_home_collects_each_need_you_kind_and_counts_steps
+  tests/test_home_route.py::test_home_orders_and_caps_needs_and_notes
+
+No failure was reported in the PH3 verification or workspace test files. This is a summary captured from the completed pytest output; the attempted tee path was invalid because it was resolved from the repository root, so the complete pytest traceback was not persisted in this worktree.

@@ -1,0 +1,81 @@
+{
+  "checkpoint": "PH12.17",
+  "captured_at_utc": "2026-10-11T02:54:31+00:00",
+  "backend": "real local Glacier FastAPI/DBOS engine",
+  "backend_url": "http://127.0.0.1:38492",
+  "glacier_home": "/tmp/glacier-property-tax-card-live-final-20261010",
+  "install_command": "GLACIER_API=... GLACIER_HOME=... ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only property-tax",
+  "run_id": "a3401b49839b",
+  "status": "failed",
+  "verified": false,
+  "waiting_on": null,
+  "node_results": {
+    "owner_input_ready": "done",
+    "packet_failed": "skipped",
+    "packet_handoff": "skipped",
+    "packet_not_approved": "skipped",
+    "packet_ready": "skipped",
+    "prepare_packet": "skipped",
+    "review_packet": "skipped"
+  },
+  "verification": [
+    {
+      "check": 0,
+      "kind": "command",
+      "passed": false,
+      "evidence": "`repo=\"${GLACIER_REPO:-$HOME/w/glacier-lean}\"; if [ ! -f \"$repo/ventures/property-tax/scripts/property_tax.py\" ]; then repo=\"$(find \"$HOME/w/workers\" -maxdepth 5 -path '*/ventures/property-tax/scripts/property_tax.py' -print -quit)\"; fi; test -n \"$repo\" && cd \"$repo\" && '/home/glacier/w/glacier-lean/.venv/bin/python' -c \"import json,os,pathlib; p=pathlib.Path(os.environ['GLACIER_HOME'])/'ventures'/'property-tax'/'packets'/'case.json'; d=json.loads(p.read_text()); assert d['result'] in ('match', 'no match found in Cook County Assessor parcel roll as of '+d['as_of'], 'uncertain — please check') and d['filing_submitted'] is False\"` exited non-zero\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-property-tax-card-live-final-20261010/ventures/property-tax/packets/case.json'\n"
+    }
+  ],
+  "packet": null,
+  "log": [
+    {
+      "action": "seed_official_public_sample",
+      "source_url": "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json?%24select=pin,year,class,township_code,township_name,zip_code,:updated_at&%24where=year='2026'&%24order=pin&%24limit=50",
+      "rows": 50,
+      "alerts": []
+    },
+    {
+      "action": "write_isolated_smoke_case",
+      "parcel_id": "01011000020000",
+      "source": "public county parcel sample; customer notice/comparable files intentionally absent"
+    },
+    {
+      "action": "start_real_engine_flow",
+      "run_id": "a3401b49839b"
+    },
+    {
+      "action": "approve_local_gate",
+      "node_id": "owner_input_ready",
+      "approved": true,
+      "scope": "isolated local test only; no message/mail/filed submission"
+    }
+  ],
+  "external_effects": {
+    "email_sent": false,
+    "mail_sent": false,
+    "signature_requested": false,
+    "filing_submitted": false,
+    "checkout_enabled": false
+  },
+  "root_cause": {
+    "node_that_ran": "owner_input_ready",
+    "node_states_after_run": {
+      "owner_input_ready": "done",
+      "packet_failed": "skipped",
+      "packet_handoff": "skipped",
+      "packet_not_approved": "skipped",
+      "packet_ready": "skipped",
+      "prepare_packet": "skipped",
+      "review_packet": "skipped"
+    },
+    "graph_edge": {
+      "source": "owner_input_ready",
+      "target": "prepare_packet",
+      "label": null
+    },
+    "engine_behavior": "approval nodes emit yes/no branches and follow only edges with a matching yes/no label",
+    "effect": "prepare_packet was skipped; the protected post-run acceptance check failed because packets/case.json was absent",
+    "flow_change_needed": "label the owner_input_ready -> prepare_packet edge yes; acceptance definition remains untouched"
+  },
+  "conclusion": "Real engine run failed verification; no packet node ran and no packet output was produced."
+}

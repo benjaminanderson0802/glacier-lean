@@ -1,0 +1,137 @@
+
+===== ventures/apify-tools/tests =====
+..........                                                            [100%]
+10 passed, 3 subtests passed in 7.20s
+EXIT 0
+
+===== ventures/blocks/connectors/tests =====
+...........                                                              [100%]
+11 passed in 0.14s
+EXIT 0
+
+===== ventures/blocks/customer/tests =====
+..........                                                               [100%]
+10 passed in 1.80s
+EXIT 0
+
+===== ventures/blocks/deadlines/tests =====
+......                                                                   [100%]
+6 passed in 0.13s
+EXIT 0
+
+===== ventures/blocks/feeds/tests =====
+...........                                                              [100%]
+11 passed in 0.17s
+EXIT 0
+
+===== ventures/blocks/filer/tests =====
+...                                                                      [100%]
+3 passed in 2.93s
+EXIT 0
+
+===== ventures/blocks/mail/tests =====
+....                                                                     [100%]
+4 passed in 0.02s
+EXIT 0
+
+===== ventures/blocks/reader/tests =====
+...                                                                      [100%]
+3 passed in 0.02s
+EXIT 0
+
+===== ventures/blocks/rules/tests =====
+...                                                                      [100%]
+3 passed in 0.01s
+EXIT 0
+
+===== ventures/carpenter-goods/tests =====
+......                                                                   [100%]
+6 passed in 0.01s
+EXIT 0
+
+===== ventures/coop-postcards/tests =====
+.........                                                                [100%]
+9 passed in 0.02s
+EXIT 0
+
+===== ventures/cpsc-prep/tests =====
+..................                                                       [100%]
+18 passed in 0.05s
+EXIT 0
+
+===== ventures/dibbs-supply/tests =====
+...........                                                              [100%]
+11 passed in 0.03s
+EXIT 0
+
+===== ventures/fda-cosmetics/tests =====
+.........                                                                [100%]
+9 passed in 0.07s
+EXIT 0
+
+===== ventures/freight-claims/tests =====
+.................                                                        [100%]
+17 passed in 0.16s
+EXIT 0
+
+===== ventures/osha-filing/tests =====
+........                                                                 [100%]
+8 passed in 0.07s
+EXIT 0
+
+===== ventures/property-tax/tests =====
+......                                                                   [100%]
+6 passed in 0.03s
+EXIT 0
+
+===== ventures/recall-checker/tests =====
+...F.......                                                              [100%]
+=================================== FAILURES ===================================
+_ RecallMatcherAcceptanceTests.test_clean_item_uses_required_source_and_date_vocabulary _
+
+self = <test_recall_checker.RecallMatcherAcceptanceTests testMethod=test_clean_item_uses_required_source_and_date_vocabulary>
+
+    def test_clean_item_uses_required_source_and_date_vocabulary(self):
+        result = match_item({"brand": "Unrelated", "model": "SAFE-1"}, [self.recall], as_of="2026-10-10")
+>       self.assertEqual(result["result"], "no match in CPSC, NHTSA, FDA and FSIS as of 2026-10-10")
+E       AssertionError: 'no match found in CPSC, NHTSA, FDA and FSIS as of 2026-10-10' != 'no match in CPSC, NHTSA, FDA and FSIS as of 2026-10-10'
+E       - no match found in CPSC, NHTSA, FDA and FSIS as of 2026-10-10
+E       ?          ------
+E       + no match in CPSC, NHTSA, FDA and FSIS as of 2026-10-10
+
+ventures/recall-checker/tests/test_recall_checker.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/recall-checker/tests/test_recall_checker.py::RecallMatcherAcceptanceTests::test_clean_item_uses_required_source_and_date_vocabulary
+1 failed, 10 passed in 0.03s
+EXIT 1
+
+===== ventures/tests =====
+F...............                                                         [100%]
+=================================== FAILURES ===================================
+____ InstallAllTests.test_discovery_is_data_driven_and_only_filters_by_slug ____
+
+self = <test_install_all.InstallAllTests testMethod=test_discovery_is_data_driven_and_only_filters_by_slug>
+
+    def test_discovery_is_data_driven_and_only_filters_by_slug(self) -> None:
+        all_flows = install_all.discover_flows()
+        apify_flows = install_all.discover_flows("apify-tools")
+>       self.assertEqual(len(all_flows), len(apify_flows))
+E       AssertionError: 36 != 2
+
+ventures/tests/test_install_all.py:18: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/tests/test_install_all.py::InstallAllTests::test_discovery_is_data_driven_and_only_filters_by_slug
+1 failed, 15 passed in 0.24s
+EXIT 1
+
+===== ventures/utility-audits/tests =====
+.........                                                                [100%]
+9 passed in 0.02s
+EXIT 0
+
+===== ventures/warranty/tests =====
+.................                                                        [100%]
+17 passed in 0.04s
+EXIT 0
+
+Venture test dirs=21 totals={'passed': 196, 'failed': 2, 'skipped': 0, 'subtests': 3} failing_dirs=['ventures/recall-checker/tests', 'ventures/tests']

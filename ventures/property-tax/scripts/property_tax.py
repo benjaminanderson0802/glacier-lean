@@ -1,0 +1,485 @@
+"""Prepare customer-reviewed Cook County property-tax appeal packets and mail proofs."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import html
+import json
+import math
+import os
+import re
+import statistics
+import sys
+from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from ventures.blocks import customer, deadlines, mail, reader
+from ventures.blocks.feeds import query, sync
+
+
+COUNTY = "Cook County"
+COUNTY_SOURCE = "cook_county_assessor"
+COUNTY_SOURCE_URL = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.json"
+NOTICE_SCHEMA = {
+    "parcel_id": ["PIN", "Parcel Identification Number"],
+    "assessed_value": ["Assessed Value", "Total Assessed Value"],
+}
+COMPARABLE_SCHEMA = {
+    "sale_date": ["Sale Date", "Date of Sale"],
+    "sale_price": ["Sale Price", "Transfer Price"],
+    "square_feet": ["Square Feet", "Building Area"],
+}
+ASSESSOR_APPEALS_URL = "https://www.cookcountyassessoril.gov/online-appeals"
+ASSESSOR_CALENDAR_URL = "https://www.cookcountyassessoril.gov/assessment-calendar-and-deadlines"
+ASSESSOR_RULES_URL = "https://www.cookcountyassessoril.gov/official-appeal-rules-cook-county-assessor"
+BOR_RESIDENTIAL_URL = "https://www.cookcountyboardofreview.com/assessment-appeals/residential"
+BOR_RULES_URL = "https://www.cookcountyboardofreview.com/board-review-official-rules"
+
+
+def homeowner_filing_guide() -> dict[str, Any]:
+    """Return current-source links and manual pro se steps for an individual homeowner."""
+    return {
+        "eligibility": (
+            "This self-file guide is for an individual taxpayer filing for themselves. At the Board of Review, "
+            "the property must be titled in the individual taxpayer's own name. An LLC, corporation, or other "
+            "entity must use a licensed attorney there; Glacier does not represent anyone."
+        ),
+        "steps": [
+            {
+                "title": "Check your property and filing window",
+                "detail": (
+                    "Confirm the PIN, township, current assessment year, and official filing dates before preparing "
+                    "a submission. Assessor and Board of Review windows are separate and change by township and year. "
+                    "The notice and current official calendar control."
+                ),
+                "links": [ASSESSOR_CALENDAR_URL, ASSESSOR_RULES_URL],
+            },
+            {
+                "title": "Review the packet and fix anything marked uncertain",
+                "detail": (
+                    "Check every PIN, notice value, comparable sale, source, requested value, and supporting record. "
+                    "Do not submit a packet with unresolved uncertainties. The homeowner decides what evidence to use."
+                ),
+                "links": [ASSESSOR_RULES_URL, BOR_RULES_URL],
+            },
+            {
+                "title": "File with the Assessor if you choose that review stage",
+                "detail": (
+                    "During the open township window, the individual homeowner files their own appeal and evidence "
+                    "through the Assessor's SmartFile portal, completes the county's current form, signs it, and saves "
+                    "the submission receipt. You sign and submit your own appeal. The Assessor's rules allow pro se filing."
+                ),
+                "links": [ASSESSOR_APPEALS_URL, "https://www.cookcountyassessoril.gov/residential-appeals"],
+            },
+            {
+                "title": "File with the Board of Review when you choose or reach that stage",
+                "detail": (
+                    "Use the Board's current residential filing portal and township deadline. An individual taxpayer "
+                    "may represent themselves when the property is titled in their own name. Complete and personally "
+                    "sign the official complaint and submit the required evidence yourself. Do not file a duplicate "
+                    "complaint for the same PIN; the Board's initial valuation complaint controls."
+                ),
+                "links": [BOR_RESIDENTIAL_URL, BOR_RULES_URL, "https://appeals.cookcountyboardofreview.com/"],
+            },
+            {
+                "title": "Keep the receipt and watch for county notices",
+                "detail": (
+                    "Save the portal confirmation and check the county portal and mail for decisions or hearing notices. "
+                    "Glacier does not log in, monitor the county account, sign, submit, or contact the county for you."
+                ),
+                "links": [ASSESSOR_APPEALS_URL, BOR_RESIDENTIAL_URL],
+            },
+        ],
+        "notice": (
+            "This is a filing checklist based on linked county instructions, not legal advice or a county filing. "
+            "You decide whether and where to appeal, verify current rules and deadlines, review all records, and file yourself."
+        ),
+    }
+
+
+def _filing_guide_markdown(packet: dict[str, Any]) -> str:
+    guide = packet["filing_guide"]
+    lines = [
+        f"# Homeowner self-file guide — {packet.get('parcel_id', 'unknown parcel')}",
+        "",
+        f"County: {packet.get('county', COUNTY)}",
+        f"Packet as of: {packet.get('as_of', 'unknown')}",
+        "",
+        "## Who can use this guide",
+        guide["eligibility"],
+        "",
+        "## Steps",
+    ]
+    for index, step in enumerate(guide["steps"], 1):
+        lines += [f"{index}. **{step['title']}** — {step['detail']}", "   Official pages: " + " · ".join(step["links"])]
+    lines += ["", "## Your filing stays yours", guide["notice"], "", "Glacier did not file anything."]
+    return "\n".join(lines) + "\n"
+
+
+def _field_value(fields: dict[str, Any], key: str) -> Any:
+    entry = fields.get(key) or {}
+    value = entry.get("value")
+    if value in (None, "") or entry.get("uncertain") is True or float(entry.get("confidence", 0)) < 0.8:
+        return None
+    return value
+
+
+def _number(value: Any, *, kind: str = "money") -> float | None:
+    """Parse a positive finite amount or area using only its supported formats."""
+    if kind not in {"money", "area"} or value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if kind == "money" and cleaned.startswith("$"):
+            cleaned = cleaned[1:].strip()
+        # Thousands separators must occur in complete groups. Currency symbols
+        # are accepted only for money; scientific notation is intentionally not.
+        if not re.fullmatch(r"(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?", cleaned):
+            return None
+        cleaned = cleaned.replace(",", "")
+    elif isinstance(value, (int, float, Decimal)):
+        cleaned = str(value)
+    else:
+        return None
+    try:
+        number = Decimal(cleaned)
+        if not number.is_finite() or number <= 0:
+            return None
+        parsed = float(number)
+        return parsed if math.isfinite(parsed) and parsed > 0 else None
+    except (InvalidOperation, TypeError, ValueError, OverflowError):
+        return None
+
+
+def _day(value: Any) -> date | None:
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_pin(value: Any) -> str:
+    digits = re.sub(r"\D", "", str(value or ""))
+    return digits.zfill(14) if digits and len(digits) <= 14 else digits
+
+
+def find_roll_parcel(parcel_id: str, feed_rows: list[dict[str, Any]], *, on_date: date | None = None) -> dict[str, Any]:
+    """Find a parcel in the shared public-feed snapshot without inferring ownership."""
+    wanted = _normalize_pin(parcel_id)
+    match = next((row for row in feed_rows if _normalize_pin(row.get("record_id")) == wanted), None)
+    day = on_date or date.today()
+    if match is None:
+        return {"result": f"no match found in Cook County Assessor parcel roll as of {day.isoformat()}", "parcel": None}
+    data = match.get("data", {})
+    return {
+        "result": "match",
+        "parcel": {
+            "parcel_id": str(match["record_id"]),
+            "class": data.get("class"),
+            "township": data.get("township_name"),
+            "zip_code": data.get("zip_code"),
+            "tax_year": data.get("year"),
+            "source_url": match.get("source_url") or COUNTY_SOURCE_URL,
+            "fetched_at": match.get("fetched_at"),
+        },
+    }
+
+
+def build_packet(case: dict[str, Any], feed_rows: list[dict[str, Any]], *, today: date | None = None) -> dict[str, Any]:
+    """Read notice and sale evidence; uncertain or incomplete data stays with the customer."""
+    as_of = today or date.today()
+    parcel_result = find_roll_parcel(case.get("parcel_id", ""), feed_rows, on_date=as_of)
+    base: dict[str, Any] = {
+        "venture": "property-tax",
+        "county": case.get("county", COUNTY),
+        "parcel_id": str(case.get("parcel_id", "")),
+        "result": parcel_result["result"],
+        "status": "no_roll_match" if parcel_result["parcel"] is None else "needs_customer_confirmation",
+        "as_of": as_of.isoformat(),
+        "filing_submitted": False,
+        "filing_mode": "homeowner_self_file",
+        "filing_guide": homeowner_filing_guide(),
+        "legal_review_notice": "The customer decides whether the records support an appeal, confirms the requested value, signs, and submits the filing. This packet is not legal advice or a filing.",
+        "parcel": parcel_result["parcel"],
+        "comparables": [],
+        "customer_requested_value": None,
+        "uncertainties": [],
+    }
+    if parcel_result["parcel"] is None:
+        base["uncertainties"].append("Parcel was not found in the local Cook County feed snapshot; refresh the source and check the PIN.")
+        return base
+
+    notice_path = case.get("notice_path")
+    if not notice_path or not Path(notice_path).is_file():
+        base["uncertainties"].append("Customer's current assessment notice is missing.")
+    else:
+        notice = reader.read_document(notice_path, NOTICE_SCHEMA)
+        notice_pin = _field_value(notice.get("fields", {}), "parcel_id")
+        notice_source = case.get("notice_source_url") or str(notice_path)
+        assessed_value = _number(_field_value(notice.get("fields", {}), "assessed_value"), kind="money")
+        if notice_pin and _normalize_pin(notice_pin) != _normalize_pin(base["parcel_id"]):
+            base["uncertainties"].append("Notice PIN does not match the requested parcel.")
+        if assessed_value is None:
+            base["uncertainties"].append(
+                f"Notice assessed value from {notice_source} is missing, malformed, unsupported, non-finite, or not positive."
+            )
+        else:
+            base["assessment_notice"] = {"assessed_value": assessed_value, "source_path": str(notice_path), "source_url": case.get("notice_source_url"), "as_of": case.get("notice_date")}
+
+    notice_day = _day(case.get("notice_date"))
+    deadline = _day(case.get("deadline"))
+    if notice_day is None or deadline is None or deadline <= (notice_day or as_of):
+        base["uncertainties"].append("A valid notice date and later county deadline are required.")
+    elif deadline < as_of:
+        base["uncertainties"].append("The supplied appeal deadline has passed; confirm the current county deadline.")
+
+    subject_source = case.get("subject_square_feet_source_url") or "customer-provided subject_square_feet field"
+    subject_sqft = _number(case.get("subject_square_feet"), kind="area")
+    requested_source = case.get("customer_requested_value_source_url") or "customer-provided customer_requested_value field"
+    requested_value = _number(case.get("customer_requested_value"), kind="money")
+    if requested_value is None:
+        if case.get("customer_requested_value") in (None, ""):
+            base["uncertainties"].append("Customer has not supplied the value they want the county to consider.")
+        else:
+            base["uncertainties"].append(
+                f"Customer requested value from {requested_source} is malformed, unsupported, non-finite, or not positive."
+            )
+    else:
+        base["customer_requested_value"] = requested_value
+    comp_rows = case.get("comparables", [])
+    unit_values: list[float] = []
+    unit_value_sources: list[str] = []
+    for comp in comp_rows:
+        path = comp.get("path")
+        if not path or not Path(path).is_file():
+            base["uncertainties"].append("A comparable-sales document is missing.")
+            continue
+        extracted = reader.read_document(path, COMPARABLE_SCHEMA)
+        fields = extracted.get("fields", {})
+        source = comp.get("source_url") or str(path)
+        sale_date = _day(_field_value(fields, "sale_date"))
+        price = _number(_field_value(fields, "sale_price"), kind="money")
+        sqft = _number(_field_value(fields, "square_feet"), kind="area")
+        if not sale_date:
+            base["uncertainties"].append(f"Comparable at {source} has a missing or uncertain sale date.")
+        if price is None:
+            base["uncertainties"].append(
+                f"Comparable sale price at {source} is missing, malformed, unsupported, non-finite, or not positive."
+            )
+        if sqft is None:
+            base["uncertainties"].append(
+                f"Comparable area at {source} is missing, malformed, unsupported, non-finite, or not positive."
+            )
+        if not sale_date or price is None or sqft is None:
+            continue
+        unit_value = price / sqft
+        if not math.isfinite(unit_value) or unit_value <= 0:
+            base["uncertainties"].append(f"Comparable valuation arithmetic from {source} is outside the supported finite range.")
+            continue
+        age_limit = notice_day or as_of
+        if sale_date > age_limit or sale_date < age_limit - timedelta(days=365):
+            base["uncertainties"].append(f"Comparable at {comp.get('source_url', path)} is outside the 12 months before the notice date.")
+            continue
+        if not comp.get("arms_length_confirmed"):
+            base["uncertainties"].append(f"Customer must confirm this sale was arm's-length: {comp.get('source_url', path)}.")
+            continue
+        evidence = {
+            "sale_date": fields["sale_date"],
+            "sale_price": fields["sale_price"],
+            "square_feet": fields["square_feet"],
+            "source_url": comp.get("source_url"),
+            "arms_length_confirmed_by_customer": True,
+        }
+        base["comparables"].append(evidence)
+        unit_values.append(unit_value)
+        unit_value_sources.append(str(source))
+
+    if len(base["comparables"]) < 3:
+        base["uncertainties"].append("At least three recent, source-linked, customer-confirmed arm's-length sales are required.")
+    if len(set(comp.get("source_url") for comp in base["comparables"])) != len(base["comparables"]):
+        base["uncertainties"].append("Comparable sales need distinct source URLs.")
+    if subject_sqft is None:
+        base["uncertainties"].append(
+            f"Subject property area from {subject_source} is missing, malformed, unsupported, non-finite, or not positive."
+        )
+    elif len(base["comparables"]) >= 3:
+        estimate_value = statistics.median(unit_values) * subject_sqft
+        if not math.isfinite(estimate_value) or estimate_value <= 0:
+            source_list = ", ".join(unit_value_sources)
+            base["uncertainties"].append(
+                f"Comparable estimate arithmetic from {source_list} and {subject_source} is outside the supported finite range."
+            )
+        else:
+            base["comparable_value_estimate"] = round(estimate_value)
+            base["estimate_basis"] = "median sale price per square foot × customer-provided subject area; customer review required"
+
+    base["result"] = "uncertain — please check" if base["uncertainties"] else "match"
+    base["status"] = "needs_customer_confirmation" if base["uncertainties"] else "ready_for_customer_review"
+    if base["result"] == "match":
+        base["filing_instructions"] = "Review the county's current instructions, confirm the requested value and comparable selection, sign the county form, and submit it through the county's approved channel before the deadline."
+    return base
+
+
+def render_packet(packet: dict[str, Any], output_path: str | Path) -> Path:
+    target = Path(output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    packet.setdefault("filing_mode", "homeowner_self_file")
+    packet.setdefault("filing_guide", homeowner_filing_guide())
+    guide_path = target.with_name(f"{target.stem}-filing-guide.md")
+    packet["filing_guide_path"] = str(guide_path)
+    target.write_text(json.dumps(packet, indent=2, ensure_ascii=False), encoding="utf-8")
+    markdown = [
+        f"# Property tax evidence packet — {packet.get('parcel_id', 'unknown parcel')}",
+        "",
+        f"Result: **{packet['result']}**",
+        f"County: {packet.get('county')}",
+        f"As of: {packet.get('as_of')}",
+        f"County roll evidence: {packet.get('parcel')}",
+        f"Customer requested value: {packet.get('customer_requested_value')}",
+        f"Comparable value estimate: {packet.get('comparable_value_estimate', 'uncertain — please check')}",
+        "",
+        "## Comparable sales",
+    ]
+    for index, comp in enumerate(packet.get("comparables", []), 1):
+        markdown.append(f"{index}. Sale date `{comp['sale_date']['value']}` (page {comp['sale_date']['page']}), price `{comp['sale_price']['value']}` (page {comp['sale_price']['page']}), area `{comp['square_feet']['value']}` (page {comp['square_feet']['page']}); source: {comp['source_url']}; arm's-length status confirmed by customer.")
+    markdown += ["", "## Customer review", packet["legal_review_notice"]]
+    if packet.get("uncertainties"):
+        markdown += ["", "## Please check", *[f"- {item}" for item in packet["uncertainties"]]]
+    if packet.get("filing_instructions"):
+        markdown += ["", packet["filing_instructions"]]
+    markdown += ["", "---", "", _filing_guide_markdown(packet)]
+    target.with_suffix(".md").write_text("\n".join(markdown) + "\n", encoding="utf-8")
+    guide_path.write_text(_filing_guide_markdown(packet), encoding="utf-8")
+    return target
+
+
+def prepare_postcard(record: dict[str, Any], *, output_dir: str | Path | None = None) -> dict[str, Any]:
+    """Render a local proof with the shared mail block; this function never sends mail."""
+    sender = str(record.get("sender", "Property Tax Packet Service"))
+    first_name = html.escape(str(record.get("name", "Property owner")))
+    parcel_id = html.escape(str(record.get("parcel_id", "")))
+    source = html.escape(str(record.get("source_url", COUNTY_SOURCE_URL)), quote=True)
+    front = f"<article><h1>Cook County assessment packet</h1><p>Prepared by {html.escape(sender)}.</p><p>Parcel reference: {parcel_id}.</p></article>"
+    back = f"<article><p>Hello {first_name},</p><p>We prepare customer-reviewed property-tax evidence packets using county public records and recent comparable sales.</p><p>Learn more: <a href=\"{source}\">public source record</a></p><p>From {html.escape(sender)}. This is a private business offer, not a county notice.</p></article>"
+    destination = str(output_dir) if output_dir else None
+    address = record.get("address", {})
+    verification = mail.verify_address(address)
+    result = mail.postcard(front, back, address, {"name": sender, **record.get("from_address", {})}, approval_id=None, output_dir=destination)
+    result["address_verification"] = verification
+    result["external_mail_sent"] = False
+    return result
+
+
+def refresh_roll() -> dict[str, Any]:
+    """Refresh the county dataset through the shared government feeds block."""
+    return {"source_id": COUNTY_SOURCE, **sync(COUNTY_SOURCE)}
+
+
+def retention_plan(closed_cases_path: str | Path, *, today: date | None = None) -> dict[str, Any]:
+    """List closed-case uploads eligible for removal; this function never deletes files."""
+    closed_file = Path(closed_cases_path).expanduser().resolve()
+    incoming_root = (Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / "property-tax" / "incoming").resolve()
+    records = json.loads(closed_file.read_text(encoding="utf-8")) if closed_file.exists() else []
+    now = today or date.today()
+    eligible = []
+    for case in records:
+        if case.get("keep") is True or not case.get("closed_on"):
+            continue
+        closed_on = _day(case["closed_on"])
+        if closed_on is None or (now - closed_on).days < 30:
+            continue
+        for supplied in case.get("uploads", []):
+            path = Path(supplied).expanduser().resolve()
+            if not path.is_relative_to(incoming_root):
+                raise ValueError(f"retention path must stay under the venture incoming folder: {path}")
+            eligible.append({"case_id": str(case.get("case_id", "")), "path": str(path), "exists": path.is_file(), "closed_on": closed_on.isoformat()})
+    eligible = [row for row in eligible if row["exists"]]
+    digest = hashlib.sha256(json.dumps(eligible, sort_keys=True).encode()).hexdigest()
+    return {"as_of": now.isoformat(), "retention_days": 30, "eligible": eligible, "sha256": digest, "deletes_files": False}
+
+
+def execute_retention(plan_path: str | Path, approval_id: str) -> dict[str, Any]:
+    """Delete only files in a reviewed 30-day plan after a non-empty Glacier approval ID."""
+    if not approval_id.strip():
+        raise ValueError("approval_id is required before deleting customer uploads")
+    plan = json.loads(Path(plan_path).read_text(encoding="utf-8"))
+    eligible = plan.get("eligible", [])
+    digest = hashlib.sha256(json.dumps(eligible, sort_keys=True).encode()).hexdigest()
+    if digest != plan.get("sha256"):
+        raise ValueError("retention plan changed after review; create a new plan and approval")
+    incoming_root = (Path(os.environ.get("GLACIER_HOME", "data")) / "ventures" / "property-tax" / "incoming").resolve()
+    deleted = []
+    for row in eligible:
+        path = Path(row["path"]).resolve()
+        if not path.is_relative_to(incoming_root):
+            raise ValueError(f"retention path must stay under the venture incoming folder: {path}")
+        if path.is_file():
+            path.unlink()
+            deleted.append(str(path))
+    return {"deleted": deleted, "approval_id": approval_id.strip(), "plan_sha256": digest}
+
+
+def prepare_case(case_path: str, output_path: str) -> dict[str, Any]:
+    case = json.loads(Path(case_path).read_text(encoding="utf-8"))
+    rows = query(COUNTY_SOURCE)
+    packet = build_packet(case, rows)
+    target = Path(output_path)
+    packet["packet_path"] = str(target)
+    packet["instructions_path"] = str(target.with_suffix(".md"))
+    packet["filing_guide_path"] = str(target.with_name(f"{target.stem}-filing-guide.md"))
+    rendered = render_packet(packet, target)
+    if case.get("signer"):
+        packet["signature_request"] = customer.request_signature(str(rendered.with_suffix(".md")), case["signer"])
+    if case.get("notice_date") and case.get("deadline"):
+        deadlines.add(
+            str(case.get("case_id") or case.get("parcel_id")),
+            str(case["notice_date"]),
+            f"{case['notice_date']}|{case['deadline']}",
+            f"{COUNTY} appeal deadline for parcel {case.get('parcel_id')}",
+        )
+    target.write_text(json.dumps(packet, indent=2, ensure_ascii=False), encoding="utf-8")
+    return packet
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("refresh-roll")
+    case = commands.add_parser("prepare-case")
+    case.add_argument("--case", required=True)
+    case.add_argument("--output", required=True)
+    postcard = commands.add_parser("postcard-preview")
+    postcard.add_argument("--record", required=True)
+    postcard.add_argument("--output-dir", required=True)
+    retention = commands.add_parser("retention-plan")
+    retention.add_argument("--closed-cases", required=True)
+    retention.add_argument("--output", required=True)
+    cleanup = commands.add_parser("execute-cleanup")
+    cleanup.add_argument("--plan", required=True)
+    cleanup.add_argument("--approval-id", required=True)
+    args = parser.parse_args()
+    if args.command == "refresh-roll":
+        result = refresh_roll()
+    elif args.command == "prepare-case":
+        result = prepare_case(args.case, args.output)
+    elif args.command == "postcard-preview":
+        record = json.loads(Path(args.record).read_text(encoding="utf-8"))
+        result = prepare_postcard(record, output_dir=args.output_dir)
+    elif args.command == "retention-plan":
+        result = retention_plan(args.closed_cases)
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
+    else:
+        result = execute_retention(args.plan, args.approval_id)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

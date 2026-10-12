@@ -1,0 +1,130 @@
+.FF.....F.F....                                                          [100%]
+=================================== FAILURES ===================================
+_____ test_missing_or_unsigned_terms_never_create_a_payable_amount[terms0] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-50/test_missing_or_unsigned_terms0')
+terms = {'rate': '0.125'}
+
+    @pytest.mark.parametrize("terms", [
+        {"rate": "0.125"},
+        {**_signed_terms(), "signed": False},
+    ])
+    def test_missing_or_unsigned_terms_never_create_a_payable_amount(tmp_path, terms):
+        completed, report = _run(
+            tmp_path, etsy=[_etsy("etsy-no-signature", adjusted="120.00")], terms=terms
+        )
+>       _assert_uncertain_without_payable_amount(completed, report)
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:132:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+completed = CompletedProcess(args=['/home/glacier/w/glacier-lean/.venv/bin/python', '/home/glacier/w/workers/gf-C-CARPENTER-COMMIS... "/tmp/pytest-of-glacier/pytest-50/test_missing_or_unsigned_terms0/commission.json", "published": false}\n', stderr='')
+report = {'result': 'match', 'eligible_sales': 1, 'eligible_orders': [{'platform': 'Etsy', 'order_id': 'etsy-no-signature', 'amount': 120.0, 'currency': 'USD'}], 'gross_sales': 120.0, ...}
+
+    def _assert_uncertain_without_payable_amount(completed, report):
+        assert completed.returncode == 0, completed.stderr
+        assert report is not None
+>       assert "uncertain" in report["result"].casefold()
+E       AssertionError: assert 'uncertain' in 'match'
+E        +  where 'match' = <built-in method casefold of str object at 0x749ba59085a0>()
+E        +    where <built-in method casefold of str object at 0x749ba59085a0> = 'match'.casefold
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:106: AssertionError
+_____ test_missing_or_unsigned_terms_never_create_a_payable_amount[terms1] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-50/test_missing_or_unsigned_terms1')
+terms = {'signed': False, 'rate': '0.125', 'eligible_amount': 'item subtotal after discounts', 'include_shipping': False, ...}
+
+    @pytest.mark.parametrize("terms", [
+        {"rate": "0.125"},
+        {**_signed_terms(), "signed": False},
+    ])
+    def test_missing_or_unsigned_terms_never_create_a_payable_amount(tmp_path, terms):
+        completed, report = _run(
+            tmp_path, etsy=[_etsy("etsy-no-signature", adjusted="120.00")], terms=terms
+        )
+>       _assert_uncertain_without_payable_amount(completed, report)
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:132:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+completed = CompletedProcess(args=['/home/glacier/w/glacier-lean/.venv/bin/python', '/home/glacier/w/workers/gf-C-CARPENTER-COMMIS... "/tmp/pytest-of-glacier/pytest-50/test_missing_or_unsigned_terms1/commission.json", "published": false}\n', stderr='')
+report = {'result': 'match', 'eligible_sales': 1, 'eligible_orders': [{'platform': 'Etsy', 'order_id': 'etsy-no-signature', 'amount': 100.0, 'currency': 'USD'}], 'gross_sales': 100.0, ...}
+
+    def _assert_uncertain_without_payable_amount(completed, report):
+        assert completed.returncode == 0, completed.stderr
+        assert report is not None
+>       assert "uncertain" in report["result"].casefold()
+E       AssertionError: assert 'uncertain' in 'match'
+E        +  where 'match' = <built-in method casefold of str object at 0x749ba5908e40>()
+E        +    where <built-in method casefold of str object at 0x749ba5908e40> = 'match'.casefold
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:106: AssertionError
+___ test_incomplete_signed_terms_never_create_a_payable_amount[refund_rule] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-50/test_incomplete_signed_terms_n5')
+missing = 'refund_rule'
+
+    @pytest.mark.parametrize("missing", [
+        "rate", "eligible_amount", "include_shipping", "include_sales_tax",
+        "deduct_platform_fees", "refund_rule", "rounding",
+    ])
+    def test_incomplete_signed_terms_never_create_a_payable_amount(tmp_path, missing):
+        terms = _signed_terms()
+        del terms[missing]
+        completed, report = _run(tmp_path, etsy=[_etsy("etsy-incomplete")], terms=terms)
+        if missing == "rate":
+            assert completed.returncode != 0
+            assert report is None
+        else:
+>           _assert_uncertain_without_payable_amount(completed, report)
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:147:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+completed = CompletedProcess(args=['/home/glacier/w/glacier-lean/.venv/bin/python', '/home/glacier/w/workers/gf-C-CARPENTER-COMMIS... "/tmp/pytest-of-glacier/pytest-50/test_incomplete_signed_terms_n5/commission.json", "published": false}\n', stderr='')
+report = {'result': 'match', 'eligible_sales': 1, 'eligible_orders': [{'platform': 'Etsy', 'order_id': 'etsy-incomplete', 'amount': 100.0, 'currency': 'USD'}], 'gross_sales': 100.0, ...}
+
+    def _assert_uncertain_without_payable_amount(completed, report):
+        assert completed.returncode == 0, completed.stderr
+        assert report is not None
+>       assert "uncertain" in report["result"].casefold()
+E       AssertionError: assert 'uncertain' in 'match'
+E        +  where 'match' = <built-in method casefold of str object at 0x749ba59099e0>()
+E        +    where <built-in method casefold of str object at 0x749ba59099e0> = 'match'.casefold
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:106: AssertionError
+__ test_conflicting_order_amount_columns_are_uncertain_even_with_signed_basis __
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-50/test_conflicting_order_amount_0')
+
+    def test_conflicting_order_amount_columns_are_uncertain_even_with_signed_basis(tmp_path):
+        # Both columns claim the order total but disagree. The signed terms name the
+        # order-total basis, but the export still does not identify which value is true.
+        row = _etsy("etsy-conflicting-columns", total="120.00", duplicate_total="121.00",
+                     adjusted="120.00")
+        terms = _signed_terms(eligible_amount="order total", refund_rule="exclude refunded orders")
+        completed, report = _run(tmp_path, etsy=[row], terms=terms)
+>       _assert_uncertain_without_payable_amount(completed, report)
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:157:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+completed = CompletedProcess(args=['/home/glacier/w/glacier-lean/.venv/bin/python', '/home/glacier/w/workers/gf-C-CARPENTER-COMMIS... "/tmp/pytest-of-glacier/pytest-50/test_conflicting_order_amount_0/commission.json", "published": false}\n', stderr='')
+report = {'result': 'match', 'eligible_sales': 1, 'eligible_orders': [{'platform': 'Etsy', 'order_id': 'etsy-conflicting-columns', 'amount': 100.0, 'currency': 'USD'}], 'gross_sales': 100.0, ...}
+
+    def _assert_uncertain_without_payable_amount(completed, report):
+        assert completed.returncode == 0, completed.stderr
+        assert report is not None
+>       assert "uncertain" in report["result"].casefold()
+E       AssertionError: assert 'uncertain' in 'match'
+E        +  where 'match' = <built-in method casefold of str object at 0x749ba590a7c0>()
+E        +    where <built-in method casefold of str object at 0x749ba590a7c0> = 'match'.casefold
+
+ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py:106: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py::test_missing_or_unsigned_terms_never_create_a_payable_amount[terms0]
+FAILED ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py::test_missing_or_unsigned_terms_never_create_a_payable_amount[terms1]
+FAILED ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py::test_incomplete_signed_terms_never_create_a_payable_amount[refund_rule]
+FAILED ventures/carpenter-goods/tests/acceptance/test_C-CARPENTER-COMMISSION-TESTER.py::test_conflicting_order_amount_columns_are_uncertain_even_with_signed_basis
+4 failed, 11 passed in 0.68s

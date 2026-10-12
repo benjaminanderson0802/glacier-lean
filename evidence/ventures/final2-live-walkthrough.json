@@ -1,0 +1,507 @@
+{
+  "api": "http://127.0.0.1:39492/api/ventures",
+  "ventures_visible": 12,
+  "dry_runs_started": 12,
+  "step_order_links_match_manifests": true,
+  "ventures": [
+    {
+      "slug": "apify-tools",
+      "name": "apify data tools \u2014 mississippi contractor license status",
+      "env_id": "apify-ms-license-daily-canary",
+      "run_id": "77a6c29a85e5",
+      "dry_run": true,
+      "status": "done",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "set up your apify developer account",
+          "links": [
+            "https://console.apify.com/account/integrations"
+          ]
+        },
+        {
+          "title": "deploy the mississippi license checker",
+          "links": [
+            "https://docs.apify.com/cli/docs/installation"
+          ]
+        },
+        {
+          "title": "review and publish the first listing",
+          "links": [
+            "https://console.apify.com/actors"
+          ]
+        }
+      ],
+      "outputs": {
+        "canaries": "{\n  \"status\": \"healthy\",\n  \"checked_at\": \"2026-10-10T09:00:28+00:00\",\n  \"consecutive_failed_runs\": 0,\n  \"repair_attempts\": 0,\n  \"retire_after_repair_attempts\": 2,\n  \"reason\": \"All three Mississippi contractor canaries matched the recorded board values.\",\n  \"failed_license_numbers\": [],\n  \"results\": [\n    {\n      \"license_number\": \"22649\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"22649\",\n        \"business_name\": \"10TENCONSTRUCTION, LLC\",\n        \"status\": \"Licensed\",\n        \"expiration_date\": \"2027-05-07\",\n        \"source_url\": \"https://search.msboc.us/Detail.cfm?ContractorID=54380&ContractorType=Residential&varDataSource=BOCRes\",\n        \"checked_at\": \"2026-10-10T09:00:23+00:00\"\n      }\n    },\n    {\n      \"license_number\": \"18583\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"18583\",\n        \"business_name\": \"1ST CHOICE CONSTRUCTION SERVICES, LLC\",\n        \"status\": \"Licensed\",\n        \"expiration_date\": \"2027-03-18\",\n        \"source_url\": \"https://search.msboc.us/Detail.cfm?ContractorID=48601&ContractorType=Residential&varDataSource=BOCRes\",\n        \"checked_at\": \"2026-10-10T09:00:24+00:00\"\n      }\n    },\n    {\n      \"license_number\": \"21881\",\n      \"ok\": true,\n      \"actual\": {\n        \"outcome\": \"match\",\n        \"verification_state\": \"verified\",\n        \"license_number\": \"21881\",\n        \"business_name\": \"3H CONSTRUCTION LLC\",\n        \"status\": \"Licensed\",\n        \"expiration_date\": \"2027-10-27\",\n        \"source_url\": \"https://search.msboc.us/Detail.cfm?ContractorID=53134&ContractorType=Residential&varDataSource=BOCRes\",\n        \"checked_at\": \"2026-10-10T09:00:26+00:00\"\n      }\n    }\n  ]\n}\n",
+        "canary_result": "yes",
+        "daily": "",
+        "status_note": "ventures/apify-tools/canary-2026-10-10.md (commit c2e66297)"
+      },
+      "node_states": {
+        "canaries": "done",
+        "canary_result": "done",
+        "daily": "done",
+        "status_note": "done"
+      }
+    },
+    {
+      "slug": "carpenter-goods",
+      "name": "carpenter's goods",
+      "env_id": "carpenter-prepare-listing",
+      "run_id": "b3cc381c7457",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "agree the commission in writing",
+          "links": [
+            "https://www.etsy.com/your/shops/me/dashboard"
+          ]
+        },
+        {
+          "title": "review and publish the first listing",
+          "links": [
+            "https://www.etsy.com/your/shops/me/dashboard",
+            "https://admin.shopify.com/"
+          ]
+        },
+        {
+          "title": "provide product and sales records",
+          "links": [
+            "https://www.etsy.com/your/shops/me/dashboard",
+            "https://admin.shopify.com/"
+          ]
+        }
+      ],
+      "outputs": {
+        "draft_ready": "no",
+        "prepare_draft": "Traceback (most recent call last):\n  File \"/home/glacier/w/workers/gf-I4/ventures/carpenter-goods/scripts/listing_prep.py\", line 176, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/carpenter-goods/scripts/listing_prep.py\", line 155, in main\n    result = prepare_listing(_read_json(args.product), _read_json(args.comparables))\n                             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/carpenter-goods/scripts/listing_prep.py\", line 136, in _read_json\n    return json.loads(path.read_text(encoding=\"utf-8\"))\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/carpenter-goods/incoming/product.json'\n"
+      },
+      "node_states": {
+        "approval_note": "skipped",
+        "approve_listing": "skipped",
+        "declined_note": "skipped",
+        "draft_ready": "done",
+        "prepare_draft": "failed"
+      }
+    },
+    {
+      "slug": "coop-postcards",
+      "name": "co-op claims + street postcards",
+      "env_id": "street-postcard-proof",
+      "run_id": "b6041a97aeac",
+      "dry_run": true,
+      "status": "waiting",
+      "waiting_on": "mail_approval",
+      "your_steps": [
+        {
+          "title": "connect jobber for the co-op app",
+          "links": [
+            "https://developer.getjobber.com/"
+          ]
+        },
+        {
+          "title": "review the first brand claim",
+          "links": [
+            "https://www.jobber.com/"
+          ]
+        },
+        {
+          "title": "choose routes and approve the first postcard",
+          "links": [
+            "https://dashboard.lob.com/",
+            "https://eddm.usps.com/"
+          ]
+        }
+      ],
+      "outputs": {
+        "november": "",
+        "proof": "{\"status\": \"idle\", \"detail\": \"No route card is waiting; no action taken.\"}\n"
+      },
+      "node_states": {
+        "lob_test": "pending",
+        "mail_approval": "waiting",
+        "november": "done",
+        "proof": "done"
+      }
+    },
+    {
+      "slug": "cpsc-prep",
+      "name": "cpsc data prep",
+      "env_id": "cpsc-batch-prep",
+      "run_id": "f83da5266c9a",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "your step: get the trade lawyer's written opinion",
+          "links": [
+            "https://www.cpsc.gov/efiling/importers"
+          ]
+        },
+        {
+          "title": "your step: review and certify this cpsc batch",
+          "links": [
+            "https://www.cpsc.gov/efiling/importers"
+          ]
+        },
+        {
+          "title": "your step: approve the first broker contract",
+          "links": [
+            "https://www.cpsc.gov/eFiling-Document-Library",
+            "#/settings/secrets"
+          ]
+        }
+      ],
+      "outputs": {
+        "prepare-draft": "cpsc-prep: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/cpsc-prep/incoming/batch.json'\n"
+      },
+      "node_states": {
+        "batch-status": "skipped",
+        "generate-upload": "skipped",
+        "prepare-draft": "failed",
+        "review-certify": "skipped"
+      }
+    },
+    {
+      "slug": "dibbs-supply",
+      "name": "dibbs government supply",
+      "env_id": "dibbs-daily-prep",
+      "run_id": "5624a4bfe6b5",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "your step: complete sam.gov and cage registration",
+          "links": [
+            "https://sam.gov/entity-registration",
+            "https://cage.dla.mil/",
+            "https://www.dibbs.bsm.dla.mil/rfq/"
+          ]
+        },
+        {
+          "title": "your step: request supplier quotes and approve parts spending",
+          "links": [
+            "https://www.dibbs.bsm.dla.mil/rfq/",
+            "https://sam.gov/entity-registration",
+            "https://cage.dla.mil/"
+          ]
+        },
+        {
+          "title": "your step: sign and submit each bid",
+          "links": [
+            "https://www.dibbs.bsm.dla.mil/rfq/",
+            "https://sam.gov/entity-registration",
+            "https://cage.dla.mil/"
+          ]
+        }
+      ],
+      "outputs": {
+        "daily": "",
+        "prepare": "Traceback (most recent call last):\n  File \"/home/glacier/w/workers/gf-I4/ventures/dibbs-supply/scripts/dibbs_supply.py\", line 332, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/dibbs-supply/scripts/dibbs_supply.py\", line 324, in main\n    result = prepare_bids(args.solicitations, args.quotes, args.output) if args.command == \"prepare\" else prepare_from_feed(args.output, args.solicitations, args.quotes)\n                                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/dibbs-supply/scripts/dibbs_supply.py\", line 282, in prepare_from_feed\n    owner_rows = _read_json(solicitations_path)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/dibbs-supply/scripts/dibbs_supply.py\", line 30, in _read_json\n    return json.loads(path.read_text(encoding=\"utf-8\"))\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/dibbs-supply/incoming/solicitations.json'\n",
+        "ready": "no",
+        "uncertain_note": "ventures/dibbs-supply/reviews/uncertain-5624a4bfe6b5.md (commit 4f68774e)"
+      },
+      "node_states": {
+        "daily": "done",
+        "owner_review": "skipped",
+        "parts_spend_approval": "skipped",
+        "prepare": "failed",
+        "purchase_declined": "skipped",
+        "ready": "done",
+        "review_note": "skipped",
+        "uncertain_note": "done"
+      }
+    },
+    {
+      "slug": "fda-cosmetics",
+      "name": "fda cosmetics listing preparation",
+      "env_id": "prepare-listing-packet",
+      "run_id": "ec35b1ebf3f3",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "connect shopify and provide product details",
+          "links": [
+            "https://shopify.dev/docs/apps",
+            "https://shopify.dev/docs/apps/build"
+          ]
+        },
+        {
+          "title": "review and submit the fda listing",
+          "links": [
+            "https://direct.fda.gov/",
+            "https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing"
+          ]
+        },
+        {
+          "title": "review listing deadlines and annual updates",
+          "links": [
+            "https://direct.fda.gov/apex/f?p=100:103:::::P103_GUIDE:26"
+          ]
+        }
+      ],
+      "outputs": {
+        "packet_ready": "no",
+        "prepare_packet": "Traceback (most recent call last):\n  File \"/home/glacier/w/workers/gf-I4/ventures/fda-cosmetics/scripts/listing_prep.py\", line 311, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/fda-cosmetics/scripts/listing_prep.py\", line 297, in main\n    result = _prepare_from_shopify(args.shop, args.details, args.output, args.as_of)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/fda-cosmetics/scripts/listing_prep.py\", line 254, in _prepare_from_shopify\n    details = json.loads(details_path.read_text(encoding=\"utf-8\"))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/fda-cosmetics/incoming/brand-details.json'\n"
+      },
+      "node_states": {
+        "customer_submit": "skipped",
+        "packet_ready": "done",
+        "prepare_packet": "failed"
+      }
+    },
+    {
+      "slug": "freight-claims",
+      "name": "freight claims",
+      "env_id": "freight-prepare-claim",
+      "run_id": "049fa6a88aa4",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "connect shipstation and approve the first listing",
+          "links": [
+            "https://docs.shipstation.com/",
+            "https://docs.shipstation.com/authentication",
+            "https://docs.shipstation.com/rate-limits"
+          ]
+        },
+        {
+          "title": "review the first ten claim packets",
+          "links": [
+            "https://www.shipstation.com/"
+          ]
+        },
+        {
+          "title": "review and respond to each claim",
+          "links": [
+            "https://www.shipstation.com/"
+          ]
+        }
+      ],
+      "outputs": {
+        "prepare_packet": "{\"result\": \"uncertain \\u2014 please check\", \"error\": \"[Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/freight-claims/incoming/claim-intake.json'\"}\n",
+        "upload_instructions": "ventures/freight-claims/incoming/README.md (commit df48c29c)"
+      },
+      "node_states": {
+        "approve_customer_submission": "skipped",
+        "owner_first_ten": "skipped",
+        "packet_note": "skipped",
+        "prepare_packet": "failed",
+        "record_owner_review": "skipped",
+        "upload_instructions": "done"
+      }
+    },
+    {
+      "slug": "osha-filing",
+      "name": "osha 300a filing preparation",
+      "env_id": "prepare-300a",
+      "run_id": "1c36ef2efc7f",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "confirm coverage and establishment details",
+          "links": [
+            "https://www.osha.gov/recordkeeping"
+          ]
+        },
+        {
+          "title": "review, certify, and submit",
+          "links": [
+            "https://www.osha.gov/injuryreporting/ita"
+          ]
+        },
+        {
+          "title": "post the signed summary",
+          "links": [
+            "https://www.osha.gov/recordkeeping"
+          ]
+        }
+      ],
+      "outputs": {
+        "intake": "$GLACIER_HOME/ventures/osha-filing/incoming/intake.json (commit 483e5445)",
+        "prepare": "Traceback (most recent call last):\n  File \"/home/glacier/w/workers/gf-I4/ventures/osha-filing/scripts/filing.py\", line 106, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/osha-filing/scripts/filing.py\", line 98, in main\n    result = prepare_300a(json.loads(args.intake.read_text(encoding=\"utf-8\")), args.output, as_of=args.as_of)\n                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/osha-filing/incoming/intake.json'\n"
+      },
+      "node_states": {
+        "intake": "done",
+        "prepare": "failed",
+        "review": "skipped"
+      }
+    },
+    {
+      "slug": "property-tax",
+      "name": "property tax appeals",
+      "env_id": "property-tax-prepare-packet",
+      "run_id": "6091e95f9b01",
+      "dry_run": true,
+      "status": "failed",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "keep launch disabled until cook county rules are confirmed",
+          "links": [
+            "https://www.cookcountyassessor.com/appeals"
+          ]
+        },
+        {
+          "title": "future texas expansion (not required for cook county launch)",
+          "links": [
+            "https://www.tdlr.texas.gov/ptc/"
+          ]
+        },
+        {
+          "title": "review the first postcard and mailing list",
+          "links": [
+            "https://www.cookcountyassessor.com/appeals"
+          ]
+        }
+      ],
+      "outputs": {
+        "packet_failed": "ventures/property-tax/reviews/packet-failed-6091e95f9b01.md (commit ebdd5d3b)",
+        "packet_ready": "no",
+        "prepare_packet": "Traceback (most recent call last):\n  File \"/home/glacier/w/workers/gf-I4/ventures/property-tax/scripts/property_tax.py\", line 336, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/property-tax/scripts/property_tax.py\", line 321, in main\n    result = prepare_case(args.case, args.output)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/property-tax/scripts/property_tax.py\", line 281, in prepare_case\n    case = json.loads(Path(case_path).read_text(encoding=\"utf-8\"))\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/property-tax/incoming/case.json'\n"
+      },
+      "node_states": {
+        "packet_failed": "done",
+        "packet_handoff": "skipped",
+        "packet_not_approved": "skipped",
+        "packet_ready": "done",
+        "prepare_packet": "failed",
+        "review_packet": "skipped"
+      }
+    },
+    {
+      "slug": "recall-checker",
+      "name": "recall checker",
+      "env_id": "recall-batch-check",
+      "run_id": "0d740bcce652",
+      "dry_run": true,
+      "status": "done",
+      "waiting_on": null,
+      "your_steps": [
+        {
+          "title": "review the first 50 recall pages",
+          "links": [
+            "https://www.cpsc.gov/Recalls"
+          ]
+        },
+        {
+          "title": "submit the chrome extension listing",
+          "links": [
+            "https://chrome.google.com/webstore/devconsole"
+          ]
+        },
+        {
+          "title": "set up test prices and review plan wording",
+          "links": [
+            "https://dashboard.stripe.com/test/products",
+            "#/settings/secrets"
+          ]
+        }
+      ],
+      "outputs": {
+        "check_done": "no",
+        "check_inventory": "Traceback (most recent call last):\n  File \"/home/glacier/w/workers/gf-I4/ventures/recall-checker/scripts/recall.py\", line 63, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/recall-checker/scripts/recall.py\", line 54, in main\n    path = process_csv(args.input, out, rows, as_of=date.today().isoformat())\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/glacier/w/workers/gf-I4/ventures/recall_checker.py\", line 127, in process_csv\n    with source.open(newline=\"\", encoding=\"utf-8-sig\") as src:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/glacier-i4-final2/ventures/recall-checker/incoming/inventory.csv'\n"
+      },
+      "node_states": {
+        "check_done": "done",
+        "check_inventory": "failed",
+        "review_note": "skipped",
+        "review_results": "skipped"
+      }
+    },
+    {
+      "slug": "utility-audits",
+      "name": "utility audits",
+      "env_id": "utility-audit-calculator",
+      "run_id": "794127fa57ed",
+      "dry_run": true,
+      "status": "waiting",
+      "waiting_on": "confirm_state",
+      "your_steps": [
+        {
+          "title": "confirm indiana as the launch state",
+          "links": [
+            "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/",
+            "https://www.in.gov/dor/files/sib11.pdf",
+            "https://www.in.gov/dor/files/sib29.pdf"
+          ]
+        },
+        {
+          "title": "provide seller-level and meter records",
+          "links": [
+            "https://forms.in.gov/Download.aspx?id=16301",
+            "https://www.in.gov/dor/files/sib11.pdf",
+            "https://www.in.gov/dor/files/sib29.pdf"
+          ]
+        },
+        {
+          "title": "review, sign, and submit the application",
+          "links": [
+            "https://forms.in.gov/Download.aspx?id=16301",
+            "https://www.in.gov/dor/i-am-a/business-corp/utility-sales-tax-exemption/"
+          ]
+        }
+      ],
+      "outputs": {},
+      "node_states": {
+        "approved_note": "pending",
+        "calculate": "pending",
+        "confirm_state": "waiting",
+        "declined_note": "pending",
+        "draft_ready": "pending",
+        "review_draft": "pending"
+      }
+    },
+    {
+      "slug": "warranty",
+      "name": "warranty registration",
+      "env_id": "daily-deadlines",
+      "run_id": "be874836138d",
+      "dry_run": true,
+      "status": "waiting",
+      "waiting_on": "review_draft",
+      "your_steps": [
+        {
+          "title": "connect a jobber test account",
+          "links": [
+            "https://developer.getjobber.com/",
+            "https://developer.getjobber.com/docs/"
+          ]
+        },
+        {
+          "title": "review each brand's portal terms",
+          "links": [
+            "https://www.trane.com/residential/en/resources/warranty-and-registration/",
+            "https://www.carrier.com/residential/en/us/products/warranties/"
+          ]
+        },
+        {
+          "title": "review the first listing and homeowner emails",
+          "links": [
+            "https://developer.getjobber.com/"
+          ]
+        }
+      ],
+      "outputs": {
+        "check_deadlines": "{\n  \"alerts\": [],\n  \"result\": \"no match found in local warranty intake as of 2026-10-10\",\n  \"units\": []\n}\n",
+        "daily": ""
+      },
+      "node_states": {
+        "check_deadlines": "done",
+        "daily": "done",
+        "review_draft": "waiting"
+      }
+    }
+  ]
+}

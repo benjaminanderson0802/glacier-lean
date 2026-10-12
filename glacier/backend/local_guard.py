@@ -27,11 +27,34 @@ def _allowed_origin(origin: str, request) -> bool:
         return False
     if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1"}:
         return False
+    if parsed.username is not None or parsed.password is not None or parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
+        return False
     host = request.headers.get("host", "").rsplit(":", 1)[0].strip("[]").lower()
     own_port = request.url.port
     if parsed.hostname.lower() == host and port == own_port:
         return True
-    return os.environ.get("GLACIER_DEV") == "1" and port in {5173, 4173}
+    if os.environ.get("GLACIER_DEV") != "1":
+        return False
+    if port in {5173, 4173}:
+        return True
+    # Dynamic Vite/test ports are opt-in and exact. Never accept a non-loopback
+    # hostname or a different origin just because development mode is enabled.
+    configured = os.environ.get("GLACIER_DEV_ORIGINS", "")
+    for allowed in configured.split(","):
+        allowed = allowed.strip()
+        if not allowed:
+            continue
+        try:
+            candidate = urlsplit(allowed)
+            candidate_port = candidate.port
+        except ValueError:
+            continue
+        if (candidate.scheme == "http" and candidate.hostname in {"localhost", "127.0.0.1"}
+                and candidate.username is None and candidate.password is None
+                and candidate.path in {"", "/"} and not candidate.query and not candidate.fragment
+                and candidate_port is not None and candidate.hostname == parsed.hostname and candidate_port == port):
+            return True
+    return False
 
 
 def _host_is_loopback(host_header: str) -> bool:

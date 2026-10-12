@@ -2,7 +2,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { memory, slugify, type MemNote } from '../api.ts'
 import { Btn } from '../ui/kit.tsx'
-import { Icon } from '../ui/Pixel.tsx'
 import { t } from '../i18n/index.ts'
 
 export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
@@ -66,7 +65,7 @@ export function NoteEditor({ path, initial, notes, onSaved, onCancel }: {
             <span className="g-detail">{t('noteEditor.linkTo')}</span>
             {matches.map((n, i) => (
               <button key={n.path} type="button" className={`g-navitem${i === sel ? ' active' : ''}`} onMouseDown={e => { e.preventDefault(); insert(n) }}>
-                <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Icon name="note" />{n.title || n.path}</span>
+                <span className="g-memory-link-suggestion">{n.title || n.path}</span>
               </button>
             ))}
           </div>

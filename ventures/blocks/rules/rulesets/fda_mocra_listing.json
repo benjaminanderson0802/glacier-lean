@@ -1,0 +1,18 @@
+{
+  "id": "fda_mocra_product_listing_fields",
+  "title": "FDA Form 5067 cosmetic product listing fields",
+  "source": {
+    "title": "FDA Form FDA 5067 - Cosmetic Product Listing",
+    "url": "https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products/form-fda-5067-cosmetic-product-listing"
+  },
+  "rules": [
+    {"id": "fda.responsible_person_name", "field": "responsible_person_name", "check": "non_empty", "section": "II, lines 86-92", "failure": "Provide the responsible person's name as it appears on the product label."},
+    {"id": "fda.responsible_person_phone", "field": "responsible_person_phone", "check": "phone", "section": "II, lines 86-92", "failure": "Provide the responsible person's contact phone number, including country or area code."},
+    {"id": "fda.product_category_codes", "field": "product_category_codes", "check": "non_empty_list", "section": "II, lines 86-107", "failure": "Provide one or more cosmetic product category codes."},
+    {"id": "fda.product_name", "field": "product_name", "check": "non_empty", "section": "II, lines 86-92 and 132", "failure": "Provide the product name or statement of identity as it appears on the label."},
+    {"id": "fda.fragrance_or_flavor", "field": "fragrance_or_flavor", "check": "enum_list", "values": ["fragrance", "flavor"], "section": "II, lines 86-92", "failure": "Identify whether the product contains fragrance and/or flavor."},
+    {"id": "fda.facility_fei", "field": "facility_fei", "check": "non_empty_list", "section": "III, lines 134-142", "failure": "List the FEI for each manufacturing or processing facility, or confirm the exemption and provide facility name/address where applicable."},
+    {"id": "fda.ingredients", "field": "ingredients", "check": "non_empty_list", "section": "IV, lines 143-149", "failure": "List product ingredients by the required or common/usual name."},
+    {"id": "fda.ingredient_products", "field": "ingredient_products", "check": "mapping_to_non_empty_lists", "section": "IV, lines 143-149", "failure": "Identify at least one product for every listed ingredient."}
+  ]
+}

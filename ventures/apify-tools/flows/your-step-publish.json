@@ -1,0 +1,11 @@
+{
+  "id": "apify-ms-license-your-step-publish",
+  "name": "Your step: Approve an Actor publication",
+  "description": "Reusable owner-only publication gate. Each of the first three distinct Actor publications requires its own approval.",
+  "goal": "Show the owner the exact Store listing and price for one distinct Actor publication.",
+  "nodes": [
+    {"id": "owner_publish", "type": "approval", "config": {"prompt": "Your step: For each of the first three distinct Actor publications, run this approval separately. Record the new Actor's unique name, have a different engine review its code and Store listing (the current Mississippi listing is ventures/apify-tools/store_listing.md), confirm its event price, included platform usage, run limit and disabled automatic apify-default-dataset-item charge, then publish it yourself in Apify Console. Never reuse an earlier approval for another Actor. Stop before publication if the different-engine review is missing."}, "position": {"x": 0, "y": 0}}
+  ],
+  "edges": [],
+  "max_steps": 3
+}

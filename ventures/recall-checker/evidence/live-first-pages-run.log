@@ -1,0 +1,7 @@
+run_id=86d0aa9abb0d
+flow=recall-review-first-pages
+status=done
+node_states={"approve_pages": "skipped", "feed_blocked": "done", "feed_blocked_note": "done", "page_count": "failed", "pages_ready": "done", "review_record": "skipped"}
+outputs={"feed_blocked": "approved", "feed_blocked_note": "ventures/recall-checker/reports/first-pages-blocked-86d0aa9abb0d.md (commit b34730e4)", "page_count": "{\n  \"sources\": {},\n  \"recall_rows\": 343488,\n  \"missing_sources\": [\n    \"fsis_recalls\"\n  ],\n  \"alerts\": {},\n  \"pages_generated\": 0,\n  \"pages_directory\": \"/tmp/glacier-recall-benchmark-home/ventures/recall-checker/pages\",\n  \"first_fifty_review_required\": false\n}\n", "pages_ready": "no"}
+pages_generated=0
+approval=[{"node_id": "feed_blocked", "approved": true, "reason": "Reviewed the live feed report; FSIS snapshot is unavailable and page generation was blocked."}]

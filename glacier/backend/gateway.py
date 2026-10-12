@@ -24,7 +24,7 @@ FRIENDLY_FAILURE = "No free model is available right now. A paid option needs yo
 DEFAULT_ROUTE = {
     "name": "local",
     "base_url": "http://localhost:11434/v1",
-    "model": "qwen3:0.6b",
+    "model": "granite3.3:2b",
     "paid": False,
     "daily_request_cap": 0,
 }
@@ -95,10 +95,21 @@ def _post(route: dict, prompt: str, timeout: int) -> dict:
     request = urllib.request.Request(endpoint, data=body, headers={"Content-Type": "application/json"})
     with open_model_request(request, timeout=timeout) as response:
         result = json.loads(response.read())
-    content = result["choices"][0]["message"]["content"]
-    if not isinstance(content, str):
-        raise ValueError("Model returned invalid chat content")
-    return {"content": content, "response": result}
+    try:
+        content = result["choices"][0]["message"]["content"]
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("empty chat content")
+        usage = result.get("usage", {})
+        if usage is None:
+            usage = {}
+        if not isinstance(usage, dict):
+            raise ValueError("invalid usage")
+        tokens_in = int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0)
+        tokens_out = int(usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0)
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError, OverflowError):
+        raise ValueError("Model returned an invalid reply") from None
+    return {"content": content, "response": result,
+            "tokens_in": tokens_in, "tokens_out": tokens_out}
 
 
 def _probe_health(url: str) -> bool:
@@ -210,7 +221,6 @@ def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = 
             continue
         _record_request(ctx["home"], route["name"], today)
         result = reply["response"]
-        usage = result.get("usage") or {}
         return {
             "state": "done",
             "exit_code": 0,
@@ -218,8 +228,8 @@ def complete(ctx: dict, routes: list[dict] | None = None, timeout: int | None = 
             "usage": {
                 "model": str(result.get("model") or route.get("model", "")),
                 "route": f"gateway/{route['name']}",
-                "tokens_in": int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0),
-                "tokens_out": int(usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0),
+                "tokens_in": reply["tokens_in"],
+                "tokens_out": reply["tokens_out"],
                 "cost_usd": 0.0,
             },
         }

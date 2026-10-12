@@ -14,6 +14,13 @@ import tempfile
 import time
 import venv
 
+try:
+    from . import dependency_inventory
+    from . import venture_health
+except ImportError:  # direct execution: python setup/health_check.py
+    import dependency_inventory
+    import venture_health
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 REQUIREMENTS = HERE / "requirements.txt"
@@ -83,11 +90,13 @@ def check_upgrades(python: Path | None = None) -> tuple[list[dict], str]:
 
 def command_specs(results_path: Path) -> list[tuple[str, list[str], Path]]:
     py = "{python}"
-    return [
+    specs = [
         ("backend", [py, "-m", "pytest", "-q", "tests"], REPO / "glacier/backend"),
         ("other suites", [py, "-m", "pytest", "-q", "glacier/importers", "templates", "bench", "tools/scan", "tools/catalog"], REPO),
         ("verification benchmark", [py, "bench/verification/run_glacier.py", "--results", str(results_path)], REPO),
     ]
+    specs.extend(venture_health.command_specs(REPO, Path(py)))
+    return specs
 
 
 def command_timeout() -> int:
@@ -116,11 +125,19 @@ def run_commands(specs, python: Path, quick: bool) -> list[dict]:
             result = subprocess.run(expanded, cwd=cwd, text=True, capture_output=True,
                                     timeout=command_timeout())
             passed = result.returncode == 0
-            summary = result_summary(name, passed, result.stdout + "\n" + result.stderr)[:500]
+            output = result.stdout + "\n" + result.stderr
+            if name.startswith("venture suite: "):
+                passed, summary = venture_health.summarize(name, result.returncode, output)
+            else:
+                summary = result_summary(name, passed, output)
+            summary = summary[:500]
         except subprocess.TimeoutExpired:
-            passed, summary = False, "timed out"
+            passed, summary = False, ("FAILED: timed out" if name.startswith("venture suite: ") else "timed out")
         except OSError as error:
-            passed, summary = False, str(error)[:500]
+            passed = False
+            summary = str(error)[:500]
+            if name.startswith("venture suite: "):
+                summary = f"FAILED: {summary}"
         sections.append({"name": name, "passed": passed, "summary": summary})
     return sections
 
@@ -181,7 +198,9 @@ def run_health_sections(quick: bool = False) -> list[dict]:
                 install_section = {"name": "fresh environment", "passed": False, "summary": str(error)[:500]}
             prefix_sections = [install_section]
             if not install_section["passed"]:
-                return prefix_sections
+                return prefix_sections + venture_health.not_run_sections(
+                    REPO, "fresh environment setup failed"
+                )
         sections = prefix_sections + run_commands(command_specs(run_dir / "verification-results.md"), python, quick)
         sections.append(run_security_suite(python, run_dir / "security-results.md"))
         return sections
@@ -202,6 +221,26 @@ def print_report(report: dict) -> None:
             print(f"  {item['package']}: {item['installed']} → {item['latest']} (upgrade available)")
     else:
         print("No pinned dependency upgrades found.")
+    inventory = report.get("venture_dependencies", {})
+    entries = inventory.get("entries", [])
+    unpinned = [entry for entry in entries
+                if entry.get("status") == "unpinned"
+                or entry.get("declaration_status") == "unpinned"]
+    ranges = [entry for entry in entries
+              if entry.get("status") == "range"
+              or entry.get("declaration_status") == "range"]
+    exact = sum(entry.get("status") in {"exact pin", "locked exact"} for entry in entries)
+    print(f"Venture dependency inventory (read-only): {len(entries)} entries; "
+          f"{exact} exact pins/locks, {len(ranges)} ranges, {len(unpinned)} unpinned.")
+    if unpinned:
+        print("Unpinned venture dependencies:")
+        for entry in unpinned:
+            declared = entry.get("declared") or "(no version declaration)"
+            print(f"  {entry['package']} ({entry['provenance']}; {declared}) — {entry['path']}")
+    for path in inventory.get("missing_files", []):
+        print(f"Missing dependency lock/manifest: {path}")
+    for error in inventory.get("errors", []):
+        print(f"Could not read dependency inventory {error['path']}: {error['error']}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -211,9 +250,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     sections = run_health_sections(quick=args.quick)
     proposals, upgrade_summary = check_upgrades(current_python())
+    venture_dependencies = dependency_inventory.inventory_venture_dependencies(REPO / "ventures")
     report = {"date": date.today().isoformat(), "python": sys.version.split()[0],
               "passed": all(section["passed"] for section in sections),
-              "sections": sections, "proposals": proposals, "upgrade_summary": upgrade_summary}
+              "sections": sections, "proposals": proposals, "upgrade_summary": upgrade_summary,
+              "venture_dependencies": venture_dependencies}
     report_path = args.report or REPORT
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

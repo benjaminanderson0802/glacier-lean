@@ -1,0 +1,96 @@
+{
+  "slug": "coop-postcards",
+  "name": "co-op claims + street postcards",
+  "status": "ready",
+  "product": {
+    "co_op_claims": "Read completed Jobber jobs and prepare source-linked, evidence-checklisted claim drafts with local PDF/Markdown output and confirmed-expiry reminders. The dealer signs and files claims directly.",
+    "street_postcards": "Prepare local neighborhood landing pages and render-only 11.5 x 6.25 inch EDDM Retail proofs for owner review. Glacier never orders or mails postcards.",
+    "budget_timing": "Open dealer outreach and postcard campaigns in November so dealers can use current year-end co-op budgets; calculate brand claim reminders 60 and 30 days before each program expiry."
+  },
+  "blocks": [
+    "connectors.jobber",
+    "mail",
+    "customer",
+    "reader",
+    "rules",
+    "deadlines"
+  ],
+  "block_functions": [],
+  "flows": [
+    "coop-claim-readiness",
+    "street-postcard-proof"
+  ],
+  "schedules": [
+    {
+      "flow": "coop-claim-readiness",
+      "cron": "0 9 * * *",
+      "purpose": "Check local claim intake for upcoming program expiries and 60/30-day reminders.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "street-postcard-proof",
+      "cron": "0 9 1 11 *",
+      "purpose": "Open the annual dealer year-end postcard preparation cycle in November.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "jobber_client_id",
+    "jobber_client_secret",
+    "jobber_access_token",
+    "jobber_refresh_token"
+  ],
+  "your_steps": [
+    {
+      "id": "jobber-setup",
+      "title": "Connect Jobber for the co-op app",
+      "when": "Before the first dealer intake",
+      "detail": "Create the Glacier app in the Jobber Developer Center and request read-only completed-job access. Paste the four Jobber OAuth values into the labeled fields on this step. Glacier saves them in this computer's keychain. Leave the callback blank until Glacier has its real URL.",
+      "links": [
+        "https://developer.getjobber.com/"
+      ],
+      "secrets": [
+        {
+          "name": "jobber_client_id",
+          "label": "Jobber app ID"
+        },
+        {
+          "name": "jobber_client_secret",
+          "label": "Jobber app secret"
+        },
+        {
+          "name": "jobber_access_token",
+          "label": "Jobber access token"
+        },
+        {
+          "name": "jobber_refresh_token",
+          "label": "Jobber refresh token"
+        }
+      ]
+    },
+    {
+      "id": "first-owner-review",
+      "title": "Review claims and postcard proofs",
+      "when": "Before the first claim for each brand and each campaign",
+      "detail": "Review current brand program terms and each evidence checklist. The dealer authorizes, signs, and files claims directly with the brand. Review and approve each exact postcard proof and campaign budget; Glacier only renders the proof.",
+      "links": [
+        "https://adkit.carrier.com/en/us/guidelines",
+        "https://www.trane.com/residential/en/for-dealers/",
+        "https://www.lennoxpros.com/partner-resources/marketing/consumer-advertising-program",
+        "https://www.rheem.com/professionals/residential-heating-and-cooling/pro-partner-programs/",
+        "https://www.goodmanmfg.com/become-a-dealer",
+        "https://eddm.usps.com/"
+      ]
+    }
+  ],
+  "launch_gates": [
+    "Each dealer authorizes, signs, and files its own claim directly; Glacier only prepares drafts.",
+    "First postcard design and any campaign are owner-approved; Glacier renders proofs but never mails them.",
+    "No homeowner name is collected or printed on street cards; completed job addresses are street-level only.",
+    "A category can appear once per shared route card, and every ad requires written approval.",
+    "Unverified brand terms or missing evidence stay visible in the local draft; Glacier never files a claim."
+  ],
+  "dry_run_env_id": "street-postcard-proof"
+}

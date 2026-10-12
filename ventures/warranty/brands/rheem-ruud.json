@@ -1,0 +1,27 @@
+{
+  "id": "rheem-ruud",
+  "brand_names": ["Rheem", "Ruud"],
+  "primary_brand": "rheem",
+  "queue_window_days": null,
+  "registration": {
+    "deadline": "uncertain - please check; the reviewed official Rheem/Ruud heating-and-cooling pages do not state one deadline that applies to every product. Check the model's warranty certificate.",
+    "who_may_register": "uncertain - please check; official registration material asks for homeowner information and may collect optional contractor information, but does not clearly say who may submit an HVAC registration.",
+    "portal_urls": {
+      "Rheem": "https://www.rheem.com/warranties/",
+      "Ruud": "https://www.ruud.com/warranty/"
+    },
+    "portal_accepts_dealer": "uncertain - please check",
+    "terms_allow_third_party_preparation": "uncertain - please check; no reviewed official terms authorize third-party preparation."
+  },
+  "date_code": {
+    "status": "published format; exact serial-family applicability should be checked",
+    "format": "For Rheem HVAC equipment, Rheem says the first two digits after a letter in the middle or beginning of the serial are the week, and the next two digits are the year. Confirm the product's own label/model because serial layouts vary."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Rheem warranty and registration", "url": "https://www.rheem.com/warranties/"},
+    {"title": "Ruud warranty and registration", "url": "https://www.ruud.com/warranty/"},
+    {"title": "Rheem serial date-code guidance for HVAC", "url": "https://www.rheem.com/air-conditioning/articles/what-to-know-before-meeting-with-an-hvac-contractor/"},
+    {"title": "Ruud homeowner resources", "url": "https://www.ruud.com/homeowners/"}
+  ]
+}

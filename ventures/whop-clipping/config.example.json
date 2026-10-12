@@ -1,0 +1,46 @@
+{
+  "live": false,
+  "campaigns_dir": "campaigns",
+  "allow_conditional_campaign_ids": [],
+  "approval_history": {},
+  "paused_campaign_ids": [],
+  "channels": [
+    "@frameandmomentdesk",
+    "@highlightdesknotes",
+    "@replaynotesdesk",
+    "@quickreplaydesk",
+    "@dailycutnotes",
+    "@clipcurrentdesk",
+    "@sceneselectnotes",
+    "@momentarchivedesk",
+    "@thecliproomnotes",
+    "@contextclipsdesk"
+  ],
+  "global_daily_cap": 85,
+  "max_spacing_hours": 6,
+  "posting_jitter_minutes": 0,
+  "target_library_stock": 20,
+  "notification_url": "",
+  "view_collapse_ratio": 0.2,
+  "sources": {
+    "max_bytes": 2000000000,
+    "max_source_gb": 40,
+    "timeout_s": 1800
+  },
+  "transcription": {
+    "model": "small"
+  },
+  "captions": true,
+  "video_layout": "blurred_background",
+  "ollama_url": "http://127.0.0.1:11434",
+  "plugins": {
+    "scout": "scripts.public_discover.PublicDiscoverScout",
+    "uploader": "youtube_upload.YouTubeUploader",
+    "submitter": "scripts.submitter.ManualQueueSubmitter"
+  },
+  "daily_target": 80,
+  "per_channel_daily": 8,
+  "min_gap_minutes": 150,
+  "min_quality": 70,
+  "youtube_daily_insert_quota": 100
+}

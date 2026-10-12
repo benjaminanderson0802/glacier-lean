@@ -1,0 +1,155 @@
+{
+  "date": "2026-10-10",
+  "command": "GLACIER_HEALTH_TIMEOUT_SECONDS=600 ~/w/glacier-lean/.venv/bin/python - [command_specs venture suites through run_commands]",
+  "scope": "Each ventures/*/tests, ventures/tests, and ventures/blocks/*/tests directory in a separate sequential pytest process; 600-second per-suite timeout.",
+  "count": 29,
+  "passed_count": 23,
+  "failed_count": 6,
+  "sections": [
+    {
+      "name": "venture suite: ventures/al-bid-triage/tests",
+      "passed": false,
+      "summary": "FAILED: FAILED ventures/al-bid-triage/tests/acceptance/test_al_bid_triage.py::test_conflicting_duplicate_deadlines_not_silently_dropped"
+    },
+    {
+      "name": "venture suite: ventures/al-license-verify/tests",
+      "passed": false,
+      "summary": "FAILED: FAILED ventures/al-license-verify/tests/acceptance/test_al_license_verify.py::test_mock_actor_outage_has_customer_uncertainty[503]"
+    },
+    {
+      "name": "venture suite: ventures/apify-portfolio/tests",
+      "passed": true,
+      "summary": "PASSED: 31 passed in 3.68s"
+    },
+    {
+      "name": "venture suite: ventures/apify-tools-louisiana/tests",
+      "passed": true,
+      "summary": "PASSED: 9 passed, 3 subtests passed in 7.35s"
+    },
+    {
+      "name": "venture suite: ventures/apify-tools/tests",
+      "passed": true,
+      "summary": "PASSED: 12 passed, 1 skipped, 3 subtests passed in 10.36s; live canary skipped, no live proof"
+    },
+    {
+      "name": "venture suite: ventures/blocks/connectors/tests",
+      "passed": true,
+      "summary": "PASSED: 18 passed in 0.46s"
+    },
+    {
+      "name": "venture suite: ventures/blocks/customer/tests",
+      "passed": true,
+      "summary": "PASSED: 10 passed in 11.69s"
+    },
+    {
+      "name": "venture suite: ventures/blocks/deadlines/tests",
+      "passed": true,
+      "summary": "PASSED: 6 passed in 0.28s"
+    },
+    {
+      "name": "venture suite: ventures/blocks/feeds/tests",
+      "passed": true,
+      "summary": "PASSED: 15 passed in 0.66s"
+    },
+    {
+      "name": "venture suite: ventures/blocks/filer/tests",
+      "passed": false,
+      "summary": "FAILED: FAILED ventures/blocks/filer/tests/test_filer_acceptance.py::PortalFilerAcceptanceTests::test_submit_requires_approval"
+    },
+    {
+      "name": "venture suite: ventures/blocks/mail/tests",
+      "passed": true,
+      "summary": "PASSED: 4 passed in 0.02s"
+    },
+    {
+      "name": "venture suite: ventures/blocks/reader/tests",
+      "passed": true,
+      "summary": "PASSED: 3 passed in 0.02s"
+    },
+    {
+      "name": "venture suite: ventures/blocks/rules/tests",
+      "passed": true,
+      "summary": "PASSED: 3 passed in 0.01s"
+    },
+    {
+      "name": "venture suite: ventures/carpenter-goods/tests",
+      "passed": true,
+      "summary": "PASSED: 20 passed in 0.29s"
+    },
+    {
+      "name": "venture suite: ventures/coop-postcards/tests",
+      "passed": true,
+      "summary": "PASSED: 16 passed in 0.10s"
+    },
+    {
+      "name": "venture suite: ventures/cpsc-prep/tests",
+      "passed": true,
+      "summary": "PASSED: 21 passed, 1 skipped in 0.07s; live canary skipped, no live proof"
+    },
+    {
+      "name": "venture suite: ventures/dibbs-supply/tests",
+      "passed": true,
+      "summary": "PASSED: 20 passed in 0.10s"
+    },
+    {
+      "name": "venture suite: ventures/fba-fee-check/tests",
+      "passed": false,
+      "summary": "FAILED: FAILED ventures/fba-fee-check/tests/acceptance/test_fba_fee_check.py::test_nonfinite_or_malformed_amount_rejected[NaN]"
+    },
+    {
+      "name": "venture suite: ventures/fda-cosmetics/tests",
+      "passed": true,
+      "summary": "PASSED: 17 passed in 0.12s"
+    },
+    {
+      "name": "venture suite: ventures/freight-claims/tests",
+      "passed": true,
+      "summary": "PASSED: 35 passed in 3.19s"
+    },
+    {
+      "name": "venture suite: ventures/job-closeout/tests",
+      "passed": false,
+      "summary": "FAILED: FAILED ventures/job-closeout/tests/acceptance/test_job_closeout.py::test_partial_or_failed_source_never_delivers_packet[rate_limit]"
+    },
+    {
+      "name": "venture suite: ventures/osha-filing/tests",
+      "passed": true,
+      "summary": "PASSED: 22 passed in 0.21s"
+    },
+    {
+      "name": "venture suite: ventures/property-tax/tests",
+      "passed": true,
+      "summary": "PASSED: 9 passed in 0.07s"
+    },
+    {
+      "name": "venture suite: ventures/recall-actor/tests",
+      "passed": true,
+      "summary": "PASSED: 13 passed, 2 skipped, 3 subtests passed in 0.11s; live canary skipped, no live proof"
+    },
+    {
+      "name": "venture suite: ventures/recall-checker/tests",
+      "passed": true,
+      "summary": "PASSED: 20 passed in 0.06s"
+    },
+    {
+      "name": "venture suite: ventures/sam-amendment-alerts/tests",
+      "passed": false,
+      "summary": "FAILED: FAILED ventures/sam-amendment-alerts/tests/acceptance/test_sam_amendment_alerts.py::test_partial_data_rejected_or_uncertain[duplicate_conflict]"
+    },
+    {
+      "name": "venture suite: ventures/tests",
+      "passed": true,
+      "summary": "PASSED: 22 passed in 0.36s"
+    },
+    {
+      "name": "venture suite: ventures/utility-audits/tests",
+      "passed": true,
+      "summary": "PASSED: 15 passed in 0.13s"
+    },
+    {
+      "name": "venture suite: ventures/warranty/tests",
+      "passed": true,
+      "summary": "PASSED: 23 passed in 0.06s"
+    }
+  ]
+}

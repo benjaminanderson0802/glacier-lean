@@ -1,0 +1,14 @@
+{
+  "meta": {"last_updated": "2026-10-03"},
+  "results": [
+    {
+      "recall_number": "Z-1234-2026",
+      "recall_initiation_date": "20260922",
+      "product_description": "Example blood pressure monitor Model BP-10",
+      "reason_for_recall": "Readings may be inaccurate",
+      "classification": "Class II",
+      "recalling_firm": "Example Medical",
+      "openfda": {"brand_name": ["Example"], "device_name": ["Blood pressure monitor"]}
+    }
+  ]
+}

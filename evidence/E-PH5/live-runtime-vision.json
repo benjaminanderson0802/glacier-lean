@@ -1,0 +1,16 @@
+{
+  "http_status": 200,
+  "response": {
+    "confirmed": true,
+    "path": "visions/6660d34a82434681981eb0a15ab706bb.md",
+    "vision": {
+      "goal": "Create one offline result file",
+      "done": [
+        "result.txt bytes equal Glacier PH5 verified followed by newline"
+      ],
+      "constraints": [
+        "No network, paid services, publishing or edits outside team workspace"
+      ]
+    }
+  }
+}

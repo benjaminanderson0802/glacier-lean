@@ -1,0 +1,35 @@
+{
+  "title": "FDIC BankFind Institution Normalizer",
+  "description": "Normalize official FDIC bank institutions by certificate or state, with source dates, vintage and bounded pagination.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "certificate": {
+      "type": "string",
+      "title": "FDIC certificate",
+      "description": "Exact FDIC certificate, as a string. Provide certificate or state.",
+      "editor": "textfield",
+      "prefill": "3510"
+    },
+    "state": {
+      "type": "string",
+      "title": "State abbreviation",
+      "description": "Two uppercase letters, for example NC.",
+      "editor": "textfield"
+    },
+    "active_only": {
+      "type": "boolean",
+      "title": "Active institutions only",
+      "description": "Filter the literal FDIC ACTIVE field. This is not a safety rating.",
+      "default": false
+    },
+    "max_records": {
+      "type": "integer",
+      "title": "Maximum records",
+      "description": "Stops at this cap; output flags truncated when more records exist.",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 100
+    }
+  }
+}

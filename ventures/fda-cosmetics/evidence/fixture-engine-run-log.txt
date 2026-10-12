@@ -1,0 +1,20 @@
+Fixture engine run log — 2026-10-10
+
+Backend: real local FastAPI/DBOS engine at 127.0.0.1:48928
+Disposable home: /tmp/glacier-fda-cosmetics-rg-20261010-02/home
+Install command: ~/w/glacier-lean/.venv/bin/python ventures/install_all.py --only fda-cosmetics
+Install result: prepare-listing-packet saved (commit f26be7d7); daily-deadline-reminders saved (commit 786e5b03).
+Fixture: ventures/fda-cosmetics/fixtures/shopify-products.graphql.json
+Network: no Shopify or FDA network request; a temporary sitecustomize supplied the GraphQL fixture and fixture store-domain secret.
+
+HTTP log from the local engine:
+GET /api/environments/prepare-listing-packet -> 404 (not installed yet)
+PUT /api/environments/prepare-listing-packet -> 200
+GET /api/environments/daily-deadline-reminders -> 404 (not installed yet)
+PUT /api/environments/daily-deadline-reminders -> 200
+POST /api/environments/prepare-listing-packet/run -> 200; run 27d795c6047b
+GET /api/runs/27d795c6047b -> 200; status waiting at customer_submit
+POST /api/environments/daily-deadline-reminders/run -> 200; run 532dc5195d17
+GET /api/runs/532dc5195d17 -> 200; status waiting at review_reminder
+
+Outputs and node states are captured in fixture-engine-runs.json. Neither approval was submitted.

@@ -1,4 +1,4 @@
-// Checks Home row icon columns, pixel sizing and empty states at desktop and narrow widths.
+// Checks Limbo room geometry, readable Home content, and empty states at desktop and narrow widths.
 // Run after `npm run build`: node e2e/home_polish.spec.mjs
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -26,10 +26,11 @@ try {
     await page.goto(UI + '/#/home', { waitUntil: 'networkidle' })
     const rows = await page.evaluate(() => {
       const root = document.querySelector('[data-testid="screen-home"]')
-      const px = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--px'))
-      const logo = document.querySelector('.g-brand .g-logo')
-      const brand = document.querySelector('.g-brand-name')
-      const title = document.querySelector('.g-title')
+      const stage = document.querySelector('.l-stage').getBoundingClientRect()
+      const panels = ['[data-testid="game-menu"]', '.l-center', '[data-testid="side-status"]'].map(selector => {
+        const rect = document.querySelector(selector).getBoundingClientRect()
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
+      })
       const empty = [...root.querySelectorAll('.g-empty')]
       const row = document.createElement('div')
       row.className = 'g-row'
@@ -38,20 +39,20 @@ try {
       const icon = row.querySelector('.g-ico').getBoundingClientRect()
       const text = row.querySelector('.g-mid').getBoundingClientRect()
       return {
-        px,
-        titleSize: parseFloat(getComputedStyle(title).fontSize),
-        brandSize: parseFloat(getComputedStyle(brand).fontSize),
-        logo: { width: logo.getBoundingClientRect().width, height: logo.getBoundingClientRect().height },
-        gap: parseFloat(getComputedStyle(document.querySelector('.g-brand')).gap),
+        stage: { left: stage.left, right: stage.right, top: stage.top, bottom: stage.bottom },
+        panels,
+        title: document.querySelector('.g-title').getBoundingClientRect().toJSON(),
+        font: getComputedStyle(document.querySelector('.g-title')).fontFamily,
+        glass: getComputedStyle(document.querySelector('.l-center')).backdropFilter,
         rowIconRight: icon.right, rowTextLeft: text.left,
-        empties: empty.map(el => ({ justify: getComputedStyle(el).justifyContent, align: getComputedStyle(el).alignItems, icon: !!el.querySelector('.g-status'), textColor: getComputedStyle(el).color, children: el.children.length })),
+        empties: empty.map(el => ({ text: el.innerText.trim(), width: el.clientWidth, scrollWidth: el.scrollWidth, height: el.clientHeight, scrollHeight: el.scrollHeight })),
       }
     })
-    const unit = rows.px
-    check(rows.rowTextLeft >= rows.rowIconRight + 2 * unit, `${viewport.width}px: fixed row icon column has a gap before text`)
-    check([8 * unit, 16 * unit].includes(rows.titleSize) && [8 * unit, 16 * unit].includes(rows.brandSize), `${viewport.width}px: Home title and title bar use 8px/16px grid sizes`)
-    check(rows.logo.height === 8 * unit && rows.logo.width === 13 * unit && rows.gap >= unit, `${viewport.width}px: title logo is integer-scaled, centred and separated`)
-    check(rows.empties.length >= 3 && rows.empties.every(e => e.justify === 'center' && e.align === 'center' && e.icon && e.children === 2), `${viewport.width}px: all empty states center an icon and dim line`)
+    check(rows.panels.length === 3 && rows.panels.every(p => p.left >= rows.stage.left && p.right <= rows.stage.right && p.top >= rows.stage.top && p.bottom <= rows.stage.bottom), `${viewport.width}px: menu, screen, and status glass panels stay inside the room`)
+    check(/Nunito/i.test(rows.font) && /blur\(/.test(rows.glass), `${viewport.width}px: Home uses readable Nunito text on frosted glass`)
+    check(rows.title.width > 0 && rows.title.height > 0, `${viewport.width}px: Home title remains visible`)
+    check(rows.rowTextLeft >= rows.rowIconRight + 2, `${viewport.width}px: Home row icon and text do not overlap`)
+    check(rows.empties.length >= 3 && rows.empties.every(e => e.text && e.width > 0 && e.height > 0 && e.scrollWidth <= e.width + 1 && e.scrollHeight <= e.height + 1), `${viewport.width}px: empty states stay readable without clipping`)
     await page.close()
   }
 } catch (error) {

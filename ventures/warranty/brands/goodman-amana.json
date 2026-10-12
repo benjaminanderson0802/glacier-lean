@@ -1,0 +1,28 @@
+{
+  "id": "goodman-amana",
+  "brand_names": ["Goodman", "Amana"],
+  "primary_brand": "goodman",
+  "queue_window_days": 60,
+  "registration": {
+    "deadline": "60 days after installation for eligible residential registered coverage; exceptions and product-specific warranty terms apply, including jurisdictions where registration is not required.",
+    "who_may_register": "Homeowner or installing dealer for Amana, as its official page states; Goodman/Daikin-hosted registration form also provides a role for someone registering on behalf of the homeowner/customer.",
+    "portal_urls": {
+      "Goodman": "https://warranty.goodmanmfg.com/newregistration/",
+      "Amana": "https://www.amana-hac.com/product-registration"
+    },
+    "portal_accepts_dealer": "yes - Amana says homeowner or installing dealer may register; Goodman/Daikin-hosted form offers `I am registering on behalf of the homeowner/customer`.",
+    "terms_allow_third_party_preparation": "uncertain - please check; portal roles support owner/dealer/representative submissions, but separate permission for an outside service or automated preparation is not stated."
+  },
+  "date_code": {
+    "status": "published for most products; verify by model",
+    "format": "Goodman and Amana state that the ten-digit serial identifies production timing; Goodman says that for most products the first four digits are YYMM (year then month), e.g. `1306` means June 2013. Product-specific exceptions may exist."
+  },
+  "automation": "disabled",
+  "sources": [
+    {"title": "Goodman registration FAQ and serial-number information", "url": "https://www.goodmanmfg.com/resources/hvac-learning-center"},
+    {"title": "Goodman/Daikin product registration form", "url": "https://warranty.goodmanmfg.com/newregistration/"},
+    {"title": "Amana product registration", "url": "https://www.amana-hac.com/product-registration"},
+    {"title": "Amana air conditioner registration and serial information", "url": "https://www.amana-hac.com/resources/hvac-learning-center/limited-warranty/get-peace-of-mind-with-an-air-conditioner-limited-warranty"},
+    {"title": "Goodman legal terms", "url": "https://www.goodmanmfg.com/legal"}
+  ]
+}

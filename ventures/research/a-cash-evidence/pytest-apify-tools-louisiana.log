@@ -1,0 +1,3 @@
+$ /home/glacier/w/glacier-lean/.venv/bin/python -m pytest ventures/apify-tools-louisiana -q
+.........                                                             [100%]
+9 passed, 3 subtests passed in 8.45s

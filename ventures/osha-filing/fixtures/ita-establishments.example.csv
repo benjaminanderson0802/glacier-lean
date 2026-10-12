@@ -1,0 +1,5 @@
+establishment_id,establishment_name,industry_code,employee_count,address,city,state,zip_code
+1,Large Shop,332710,250,1 Main Street,Town,IL,60000
+2,Small Shop,332710,19,2 Main Street,Town,IL,60000
+3,Unknown Shop,000000,45,3 Main Street,Town,IL,60000
+4,High Hazard Shop,332710,45,4 Main Street,Town,IL,60000

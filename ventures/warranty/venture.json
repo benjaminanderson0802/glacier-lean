@@ -1,0 +1,82 @@
+{
+  "slug": "warranty",
+  "name": "warranty registration",
+  "status": "ready",
+  "product": {
+    "description": "Prepare and track HVAC warranty registration records for contractor review.",
+    "customer_output_vocabulary": [
+      "match",
+      "no match found in [sources] as of [date]",
+      "uncertain — please check"
+    ],
+    "portal_submission": "disabled until an official brand portal policy permits automation and customer authorization is recorded",
+    "email_sending": "not configured; drafts only",
+    "readiness_scope": "Ready for local and short-lived read-only Jobber test intake preparation; durable production OAuth, marketplace publication, email sending, and manufacturer portal submission are not enabled.",
+    "future_portal_enablement_gates": [
+      "Documented permission must cover the exact proposed manufacturer portal action; uncertain sources stay uncertain.",
+      "Any customer authorization and consequential-action approval must be recorded before an external write.",
+      "Serial parsing stays disabled unless official, model-scoped patterns and an independent check are available."
+    ]
+  },
+  "blocks": [
+    "ventures.blocks.connectors.jobber",
+    "ventures.blocks.filer"
+  ],
+  "block_functions": [
+    "prepare_local_mock (warranty-only localhost guard around filer.prepare)"
+  ],
+  "flows": [
+    "hourly-intake",
+    "daily-deadlines",
+    "owner-review"
+  ],
+  "schedules": [
+    {
+      "flow": "hourly-intake",
+      "cron": "0 * * * *",
+      "purpose": "Read Jobber jobs, prepare the local registration queue, and generate unsent homeowner email drafts; no records or messages are changed.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    },
+    {
+      "flow": "daily-deadlines",
+      "cron": "0 8 * * *",
+      "purpose": "Calculate the local registration queue and identify deadlines within ten days.",
+      "missed_run": "run_once",
+      "overlap": "skip"
+    }
+  ],
+  "secrets_needed": [
+    "jobber_client_id",
+    "jobber_client_secret",
+    "jobber_access_token"
+  ],
+  "your_steps": [
+    {
+      "id": "jobber-setup",
+      "title": "Set up Jobber fields and run a read-only test",
+      "when": "Before the first live test read; about 15 minutes if accounts already exist",
+      "detail": "Follow OWNER-STEPS.md in one setup session. Create the four pre-written Job Text fields, enter actual values on completed installation jobs, and optionally create a draft test app in Jobber Developer Center for a short GraphiQL read test. Save the app Client ID, Client Secret, and temporary GraphiQL access token in Glacier Settings → Secrets, then run the read-only owner check. The temporary token expires after 60 minutes and does not enable recurring production access. Manufacturer terms review, outreach, publication, email sending, and portal submission are not required for the current local preparation workflow.",
+      "links": [
+        "https://secure.getjobber.com/",
+        "https://developer.getjobber.com/"
+      ],
+      "secrets": [
+        {
+          "name": "jobber_client_id",
+          "label": "Jobber app ID"
+        },
+        {
+          "name": "jobber_client_secret",
+          "label": "Jobber app secret"
+        },
+        {
+          "name": "jobber_access_token",
+          "label": "Temporary Jobber test access token"
+        }
+      ]
+    }
+  ],
+  "launch_gates": [],
+  "dry_run_env_id": "daily-deadlines"
+}

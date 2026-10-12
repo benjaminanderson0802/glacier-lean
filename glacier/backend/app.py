@@ -1,5 +1,5 @@
 """Glacier core v0 backend: `uvicorn app:app --port 8000`. Data lives in GLACIER_HOME (default ./data)."""
-import os, json, asyncio
+import os, json, asyncio, threading
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -35,8 +35,26 @@ async def lifespan(_app):
     install_access_log_redaction()
     store.broadcaster.loop = asyncio.get_running_loop()
     DBOS.launch()  # recovers runs that were in flight when the backend died
+    # DBOS persists each schedule's pause state. Rebuild the tray's toggle state
+    # from that durable source so a restart does not invert Pause/Resume.
+    schedules = DBOS.list_schedules()
+    runner.SCHEDULES_PAUSED = bool(schedules) and all(row.get("status") == "PAUSED" for row in schedules)
     triggers.start(HOME)
+    health_stop = threading.Event()
+    from routes.home import _health_report
+    def maintain_health():
+        # Let startup settle; Home creates the report immediately when opened,
+        # while a headless tray session still gets one within its first minute.
+        while not health_stop.wait(60):
+            try:
+                _health_report()
+            except Exception:
+                logging.getLogger(__name__).warning("Health report update failed", exc_info=True)
+    health_thread = threading.Thread(target=maintain_health, name="glacier-health", daemon=True)
+    health_thread.start()
     yield
+    health_stop.set()
+    health_thread.join(timeout=2)
     triggers.stop()
     DBOS.destroy()
 
@@ -73,9 +91,28 @@ def health():
     """Open liveness check (no data); every other /api path needs the install token."""
     return {"ok": True}
 
+
+@app.post("/api/scheduler/pause-all")
+def pause_all_schedules():
+    """Toggle scheduled starts; runs already in progress continue to finish."""
+    schedules = DBOS.list_schedules()
+    # Treat the action as a toggle, but derive current state from DBOS's
+    # persisted schedule rows rather than an in-memory flag that may be stale.
+    currently_paused = bool(schedules) and all(row.get("status") == "PAUSED" for row in schedules)
+    runner.SCHEDULES_PAUSED = not currently_paused
+    for schedule in schedules:
+        if runner.SCHEDULES_PAUSED:
+            DBOS.pause_schedule(schedule["schedule_name"])
+        else:
+            DBOS.resume_schedule(schedule["schedule_name"])
+    audit_log.record("scheduler.pause_toggled", what={"paused": runner.SCHEDULES_PAUSED})
+    return {"paused": runner.SCHEDULES_PAUSED}
+
 plugins.load_routes(app)  # registers routers in routes/, including the Home summary endpoint
 import a2a_routes  # noqa: E402  A2A lives at /a2a and /.well-known/ (outside /api), token-protected like /api
 app.include_router(a2a_routes.router)
+from routes import ventures as venture_routes  # noqa: E402
+venture_routes.install_manifests(HOME)
 
 
 def _env_or_404(env_id: str) -> dict:

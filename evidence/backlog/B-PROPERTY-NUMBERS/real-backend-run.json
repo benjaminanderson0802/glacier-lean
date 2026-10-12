@@ -1,0 +1,17 @@
+{
+  "backend": "real FastAPI/DBOS process",
+  "run_id": "2beb35eb946d",
+  "status": "done",
+  "node_state": "done",
+  "node_output": {
+    "result": "uncertain — please check",
+    "status": "needs_customer_confirmation",
+    "uncertainties": [
+      "Notice assessed value from https://records.example.test/notices/notice-1 is missing, malformed, unsupported, non-finite, or not positive."
+    ],
+    "finite_estimate": 500000,
+    "filing_guide_present": true,
+    "fixture_only": true
+  },
+  "evidence_class": "fixture through real engine; no live source or customer data"
+}

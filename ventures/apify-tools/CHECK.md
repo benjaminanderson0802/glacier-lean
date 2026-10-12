@@ -1,0 +1,3 @@
+# Venture release check
+
+Before release, run the local test suite and `scripts/daily_canary.py` against the live Mississippi State Board of Contractors public lookup. The three saved license numbers must return their recorded business names, literal board statuses, and expiration dates with direct official record URLs and UTC check times. Use the logged-out public search and detail pages; no account, browser, CAPTCHA, proxy, or paid data source is needed. A source outage must return `outcome: uncertain — please check` with `verification_state: unverifiable`, never a no-match. Requests must be spaced by at least one second. A changed canary marks the local venture state `maintenance` and fails the Glacier flow. The first publication remains owner-approved.

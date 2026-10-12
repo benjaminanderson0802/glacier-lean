@@ -1,0 +1,26 @@
+{
+  "brand": {
+    "responsible_person_name": "Brand name exactly as shown on label",
+    "responsible_person_phone": "+1-555-0100",
+    "customer_confirmed": false,
+    "responsible_person_role": "manufacturer"
+  },
+  "products": {
+    "gid://shopify/Product/123456789": {
+      "product_name": "Name exactly as shown on product label",
+      "product_category_codes": ["06A2"],
+      "fragrance_or_flavor": ["fragrance"],
+      "ingredients": ["Ingredient in label order", "Fragrance"],
+      "ingredient_document": "$GLACIER_HOME/ventures/fda-cosmetics/incoming/product-label.pdf",
+      "exemption_checklist": {"small_business": false, "product_may_be_covered_exception": false, "customer_wants_listing": true},
+      "facilities": [
+        {"fei": "1234567890", "exempt_confirmed": false}
+      ],
+      "facility_fei": ["1234567890"],
+      "facility_exempt": false,
+      "customer_confirmed": false,
+      "first_market_date": "2026-10-01",
+      "last_listing_date": "2026-10-01"
+    }
+  }
+}

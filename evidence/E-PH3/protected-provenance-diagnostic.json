@@ -1,0 +1,26 @@
+{
+  "classification": "builder diagnostic; not independent acceptance evidence",
+  "command": "~/w/glacier-lean/.venv/bin/python - (direct verify.snapshot_protected_files and verify.run_check calls)",
+  "cases": [
+    {
+      "case": "deleted-after-start",
+      "passed": false,
+      "evidence": "the worker deleted protected check file check.sh during the run\nnot accepted: the worker changed a protected check file"
+    },
+    {
+      "case": "modified-after-start",
+      "passed": false,
+      "evidence": "the worker changed protected check file check.sh during the run\nthe worker changed check.sh (a protected check file)\nnot accepted: the worker changed a protected check file"
+    },
+    {
+      "case": "verifier-only-file-absent-before-and-after",
+      "passed": true,
+      "evidence": "`true` exited 0"
+    },
+    {
+      "case": "created-after-start",
+      "passed": false,
+      "evidence": "the worker created protected check file check.sh during the run\nthe worker changed check.sh (a protected check file)\nnot accepted: the worker changed a protected check file"
+    }
+  ]
+}

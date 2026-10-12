@@ -3,10 +3,14 @@ execution is a DBOS step, so after a crash finished nodes are replayed from DBOS
 import json, os, re, uuid, operator, sqlite3, subprocess, tempfile, threading, time
 import shlex
 from collections import defaultdict, deque
+from datetime import datetime, timezone
+from queue import Empty, Queue
 from dbos import DBOS, SetWorkflowID
 import store, vault, decider, plugins, verify, claims, workspaces, memory_context, secrets_store, sandboxing, system_check
 import shell_commands
 import audit_log
+import schedule_policy
+from dbos._croniter import croniter  # DBOS 3.2.0's cron parser; keep cron semantics identical to its scheduler.
 from agents_md import project_instructions_detail
 
 MAX_EXECUTIONS = 500  # default step limit per run; an environment may set its own "max_steps"
@@ -23,6 +27,7 @@ CODEX_LOGIN_HINT = "Codex not signed in \u2014 run: codex login --device-auth"
 RUN_WAITING_MESSAGE = "Waiting for another run to finish"
 MAX_PARALLEL_RUNS = max(1, int(system_check.effective_settings().get("max_parallel_runs", 1)))
 _execution_slots = threading.BoundedSemaphore(MAX_PARALLEL_RUNS)
+SCHEDULES_PAUSED = False
 # steps with an exit_code that check nodes branch on: see plugins.is_worker
 OPS = {"==": operator.eq, "!=": operator.ne, "<=": operator.le, ">=": operator.ge, "<": operator.lt, ">": operator.gt}
 
@@ -45,6 +50,12 @@ def env_path(env_id: str) -> str:
     if not isinstance(env_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", env_id):
         raise ValueError("environment id must use letters, numbers, dots, underscores, or hyphens")
     return f"environments/{env_id}.json"
+
+
+def _codex_model_args(config: dict) -> list[str]:
+    """An empty/default model means use the model configured in the Codex CLI."""
+    model = str(config.get("model") or "").strip()
+    return ["-m", model] if model and model.casefold() != "default" else []
 
 
 def load_env(env_id: str) -> dict:
@@ -86,7 +97,7 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     fd, last_file = tempfile.mkstemp(prefix="codex-last-", suffix=".txt"); os.close(fd)
     executable = os.environ.get("CODEX_BIN", "codex")
     args = shell_commands.executable_invocation(executable, "exec", "--json", "--skip-git-repo-check", "-s", sandbox,
-            "-C", workdir, "-o", last_file) + (["-m", cfg["model"]] if cfg.get("model") else []) + ["--", prompt]
+            "-C", workdir, "-o", last_file) + _codex_model_args(cfg) + ["--", prompt]
     try:
         process_options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
         p = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -99,8 +110,25 @@ def run_codex(env_id: str, run_id: str, nid: str, cfg: dict, prev_output: str, t
     timer = threading.Timer(timeout, terminate_process, args=(p,)); timer.start()
     log, errs, agent_msg, started, tok = [], [], "", time.time(), {}
     flushed = started
+    lines = Queue()
+    def read_stdout():
+        try:
+            for output_line in p.stdout:
+                lines.put(output_line)
+        finally:
+            lines.put(None)
+    reader = threading.Thread(target=read_stdout, daemon=True)
+    reader.start()
     try:
-        for line in p.stdout:
+        while True:
+            try:
+                line = lines.get(timeout=max(0, 2 - (time.time() - flushed)))
+            except Empty:
+                store.set_node(run_id, env_id, nid, "running", "\n".join(log[-40:]))
+                flushed = time.time()
+                continue
+            if line is None:
+                break
             line = line.strip()
             try:
                 ev = json.loads(line)
@@ -168,14 +196,19 @@ def terminate_process(process) -> None:
 # ---- steps -------------------------------------------------------------------------------
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
-def snapshot_scheduled_run(env_id: str, run_id: str) -> bool:
+def snapshot_scheduled_run(env_id: str, run_id: str, attempt: int = 0) -> bool:
     """Create the run for a schedule tick, unless the flow no longer has a schedule (a tick that was already
-    queued when the owner removed the schedule must not start the flow)."""
+    queued when the owner removed the schedule must not start the flow). The database insert also reserves
+    this flow atomically, so multiple queued ticks cannot wake and start together."""
     graph = load_env(env_id)
-    if not any(n.get("type") == "schedule" for n in graph.get("nodes", [])):
+    if graph.get("enabled", True) is False or not any(n.get("type") == "schedule" for n in graph.get("nodes", [])):
         return False
-    store.create_run(run_id, env_id, graph)
-    return True
+    reserved = store.create_run(run_id, env_id, graph, True)
+    # Older store doubles return None; the real store reports busy vs reserved.
+    started = True if reserved is None else reserved
+    if started:
+        audit_log.record("run.started", what={"env_id": env_id, "run_id": run_id, "source": "schedule"})
+    return started
 
 
 def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) -> dict:
@@ -200,7 +233,13 @@ def run_command(cfg: dict, timeout: int, ws: str = "", sandbox: bool = False) ->
     warning = ""
     if not sandbox:
         command, shell, warning = shell_commands.command_invocation(command)
-    cwd = ws if sandbox else cfg.get("cwd") or ws or None
+    requested_cwd = str(cfg.get("cwd") or "").strip()
+    if sandbox:
+        cwd = ws
+    elif ws and not os.path.isabs(requested_cwd):
+        cwd = os.path.join(ws, requested_cwd) if requested_cwd and requested_cwd != "." else ws
+    else:
+        cwd = requested_cwd or None
     if os.name == "nt" and cwd and not sandbox:
         cwd = os.path.abspath(cwd)
     p = subprocess.Popen(command, shell=shell, cwd=cwd, env=env, stdout=subprocess.PIPE,
@@ -264,7 +303,7 @@ def send_failure_alert(env_id: str, run_id: str, alert_urls: list) -> str:
     return "sent" if ok else "alert failed"
 
 
-def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
+def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "", approved_by_human: bool = False) -> dict:
     """Execute one non-approval node. Returns {"state", "output", "exit_code"?, "branch"?}."""
     nid, kind, cfg = node["id"], node["type"], node.get("config") or {}
     try:
@@ -272,7 +311,7 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     except (TypeError, KeyError, sqlite3.OperationalError):
         # Direct runner unit calls may have no persisted run snapshot (no row, or no run table yet).
         trigger = {}
-    if kind not in ("file_trigger", "webhook_trigger"):
+    if kind not in ("file_trigger", "webhook_trigger", "email_trigger"):
         cfg = _expand_trigger_values(cfg, trigger)
     store.set_node(run_id, env_id, nid, "running")
     try:
@@ -282,6 +321,7 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
         # run-state database; they still need the default audit identity.
         run_record = {"author": "owner"}
     res = {"state": "done", "output": ""}
+    command_audit_complete = True
     try:
         if kind in ("command", "codex"):
             execution_cfg = dict(cfg)
@@ -302,6 +342,11 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
             timeout = max(1, min(int(cfg.get("timeout") or default_timeout), 24 * 3600))
             for attempt in range(1, retries + 2):
                 if kind == "command":
+                    command_audit_complete = audit_log.record(
+                        "step.command_started", who=run_record.get("author", "owner"),
+                        what={"env_id": env_id, "run_id": run_id, "node_id": nid,
+                              "step_type": kind, "attempt": attempt}) and command_audit_complete
+                if kind == "command":
                     sandbox_setting = execution_cfg.get("sandbox", "off")
                     env_sandbox = os.environ.get("GLACIER_SANDBOX", "off")
                     try:
@@ -313,8 +358,25 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                         res = run_command(execution_cfg, timeout, ws, sandbox_on)
                     except (RuntimeError, NotImplementedError, ValueError) as exc:
                         res = {"state": "failed", "output": str(exc), "exit_code": 1}
+                    except BaseException:
+                        command_audit_complete = audit_log.record(
+                            "step.command_interrupted", who=run_record.get("author", "owner"),
+                            what={"env_id": env_id, "run_id": run_id, "node_id": nid,
+                                  "step_type": kind, "attempt": attempt, "outcome": "unknown"}) and command_audit_complete
+                        raise
                 else:
                     res = run_codex(env_id, run_id, nid, execution_cfg, (last or {}).get("output") or "", timeout, ws)
+                # Failed attempts can still write files or call a model. Record
+                # each outcome before retrying, not only the final attempt.
+                outcome = {"env_id": env_id, "run_id": run_id, "node_id": nid,
+                           "step_type": kind, "attempt": attempt,
+                           "exit_code": res.get("exit_code")}
+                if kind == "command":
+                    outcome["outcome"] = "done" if res.get("exit_code") == 0 else "failed"
+                recorded = audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
+                                            who=run_record.get("author", "owner"), what=outcome)
+                if kind == "command":
+                    command_audit_complete = recorded and command_audit_complete
                 res["output"] = secrets_store.redact(str(res.get("output") or ""))
                 if retries:
                     res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
@@ -322,10 +384,6 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                     break
                 store.set_node(run_id, env_id, nid, "running", res["output"] + "\n[retrying]")
                 time.sleep(min(attempt, 10))
-            audit_log.record("step.command_executed" if kind == "command" else "outbound.model_call",
-                             who=run_record.get("author", "owner"),
-                             what={"env_id": env_id, "run_id": run_id, "node_id": nid,
-                                   "step_type": kind, "exit_code": res.get("exit_code")})
         elif kind == "check":
             if last is None:
                 raise ValueError("check has no previous command/codex result")
@@ -357,18 +415,37 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
         elif kind in plugins.NODES:
             home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
             ctx = {"env_id": env_id, "run_id": run_id, "node_id": nid, "config": cfg, "prev": last, "home": home, "workspace": ws,
+                   "approved_by_human": approved_by_human,
                    "memory": lambda task: memory_context.block(task, cfg),
                    "log": lambda text: store.set_node(run_id, env_id, nid, "running", secrets_store.redact(str(text)[-OUTPUT_LIMIT:])),
-                   "trigger": trigger if kind in ("file_trigger", "webhook_trigger") else {}}
-            res = plugins.NODES[kind]["run"](ctx)
-            if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
-                raise ValueError(f"step plug-in {kind!r} returned an invalid result")
-            if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
-                res["exit_code"] = 0 if res["state"] == "done" else 1
-            res["output"] = secrets_store.redact(res.get("output", "")[-OUTPUT_LIMIT:])
+                   "trigger": trigger if kind in ("file_trigger", "webhook_trigger", "email_trigger") else {}}
+            plugin = plugins.NODES[kind]
+            retry_safe = plugin["catalog"].get("retry_safe", False)
+            if kind == "data_table" and str(cfg.get("operation") or "query") == "insert":
+                retry_safe = False  # a crash after commit must not turn replay into a duplicate-insert error
+            retries = max(0, min(int(cfg.get("retries") or 0), MAX_RETRIES)) if retry_safe else 0
+            for attempt in range(1, retries + 2):
+                try:
+                    res = plugin["run"](ctx)
+                    if res.get("state") not in ("done", "failed") or not isinstance(res.get("output", ""), str):
+                        raise ValueError(f"step plug-in {kind!r} returned an invalid result")
+                    if plugins.is_worker(kind) and not isinstance(res.get("exit_code"), int):
+                        res["exit_code"] = 0 if res["state"] == "done" else 1
+                except Exception as exc:
+                    res = {"state": "failed", "output": f"error: {exc}", "exit_code": 1}
+                res["output"] = secrets_store.redact(str(res.get("output") or "")[-OUTPUT_LIMIT:])
+                if retries:
+                    res["output"] = f"[attempt {attempt} of {retries + 1}]\n{res['output']}"[-OUTPUT_LIMIT:]
+                if (res["state"] == "done" and res.get("exit_code", 0) == 0) or attempt > retries:
+                    break
+                store.set_node(run_id, env_id, nid, "running", res["output"] + "\n[retrying]")
+                time.sleep(min(attempt, 10))
             event = {"http_request": "outbound.http_request", "fetch_page": "outbound.web_fetch",
                      "web_search": "outbound.web_search", "read_document": "outbound.document_fetch",
-                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call"}.get(kind)
+                     "acp_agent": "outbound.agent_call", "local_ai": "outbound.model_call",
+                     "structured_ai": "outbound.model_call",
+                     "data_table": "local.data_step", "json_transform": "local.data_step",
+                     "csv_file": "local.data_step", "delay": "local.delay"}.get(kind)
             if event:
                 safe = {"env_id": env_id, "run_id": run_id, "node_id": nid, "step_type": kind}
                 if kind == "http_request":
@@ -378,6 +455,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
                     safe["destination"] = str(cfg.get("url") or cfg.get("source") or "")
                 elif kind == "web_search":
                     safe["destination"] = str(cfg.get("search_server", ""))
+                elif kind in {"data_table", "json_transform", "csv_file"}:
+                    safe["operation"] = str(cfg.get("operation", ""))
                 audit_log.record(event, who=run_record.get("author", "owner"), what=safe)
         elif kind != "schedule":
             raise ValueError(f"unknown node type {kind!r}")
@@ -386,6 +465,8 @@ def _run_node_impl(env_id: str, run_id: str, node: dict, last: dict | None, ws: 
     if isinstance(res.get("usage"), dict):
         store.record_usage(run_id, nid, res["usage"])
     store.set_node(run_id, env_id, nid, res["state"], res["output"])
+    if kind == "command" and not command_audit_complete:
+        res["audit_state"] = "unavailable"
     return res
 
 
@@ -411,7 +492,7 @@ def _expand_trigger_values(value, trigger):
 
 
 @DBOS.step()
-def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "") -> dict:
+def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = "", approved_by_human: bool = False) -> dict:
     """Run one step while respecting the hardware-derived execution limit."""
     acquired = _execution_slots.acquire(blocking=False)
     if not acquired:
@@ -420,7 +501,7 @@ def run_node(env_id: str, run_id: str, node: dict, last: dict | None, ws: str = 
         _execution_slots.acquire()
     try:
         store.set_run(run_id, "running")
-        return _run_node_impl(env_id, run_id, node, last, ws)
+        return _run_node_impl(env_id, run_id, node, last, ws, approved_by_human)
     finally:
         _execution_slots.release()
 
@@ -450,6 +531,13 @@ def prepare_workspace(env_id: str, run_id: str, isolate: bool) -> str:
 
 
 @DBOS.step()
+def snapshot_acceptance_files(env_id: str, acceptance: list, ws: str) -> list[dict]:
+    """Persist the protected-file baseline before any worker node executes."""
+    home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
+    return verify.snapshot_protected_files(home, env_id, acceptance, ws)
+
+
+@DBOS.step()
 def finish_workspace(env_id: str, run_id: str, verified: bool) -> dict:
     r = workspaces.finish(os.path.abspath(os.environ.get("GLACIER_HOME", "data")), env_id, run_id, verified)
     store.record_workspace(run_id, r)
@@ -457,11 +545,12 @@ def finish_workspace(env_id: str, run_id: str, verified: bool) -> dict:
 
 
 @DBOS.step()
-def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str, ws: str = "") -> dict:
+def run_acceptance_check(env_id: str, run_id: str, idx: int, check: dict, last_output: str, ws: str = "",
+                         protected_snapshot: dict | None = None) -> dict:
     """Runs one acceptance check outside the worker's control (rule I-04) and records the evidence."""
     home = os.path.abspath(os.environ.get("GLACIER_HOME", "data"))
     try:
-        r = verify.run_check(home, env_id, check, last_output, ws)
+        r = verify.run_check(home, env_id, check, last_output, ws, protected_snapshot)
     except Exception as e:
         r = {"passed": False, "evidence": f"the check could not run: {e}"}
     store.record_check(run_id, idx, check["kind"], r["passed"], r["evidence"])
@@ -526,14 +615,23 @@ def loop_tick(env_id: str, run_id: str, node_id: str, count: int, times: int) ->
 
 
 @DBOS.step(retries_allowed=True, max_attempts=5)
+def for_each_tick(env_id: str, run_id: str, node_id: str, items: list, index: int) -> dict:
+    if index < len(items):
+        output = json.dumps(items[index], ensure_ascii=False)
+        res = {"state": "running", "output": output, "branch": "each", "exit_code": 0}
+    else:
+        res = {"state": "done", "output": f"Processed {len(items)} items", "branch": "done", "exit_code": 0}
+    store.set_node(run_id, env_id, node_id, res["state"], res["output"])
+    return res
+
+
+@DBOS.step(retries_allowed=True, max_attempts=5)
 def start_child(env_id: str, run_id: str, node_id: str, child_env: str, child_run: str, depth: int) -> dict:
     """Snapshot the sub-flow's saved graph into its own run (visible in history like any run)."""
     try:
         if depth >= MAX_FLOW_DEPTH:
             raise ValueError(f"sub-flows nested more than {MAX_FLOW_DEPTH} deep; stopping")
         store.create_run(child_run, child_env, load_env(child_env))
-        audit_log.record("run.child_started", who=store.get_run(run_id).get("author", "owner"),
-                         what={"env_id": child_env, "run_id": child_run, "parent_run_id": run_id, "node_id": node_id})
         audit_log.record("run.child_started", who=store.get_run(run_id).get("author", "owner"),
                          what={"env_id": child_env, "run_id": child_run, "parent_run_id": run_id, "node_id": node_id})
     except (FileNotFoundError, ValueError) as e:
@@ -570,8 +668,12 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                                 if graph.get("_author") == "a2a" else None), "done", 0
     limit = int(graph.get("max_steps") or MAX_EXECUTIONS)
     loop_counts, flow_visits, failures = defaultdict(int), defaultdict(int), defaultdict(list)
+    foreach_items, foreach_indices = {}, defaultdict(int)
     isolate = bool(graph.get("isolate"))
+    approved_by_human = False
     ws = prepare_workspace(env_id, run_id, isolate)
+    acceptance = graph.get("acceptance") or []
+    protected_snapshots = snapshot_acceptance_files(env_id, acceptance, ws) if acceptance else []
     while queue:
         if executions >= limit:
             status = "failed"
@@ -589,6 +691,33 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             res = loop_tick(env_id, run_id, nid, loop_counts[nid], times)
             if res["branch"] == "done":
                 loop_counts[nid] = 0  # an outer loop can run this loop again
+        elif node["type"] == "for_each":
+            if nid not in foreach_items:
+                try:
+                    items = json.loads(str((last or {}).get("output") or ""))
+                except (TypeError, json.JSONDecodeError):
+                    items = None
+                try:
+                    limit_items = max(1, min(int(cfg.get("max_items") or 100), MAX_LOOP_TIMES))
+                except (TypeError, ValueError):
+                    limit_items = 100
+                if not isinstance(items, list):
+                    msg = "For each item needs a JSON list from the previous step"
+                    store.set_node(run_id, env_id, nid, "failed", msg)
+                    res = {"state": "failed", "output": msg, "error": True}
+                elif len(items) > limit_items:
+                    msg = f"This list has {len(items)} items, above the limit of {limit_items}"
+                    store.set_node(run_id, env_id, nid, "failed", msg)
+                    res = {"state": "failed", "output": msg, "error": True}
+                else:
+                    foreach_items[nid] = items
+            if nid in foreach_items:
+                res = for_each_tick(env_id, run_id, nid, foreach_items[nid], foreach_indices[nid])
+                if res["branch"] == "each":
+                    foreach_indices[nid] += 1
+                else:
+                    foreach_items.pop(nid, None)
+                    foreach_indices.pop(nid, None)
         elif node["type"] == "flow":
             child_env = str(cfg.get("env") or "")
             flow_visits[nid] += 1
@@ -601,8 +730,9 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
         else:
             if node["type"] == "command" and cfg.get("sandbox") is None and graph.get("sandbox") is not None:
                 node = dict(node, config=dict(cfg, sandbox=graph["sandbox"]))
-            res = run_node(env_id, run_id, node, last, ws)
+            res = run_node(env_id, run_id, node, last, ws, approved_by_human)
         edges = out[nid]
+        approved_by_human = node["type"] == "approval" and res.get("branch") == "yes"
         if res.get("error"):
             status = "failed"
             break
@@ -626,7 +756,6 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
             if not edges and node["type"] == "approval" and res["branch"] == "no":
                 status = "rejected"
         queue.extend(e["target"] for e in edges)
-    acceptance = graph.get("acceptance") or []
     if status == "done" and acceptance:  # done only when every required check passes (P-VERIFY)
         last_output = (last or {}).get("output") or ""
         for i, check in enumerate(acceptance):
@@ -634,7 +763,8 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
                 mark_waiting(env_id, run_id, f"check-{i}")
                 r = finish_human_check(env_id, run_id, i, DBOS.recv(topic=f"check-{i}", timeout_seconds=APPROVAL_TIMEOUT))
             else:
-                r = run_acceptance_check(env_id, run_id, i, check, last_output, ws)
+                snapshot = protected_snapshots[i] if i < len(protected_snapshots) else None
+                r = run_acceptance_check(env_id, run_id, i, check, last_output, ws, snapshot)
             if not r["passed"] and check.get("required", True):
                 # The owner saying no is a decision, not a broken run: report it as rejected and stop checking.
                 if check.get("kind") == "human" and r.get("evidence") == "rejected by the owner":
@@ -652,9 +782,34 @@ def run_environment(env_id: str, run_id: str, depth: int = 0) -> str:
 @DBOS.workflow()
 def scheduled_run(when, env_id) -> str:
     """Fired by the environment's DBOS schedule; starts a normal run (id derived from this workflow, so replay-safe)."""
-    run_id = uuid.uuid5(uuid.NAMESPACE_URL, DBOS.workflow_id).hex[:12]
-    if not snapshot_scheduled_run(env_id, run_id):
+    graph = load_env(env_id)
+    if SCHEDULES_PAUSED:
         return ""
+    schedule_node = next((n for n in graph.get("nodes", []) if n.get("type") == "schedule"), {})
+    cfg = schedule_node.get("config") or {}
+    now = datetime.now(timezone.utc)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    if when < now:
+        if cfg.get("missed_run", "run_once") == "skip":
+            return ""
+        # DBOS backfills durably. Collapse its list of overdue ticks to the newest one.
+        next_tick = croniter(cfg.get("cron", ""), when, second_at_beginning=True).get_next(datetime)
+        if next_tick <= now:
+            return ""
+    run_id = uuid.uuid5(uuid.NAMESPACE_URL, DBOS.workflow_id).hex[:12]
+    overlap = cfg.get("overlap", "queue")
+    attempt = 0
+    while True:
+        if snapshot_scheduled_run(env_id, run_id, attempt):
+            break
+        if not any(n.get("type") == "schedule" for n in load_env(env_id).get("nodes", [])):
+            return ""
+        if schedule_policy.overlap_action(overlap, active=True) == "skip":
+            return ""
+        # Queue policy waits durably, then retries an atomic database reservation.
+        DBOS.sleep(1)
+        attempt += 1
     with SetWorkflowID(run_id):
         DBOS.start_workflow(run_environment, env_id, run_id)
     return run_id
@@ -662,9 +817,24 @@ def scheduled_run(when, env_id) -> str:
 
 def sync_schedule(env: dict) -> None:
     """Create/replace the environment's DBOS schedule from its schedule node, or delete it if there is none."""
-    DBOS.delete_schedule(schedule_name(env["id"]))
+    name = schedule_name(env["id"])
+    existing = DBOS.get_schedule(name)
+    if env.get("enabled", True) is False:
+        if existing:
+            DBOS.delete_schedule(name)
+        return
     for n in env.get("nodes", []):
         if n["type"] == "schedule":
-            DBOS.create_schedule(schedule_name=schedule_name(env["id"]), workflow_fn=scheduled_run,
-                                 schedule=(n.get("config") or {}).get("cron", ""), context=env["id"])
+            cfg = n.get("config") or {}
+            cron = cfg.get("cron", "")
+            if existing and existing.get("schedule") == cron and existing.get("context") == env["id"]:
+                return
+            if existing:
+                DBOS.delete_schedule(name)
+            DBOS.create_schedule(schedule_name=name, workflow_fn=scheduled_run, schedule=cron,
+                                 context=env["id"], automatic_backfill=True)
+            if SCHEDULES_PAUSED:
+                DBOS.pause_schedule(name)
             return
+    if existing:
+        DBOS.delete_schedule(name)

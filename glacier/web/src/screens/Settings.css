@@ -12,17 +12,18 @@
 }
 
 .g-settings .g-menu-item {
-  min-height: calc(20 * var(--px));
+  min-height: calc(12 * var(--px));
   font-family: var(--g-font-body);
-  font-size: calc(8 * var(--px));
+  font-size:var(--g-size-small);
 }
 
-.g-memory-text,.g-run-text,.g-usage-table { font-family:var(--g-font-body);font-size:calc(8 * var(--px));line-height:1.6; }
+.g-memory-text,.g-run-text,.g-usage-table { font-family:var(--g-font-body);font-size:var(--g-size-small);line-height:1.6; }
 .g-memory-text { line-height:1.7; }
 
 /* Keep the model list heading, release details and table cells inside their scroll areas. */
-.g-settings .settings-scroll-body { min-height: 0; overflow-y: auto; }
+.g-settings .settings-scroll-body { flex: 1; min-height: 0; overflow-y: auto; }
 .g-settings .settings-scroll-panel { overflow: hidden; }
+.g-settings .settings-scroll-body { width: 100%; min-width: 0; }
 .g-settings .g-usage-table td.g-lead { white-space: normal; overflow-wrap: anywhere; }
 
 /* Settings uses the kit's two readable text sizes throughout. */
@@ -30,12 +31,12 @@
   .g-empty, .g-error, .g-sub, .g-crumb, .g-hintbar, .g-btn, .g-input, .g-detail,
   .g-muted, .g-kv, .g-table th, .g-table td, label, input, select, button) {
   font-family: var(--g-font-body);
-  font-size: calc(8 * var(--px));
+  font-size:var(--g-size-small);
 }
 
 .g-settings .g-title {
   font-family: var(--g-font-head);
-  font-size: calc(16 * var(--px));
+  font-size: var(--g-size-title);
 }
 
 .g-settings .g-menu-item {
@@ -66,12 +67,49 @@
   color: var(--g-ink);
 }
 
+.g-settings > .g-sidenav { background: none; border: 0; padding-inline: 0; overflow: visible; }
+.g-settings > .g-panel { background: none; border: 0; padding: 0 calc(2 * var(--px)); }
+.g-settings .g-usage-table { margin-top: calc(5 * var(--px)); }
+.g-settings .g-usage-table th,
+.g-settings .g-usage-table td { padding: calc(2 * var(--px)) calc(1.5 * var(--px)); }
+.g-settings .g-usage-table th:first-child,
+.g-settings .g-usage-table td:first-child { width: 34%; }
+.g-settings .g-usage-table th:nth-child(2),
+.g-settings .g-usage-table th:nth-child(3),
+.g-settings .g-usage-table th:nth-child(4),
+.g-settings .g-usage-table th:nth-child(5) { width: 16.5%; }
+.g-settings .g-usage-table td:not(:first-child) { font-variant-numeric: tabular-nums; }
+.g-settings .g-usage-table th { color: var(--g-white); background: var(--g-ice2); border-bottom: 1px solid var(--l-edge); }
+.g-settings .g-usage-table td { border-bottom: 1px solid var(--l-edge); padding: calc(2 * var(--px)); color: var(--g-white); }
+.g-settings .settings-day-range { gap: calc(2 * var(--px)); }
+.g-settings .settings-day-range .g-seg-btn { min-height: calc(12 * var(--px)); padding: calc(1 * var(--px)) calc(4 * var(--px)); }
+.g-settings .g-ask-row { display: flex; flex-wrap: wrap; align-items: center; gap: calc(2 * var(--px)); margin-top: calc(4 * var(--px)); }
+.g-settings .g-ask-row input:first-child { flex: 0 1 calc(82 * var(--px)); }
+.g-settings .g-ask-row input:nth-child(2) { flex: 1 1 calc(100 * var(--px)); }
+.g-settings .g-secret-message { margin-top: calc(2 * var(--px)); }
+.g-settings .settings-scroll-body > .g-panel-title { margin-top: calc(5 * var(--px)); }
+.g-settings .settings-update-stack { gap: calc(3 * var(--px)); }
+.g-settings .settings-update-notes { white-space: pre-wrap; }
+.g-settings .settings-section-heading { margin-top: calc(5 * var(--px)); }
+.g-settings .settings-secret-description { margin-bottom: calc(3 * var(--px)); }
+.g-settings .settings-secret-actions { display: flex; flex-wrap: wrap; gap: calc(2 * var(--px)); }
+.g-settings .settings-secret-row { grid-template-columns: minmax(0,1fr) auto; }
+.g-settings .settings-data-rows { margin-top: calc(5 * var(--px)); }
+
+@media (max-width: 800px) {
+  .g-settings { grid-template-columns: minmax(calc(34 * var(--px)), .52fr) minmax(0, 1.48fr); }
+  .g-settings .g-kv { grid-template-columns: minmax(0, 1fr); gap: calc(1 * var(--px)); }
+  .g-settings .g-kv dd { margin-bottom: calc(2 * var(--px)); }
+  .g-settings .g-usage-table th,
+  .g-settings .g-usage-table td { font-size: var(--g-size-small); }
+}
+
 @media (max-width: 760px) {
   .g-settings {
     grid-template-columns: calc(88 * var(--px)) minmax(0, 1fr);
   }
 
   .g-settings .g-menu-item {
-    font-size: calc(8 * var(--px));
+    font-size:var(--g-size-small);
   }
 }

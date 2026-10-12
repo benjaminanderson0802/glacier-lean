@@ -1,0 +1,10 @@
+{"saved":true,"commit":"006f3a3b"}
+run b75517eb782b
+STATUS failed
+NODES {'n1': 'done', 'n2': 'failed', 'n3': 'skipped'}
+--- n1
+codex exit 0
+Created `hello.txt` containing exactly `Glacier says hi.`
+--- n2
+error: [Errno 2] No such file or directory: '/tmp/glacier-i3-owner-walkthrough-20261010/workspaces/codex-hello/${GLACIER_HOME:-$HOME/.glacier}/workspaces/codex-hello'
+LIVE_DONE

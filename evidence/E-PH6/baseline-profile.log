@@ -1,0 +1,31 @@
+Sessions: 870
+         15059079 function calls (15047805 primitive calls) in 195.393 seconds
+
+   Ordered by: cumulative time
+   List reduced from 158 to 22 due to restriction <22>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.069    0.069  195.394  195.394 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:278(list_sessions)
+      823    0.874    0.001  195.218    0.237 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:178(_load_file)
+   288759  173.973    0.001  173.973    0.001 {method 'readline' of '_io.BufferedReader' objects}
+      823    0.009    0.000  118.840    0.144 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:128(_first_record)
+   287797    0.574    0.000   62.885    0.000 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:53(_records)
+   286151    0.823    0.000   11.758    0.000 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:138(_event)
+295744/284470    0.334    0.000    9.708    0.000 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:43(_text)
+   272817    0.415    0.000    9.244    0.000 /usr/lib/python3.12/json/__init__.py:183(dumps)
+   272817    0.351    0.000    8.772    0.000 /usr/lib/python3.12/json/encoder.py:183(encode)
+   272817    8.278    0.000    8.278    0.000 /usr/lib/python3.12/json/encoder.py:205(iterencode)
+   287526    0.405    0.000    5.876    0.000 /usr/lib/python3.12/json/__init__.py:299(loads)
+   287526    0.444    0.000    4.427    0.000 /usr/lib/python3.12/json/decoder.py:332(decode)
+   287526    3.533    0.000    3.533    0.000 /usr/lib/python3.12/json/decoder.py:343(raw_decode)
+   287113    1.144    0.000    1.144    0.000 {method 'update' of '_hashlib.HASH' objects}
+   578886    0.573    0.000    1.039    0.000 /home/glacier/w/workers/gf-E-PH6/glacier/backend/session_mirror.py:33(_timestamp)
+   287891    0.548    0.000    0.548    0.000 {method 'isoformat' of 'datetime.datetime' objects}
+   286974    0.297    0.000    0.517    0.000 /usr/lib/python3.12/json/__init__.py:244(detect_encoding)
+   286985    0.455    0.000    0.455    0.000 {method 'decode' of 'bytes' objects}
+  3145010    0.385    0.000    0.385    0.000 {built-in method builtins.isinstance}
+   578103    0.321    0.000    0.321    0.000 {method 'match' of 're.Pattern' objects}
+  1769123    0.265    0.000    0.265    0.000 {method 'get' of 'dict' objects}
+   860922    0.185    0.000    0.185    0.000 {method 'startswith' of 'bytes' objects}
+
+

@@ -1,5 +1,7 @@
 # Live ACP proof: two real harnesses
 
+Current status: **PASS** — B5 reran the real temporary-backend proof on 2026-10-09; see the final section. Earlier failed attempts are retained as history.
+
 Run date: 2026-10-07
 
 Both flows used the same goal and command acceptance check in separate temporary workspaces. The backend, database, and workspaces were temporary. OpenCode used the local Ollama model; Codex ACP used the existing Codex login with configured model `gpt-6-luna` and low reasoning effort.
@@ -167,3 +169,14 @@ FILE_CONTENT=hello from glacier
 ### Result
 
 PH2.4's live test is met: the same goal completed through OpenCode ACP and Codex ACP, and both Glacier checks and independent checks passed. Ollama `qwen3:1.7b` (Apache-2.0) is the tested OpenCode model. Explicitly naming `./hello.txt`, enabling `tool_call: true`, and asking the model not to use an absolute path mattered; the vague “current folder” wording caused a denied out-of-project path. Earlier failed W28 and W43 attempts remain recorded above.
+
+## B5 live rerun — 2026-10-09
+
+Command: `PATH="$HOME/.local/bin:$PATH" ~/w/glacier-lean/.venv/bin/python bench/live_acp/run_live.py --evidence /tmp/gf-b5-acp-two-harnesses.md`. The runner used its real temporary-home Glacier backend; its generated report was reviewed and this result was added without replacing the earlier run history.
+
+| Harness | Version | Glacier status | Glacier check | Independent check | Elapsed |
+| --- | --- | --- | --- | --- | ---: |
+| OpenCode | 1.18.35 (MIT) | done | pass | pass | 23.36 s |
+| Codex ACP | 2.1.1 (Apache-2.0) | done | pass | pass | 10.11 s |
+
+Both ran the same `./hello.txt` task with `test "$(cat hello.txt)" = "hello from glacier"`. OpenCode output: `The file was written successfully to the local filesystem. No further action is required.` Codex ACP output: `I’ll create ./hello.txt in the project folder with the exact requested text.Created ./hello.txt with exactly hello from glacier.` Overall result: **PASS**. No `acp_agent.py` change was needed.
