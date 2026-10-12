@@ -17,6 +17,7 @@ from scripts.ledger import Ledger
 from scripts.producer import parse_campaign_requirements, produce_ready
 from scripts.clipper import write_word_captions
 from scripts.variants import assign_segments
+from media_fixtures import generated_clip_media
 
 
 @pytest.fixture(autouse=True)
@@ -99,18 +100,18 @@ def test_synthetic_clip_caption_timing_stays_within_50ms(tmp_path):
     assert output.exists()
 
 
-def test_distributor_uses_nearest_deadline_and_manual_submit_queue(tmp_path, monkeypatch):
-    import scripts.distributor as distributor_module
-    monkeypatch.setattr(distributor_module, "_ffprobe", lambda path: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
+def test_distributor_uses_nearest_deadline_and_manual_submit_queue(tmp_path):
     now = datetime(2026, 10, 11, 12, tzinfo=timezone.utc)
     channels = ["@first", "@second"]
     ledger = Ledger(tmp_path)
     ledger.set_channel_config("@first", caption="first template", paused=False)
     ledger.set_channel_config("@second", caption="second template", paused=False)
-    old_path, fresh_path = tmp_path / "old.mp4", tmp_path / "fresh.mp4"
-    old_path.write_bytes(b"master"); fresh_path.write_bytes(b"master")
-    old = Clip("old", "camp-a", "src1", 0, 25, str(old_path), "Old", "#ad\n\nPaid partnership", ["#ad"], "", passthrough=True)
-    fresh = Clip("fresh", "camp-b", "src2", 30, 55, str(fresh_path), "Fresh", "#ad\n\nPaid partnership", ["#ad"], "", passthrough=True)
+    old_base, old_path, old_words = generated_clip_media(tmp_path, "old", variant=0)
+    fresh_base, fresh_path, fresh_words = generated_clip_media(tmp_path, "fresh", variant=1)
+    old = Clip("old", "camp-a", "src1", 0, 25, str(old_path), "Old", "#ad\n\nPaid partnership", ["#ad"], "",
+               passthrough=True, base_path=str(old_base), caption_words=old_words)
+    fresh = Clip("fresh", "camp-b", "src2", 30, 55, str(fresh_path), "Fresh", "#ad\n\nPaid partnership", ["#ad"], "",
+                 passthrough=True, base_path=str(fresh_base), caption_words=fresh_words)
     for clip in (old, fresh):
         ledger.record_clip(clip)
         ledger.add_library_clip(clip, checklist={"required_tags": ["#ad"]}, status="ready")
@@ -125,8 +126,9 @@ def test_distributor_uses_nearest_deadline_and_manual_submit_queue(tmp_path, mon
             return Post(clip.id, clip.channel_handle, "youtube_shorts", f"v-{clip.id}",
                         f"https://youtube.test/shorts/{clip.id}", now.isoformat())
     uploader = Uploader()
-    config = {"live": True, "channels": channels, "daily_channel_cap": 6, "global_daily_cap": 100,
-              "min_spacing_hours": 2, "max_spacing_hours": 6, "approved_campaign_ids": ["camp-a", "camp-b"]}
+    config = {"live": True, "channels": channels, "daily_target": 80, "per_channel_daily": 8,
+              "min_gap_minutes": 150, "global_daily_cap": 100,
+              "max_spacing_hours": 6, "approved_campaign_ids": ["camp-a", "camp-b"]}
     result = distribute_ready(config, home=tmp_path, uploader=uploader, now_fn=lambda: now,
                               rng=__import__("random").Random(4), sleep_fn=lambda _: None)
     assert result["uploads"] == 2
@@ -156,18 +158,12 @@ def test_deadline_risk_alert_and_paused_channel_reporting(tmp_path):
     assert any(event["kind"] == "deadline at risk" for event in ledger.events())
 
 
-def test_producer_stocks_library_and_distributor_queues_whop_manually(tmp_path, monkeypatch):
-    import scripts.producer as producer_module
-    import scripts.distributor as distributor_module
-    probe = {"width": 1080, "height": 1920, "audio_loudness_ok": True}
-    monkeypatch.setattr(producer_module, "_ffprobe", lambda path: probe)
-    monkeypatch.setattr(distributor_module, "_ffprobe", lambda path: probe)
-    source = tmp_path / "provided.mp4"
-    source.write_bytes(b"untouched source bytes")
+def test_producer_stocks_library_and_distributor_queues_whop_manually(tmp_path):
+    base, source, words = generated_clip_media(tmp_path, "provided", variant=2)
     campaign = make_campaign(rules_text="Required tags: #ad\nNo editing: true\nLength: min 20 max 45",
                              requires_editing=False)
     clip = Clip("queued", campaign.id, "src-1", 0, 25, str(source), "Title", "#ad", ["#ad"], "",
-                passthrough=True)
+                passthrough=True, base_path=str(base), caption_words=words)
 
     class Scout:
         def list_campaigns(self): return [campaign]
@@ -221,23 +217,21 @@ def test_producer_logs_qa_failure_without_marking_clip_ready(tmp_path, monkeypat
     assert any(event["kind"] == "producer_qa_failed" for event in ledger.events())
 
 
-def test_distributor_respects_two_hour_spacing_and_six_per_day_cap(tmp_path, monkeypatch):
-    import scripts.distributor as distributor_module
-    monkeypatch.setattr(distributor_module, "_ffprobe", lambda path: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
+def test_distributor_respects_150_minute_spacing_and_eight_per_channel_cap(tmp_path):
     now = datetime(2026, 10, 11, 11, 30, tzinfo=timezone.utc)
     ledger = Ledger(tmp_path)
     channels = ["@spacing", "@capped"]
     for channel in channels:
         ledger.set_channel_config(channel)
     ledger.record_post(Post("previous", "@spacing", "youtube_shorts", "p0", "url",
-                            (now - timedelta(hours=1, minutes=30)).isoformat()))
-    for index in range(6):
+                            (now - timedelta(minutes=149)).isoformat()))
+    for index in range(8):
         ledger.record_post(Post(f"cap-{index}", "@capped", "youtube_shorts", f"cap-v{index}", "url",
                                 now.replace(hour=8, minute=index).isoformat()))
-    clip_path = tmp_path / "spacing.mp4"
-    clip_path.write_bytes(b"master")
+    base, clip_path, words = generated_clip_media(tmp_path, "spacing", variant=3)
     clip = Clip("spacing-clip", "camp-a", "source-a", 0, 25, str(clip_path),
-                "Title", "#ad", ["#ad"], "", passthrough=True)
+                "Title", "#ad", ["#ad"], "", passthrough=True,
+                base_path=str(base), caption_words=words)
     ledger.record_clip(clip)
     ledger.add_library_clip(clip, checklist={"required_tags": ["#ad"]})
     waits = []
@@ -245,14 +239,15 @@ def test_distributor_respects_two_hour_spacing_and_six_per_day_cap(tmp_path, mon
     class Uploader:
         def upload(self, item, *, dry_run=False):
             return Post(item.id, item.channel_handle, "youtube_shorts", "new", "https://youtube.test/new", current[0].isoformat())
-    config = {"live": True, "channels": channels, "daily_channel_cap": 6}
+    config = {"live": True, "channels": channels, "daily_target": 80,
+              "per_channel_daily": 8, "min_gap_minutes": 150}
     ledger.set_next_post_at("@spacing", now - timedelta(minutes=5))
     result = distribute_ready(config, home=tmp_path, uploader=Uploader(), now_fn=lambda: current[0],
                               rng=__import__("random").Random(8), sleep_fn=waits.append)
-    assert result["uploads"] == 0  # due time cannot override the 2-hour minimum
-    current[0] = now + timedelta(minutes=30)
+    assert result["uploads"] == 0  # due time cannot override the 150-minute minimum
+    current[0] = now + timedelta(minutes=1)
     result = distribute_ready(config, home=tmp_path, uploader=Uploader(), now_fn=lambda: current[0],
                               rng=__import__("random").Random(8), sleep_fn=waits.append)
     assert result["uploads"] == 1
     assert all(0 <= wait <= 45 * 60 for wait in waits)
-    assert ledger.posts_today("@capped", today=now.date().isoformat()) == 6
+    assert ledger.posts_today("@capped", today=now.date().isoformat()) == 8

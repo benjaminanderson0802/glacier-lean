@@ -16,6 +16,7 @@ from scripts.sources import fetch_source
 from scripts.variants import assign_segments, make_variant
 from scripts.cycle import run_cycle
 from scripts.clipper import candidate_segments, make_clip, score_candidate, transcribe, write_word_captions
+from media_fixtures import generated_clip_media
 
 
 @pytest.fixture(autouse=True)
@@ -297,14 +298,14 @@ def test_unapproved_campaign_and_reached_daily_cap_never_upload(tmp_path):
 
 
 def _make_qa_passing_clip_fixture(tmp_path, monkeypatch, clip):
-    """Give orchestration tests media satisfying Producer and Distributor QA."""
-    media = tmp_path / "qa-passing-clip.mp4"
-    media.write_bytes(b"fixture-media")
+    """Give orchestration tests generated, captioned media satisfying both QA gates."""
+    variant = 0 if clip.id == "clip1" else 1
+    duration = clip.end_s - clip.start_s
+    base, media, words = generated_clip_media(tmp_path, f"qa-{clip.id}", duration_s=duration,
+                                              variant=variant)
     clip.path = str(media)
-    clip.caption_words = [{"start": 0, "end": 1, "word": "Caption"}]
-    probe = lambda _path: {"width": 1080, "height": 1920, "audio_loudness_ok": True}
-    monkeypatch.setattr("scripts.producer._ffprobe", probe)
-    monkeypatch.setattr("scripts.distributor._ffprobe", probe)
+    clip.base_path = str(base)
+    clip.caption_words = words
     monkeypatch.setattr("scripts.distributor._channel_variant", lambda clip, *_args, **_kwargs: clip)
 
 

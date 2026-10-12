@@ -10,6 +10,7 @@ import os
 import sys
 import zipfile
 from pathlib import Path
+from media_fixtures import generated_clip_media
 
 import pytest
 
@@ -92,24 +93,19 @@ def test_legacy_clip_home_rule_and_source_files_override_registry(tmp_path, monk
     assert result["qa_rules_enforced"]["camp-a"]["required_tags"] == ["#private"]
 
 
-def test_producer_marks_ffprobe_error_as_clip_qa_failure_and_continues(tmp_path, monkeypatch):
-    import subprocess
+def test_producer_marks_truncated_real_media_as_clip_qa_failure_and_continues(tmp_path):
     import scripts.producer as producer
     from scripts.interfaces import Campaign, Clip
 
     campaign = Campaign("camp", "Camp", "", 1, None, ["youtube_shorts"], "Required tags: #ad")
-    bad_path, good_path = tmp_path / "bad.mp4", tmp_path / "good.mp4"
-    bad_path.write_bytes(b"bad fixture")
-    good_path.write_bytes(b"good fixture")
-    bad = Clip("bad", campaign.id, "source", 0, 25, str(bad_path), "Title #ad", "", ["#ad"], "", passthrough=True)
-    good = Clip("good", campaign.id, "source", 30, 55, str(good_path), "Title #ad", "", ["#ad"], "", passthrough=True)
-
-    def ffprobe(path):
-        if path == str(bad_path):
-            raise subprocess.CalledProcessError(1, ["ffprobe", path], stderr="invalid media")
-        return {"width": 1080, "height": 1920, "audio_loudness_ok": True}
-
-    monkeypatch.setattr(producer, "_ffprobe", ffprobe)
+    bad_base, bad_path, bad_words = generated_clip_media(tmp_path, "bad", variant=0)
+    good_base, good_path, good_words = generated_clip_media(tmp_path, "good", variant=1)
+    # Start with real generated footage, then truncate one file to exercise the actual probe error path.
+    bad_path.write_bytes(bad_path.read_bytes()[:128])
+    bad = Clip("bad", campaign.id, "source", 0, 25, str(bad_path), "Title #ad", "", ["#ad"], "",
+               passthrough=True, base_path=str(bad_base), caption_words=bad_words)
+    good = Clip("good", campaign.id, "source", 30, 55, str(good_path), "Title #ad", "", ["#ad"], "",
+                passthrough=True, base_path=str(good_base), caption_words=good_words)
 
     class Scout:
         joined_campaign_ids = [campaign.id]
@@ -122,7 +118,8 @@ def test_producer_marks_ffprobe_error_as_clip_qa_failure_and_continues(tmp_path,
     ledger = __import__("scripts.ledger", fromlist=["Ledger"]).Ledger(tmp_path / "home")
     assert result["qa_failures"] == 1
     assert ledger.library_item("bad")["status"] == "failed"
-    assert "media probe failed" in ledger.library_item("bad")["qa_failures"][0]
+    assert any("quality evidence unavailable" in reason and "invalid or excessive clip duration" in reason
+               for reason in ledger.library_item("bad")["qa_failures"])
     assert ledger.library_item("good")["status"] == "ready"
 
 
@@ -284,12 +281,11 @@ def test_producer_stocks_each_qa_passing_clip_before_rendering_next(tmp_path, mo
     paths = []
     clips = []
     for index in range(3):
-        path = tmp_path / f"{index}.mp4"
-        path.write_bytes(b"fixture")
+        base_path, path, words = generated_clip_media(tmp_path, str(index), variant=index)
         paths.append(path)
         clips.append(Clip(str(index), "camp", "source", index * 60, index * 60 + 25,
-                          str(path), "Title #ad", "Disclosure", ["#ad"], "", passthrough=True))
-    monkeypatch.setattr(producer, "_ffprobe", lambda _: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
+                          str(path), "Title #ad", "Disclosure", ["#ad"], "", passthrough=True,
+                          base_path=str(base_path), caption_words=words))
     class Scout:
         joined_campaign_ids = ["camp"]
         def list_campaigns(self): return [campaign]
