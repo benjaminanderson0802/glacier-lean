@@ -4,6 +4,7 @@ import sys
 import re
 import shutil
 import subprocess
+import pytest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -16,6 +17,14 @@ from scripts.ledger import Ledger
 from scripts.producer import parse_campaign_requirements, produce_ready
 from scripts.clipper import write_word_captions
 from scripts.variants import assign_segments
+
+
+@pytest.fixture(autouse=True)
+def isolate_campaign_registry(tmp_path, monkeypatch):
+    import scripts.producer as producer
+    campaigns_dir = tmp_path / "fixture-campaigns"
+    campaigns_dir.mkdir()
+    monkeypatch.setattr(producer, "DEFAULT_CAMPAIGNS_DIR", campaigns_dir)
 
 
 def make_campaign(**updates):

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import time
+import pytest
 
 from scripts.public_discover import PublicDiscoverScout, parse_campaign_cards, parse_campaign_detail
 from scripts.interfaces import Campaign
@@ -10,6 +11,14 @@ from scripts.ledger import Ledger
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def isolate_campaign_registry(tmp_path, monkeypatch):
+    import scripts.producer as producer
+    campaigns_dir = tmp_path / "fixture-campaigns"
+    campaigns_dir.mkdir()
+    monkeypatch.setattr(producer, "DEFAULT_CAMPAIGNS_DIR", campaigns_dir)
 
 
 def test_parser_reads_discover_cards_and_detail_fields():

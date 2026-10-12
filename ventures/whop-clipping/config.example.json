@@ -1,5 +1,7 @@
 {
   "live": false,
+  "campaigns_dir": "campaigns",
+  "allow_conditional_campaign_ids": [],
   "approval_history": {},
   "paused_campaign_ids": [],
   "channels": [

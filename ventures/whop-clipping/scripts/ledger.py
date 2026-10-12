@@ -142,6 +142,11 @@ class Ledger:
             row = db.execute("SELECT payload FROM campaigns WHERE id=?", (campaign_id,)).fetchone()
         return json.loads(row[0]) if row else None
 
+    def campaigns(self):
+        with self._connect() as db:
+            rows = db.execute("SELECT payload FROM campaigns ORDER BY name,id").fetchall()
+        return [json.loads(row[0]) for row in rows]
+
     def clip(self, clip_id):
         with self._connect() as db:
             row = db.execute("SELECT payload FROM clips WHERE id=?", (clip_id,)).fetchone()

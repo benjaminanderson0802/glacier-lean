@@ -17,6 +17,14 @@ VENTURE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(VENTURE_DIR))
 
 
+@pytest.fixture(autouse=True)
+def isolate_campaign_registry(tmp_path, monkeypatch):
+    import scripts.producer as producer
+    campaigns_dir = tmp_path / "fixture-campaigns"
+    campaigns_dir.mkdir()
+    monkeypatch.setattr(producer, "DEFAULT_CAMPAIGNS_DIR", campaigns_dir)
+
+
 def campaign_files(root: Path, campaign_id="camp-a", **summary):
     folder = root / "campaigns" / campaign_id
     folder.mkdir(parents=True)
@@ -72,6 +80,7 @@ def test_legacy_clip_home_rule_and_source_files_override_registry(tmp_path, monk
     campaign = load_campaign_registry(repo, home)[0]
     assert _campaign_sources(campaign, home)[0]["url"] == "https://private.test/video.mp4"
     class Scout:
+        joined_campaign_ids = [campaign.id]
         def list_campaigns(self): return [campaign]
     media = tmp_path / "clip.mp4"
     media.write_bytes(b"fixture")
@@ -131,6 +140,35 @@ def test_campaign_ineligible_for_new_channels_is_logged_and_skipped(tmp_path):
                           home=tmp_path / "home", scout=Scout(), campaign_clips={campaign.id: []})
     assert result["campaigns"] == 0
     assert any(row["kind"] == "campaign_ineligible" for row in result["errors"])
+
+
+def test_conditional_campaign_requires_explicit_allow_list_and_status_shows_summary_actions(tmp_path):
+    from scripts.campaigns import load_campaign_registry
+    from scripts.distributor import status_report
+    from scripts.producer import produce_ready
+
+    repo = tmp_path / "repo"
+    campaign_files(repo, eligible_for_new_youtube_shorts_channels="Conditional",
+                   needs_owner_action=["Provide channel demographics"])
+    campaign = load_campaign_registry(repo, tmp_path / "home")[0]
+
+    class Scout:
+        joined_campaign_ids = [campaign.id]
+        def list_campaigns(self): return []
+
+    config = {"channels": ["@one"], "campaigns_dir": str(repo / "campaigns")}
+    blocked = produce_ready(config, home=tmp_path / "blocked", scout=Scout(),
+                            campaign_clips={campaign.id: []}, target_stock=0)
+    assert blocked["campaigns"] == 0
+
+    allowed = produce_ready({**config, "allow_conditional_campaign_ids": [campaign.id]},
+                            home=tmp_path / "allowed", scout=Scout(),
+                            campaign_clips={campaign.id: []}, target_stock=0)
+    assert allowed["campaigns"] == 1
+    status = status_report(config, home=tmp_path / "fresh")
+    assert status["owner_actions"][campaign.id] == [
+        {"requirement": "Provide channel demographics", "reason": "campaign brief requires owner action"}
+    ]
 
 
 def test_campaign_daily_targets_weight_cpm_and_budget_but_give_each_one(tmp_path):
@@ -338,6 +376,13 @@ def test_windows_runner_and_scheduler_are_present_and_live_is_opt_in():
     assert "scripts.producer" in runner and "scripts.distributor --live" in runner
     assert "CLIP_HOME" in runner and "logs" in runner
     assert "Register-ScheduledTask" in installer
+    for script in (runner, installer):
+        assert '[string]$Python = ""' in script
+        assert '.venv\\Scripts\\python.exe' in script
+        assert 'C:\\Users\\benja\\glacier-dev\\.venv\\Scripts\\python.exe' in script
+        assert '$Python = "python"' in script
+    assert 'Push-Location $ventureDir' in runner
+    assert '-WorkingDirectory $ventureDir' in installer
     assert "$Live" in installer and "$config.live = [bool]$Live.IsPresent" in installer
 
 

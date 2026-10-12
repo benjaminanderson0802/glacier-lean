@@ -1,10 +1,18 @@
 param(
-    [string]$Python = "python",
+    [string]$Python = "",
     [string]$ClipHome = $env:CLIP_HOME
 )
 
 $ErrorActionPreference = "Stop"
 $ventureDir = Split-Path -Parent $PSScriptRoot
+$repoDir = Split-Path -Parent $ventureDir
+if (-not $Python) {
+    $repoPython = Join-Path $repoDir ".venv\Scripts\python.exe"
+    $ownerPython = "C:\Users\benja\glacier-dev\.venv\Scripts\python.exe"
+    if (Test-Path $repoPython) { $Python = $repoPython }
+    elseif (Test-Path $ownerPython) { $Python = $ownerPython }
+    else { $Python = "python" }
+}
 if (-not $ClipHome) {
     $ClipHome = Join-Path $env:USERPROFILE ".glacier\ventures\whop-clipping"
 }

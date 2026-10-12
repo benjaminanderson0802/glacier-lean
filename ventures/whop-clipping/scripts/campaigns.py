@@ -20,7 +20,7 @@ def _read_campaign(folder: Path, override: Path | None = None) -> Campaign:
                    if line.strip().startswith(("https://", "http://"))]
     fields = Campaign.__dataclass_fields__
     values = {key: summary[key] for key in fields if key in summary}
-    values.setdefault("id", folder.name)
+    values.setdefault("id", summary.get("uuid", folder.name))
     values.setdefault("name", values["id"])
     values.setdefault("url", "")
     values.setdefault("cpm_usd", 0)
@@ -31,16 +31,18 @@ def _read_campaign(folder: Path, override: Path | None = None) -> Campaign:
     campaign = Campaign(**values)
     # Extra brief fields are carried in the instance payload for status/eligibility.
     campaign.eligible_for_new_youtube_shorts_channels = summary.get(
-        "eligible_for_new_youtube_shorts_channels", True)
-    campaign.owner_requirements = summary.get("owner_requirements", [])
+        "eligible_for_new_youtube_shorts_channels", "No")
+    campaign.owner_requirements = summary.get("owner_requirements", summary.get("needs_owner_action", []))
+    if isinstance(campaign.owner_requirements, str):
+        campaign.owner_requirements = [campaign.owner_requirements]
     campaign.requires_draft_preapproval = bool(summary.get("requires_draft_preapproval", False))
     return campaign
 
 
-def load_campaign_registry(repo_dir: Path, home: Path) -> list[Campaign]:
-    """Load repo briefs, overlaying each matching private CLIP_HOME brief."""
+def load_campaign_registry(repo_dir: Path, home: Path, *, campaigns_dir: Path | None = None) -> list[Campaign]:
+    """Load configured briefs, overlaying each matching private CLIP_HOME brief."""
     repo_dir, home = Path(repo_dir), Path(home)
-    repo_campaigns = repo_dir / "campaigns"
+    repo_campaigns = Path(campaigns_dir) if campaigns_dir is not None else repo_dir / "campaigns"
     home_campaigns = home / "campaigns"
     repo_folders = {path.name: path for path in repo_campaigns.iterdir()
                     if path.is_dir() and (path / "summary.json").is_file()} if repo_campaigns.is_dir() else {}

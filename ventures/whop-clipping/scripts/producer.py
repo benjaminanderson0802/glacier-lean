@@ -393,14 +393,10 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         except Exception as exc:
             report_error("campaign_contract_invalid", f"campaign {index}: {type(exc).__name__}: {exc}")
     eligibility_config = config
-    joined_ids = getattr(scout, "joined_campaign_ids", None)
-    registry_ids = {path.name for root in (campaigns_dir, home / "campaigns")
-                    if root.is_dir() for path in root.iterdir() if path.is_dir()}
-    if joined_ids is not None:
-        registry_ids.update(joined_ids)
-    if registry_ids:
+    joined_ids = set(getattr(scout, "joined_campaign_ids", None) or [])
+    if joined_ids:
         eligibility_config = {**config, "approved_campaign_ids": sorted(
-            set(config.get("approved_campaign_ids", [])) | registry_ids)}
+            set(config.get("approved_campaign_ids", [])) | joined_ids)}
     eligible = []
     for campaign in campaigns:
         eligibility = campaign.eligible_for_new_youtube_shorts_channels
@@ -408,7 +404,7 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         is_yes = eligibility is True or (isinstance(eligibility, str) and eligibility.strip().casefold() == "yes")
         is_conditional = isinstance(eligibility, str) and eligibility.strip().casefold() == "conditional"
         if eligibility is not None and not is_yes and not (is_conditional and campaign.id in allow_conditional):
-            report_error("campaign_ineligible", "eligible_for_new_youtube_shorts_channels=false",
+            report_error("campaign_ineligible", f"campaign eligibility is {eligibility!r}",
                          campaign_id=campaign.id)
             continue
         if _campaign_eligible(campaign, eligibility_config, ledger):

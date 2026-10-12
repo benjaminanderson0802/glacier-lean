@@ -18,6 +18,14 @@ from scripts.cycle import run_cycle
 from scripts.clipper import candidate_segments, make_clip, score_candidate, transcribe, write_word_captions
 
 
+@pytest.fixture(autouse=True)
+def isolate_campaign_registry(tmp_path, monkeypatch):
+    import scripts.producer as producer
+    campaigns_dir = tmp_path / "fixture-campaigns"
+    campaigns_dir.mkdir()
+    monkeypatch.setattr(producer, "DEFAULT_CAMPAIGNS_DIR", campaigns_dir)
+
+
 def campaign(**overrides):
     values = dict(id="camp-1", name="Campaign", url="https://whop.com/c/1", cpm_usd=2.0,
                   budget_left_usd=20.0, platforms=["youtube_shorts"], rules_text="#ad required",
