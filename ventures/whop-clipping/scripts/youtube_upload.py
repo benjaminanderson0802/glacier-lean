@@ -16,16 +16,18 @@ from googleapiclient.http import MediaFileUpload
 if __package__:
     from .interfaces import Clip, Post
     from .ledger import Ledger, clip_home, quota_day
+    from .policy import limits
 else:
     from scripts.interfaces import Clip, Post
     from scripts.ledger import Ledger, clip_home, quota_day
+    from scripts.policy import limits
 
 
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly",
 ]
-MAX_UPLOADS_PER_DAY = 90
+MAX_UPLOADS_PER_DAY = 85
 
 
 def _handle_key(handle: str) -> str:
@@ -72,7 +74,7 @@ class YouTubeUploader:
     def __init__(self, config=None, *, ledger=None, service=None, home=None,
                  retry_sleep=time.sleep, now_fn=lambda: datetime.now(timezone.utc), rng=None):
         self.config = dict(config or {})
-        self.home = clip_home(home)
+        self.home = clip_home(home or self.config.get("clip_home") or getattr(ledger, "home", None))
         self.ledger = ledger or Ledger(self.home)
         self.service = service
         self._services = {}
@@ -117,26 +119,14 @@ class YouTubeUploader:
         )
 
     def quota_stopped_today(self) -> bool:
-        today = quota_day(self.now_fn()).isoformat()
-        return any(event["kind"] == "youtube_quota_stop"
-                   and event["details"].get("day") == today
-                   for event in self.ledger.events())
+        return self.ledger.upload_quota_remaining(self.now_fn(), cap=limits(self.config)["upload_cap"]) == 0
 
     def _reserve_upload(self, clip):
         if self.quota_stopped_today():
             raise RuntimeError("YouTube quota was exceeded; uploads are stopped for today")
-        configured_cap = min(MAX_UPLOADS_PER_DAY,
-                             max(0, int(self.config.get("global_daily_cap", MAX_UPLOADS_PER_DAY))))
-        cap = min(MAX_UPLOADS_PER_DAY, configured_cap)
-        if self._today_uploads() >= cap:
+        cap = limits(self.config)["upload_cap"]
+        if not self.ledger.reserve_upload_quota(clip.id, clip.channel_handle, self.now_fn(), cap=cap):
             raise RuntimeError(f"YouTube daily upload safety cap reached ({cap}); uploads stop for today")
-        now = self.now_fn()
-        quota_date = quota_day(now).isoformat()
-        self.ledger.event("youtube_quota_reservation", {
-            "day": quota_date, "count": 1, "quota_units": 1,
-            "bucket": "Video Uploads", "clip_id": clip.id,
-            "channel": clip.channel_handle,
-        })
 
     def _validate_clip(self, clip):
         if not Path(clip.path).is_file():
@@ -162,6 +152,8 @@ class YouTubeUploader:
                         "", self.now_fn().isoformat())
         if not self.config.get("live", False):
             raise RuntimeError("live upload refused: set live=true in the private config")
+        if (self.home / "HOLD").exists():
+            raise RuntimeError("uploads held by HOLD file")
         if self.ledger.is_paused(clip.channel_handle, clip.campaign_id):
             raise RuntimeError(f"YouTube channel or campaign is paused: {clip.channel_handle}")
         if self.ledger.submitted_or_posted(clip.id):

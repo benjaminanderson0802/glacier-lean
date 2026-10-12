@@ -14,9 +14,11 @@ from pathlib import Path
 from .cycle import DEFAULT_CHANNELS, FakeScout, _campaign, _campaign_eligible, load_plugin
 from .campaigns import allocate_daily_campaign_targets, load_campaign_registry
 from .interfaces import Campaign, Clip
-from .ledger import Ledger, clip_home
+from .ledger import Ledger, clip_home, exclusive_library_run
 from .clipper import candidate_segments, make_clip, transcribe
 from .sources import fetch_source
+from .policy import limits
+from .quality import evaluate_quality, feedback_summary, record_review, render_review
 from .variants import (assign_segments, brand_spelling, campaign_brand, make_variant,
                        normalize_brand, normalize_caption_words, required_mentions, required_tags, channel_style)
 
@@ -257,19 +259,19 @@ def _campaign_sources(campaign, home):
     return []
 
 
-def _iter_prepared_clips(campaign, config, ledger, home):
+def _iter_prepared_clips(campaign, config, ledger, home, *, plan_only=False):
     source_cfg = config.get("sources", {})
     checklist = parse_campaign_requirements(campaign.rules_text)
     recovered = []
     for row in ledger.campaign_clips(campaign.id):
         library_item = ledger.library_item(row["id"])
-        if library_item and library_item["status"] in {"ready", "posted"}:
+        if library_item and library_item["status"] in {"ready", "posted", "failed"}:
             continue
         if Path(row.get("path", "")).is_file():
             recovered.append(Clip(**row))
     if recovered:
             for clip in recovered:
-                yield clip
+                yield (clip, None, None) if plan_only else clip
             return
     for source_item in _campaign_sources(campaign, home):
         url = source_item.get("url") if isinstance(source_item, dict) else str(source_item)
@@ -311,14 +313,6 @@ def _iter_prepared_clips(campaign, config, ledger, home):
             variant = make_variant(campaign, item, item["channel_handle"])
             digest = hashlib.sha256(f"{campaign.id}:{source_id}:{item['start_s']:.3f}:{item['end_s']:.3f}".encode()).hexdigest()[:24]
             target = home / "media" / "clips" / f"{digest}.mp4"
-            render_started = time.monotonic()
-            rendered = not target.exists()
-            previous = ledger.clip(digest) if not rendered else None
-            if not target.exists():
-                make_clip(source.path, target, item, requires_editing=not item.get("passthrough", False),
-                          caption_words=False, mode=config.get("video_layout", "blurred_background"))
-            render_seconds = (time.monotonic() - render_started if rendered else
-                              float((previous or {}).get("render_seconds", 0.0)))
             words = [{**word,
                       "start": max(0.0, float(word["start"])-float(item["start_s"])),
                       "end": min(float(item["end_s"])-float(item["start_s"]), float(word["end"])-float(item["start_s"]))}
@@ -327,10 +321,22 @@ def _iter_prepared_clips(campaign, config, ledger, home):
             clip = Clip(digest, campaign.id, source_id, item["start_s"], item["end_s"], str(target),
                         variant["title"], variant["description"], variant["hashtags"], "",
                         caption_words=words, passthrough=bool(item.get("passthrough")))
-            clip.render_seconds = render_seconds
             clip.source_route = source_route
-            ledger.record_clip(clip)
-            yield clip
+            plan = (clip, source.path, item)
+            yield plan if plan_only else _render_plan(plan, config, ledger)
+
+
+def _render_plan(plan, config, ledger):
+    clip, source, item = plan
+    if source is not None:
+        target = Path(clip.path)
+        started = time.monotonic()
+        if not target.exists():
+            make_clip(source, target, item, requires_editing=not clip.passthrough,
+                      caption_words=False, mode=config.get("video_layout", "blurred_background"))
+            clip.render_seconds = time.monotonic() - started
+        ledger.record_clip(clip)
+    return clip
 
 
 def _prepare_clips(campaign, config, ledger, home):
@@ -338,6 +344,7 @@ def _prepare_clips(campaign, config, ledger, home):
     return list(_iter_prepared_clips(campaign, config, ledger, home))
 
 
+@exclusive_library_run
 def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_stock=20):
     home = clip_home(home)
     library_dir = home / "library"
@@ -417,13 +424,40 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
                                  approval_score(c.id),
                                  len(c.platforms)), reverse=True)
     ready_before = len(ledger.library_items("ready"))
-    daily_target = max(1, int(config.get("daily_target_clips", 40)))
-    campaign_targets = allocate_daily_campaign_targets(eligible, daily_target)
+    daily_target = limits(config)["daily_target"]
+    feedback = feedback_summary(ledger)
+    capacities, source_plans = {}, {}
+    if campaign_clips is None:
+        from itertools import islice
+        for campaign in eligible:
+            source_plans[campaign.id] = []
+            if _campaign_sources(campaign, home) and ledger.ready_today() < daily_target:
+                try:
+                    plans = _iter_prepared_clips(campaign, {**config, "channels": ["__library__"]}, ledger, home, plan_only=True)
+                    for plan in islice(plans, daily_target):
+                        clip = plan[0]
+                        if not any(other[0].source_id == clip.source_id and min(other[0].end_s, clip.end_s) >
+                                   max(other[0].start_s, clip.start_s) for other in source_plans[campaign.id]):
+                            source_plans[campaign.id].append(plan)
+                except Exception as exc:
+                    report_error("campaign_production_failed", f"{type(exc).__name__}: {exc}", campaign_id=campaign.id)
+            capacities[campaign.id] = ledger.campaign_ready_today(campaign.id) + len(source_plans[campaign.id])
+    if campaign_clips is not None:
+        for campaign_id, candidates in campaign_clips.items():
+            if isinstance(candidates, (list, tuple)):
+                distinct = []
+                for candidate in candidates:
+                    if not any(other.source_id == candidate.source_id and min(other.end_s, candidate.end_s) >
+                               max(other.start_s, candidate.start_s) for other in distinct):
+                        distinct.append(candidate)
+                capacities[campaign_id] = ledger.campaign_ready_today(campaign_id) + len(distinct)
+    campaign_targets = allocate_daily_campaign_targets(eligible, daily_target, capacities=capacities, feedback=feedback)
     output = {"campaigns": len(eligible), "produced": 0, "qa_failures": 0, "ready": ready_before,
               "errors": errors, "error_count": 0, "failure_count": 0,
               "render_time_per_clip_seconds": {}, "source_routes": {}, "qa_rules_enforced": {},
               "daily_target": daily_target, "daily_ready": ledger.ready_today(),
               "campaign_targets": campaign_targets,
+              "whop_feedback": feedback, "distinct_moment_capacity": capacities,
               "owner_actions": {}}
     if hasattr(scout, "join_suggestions"):
         try:
@@ -448,16 +482,22 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         output["qa_rules_enforced"][campaign.id] = checklist
         if checklist["owner_actions"]:
             output["owner_actions"][campaign.id] = checklist["owner_actions"]
-        if ledger.campaign_ready_today(campaign.id) >= campaign_targets.get(campaign.id, 1):
-            continue
         if campaign_clips is None and not _campaign_sources(campaign, home):
             report_error("campaign_sources_unavailable",
                          "No public detail, campaign-rule, or override source links found",
                          campaign_id=campaign.id)
             continue
+        if ledger.campaign_ready_today(campaign.id) >= campaign_targets.get(campaign.id, 0):
+            continue
+        def rendered_plans():
+            for plan in source_plans.get(campaign.id, []):
+                try:
+                    yield _render_plan(plan, config, ledger)
+                except Exception as exc:
+                    report_error("campaign_render_failed", f"{type(exc).__name__}: {exc}", campaign_id=campaign.id)
+                    yield plan[0]  # The missing/broken media fails QA with a review entry.
         try:
-            clips = iter(campaign_clips[campaign.id]) if campaign_clips is not None else _iter_prepared_clips(
-                campaign, {**config, "channels": ["__library__"], "captions": False}, ledger, home)
+            clips = iter(campaign_clips.get(campaign.id, [])) if campaign_clips is not None else rendered_plans()
         except Exception as exc:
             report_error("campaign_production_failed", f"{type(exc).__name__}: {exc}", campaign_id=campaign.id)
             continue
@@ -465,9 +505,15 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             report_error("campaign_no_clip_candidates",
                          "Source media produced no campaign-compliant clip candidates",
                          campaign_id=campaign.id)
+        seen_moments = []
         for original in clips:
             if ledger.campaign_ready_today(campaign.id) >= campaign_targets.get(campaign.id, 1):
                 break
+            if any(other.source_id == original.source_id and min(other.end_s, original.end_s) >
+                   max(other.start_s, original.start_s) for other in seen_moments):
+                record_review(ledger, original, {"score": 0, "reasons": ["duplicate source moment"]}, "rejected")
+                continue
+            seen_moments.append(original)
             if getattr(original, "source_route", None):
                 output["source_routes"].setdefault(campaign.id, original.source_route)
             output["render_time_per_clip_seconds"][original.id] = round(
@@ -476,31 +522,54 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             if original.channel_handle not in {"", "__library__"}:
                 original.channel_handle = ""
             existing_item = ledger.library_item(original.id)
-            if existing_item and existing_item["status"] == "posted":
+            if existing_item and existing_item["status"] in {"ready", "posted"}:
                 continue
-            failures = qa_clip(original, checklist, word_times=original.caption_words,
-                               probe_fn=_ffprobe if Path(original.path).exists() else None)
-            if ledger.any_segment_overlap(original.source_id, original.start_s, original.end_s,
-                                          except_clip_id=original.id):
-                ledger.event("duplicate_source_moment_skipped", {"clip_id": original.id,
-                    "source_id": original.source_id, "start_s": original.start_s, "end_s": original.end_s})
-                continue
+            from dataclasses import replace
+            preview = original
+            try:
+                if not original.passthrough:
+                    from .clipper import render_clip
+                    base = original.base_path or original.path
+                    target = home / "media" / "quality-previews" / f"{original.id}.mp4"
+                    render_clip(Path(base), target, start_s=0, end_s=original.end_s-original.start_s,
+                                caption_words=original.caption_words, mode="center_crop")
+                    preview = replace(original, path=str(target), base_path=base)
+                result = evaluate_quality(preview, checklist, config, ledger)
+            except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+                result = {"passed": False, "score": 0, "signals": {}, "reasons": [f"preview render failed: {exc}"]}
+            failures = qa_clip(preview, checklist, word_times=preview.caption_words)
+            result["reasons"] = list(dict.fromkeys([*result["reasons"], *failures]))
+            result["passed"] = not result["reasons"]
+            failures = result["reasons"]
+            original.quality = result
             ledger.record_clip(original)
+            ledger.update_clip_path(original)
             if failures:
                 ledger.add_library_clip(original, checklist=checklist, status="failed", qa_failures=failures)
+                record_review(ledger, preview, result, "rejected")
                 output["qa_failures"] += 1
                 continue
-            source_path = Path(original.path)
+            source_path = Path(preview.path)
             suffix = source_path.suffix or ".mp4"
             target = library_dir / f"{original.id}{suffix}"
+            base_path = original.base_path or original.path
+            if not original.passthrough:
+                stored_base = library_dir / f"{original.id}-base.mp4"
+                if Path(base_path).resolve() != stored_base.resolve():
+                    shutil.copy2(base_path, stored_base)
+                base_path = str(stored_base)
             if source_path.resolve() != target.resolve():
                 shutil.copy2(source_path, target)
-            clip = Clip(**{**original.__dict__, "path": str(target), "channel_handle": ""})
+            clip = Clip(**{**original.__dict__, "path": str(target), "base_path": base_path, "channel_handle": ""})
             ledger.update_clip_path(clip)
             ledger.add_library_clip(clip, checklist=checklist, status="ready")
             output["produced"] += 1
             if ledger.ready_today() >= daily_target:
                 break
+        else:
+            # Source stream exhausted: only real distinct moments can support an allocation.
+            capacities[campaign.id] = ledger.campaign_ready_today(campaign.id)
+            campaign_targets[campaign.id] = min(campaign_targets.get(campaign.id, 0), capacities[campaign.id])
         if ledger.ready_today() >= daily_target:
             break
     output["ready"] = len(ledger.library_items("ready"))
@@ -512,6 +581,7 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         output["source_routes"].setdefault(details["campaign_id"], details["route"])
     output["error_count"] = len(errors)
     output["failure_count"] = len(errors) + output["qa_failures"]
+    render_review(ledger)
     if output["daily_ready"] < daily_target:
         ledger.event("producer_stock_low", {"ready": output["ready"], "daily_ready": output["daily_ready"],
                                              "target": daily_target})

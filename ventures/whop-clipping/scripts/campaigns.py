@@ -52,30 +52,28 @@ def load_campaign_registry(repo_dir: Path, home: Path, *, campaigns_dir: Path | 
             for key in sorted(repo_folders.keys() | home_folders.keys())]
 
 
-def allocate_daily_campaign_targets(campaigns, total=40):
-    """Largest-remainder allocation weighted by CPM times remaining budget."""
+def allocate_daily_campaign_targets(campaigns, total=80, *, capacities=None, feedback=None):
+    """Capacity-bounded allocation weighted by CPM, budget and owner feedback."""
     rows = [row if isinstance(row, dict) else {
         "id": row.id, "cpm_usd": row.cpm_usd, "budget_left_usd": row.budget_left_usd
     } for row in campaigns]
     if not rows:
         return {}
-    total = max(int(total), len(rows))
-    weights = [max(0.0, float(row.get("cpm_usd") or 0) * float(row.get("budget_left_usd") or 0)) for row in rows]
+    total = max(0, int(total))
+    capacities = capacities or {}
+    feedback = feedback or {}
+    weights = [max(0.0, float(row.get("cpm_usd") or 0) * float(row.get("budget_left_usd") or 0)) *
+               float(feedback.get(row["id"], {}).get("factor", 1)) for row in rows]
     if not any(weights):
-        weights = [1.0] * len(rows)
-    weight_sum = sum(weights)
-    exact = [total * weight / weight_sum for weight in weights]
-    result = {row["id"]: max(1, int(value)) for row, value in zip(rows, exact)}
-    leftovers = total - sum(result.values())
-    order = sorted(range(len(rows)), key=lambda idx: (exact[idx] - int(exact[idx]), weights[idx]), reverse=True)
-    while leftovers < 0:
-        for idx in reversed(order):
-            key = rows[idx]["id"]
-            if result[key] > 1:
-                result[key] -= 1
-                leftovers += 1
-                if leftovers == 0:
-                    break
-    for index in range(leftovers):
-        result[rows[order[index % len(order)]] ["id"]] += 1
+        weights = [float(feedback.get(row["id"], {}).get("factor", 1)) for row in rows]
+    result = {row["id"]: 0 for row in rows}
+    # Allocate at most the number of distinct usable moments. Reassign exhausted
+    # shares, preserving the CPM x budget ranking and an initial campaign floor.
+    for _ in range(total):
+        available = [i for i, row in enumerate(rows) if result[row["id"]] < max(0, int(capacities.get(row["id"], total)))]
+        if not available:
+            break
+        index = max(available, key=lambda i: (result[rows[i]["id"]] == 0,
+                                              weights[i] / (result[rows[i]["id"]] + 1), rows[i]["id"]))
+        result[rows[index]["id"]] += 1
     return result

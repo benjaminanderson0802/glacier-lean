@@ -13,10 +13,12 @@ from pathlib import Path
 from .cycle import DEFAULT_CHANNELS, FakeUploader, _campaign, load_plugin
 from .interfaces import Campaign, Clip
 from .campaigns import load_campaign_registry
-from .ledger import Ledger, clip_home, quota_day
+from .ledger import Ledger, clip_home, quota_day, exclusive_library_run
 from .variants import (brand_spelling, campaign_brand, make_public_title, normalize_brand,
                        normalize_caption_words, required_mentions, required_tags, title_hook, channel_style)
 from .producer import qa_clip, _ffprobe
+from .policy import limits
+from .quality import evaluate_quality, feedback_summary, record_review, render_review
 
 
 def _as_datetime(value):
@@ -76,9 +78,10 @@ def _channel_assignment(ledger, channels, now, config):
         else:
             if last.tzinfo is None:
                 last = last.replace(tzinfo=timezone.utc)
-            min_hours = min(6.0, max(2.0, float(config.get("min_spacing_hours", 2))))
-            due_at = ledger.next_post_at(channel) or (last + timedelta(hours=min_hours))
-            due_at = max(due_at, last + timedelta(hours=min_hours))
+            policy = limits(config)
+            min_gap = timedelta(minutes=policy["min_gap_minutes"])
+            due_at = ledger.next_post_at(channel) or (last + timedelta(minutes=policy["interval_minutes"]))
+            due_at = max(due_at, last + min_gap)
         if due_at <= now or deadline <= now + timedelta(hours=1):
             rows.append((deadline, last or datetime.min.replace(tzinfo=timezone.utc), channel, settings, due_at))
     return sorted(rows, key=lambda row: (row[0], row[1], row[2]))
@@ -99,10 +102,12 @@ def _channel_variant(clip, campaign, settings, home, checklist=None):
     if not clip.passthrough and clip.caption_words:
         from .clipper import render_clip
         target = home / "media" / "channel-variants" / f"{clip.id}-{style['index']}.mp4"
-        if not target.exists():
+        # Re-render from the neutral base so changed text/style cannot reuse stale captions.
+        if clip.caption_words:
             caption_words = normalize_caption_words(clip.caption_words, rules_text, brand)
-            render_clip(Path(clip.path), target, start_s=0, end_s=clip.end_s - clip.start_s,
+            render_clip(Path(clip.base_path or clip.path), target, start_s=0, end_s=clip.end_s - clip.start_s,
                         caption_words=caption_words,
+                        mode="center_crop",
                         caption_style={"caption": settings.get("caption_style") or style["caption"],
                                        "base_color": style["base_color"],
                                        "accent_color": style["accent_color"],
@@ -113,7 +118,7 @@ def _channel_variant(clip, campaign, settings, home, checklist=None):
         description_lines = [line.strip() for line in clip.description.splitlines() if line.strip()]
         transcript = next((line for line in description_lines
                            if line.startswith(brand + ":")), "")
-        hook = transcript.partition(":")[2].strip() or description_lines[-1]
+        hook = transcript.partition(":")[2].strip() or (description_lines[-1] if description_lines else clip.title)
         hook = title_hook(hook)
         hook = normalize_brand(hook, rules_text, brand)
         template = settings.get("title_template") or style["title"]
@@ -123,19 +128,23 @@ def _channel_variant(clip, campaign, settings, home, checklist=None):
         normalized_words = normalize_caption_words(clip.caption_words, rules_text, brand)
     else:
         normalized_words = clip.caption_words
-    return replace(clip, path=path, title=title, caption_words=normalized_words)
+    return replace(clip, path=path, base_path=clip.base_path or clip.path, title=title, caption_words=normalized_words)
 
 
+@exclusive_library_run
 def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetime.now(timezone.utc),
-                     rng=None, sleep_fn=lambda _: None, alert_fn=None, dry_run=False, submitter=None):
+                     rng=None, sleep_fn=time.sleep, alert_fn=None, dry_run=False, submitter=None):
     home = clip_home(home)
     ledger = Ledger(home)
+    if (home / "HOLD").exists():
+        ledger.event("distribution_held", {"reason": "HOLD file exists"})
+        return {"held": True, "uploads": 0, "skipped": 0, "ready": len(ledger.library_items()), "deadline_at_risk": []}
     if not dry_run and not config.get("live", False):
         raise RuntimeError("live run refused: set live=true in the private config")
     if uploader is None:
         spec = config.get("plugins", {}).get("uploader", "youtube_upload.YouTubeUploader")
         try:
-            uploader = load_plugin(spec, config=config)
+            uploader = load_plugin(spec, config={**config, "clip_home": str(home)})
         except (ImportError, AttributeError, ValueError) as exc:
             if not dry_run:
                 raise
@@ -154,12 +163,13 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
                                       title_template=settings.get("title_template", ""),
                                       paused=bool(settings.get("paused", False)),
                                       paused_reason=settings.get("paused_reason", ""))
-    cap = min(6, max(0, int(config.get("daily_channel_cap", 6))))
-    global_cap = min(90, max(0, int(config.get("global_daily_cap", 90))))
-    min_spacing = timedelta(hours=min(6.0, max(2.0, float(config.get("min_spacing_hours", 2)))))
+    policy = limits(config)
+    cap = policy["per_channel_daily"]
+    global_cap = min(policy["daily_target"], policy["upload_cap"])
+    min_spacing = timedelta(minutes=policy["min_gap_minutes"])
     max_spacing = timedelta(hours=min(6.0, max(min_spacing.total_seconds() / 3600,
                                                float(config.get("max_spacing_hours", 6)))))
-    jitter_minutes = max(0, int(config.get("posting_jitter_minutes", 45)))
+    jitter_minutes = max(0, int(config.get("posting_jitter_minutes", 0)))
     rng = rng or random.Random()
     now = now_fn()
     ready = ledger.library_items("ready")
@@ -171,6 +181,13 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
         if channel in used_channels:
             continue
         day = quota_day(now).isoformat()
+        if ledger.upload_quota_remaining(now_fn(), cap=policy["upload_cap"]) == 0:
+            output["quota_stopped"] = True
+            ledger.event("distribution_quota_stopped", {"day": day, "cap": policy["upload_cap"]}, f"distribution-quota:{day}")
+            break
+        if (home / "HOLD").exists():
+            output["held"] = True
+            break
         if ledger.posts_today(channel, day) >= cap or ledger.global_posts_today(day) >= global_cap:
             if deadline <= now + timedelta(hours=1):
                 msg = f"deadline at risk for {channel}: upload cap reached before {deadline.isoformat()}"
@@ -194,13 +211,15 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
             clip = Clip(**{key: val for key, val in clip_data.items() if key in Clip.__dataclass_fields__})
             if ledger.is_paused(channel, clip.campaign_id):
                 continue
-            if ledger.any_segment_overlap(clip.source_id, clip.start_s, clip.end_s,
-                                          except_clip_id=clip.id):
+            if any(other["source_id"] == clip.source_id and min(clip.end_s, other["end_s"]) >
+                   max(clip.start_s, other["start_s"]) for other in ledger.quality_reference_clips(except_clip_id=clip.id)):
+                ledger.finish_library_clip(clip.id, "failed")
+                record_review(ledger, clip, {"score": 0, "reasons": ["source segment overlap across channels"]}, "rejected")
                 continue
             candidates.append((ledger.campaign_channel_count(clip.campaign_id),
                                ledger.campaign_posts(channel, clip.campaign_id),
                                item["created_at"], item, clip))
-        candidate = min(candidates, key=lambda row: (row[0], row[1], row[2], row[3]["clip_id"]))[3:] if candidates else None
+        candidate = min(candidates, key=lambda row: (-row[4].quality.get("score", 0), row[0], row[1], row[2], row[3]["clip_id"]))[3:] if candidates else None
         if not candidate:
             if deadline <= now + timedelta(hours=1):
                 msg = f"deadline at risk for {channel}: no ready clips before {deadline.isoformat()}"
@@ -228,22 +247,29 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
             ledger.finish_library_clip(clip.id, "failed")
             ledger.event("duplicate_upload_prevented", {"clip_id": clip.id, "reason": "existing submission record"})
             continue
-        variant = _channel_variant(clip, campaign, settings, home, item["checklist"])
-        variant.channel_handle = channel
-        failures = qa_clip(variant, item["checklist"], word_times=variant.caption_words,
-                           probe_fn=_ffprobe if Path(variant.path).exists() else None)
+        clip.channel_handle = channel
+        variant = clip
+        try:
+            variant = _channel_variant(clip, campaign, settings, home, item["checklist"])
+            result = evaluate_quality(variant, item["checklist"], config, ledger)
+            result["reasons"].extend(qa_clip(variant, item["checklist"], word_times=variant.caption_words))
+        except Exception as exc:
+            result = {"score": 0, "reasons": [f"variant quality check failed: {exc}"], "passed": False}
+        failures = result["reasons"]
+        result["passed"] = not failures
+        variant.quality = result
         if failures:
             ledger.finish_library_clip(clip.id, "failed")
             ledger.event("distributor_qa_failed", {"clip_id": clip.id, "channel": channel, "reasons": failures})
+            record_review(ledger, variant, result, "rejected")
             output["skipped"] += 1
             continue
         scheduled = now + timedelta(minutes=rng.randint(0, jitter_minutes))
         scheduled = max(scheduled, due_at)
         if last != datetime.min.replace(tzinfo=timezone.utc):
             scheduled = max(scheduled, last + min_spacing)
-        if scheduled > deadline:
-            scheduled = deadline
-        if scheduled - now < timedelta(0) or scheduled > deadline:
+        # A missed deadline never permits violating the minimum gap.
+        if scheduled - now < timedelta(0) or scheduled > deadline and now < deadline:
             output["deadline_at_risk"].append(channel)
             ledger.event("deadline at risk", {"channel": channel, "deadline": deadline.isoformat(), "reason": "spacing exceeded deadline"})
             _send_deadline_alert(ledger, config, alert_fn,
@@ -260,9 +286,17 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
             ledger.finish_library_clip(clip.id, "ready")
             output["skipped"] += 1
             continue
+        if (home / "HOLD").exists():
+            ledger.finish_library_clip(clip.id, "ready")
+            output["held"] = True
+            break
         try:
             post = uploader.upload(variant, dry_run=False)
         except Exception as exc:
+            if ledger.upload_quota_remaining(now_fn(), cap=policy["upload_cap"]) == 0:
+                ledger.finish_library_clip(clip.id, "ready")
+                output["quota_stopped"] = True
+                break
             ledger.finish_library_clip(clip.id, "failed")
             ledger.event("distribution_failed", {"clip_id": clip.id, "channel": channel, "error": str(exc)})
             if re.search(r"terms|strike|suspend|terminat|flagged|\b403\b", str(exc), re.I):
@@ -277,11 +311,11 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
             output["skipped"] += 1
             continue
         ledger.record_post(post)
+        ledger.update_clip_path(variant)
         ledger.finish_library_clip(clip.id, "posted")
+        record_review(ledger, variant, result, "posted")
         posted_at = _as_datetime(post.posted_at) or scheduled
-        randomized_window = max(timedelta(0), max_spacing - timedelta(hours=1) - min_spacing)
-        extra_minutes = int(randomized_window.total_seconds() // 60)
-        next_post = posted_at + min_spacing + timedelta(minutes=rng.randint(0, extra_minutes))
+        next_post = posted_at + timedelta(minutes=policy["interval_minutes"])
         ledger.set_next_post_at(channel, next_post)
         if posted_at > deadline:
             msg = f"deadline at risk for {channel}: posted after {deadline.isoformat()}"
@@ -306,8 +340,10 @@ def _run_injected_library(config, *, library, uploader, submitter, campaigns, cl
     channels = list(config.get("channels") or
                     dict.fromkeys(clip.channel_handle for clip in clips if clip.channel_handle) or
                     DEFAULT_CHANNELS)
-    cap = min(6, max(0, int(config.get("daily_channel_cap", 6))))
-    global_cap = min(90, max(0, int(config.get("global_daily_cap", 90))))
+    policy = limits(config)
+    cap = policy["per_channel_daily"]
+    global_cap = min(policy["daily_target"], policy["upload_cap"])
+    interval = timedelta(minutes=policy["interval_minutes"])
     # The owner requires a deadline no later than six hours after a post.
     max_spacing = timedelta(hours=min(6, max(2, float(config.get("max_spacing_hours", 6)))))
     campaign_by_id = {item.id: item for item in (_campaign(row) for row in (campaigns or []))}
@@ -316,7 +352,7 @@ def _run_injected_library(config, *, library, uploader, submitter, campaigns, cl
     output = {"posts": [], "uploads": 0, "skipped": 0, "deadline_at_risk": [],
               "paused_channels": [], "pauses": []}
     live = bool(config.get("live", False)) and not dry_run
-    if not live:
+    if not live or (clip_home(config.get("clip_home")) / "HOLD").exists():
         return output
 
     hours = max(1, int(simulation_hours or 1))
@@ -335,7 +371,7 @@ def _run_injected_library(config, *, library, uploader, submitter, campaigns, cl
                     output["paused_channels"].append(channel)
                 continue
             previous = last_by_channel.get(channel)
-            if previous is not None and now - previous < max_spacing:
+            if previous is not None and now - previous < interval:
                 continue
             day = quota_day(now).isoformat()
             if counts_by_day.get((channel, day), 0) >= cap:
@@ -412,7 +448,7 @@ def run(config, *, home=None, library=None, uploader=None, submitter=None, campa
     dry_run = (not bool(config.get("live", False))) if dry_run is None else bool(dry_run)
     if library is not None and not isinstance(library, Ledger):
         simulation_hours = simulation_hours or int(config.get("simulation_hours", 0))
-        return _run_injected_library(config, library=library, uploader=uploader or FakeUploader(),
+        return _run_injected_library({**config, "clip_home": str(clip_home(home))}, library=library, uploader=uploader or FakeUploader(),
                                      submitter=submitter, campaigns=campaigns, clock=clock,
                                      simulation_hours=simulation_hours, dry_run=dry_run)
     now_fn = clock.now if clock is not None else kwargs.pop("now_fn", lambda: datetime.now(timezone.utc))
@@ -423,6 +459,8 @@ def run(config, *, home=None, library=None, uploader=None, submitter=None, campa
 def status_report(config, *, home=None, now_fn=lambda: datetime.now(timezone.utc), alert_fn=None):
     home = clip_home(home)
     ledger = Ledger(home)
+    feedback = feedback_summary(ledger)
+    review_path = render_review(ledger)
     now = now_fn()
     for channel, settings in config.get("channel_settings", {}).items():
         ledger.set_channel_config(channel, caption=settings.get("caption_style", ""),
@@ -483,6 +521,9 @@ def status_report(config, *, home=None, now_fn=lambda: datetime.now(timezone.utc
         if actions:
             owner_actions[campaign_id] = actions
     return {"channels": channels, "library_stock_by_campaign": campaigns,
+            "held": (home / "HOLD").exists(), "whop_feedback": feedback,
+            "review_sheet": str(review_path), "limits": limits(config),
+            "upload_quota_remaining": ledger.upload_quota_remaining(now, cap=limits(config)["upload_cap"]),
             "producer_qa_failures": failures, "waiting_for_whop": len(waiting),
             "paused_channels": [channel for channel, data in channels.items() if data["paused"]],
             "join_suggestions": suggestions, "join_suggestions_error": suggestion_error,

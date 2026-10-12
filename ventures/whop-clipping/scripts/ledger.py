@@ -10,6 +10,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
+from functools import wraps
 
 from .interfaces import Post
 
@@ -39,6 +40,38 @@ def quota_day_bounds(day: Optional[date | str] = None) -> tuple[str, str]:
 
 def clip_home(home: Optional[Path] = None) -> Path:
     return Path(home or os.environ.get("CLIP_HOME", Path.home() / ".glacier/ventures/whop-clipping"))
+
+
+def exclusive_library_run(function):
+    """Prevent overlapping copies of one automation; release automatically on crash.
+
+    Producer and Distributor have separate locks so rendering never prevents
+    distributing previously stocked clips. Quota reservations use SQLite locks.
+    """
+    @wraps(function)
+    def wrapped(config, *args, **kwargs):
+        home = clip_home(kwargs.get("home"))
+        home.mkdir(parents=True, exist_ok=True)
+        with (home / (function.__name__ + ".lock")).open("a+b") as lock:
+            if os.name == "nt":
+                import msvcrt
+                lock.seek(0)
+                lock.write(b"0")
+                lock.flush()
+                lock.seek(0)
+                msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                return function(config, *args, **kwargs)
+            finally:
+                if os.name == "nt":
+                    lock.seek(0)
+                    msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(lock, fcntl.LOCK_UN)
+    return wrapped
 
 
 class Ledger:
@@ -126,6 +159,46 @@ class Ledger:
     def events(self):
         with self._connect() as db:
             return [dict(row, details=json.loads(row["details"])) for row in db.execute("SELECT * FROM events ORDER BY id")]
+
+    def quality_reference_clips(self, *, except_clip_id=None):
+        with self._connect() as db:
+            rows = db.execute("""SELECT DISTINCT c.payload FROM clips c
+                LEFT JOIN library l ON l.clip_id=c.id LEFT JOIN posts p ON p.clip_id=c.id
+                WHERE (l.status IN ('ready','posted') OR p.clip_id IS NOT NULL)
+                AND c.id != ?""", (except_clip_id or "",)).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
+    def reserve_upload_quota(self, clip_id, channel, now, *, cap=85):
+        """Serialize project-wide insert attempts; failed requests still consume quota."""
+        day = quota_day(now).isoformat()
+        cap = min(85, max(0, int(cap)))
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows = db.execute("SELECT kind,details FROM events WHERE kind IN ('youtube_quota_reservation','youtube_quota_stop')").fetchall()
+            events = [(row[0], json.loads(row[1])) for row in rows]
+            if any(kind == 'youtube_quota_stop' and data.get('day') == day for kind, data in events):
+                return False
+            count = sum(int(data.get('count', 0)) for kind, data in events
+                        if kind == 'youtube_quota_reservation' and data.get('day') == day)
+            if count >= cap:
+                details = {"day": day, "reason": "15% safety cap reached", "cap": cap}
+                db.execute("INSERT INTO events(kind,created_at,details) VALUES(?,?,?)",
+                           ("youtube_quota_stop", now.isoformat(), json.dumps(details)))
+                return False
+            details = {"day": day, "count": 1, "quota_units": 1, "bucket": "Video Uploads",
+                       "clip_id": clip_id, "channel": channel}
+            db.execute("INSERT INTO events(kind,created_at,details) VALUES(?,?,?)",
+                       ("youtube_quota_reservation", now.isoformat(), json.dumps(details)))
+            return True
+
+    def upload_quota_remaining(self, now, *, cap=85):
+        day = quota_day(now).isoformat()
+        events = self.events()
+        if any(row["kind"] == "youtube_quota_stop" and row["details"].get("day") == day for row in events):
+            return 0
+        used = sum(int(row["details"].get("count", 0)) for row in events
+                   if row["kind"] == "youtube_quota_reservation" and row["details"].get("day") == day)
+        return max(0, min(85, int(cap)) - used)
 
     def record_campaign(self, campaign):
         payload = campaign.__dict__

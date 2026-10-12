@@ -46,8 +46,8 @@ states that `videos.insert` has a quota cost of **1 unit** in the **Video Upload
 bucket and a daily limit of **100 calls**. It also states that uploads from
 unverified API projects are **not restricted to private viewing mode**. The
 adapter records a quota reservation in the local event ledger before each
-upload and defaults to a stricter project-wide cap of **90 uploads per day**;
-the configured value is clamped to 90. The ledger keys its safety count to
+upload and defaults to a stricter project-wide cap of **85 upload attempts per day**;
+the configured value is clamped to 85 (15% safety margin). The ledger keys its safety count to
 Google's Pacific-time quota day. A `quotaExceeded` response records a stop event
 and prevents further uploads for that day. Google controls the project's actual
 quota window, so the API Console remains the authoritative usage display.
@@ -65,13 +65,13 @@ is `https://youtube.com/shorts/<video-id>`.
 ## Account and campaign safeguards
 
 - The pipeline assigns each segment to one channel and checks the local ledger
-  for duplicate clips and source overlaps above 30% before upload. The adapter
+  for duplicate clips and any source-time overlap before upload. The adapter
   repeats the cross-channel overlap and already-posted checks at its boundary.
 - The pipeline enforces the approved campaign list, allowed platform, required
   campaign tags and disclosure, length rules, and the no-edit passthrough rule.
   The uploader does not rewrite video bytes; it only constructs upload metadata.
-- The default per-channel cap is three uploads a day, with at least two hours
-  between posts and randomized delays. The project-wide cap is at most 90 a day,
+- The default per-channel cap is eight uploads a day, with at least 150 minutes
+  between posts and an even three-hour cadence. The project-wide cap is at most 85 attempts a day,
   leaving room below Google's 100-call daily upload limit.
 - A 403 or a terms-, strike-, suspension-, or termination-like response pauses
   that channel in the ledger. Quota errors stop the project's uploads for the

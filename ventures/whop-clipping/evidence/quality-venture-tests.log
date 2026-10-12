@@ -1,0 +1,268 @@
+..................F.........F...s...............FF...................... [ 56%]
+.....................................F.F.F..............                 [100%]
+=================================== FAILURES ===================================
+______ test_producer_marks_ffprobe_error_as_clip_qa_failure_and_continues ______
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_producer_marks_ffprobe_er0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e95d77dd0>
+
+    def test_producer_marks_ffprobe_error_as_clip_qa_failure_and_continues(tmp_path, monkeypatch):
+        import subprocess
+        import scripts.producer as producer
+        from scripts.interfaces import Campaign, Clip
+    
+        campaign = Campaign("camp", "Camp", "", 1, None, ["youtube_shorts"], "Required tags: #ad")
+        bad_path, good_path = tmp_path / "bad.mp4", tmp_path / "good.mp4"
+        bad_path.write_bytes(b"bad fixture")
+        good_path.write_bytes(b"good fixture")
+        bad = Clip("bad", campaign.id, "source", 0, 25, str(bad_path), "Title #ad", "", ["#ad"], "", passthrough=True)
+        good = Clip("good", campaign.id, "source", 30, 55, str(good_path), "Title #ad", "", ["#ad"], "", passthrough=True)
+    
+        def ffprobe(path):
+            if path == str(bad_path):
+                raise subprocess.CalledProcessError(1, ["ffprobe", path], stderr="invalid media")
+            return {"width": 1080, "height": 1920, "audio_loudness_ok": True}
+    
+        monkeypatch.setattr(producer, "_ffprobe", ffprobe)
+    
+        class Scout:
+            joined_campaign_ids = [campaign.id]
+            def list_campaigns(self): return [campaign]
+    
+        result = producer.produce_ready({"channels": ["@one"], "daily_target_clips": 1},
+                                        home=tmp_path / "home", scout=Scout(),
+                                        campaign_clips={campaign.id: [bad, good]}, target_stock=2)
+    
+        ledger = __import__("scripts.ledger", fromlist=["Ledger"]).Ledger(tmp_path / "home")
+>       assert result["qa_failures"] == 1
+E       assert 2 == 1
+
+ventures/whop-clipping/tests/test_multi_campaigns.py:123: AssertionError
+_______ test_producer_stocks_each_qa_passing_clip_before_rendering_next ________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_producer_stocks_each_qa_p0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e95cab410>
+
+    def test_producer_stocks_each_qa_passing_clip_before_rendering_next(tmp_path, monkeypatch):
+        from scripts.interfaces import Campaign, Clip
+        import scripts.producer as producer
+        order = []
+        original = producer.make_clip
+        def render(*args, **kwargs):
+            order.append("render")
+            return original(*args, **kwargs)
+        # Injected clip rows model individually rendered candidates without ffmpeg.
+        campaign = Campaign("camp", "Camp", "https://example.test", 1, 20, ["youtube_shorts"],
+                            "Length: min 20 max 45\nRequired tags: #ad")
+        paths = []
+        clips = []
+        for index in range(3):
+            path = tmp_path / f"{index}.mp4"
+            path.write_bytes(b"fixture")
+            paths.append(path)
+            clips.append(Clip(str(index), "camp", "source", index * 60, index * 60 + 25,
+                              str(path), "Title #ad", "Disclosure", ["#ad"], "", passthrough=True))
+        monkeypatch.setattr(producer, "_ffprobe", lambda _: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
+        class Scout:
+            joined_campaign_ids = ["camp"]
+            def list_campaigns(self): return [campaign]
+        ledger = __import__("scripts.ledger", fromlist=["Ledger"]).Ledger(tmp_path / "home")
+        def clips_iter():
+            yield clips[0]
+            assert len(ledger.library_items("ready")) == 1
+            yield clips[1]
+            assert len(ledger.library_items("ready")) == 2
+            yield clips[2]
+>       result = producer.produce_ready({"channels": ["@one"], "approved_campaign_ids": ["camp"],
+                                         "daily_target_clips": 2},
+                                        home=tmp_path / "home", scout=Scout(),
+                                        campaign_clips={"camp": clips_iter()}, target_stock=2)
+
+ventures/whop-clipping/tests/test_multi_campaigns.py:303: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ventures/whop-clipping/scripts/ledger.py:63: in wrapped
+    return function(config, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ventures/whop-clipping/scripts/producer.py:509: in produce_ready
+    for original in clips:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def clips_iter():
+        yield clips[0]
+>       assert len(ledger.library_items("ready")) == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = len([])
+E        +    where [] = library_items('ready')
+E        +      where library_items = <scripts.ledger.Ledger object at 0x754e95cab680>.library_items
+
+ventures/whop-clipping/tests/test_multi_campaigns.py:299: AssertionError
+______ test_live_cycle_requires_explicit_config_and_records_side_effects _______
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_live_cycle_requires_expli0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e95cdd190>
+
+    def test_live_cycle_requires_explicit_config_and_records_side_effects(tmp_path, monkeypatch):
+        config = {"live": True, "channels": ["@frameandmomentdesk"], "daily_channel_cap": 3,
+                  "global_daily_cap": 100, "min_spacing_hours": 2, "plugins": {}, "campaigns": []}
+        config["approved_campaign_ids"] = ["camp-1"]
+        uploader, submitter = FakeUploader(), FakeSubmitter()
+        clip = Clip("clip1", "camp-1", "source1", 0, 30, "x.mp4", "Title", "#ad", ["#ad"], "@frameandmomentdesk")
+        _make_qa_passing_clip_fixture(tmp_path, monkeypatch, clip)
+        result = run_cycle(config, home=tmp_path, scout=FakeScout(), uploader=uploader, submitter=submitter,
+                           dry_run=False, campaign_clips={"camp-1": [clip]}, sleep_fn=lambda _: None,
+                           now_fn=lambda: __import__("datetime").datetime.fromisoformat("2026-10-11T10:00:00+00:00"))
+>       assert result["uploads"] == 1
+E       assert 0 == 1
+
+ventures/whop-clipping/tests/test_pipeline.py:321: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x2b67b400] moov atom not found
+[in#0 @ 0x2b67f3c0] Error opening input: Invalid data found when processing input
+Error opening input file /tmp/pytest-of-glacier/pytest-269/test_live_cycle_requires_expli0/qa-passing-clip.mp4.
+Error opening input files: Invalid data found when processing input
+_________ test_dry_run_reservation_can_be_reused_live_on_same_channel __________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_dry_run_reservation_can_b0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e95cabaa0>
+
+    def test_dry_run_reservation_can_be_reused_live_on_same_channel(tmp_path, monkeypatch):
+        config = {"live": True, "channels": ["@frameandmomentdesk"], "approved_campaign_ids": ["camp-1"],
+                  "daily_channel_cap": 3, "global_daily_cap": 100, "plugins": {}}
+        clip = Clip("clip1", "camp-1", "source1", 10, 40, "x.mp4", "Title", "#ad", ["#ad"], "@frameandmomentdesk")
+        scout = FakeScout([campaign()])
+        uploader, submitter = FakeUploader(), FakeSubmitter()
+        _make_qa_passing_clip_fixture(tmp_path, monkeypatch, clip)
+        run_cycle(config, home=tmp_path, scout=scout, uploader=uploader, submitter=submitter,
+                  dry_run=True, campaign_clips={"camp-1": [clip]})
+        live_result = run_cycle(config, home=tmp_path, scout=scout, uploader=uploader, submitter=submitter,
+                                dry_run=False, campaign_clips={"camp-1": [clip]},
+                                sleep_fn=lambda _: None)
+>       assert live_result["uploads"] == 1
+E       assert 0 == 1
+
+ventures/whop-clipping/tests/test_pipeline.py:341: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x1b8aaec0] moov atom not found
+[in#0 @ 0x1b89e3c0] Error opening input: Invalid data found when processing input
+Error opening input file /tmp/pytest-of-glacier/pytest-269/test_dry_run_reservation_can_b0/qa-passing-clip.mp4.
+Error opening input files: Invalid data found when processing input
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x2348b2c0] moov atom not found
+[in#0 @ 0x23489e80] Error opening input: Invalid data found when processing input
+Error opening input file /tmp/pytest-of-glacier/pytest-269/test_dry_run_reservation_can_b0/qa-passing-clip.mp4.
+Error opening input files: Invalid data found when processing input
+________ test_distributor_uses_nearest_deadline_and_manual_submit_queue ________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_distributor_uses_nearest_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e953202f0>
+
+    def test_distributor_uses_nearest_deadline_and_manual_submit_queue(tmp_path, monkeypatch):
+        import scripts.distributor as distributor_module
+        monkeypatch.setattr(distributor_module, "_ffprobe", lambda path: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
+        now = datetime(2026, 10, 11, 12, tzinfo=timezone.utc)
+        channels = ["@first", "@second"]
+        ledger = Ledger(tmp_path)
+        ledger.set_channel_config("@first", caption="first template", paused=False)
+        ledger.set_channel_config("@second", caption="second template", paused=False)
+        old_path, fresh_path = tmp_path / "old.mp4", tmp_path / "fresh.mp4"
+        old_path.write_bytes(b"master"); fresh_path.write_bytes(b"master")
+        old = Clip("old", "camp-a", "src1", 0, 25, str(old_path), "Old", "#ad\n\nPaid partnership", ["#ad"], "", passthrough=True)
+        fresh = Clip("fresh", "camp-b", "src2", 30, 55, str(fresh_path), "Fresh", "#ad\n\nPaid partnership", ["#ad"], "", passthrough=True)
+        for clip in (old, fresh):
+            ledger.record_clip(clip)
+            ledger.add_library_clip(clip, checklist={"required_tags": ["#ad"]}, status="ready")
+        ledger.record_post(Post("prior", "@first", "youtube_shorts", "v0", "https://youtu.be/v0",
+                                (now - timedelta(hours=5, minutes=55)).isoformat()))
+        ledger.record_post(Post("prior2", "@second", "youtube_shorts", "v1", "https://youtu.be/v1",
+                                (now - timedelta(hours=5, minutes=50)).isoformat()))
+        class Uploader:
+            def __init__(self): self.calls = []
+            def upload(self, clip, *, dry_run=False):
+                self.calls.append(clip)
+                return Post(clip.id, clip.channel_handle, "youtube_shorts", f"v-{clip.id}",
+                            f"https://youtube.test/shorts/{clip.id}", now.isoformat())
+        uploader = Uploader()
+        config = {"live": True, "channels": channels, "daily_channel_cap": 6, "global_daily_cap": 100,
+                  "min_spacing_hours": 2, "max_spacing_hours": 6, "approved_campaign_ids": ["camp-a", "camp-b"]}
+        result = distribute_ready(config, home=tmp_path, uploader=uploader, now_fn=lambda: now,
+                                  rng=__import__("random").Random(4), sleep_fn=lambda _: None)
+>       assert result["uploads"] == 2
+E       assert 0 == 2
+
+ventures/whop-clipping/tests/test_schedule.py:132: AssertionError
+______ test_producer_stocks_library_and_distributor_queues_whop_manually _______
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_producer_stocks_library_a0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e95321df0>
+
+    def test_producer_stocks_library_and_distributor_queues_whop_manually(tmp_path, monkeypatch):
+        import scripts.producer as producer_module
+        import scripts.distributor as distributor_module
+        probe = {"width": 1080, "height": 1920, "audio_loudness_ok": True}
+        monkeypatch.setattr(producer_module, "_ffprobe", lambda path: probe)
+        monkeypatch.setattr(distributor_module, "_ffprobe", lambda path: probe)
+        source = tmp_path / "provided.mp4"
+        source.write_bytes(b"untouched source bytes")
+        campaign = make_campaign(rules_text="Required tags: #ad\nNo editing: true\nLength: min 20 max 45",
+                                 requires_editing=False)
+        clip = Clip("queued", campaign.id, "src-1", 0, 25, str(source), "Title", "#ad", ["#ad"], "",
+                    passthrough=True)
+    
+        class Scout:
+            def list_campaigns(self): return [campaign]
+        result = produce_ready({"approved_campaign_ids": [campaign.id], "channels": ["@first"]},
+                               home=tmp_path / "runtime", scout=Scout(),
+                               campaign_clips={campaign.id: [clip]}, target_stock=1)
+>       assert result["ready"] == 1
+E       assert 0 == 1
+
+ventures/whop-clipping/tests/test_schedule.py:177: AssertionError
+________ test_distributor_respects_two_hour_spacing_and_six_per_day_cap ________
+
+tmp_path = PosixPath('/tmp/pytest-of-glacier/pytest-269/test_distributor_respects_two_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x754e953201a0>
+
+    def test_distributor_respects_two_hour_spacing_and_six_per_day_cap(tmp_path, monkeypatch):
+        import scripts.distributor as distributor_module
+        monkeypatch.setattr(distributor_module, "_ffprobe", lambda path: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
+        now = datetime(2026, 10, 11, 11, 30, tzinfo=timezone.utc)
+        ledger = Ledger(tmp_path)
+        channels = ["@spacing", "@capped"]
+        for channel in channels:
+            ledger.set_channel_config(channel)
+        ledger.record_post(Post("previous", "@spacing", "youtube_shorts", "p0", "url",
+                                (now - timedelta(hours=1, minutes=30)).isoformat()))
+        for index in range(6):
+            ledger.record_post(Post(f"cap-{index}", "@capped", "youtube_shorts", f"cap-v{index}", "url",
+                                    now.replace(hour=8, minute=index).isoformat()))
+        clip_path = tmp_path / "spacing.mp4"
+        clip_path.write_bytes(b"master")
+        clip = Clip("spacing-clip", "camp-a", "source-a", 0, 25, str(clip_path),
+                    "Title", "#ad", ["#ad"], "", passthrough=True)
+        ledger.record_clip(clip)
+        ledger.add_library_clip(clip, checklist={"required_tags": ["#ad"]})
+        waits = []
+        current = [now]
+        class Uploader:
+            def upload(self, item, *, dry_run=False):
+                return Post(item.id, item.channel_handle, "youtube_shorts", "new", "https://youtube.test/new", current[0].isoformat())
+        config = {"live": True, "channels": channels, "daily_channel_cap": 6}
+        ledger.set_next_post_at("@spacing", now - timedelta(minutes=5))
+        result = distribute_ready(config, home=tmp_path, uploader=Uploader(), now_fn=lambda: current[0],
+                                  rng=__import__("random").Random(8), sleep_fn=waits.append)
+        assert result["uploads"] == 0  # due time cannot override the 2-hour minimum
+        current[0] = now + timedelta(minutes=30)
+        result = distribute_ready(config, home=tmp_path, uploader=Uploader(), now_fn=lambda: current[0],
+                                  rng=__import__("random").Random(8), sleep_fn=waits.append)
+>       assert result["uploads"] == 1
+E       assert 0 == 1
+
+ventures/whop-clipping/tests/test_schedule.py:256: AssertionError
+=========================== short test summary info ============================
+FAILED ventures/whop-clipping/tests/test_multi_campaigns.py::test_producer_marks_ffprobe_error_as_clip_qa_failure_and_continues
+FAILED ventures/whop-clipping/tests/test_multi_campaigns.py::test_producer_stocks_each_qa_passing_clip_before_rendering_next
+FAILED ventures/whop-clipping/tests/test_pipeline.py::test_live_cycle_requires_explicit_config_and_records_side_effects
+FAILED ventures/whop-clipping/tests/test_pipeline.py::test_dry_run_reservation_can_be_reused_live_on_same_channel
+FAILED ventures/whop-clipping/tests/test_schedule.py::test_distributor_uses_nearest_deadline_and_manual_submit_queue
+FAILED ventures/whop-clipping/tests/test_schedule.py::test_producer_stocks_library_and_distributor_queues_whop_manually
+FAILED ventures/whop-clipping/tests/test_schedule.py::test_distributor_respects_two_hour_spacing_and_six_per_day_cap
+7 failed, 120 passed, 1 skipped in 56.61s

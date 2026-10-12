@@ -38,6 +38,8 @@ class Clip:
     passthrough: bool = False
     source_route: str = ""
     render_seconds: float = 0.0
+    base_path: str = ""
+    quality: dict = field(default_factory=dict)
 
 
 @dataclass

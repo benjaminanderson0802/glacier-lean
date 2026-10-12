@@ -16,13 +16,10 @@
     "@thecliproomnotes",
     "@contextclipsdesk"
   ],
-  "daily_channel_cap": 6,
-  "global_daily_cap": 90,
-  "min_spacing_hours": 2,
+  "global_daily_cap": 85,
   "max_spacing_hours": 6,
-  "posting_jitter_minutes": 45,
+  "posting_jitter_minutes": 0,
   "target_library_stock": 20,
-  "daily_target_clips": 40,
   "notification_url": "",
   "view_collapse_ratio": 0.2,
   "sources": {
@@ -40,5 +37,10 @@
     "scout": "scripts.public_discover.PublicDiscoverScout",
     "uploader": "youtube_upload.YouTubeUploader",
     "submitter": "scripts.submitter.ManualQueueSubmitter"
-  }
+  },
+  "daily_target": 80,
+  "per_channel_daily": 8,
+  "min_gap_minutes": 150,
+  "min_quality": 70,
+  "youtube_daily_insert_quota": 100
 }
