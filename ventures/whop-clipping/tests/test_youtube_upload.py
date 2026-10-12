@@ -4,6 +4,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 from googleapiclient.discovery import build_from_document
@@ -12,7 +13,7 @@ from googleapiclient.http import HttpMockSequence
 VENTURE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(VENTURE_DIR))
 
-from scripts.interfaces import Clip
+from scripts.interfaces import Clip, Post
 from scripts.ledger import Ledger
 from scripts.youtube_upload import YouTubeUploader
 
@@ -204,3 +205,26 @@ def test_quota_ledger_uses_the_pacific_quota_day(tmp_path):
 
     event = [event for event in ledger.events() if event["kind"] == "youtube_quota_reservation"][-1]
     assert event["details"]["day"] == "2026-10-10"
+
+
+def test_ledger_counts_upload_across_chicago_to_utc_midnight(tmp_path, monkeypatch):
+    import scripts.ledger as ledger_module
+
+    chicago_late = datetime(2026, 10, 11, 23, 30, tzinfo=ZoneInfo("America/Chicago"))
+    ledger = Ledger(tmp_path / "runtime")
+    post = Post("clip", "@channel", "youtube_shorts", "video", "https://youtube.test/video",
+                chicago_late.astimezone(timezone.utc).isoformat())
+    ledger.record_post(post)
+
+    frozen = chicago_late
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return frozen.astimezone(tz) if tz else frozen.replace(tzinfo=None)
+
+    monkeypatch.setattr(ledger_module, "datetime", FrozenDateTime)
+    assert ledger.global_posts_today() == 1
+
+    frozen = datetime(2026, 10, 12, 0, 30, tzinfo=timezone.utc)
+    assert ledger.global_posts_today() == 1

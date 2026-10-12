@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .cycle import DEFAULT_CHANNELS, FakeUploader, _campaign, load_plugin
 from .interfaces import Campaign, Clip
-from .ledger import Ledger, clip_home
+from .ledger import Ledger, clip_home, quota_day
 from .variants import channel_style
 from .producer import qa_clip, _ffprobe
 
@@ -156,7 +156,8 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
     for deadline, last, channel, settings, due_at in available:
         if channel in used_channels:
             continue
-        if ledger.posts_today(channel, now.date().isoformat()) >= cap or ledger.global_posts_today(now.date().isoformat()) >= global_cap:
+        day = quota_day(now).isoformat()
+        if ledger.posts_today(channel, day) >= cap or ledger.global_posts_today(day) >= global_cap:
             if deadline <= now + timedelta(hours=1):
                 msg = f"deadline at risk for {channel}: upload cap reached before {deadline.isoformat()}"
                 ledger.event("deadline at risk", {"channel": channel, "deadline": deadline.isoformat(), "reason": "upload cap reached"})
@@ -215,9 +216,8 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
             continue
         variant = _channel_variant(clip, campaign, settings, home, item["checklist"])
         variant.channel_handle = channel
-        probe = _ffprobe(variant.path) if Path(variant.path).exists() else None
         failures = qa_clip(variant, item["checklist"], word_times=variant.caption_words,
-                           probe_fn=(lambda _: probe) if Path(variant.path).exists() else None)
+                           probe_fn=_ffprobe if Path(variant.path).exists() else None)
         if failures:
             ledger.finish_library_clip(clip.id, "failed")
             ledger.event("distributor_qa_failed", {"clip_id": clip.id, "channel": channel, "reasons": failures})
@@ -323,7 +323,7 @@ def _run_injected_library(config, *, library, uploader, submitter, campaigns, cl
             previous = last_by_channel.get(channel)
             if previous is not None and now - previous < max_spacing:
                 continue
-            day = now.date().isoformat()
+            day = quota_day(now).isoformat()
             if counts_by_day.get((channel, day), 0) >= cap:
                 continue
             if global_counts_by_day.get(day, 0) >= global_cap:

@@ -224,7 +224,7 @@ def test_distributor_respects_two_hour_spacing_and_six_per_day_cap(tmp_path, mon
                             (now - timedelta(hours=1, minutes=30)).isoformat()))
     for index in range(6):
         ledger.record_post(Post(f"cap-{index}", "@capped", "youtube_shorts", f"cap-v{index}", "url",
-                                now.replace(hour=1, minute=index).isoformat()))
+                                now.replace(hour=8, minute=index).isoformat()))
     clip_path = tmp_path / "spacing.mp4"
     clip_path.write_bytes(b"master")
     clip = Clip("spacing-clip", "camp-a", "source-a", 0, 25, str(clip_path),

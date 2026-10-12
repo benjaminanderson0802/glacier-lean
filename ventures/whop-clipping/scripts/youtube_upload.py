@@ -6,7 +6,6 @@ import random
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -16,10 +15,10 @@ from googleapiclient.http import MediaFileUpload
 
 if __package__:
     from .interfaces import Clip, Post
-    from .ledger import Ledger, clip_home
+    from .ledger import Ledger, clip_home, quota_day
 else:
     from scripts.interfaces import Clip, Post
-    from scripts.ledger import Ledger, clip_home
+    from scripts.ledger import Ledger, clip_home, quota_day
 
 
 SCOPES = [
@@ -27,7 +26,6 @@ SCOPES = [
     "https://www.googleapis.com/auth/youtube.readonly",
 ]
 MAX_UPLOADS_PER_DAY = 90
-QUOTA_TIMEZONE = ZoneInfo("America/Los_Angeles")
 
 
 def _handle_key(handle: str) -> str:
@@ -110,7 +108,7 @@ class YouTubeUploader:
         )
 
     def _today_uploads(self):
-        today = self.now_fn().astimezone(QUOTA_TIMEZONE).date().isoformat()
+        today = quota_day(self.now_fn()).isoformat()
         return sum(
             int(event["details"].get("count", 0))
             for event in self.ledger.events()
@@ -119,7 +117,7 @@ class YouTubeUploader:
         )
 
     def quota_stopped_today(self) -> bool:
-        today = self.now_fn().astimezone(QUOTA_TIMEZONE).date().isoformat()
+        today = quota_day(self.now_fn()).isoformat()
         return any(event["kind"] == "youtube_quota_stop"
                    and event["details"].get("day") == today
                    for event in self.ledger.events())
@@ -133,9 +131,9 @@ class YouTubeUploader:
         if self._today_uploads() >= cap:
             raise RuntimeError(f"YouTube daily upload safety cap reached ({cap}); uploads stop for today")
         now = self.now_fn()
-        quota_day = now.astimezone(QUOTA_TIMEZONE).date().isoformat()
+        quota_date = quota_day(now).isoformat()
         self.ledger.event("youtube_quota_reservation", {
-            "day": quota_day, "count": 1, "quota_units": 1,
+            "day": quota_date, "count": 1, "quota_units": 1,
             "bucket": "Video Uploads", "clip_id": clip.id,
             "channel": clip.channel_handle,
         })
@@ -210,7 +208,7 @@ class YouTubeUploader:
             except HttpError as exc:
                 status, reasons, message = _http_error_data(exc)
                 if "quotaexceeded" in reasons or "dailylimitexceeded" in reasons:
-                    today = self.now_fn().astimezone(QUOTA_TIMEZONE).date().isoformat()
+                    today = quota_day(self.now_fn()).isoformat()
                     self.ledger.event("youtube_quota_stop", {"day": today, "channel": clip.channel_handle,
                                                               "reason": ",".join(sorted(reasons))})
                     raise RuntimeError("YouTube quota exceeded; uploads are stopped for today") from exc
@@ -234,8 +232,11 @@ class YouTubeUploader:
         video_id = str(response.get("id", ""))
         if not video_id:
             raise RuntimeError("YouTube upload response did not include a video id")
+        posted_at = self.now_fn()
+        if posted_at.tzinfo is None:
+            posted_at = posted_at.replace(tzinfo=timezone.utc)
         post = Post(clip.id, clip.channel_handle, "youtube_shorts", video_id,
-                    f"https://youtube.com/shorts/{video_id}", self.now_fn().isoformat())
+                    f"https://youtube.com/shorts/{video_id}", posted_at.astimezone(timezone.utc).isoformat())
         self.ledger.record_post(post)
         self.ledger.event("youtube_upload_completed", {"clip_id": clip.id, "channel": clip.channel_handle,
                                                         "video_id": video_id, "quota_units": 1})
