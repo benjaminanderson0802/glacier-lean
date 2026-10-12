@@ -20,10 +20,12 @@
   "max_spacing_hours": 6,
   "posting_jitter_minutes": 45,
   "target_library_stock": 20,
+  "daily_target_clips": 40,
   "notification_url": "",
   "view_collapse_ratio": 0.2,
   "sources": {
     "max_bytes": 2000000000,
+    "max_source_gb": 40,
     "timeout_s": 1800
   },
   "transcription": {

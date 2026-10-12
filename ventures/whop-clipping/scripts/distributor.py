@@ -151,7 +151,7 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
     ready = ledger.library_items("ready")
     available = _channel_assignment(ledger, channels, now, config)
     output = {"ready": len(ready), "uploads": 0, "skipped": 0, "deadline_at_risk": [],
-              "paused_channels": []}
+              "paused_channels": [], "owner_actions": {}}
     used_channels = set()
     for deadline, last, channel, settings, due_at in available:
         if channel in used_channels:
@@ -169,6 +169,11 @@ def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetim
             if item["clip_id"] in {row["clip_id"] for row in ledger.library_items("posted")}:
                 continue
             clip_data = item["clip"]
+            if item.get("checklist", {}).get("draft_preapproval"):
+                output["owner_actions"].setdefault(clip_data["campaign_id"], []).extend(
+                    item.get("checklist", {}).get("owner_actions", [{
+                        "requirement": "draft_preapproval", "reason": "draft must be approved before posting"}]))
+                continue
             if clip_data.get("channel_handle") and clip_data["channel_handle"] != channel:
                 continue
             clip = Clip(**{key: val for key, val in clip_data.items() if key in Clip.__dataclass_fields__})
@@ -444,10 +449,20 @@ def status_report(config, *, home=None, now_fn=lambda: datetime.now(timezone.utc
                 suggestion_error = "cached campaign suggestions are older than one hour"
     except (OSError, json.JSONDecodeError, AttributeError) as exc:
         suggestion_error = str(exc)
+    owner_actions = {}
+    for campaign_id in {item["campaign_id"] for item in ledger.library_items("ready")}:
+        campaign = ledger.campaign(campaign_id) or {}
+        checklist = campaign.get("checklist", {})
+        actions = checklist.get("owner_actions", [])
+        if checklist.get("draft_preapproval"):
+            actions = list(actions) + [{"requirement": "draft_preapproval", "reason": "draft must be approved before posting"}]
+        if actions:
+            owner_actions[campaign_id] = actions
     return {"channels": channels, "library_stock_by_campaign": campaigns,
             "producer_qa_failures": failures, "waiting_for_whop": len(waiting),
             "paused_channels": [channel for channel, data in channels.items() if data["paused"]],
-            "join_suggestions": suggestions, "join_suggestions_error": suggestion_error}
+            "join_suggestions": suggestions, "join_suggestions_error": suggestion_error,
+            "owner_actions": owner_actions}
 
 
 def main(argv=None):

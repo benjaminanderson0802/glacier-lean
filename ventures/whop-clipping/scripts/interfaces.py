@@ -17,6 +17,9 @@ class Campaign:
     max_payout_usd: Optional[float] = None
     budget_used_usd: Optional[float] = None
     budget_total_usd: Optional[float] = None
+    eligible_for_new_youtube_shorts_channels: Optional[bool] = None
+    requires_draft_preapproval: bool = False
+    owner_requirements: list = field(default_factory=list)
 
 
 @dataclass
