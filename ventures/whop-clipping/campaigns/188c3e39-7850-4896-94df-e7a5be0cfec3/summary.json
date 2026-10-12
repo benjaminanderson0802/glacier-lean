@@ -1,0 +1,2968 @@
+{
+  "uuid": "188c3e39-7850-4896-94df-e7a5be0cfec3",
+  "name": "Boxabl Official Clipping",
+  "brand": "BOXABL",
+  "cpm_usd": 0.5,
+  "budget_left_usd": 64900,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok",
+    "X"
+  ],
+  "min_len_s": null,
+  "max_len_s": null,
+  "required_tags": [
+    "@boxabl"
+  ],
+  "banned": [
+    "Kanye",
+    "stock/ticker posts",
+    "politics/controversy",
+    "mocking/negativity",
+    "other-brand watermark",
+    "raw rips",
+    "bait",
+    "boosting/bots/story boosting"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Supply qualifying audience evidence as required; avoid unavailable Airrack video. Confirm X attribution only if using X."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://drive.google.com/drive/folders/1XrfBdpDgkQb_Dq6ZVZaPeOuLa6ZElwK7?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 13,
+      "approx_size": 615445721,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:35Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 0,
+        "files": 13,
+        "names": [
+          " Joe Rogan and Rick Caruso (1)",
+          "Airrack (2)",
+          "Airrack (3)",
+          "Boxabl (4)",
+          "Ellie in Space (5)",
+          "Enes Yilmazer (8)",
+          "Enes Yilmazer (9)",
+          "FaZe Rug (10)",
+          "FaZe Rug (11)",
+          "FaZe Rug (12)",
+          "FaZe Rug (13)",
+          "Graham Stephan (14)",
+          "Post Malone Talked About Boxabl (15)"
+        ]
+      },
+      "response_sha256": "5ee9dc6ca2308b3dd2132cee8896c67570a39f83fe85690f7fc952f70b4e87e0",
+      "recursive_inventory": {
+        "files_observed": 13,
+        "video_files_observed": 13,
+        "known_file_bytes": 615445721,
+        "known_video_bytes": 615445721,
+        "folders_probed": 1,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/1XrfBdpDgkQb_Dq6ZVZaPeOuLa6ZElwK7?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:35Z",
+            "sha256": "5ee9dc6ca2308b3dd2132cee8896c67570a39f83fe85690f7fc952f70b4e87e0",
+            "direct_items": 13
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/14hsa8iKW0kFY9yAZBTsTUvxr_lgoGelk?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 15,
+      "approx_size": 3152182,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:35Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 14,
+        "files": 1,
+        "names": [
+          "1. Most Viewed YouTube",
+          "2. 3rd Party Videos",
+          "3. BOXABL YouTube",
+          "4. Most Viewed Shorts",
+          "BOXABL Casita",
+          "BOXABL Logos",
+          "BOXABL MEDIA ASSETS",
+          "Casita Installs",
+          "Edited Shorts",
+          "Factory",
+          "News Segments",
+          "Renders",
+          "YouTube Uncut",
+          "zPR",
+          "BOXABL x ClipFarm Clipper Briefv2.pdf"
+        ]
+      },
+      "response_sha256": "2faaa0faa9c36d6a5e142e2a1c751ea0e7197adf5727861a51119202f12a8cd0",
+      "recursive_inventory": {
+        "files_observed": 3725,
+        "video_files_observed": 1750,
+        "known_file_bytes": 455268672219,
+        "known_video_bytes": 439710419812,
+        "folders_probed": 358,
+        "remaining_folder_count": 63,
+        "complete": false,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/14hsa8iKW0kFY9yAZBTsTUvxr_lgoGelk?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:35Z",
+            "sha256": "2faaa0faa9c36d6a5e142e2a1c751ea0e7197adf5727861a51119202f12a8cd0",
+            "direct_items": 15
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sxVPLeJR9vuaR3H2mEtJNXzs7T0fEV2y",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:49Z",
+            "sha256": "ab764bca17c45e5d537ff21f1bad4342515603546f86c7d4268e34ad29d75c62",
+            "direct_items": 15
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Mo665x6vYOS5hoYV7lsrKBp5xGKFBmer",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:49Z",
+            "sha256": "318b41c456575d1b21a64115e512854036d55169c2d9395353965fffcba2b436",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1a77OkB1Rns6cJSQFbHGY0HUzgi4GvmRy",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:49Z",
+            "sha256": "a40ff585e9a151e64feb018ca6e9c2b19bd2c0fffc1a81f5b2f88c3781780130",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ajmV9v5Q-3Sql3mXb3Vt6qM3IHJIOn1I",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:49Z",
+            "sha256": "97a84de31a1cfb96968544578b5130ddc86ec4eccd2e74966ca6b457be3c0994",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1SH3Fyi7qlgrqmSzCXfORgLnEayyLMY4X",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:49Z",
+            "sha256": "7956a7f912784c22f2d2198a9f2271a5a677388c857d373f165722a64b599efe",
+            "direct_items": 14
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1-3JEKLPip96DwyYii5AaUS_801zxeW1w",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:56Z",
+            "sha256": "8f907a7a30e113603ffc11b4186b3c063da436363044bddf9c002d5cdfaff3a2",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Dspl7oHLo4N3KJOnCji4XB6DZA-PkGSx",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:56Z",
+            "sha256": "3e809a600748210e8da8e339929389315f9f5cae7fc42fcaa7cdccee58db3ef7",
+            "direct_items": 37
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1qjsS1XgyS95-0s3Z8qL-yvHcL-HgM3od",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:06Z",
+            "sha256": "19278772e1bf2b1102be8d031fa2921a6f287be90c6b34e8333c4fa54fec6be8",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Q4-8XAzrCLhTC-CTkDDvkPY26Z3Li8da",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:56Z",
+            "sha256": "d6a857c694eb3abd16643a4a48822253372dfa1ddd771136e0eaf8e6902f81c1",
+            "direct_items": 35
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1yakk7mOBkVZFAuQaPRZmLCHjyBcofvbn",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:56Z",
+            "sha256": "333e4ba3d01ee79c497e45e4b781f4456e1e0bc164961bbae8269c77a03e07e1",
+            "direct_items": 49
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1AuY88jx33mlZ-9-T9wBgdREfEdF-Yw46",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:56Z",
+            "sha256": "5e415874e24dec701aa6aeb296051325e8b3a6669d376c08a1c72b7563dc6028",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1H7VVi0Lo_t8beTdtg_uJx1KQnuSonyba",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:57Z",
+            "sha256": "e3f516691032682bca2640ff0f3f4ebc58edfdc4e81781fe1ac0ca1211d38388",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1RGYNw_6ru8-2u6_kVk9fiyNL-BBywbb-",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:06Z",
+            "sha256": "3201f0755e55d198e95f24cf6b58c870d03c13e4897f1e71baa9f4b2bffe43b7",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13FRC0otczgRm_qDnNxYwZqk-9l7iZtgq",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:57Z",
+            "sha256": "d40258dd9aab3b7c1c753592d4508efde4c0ca9729b2eeb0fbf8a16f9b6a6f2d",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18oeWW51pBgyioIqn7wImkVt_ertoUX3Y",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:06Z",
+            "sha256": "b23f7c444539344e3484a65209ab0a7a5af7fdf77ec6c40c19f1c7d7b065a18b",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1qVx3xg2JbtkR8InQLyW2_wmFbokznEPj",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:06Z",
+            "sha256": "47546d58c3b4d70218fe8a92cae048574acd28659a120284ef005ef2be4e3cc1",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/14bASXV6mCFoSuG8eRpVnfbV-nwjIv0eV",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:06Z",
+            "sha256": "23a68c3f9c6031c74bcdf00a08780da4bb4a9973843abd9108ad9128f15165f1",
+            "direct_items": 10
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1IZvLeD-oHi7rBZfaB_Ho0m5gcsgdOVqW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:07Z",
+            "sha256": "f929c36c3acd491063ebda181583e93e44a072d1ba499e906500f178f47be496",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Vjd5DMzEdve0ua08jQl37lI7y4ILr5hG",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:57Z",
+            "sha256": "6128d75b0d0be1beef6c970478b309cbc2f1f987e06d70424a00f606778138ad",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1W6rtU3o5dZPEMy7YsjrAZ84v7iiJ2z7e",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:57Z",
+            "sha256": "f127a4ef3cc748ff379c7ddea6c04e8fde68785a721c52730efccfac3e541dac",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1NY23KX91bBa1vDCx7w0GXM1OrLTT5ZYK",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:57Z",
+            "sha256": "b4b85c9023fdbe65f934e0115d1d8fefb97b7388fc5fe9382285e09a2a8eea39",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/167KvKGnAy8jNjXgbhheDh-WRSKi1xB1E",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:07Z",
+            "sha256": "3c133b3efdf04ab628f7040ba8304a6283a52b90530cdc0cdf20cb46750e3e77",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ycKX9f3b8nhnWtfZrJJS6ART3qh8md76",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:07Z",
+            "sha256": "dc42374d56e052bd23648e05990f2c85ac431c2907118ed947e09f8eab2a040c",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1zdHQCZa0e3oWOiz3l4Px8iLmdDkahZOd",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:58Z",
+            "sha256": "4fd325ecd587a84918f3a4af1999a969b45f722b9b322c85fe6d983268f54099",
+            "direct_items": 27
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/19kd9ViB7sTPhoHG9syS4EnPN5FeZvVKB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:58Z",
+            "sha256": "3a2e95e0fc967f2fc20b6e9801a9bbc87c298ff608a96225d53f9e08c8849b89",
+            "direct_items": 7
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1G7mYWhGjqHQyjjrQS9eIF6UD7USLstBI",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:58Z",
+            "sha256": "222743f4100dd66464a94fcf2c4e5455dac061e418bb97f8d83a66f4e2b8fddd",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/17vI1euHHWqZXTPPxRXBf8qGICLwtzzEw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:07Z",
+            "sha256": "d66df03f9a1792e3137e91a0455834c4460db64d4556f41b5fb10ef057bcc9e4",
+            "direct_items": 42
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ORo6e0sW-ffA8Wn5a-AjpFVpPeRyqf7z",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:07Z",
+            "sha256": "f4f901377d8e6f529ccb82222746c82df8220d3f9d037fe3c5b93e6efcebe13b",
+            "direct_items": 42
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1lFTIr8SG41h1gdtcCJ5tTwIv28Ct4qTB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:50Z",
+            "sha256": "3b28826fc0cffd7806d20b1ef0fc762390996373590fa362658c97c4e8add2d8",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1QRZFVvXRDgs3oMWUFSkQA0OAfLWeGIuu",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:58Z",
+            "sha256": "8ceda0c872a31de823e6ea5f75ab504141add1fa30b196ea8e5cc79866dcf95d",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13u24MCGhpISJ_00-7tGIoVXwcrHCoqMu",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:50Z",
+            "sha256": "e7a3e9e85d907e2d334cf6427117e17b712c3bea5b662fb2e54c63c55ff4a25e",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1iMW8unXUCAXYjdhc5_IxrBQJWq0DYgkv",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:59Z",
+            "sha256": "569c25620ca2ea910506e7f3c911d693e01c0e8998afe0a26022f4ccdd81c6c6",
+            "direct_items": 10
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1GHvo39RcoUKP5t-sckfQh5359auRSsIL",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:08Z",
+            "sha256": "b56cfd4ad479ce932df61ffa55d2959ba8899d4588f09f7ada8639657a68b459",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1GQ-inqsUg0GM8efAl4AOXh1qeBu4VFBW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:59Z",
+            "sha256": "556f17ac9c212b27b6ab6b7366415b314530418a675cc72d7307a3c0634f5347",
+            "direct_items": 15
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1buJX8tNih5YGIulR3Osm2iztWEtH5ERJ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:59Z",
+            "sha256": "f28616efd4e3566942dff4a3c1411e719642b87396062876e0682cbe2199fca0",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ni8RO8m0hx8fjsIqn2C2KKVc_EBJmok6",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:08Z",
+            "sha256": "a9152bb980fb2be9b17997fe25e537175da33c25edb3548cd4395521bcf87e84",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fE77CRa49FLuYtIyPg-hG8-x8gI_1j7X",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:37Z",
+            "sha256": "0f7077981f086c38e7a77c5462c3731c38c5de4c40fca079a0edabacd43bac52",
+            "direct_items": 22
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/15lfH4MTh2HOfXTmkwESTNsipvWim1lYM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:37Z",
+            "sha256": "ccf927b06278b75022a392705deddf40c1f9999a8ebad476b3d1b5404f9fe112",
+            "direct_items": 21
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1n7wNf1hHW57OEbU0li0jQdzFNxefXk1z",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:08Z",
+            "sha256": "9f7b134d3cd18d71e1bfe6835c1784827af5165658cc8e615162c2e688f9de96",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1uqAh06PfozcaZgFIapMxpUxxK77KvdI6",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:59Z",
+            "sha256": "2cf503c4ebc249076da7a0ec07e2eecefa351bfc28f4e3f63a6beb2d4b1da277",
+            "direct_items": 7
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1e93d5LeqNLd6IPGj5oUJ4Pp_FMlCCCqu",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:08Z",
+            "sha256": "2f1b78c446cef8b16a84a56c6d832b854222efff310f30da011f1ad44bc88faf",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1CaYl7t-EXtZm7hE_kDK6qOi7C17eNwCl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:37Z",
+            "sha256": "ef226f4ef9b3eb75ea61904c3ecce4dd82c12d6b5e2178ee794725b93dc1c4f5",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1XbPEzx33DYl539Fn9GM3oipo0__MNNbw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:37Z",
+            "sha256": "56ca7cb03ce72f3d58988920abbeb28e1f9628d56234dae69ca3db6e55d408c5",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1gNky7Vyq0ln8PIHL9rZEagx4M0xV6ybq",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:08Z",
+            "sha256": "814562dfd2ec2541d44db67da413b76237eba965f374aa1ccff8c1546348751f",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1f5vLc-hFPRB1iA7WCGwTnBA405xMHSPB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:37Z",
+            "sha256": "93ba884f1c54272a5169c88d3210e9b5dd9edce813ef087940d52dba32dd614e",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1zQ10aFVwpXR_VlPm-M2Y2FfZTVAx2q0g",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:38Z",
+            "sha256": "e5d8bee71788a0bd09758211d5ec1d79d12fc6e65ac3a1193964991916bc3ebe",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ynNSizVMJxcTtStXS8tCw84oOuGus7ze",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:38Z",
+            "sha256": "c68e0c11bab4db733e60482575fbab0ef0fcc172a0f5355cf0c65b869a851629",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dC_ex-XZXkCTWroEN26Ok3TUtqpFOBx_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:38Z",
+            "sha256": "12492fed31a038a67f2bf0f9f8ec6b4ee6e677e54b42e2f7d4d217c041a8e181",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1irmdCzlHu0mtT4ueFe6ZP8RGm6gs_g2Q",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:09Z",
+            "sha256": "dfe9901c9d086c5502a93d06f000373e100e260cc1d58dc693d4b9aeca4fefc2",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1esVTGkU6DYtZlrwQWmh5ORNza8JxBVUJ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:38Z",
+            "sha256": "e833045523d1502742e35b9664cfaa7bf6836788293a7113d020a7c36903dcfb",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1r5-0F9S5t175r4lZFSCqB7NoEEHgmTER",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:38Z",
+            "sha256": "b7e7fcaa0c60b8afccbf349eb7b777e8635b6ab4d53e3576d240279848371f09",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1U3ICqNvY_Pz7WoRyN4NnL9SNFLckz3Dv",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:38Z",
+            "sha256": "59870e4fa352776634db68f466b8542b9a2b8f7ec4a391b981b44916be5f491d",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sKimc9ERh5Q0FwYpwpq8BHRUp64h5AD6",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:09Z",
+            "sha256": "3385989eec3c35fc09c00549a9e1985bba6361e56d052aa1ae0a611454959c8b",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18r7xavIYob17uQagxilcJNF_gfHmp87K",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:39Z",
+            "sha256": "7056d3e470dd97f3f03051862585b89f64a2d77f8d4b46f0495c74bfe0099267",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1yZfr8RmhckZ1l4sc1OKf-gW8OZOcNmk0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:09Z",
+            "sha256": "0282f079892ec00c487aa476834777641c9431eba7ba08a68024643a4de58621",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1phUWKFtoEtbcLBJE_dKNFa6DN1fdpD6Y",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:39Z",
+            "sha256": "2a0bfdff0e1d3a8e6ee4236075d9002d69e25cb87eeca963d04d6c79e6411b14",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18TT8SAC-fNqv1U9pdONbzSKvmcD8Dvkj",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:39Z",
+            "sha256": "16cebf8dfdd3bfa49154eda8548ae74186011d620f44b4d0c8b39c376cd8766d",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kZbR_4w4wyDV_GTwlPgyZVdx1EDP6SDu",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:09Z",
+            "sha256": "0c8d09050b41c0fbac95f2d9ee7bf6288a05543d9e517274da5f1e5a9f6077e8",
+            "direct_items": 16
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1WsQmJDws0qeUHFsNPNU8YauFeQInEutB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:39Z",
+            "sha256": "11e97f722843fbe45b4d763cdd986f9a444480e4ed14e00850547cce33e412be",
+            "direct_items": 27
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1wsJezytMz4hXeGMrZNBUW-Ts_lr2lUfc",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:39Z",
+            "sha256": "10f0a10fe48e8fd3fcf57d0de295a5522eee3c604819ecf506cb6262e76b8e8c",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dx0qaZmaahyDiJdhmAmmEz3K2eiRXmaB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:59Z",
+            "sha256": "1748c7354ed9999f5dfd59ba76643be93ac84a0c41a8ffab5b4680f555859a66",
+            "direct_items": 21
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1MHFkVCXH63o8MH2eg_u1pGI7pegys5G8",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:09Z",
+            "sha256": "297dc9545518218fb2ccd1f270701fe1d88cd6658ccda3904745349904dee1d9",
+            "direct_items": 21
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1pVwYv93FaYZWUG62fHPkvTw7eDqduWs4",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:10Z",
+            "sha256": "17e3590097bc07ba7e24e5e5b37f7b8c8e90b6be7b7712d744c9bc21745ac23f",
+            "direct_items": 7
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/16rhVqufCGb5Xnh-_7aqwkPlKhoGdh-1Q",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:10Z",
+            "sha256": "d1587b0aa77e481486c9cd5e3d22a2ee9b9855a21d825810f60f20db5bb2f838",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1XcV4kCLzSmX8ASXuIyBMCmJNcpKTrn_7",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:50Z",
+            "sha256": "ee1d270b5943930a0f3017a0524311f890096df9f6b751f6780fb929d86b7e6d",
+            "direct_items": 16
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1HFkLOadfufCD9mMbJYoN6KN-0849RvIH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:00Z",
+            "sha256": "0522fb5d202ee670b9f6b3ef97cb0135e54a6ce3acb920639557177ea4c79533",
+            "direct_items": 11
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mAlLTXTKcAe2KDMeIBQbIdvXSqPYFYej",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:10Z",
+            "sha256": "0d2d81d4641f2d7637f8166cab4123c5d4726504e165c439b8df9348a4a1b819",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ItVUPWj3_zITUWf7h_0yomT2ZgFprpQO",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:10Z",
+            "sha256": "355d7e514126464ff130f4637650b57b7941fa3d936e6415b0755e428e2c35f8",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/14LQQLDXEPGrJ6RrkThZyhcWibym6fm-e",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:40Z",
+            "sha256": "57cc2ccf7113fbb3b3cfb06d8fcf5f349502b15bd6c9d2637959642d1159c438",
+            "direct_items": 11
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ryaPf5aYSMuBVC2swHanOuAoUabpDdxG",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:40Z",
+            "sha256": "0feee5427445c40e8139bfe6e838588da9866fc978c3bff31fa5a1c445272ebe",
+            "direct_items": 19
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1BB6fPzJzyRQkXdioMKYkULX_iw5jAig0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:10Z",
+            "sha256": "b5b14a67b0c1cad94df6c19b1cb7cad7ee9cd2bc0c7c415ca32bb1c160fe51b8",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1B_iVJlUgfVPrYEuLmaz6G2YtRdfOk9tE",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "59a1d036adac44b88d4744a5c5638e566395569ca4ebe667b612f01937121ebc",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1_wA-h84VNzqPZzr05rpQU6FxzZov2vTZ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "66a12d22e9c194845466b9590a3e9e585509b58626085c9d5d5e3a783fabc96d",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1bEdWFF5I0HVSTJbVSw8D4Dn54bLCaBjH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "3ed9678b758bf442661c9f3eac2acb84fc1c68e22b4b4f13256ebfd02566276e",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18K4jtAYuU9l3iPKtJuNxW1EGz7VSYnLX",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:40Z",
+            "sha256": "fab4ccd4fb7973ce82eeb8a6222ae4ead3a66f405977e1ee814493c5c8663aad",
+            "direct_items": 16
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/11YGoS-8PnVOJX2E4vv57f9Q6qJS7LIm4",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "bc91e0590a2567fcdb0cb4a9e4e41d77f2a33d416dc394dc1c48203f1046ba37",
+            "direct_items": 14
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dYIfur4X_eSApJdN35euULP7AQSdKPKY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "1d5691bcc33e5c2f851182acf8af8b6ff5317be0bcc8c4badece6697b753496e",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1PA7rZvZvlLHX9c4RlEYfwvOYjdFFgFBx",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "a719f5dc9eb315f8ecf52e62bfec3607fd3540ddf51b12ee4b6a00f21a416626",
+            "direct_items": 13
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1qsK2bjdApgS0X3a6KisSaPA_rPFP5T_s",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:11Z",
+            "sha256": "911dc5dfdb7a7a592a27ec6c67410dbc27187613e4d49ad7c23f72a35d861ff8",
+            "direct_items": 15
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1a4iXsAwanyfJoseELa7WrHveSdMkn9w_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:12Z",
+            "sha256": "97ccf66e5ec47da19a56e039a05ba73aac0d067b809f810c67b0f32a58886719",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1DfFvoLuIuqr1yBaetDfGvbdtZ2N0et6T",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:41Z",
+            "sha256": "128e585372802570899cd9d1996aae94b72168c5caafd2b6d3b51dcba6fdd7e2",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1R3Y0tEUB4XtWEf8j4UlQZz8q9dcx1zSa",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:41Z",
+            "sha256": "9c1045994675b035ff5523a73bab7664e2d2d15317522acab76cf81efd1a6395",
+            "direct_items": 19
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1uD_SPOWS-8LxQ5MGEnnD5dEhVOgf1F5n",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:00Z",
+            "sha256": "5d9e3f7619f4394841cd8a23cc7f941c3c7d2609880d44eef34f887ac3d8b076",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1QugVWl1OmAGnkIl7rzBHeEFTA2RKCpAj",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:00Z",
+            "sha256": "d44fbe19d871163cf307ad4ba79914bc83d3e4eecdff13bb90fba8c7b5028920",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1m7PKNGDfy497LB_9GB7tzwar4DnHEdh0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:12Z",
+            "sha256": "5b10143f333f0bebcf2700185528ab753e1c2bd95e3131ef2e02a0ebedffb2bf",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kDc6Ts-1i9zXijB_HlU9gtd9rng2sIST",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:42Z",
+            "sha256": "06a1189d0c9ad7b70b6cbb632ae408ce713050e15d12f2279bb223134ab0cd51",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1J-W062exNvGSfdieVbIkSbxxyP9di4aL",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:42Z",
+            "sha256": "12b92693dcfe9adbac7bcc100a508c4b3c562b5f842858a05146236cd8aa7962",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ElLNvUDjMdno1kMpbD5Ci0VZpSuI7XD9",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:12Z",
+            "sha256": "59e2861767aaa5791daad9ac3bf87a18df8f14ec5f1692cafb82d99644863239",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1NKJ8FOfkVHK5FJzIXOwG8_Dif0hrvANw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:42Z",
+            "sha256": "937761a6abe1be73adad21d2bd5d15abf60bd208a73dbad7ea183ff22934b0d4",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ZdX5pnz9Nwpu8Au6wnprYmBpTZ0RyYiI",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:42Z",
+            "sha256": "a9d2f5b2ad195efef1415702bc285e35133978101ec3fdaaee34be4aa8a151ee",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1reQt1s4NASE5tzMVbR-hJVAQxJ48VfM6",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:00Z",
+            "sha256": "a9f61642a9b4ca26647e18e16cdfc0893e5b0014b64c49854060459e7827479e",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1u1o9PRzkuvU3LUU-08U78EsZ1fTtEzbd",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:12Z",
+            "sha256": "e1cf69972243f7eb009fb5670a6a90be410b74afccd1a60a879e45b86d81ec88",
+            "direct_items": 7
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1WFz4yTFZxd6yykYBFlsIRktMg2cUbLOh",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:12Z",
+            "sha256": "1f59ed3d94bd0e4623d4f0a9a8e475eb92dbfebee53ed83cfc14901fad318c14",
+            "direct_items": 18
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sQeRf7sPgbHduADCZy8ySySHfL_Rvuqb",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:12Z",
+            "sha256": "b06b5455acaa1730461c56b81038b825dd663a940f6363bad8c1794b6292fc38",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1So_wbOC63LGnq_sJUIXj6cNvy-Q14Cgq",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:13Z",
+            "sha256": "831eba795588b4590d9db7c1eb38fdd2ee461da3369561014c2e78646b70afc9",
+            "direct_items": 31
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1uWHQdR6K4M2_p8YQ8IY8S6_XRuLvx4Wr",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:00Z",
+            "sha256": "d0a4e9d623346a9587213b49c044b918fa119fcd668ab7e0540842dd9ef331ce",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dl8scD95HmhrR9u3yYjSD5VeljvORApy",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:13Z",
+            "sha256": "ccf2107e4c5b8860e29470355e72a8e37b4a8f17b65616c3c4ce01fb52ade268",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fIoNsB79HZF4WAXSTImkpr67oWRI71BQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:13Z",
+            "sha256": "5e4c048f83faa23286c00464caae4528b71d9615090e512eb736fee7ece934a0",
+            "direct_items": 14
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xmnquBsYVW2KdHqaHqFeUuHLgJJZ4I05",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:00Z",
+            "sha256": "a7c803264175caa8f2924001579d094de009d79b6fc054577eaa104bc412b4f5",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ss44qkS0Ie3SSUzjOdMXZ3SqfvRIqpH3",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:01Z",
+            "sha256": "352df99630053ccece240934e0e9946c6d34b7622a2989dbc69144dfe11eff09",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1OIjYOzFHGhJoGk7g_LTi7fpf6_B5Iwop",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:13Z",
+            "sha256": "05b7b00d71ab9a3b3ffe95e350f94b0d02d09cc693e5abb75a7059966ca28bd1",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1F3J-4bvI-ZjNY7q7zYzmCb4CfLuyK0fW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:14Z",
+            "sha256": "a616769523ec2f15d196ac84c5a080a0ffcd094c81c26c7c8974072ba30769a2",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1pqxc-pE1Ry5XAFeBwENwTxbyRxwCzkdO",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:14Z",
+            "sha256": "cf280d01c79a07aefb2089ebe7de731e6856d7f816f8ee97cb04b04fe567a733",
+            "direct_items": 30
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1iJna-12Dbjno6N0UoTe2YkZ6VFLyQIOR",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:14Z",
+            "sha256": "ed1453300d82eafe31208bdca1a9e42a2d6c97bd249f60e790a4abd1339550ed",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1iilFPUMQ6yPr83pQucaDJnt_E8d9OO1E",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:14Z",
+            "sha256": "da34a65da4361a3bc2d04d0adbcd2f992333b572924090b8ab3697b44b3a4690",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1rqUlaio1-pT6iNyIvwQy-RKkCZO96mlH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:01Z",
+            "sha256": "c92a64368418a7c41ed9913b0606db851ecf4e068ba48a5144f5081e2604d2e2",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1qBXOyQaDSqxffGpQlqpwJZ2Cjaj_vDNp",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "d06506d2b834f85cc6dd542e3dc76997d1ac12d4d074da7ebb7062faeb6b1551",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Gfq5RaDRVLAC_8ss0EsLxTXwT-Sh5dyz",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "8b08cc395160d67149edcd3db50f1692eeb79a8ac76a06e496106051d2c5cef2",
+            "direct_items": 40
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1J73sNJxbQVvQr_UsbPf7yusU2uwa5Q7E",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "2201648144fedee23578b94a06328a93100062a9e8fa8ad1e69d169cab76e4dd",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1X77egrJmPZKgOpptlILyX5xT_cZID5PK",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "c20feeddaae1218957939f952b588bbe99016eb667b84552e5f073af986a32ba",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1b6k6uVGgkp9F5Z1jeQTuTRKKeskWGyEd",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:43Z",
+            "sha256": "45ebab9ca359d11450366a0b50828c9b9ca85204f17737a83a52ed668ca5cc5d",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1boYW5m8AYPyEOqpJPvGiHfKrXNCTrC3O",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:01Z",
+            "sha256": "406d16318a9574d0be3afd15d9c1d9e11f5755eacdf4c4818cc77e175c5f9cf7",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1uDU_i_6YX9oeqQAOc7F7OYNnKwkCJhHi",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "5d4e1241d38e7c57d922635a5fcb00fa90ff898911c54ae33941fe6deabd18bc",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1DEbEP4cR1Qz2nh68EWTEy6kIVnULu5UH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:43Z",
+            "sha256": "80e7a0568877f48092602b1928b93c81399c39f1c6de7969cabbc01fbf5057da",
+            "direct_items": 32
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18pr4wAR7s-ASDC5MNybZ9wJxQ3h8-huF",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:43Z",
+            "sha256": "1d3174daf223bbb6498cc4c6adf4ca46d27d39710e9d7a64e1b84d90275a9f8f",
+            "direct_items": 18
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1us1s99FRs7hXWrZ73Ge8bP1qAb2V7330",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "ea1b7d96660350584ca9b3365795ecde92d050ef180a56a1d50b154fb3c54872",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kQSiahARSDkytjjmCk0a8QjCBmaF-s-N",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:15Z",
+            "sha256": "5b9b81f9a5e898755d67aed7c99a67e5da2204efd915e0409f971a3ca3681672",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1L9uiYxs8p38WZhJwoxrA_t-xr2XI_WLW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:43Z",
+            "sha256": "420f79f845bc0175e636066120edacccc6aab610a6d9467b6fbae68a2fd5bb4b",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xVE7xp_JYGT-EKPUjnBAO5XdvQwgSti7",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:43Z",
+            "sha256": "89f6826ba5b58ecb945098881a2fde4f6ff0ed416f0d69653eb7210989963aa2",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1F7UvRTnemf0Xu2t2fBsi5cKojVAuei6R",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:44Z",
+            "sha256": "b9844e3f7e8b92b10c77688f7d18fe8ae3efbbb7060a59fdb438fea57ef36eda",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1NwVLgujiJ2hOyDXn-3HN5KfKDmxCv9tO",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:44Z",
+            "sha256": "1304c630b0133699b979769881778991bfe6cdb6e45b3bd6aa1192968f9e940a",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Mpw2fwfhJ5CLuh9PCXT5UNtx-MgqU07F",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:16Z",
+            "sha256": "99728cd015b308fe56af76ef7a0afe3ceaaee893b27e0e4a37b7e5d21c82a8f6",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1IrxGNwAvMqiv3i73M_tYxzDzgjMLBPSW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:44Z",
+            "sha256": "a830929196e254c8ff7d155d973089fede50d9dac580f560f9f5f453ba80a977",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1CXh6okXfbvGZhuvodx65QGgXgcOqxQVl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:44Z",
+            "sha256": "9a3c0ebc7156ed1b8c5ce3c8347efc719f929d32e09926b342f985afbf6e374a",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1_UuUoXQvgwz90_rcGRjubF9QEdZFDP9U",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:16Z",
+            "sha256": "fabd7b2fab88d14954d9c0464c0bac069461870b2c2ac763abb9d1a0fac407ac",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/14Cnv1Zc6DTdAJ80EWtcewcGgmnEq8lZl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:44Z",
+            "sha256": "87f317ffaf6a4f004a20840f7c9b87a781634535b7f0aeaca34056e9d9030253",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1QWSFJEudq3MJeVqLPcP8NwIriXpukkl0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:45Z",
+            "sha256": "29c8089f4c2490bb42a3b370604539da37ead0713cd889461f24abcdb0fdf927",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FDB0K0yYwOWpJmPws7zAMOf1Zr0nDRzV",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:16Z",
+            "sha256": "d8e89a3ae53a3f7f99a9dd6a31fea24f107cd8efbd06c4d28d0d75117fef4739",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1hgU8znQakUmuMbnNJrEoroY8FezCJGD9",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "a1490a917cd8f9ce7eee6e10d37e6df4e8094a200fec0ee8e078d912d58c1f6b",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FbR-Q0fJR1B46qYgc8Mv7qR54aI6amgH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "c741e3c34cc0a77fa512651b679cb79181222a0eefe78be7d7c46f2616aa6f94",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1UZcKWoWPGhnECV6d5SI8mLJx-Rmyqskv",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:01Z",
+            "sha256": "59bea20143ef79be605bd377409647ffb16f48b082bdb8995d5927a2f28ad02e",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1oR_X1NnfniHwp3rw2CbdWaYCtXYlcmf_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:16Z",
+            "sha256": "21270f7db72eee6902588c675440bf26ea9caa2d097af6a15e74736a00b24d57",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/19LphTn5g7L1Hw8MA7GabWC1JVc0tsRvS",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:16Z",
+            "sha256": "0e4ac2bc18c607289c9529d4f2a82eb0f536da4aef51fae3d5a6470b9d440450",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18vfzw28knja0bQvCrrO0UIIqsOMlrLXc",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "0c5692e771a6ed624241f3832f48d96f90145fbef9701de13b87d1ac3d8cd6bc",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1gzwU0xuCsOEaU9Y7t6rFmCFa55qwCjEI",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "66539b6baef18a3930a756273050fcd058b14667c13c90c14181d2b5ab94b42a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1LO7xo4uC2-0c-6761tvlpwyOxYhQH_wi",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "84343aaf5e37ab93b5c6a9e5e0af65176afca814ec2961e071d0293b2ca410c6",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fLYQ1S4BylyfW6QNppU30bVzPiE9J319",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:16Z",
+            "sha256": "65f79989386734bb526c72006260d64948181e8ff359b8a930b2a84069e74199",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1zSyavGpKBwTBJCnYuyg6zc9MKAvy3sR2",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "fa36b4e93cfee60202965377bf379bc6a81d63b4fe137bd49135f256673066da",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1MG-5wIINJ4jNSAq5yrN1aNnReEDTnivU",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "8deebafe5a25a0df77cec6eb2f0901861d144730ac7a983890b138d3d1bd2958",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FtatBKRH_GZzfO_pe0pJtDjoSS_JPZET",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:01Z",
+            "sha256": "6b1b0759f2853c8960e1e62d7e22186fb096a7bafb4af43c5c8614b721f633af",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13d8aGQiTXAp92zO0Czowf2_54YuGjVXE",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "4d954ce29fa26ca8c588dbedc37edbef53f82f1ffba02f2277ea28dcda089f60",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/16x8bqKehLBCBd40m4SkdtInFdwDHdLsJ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "a22b419734319a8fd0cc1f61abf1b010e1ec3437453589296e48ac41f2e09d03",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/16msAYGonJlR-Au8z5qZ_3wMeZ_jZX8yf",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "0a5721a71f88487ad0b80a50bf271864841381ec8a519d1d6e347bfd06d017df",
+            "direct_items": 35
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1yQSf66QtI3GkkSJsuH8UI2f9yn-9x6px",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "ef1e21331bbcc3ac84a73fe29ec8ef67efe560abf131225fb898327f6f3bd4a1",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1HLm94KQCBma5q7mDiKktF-EN5eCxpFiG",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "4dd34aa0fa6db84ec655334637d0f5331afe61bc911336bc2ae1ef187f7b190d",
+            "direct_items": 16
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1vLQO2MJm4RBL9jm62iws2w90wE6b9uOs",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "0a6a91742691e45674df8d96ac82ce43bdd56daa6d36952e3bbce54e01b48e70",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xFL3wip0OzQq-v6mRbhCWuu2Rl6jSjxq",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:17Z",
+            "sha256": "c1c8fcd3e0be0b6f6a6831eb783d954da9a5e7e2a7d45227adde8acaa18dd786",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kR8A1UCBvD7HTfwJe3qledPyOJIKcF5t",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:18Z",
+            "sha256": "568cfce14dc85dce8b7df9b731ccdfb0e144e8a610f5d8623d235000ec4ac5f9",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1WuqAvtSEraoB_oJ1I77b3OT-TYTqBVNt",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:20Z",
+            "sha256": "00259418d5e0a01fe9a8913f497c075cb0d8372dc86bd4df1f245a7014e39bbd",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1q__5DX770RXL0hjJEFY4Sjk1AFxdkYYM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:46Z",
+            "sha256": "cbaf5a66d0def8019b9e83a9bf9874b2153f4737a4567659c76a0381867a3286",
+            "direct_items": 23
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1oKERGzLHupbkKOLsl2WcBhkAGEFMh2Dp",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "3f55cdb120a9456bfcf8dc723f4b51f28ecbeacdc24e46d41aa700bd8647b7a8",
+            "direct_items": 19
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Y1ceQgJ1X6pWrGQt77nkmbx60J6Gb0jt",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:21Z",
+            "sha256": "d9b0f8c95dce0294e4f4cc6a2d227188229001ce4ee1b6de7404426bbab75b39",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1s-31YH1rtyGZjNwOUYqmJmRRBlDSSOOs",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:21Z",
+            "sha256": "5a5a0f680a30f9570c3fe30d4d809b9fd206e59b6ea83d01bb2777dd84bc5501",
+            "direct_items": 22
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ReC9o3YgAGYClcOZYiBHBxZZTKmSTg1P",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "9be37dbef565913c630df5e879b9bf1f8c509783a72f6516a88a192dba7ae806",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xOItdnCx6AuuhuxDKjWEc7uhc2vydy_V",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:21Z",
+            "sha256": "56df9e65c33d7eb8fc6976625fa9a9262af665d71cc09e0926e43bd6bcdcdeee",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ZhY_HtwgZb9jcsU75sUndIRu0ksagtkr",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:21Z",
+            "sha256": "e7fc5509ad7bc0221a33a79aae09a9cfd3a59516463862bef7be7628501802ea",
+            "direct_items": 28
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1g1qjl-sKSkHjPopyJx5V4WLzbEr2R0tz",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:21Z",
+            "sha256": "5a88f4cbf6340d7660b85953fbc241340a25f8ab5d467c72fbf37d129f9c5905",
+            "direct_items": 45
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1K3YMMMnkPqSsQyb2m_gSXJ2M1uI6YlUk",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:21Z",
+            "sha256": "0f742ff32b5616915162ce72c918ee3955cdccc23fcff09bb559390f6b6e9595",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1_aLAl2nodltzKLtDWRpn783RLBmWdUfl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "be889dc783cb381dd7bd8ee75f41a6189059dcebe93522d72e4e00de6eded707",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xHN7krtma7O0PxqXusrWMpPHoH7msFlw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:22Z",
+            "sha256": "b166648d1c31de24807933d1d2bcc76f1b8aabb7e93394a8328902f13122b3b9",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1HAc-scxnR_qqNMZh3Q0fTVBuXnNdedzW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:22Z",
+            "sha256": "37e42c41c7c55e4519ec999741775b18cebebcc5e6d8cdb744433c187779e7ee",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xOJczCwPeMgB5ZQw4umxSh0sb6XeLU0m",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "63f77f0e1609486cb2e02e7c88868d7ac30bf1a7231acf8bd238518f4e7712bc",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1PcFWe6jdLIGSP92RhAdhJnwgSE6jM71n",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:22Z",
+            "sha256": "104f5b23b0f3064b9563b9dcb2c18b623e90fb3b1a242e6067a3734f5626fda7",
+            "direct_items": 37
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1AtL3vZaDrD0_KfX0afKnDgNuDGwDg3va",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "5044a97c77e82960e25a71edd0abdc5d0d245cefd0c0719d01054c949fc7b660",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1bPgJc8SqhOPP3V5DcA65rlE9NmSDYpPt",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:22Z",
+            "sha256": "224efe65716d09cdcc99e097787f0a44dcb591b9cfcd9d523784ca8e687373e4",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/14pbgm6H1uyyGt3-OY1N3v24ButHcJR0s",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "6ee3bcb823ae00648f22d3a6a7353c14449d8a24b4e960772ff67e680f8ec666",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1AXvZyacbTguoSI4U5bdCMkXpzhTp9zy1",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "2b43f5662330a93a1382f1f7f4291f3d173bf1f25c44edd99d118db3c6dc0fe8",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1XSD7JWmvaEzuY_d9P_xGva_z5oAHWwul",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "7ae505adf4745848c584b7922afe3637d02b2bb0c9cf218f0ce90f4c133a6c5d",
+            "direct_items": 31
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sTbCLvcB244XiZvrmnJ2dErcnX-85QPq",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "c657255bfa705b8d2695a2054bbd7c06cfee1ac3d552f842aaf962c67bb1c2c6",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1eNDSzM0Ckv9DirM4jsnykBoBUDA081zN",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:47Z",
+            "sha256": "b1a28782f2a616c57a9695abed272e1b0fd884960a0a7653ceea61241b8b11f3",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1g5z_cHIMZs3GDWTbjzE1OOtzXfRo0lJy",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:48Z",
+            "sha256": "6c59304ee5e379f06373a46787a0a49c9df95b3c2f5296432b0edb2dc70148e9",
+            "direct_items": 41
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/12diulmiRugIlZiZRIxpqLpOr6A3VFDla",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:22Z",
+            "sha256": "7a32d58aaf53df4d25dd1d752dc459841f6dbc9226793b1e287fda77f7a0e76c",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1RUh5RO0p7ptb-x0cPrK9JKcq0hUI-poQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:48Z",
+            "sha256": "eec31e1577b257cfef561bb1d94ff9012dfdf3ece14fc3d0ff04a8821c54ed25",
+            "direct_items": 48
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ZZSMmw2Mide94Y9vPa-1BOTx9mK0QP3m",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:48Z",
+            "sha256": "94a402453aa7612a21aae8243a965120942a98d552cfb9a55174c411f7f0abab",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1-RsizFXFuEQ90hhRvdiBSk0aLCqBvqeM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:23Z",
+            "sha256": "76a9ba33bd28e535aef2eba4b0dfb4bd336ba0cde88fbddf602f57f8df177154",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1BNY98H550U4utpsNutRGD14h3gMLkQop",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "20a5abe9a08f7f3f90fc5e791df7451e70be4bfe2356b63927e811cfd413268d",
+            "direct_items": 17
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fREhpyHR2PxYMNd4BkvpIs3oRs7KSUGs",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:23Z",
+            "sha256": "eb97550f73037a65751af4a39861ba5f24e80ef69a0c44a3acc078fd915a883c",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ro3OFvX01uNky0BrKQ6rsPPTU5_mwCSl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:48Z",
+            "sha256": "826b3e7b1827e4758801780584f44930f93d566f1831ae9c622c6fe3335641fe",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1eYExerkqNPtfHO9j2PlfXI1iP-dh3FwW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:49Z",
+            "sha256": "5d48a3eb8ccf0998da86078c216c97835a36c184d2a7372e40a06faad30fb708",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1MU9wS25rARcBHgCKWg1fT-NJXQcEckKD",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:49Z",
+            "sha256": "6dec3437b29a04ea3b346e3528fc91a6a3ec431120d286307b01540821147d37",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fDNGv3jJXSNz264BS7Z14TJtwLnpbIhl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:50Z",
+            "sha256": "c2d89ca2e5a435aafe41e2c51f62494e4c38c5215689ed35ebd219d7a618e296",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1t_j6VWxW-4bcQgdb5vDeboMvKOXXQPcs",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:50Z",
+            "sha256": "556810b6e68529148b45bb18f674c51db510647b960e26619cbd20adf2b2ce06",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mo-l-I-1z3-UBHrYalYHZx4Mnajr_jHl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:50Z",
+            "sha256": "8e64b456e625cbce8aefa8a373928155ac951e22066b3fbe6ddb272398dfac65",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1EEGSTdek_3SaR2F-9O01mR6WF424T9bO",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:50Z",
+            "sha256": "0a7f6fa1488eddcacc0f20ccbc875c89eba6f9b1aa98404a5b26f91fbc4ce49a",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1IfAgwMvlrJZ53ZYaPAe8PnYLGJ00wsCG",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "08bdeda3cdd1e6af1f6031f3dd5d92b80f2148ba5ddbdf8d3dbcaac9390fb033",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1YqefKzrtAkytrW_vTDuLN2-b91CaVs3s",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:23Z",
+            "sha256": "ea24603bb96ae98bb66782b604b46b974c1575c58c7e466b7101cf1d3cfef5f3",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FOW-qD7xp1QAKlE9vfjFwZ8sxZ1DTBB1",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "48618a810325b63efb7391d726d7d8455deceb80e3664c598c6d8f119d4696e7",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1L5k-XbZS16bCI3Ie6bM19uZBhKFOdu6i",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "82c2ae0aee6e380f4ed3057390ef0686dfc49eb7a7478f984ed48cb529309dd4",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Xe-wMatL2HQmZKdpPbZEJ_o3LRvfo2yS",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:23Z",
+            "sha256": "83471364ff6419d220d9cce03b4df725fe193a1d44415f660b2708511037af31",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1tbhtIvjRaslDoFQj3II4cat-coltJ37C",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:23Z",
+            "sha256": "7bf2ab238c1f028a0ad9a1ed62b0425fccebd925974b5b5bc8d906b42b6f06d6",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1YgTfk3aHkshB3vY6RJa_PTstQQcEIRFi",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "63a3ad7815acebf9cf51dc38b2bb9695ae1a9c35bddad46184058de39e556302",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13mRE0OQHZ9Byz5-J-fRmktK6hiKcYRnc",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "c4391742d38c52c75408bece343307f698b55d6ac92d3d37f85727888d26fc02",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1bihS4Sr7WqcqvC73V-PPuTaT68YJhxBo",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "b20439fd715844c6d0a39870d460c71149c8e58215fcb420ff6f36c634d58d84",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1wbRdyll_ZEl8NoxZkYrS1y7wz2MTv-LY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:51Z",
+            "sha256": "bb6de60354ea29f66085abe285d3530d505368921e4451b65534327d2afa5696",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xPnvqIZbpmAOatsoYiZ0-Baohq-kr9z2",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:52Z",
+            "sha256": "a67459e7b513cd7083b6a85cb58a77b5a859b810d259bc2d51464d8f33061791",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fbAjcRoTODX5tV3s3I8s2Ma4cqiLegH6",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:24Z",
+            "sha256": "1f840cfe5cfefab26a81bbd378dde8f6ea9545645c0c16554ba50307859eff19",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/16VozpuoZK1dX_5iNZN9B_RR_HHvd79ia",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:24Z",
+            "sha256": "9c18bb9e46488eeaecfcaba46e3b5f8fdd037825d5e41064d650d73bd7b72f61",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1l5quqmGq1-7a9SF3_SG13Z8U4J3bzDS8",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:24Z",
+            "sha256": "37515a1e70809e09bd6d820f44c09debabb80c3819fb4c39d0520730f38c0482",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1-JfDUIHYxhy9PB4R8GTLhad5hXZLMShw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:52Z",
+            "sha256": "49173ead914eacc4aebbc68dbbcc375e4082f1e63dbc9c51f5902f4a4b54beaf",
+            "direct_items": 10
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/12TOX5XizlrvevFPypRCrPwvHoKsnFz_W",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:24Z",
+            "sha256": "528f89d641f945e8711b8987927359eb443baa58476154f60761af5e887c475e",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1vSTGm2TAvGE-EurY2FtjDtLy3DMfHY5W",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:52Z",
+            "sha256": "3ae67918d0ecafac90b612886b4bb3189b8719ab26dac5c30dcfa1e2e8a9b7e3",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Apt5AbN1kYF4-gi9MvjjNsrdFTYAaX81",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:52Z",
+            "sha256": "1f1275943b1ef0602000418ebf021e75e24f0d7ba7b01c6ad9b5e90dd5277513",
+            "direct_items": 27
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/19TgJVKI1aMVG8-fLkglEb5NkPVG4XeYw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:24Z",
+            "sha256": "709f7a7be63ca42a784d750cd47cd5ffab0d4095ea5f5945d290a82cccf68623",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13Nxjr092L-fR3iMxja4MVsKmHi_p_i06",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:52Z",
+            "sha256": "1df8633bd224990402d4e39c98b27bfa942abe146fcdf5485cde1a2ae046ac4c",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1bgTqatk3zcBKfwfFzARzUku6gr94tqAn",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:53Z",
+            "sha256": "2fc490a6542faeabecd342e42d6d76a135082f88076780f352a7e7f6f366925d",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1lvkb4Ito5QPb0KVv1bggmKZQGS0M5Hgn",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:55Z",
+            "sha256": "1819c149509e799e2ccca2b21b83f4dc17586448e80f3ead5066e3aea7c458f9",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kCyxPfFNz_zZgp6Kg8qZ5eV1bJcztyI4",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:55Z",
+            "sha256": "dbdbfa52e0ef42d4c74aa45ef7d59e8563719c3804dc8ab1741738504ec0a634",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1J89bTg-gQVBGWKxf517prcceBJObojse",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:24Z",
+            "sha256": "7d51f10d0c17c07f5793f829db8faaf76f533b009ad0f23a80d4893568764215",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/169XCNiQRtUzOE87k0P3OcX4ddUl3iEJy",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:55Z",
+            "sha256": "f490018351b62f4c8f08879f1fb5df4ab9aed26480140087b6c04e6aeac46c50",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/11o_fM3-4GvIkMi4LorlYs3jHATYwzQl0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:55Z",
+            "sha256": "3d466ec1ccfead7f2bd1ca943e0cd3d7d4fd0d924f6bce82c523596424175eff",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1of6LPgWZkPC6iDGT3Wn_vEbLTYAr6wzQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:55Z",
+            "sha256": "f5e84d9f43a54de1b7bdbeeb1e625de20402cc20e9fc25821314da0210154ec0",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1GCad--hMawzeWqW81Cl0187KwCDM9ETP",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "7069fa9121e759d5a946d92e6e134bd6fbfc9f52f360e9eceea176164c28afa9",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1EbCxzI3v-mgtXyDFjpWvdoi5k71lgdd9",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "2e43c3e0e8b1eda8b5d9dd1b5935db9bec1e2d18f481e1c07ee734b50885620f",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1hpVBH0uT1C0js8aONaBm2-junrpD1lQs",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:25Z",
+            "sha256": "7c4df7ae4c448eea08630f973c8fc90d84385957290479ddeca7ce4e1c0bb3aa",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1t1X3idx3zOXoKw1dvV1I4mjGFiGF3b1_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "c308046241fe1b50486fd109f6720a4e20565ca2823d56399a72b6be071aa0f5",
+            "direct_items": 17
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1zo9RJC4uUBsA-Rt_45isAHZVzQZnCbrS",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "bf8ad08165e4d6b28365d5a1b63c3a0a05ac00aabf0970057073b4830981aaf7",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1QrwoQVz4ubyqeDd5r8DQ-K3yA9sjnu5-",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:25Z",
+            "sha256": "0a2f70f118f55e4528c58379d95fd0ddfa394b7ac6ad3c86d15ef3cc0dce5298",
+            "direct_items": 14
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1T5uuCQKhCxM6G0H5ZcwAC4aPYdLJMlXY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "835ce87ddf27f6038f38dbd86d0733ad919f255b115b5a3f66ebed703f98c9e3",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1emfkPdFmaepKke--1PHWuzpaE4oWOXsY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:25Z",
+            "sha256": "d0a996389c250edb9696d6e4afe7933571f8573fbab420f8775c761c0de3e80c",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1n8oky0pXwShKAbY-8LgtyeG5OrcmSr5U",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "a2e2ab06336dd914afd8294a1e7d8b4a5f07c6d01c214839c5f40254ed7c7694",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1DCRG3bwwGnxfuEHNpWqWH93norbzmDMQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:25Z",
+            "sha256": "1a94e1af74a6cd5f1b26dcacea3bd4ee487cc9620a25e8ae921584276280e9c8",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Jko8Y2p0lV6-pWkRYnflDw4q2MMOXoX5",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:56Z",
+            "sha256": "6979b41afe4e54af390acffacaa512fb2b8701cc35ffd7f8b1cde54029106ff5",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Vq5AcrYi_F0hyWyD10tVgRBrI-PkyexL",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:25Z",
+            "sha256": "3ddac358e739dbdf53e437ec9691c9dcbb11669516bf14d06ce7d3be556fbc25",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1vaBj8_oRnvYEsHeOVLYef2QYFMaeeMMB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:25Z",
+            "sha256": "c80e26e68978946de546f2c5cdd2399d14aad8d9adca885849c1eeb12dfee894",
+            "direct_items": 11
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1-_kZCuPKZmC8RDJlCX-7KmN0GNEVH6Lv",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:50Z",
+            "sha256": "d0826d1544263daf63c6df8559d389d10fc168f86c9ae5f5b5c12daa81673f1c",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xFiu5SktlCZr-EsUVbRWwJdb_M3bW8Rb",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "08e72a6a326b83f50eb0857ae954d5e8563b37f72e819b2e305903ec7dc5495c",
+            "direct_items": 21
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1uQuraFpfoQjwzykvnIgAhGTZYXMHEDiH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "9a4e5997c9c970f7cd5969c42e0c3e0ff715c1d35ed6096dc3e65d4e695fc486",
+            "direct_items": 25
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1bGxjDUYNW12Mvy801vRG4si8jIW98idR",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:26Z",
+            "sha256": "bfa0d8c94e2fb0ccd17733117520a68b8c1a6cb2abf574616f3d38f682589b59",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1j2hBiQIyDf5_sUd0-NKyOMggMr8MdTr8",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:50Z",
+            "sha256": "2e2f159458babc9bb43989a34bda24fffe7fde6d7d5a2420b17a102a0d5b2f83",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sOOvbw4AnsEnpsD6XtiBEqlvDUp7EeT1",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "c46c1953455e183f3b2670622f2b05119b8de06e4999b719630fd1701cd2ba46",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1slLKD6nV56UNEqcYUlqovyKwA4hFnzw7",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:26Z",
+            "sha256": "e80558acb9c773e064129de9059754299d4c2386abf97b9844a2664aa2dbc309",
+            "direct_items": 32
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mbYmFc_2xBe5IidYjlVFNQJLwvpH9zM4",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:02Z",
+            "sha256": "42557ea00a8069267fd9dbdf9b96b118c1a4ee93d2faeec10fd020e26f3ded3e",
+            "direct_items": 17
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1oK3IWvHMoR4PvDMrKm9biqhbTbX59JBA",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:03Z",
+            "sha256": "0ab877caecf7862dc8df9b385284f43b6d6f6a5a7f25f0a1dee333e8d2c5f5eb",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1IGcbFZaJ02CNEC0Aym2lpvx2G972ohYa",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:51Z",
+            "sha256": "691c89c9fca09d328b9e2b69637344e716f0757689fe913e400a7ceeec60b2c4",
+            "direct_items": 17
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sGk4RDXuzebDQ1YatvA6ThOv7tpTk0nG",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:51Z",
+            "sha256": "3a1709b29880ad9cd2c76e24fe7010b0f48322a224adb920d804ced122f282ca",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dMMfL8kEj5jeurkSh_nGQ8tcOzlj9owM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:03Z",
+            "sha256": "132ed74803a3274472aec0e8e701da15d2a13598d3a47e32b32fadd773b5bba9",
+            "direct_items": 20
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1LoOUaxEUiBPV-mIUOiDRYZh6Nt0E1xwO",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:26Z",
+            "sha256": "635b30beeeaef8087751da0cc3c0432c5b25d0725725cc134834f4b0c1bb66b3",
+            "direct_items": 18
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1pYXuajJyc_BsFUgFmu6w2VaOzN9iQ0_Y",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:57Z",
+            "sha256": "09fb0536fb53e4092fca81c6efc09c5df38e6eee143b17b7d173ff777140cfeb",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ZyYG9q6piRINfqxKgvadd8ujdmRN9oDM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:26Z",
+            "sha256": "28b79b97233d72454a1c1756ed5e2d536fd16b484ed8e14fc13a02cfda752dbc",
+            "direct_items": 10
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1tYxwqdatWS0F2_fuEdd_gr4vQ3Bvzvjo",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:26Z",
+            "sha256": "ca27c7086078d9e1ca66360973f2d940b61e007af024db6a222a57caaabc6c11",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1qROZR-77iFAs_Si_z0yl4F29mu062QSm",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:26Z",
+            "sha256": "094119ea3043efb893aff77eadf7db0e31f02d52126c832d5556c779a00054f5",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/17ngmSYSJp3XQ6f_sjH52LmLmIff03LYU",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:27Z",
+            "sha256": "f2f02901b99113aa776777089e6a98bd2f24b1c2f0e149aa9ce57447a34306ad",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xQfL00D6HclANK_iMxjkrZuhZgWG_Tt3",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:57Z",
+            "sha256": "a843cc0024e9b216a7bbab9541a7fdcf90e4622d134a3d6eb403df72fd2756b2",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1LLFqA_pEvbKhDjm30ToSa0MBED8RBhoC",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:27Z",
+            "sha256": "b3e802c282184d696c80ad74e133e52bb93a9856a8474e30a11544a883d83d1d",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1U_izsN7yxPjuoIu6jPIbKWQWhudG20hW",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:27Z",
+            "sha256": "49b3ce808c1cbb59f43eaccf4bc99fc9549679dd18c27c49a037b511cd2a42f6",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Fbi2xeLEhnfjlSlp3V9g8eWf-dHr7MVp",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:27Z",
+            "sha256": "ce859f32ddf5476067329c1134273de9de2cac2f3effd38266cbe37ad69bb16d",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1eijxvTEvo1bLN9bl0WW5eJeouRkAr1La",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:27Z",
+            "sha256": "0b722950e611aa3360d47ea43a79d3774862179f0a9b2779e50f8bf01157d404",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1VRYw6ZtxH59s43Sc1SiQx96fZVWs1Pfw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:57Z",
+            "sha256": "97bc482abfc3b50d3a3f5b0250021e86d03b516f3921f8ef674efe8e764cc3ce",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Evj5nwAiDaCQb8m-rJu4VNL1mVtchfoC",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "a48b9c45a6e276bf8d9e356446d78be6e9ce320e2c92b0abf2df8eef09c55750",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FsjxqMN2bEgERbq5mdKDJhwNlthkcMn0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "56f75e1aba3b662ed2389550140579a73c99a9e371f18c959c3328bedfbd9904",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1HHoATCblBtU7KbgxI_yJ6guB0uOuEZJN",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "2782f222a8bb6632a0daf523ebfd00ed254eeeb1171582ffc4815aa5f7aef0f7",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1-TK5z3aFx4q5EpwtWfGnbK8_nlEsncFH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "772fe669c78dd923e4a90f2567721167439a158355b21b4266fcded54c371c2d",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1UNGwJHCLzhbjNSUhgJPzRG_HWqFjLoxp",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "2be2e76be75096d9d0c71ae27b35ca7d801004392145ea307d076e7617365c30",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1wFuuYadBLFbEuCQtmNzfVWjxhqHyIjfY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "baef90767392209a888fef525c6e82a317f0d2cc776ad04fd73e7b62c30caa65",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kcr4HYuVEobg2eTLpmwStkwU3ts9NMQ5",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "609e07e96f12b6012ea9bdbfb698db52ef57b575d1358b71566c1cd6b857f1a3",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1wMtTP9nZnOHvZ_tllMkhMhZBgKicI6Xw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "96a5f0dd36a63669af18b3d15740d29b93cdc6545fd934a8db0e539fdcd52eda",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1HGVWpUkReZXBry-7wiNuXjdiQ2nvQ__W",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "74adefafab41c9adb56b580310f9c0a834b9d3db15d1779905ae20fd9938daac",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1JiD4PUfc_x-4uC_YiaK1KxDxYApAMIS1",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "d1ce6745246598cc8fbc60897b458fbfab586d9372a7bc492943519d9e027b9f",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1tDql2C9Wj-fmuSKLHUDB9W1JrZQ9pgQM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "907da44c2aef40980d5c4e9eb27cda2c2c75f5fbed3bb36268060f9c608e5e5d",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dd4yNJCXljHV5XMvshxsgt-9NbnqkgGL",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "3650209a9a60dd9cabeadedce7cab5cf1a126f7b21ada1edc9f8c6ee34bb53bb",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1W2Id7U6dz6qHdNRyMU5VNugssVelGoqh",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:58Z",
+            "sha256": "a2e50d2d89c142107d497e813f4f5bd9ff83c03312af3f754d6ab080757c4634",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1vsU1gbPJvwHtMMhgMIdoYe75b1ETTkRS",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:59Z",
+            "sha256": "9c808a01c6e402782c93aa6f953c3b1e9da6c66277050dfc3fd2030d40463737",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1pEMzvnDvtske5OqeCY1IyQ-1BmuBK4v9",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:59Z",
+            "sha256": "f1b9776d70a92a6e7d426214a22b814b3b3af9f6945bcf463608bc533d4f1ae1",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ayahjGSsVEELXYFBZcJIZ2yUhpxporgN",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "53ea585ad4cc2fb968081989c0982048464b9558f4f23270da04192b183d7120",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/17NTgGWf85htu5p1L3JJjhxZeLYtjbdeY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "251d21872962a95a9a3d669e020a44b07409b948bf0309e3a3326c81c7c4945b",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1keZuAqYl2uwyn5frTK9A-MJmPAE8Htb3",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "0e9b05dd4d89238f44b1f2acf9d2e396a04c1f2f775f77dce9abd65e200c02fc",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13XyDTwm9NOYx_qm_Z4Aw-lwzMrZR6aV_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:28Z",
+            "sha256": "b503c364d744d9c1395717d0a834976671c988776c33446ff3baf38eceb979e3",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1QvOiPOl3LqhOH5A26JdhnkyrIqUW-F8c",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:03Z",
+            "sha256": "e9cce725ef1d0f4e660b0789aaac57e8dcc679bd666b56b39c25d132c3f1bd66",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FveataDU_kgzV9GdkhddYc96BCxHfx13",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:29Z",
+            "sha256": "5640a79d0e845128064ac0cd867ae423c26e36d7af23e7ad2e40e0dbe57b20c4",
+            "direct_items": 43
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1if7fvjt10zdr5hr-umFxM7RJpVj-XqD3",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:29Z",
+            "sha256": "1560972f299e0e9d02f374c8be95e5f34b72b71ec8a325072d780fc75ad5db50",
+            "direct_items": 3
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1NqLmvHefweIp4HXQSo071uhFEZ1SyBRV",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:59Z",
+            "sha256": "76768aa045ae974bc81e2352afbfa7eb1b268ccbe3e858768b8710f625ac558d",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/14cEnCuH9Ac-l8Cl4bi0Zm-YhRNvm79Zt",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:59Z",
+            "sha256": "28237350fd0c7d1775c2003c691125986f517fbba247c0f17e1434b385dbd389",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1nZ6j-U0aNyEm9URofqTiKF_5nIldwoYj",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:59Z",
+            "sha256": "9b826435d61ba389022ba0a4ecefbe3770f5df7ac846890decf918fd1a8087cd",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Rp3-p-_nzDq0NPYzjSiexNjbwLI63rvl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:29Z",
+            "sha256": "8fccacaccd584fa9bfb6a328da80322e47eb2de56bfcbcdea93f4df5d0fcf6e1",
+            "direct_items": 26
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1B7-QjOPDK2Afh0y4bB6meqX7S9KVAcIN",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:03Z",
+            "sha256": "19758624035c6226428ed0383aa56ede491bc6d22f9e8f2405d1f2188fbbaaaa",
+            "direct_items": 16
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1nh4AvsIHgP_wntz5aIks-Cq_Turhb6Sj",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:29Z",
+            "sha256": "3883c3d2b8f2aed3f3f1263f01dfc30be04cc88bae6ebb8553cfde08d3382492",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/19F0XJuAjGKzBGF9Zd4-110kDDejeALKL",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "22e86b26e7d24c5fe5d1db7924455b9f9018b7cc6958656b748af5bbc57b5d95",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mQ89D4z1xzLWt7MNUSVFYelQEHVUBJ_p",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "f27c66441bbc9beddaa14b8e0354aa656c58393fe79b07ee615bc2a192c0b48a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1KoVcTTRKa3Oz1XNDVuJPCVlpoBgMZwO3",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "f769217f4de7fdf2aabb786bd8e2a3c693ed7175b5296f738d7530038354ec72",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1MfzzW0Rm1dXXE0dlwSA_pJnfVmVot4Bl",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:29Z",
+            "sha256": "6fee3f86ec82e189495bf635a62c87f04c7217cfb78f76940afe016b5cc84333",
+            "direct_items": 25
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1THFD76S2Opoal4edQfTLgeZcGkd_Oz6P",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:30Z",
+            "sha256": "c60940e46c59893e479d2c25ba1c6abfcd6006532623afb3faf7f8fd9bf2bd65",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1u-0qqvrOCuyiZy2MDADogDeV-aq504lR",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:30Z",
+            "sha256": "4c8210af0da288cb41dfba4767cfda2beb244c6f836f7cf3de2943b39dd74c46",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1PH9f_CTZU8CJt8rpqcJaEYzRpoP8cQjY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:30Z",
+            "sha256": "57fec6578e8699e9337f19e1d99777a04bf4019aa8e134c51936812478ef76d5",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1xA5WUz4Y7RFxrnpD4srIyhZP6tO8Zwwt",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:30Z",
+            "sha256": "d4d44b411cd61fd3d55d62dfab723ee12fc24279bdd259e7e47d8c4e46235039",
+            "direct_items": 14
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1iwRx2DGLez3oNhwMlxWTvpDz94azrUyf",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:31Z",
+            "sha256": "c1be6110239d85a60b63538c5de2d91daa520568897b486452ce3aa03a1259b9",
+            "direct_items": 13
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1eqdWQejcJxedrSVco0YEfa74-ESTpcA5",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:31Z",
+            "sha256": "1f62e35460a42f3dcc04c167af855762d0af4110791cd43253e1a23519f2bdd1",
+            "direct_items": 25
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Of0KeX1j0NmcXniZ1d0cfur69zjwCUSo",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:31Z",
+            "sha256": "0c3e9b8c90d5c01c8ec07adb7a0098acbbd42882c4f740fb0931fce47b296a90",
+            "direct_items": 43
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1YmCf72iouOtjcY_zwU35tKUsxXFrxhID",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:31Z",
+            "sha256": "25ddf50c1fe665867fe9e8abb7fbdb3cfa91072183ed565114210b26ee27d1af",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1_oZGluxXdxFtEZ5uOc605c7CLu7CG6H-",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:31Z",
+            "sha256": "1b662d9b42bca5c9c0092838e24f844d2d057c78048a1a3ac7637a1f76475247",
+            "direct_items": 19
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ipWL450f4E3wE5nBeTpx-s0tQelaJJSk",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:31Z",
+            "sha256": "a779b11f4c911f5a3c8f5e1ae5a23b264529ff254eebe83bac74ade9e06d17f4",
+            "direct_items": 20
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/11CkcFjFpSbc91Vs2chkO9HzeQnXR3YUg",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:32Z",
+            "sha256": "f60f4e93a006f01edc6e7f156f2858c3ac92a28ec87b0b5b0e6851ce71e5ef51",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1bA_2hxKqu4BAZD5E3_LTL62lbivmzI9s",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:32Z",
+            "sha256": "b2b6e298bb6fbd33346354a3594510e2dbd9e17ab9b82201d50bdd8880abef60",
+            "direct_items": 17
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1MQhgFY86AoNFuF73s0QjNPpQ9AtbyQBc",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:32Z",
+            "sha256": "3f2f8ab27e509260892ffa14dcf629f4d30832b9d959d9b17e5da78c2f475b75",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1FmiBh-uqDFGgSHPDYaVMVy9zsQ0ssNU0",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:03Z",
+            "sha256": "307df30fcbe537258e731e4225693a3536b6999451f8e23fb07081aeff350652",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1fzrRXrQwy8LZ3f7pH6uyV947Y2VDdpV_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:32Z",
+            "sha256": "d2295f034c2d1c255a51fa91061ef75af784fe9387a58b8228f493139eabb2c2",
+            "direct_items": 36
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1l8BZm0eBK8iKuriB9iXjCjiwuq5TEzXZ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:32Z",
+            "sha256": "e46397776d077d18148683016e28fc564e47c8ecf79eb83a8601bbea9849e1f9",
+            "direct_items": 9
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1BPybaaqKVc8AYpFQASC-Z5KSHaGWteMY",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:33Z",
+            "sha256": "0dc97c0524fb9384301f00f6bf7ac193252578feaeb841bdad1a09c7778428d8",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1PKI8u2inMAmQUo8mLH20uwkvGNEPVq6S",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "f43d9ed21770682dff494a5f03f51f65d7aca505f94cc90908bd83dbb90fde49",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/15JVtPTRfLtHnnQTc3K8V2217iNcwVCXB",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "d5ea0c0d4c196e7aeecde305f3b8daa563c045538e894d3718a71bc46248a13a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/104SQ5ZUg3hVMAJyRDbgWKxv5x2shPu19",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:33Z",
+            "sha256": "efbe499733164004864e99c671feca3fbcbed4df76a20241eb4b629f7295abc7",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1eu-26EYr9srNv3VVxWvrIss7fSHdBhlv",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "e44a1f9b51d35376e3dfd7a29fdfbc468cb54353e91df645496fdafec3cb8232",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1dpDswkvS3Ui2V2R1W7izGBLrbWOn_PQa",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:33Z",
+            "sha256": "4affd6c87259d652a90a41ee349c8e01f0ecc484337082ce3f5cc9a0be0c6121",
+            "direct_items": 5
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1126wb6Z9mxYDHHWhBIJocSIk1xYZrMe1",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "696236144e6e2e4f809eb8f6509b6771634825fbb14f0a60f3f146b548987526",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1OK7VF-9VEA3jTFgPWlOiDmVWjVTm1KCV",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "50fb2aa117bbbd089b176720155c6d469a482615166e2d95ef43c62161f478e2",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1anSnaKu3LXi8EghkNE6L6yE6iVnGT2F3",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "a3f04b2d60688001d915d0be41c3e7b157cef2aa8dcbef49f5b523db5e7d2657",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1IMVsSQLzRK1IGIUOFER0_T5xHP2ys94N",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:00Z",
+            "sha256": "454d19517645a1decc16484c6fb9f58e2864a4711d8cdde644f45c5309027d8a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1nCEHeW0ZGGNrxy0jtx8JSlXbUZAhsAhQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:01Z",
+            "sha256": "af8ae2ae8d7e3bf3fa7f6e22521530e8666a59109468a5f102aab760d802d350",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1TdveDz21c8NHl1Ssv84DuCGcpHkK_mk8",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:33Z",
+            "sha256": "74661b60d39cae2ef3addfb4e8fa5fcf11c2c5bd2737a75e037f1558c789d9ed",
+            "direct_items": 17
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/14NXl1KLwMfO-033HYqMyEm3c4WtJaRkZ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:01Z",
+            "sha256": "5b9f21bfaca3eb6adebaad30f9bc538e475ffec9f06a64918baa322ef5edd353",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1uvXj7PVgnIyOpQgrNbGAueKWIK--BVbk",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:01Z",
+            "sha256": "77e254344d7142ee9dd37dabf6a1a2c0f7084f917089880e34e35ca1ab41c9db",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Zx5RlZjQCyT1tBq22z5z4Gbrrp98V5hG",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:34Z",
+            "sha256": "66d9d5dc0b834274b1491f961009a99a1ee7dbb5721530665aae2829b7b73ca7",
+            "direct_items": 8
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1YKF1mnCKNc1NPSVMlIveY3QUJcKu0pJp",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:01Z",
+            "sha256": "ce0dfbba06e5eff34f63dffc6cd1674adb28c6091f7ed1674199755f5ff467ea",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sTeeMkxE6tE5jgaLjBjghULDL-amg_TQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:01Z",
+            "sha256": "6066832f518c15febbf9af003f7871059913e8df9acf041e0b2ed15b68ce7ea5",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1LqmmXImr8rB7ddsM35B10p0gkHl-fuhO",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:02Z",
+            "sha256": "f10d3d5c091f18cf51ded3a9dd4b7aea1a4d07918a56cf3fcbb05acb53ba522d",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1p1rmaNMqky0vw3lqMvfgjyZCHGcTNasS",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:02Z",
+            "sha256": "2e9281c6ed83bc05d1d34c7ca46077312eac2fb7367992a8898521172486b122",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13FHSmFTlf7g7HaPgkIQ2wY9zIQV4zT1Z",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:02Z",
+            "sha256": "4edfcdb9ab9350a8b90f0e51119003f978eea6b654335cc56c6a044b02f2d2a7",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1nAPuX4aW3OSVEavq8mMGQeq7MtI_eLdw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:02Z",
+            "sha256": "a509fc3d678c60bfc1f19436398b3d3160687e9bfae7a6a58fe6c69d31b1c35a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1qmWBpldP5HYhKCkeD6p0EY-COxKec4Qj",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:02Z",
+            "sha256": "9b86797b7b72974bd5420502859a38ff3980c0f37f50f13ca9c1dbcf878ddb4c",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1TownJ9aQydWKApoSN3DyZNAvx-TNsFE1",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "0c0555442c20ee28d5848628f60c421e9fc93973a0bd1e0bb6811290614d8047",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/12LmVh6NrZrtScdFLQaLkbcAXGpB65-am",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:34Z",
+            "sha256": "a67ec7412dd459b859e407643187343cbc595ec5bd6fa38675306c0b9da1ad69",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sKlK1cUZLVy52cW-5zO5I0ojtuypWYPS",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "323fd444743c3d66b5c50e7db1ab53110b9533b4fe961412e8d3a0b2317d7fb5",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1OXCeRpDZMNQMvncICi5ihRkhAtUbIQxb",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "715478ef90698ef64db8184b9b4ca6252ff912aead4f5e5bb2d6920cfc2d273c",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1O8zTPyx0yGDPDSw-lBXPcqzybImvkJZV",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "913988f0ef9d587790de8560400da194f5908c30c1a9b5839356b1b4148226df",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1t6wMt8B07wE3MiSQpZEOt0mWmZwPV587",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "ea9b0190829bad833b49d4d75a03e4517e521802e490ae660dc77c864e21dfa0",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1At4Dur2NkaLxdOrY8U0f8ZeGAcF3Qbtf",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "d3893128061e47cf80da629a3d33810ed96c8941c5dc05d2c5bd73702adb8d3a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/19zv6PVYYOwe17KtxdO9EIiOm0G3jvUL8",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:03Z",
+            "sha256": "8c9b505e4688075a9f897bf6b7b83467c35bde77e40c0e14c80507c67de1fdc4",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/17b94Zf8r6uFLJwFMrKeU9iXrK2jQ36kw",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:04Z",
+            "sha256": "bfe6d75ab1699dc76b2d6e62dc71899f58c2c3dc1c3fc6e98873cacc0a85d8bc",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1kaOTLeM6MGRJOoeVfMhRTrWSr7OgOI5E",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:04Z",
+            "sha256": "8335ddd267e5c7218c0ee1d3917d90949485c4e542365cd1e5d6060fa78bdd81",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1DgT38A-9nBRnIiqDgNBEEtZLfGmTm4lc",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:04Z",
+            "sha256": "6dc5353ef0e843ac8ac4e96fd8e96b41578c5f9bef8ddaaabbef89d599da46d5",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1CfZMK3isE_d9BZvIij0uJ2rObbCdw2sH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:04Z",
+            "sha256": "e01c0123791a02cf609aa910ae463eddab46c538de360977a743d32d6d622be2",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1hA4TRLN2z52K94Mb4jkFbmWrwEEeQWNc",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:04Z",
+            "sha256": "62f5e2afeb21a3e18d9d3fa99fc7e38cc78dd7ecf105890eb9092c4d802357bc",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/18NBxwvQP-IiE2gxIQgybBKUzuKOlh0q5",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "6c5f0365decf0754ebfd3a2d5d2f1736124f7fc6b6f1fdc72604c512dbdfbf88",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1sjVqusaxEHXJIm5uoKxenYOWQMgmgma9",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:04Z",
+            "sha256": "a73584fb6c30e32e191ab3b869a44957160bebf945e13984e2121658c7c6f175",
+            "direct_items": 16
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1eQtdeLbVKTepLMUs5oYFjwCT-B6kS_SE",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:34Z",
+            "sha256": "eb9a4622e24ff78a09497f75730909f45a89366d9ea9536def82a6b446c14f52",
+            "direct_items": 36
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13GoQ0dFReGUTnQ97UPRxMD8MRTdVHqRX",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "71b68d94f282938473034985e80c785abc70d2eff67d3d798853a06aec5483d7",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1_KID92XJvcE9zm6aSWZPoNZuSzBjPKku",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "32e1654e05a141272d46c1d10816156be654d56b5d88d8796fb88bacde4de520",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1HmRR9OwOfLJS95ARBGOKwumLyKK3uphh",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "af112532e3060fce1206006850f422288c0d95a2ce85275058489844dbedd409",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1zTKwMAtDghfUFilqv72FP2JrEb4sc56E",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "e7e2cbc4b57e8ab4841609b341193aeba4062995f11189fd87b9b786529058f5",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1pU1dUQk8Yd3Pqr07oI3dE92UzLTzydsL",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "945f81ac3182a1bf299fa2df4ef66f282923b261197c72bb17c9b5d687e9d771",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/12oEeWDaNKyl6BynMXqYfGilBdG5GZnYd",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:05Z",
+            "sha256": "3dd9418a6914d401753ef8d5cbdb9c4f6904858d71089e5b96dbd3f9c9e3a65a",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mVpC_n-7sgy39Cyv88-NBjQqqGSwfl6m",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:06Z",
+            "sha256": "97253972bbf8c53a9f6e838ccda7cd06dd388ee207638393bb0986c5888983a5",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/19YsYceqYmtlGPwdor6YmCZEa2UfWLk96",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:06Z",
+            "sha256": "a1d86d2a2ea813239e9d4c1a5ae1889d2db999ba565431816e28317229b462b1",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1SAVFAtchEqef2kq_VunbVhhNlFNKVf1V",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:06Z",
+            "sha256": "87768eb5291f1b08def4af62be9039f93f3bac7e9830be23b07e8996b6d47537",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/10cXHkADeAVTY47ucwa4p2CZBAVfG7gu-",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:34Z",
+            "sha256": "78765979cf93c64c2cc49816416dd3237abb3f01186358e3ec3db8ef08f324d0",
+            "direct_items": 7
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mh1td2pIGSlycNDNQnGPLNLApgJHjGRQ",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:06Z",
+            "sha256": "58a2d8a2c2597e84b8781818f3ff19d9dee0adf748770d8459f1b74894feffb0",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1grZATLRlfwgAVzx2EccZg1EKG9_2p2vs",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:34Z",
+            "sha256": "7cc9f10f5ee0d657ed2c3590af23a5560a13ce76bfd6af2b3d7d53e8af1576cc",
+            "direct_items": 6
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/12WHfPhfADaOC5RcJglxbnhuGdz7v-jX4",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:35Z",
+            "sha256": "ea4927542b1d4c915a6ec1b4ab953ab9d5f90585a6204022c0158592caf3c236",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1cLy85YSlTL8_NRM2hzeEzXlZDkU_VzpA",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:06Z",
+            "sha256": "63689aa949dc5d67eb6c08be3e6ceec444fa05d28aeb7763ec298f67250155df",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/13qA5MZk5UvTE17G4wWDB2QlvKVpbTrTk",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:51Z",
+            "sha256": "53df482b1057e51612ab34165115c78fb9e4c436e3c473b916d7a0247cd0027f",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/16ou0WgYLy20EdQNmO85Zt8KP7LGmcSJH",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:04Z",
+            "sha256": "6ff45763c45bd2ba6db2134bdbcb0ba272a5161849e7c875c6f86ad5a5b80013",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1mjDaGrXMFXER6OCtD73jR_JOyi1QpCPM",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:04Z",
+            "sha256": "cf7f9a6d349e8d0a20496f380acb5adac960ce20577053492b9f4627908cb06c",
+            "direct_items": 2
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1VKVZ3oRg85sBRuXLXLk2Q-bIeiG4kUpt",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:35Z",
+            "sha256": "b5f1d2d2454843afcde00408ad9937f0d97bf999e6beb741a4cd436eadbec346",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1b8kL6h9-OD76BalYhFbeXvNaJb1U_Gwu",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:35Z",
+            "sha256": "7c6aa4563d1392bb80c40dfa98e0ead03e188bc7f8a9b81a124e3462c7806318",
+            "direct_items": 1
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1ga1VR8ZW_z4n4r_C4rZ3ZA6QWAT6pxyV",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:27:07Z",
+            "sha256": "04674355fe60db460791adaa32336396686182da4050dd5b141024eb187ab530",
+            "direct_items": 0
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1hfCz77OCJulvlWMGQk1oiHC3KCBJGdjP",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:05Z",
+            "sha256": "211da0707fc67ad3389b62514cf1653a671403893c6b450e6c78b8a5f3a110b9",
+            "direct_items": 50
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1D83-6I2ZY3EY2V0VOEGAfDUvHpazeSz_",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:26:05Z",
+            "sha256": "41b7a20f0bf5364bb87286e3cfe2c010c435c20cf25073a892dff8645f5f60ee",
+            "direct_items": 38
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1QdGxptFpyvyvqj50lzAkmI6hSrLwWmyU",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:51Z",
+            "sha256": "efe6b6d1b49ca170ef0188b0e54e11d68cb63bd1107ad61e98f48e44c79393a2",
+            "direct_items": 50
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://youtu.be/8JMrfSFQdpo?si=0n_dm811sqljNSd1",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:35Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Inside Elon Musk's Famous $50,000 Tiny Home",
+      "duration_s": 1061,
+      "response_sha256": "73e168d16d04d3cbf83c63aab39299a072510693626aa21f7107eed98c87e321"
+    },
+    {
+      "url": "https://youtu.be/eS-fnedN2yI?si=tqePyWkrVdp89_fc",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:35Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "ELON MUSK'IN YAŞADIĞI KUTU EVİ GEZDİM! (Amerika)",
+      "duration_s": 918,
+      "response_sha256": "bbff9eb502206dd885d600c66f9cd7431a257523da033b79280c258959251ec4"
+    },
+    {
+      "url": "https://youtu.be/uu5aORByttg?si=cP3o5NdR3vADAvYG",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:35Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Visiting Elon Musk’s $50,000 Tiny Home! *SHOCKING*",
+      "duration_s": 888,
+      "response_sha256": "b4a5ed2c79119dd432a1088cc0d6f80bb3a53ecd986ee2ab745a5bbd7d4274bd"
+    },
+    {
+      "url": "https://youtu.be/0Cdqs2Q1Vis?si=gQaS5BDgScKJGDzv",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:35Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Touring Elon Musk’s $50,000 Tiny Home",
+      "duration_s": 632,
+      "response_sha256": "2781d190d48db196e7fa8be8c1e4599b0cec1778d243972331a9bbd8f94ee3a8"
+    },
+    {
+      "url": "https://youtu.be/7rX5cPQrx_s?si=P2aRoWi0TBM7V-cS",
+      "kind": "youtube_video",
+      "reachable": false,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:38Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "YouTube player reports LOGIN_REQUIRED. No login attempted; other approved sources remain available."
+      ],
+      "title": null,
+      "duration_s": null,
+      "response_sha256": "2891cf23461568fc949d43c4e21f13dc1a202fc17bb6551722aa49333dc8a162"
+    },
+    {
+      "url": "https://youtu.be/5Lo54Lx7MCU?si=v4MZZrD-1mg_hN-U",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:38Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Складной дом за 48 минут! Обзор BOXABL",
+      "duration_s": 852,
+      "response_sha256": "c2512087bf243eb4ee14603135aefd2bcc718050d3d01a66e267130c441215ed"
+    },
+    {
+      "url": "https://youtu.be/KrahQlLAz44?si=urXWlv8wzQWWfajM",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "BOXABL debuts *NEW* 2-STORY DESIGN",
+      "duration_s": 1918,
+      "response_sha256": "5192b42559e4717481c90fe46402b7161522babcc79498bacdff59af6332cead"
+    },
+    {
+      "url": "https://youtu.be/3plLxp_7Jlo?si=KN7C9bbv7UqgQzAU",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Is the Boxabl Casita ACTUALLY Affordable?",
+      "duration_s": 641,
+      "response_sha256": "0ffe7058e93cdec5903e5788589263952594130fe71fd6da89c7a3ccadef6701"
+    },
+    {
+      "url": "https://www.youtube.com/@BOXABL/videos",
+      "kind": "youtube_channel",
+      "reachable": true,
+      "approx_items": 115,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "BOXABL - Videos",
+      "duration_s": null,
+      "response_sha256": "49dbc5a92b4913057d63ead9710a52dc03a65bba3dba329104c252e0d52c5123"
+    },
+    {
+      "url": "https://youtu.be/JbS_VhA0rRo?si=mcv8qG-AreMoaE2K",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "BOXABL Casita Tour",
+      "duration_s": 326,
+      "response_sha256": "22a7bcedc95bf5a6e6af0107e8ae6bdf01db68a84aa5046606d8f011fad1095c"
+    },
+    {
+      "url": "https://youtu.be/IBV7eIH3Bdw?si=ckj0kxXGsdAePfIi",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Ep. 7 BOXABL Factory Update 2025 - Phase 2",
+      "duration_s": 380,
+      "response_sha256": "6d19d02004d342be6708ebb616f1c86c2eaa4740476ccacc7ee5005cfb09c907"
+    },
+    {
+      "url": "https://youtu.be/b9erzF6LHKI?si=8r4LeXcUIxdVF8ou",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Ep. 6 BOXABL Factory Update 2024 - 550 Casitas Produced, Automation Upgrades, & AZ...",
+      "duration_s": 812,
+      "response_sha256": "98b41a9cfadae6eff3c4ba51813f85086bc552d2992a93946da11df2a9ff8d5e"
+    },
+    {
+      "url": "https://youtu.be/9ThVUNGj3To?si=cHsKwhmRlAiFHutM",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Ep. 5 BOXABL Factory Update 2023 - Panel Upgrades, Factory 3, and BOXZILLA",
+      "duration_s": 1093,
+      "response_sha256": "1367e5dfd7a4a59b29d55d1dbb22da1da61a64e1c27b58ba13669e7531f14706"
+    },
+    {
+      "url": "https://youtu.be/rUArr8SWyf8?si=bKM8XtJGUACiFi11",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:39Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Ep. 3 BOXABL Factory Update 2022 - Casitas Now Shipping! (Outside the BOXABL)",
+      "duration_s": 320,
+      "response_sha256": "cb8ca7be6cd7fa707d0e24075e5e27266931ecf1771c0809b748f3ee4406fa80"
+    },
+    {
+      "url": "https://youtu.be/Cz9cwL_fqTI?si=xV7KbTfE2yrSE4QI",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:40Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "NYSE Interview",
+      "duration_s": 484,
+      "response_sha256": "5025342fcc414405c6674a4b452155f3ea9b2ce4c8c1da5c6579bee8557f3f3b"
+    },
+    {
+      "url": "https://drive.google.com/file/d/1OnH2B5N-TaGyHqPdmT0uxdCeA-38FXry/view?usp=sharing",
+      "kind": "google_drive_file",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:40Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public preview HTML reached; media bytes/playability not verified."
+      ],
+      "response_sha256": "2db3a9c15d38472a1428a2ff03dca58a4b39415aba2ed2b031faf5012a3536ef"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1DP7iD-sndoSnaihYhwppziogPXi5ZT3OkTHiOQI__X0/export?format=txt",
+      "checked_at": "2026-10-12T02:23:37Z",
+      "http_status": 200,
+      "sha256": "3cc99bc04ab1afb4ebd4efea0413bcff0e4ae84cbceecf3f66124a55f6b098c7",
+      "html_links_export": "https://docs.google.com/document/d/1DP7iD-sndoSnaihYhwppziogPXi5ZT3OkTHiOQI__X0/export?format=html"
+    },
+    {
+      "url": "https://docs.google.com/document/d/1QwGNf5KW_ACPqlkLpVvraUXlM8-lJz170yz2YOuR-SE/export?format=txt",
+      "checked_at": "2026-10-12T02:23:37Z",
+      "http_status": 200,
+      "sha256": "55cbc07216e2ef766c9ada51de18d8994a6f9516be2be8fa1524fb09629c7ba8",
+      "html_links_export": "https://docs.google.com/document/d/1QwGNf5KW_ACPqlkLpVvraUXlM8-lJz170yz2YOuR-SE/export?format=html"
+    },
+    {
+      "url": "https://drive.google.com/uc?export=download&id=1D5gejaWlglMgXn2eFpb98Q0HSXLd_M5o",
+      "http_status": 200,
+      "checked_at": "2026-10-12T02:26:24Z",
+      "sha256": "6b12e3ff1cc7f0ee4da062f87e4a0cb8ab552ae9510682774a5e1a493bdec47d",
+      "note": "Additional linked PDF read in full using pdfplumber; four linked Drive folders and FAQ fetched. Architectural drawings/product docs encountered during inventory are not campaign briefs and were not bulk-downloaded."
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 0.5,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "supporting_links_checked": [
+    {
+      "url": "https://drive.google.com/drive/folders/1AeaI6dCA8Yof475GVEp3s8Zd6l8e_t22?usp=sharing",
+      "http_status": 200,
+      "checked_at": "2026-10-12T02:27:10Z"
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/1m2K9XjNrFMeS3WE_sa5tEBzLy5hkruRQ?usp=sharing",
+      "http_status": 200,
+      "checked_at": "2026-10-12T02:27:10Z"
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/1UX9oLVRoIOzGooUheN-nTTqhPVZSaEIZ?usp=sharing",
+      "http_status": 200,
+      "checked_at": "2026-10-12T02:27:10Z"
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/1Yo67adKcItquZCG8uZ4mi9XNTmjIB7Ge?usp=sharing",
+      "http_status": 200,
+      "checked_at": "2026-10-12T02:27:10Z"
+    },
+    {
+      "url": "https://www.boxabl.com/faq",
+      "http_status": 200
+    }
+  ],
+  "automated_posting_explicitly_prohibited": false
+}

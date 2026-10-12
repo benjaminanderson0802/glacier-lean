@@ -1,0 +1,5 @@
+# Approved source URLs only; no examples, product pages, tag accounts or downloader services.
+# Source restrictions are in rules.txt. Metadata probe results are in summary.json.
+https://www.youtube.com/watch?v=Xyo-mst-qPE
+# Expiring link: expiry not stated; recheck before use
+https://we.tl/t-5UxQ7D4fs0jPLSQC

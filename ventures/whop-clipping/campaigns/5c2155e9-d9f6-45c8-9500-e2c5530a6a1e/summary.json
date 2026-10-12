@@ -1,0 +1,113 @@
+{
+  "uuid": "5c2155e9-d9f6-45c8-9500-e2c5530a6a1e",
+  "name": "Boxabl Phase 2 Clipping",
+  "brand": "BOXABL",
+  "cpm_usd": 1,
+  "budget_left_usd": 7600,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok",
+    "X"
+  ],
+  "min_len_s": 20,
+  "max_len_s": 60,
+  "required_tags": [
+    "@boxabl"
+  ],
+  "banned": [
+    "stock/shares/investing/ticker",
+    "Kanye including B-roll",
+    "politics",
+    "other-brand watermark",
+    "raw/lazy/reposted clips",
+    "mocking/negativity",
+    "BOXABL misspelling",
+    "excess B-roll",
+    "boosts/bots/story boosting"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Confirm $1 page rate versus $0.50 brief and 15-second versus 20-second minimum; use 20–60 seconds meanwhile.",
+    "Provide demographics and written post-approval ticket; obtain tracking URL only if using X."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://www.youtube.com/watch?v=IBV7eIH3Bdw",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Ep. 7 BOXABL Factory Update 2025 - Phase 2",
+      "duration_s": 380,
+      "response_sha256": "c3ab246d57519c67b915981acbc86836556be1d5537b8cf2837d72da43361c9d"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=0C3TjH7RP8E",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "BOXABL Phase 2 Update",
+      "duration_s": 274,
+      "response_sha256": "d11c3ec1fbae949b289105467eced6045fc443e83e1c26fc440a94cc0ff3a54e"
+    },
+    {
+      "url": "https://we.tl/t-KfQdRgBiFUkamUwD",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 2,
+      "approx_size": 188086648,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": null,
+      "files": [
+        {
+          "name": "videoplayback (1).mp4",
+          "size_bytes": 86180273
+        },
+        {
+          "name": "videoplayback (2).mp4",
+          "size_bytes": 101906375
+        }
+      ],
+      "response_sha256": "1b1ff387366304e4083c1b7e150b5bafdfd4805477d56fa1697eefaa61a98dce"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1oS_Gdd6pSrfGZmjdy9WVsOkB_RrYZOLVbC3jmqJQRBo/export?format=txt",
+      "checked_at": "2026-10-12T02:23:40Z",
+      "http_status": 200,
+      "sha256": "9660218dfa5c112c2e2679bb0e0c2ab59f860c37709bf26474e595a2499e80b8",
+      "html_links_export": "https://docs.google.com/document/d/1oS_Gdd6pSrfGZmjdy9WVsOkB_RrYZOLVbC3jmqJQRBo/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 0.5,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}

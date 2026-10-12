@@ -1,0 +1,369 @@
+{
+  "uuid": "187aab3d-899e-4fc6-a56f-65977109adc0",
+  "name": "Flightdeck App Clipping",
+  "brand": "FlightDeck",
+  "cpm_usd": 1.25,
+  "budget_left_usd": 11800,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": 15,
+  "max_len_s": null,
+  "required_tags": [],
+  "banned": [
+    "ATC content/pages",
+    "#flightdeck",
+    "fake/edited pilot messages or emergencies",
+    "other tracker apps",
+    "real crash/death footage or jokes",
+    "invented features",
+    "recycled/reposted clips",
+    "NSFW/violent/off-topic",
+    "spam/boosts/bots/auto-posters"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Set up one dedicated FlightDeck page, bio and warm-up; do not mix with ATC.",
+    "Resolve no-auto-poster restriction, setup iPhone assumption, bio/link timing and US-vs-T1 target; manual posting only pending written clarification.",
+    "Provide required demographics and written support ticket after payout minimum."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://drive.google.com/drive/folders/1zS7fg0M90TsB2JjqR2eipj0UwioSqvU7?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 21,
+      "approx_size": 249336732,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:43Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 0,
+        "files": 21,
+        "names": [
+          "Cocaine on Flight From Ibizia.mp4",
+          "Cockroach in Overhead Lights.mov",
+          "Copy of Passenger Fondling Passenger Next to Him.mp4",
+          "Delta Earbud Stuck in Passenger Ear.mp4",
+          "Deportee on Board Flight.mp4",
+          "Electrical Burning Smell in Flight Deck.mp4",
+          "Emergency Smoke in Cabin.mov",
+          "Engine Failure Landing.mp4",
+          "Engine Failure on Runway.mp4",
+          "Female Passenger Took off Clothes and Touching Herself.mp4",
+          "Level Threat 2 Pax Grabbing Flight Attendent.mp4",
+          "Live Mice Found Onboard.mov",
+          "Marijuana Smell.mp4",
+          "Passenger Abusing Female Passenger.mp4",
+          "Passenger Having Mental Health Episode.mov",
+          "Passenger Hitting Flight Attendent.mp4",
+          "Passenger Trying to Touch Someone Sleeping Next to Him.mp4",
+          "Seat Full of Poo.mp4",
+          "Susipous Passenger With Ankle Monitor.mp4",
+          "Suspicious Package in Bathroom.mp4",
+          "UK Military Intercepting Flight.mov"
+        ]
+      },
+      "response_sha256": "4e37724681ee150036d98313bde8ffc66047c1dc076ec5c1bc79cb1a2755d385",
+      "recursive_inventory": {
+        "files_observed": 21,
+        "video_files_observed": 21,
+        "known_file_bytes": 249336732,
+        "known_video_bytes": 249336732,
+        "folders_probed": 1,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/1zS7fg0M90TsB2JjqR2eipj0UwioSqvU7?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:43Z",
+            "sha256": "4e37724681ee150036d98313bde8ffc66047c1dc076ec5c1bc79cb1a2755d385",
+            "direct_items": 21
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/105cBFc-pZjTW-Z7ZzgsKKqLxeuXFTGYn?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 20,
+      "approx_size": 921059669,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:43Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 0,
+        "files": 20,
+        "names": [
+          "948188-hd_720_1280_30fps.mp4",
+          "13114557_2160_3840_60fps.mp4",
+          "13817978-hd_720_1280_30fps.mp4",
+          "13817979-hd_720_1280_30fps.mp4",
+          "13922815_2160_3840_24fps.mp4",
+          "14637562_2160_3840_30fps.mp4",
+          "14652987_2160_3840_30fps.mp4",
+          "14860921_3840_2160_30fps.mp4",
+          "15042659_1080_1920_30fps.mp4",
+          "15076427_3840_2160_30fps.mp4",
+          "15230034_1080_1920_30fps.mp4",
+          "15332705_3840_2160_30fps.mp4",
+          "15380256_3840_2160_30fps.mp4",
+          "15547524_2160_3840_24fps.mp4",
+          "15594036_2160_3840_60fps.mp4",
+          "15998719_1920_1080_30fps.mp4",
+          "16190082_3840_2160_30fps.mp4",
+          "18074842-hd_1080_1920_30fps.mp4",
+          "18248318-hd_1920_1080_30fps.mp4",
+          "18824881-uhd_2160_3840_60fps.mp4"
+        ]
+      },
+      "response_sha256": "ba6f119f9a3b8d52540a6d7a1dab6232a7b26173d422e7e0c977d4b6f68810a9",
+      "recursive_inventory": {
+        "files_observed": 20,
+        "video_files_observed": 20,
+        "known_file_bytes": 921059669,
+        "known_video_bytes": 921059669,
+        "folders_probed": 1,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/105cBFc-pZjTW-Z7ZzgsKKqLxeuXFTGYn?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:43Z",
+            "sha256": "ba6f119f9a3b8d52540a6d7a1dab6232a7b26173d422e7e0c977d4b6f68810a9",
+            "direct_items": 20
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/1_gpeCFcxc2qQmFbn7Tnps9Fh0236o2rN?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 21,
+      "approx_size": 19525503,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:44Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 0,
+        "files": 21,
+        "names": [
+          "Screenshot 2026-10-01 at 6.11.50 PM.png",
+          "Screenshot 2026-10-01 at 6.12.16 PM.png",
+          "Screenshot 2026-10-01 at 6.12.33 PM.png",
+          "Screenshot 2026-10-01 at 6.12.59 PM.png",
+          "Screenshot 2026-10-01 at 6.13.17 PM.png",
+          "Screenshot 2026-10-01 at 6.13.45 PM.png",
+          "Screenshot 2026-10-01 at 6.14.07 PM.png",
+          "Screenshot 2026-10-01 at 6.14.37 PM.png",
+          "Screenshot 2026-10-01 at 6.14.47 PM.png",
+          "Screenshot 2026-10-01 at 6.14.58 PM.png",
+          "Screenshot 2026-10-01 at 6.15.10 PM.png",
+          "Screenshot 2026-10-01 at 6.15.23 PM.png",
+          "Screenshot 2026-10-01 at 6.15.44 PM.png",
+          "Screenshot 2026-10-01 at 6.16.02 PM.png",
+          "Screenshot 2026-10-01 at 6.16.11 PM.png",
+          "Screenshot 2026-10-01 at 6.16.23 PM.png",
+          "Screenshot 2026-10-01 at 6.16.36 PM.png",
+          "Screenshot 2026-10-01 at 6.16.47 PM.png",
+          "Screenshot 2026-10-01 at 6.17.02 PM.png",
+          "Screenshot 2026-10-01 at 6.17.14 PM.png",
+          "Screenshot 2026-10-01 at 6.17.27 PM.png"
+        ]
+      },
+      "response_sha256": "dbbe877c6eca0997b290231daa576c3718f8d996dde010b8ce30d6092296a8b1",
+      "recursive_inventory": {
+        "files_observed": 21,
+        "video_files_observed": 0,
+        "known_file_bytes": 19525503,
+        "known_video_bytes": 0,
+        "folders_probed": 1,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/1_gpeCFcxc2qQmFbn7Tnps9Fh0236o2rN?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:44Z",
+            "sha256": "dbbe877c6eca0997b290231daa576c3718f8d996dde010b8ce30d6092296a8b1",
+            "direct_items": 21
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/1Jh4hiplVS76aRLn_-CZmus7sQr07t476?usp=sharing",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 12,
+      "approx_size": 21497819,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:44Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 0,
+        "files": 12,
+        "names": [
+          "pexels-aemyr-sahli-154798633-31703078.jpg",
+          "pexels-amar-14186727.jpg",
+          "pexels-darya-sheydel-85579382-8949801.jpg",
+          "pexels-dmitry93-12279297.jpg",
+          "pexels-juan1791-30309665.jpg",
+          "pexels-kelly-3861783.jpg",
+          "pexels-kelly-4269510.jpg",
+          "pexels-kelly-23848586.jpg",
+          "pexels-magic-k-24827758-6726195.jpg",
+          "pexels-mariya-eskina-555701080-34593175.jpg",
+          "pexels-nguyendesigner-11989285.jpg",
+          "pexels-shojol-36130520.jpg"
+        ]
+      },
+      "response_sha256": "669e38d75493a8f6cb6fcbda418db0239c2f19c85639f678f6c924d2ffc99bea",
+      "recursive_inventory": {
+        "files_observed": 12,
+        "video_files_observed": 0,
+        "known_file_bytes": 21497819,
+        "known_video_bytes": 0,
+        "folders_probed": 1,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/1Jh4hiplVS76aRLn_-CZmus7sQr07t476?usp=sharing",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:44Z",
+            "sha256": "669e38d75493a8f6cb6fcbda418db0239c2f19c85639f678f6c924d2ffc99bea",
+            "direct_items": 12
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://drive.google.com/drive/folders/1i_nh0CKQ_CyoyGpQdjwKuUAom7zXvjbh",
+      "kind": "google_drive_folder",
+      "reachable": true,
+      "approx_items": 4,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:44Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Direct child count and bytes only; folders counted as entries with unknown child size."
+      ],
+      "listing": {
+        "folders": 4,
+        "files": 0,
+        "names": [
+          "FlightDeck Images",
+          "FlightDeck Videos",
+          "Stock Images",
+          "Stock Videos"
+        ]
+      },
+      "response_sha256": "1eb24ba6885045333bdf537d326ff3b2e762a32de76161d1c8346eca4517faae",
+      "recursive_inventory": {
+        "files_observed": 74,
+        "video_files_observed": 41,
+        "known_file_bytes": 1211419723,
+        "known_video_bytes": 1170396401,
+        "folders_probed": 5,
+        "remaining_folder_count": 0,
+        "complete": true,
+        "notes": "Deduplicated Drive file IDs; four folder depths sampled. Counts are lower bounds when remaining_folder_count > 0; includes non-footage assets. No media downloaded.",
+        "folder_probes": [
+          {
+            "url": "https://drive.google.com/drive/folders/1i_nh0CKQ_CyoyGpQdjwKuUAom7zXvjbh",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:24:44Z",
+            "sha256": "1eb24ba6885045333bdf537d326ff3b2e762a32de76161d1c8346eca4517faae",
+            "direct_items": 4
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1_gpeCFcxc2qQmFbn7Tnps9Fh0236o2rN",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:53Z",
+            "sha256": "54310f1b933959f2f3d16b6da75dcffbb4f96b4ce2fe47d998264eb718c0a460",
+            "direct_items": 21
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1zS7fg0M90TsB2JjqR2eipj0UwioSqvU7",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:54Z",
+            "sha256": "54473de675897fc10f5b8a96eb824377acffc5bc1c582dca0fbebcb8f587434e",
+            "direct_items": 21
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/1Jh4hiplVS76aRLn_-CZmus7sQr07t476",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:54Z",
+            "sha256": "13a97cb57967f5c770e7ab90aeb1ea4bd3a11fba5a64fc1b199f2e28d72478db",
+            "direct_items": 12
+          },
+          {
+            "url": "https://drive.google.com/drive/folders/105cBFc-pZjTW-Z7ZzgsKKqLxeuXFTGYn",
+            "http_status": 200,
+            "checked_at": "2026-10-12T02:25:54Z",
+            "sha256": "2d22f87f87bb97004f95031158dae35f3d413ee679467f094e6eb733c4ed4a06",
+            "direct_items": 20
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1GL-udnX7Fjt_tKSiMq_W-8wrXf9KqP0NbNJN4u2emCo/export?format=txt",
+      "checked_at": "2026-10-12T02:23:39Z",
+      "http_status": 200,
+      "sha256": "2d90fa53eda3c6e0812241d347a2784484740f29987e703aa1e54bfda897464f",
+      "html_links_export": "https://docs.google.com/document/d/1GL-udnX7Fjt_tKSiMq_W-8wrXf9KqP0NbNJN4u2emCo/export?format=html"
+    },
+    {
+      "url": "https://docs.google.com/document/d/1oF4Dm1WlSwJNgUFj9bZVivIrA0Et1U3DVYtYXcA_2Jo/export?format=txt",
+      "checked_at": "2026-10-12T02:23:39Z",
+      "http_status": 200,
+      "sha256": "c5047082b83b7164c9f6f8fc0a6af33ab86b9a595739bd4e7f9cb53cfe544b02",
+      "html_links_export": "https://docs.google.com/document/d/1oF4Dm1WlSwJNgUFj9bZVivIrA0Et1U3DVYtYXcA_2Jo/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1.25,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "recommended_length_s": [
+    15,
+    40
+  ],
+  "manual_submission_required": true,
+  "eligibility_conditions": "Explicitly welcomes a fresh dedicated page after required setup/warm-up. One-page instruction and prohibition on auto-posters prevent immediate use across ten automated channels.",
+  "automated_posting_explicitly_prohibited": true
+}

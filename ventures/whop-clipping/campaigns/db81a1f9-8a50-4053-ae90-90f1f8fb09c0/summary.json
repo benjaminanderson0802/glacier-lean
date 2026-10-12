@@ -1,0 +1,71 @@
+{
+  "uuid": "db81a1f9-8a50-4053-ae90-90f1f8fb09c0",
+  "name": "DIGGER x ClipFarm",
+  "brand": "Warner Bros. Pictures",
+  "cpm_usd": 1.5,
+  "budget_left_usd": 37500,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": 10,
+  "max_len_s": 60,
+  "required_tags": [
+    "#DiggerPartner"
+  ],
+  "banned": [
+    "spoilers/twist reveal",
+    "Don't Look Up comparisons",
+    "politics",
+    "Scientology/relationships",
+    "review scores/box office/arguing critics",
+    "mocking",
+    "face/voice AI or invented quotes",
+    "outside footage",
+    "copyrighted music",
+    "spam/reposts/boosts/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": false,
+  "ineligible_reason": "Established-page requirement excludes new channels; posting limited to October 9–11, 2026 (ending on research date).",
+  "needs_owner_action": [
+    "Use an established page and confirm campaign window/timezone or written extension; new channels cannot qualify.",
+    "Obtain exact Warner Bros. platform handles and submit screen-recorded US demographics."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://f.io/czxfG7a5",
+      "kind": "frame_io_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Public Footage share reached; client-rendered file inventory/bytes not exposed. Brief says approximately 15 minutes of trailers/spots/clips plus GIFs, not independently counted."
+      ],
+      "response_sha256": "a4645aae5fc126ed88344081a4c87b48beeec0b13908abd19243c7b918bbe267"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/14ywRNHuiztlnsu-VbD8ZL1NvQkqcrXYNOB_fwG6tthE/export?format=txt",
+      "checked_at": "2026-10-12T02:23:37Z",
+      "http_status": 200,
+      "sha256": "602f13c68df4e27e71102f55fddd4b5e7fdba95c9425ab78952e7a9f53190cd2",
+      "html_links_export": "https://docs.google.com/document/d/14ywRNHuiztlnsu-VbD8ZL1NvQkqcrXYNOB_fwG6tthE/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1.5,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "unresolved_required_tags": [
+    "Warner Bros. correct platform handles not supplied in brief"
+  ],
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}
