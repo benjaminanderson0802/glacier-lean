@@ -36,6 +36,12 @@ def test_ten_configured_handles_and_daily_caps_and_spacing():
     assert len(schedule_slots(day, count=9, daily_channel_cap=3, global_remaining=2)) == 2
 
 
+def test_schedule_slots_stop_at_pacific_quota_midnight():
+    start = datetime(2026, 10, 12, 6, 30, tzinfo=timezone.utc)  # 23:30 Pacific on Oct 11
+    assert schedule_slots(start, count=4, daily_channel_cap=4, global_remaining=90,
+                          min_spacing_hours=2, jitter_minutes=0, seed=1) == [start]
+
+
 def test_view_collapse_requires_six_posts_and_compares_7_to_prior_21_days():
     now = datetime(2026, 10, 11, tzinfo=timezone.utc)
     views = [(now - timedelta(days=days), 1000) for days in (1, 2, 3, 4, 5, 6)]

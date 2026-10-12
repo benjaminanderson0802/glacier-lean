@@ -86,13 +86,18 @@ def qa_clip(clip: Clip, checklist: dict, *, word_times=(), probe_fn=None) -> lis
     if not clip.passthrough and not word_times:
         failures.append("word-level caption timing is missing")
     if probe_fn:
-        media = probe_fn(clip.path)
-        if media is None:
-            failures.append("media QA tools are unavailable")
-        elif media.get("width") != 1080 or media.get("height") != 1920:
-            failures.append("render is not 1080x1920")
-        if media is not None and not media.get("audio_loudness_ok", False):
-            failures.append("audio loudness outside target")
+        try:
+            media = probe_fn(clip.path)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError,
+                json.JSONDecodeError) as exc:
+            failures.append(f"media probe failed: {type(exc).__name__}: {exc}")
+        else:
+            if media is None:
+                failures.append("media QA tools are unavailable")
+            elif media.get("width") != 1080 or media.get("height") != 1920:
+                failures.append("render is not 1080x1920")
+            if media is not None and not media.get("audio_loudness_ok", False):
+                failures.append("audio loudness outside target")
     return failures
 
 
@@ -383,9 +388,8 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             existing_item = ledger.library_item(original.id)
             if existing_item and existing_item["status"] == "posted":
                 continue
-            probe = _ffprobe(original.path) if Path(original.path).exists() else None
             failures = qa_clip(original, checklist, word_times=original.caption_words,
-                               probe_fn=(lambda _: probe) if Path(original.path).exists() else None)
+                               probe_fn=_ffprobe if Path(original.path).exists() else None)
             if ledger.any_segment_overlap(original.source_id, original.start_s, original.end_s,
                                           except_clip_id=original.id):
                 ledger.event("duplicate_source_moment_skipped", {"clip_id": original.id,

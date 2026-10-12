@@ -58,10 +58,11 @@ def test_partial_private_brief_only_overrides_present_files(tmp_path):
     assert campaign.source_links == [{"url": "https://example.test/video.mp4"}]
 
 
-def test_legacy_clip_home_rule_and_source_files_override_registry(tmp_path):
+def test_legacy_clip_home_rule_and_source_files_override_registry(tmp_path, monkeypatch):
     from scripts.campaigns import load_campaign_registry
     from scripts.producer import _campaign_sources, produce_ready
     from scripts.interfaces import Campaign, Clip
+    import scripts.producer as producer
     repo, home = tmp_path / "repo", tmp_path / "home"
     campaign_files(repo)
     (home / "campaign_rules").mkdir(parents=True)
@@ -75,9 +76,45 @@ def test_legacy_clip_home_rule_and_source_files_override_registry(tmp_path):
     media = tmp_path / "clip.mp4"
     media.write_bytes(b"fixture")
     clip = Clip("clip", "camp-a", "source", 0, 25, str(media), "Title #private", "", ["#private"], "", passthrough=True)
+    monkeypatch.setattr(producer, "_ffprobe",
+                        lambda _: {"width": 1080, "height": 1920, "audio_loudness_ok": True})
     result = produce_ready({"campaign_registry": str(repo), "channels": ["@one"], "daily_target_clips": 1},
                            home=home, scout=Scout(), campaign_clips={"camp-a": [clip]})
     assert result["qa_rules_enforced"]["camp-a"]["required_tags"] == ["#private"]
+
+
+def test_producer_marks_ffprobe_error_as_clip_qa_failure_and_continues(tmp_path, monkeypatch):
+    import subprocess
+    import scripts.producer as producer
+    from scripts.interfaces import Campaign, Clip
+
+    campaign = Campaign("camp", "Camp", "", 1, None, ["youtube_shorts"], "Required tags: #ad")
+    bad_path, good_path = tmp_path / "bad.mp4", tmp_path / "good.mp4"
+    bad_path.write_bytes(b"bad fixture")
+    good_path.write_bytes(b"good fixture")
+    bad = Clip("bad", campaign.id, "source", 0, 25, str(bad_path), "Title #ad", "", ["#ad"], "", passthrough=True)
+    good = Clip("good", campaign.id, "source", 30, 55, str(good_path), "Title #ad", "", ["#ad"], "", passthrough=True)
+
+    def ffprobe(path):
+        if path == str(bad_path):
+            raise subprocess.CalledProcessError(1, ["ffprobe", path], stderr="invalid media")
+        return {"width": 1080, "height": 1920, "audio_loudness_ok": True}
+
+    monkeypatch.setattr(producer, "_ffprobe", ffprobe)
+
+    class Scout:
+        joined_campaign_ids = [campaign.id]
+        def list_campaigns(self): return [campaign]
+
+    result = producer.produce_ready({"channels": ["@one"], "daily_target_clips": 1},
+                                    home=tmp_path / "home", scout=Scout(),
+                                    campaign_clips={campaign.id: [bad, good]}, target_stock=2)
+
+    ledger = __import__("scripts.ledger", fromlist=["Ledger"]).Ledger(tmp_path / "home")
+    assert result["qa_failures"] == 1
+    assert ledger.library_item("bad")["status"] == "failed"
+    assert "media probe failed" in ledger.library_item("bad")["qa_failures"][0]
+    assert ledger.library_item("good")["status"] == "ready"
 
 
 def test_campaign_ineligible_for_new_channels_is_logged_and_skipped(tmp_path):

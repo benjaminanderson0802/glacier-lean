@@ -6,11 +6,35 @@ import os
 import sqlite3
 import statistics
 import html
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from .interfaces import Post
+
+
+QUOTA_TIMEZONE = ZoneInfo("America/Los_Angeles")
+
+
+def quota_day(now: Optional[datetime] = None) -> date:
+    """Return the YouTube quota day for an instant, using Pacific midnight."""
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    return now.astimezone(QUOTA_TIMEZONE).date()
+
+
+def quota_day_bounds(day: Optional[date | str] = None) -> tuple[str, str]:
+    """Return UTC ISO bounds for a Pacific calendar day (DST aware)."""
+    if day is None:
+        day = quota_day()
+    elif isinstance(day, str):
+        day = date.fromisoformat(day)
+    start = datetime.combine(day, time.min, tzinfo=QUOTA_TIMEZONE).astimezone(timezone.utc)
+    end = datetime.combine(day + timedelta(days=1), time.min,
+                           tzinfo=QUOTA_TIMEZONE).astimezone(timezone.utc)
+    return start.isoformat(), end.isoformat()
 
 
 def clip_home(home: Optional[Path] = None) -> Path:
@@ -163,17 +187,17 @@ class Ledger:
                      qa_failures=json.loads(row["qa_failures"])) for row in rows]
 
     def campaign_ready_today(self, campaign_id, today=None):
-        today = today or datetime.now(timezone.utc).date().isoformat()
+        start, end = quota_day_bounds(today)
         with self._connect() as db:
             return db.execute("""SELECT count(*) FROM events WHERE kind='library_clip_added'
-                AND substr(created_at,1,10)=? AND json_extract(details,'$.campaign_id')=?""",
-                (today, campaign_id)).fetchone()[0]
+                AND created_at>=? AND created_at<? AND json_extract(details,'$.campaign_id')=?""",
+                (start, end, campaign_id)).fetchone()[0]
 
     def ready_today(self, today=None):
-        today = today or datetime.now(timezone.utc).date().isoformat()
+        start, end = quota_day_bounds(today)
         with self._connect() as db:
             return db.execute("""SELECT count(*) FROM events WHERE kind='library_clip_added'
-                AND substr(created_at,1,10)=?""", (today,)).fetchone()[0]
+                AND created_at>=? AND created_at<?""", (start, end)).fetchone()[0]
 
     def library_item(self, clip_id):
         with self._connect() as db:
@@ -386,15 +410,16 @@ class Ledger:
         return row[0] if row else None
 
     def posts_today(self, channel: str, today: Optional[str] = None) -> int:
-        day = today or date.today().isoformat()
+        start, end = quota_day_bounds(today)
         with self._connect() as db:
-            return db.execute("SELECT count(*) FROM posts WHERE channel_handle=? AND substr(posted_at,1,10)=?",
-                              (channel, day)).fetchone()[0]
+            return db.execute("SELECT count(*) FROM posts WHERE channel_handle=? AND posted_at>=? AND posted_at<?",
+                              (channel, start, end)).fetchone()[0]
 
     def global_posts_today(self, today: Optional[str] = None) -> int:
-        day = today or date.today().isoformat()
+        start, end = quota_day_bounds(today)
         with self._connect() as db:
-            return db.execute("SELECT count(*) FROM posts WHERE substr(posted_at,1,10)=?", (day,)).fetchone()[0]
+            return db.execute("SELECT count(*) FROM posts WHERE posted_at>=? AND posted_at<?",
+                              (start, end)).fetchone()[0]
 
     def last_post_at(self, channel: str):
         with self._connect() as db:

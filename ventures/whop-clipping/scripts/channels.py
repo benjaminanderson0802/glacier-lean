@@ -8,10 +8,10 @@ from datetime import datetime, timedelta, timezone
 from googleapiclient.discovery import build
 
 if __package__:
-    from .ledger import Ledger, clip_home
+    from .ledger import Ledger, clip_home, quota_day
     from .youtube_upload import load_credentials
 else:
-    from scripts.ledger import Ledger, clip_home
+    from scripts.ledger import Ledger, clip_home, quota_day
     from scripts.youtube_upload import load_credentials
 
 
@@ -125,9 +125,16 @@ def schedule_slots(start, *, count, daily_channel_cap=3, global_remaining=GLOBAL
     spacing = timedelta(hours=max(2.0, float(min_spacing_hours)))
     jitter = max(0, int(jitter_minutes))
     rng = random.Random(seed)
-    slots = [start + timedelta(minutes=rng.randint(0, jitter))]
+    day = quota_day(start)
+    first = start + timedelta(minutes=rng.randint(0, jitter))
+    if quota_day(first) != day:
+        return []
+    slots = [first]
     for _ in range(1, cap):
-        slots.append(slots[-1] + spacing + timedelta(minutes=rng.randint(0, jitter)))
+        following = slots[-1] + spacing + timedelta(minutes=rng.randint(0, jitter))
+        if quota_day(following) != day:
+            break
+        slots.append(following)
     return slots
 
 
