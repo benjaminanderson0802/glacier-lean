@@ -1,0 +1,7 @@
+# Approved source URLs only; no examples, product pages, tag accounts or downloader services.
+# Source restrictions are in rules.txt. Metadata probe results are in summary.json.
+https://drive.google.com/drive/folders/1zS7fg0M90TsB2JjqR2eipj0UwioSqvU7?usp=sharing
+https://drive.google.com/drive/folders/105cBFc-pZjTW-Z7ZzgsKKqLxeuXFTGYn?usp=sharing
+https://drive.google.com/drive/folders/1_gpeCFcxc2qQmFbn7Tnps9Fh0236o2rN?usp=sharing
+https://drive.google.com/drive/folders/1Jh4hiplVS76aRLn_-CZmus7sQr07t476?usp=sharing
+https://drive.google.com/drive/folders/1i_nh0CKQ_CyoyGpQdjwKuUAom7zXvjbh

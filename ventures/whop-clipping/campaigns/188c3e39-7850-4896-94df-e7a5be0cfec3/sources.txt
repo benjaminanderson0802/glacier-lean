@@ -1,0 +1,20 @@
+# Approved source URLs only; no examples, product pages, tag accounts or downloader services.
+# Source restrictions are in rules.txt. Metadata probe results are in summary.json.
+https://drive.google.com/drive/folders/1XrfBdpDgkQb_Dq6ZVZaPeOuLa6ZElwK7?usp=sharing
+https://drive.google.com/drive/folders/14hsa8iKW0kFY9yAZBTsTUvxr_lgoGelk?usp=sharing
+https://youtu.be/8JMrfSFQdpo?si=0n_dm811sqljNSd1
+https://youtu.be/eS-fnedN2yI?si=tqePyWkrVdp89_fc
+https://youtu.be/uu5aORByttg?si=cP3o5NdR3vADAvYG
+https://youtu.be/0Cdqs2Q1Vis?si=gQaS5BDgScKJGDzv
+https://youtu.be/7rX5cPQrx_s?si=P2aRoWi0TBM7V-cS
+https://youtu.be/5Lo54Lx7MCU?si=v4MZZrD-1mg_hN-U
+https://youtu.be/KrahQlLAz44?si=urXWlv8wzQWWfajM
+https://youtu.be/3plLxp_7Jlo?si=KN7C9bbv7UqgQzAU
+https://www.youtube.com/@BOXABL/videos
+https://youtu.be/JbS_VhA0rRo?si=mcv8qG-AreMoaE2K
+https://youtu.be/IBV7eIH3Bdw?si=ckj0kxXGsdAePfIi
+https://youtu.be/b9erzF6LHKI?si=8r4LeXcUIxdVF8ou
+https://youtu.be/9ThVUNGj3To?si=cHsKwhmRlAiFHutM
+https://youtu.be/rUArr8SWyf8?si=bKM8XtJGUACiFi11
+https://youtu.be/Cz9cwL_fqTI?si=xV7KbTfE2yrSE4QI
+https://drive.google.com/file/d/1OnH2B5N-TaGyHqPdmT0uxdCeA-38FXry/view?usp=sharing

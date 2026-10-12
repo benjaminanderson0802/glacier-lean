@@ -1,0 +1,240 @@
+{
+  "uuid": "58064a02-248a-49a7-be87-6011ea6545c7",
+  "name": "BOXED Clipping",
+  "brand": "BOXED.GG",
+  "cpm_usd": 1,
+  "budget_left_usd": 17200,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": null,
+  "max_len_s": null,
+  "required_tags": [
+    "@boxedhq",
+    "#boxedgg"
+  ],
+  "banned": [
+    "gambling/odds/bets/risk/casino framing",
+    "dollar-value hooks",
+    "outside footage",
+    "NSFW/violent/off-topic",
+    "spam/reposts",
+    "boosts/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Submit account/video demographics (40% US/CA/UK).",
+    "Confirm whether brief saying post on all three permits Shorts-only participation.",
+    "If using Sack Summit, inspect caption assets in linked Social Cuts folder; static Dropbox listing did not expose their contents."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://www.dropbox.com/scl/fo/7m1kfi47bvek5z6olsowr/AALoorpEe_0FPDVT3f1WD3k?rlkey=znhjqkclsyp37cf0qlf4bfucn&st=esjd61y5&dl=0",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:40Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "28329cace8c1420bfaa575640e581c1c8b9b4eac2ff55526fd2bfa963689424d"
+    },
+    {
+      "url": "https://we.tl/t-oRoQENFFbvri9C36",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 8,
+      "approx_size": 682682912,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:41Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": null,
+      "files": [
+        {
+          "name": "Taylor Fitz_16x9_90 Sec V3.mp4",
+          "size_bytes": 231709347
+        },
+        {
+          "name": "Taylor Fitz_1x1_15 Sec - Website.mp4",
+          "size_bytes": 9546482
+        },
+        {
+          "name": "Taylor Fitz_1x1_30 Sec - Website.mp4",
+          "size_bytes": 71222025
+        },
+        {
+          "name": "Taylor Fitz_1x1_6 Sec - Website.mp4",
+          "size_bytes": 15991548
+        },
+        {
+          "name": "Taylor Fitz_9x16_15 Sec - Website.mp4",
+          "size_bytes": 35955172
+        },
+        {
+          "name": "Taylor Fitz_9x16_30 Sec - Website.mp4",
+          "size_bytes": 71043390
+        },
+        {
+          "name": "Taylor Fitz_9x16_6 Sec - Website.mp4",
+          "size_bytes": 15745363
+        },
+        {
+          "name": "Taylor Fitz_9x16_90 Sec V3.mp4",
+          "size_bytes": 231469585
+        }
+      ],
+      "response_sha256": "2b2bf76b19f6546cb93f84d718e999f78c7693b66a3d0ecffbaddc316bc8fa10"
+    },
+    {
+      "url": "https://www.dropbox.com/scl/fo/mocmuleuj3k7t76jee10b/AIiQLQtJZyQU6Iuh-PFB3gQ?rlkey=rnr1gbx5lae72ix0m6nlc22z1&st=g591xo1e&dl=0",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:41Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "b1890004f048b5d65640127bdab9cbdb6a81f0c377c9dcd2a9e682e19ce4c5f7"
+    },
+    {
+      "url": "https://www.dropbox.com/scl/fo/r1c85bg5x8uyrozw4ht9o/AF69jqGzxePRNpOa1SHaazU?rlkey=gkxfu8w0bwzwh1dupsu5c9qoi&st=0d0zi3ce&dl=0",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:41Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "79376af723ea188dc241f77f966c3d7ae895c15cd8929c7666740573ca9d42fa"
+    },
+    {
+      "url": "https://www.dropbox.com/scl/fo/inrlltucfw668qkbga48f/AHFQLOHLpw8uQw5kAwODK2A?rlkey=1gz92kytga7n74xk4rsl3r47u&st=d9sg638e&dl=0",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:41Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "6d980e3232ab387bc9abfa05175d3b6967f5a0bd06d704fa69aa6d438c09d58f"
+    },
+    {
+      "url": "https://www.twitch.tv/islandgrown",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:41Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "IslandGrown - Twitch",
+      "response_sha256": "4278cd4c56f5a3aa7b6dd22a9077c43e273fe09cddab8242f510b51e08d01a1a"
+    },
+    {
+      "url": "https://www.twitch.tv/timmeh",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Timmeh - Twitch",
+      "response_sha256": "15275f273f063f4ffe291398add4d2cdb4d0449bcd3e79fe24ebf88fd0b7ea5d"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=AKnCeyI-bv8",
+      "kind": "youtube_video",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "yt-dlp --ignore-config --flat-playlist --simulate --dump-single-json; no cookies",
+      "notes": [
+        "Byte size not exposed by flat metadata; no media downloaded."
+      ],
+      "title": "Pokémon Mystery Box Opening! $10,000",
+      "duration_s": 934,
+      "response_sha256": "c6bf99eac1fd36dab632a54b32d565f42e425029a1dbc0e5c1937a36d7df11f8"
+    },
+    {
+      "url": "https://www.dropbox.com/scl/fo/30qkc8of7zlx1145pwu1x/AHFqYs4rhUKcwcK1NQPUMUs/Sack%20Summit%20July%202026/All%20Player%20Social%20Cuts?rlkey=oum7k7fdtvka05502chm7lyrg&subfolder_nav_tracking=1&st=kfad9u8r&dl=0",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "211dc8e1647f728579212db610cab5a552e8a5fc2009b47d971cc727cea5b1ec"
+    },
+    {
+      "url": "https://www.dropbox.com/scl/fo/30qkc8of7zlx1145pwu1x/AFJ2VcXLna-V96j_dk745mM?rlkey=oum7k7fdtvka05502chm7lyrg&st=9giezj09&dl=0",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "44a02d5e8a6eff5864891b006bfa21d2cc66e3a6ee06562d74435cf24cc4cbb9"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1oCxN3co0yFeGHODl_NPELQZJV-dMOSgNfwNNON8zDoU/export?format=txt",
+      "checked_at": "2026-10-12T02:23:37Z",
+      "http_status": 200,
+      "sha256": "d436db857abf11383f4d57420a689272123981f7ac843ef93d45ba9afd501d63",
+      "html_links_export": "https://docs.google.com/document/d/1oCxN3co0yFeGHODl_NPELQZJV-dMOSgNfwNNON8zDoU/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}

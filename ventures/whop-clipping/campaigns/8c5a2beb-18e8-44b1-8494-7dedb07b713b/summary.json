@@ -1,0 +1,574 @@
+{
+  "uuid": "8c5a2beb-18e8-44b1-8494-7dedb07b713b",
+  "name": "FlyQuest PTL Clipping",
+  "brand": "FlyQuest x Tradeify",
+  "cpm_usd": 1.5,
+  "budget_left_usd": 8000,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": null,
+  "max_len_s": null,
+  "required_tags": [
+    "@TradeifyTV",
+    "@JoinPTL"
+  ],
+  "banned": [
+    "non-PTL streams/gaming",
+    "other brands/sponsors",
+    "rude/NSFW/hateful content",
+    "trading advice/easy money promises",
+    "watermark crop/cover/resize",
+    "reposts/spam/boosts/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": true,
+  "ineligible_reason": null,
+  "needs_owner_action": [
+    "Provide demographic evidence and required written post-approval ticket; check schedule manually if planning live capture."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://www.twitch.tv/itsKatchii/",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:44Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "itsKatchii - Twitch",
+      "response_sha256": "cb6673adbefbf8d009f6594e907272cafb38b9027f256237bdac4989e9e32281"
+    },
+    {
+      "url": "https://www.twitch.tv/penta",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:44Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "PENTA - Live on Twitch",
+      "response_sha256": "baeffe31fad6143ba4ecf40515f72136f0dd3d5c01c075dc38ec63d9e8a73f9c"
+    },
+    {
+      "url": "https://www.twitch.tv/tminnzy",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:44Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Tminnzy - Twitch",
+      "response_sha256": "f74ebaab1ecd25998396e55f5f03192a46175ef87192d7ab4310bc70c79e34d3"
+    },
+    {
+      "url": "https://www.twitch.tv/pikabooirl",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Pikabooirl - Live on Twitch",
+      "response_sha256": "6db3fe58291eb349c614b65a1d34f537a942ce0cb8dc47ea677947e56c3dceec"
+    },
+    {
+      "url": "https://www.twitch.tv/Awake",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Awake - Twitch",
+      "response_sha256": "6a2d323957835439be14f50752de32937c66520d857e0c20e72587732746e4f3"
+    },
+    {
+      "url": "https://www.twitch.tv/akanemsko",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "akaNemsko - Twitch",
+      "response_sha256": "dc4c81a22b32ea8f28e7e10fa6d889e188d8cca3b512725a57e17aa91c578cae"
+    },
+    {
+      "url": "https://www.twitch.tv/esfandtv/",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "EsfandTV - Live on Twitch",
+      "response_sha256": "257e01e2530a652f866bba9a823a06945450e11a97946e95e667783cf6577e47"
+    },
+    {
+      "url": "https://www.twitch.tv/coopertv",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "coopertv - Twitch",
+      "response_sha256": "d618c03f2b4fcf92ef2c8fbc181c4287b45829604048877037ff0fc8638de107"
+    },
+    {
+      "url": "https://www.twitch.tv/Nagzz",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Nagzz - Twitch",
+      "response_sha256": "22d57b55a976e76b394c4fa7ba1c445274bab0f6b7a6a02904a1f7b1b92f792e"
+    },
+    {
+      "url": "https://www.twitch.tv/frodan",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Frodan - Twitch",
+      "response_sha256": "d062c3d1b052879de792e2e79e3a1f1606d6063a680734c551d60b180843eb75"
+    },
+    {
+      "url": "https://www.twitch.tv/varsitygaming",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "VarsityGaming - Twitch",
+      "response_sha256": "c2512eed0265b3f2d5367f3771b7d5ea4e7b2a8d224e187aef640d3659e38d8e"
+    },
+    {
+      "url": "https://www.twitch.tv/arteezy",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Arteezy - Twitch",
+      "response_sha256": "124d08c238bdd40b0e3f49d5f2f7711ff4cf40a7d8be2fcc02516d08c9cd9512"
+    },
+    {
+      "url": "https://www.twitch.tv/Thijs",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Thijs - Twitch",
+      "response_sha256": "d8c91bf6f6436da3410d12c6ae880878173a0ec0c82f36bb6568e5d1642b2427"
+    },
+    {
+      "url": "https://www.twitch.tv/Juliakins",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "juliakins - Twitch",
+      "response_sha256": "74098cbad84b611f93183626161427e6a2e3960e9c3e304e51de93876452b50c"
+    },
+    {
+      "url": "https://www.twitch.tv/Syanne",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:45Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "syanne - Twitch",
+      "response_sha256": "d75f6d655ea558cd44f1df9aa0ec34c15faa7a3df4e9586be6b2846e52bd7d7e"
+    },
+    {
+      "url": "https://www.twitch.tv/qojqva",
+      "kind": "twitch_channel",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "qojqva - Twitch",
+      "response_sha256": "04e50ca5856fb4994b9538227f7e1bb9807cb37d75a003bc2be8c2ae9280d429"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2886720293",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "#AD | SILENT HILL: TOWNFALL 😱 CONTINUING THE NIGHTMARE + PTL SIMULATED TRADING GAME DAY #JoinPTL - tminnzy on Twitch",
+      "response_sha256": "55baeb73c6e9455b6138fff4e3ab795e6906cffee1c2e4876afe53bd86ce226e"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2886543710",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "SHINING, FOCUSED, GLEAMING. SWOLE PATROL GRIND FOR NEXT SEASON. TRADEFY STUFF - !skinswap !skinclub - coopertv on Twitch",
+      "response_sha256": "9bf8efc94511f3572ea19758a409f38216a6b1ef2aed083b009f7c460bd3ff95"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2887102242",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "⚜️SUBATHON DAY 27⚜️!ChaseRP | VOD TIME - penta on Twitch",
+      "response_sha256": "855c252046adbf3b8e837c20441abf7fc686cb6210a15d0e1270cfc370258978"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2887359701",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "TURNING @misterarther INTO MY CANVAS 🎨 PAINTING HIS FOREHEAD 🎨 INSPIRED BY @russel 🎨 !discord !wallet - juliakins on Twitch",
+      "response_sha256": "cb6a8a9a58460fd65d6295f744ee3601bf7ab0b014dd0e785c63e634bdd42230"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2888145528",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Dota 2 -> Tradeify with @qojqva later -> Fun !multistream - arteezy on Twitch",
+      "response_sha256": "8a6572048873a98e2e1721b9caf7befd88a7776ddcdff76f7bbd7ff77f9c32a4"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2888048627",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "lil later stream today around 3:30pm cest - qojqva on Twitch",
+      "response_sha256": "42661ebf19b67a67d1d26f3221fb8f95d5fd914deed809553c8ff60a59ae9019"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2888061622",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "HAPPY WEDNESDAY💥CHATTING, CLIPS, & DRAMA💥LIVE TRADING & GAMING💥 !discord !wallet - juliakins on Twitch",
+      "response_sha256": "5a1ee54536d5c45386e7ff6c489f6de69e09f027406c3e71df2dcb1d99c9555e"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2888942909",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "🍤 100 FRIED SHRIMP CHALLENGE 🍤 COMPETING FIRST IN TRADEIFY’S PTL! 🏆 !wallet #ad - itskatchii on Twitch",
+      "response_sha256": "32caec90ff6427977d2dfa29648fa0ed463989431b6c16a7d1a403ceab4376e8"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2889735221",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:46Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "☔FIRST DAY TRADING LIVE☔PTL CREATOR LEAGUE☔#AD☔GAMBA SOON☔!site !discord - awake on Twitch",
+      "response_sha256": "031d93d72fdd314b0bdc2cf89db303772dbfa4e8fd407b79c7b498a2d227febb"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2892624762",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "🍎 TEACHER COSPLAY 👩‍🏫 CAN I WIN TRADEIFY’S PTL?! 📈 + SURPRISE AFTER! 😈 !wallet #ad - itskatchii on Twitch",
+      "response_sha256": "93f15c7125509c4f049957366e051d36581700f4eaccbee8e42b9680b7e3774b"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2893364729",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "Chat Makes the Content | Variety | Prof G |  Learning to trade with Tradeify, PTL competition with other streamers #ad - nagzz on Twitch",
+      "response_sha256": "43decc15be8ecd7045a74116f1f02b8347f4f80e7f11d1ee056cb192fe4752b6"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2894284899",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "short mm -> tradeify -> pubs -> happy !multistream - arteezy on Twitch",
+      "response_sha256": "0db03bf192bc3e6a38e5fae7c86d352951c174a0ceebd4e429b8f221f57f4195"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2894337167",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "SPOOKY GAMEDAY 👻 SILENT HILL TOWNFALL 👻 LIVE TRADING COMPETITION VS @arteezy  👻 !discord !schedule - juliakins on Twitch",
+      "response_sha256": "eca061fb37c817e077a944551cb28ed930df206c216de28f90834099e9ab16ad"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2894231830",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "☔RAW BALANCE RUNNING IT UP☔GIVEAWAY NOW☔CHAT CALLS TODAY?☔UMBRELLAS☔awakerewards.gg☔$25K MONTHLY LEADERBOARD, AD☔!site !discord - awake on Twitch",
+      "response_sha256": "6b92b8ae83ee445b9a535d127617cf5dd0f20ee38054f143eaa9e80487f79e1b"
+    },
+    {
+      "url": "https://www.twitch.tv/videos/2895966379",
+      "kind": "twitch_vod",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:47Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "Named public HTML reached; playback, total VOD count and bytes not verified. PTL/BOXED segment filtering still required."
+      ],
+      "title": "☔$15K RAW START RUN UP☔4TH PLACE IN PTL CREATORS LEAGUE☔LOCK IN☔UMBRELLAS☔awakerewards.gg☔$25K MONTHLY LEADERBOARD, AD☔!site !discord - awake on Twitch",
+      "response_sha256": "04ab4e48c3e12d9dc4d7db7fbc2281098d5afbf66e6c288573c850caccfc5801"
+    },
+    {
+      "url": "https://we.tl/t-S9SDa17oKK4s1KWx",
+      "kind": "wetransfer",
+      "reachable": true,
+      "approx_items": 1,
+      "approx_size": 48976,
+      "role": "required_watermark",
+      "checked_at": "2026-10-12T02:24:48Z",
+      "http_status": 200,
+      "probe_method": "Public HTML __NEXT_DATA__.initialTransfer metadata",
+      "notes": [
+        "Potentially expiring transfer; recheck before use. Null expires_at means not stated, not guaranteed permanent."
+      ],
+      "expires_at": null,
+      "files": [
+        {
+          "name": "Group 2147225290 (1).png",
+          "size_bytes": 48976
+        }
+      ],
+      "response_sha256": "0703dd90a27f32cbe46edbc1235ea5db5b0182035bc1f09d21d7e1abeeeaee78"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1mJs2DfeI6wrJfnV0rxk9tUz8zBCK6oIyhdFiz7LyunU/export?format=txt",
+      "checked_at": "2026-10-12T02:23:39Z",
+      "http_status": 200,
+      "sha256": "2948a2a0643cfe2ad95a890faeef954919fc90af0ed952710cbeee7dce0ec158",
+      "html_links_export": "https://docs.google.com/document/d/1mJs2DfeI6wrJfnV0rxk9tUz8zBCK6oIyhdFiz7LyunU/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1.5,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "supporting_links_checked": [
+    {
+      "url": "https://claude.ai/artifact/EKcdk85BmxaLRSnqTgHFfS",
+      "http_status": 200,
+      "note": "Static public HTML shell only; actual schedule unverified."
+    }
+  ],
+  "automated_posting_explicitly_prohibited": false
+}

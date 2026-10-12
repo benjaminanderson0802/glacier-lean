@@ -1,0 +1,62 @@
+{
+  "uuid": "9777dfec-3b96-4e87-9b6f-40539c05818c",
+  "name": "Topps x ClipFarm Hero Content",
+  "brand": "Topps",
+  "cpm_usd": 1,
+  "budget_left_usd": 30000,
+  "platforms": [
+    "YouTube Shorts",
+    "Instagram Reels",
+    "TikTok"
+  ],
+  "min_len_s": null,
+  "max_len_s": null,
+  "required_tags": [],
+  "banned": [
+    "dollar values/prices everywhere",
+    "#ad/#sponsored/any ad-disclosure tags (hold pending resolution)",
+    "broadcast/outside footage",
+    "lazy/captionless edits",
+    "duplicate cuts",
+    "story boosting/bots"
+  ],
+  "eligible_for_new_youtube_shorts_channels": false,
+  "ineligible_reason": "New channels lack required 1K+ followers and established dedicated niche audience; disclosure rule unresolved.",
+  "needs_owner_action": [
+    "Use an established dedicated card/sports page with 1K+ followers and 40% US analytics.",
+    "Resolve disclosure-tag prohibition before any publication; confirm page-type exceptions and conflicting $400/$1000 cap."
+  ],
+  "source_inventory": [
+    {
+      "url": "https://www.dropbox.com/scl/fo/0fb12utk6tzs0ujjnkap4/AGEAujxlsRIp76HhpJzXvfA?dl=0&e=1&rlkey=8vqgifb1p0exrjuhek915kuq1&st=jjqmbswq",
+      "kind": "dropbox_folder",
+      "reachable": true,
+      "approx_items": null,
+      "approx_size": null,
+      "role": "footage",
+      "checked_at": "2026-10-12T02:24:42Z",
+      "http_status": 200,
+      "probe_method": "Bounded public HTTPS GET; no media download",
+      "notes": [
+        "HTTP 200 shell and no-script folder title reached; item listing/bytes are client-rendered and remain unknown. No authenticated access or ZIP download attempted."
+      ],
+      "response_sha256": "261c337dbcd2a8e2ee55c2f5ff79ba68a6d0a94c9a27d3c5d54f75bc76f3c182"
+    }
+  ],
+  "provenance": [
+    {
+      "url": "https://docs.google.com/document/d/1Ao_JdzEG1GvXKSlbLqdZG7mz63eHVJxa/export?format=txt",
+      "checked_at": "2026-10-12T02:23:37Z",
+      "http_status": 200,
+      "sha256": "3f89b542ecb232304899cd5f39f02175fc3fa7cc3f0f17637ace7d4cccffb8b3",
+      "html_links_export": "https://docs.google.com/document/d/1Ao_JdzEG1GvXKSlbLqdZG7mz63eHVJxa/export?format=html"
+    }
+  ],
+  "financial_snapshot_note": "CPM/budget are owner-provided campaign-page snapshot from 2026-10-11; not fetched from Whop/Content Rewards. k means 1,000 USD; rounded balances, not guaranteed availability. Unknown values are null.",
+  "youtube_cpm_used_for_ranking": 1,
+  "tags_scope": "required_tags contains unconditional YouTube tags only; see rules.txt for other platforms and conditional/alternative caption text.",
+  "inventory_units": "approx_items is observed count where available; approx_size is bytes, null when unknown. HTTP reachability does not prove playback/download. Folder counts are direct children, unless recursive_inventory says otherwise.",
+  "eligibility_note": "True means new pages are not explicitly excluded, including fresh dedicated pages after warm-up; not ready-to-post or guaranteed payout. All demographic, content and owner-action conditions still apply. Automation readiness is separate.",
+  "manual_submission_required": true,
+  "automated_posting_explicitly_prohibited": false
+}
