@@ -13,7 +13,8 @@ from pathlib import Path
 from .cycle import DEFAULT_CHANNELS, FakeUploader, _campaign, load_plugin
 from .interfaces import Campaign, Clip
 from .ledger import Ledger, clip_home
-from .variants import channel_style
+from .variants import (brand_spelling, campaign_brand, make_public_title, normalize_brand,
+                       normalize_caption_words, required_mentions, required_tags, title_hook, channel_style)
 from .producer import qa_clip, _ffprobe
 
 
@@ -87,29 +88,41 @@ def _channel_variant(clip, campaign, settings, home, checklist=None):
     from dataclasses import replace
     path = clip.path
     checklist = checklist or {}
-    key_words = [campaign.name, *re.findall(r"[\w'-]+", campaign.name),
-                 *re.findall(r"\b\d+(?:\.\d+)?\b", campaign.rules_text)]
+    brand = campaign_brand(campaign.name) if campaign else ""
+    public_brand = brand_spelling(campaign.rules_text, brand) if campaign else brand
+    rules_text = campaign.rules_text if campaign else ""
+    key_words = [brand, *re.findall(r"[\w'-]+", brand),
+                 *re.findall(r"\b\d+(?:\.\d+)?\b", rules_text)]
     for value in [*checklist.get("mentions", []), *checklist.get("required_tags", [])]:
         key_words.extend(Path(str(value).replace("#", "").replace("@", "")).name.split())
     if not clip.passthrough and clip.caption_words:
         from .clipper import render_clip
         target = home / "media" / "channel-variants" / f"{clip.id}-{style['index']}.mp4"
         if not target.exists():
+            caption_words = normalize_caption_words(clip.caption_words, rules_text, brand)
             render_clip(Path(clip.path), target, start_s=0, end_s=clip.end_s - clip.start_s,
-                        caption_words=clip.caption_words,
+                        caption_words=caption_words,
                         caption_style={"caption": settings.get("caption_style") or style["caption"],
                                        "base_color": style["base_color"],
                                        "accent_color": style["accent_color"],
                                        "key_words": key_words if campaign else []})
         path = str(target)
     title = clip.title
-    template = settings.get("title_template") or style["title"]
-    hook = " ".join(clip.description.split()[:8])
-    try:
-        title = template.format(campaign=campaign.name if campaign else clip.campaign_id, hook=hook)[:100]
-    except (KeyError, ValueError):
-        pass
-    return replace(clip, path=path, title=title)
+    if campaign:
+        description_lines = [line.strip() for line in clip.description.splitlines() if line.strip()]
+        transcript = next((line for line in description_lines
+                           if line.startswith(brand + ":")), "")
+        hook = transcript.partition(":")[2].strip() or description_lines[-1]
+        hook = title_hook(hook)
+        hook = normalize_brand(hook, rules_text, brand)
+        template = settings.get("title_template") or style["title"]
+        title = make_public_title(hook, public_brand,
+                                  [*required_mentions(rules_text), *required_tags(rules_text)],
+                                  template=template)
+        normalized_words = normalize_caption_words(clip.caption_words, rules_text, brand)
+    else:
+        normalized_words = clip.caption_words
+    return replace(clip, path=path, title=title, caption_words=normalized_words)
 
 
 def distribute_ready(config, *, home=None, uploader=None, now_fn=lambda: datetime.now(timezone.utc),

@@ -18,6 +18,105 @@ STYLES = (
     {"caption": "small_caps_top", "title": "Scene select: {hook}"},
 )
 
+INTERNAL_NAME_WORDS = {"clipping", "official", "campaign"}
+TRAILING_HOOK_FRAGMENTS = {"a", "an", "and", "because", "but", "he", "it", "she", "that", "the", "they", "this", "to"}
+
+
+def campaign_brand(name: str) -> str:
+    words = [word for word in re.findall(r"[\w&'-]+", name or "")
+             if word.casefold() not in INTERNAL_NAME_WORDS]
+    return " ".join(words).strip()
+
+
+def brand_spelling(rules_text: str, brand: str) -> str:
+    match = re.search(r"\bspell\s+(?:the\s+)?([A-Z][A-Z0-9]{1,})\s+(?:correctly|in\s+caps|in\s+uppercase)",
+                      rules_text or "", re.I)
+    if match:
+        return match.group(1).upper()
+    # A clearly all-caps brand immediately attached to a spelling instruction is authoritative.
+    match = re.search(r"\bspell\s+(?:the\s+)?([A-Z][A-Z0-9]{1,})\b", rules_text or "", re.I)
+    return match.group(1).upper() if match and match.group(1).isupper() else brand
+
+
+def normalize_brand(text: str, rules_text: str, brand: str) -> str:
+    exact = brand_spelling(rules_text, brand)
+    if not exact:
+        return text
+    if exact.casefold() == "boxabl":
+        pattern = r"(?<![@#\w])(?:box\s*able|boxable|boxabl)\b"
+        return re.sub(pattern, exact, text, flags=re.I)
+    escaped = r"\s*".join(re.escape(part) for part in exact.split())
+    return re.sub(rf"(?<![@#\w]){escaped}\b", exact, text, flags=re.I)
+
+
+def normalize_caption_words(words, rules_text: str, brand: str):
+    result = []
+    values = list(words or [])
+    exact = brand_spelling(rules_text, brand)
+    index = 0
+    while index < len(values):
+        current = dict(values[index])
+        value = str(current.get("word", ""))
+        next_value = str(values[index + 1].get("word", "")) if index + 1 < len(values) else ""
+        if exact.casefold() == "boxabl" and value.strip(" ,.!?:;").casefold() == "box" \
+                and next_value.strip(" ,.!?:;").casefold() == "able":
+            punctuation = value[-1] if value and value[-1] in ",.!?;:" else ""
+            current["word"] = exact + punctuation
+            current["end"] = values[index + 1].get("end", current.get("end"))
+            result.append(current)
+            index += 2
+            continue
+        current["word"] = normalize_brand(value, rules_text, brand)
+        result.append(current)
+        index += 1
+    return result
+
+
+def make_public_title(hook: str, brand: str, social_tags=(), template=None) -> str:
+    suffix = "#shorts"
+    all_tags = list(dict.fromkeys([*social_tags, suffix]))
+    # Keep the platform tag and as many required social tags as fit.
+    tags = [suffix]
+    for tag in all_tags:
+        if tag != suffix and len(" ".join([*tags[:-1], tag, suffix])) <= 35:
+            tags.insert(-1, tag)
+    tail = " ".join(tags)
+    hook = hook.strip(" .,!?:;")
+    try:
+        core = template.format(campaign=brand, hook=hook) if template else hook
+    except (KeyError, ValueError, AttributeError):
+        core = hook
+    core = core.strip(" .,!?:;")
+    has_brand = bool(brand and re.search(rf"(?<!\w){re.escape(brand)}(?!\w)", core, re.I))
+    if brand and not has_brand:
+        core = f"{brand} {core}".strip()
+    elif brand:
+        seen = False
+
+        def keep_first_brand(_match):
+            nonlocal seen
+            if seen:
+                return ""
+            seen = True
+            return brand
+
+        core = re.sub(rf"(?<!\w){re.escape(brand)}(?!\w)", keep_first_brand, core, flags=re.I)
+    core = re.sub(r"\s+([:|—-])", r"\1", core)
+    core = re.sub(r"\s{2,}", " ", core).strip()
+    room = max(0, 100 - len(tail) - 1)
+    core = core[:room].rsplit(" ", 1)[0] if len(core) > room else core
+    core = core.rstrip(" ,.!?:;-|—")
+    return f"{core} {tail}".strip()
+
+
+def title_hook(text: str, limit=8) -> str:
+    words = (text or "").split()[:limit]
+    while words and words[-1].strip(".,!?;:").casefold() in TRAILING_HOOK_FRAGMENTS:
+        words.pop()
+    if len(words) > 1 and words[-2].strip(".,!?;:").casefold() in {"it", "he", "she", "they", "this", "that"}:
+        words = words[:-2]
+    return " ".join(words).strip(" .,!?:;")
+
 CHANNEL_STYLE_INDEX = {
     "@frameandmomentdesk": 0, "@highlightdesknotes": 1, "@replaynotesdesk": 2,
     "@quickreplaydesk": 3, "@dailycutnotes": 4, "@clipcurrentdesk": 5,
@@ -43,19 +142,26 @@ def channel_style(channel: str):
 
 
 def required_tags(rules_text: str):
-    tags = set(re.findall(r"(?<!\w)#[\w-]+", rules_text))
-    patterns = (r"(?:required|include|must use|hashtag|tags?)\s*[:=]\s*([^\n.]+)",)
-    for pattern in patterns:
-        for match in re.finditer(pattern, rules_text, re.I):
-            tags.update(re.findall(r"(?<!\w)#[\w-]+", match.group(1)))
+    tags = set()
+    for line in (rules_text or "").splitlines():
+        if re.search(r"\b(?:required|tag|use|include|hashtag|tags?)\b", line, re.I):
+            tags.update(re.findall(r"(?<!\w)#[\w-]+", line))
     return sorted(tags, key=str.lower)
+
+
+def required_mentions(rules_text: str):
+    mentions = set()
+    for line in (rules_text or "").splitlines():
+        if re.search(r"\b(?:required|tag|use|include|mention|mentions)\b", line, re.I):
+            mentions.update(re.findall(r"(?<!\w)@[\w.-]+", line))
+    return sorted(mentions, key=str.lower)
 
 
 def required_disclosures(rules_text: str):
     disclosures = []
     for line in rules_text.splitlines():
-        if re.search(r"disclosure|must say|caption must|include in (?:the )?(?:caption|description)", line, re.I):
-            value = re.sub(r"^.*?(?:disclosure|must say|caption must|include in (?:the )?(?:caption|description))\s*[:=]?\s*", "", line, flags=re.I).strip()
+        if re.search(r"\bdisclosure\s*[:=]", line, re.I):
+            value = re.sub(r"^.*?\bdisclosure\s*[:=]\s*", "", line, flags=re.I).strip()
             if value:
                 disclosures.append(value)
     if re.search(r"\bad\b|paid partnership|sponsored", rules_text, re.I):
@@ -66,17 +172,20 @@ def required_disclosures(rules_text: str):
 
 def make_variant(campaign, segment, channel: str):
     text = re.sub(r"\s+", " ", segment.get("text", "")).strip()
-    hook = " ".join(text.split()[:8]).strip(" .,!?:;") or campaign.name
+    brand = campaign_brand(campaign.name)
+    public_brand = brand_spelling(campaign.rules_text, brand)
+    text = normalize_brand(text, campaign.rules_text, brand)
+    hook = title_hook(text) or brand
     style = channel_style(channel)
-    title = style["title"].format(campaign=campaign.name, hook=hook)[:100]
-    hashtags = required_tags(campaign.rules_text)
+    hook = normalize_brand(hook, campaign.rules_text, brand)
+    title = make_public_title(hook, public_brand,
+                              [*required_mentions(campaign.rules_text), *required_tags(campaign.rules_text)],
+                              template=style["title"])
+    hashtags = [*required_mentions(campaign.rules_text), *required_tags(campaign.rules_text), "#shorts"]
+    hashtags = list(dict.fromkeys(hashtags))
     disclosure = required_disclosures(campaign.rules_text)
-    desc_lines = [text, f"Campaign: {campaign.name}"]
-    if campaign.url:
-        desc_lines.append(campaign.url)
-    desc_lines.extend(disclosure)
-    if hashtags:
-        desc_lines.append(" ".join(hashtags))
+    first_line = " ".join(hashtags)
+    desc_lines = [first_line, f"{public_brand}: {text}", *disclosure]
     return {"title": title, "description": "\n\n".join(dict.fromkeys(line for line in desc_lines if line)),
             "hashtags": hashtags, "channel_handle": channel, "caption_style": style["caption"]}
 
