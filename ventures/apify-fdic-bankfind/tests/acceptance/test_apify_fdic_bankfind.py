@@ -35,7 +35,7 @@ def test_explicit_empty_result_is_free_no_match(subject, fixture_json, client_fa
     empty['totals']['count'] = 0
     rows = subject.source.collect({'certificate': '999999'}, client_factory([empty]))
     assert len(rows) == 1 and rows[0]['outcome'] == 'no_match' and rows[0]['billable'] is False
-    assert 'no match found in FDIC as of' in rows[0]['message'].lower()
+    assert 'no match found in fdic as of' in rows[0]['message'].lower()
 
 
 def test_partial_page_outage_and_vintage_change_discard_partial_rows(subject, fixture_json, client_factory):

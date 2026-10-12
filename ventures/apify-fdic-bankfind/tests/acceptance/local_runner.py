@@ -21,11 +21,24 @@ host = {'apify-census-permits': 'www2.census.gov', 'apify-fdic-bankfind': 'api.f
         'apify-npi-batch': 'npiregistry.cms.hhs.gov'}[root.name]
 audit = []
 permission = threading.local()
+original_pair = socket.socketpair
 original_connect = socket.socket.connect
 original_request = requests.sessions.Session.request
 
 
+def local_pair(*args, **kwargs):
+    # asyncio's Windows wakeup pipe is a local TCP socketpair, not source IO.
+    permission.socketpair = True
+    try:
+        return original_pair(*args, **kwargs)
+    finally:
+        permission.socketpair = False
+
+
 def connect(sock, address):
+    if (getattr(permission, 'socketpair', False) and isinstance(address, tuple)
+            and address[0] in ('127.0.0.1', '::1')):
+        return original_connect(sock, address)
     if not getattr(permission, 'source_request', False):
         raise AssertionError('External connection outside the approved source GET')
     return original_connect(sock, address)
@@ -63,6 +76,7 @@ async def forbidden_charge(*args, **kwargs):
     raise AssertionError('Owner-only payment attempted during a local acceptance run')
 
 
+socket.socketpair = local_pair
 socket.socket.connect = connect
 socket.socket.connect_ex = lambda *args: (_ for _ in ()).throw(AssertionError('Unexpected socket connect_ex'))
 requests.sessions.Session.request = request

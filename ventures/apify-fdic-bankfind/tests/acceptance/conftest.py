@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import threading
 from types import SimpleNamespace
 from urllib.parse import urlencode, urlparse
 
@@ -37,9 +38,29 @@ def subject():
 @pytest.fixture(autouse=True)
 def no_accidental_network(monkeypatch):
     import socket
+    permission = threading.local()
+    original_connect = socket.socket.connect
+    original_pair = socket.socketpair
+
+    def local_pair(*args, **kwargs):
+        # Windows asyncio uses CPython's TCP socketpair fallback for its wakeup
+        # pipe. Permit only that synchronous stdlib call, not arbitrary localhost.
+        permission.socketpair = True
+        try:
+            return original_pair(*args, **kwargs)
+        finally:
+            permission.socketpair = False
+
+    def guarded_connect(sock, address):
+        if (getattr(permission, 'socketpair', False) and isinstance(address, tuple)
+                and address[0] in ('127.0.0.1', '::1')):
+            return original_connect(sock, address)
+        raise AssertionError('Acceptance parent process must not open network sockets')
+
     def denied(*args, **kwargs):
         raise AssertionError('Acceptance parent process must not open network sockets')
-    monkeypatch.setattr(socket.socket, 'connect', denied)
+    monkeypatch.setattr(socket, 'socketpair', local_pair)
+    monkeypatch.setattr(socket.socket, 'connect', guarded_connect)
     monkeypatch.setattr(socket.socket, 'connect_ex', denied)
 
 
@@ -163,19 +184,21 @@ def run_local(tmp_path, prefill, record_property):
         (kv / 'INPUT.json').write_text(json.dumps(prefill))
         # Deliberate environment allowlist: never inherit a token, account or cloud store.
         env = {key: os.environ[key] for key in ('PATH', 'LANG', 'LC_ALL', 'SYSTEMROOT') if key in os.environ}
-        env.update(HOME=str(tmp_path), APIFY_IS_AT_HOME='0',
+        env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path),
+            TEMP=str(tmp_path), TMP=str(tmp_path), PYTHONUTF8='1', PYTHONIOENCODING='utf-8',
+            GLACIER_HOME=str(tmp_path / 'glacier'), APIFY_IS_AT_HOME='0',
             APIFY_LOCAL_STORAGE_DIR=str(storage), CRAWLEE_STORAGE_DIR=str(storage),
             CRAWLEE_PURGE_ON_START='false', APIFY_DISABLE_OUTDATED_WARNING='1')
         command = [sys.executable, str(Path(__file__).parent / 'local_runner.py'),
                    str(ROOT), str(FIXTURES), str(storage), 'live' if live else 'offline']
-        result = subprocess.run(command, cwd=ROOT, env=env, text=True,
+        result = subprocess.run(command, cwd=ROOT, env=env, text=True, encoding='utf-8',
                                 capture_output=True, timeout=180)
         record_property('local_main_input', json.dumps(prefill))
         record_property('local_main_exit', result.returncode)
         print(result.stdout, result.stderr)
         assert result.returncode == 0, result.stderr
         files = sorted((storage / 'datasets/default').glob('[0-9]*.json'))
-        rows = [json.loads(path.read_text()) for path in files]
+        rows = [json.loads(path.read_text(encoding='utf-8')) for path in files]
         audit = json.loads((storage / 'acceptance-network.json').read_text())
         record_property('network_audit', json.dumps(audit))
         record_property('dataset', json.dumps(rows, ensure_ascii=False))

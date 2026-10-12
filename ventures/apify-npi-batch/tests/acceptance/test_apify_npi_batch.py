@@ -33,7 +33,7 @@ def test_captured_registry_object_selects_location_and_primary_taxonomy(subject,
 def test_no_match_is_explicit_and_free(subject, client_factory):
     rows = subject.source.collect({'npis': [NPI]}, client_factory([{'result_count': 0, 'results': []}]))
     assert rows[0]['outcome'] == 'no_match' and rows[0]['billable'] is False
-    assert 'no match found in NPPES as of' in rows[0]['message'].lower()
+    assert 'no match found in nppes as of' in rows[0]['message'].lower()
 
 
 def test_invalid_npi_checksum_is_rejected_before_source_request(subject, client_factory):
