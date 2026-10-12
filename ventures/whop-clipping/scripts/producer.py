@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 from .cycle import DEFAULT_CHANNELS, FakeScout, _campaign, _campaign_eligible, load_plugin
+from .campaigns import allocate_daily_campaign_targets, load_campaign_registry
 from .interfaces import Campaign, Clip
 from .ledger import Ledger, clip_home
 from .clipper import candidate_segments, make_clip, transcribe
@@ -36,12 +37,23 @@ def parse_campaign_requirements(rules_text: str) -> dict:
     no_edit = bool(re.search(r"no editing|do not edit|don't edit|unedited|as[- ]is", rules_text, re.I))
     if re.search(r"no editing\s*[:=]\s*(?:false|no|0)", rules_text, re.I):
         no_edit = False
+    owner_actions = []
+    owner_patterns = (
+        ("link_in_bio", r"link\s+in\s+(?:the\s+)?bio"),
+        ("demographics_screenshots", r"demographic(?:s|al)?[^\n]*(?:screenshot|screen shot)|(?:screenshot|screen shot)[^\n]*demographic"),
+        ("draft_preapproval", r"(?:draft|pre[- ]?approval|approve[^\n]*before[^\n]*(?:post|publish))"),
+    )
+    for requirement, pattern in owner_patterns:
+        if re.search(pattern, rules_text, re.I):
+            owner_actions.append({"requirement": requirement, "reason": "requires owner action"})
+    draft_preapproval = any(row["requirement"] == "draft_preapproval" for row in owner_actions)
     return {"required_tags": tags, "disclosures": list(dict.fromkeys(disclosures)), "mentions": mentions,
             "links": links, "min_length_s": float(min_match.group(1)) if min_match else 0.0,
             "max_length_s": float(max_match.group(1)) if max_match else 58.0,
             "allowed_edits": [part.strip() for part in re.split(r"[,;]", edits_match.group(1))] if edits_match else [],
             "banned_content": [part.strip() for part in re.split(r"[,;]", banned_match.group(1))] if banned_match else [],
-            "no_edit": no_edit}
+            "no_edit": no_edit, "owner_actions": owner_actions,
+            "draft_preapproval": draft_preapproval}
 
 
 def qa_clip(clip: Clip, checklist: dict, *, word_times=(), probe_fn=None) -> list[str]:
@@ -132,6 +144,15 @@ def _source_id(campaign_id, url):
 
 def _campaign_sources(campaign, home):
     """Choose source links in order and label their provenance."""
+    override = home / "campaign_sources" / f"{campaign.id}.txt"
+    if override.is_file():
+        urls = []
+        for line in override.read_text(encoding="utf-8").splitlines():
+            value = line.split("#", 1)[0].strip()
+            if value.startswith(("https://", "http://")):
+                urls.append(value)
+        if urls:
+            return [{"url": url, "route": "campaign_override"} for url in dict.fromkeys(urls)]
     if campaign.source_links:
         return [{**(item if isinstance(item, dict) else {"url": str(item)}),
                  "route": "public_detail_page"} for item in campaign.source_links]
@@ -145,19 +166,10 @@ def _campaign_sources(campaign, home):
         return [{"url": url.rstrip(".,);]"), "route": "campaign_rules_or_description"}
                 for url in youtube_urls]
 
-    override = home / "campaign_sources" / f"{campaign.id}.txt"
-    if override.is_file():
-        urls = []
-        for line in override.read_text(encoding="utf-8").splitlines():
-            value = line.split("#", 1)[0].strip()
-            if value.startswith(("https://", "http://")):
-                urls.append(value)
-        return [{"url": url, "route": "campaign_override"} for url in dict.fromkeys(urls)]
     return []
 
 
-def _prepare_clips(campaign, config, ledger, home):
-    output = []
+def _iter_prepared_clips(campaign, config, ledger, home):
     source_cfg = config.get("sources", {})
     checklist = parse_campaign_requirements(campaign.rules_text)
     recovered = []
@@ -168,14 +180,17 @@ def _prepare_clips(campaign, config, ledger, home):
         if Path(row.get("path", "")).is_file():
             recovered.append(Clip(**row))
     if recovered:
-        return recovered
+            for clip in recovered:
+                yield clip
+            return
     for source_item in _campaign_sources(campaign, home):
         url = source_item.get("url") if isinstance(source_item, dict) else str(source_item)
         source_route = source_item.get("route", "public_detail_page") if isinstance(source_item, dict) else "public_detail_page"
         source_id = str(source_item.get("id")) if isinstance(source_item, dict) and source_item.get("id") else _source_id(campaign.id, url)
         source = fetch_source(url, source_id, cache_dir=home / "media" / "sources", ledger=ledger,
                               max_bytes=int(source_cfg.get("max_bytes", 2_000_000_000)),
-                              timeout_s=int(source_cfg.get("timeout_s", 1800)))
+                              timeout_s=int(source_cfg.get("timeout_s", 1800)),
+                              max_source_gb=float(source_cfg.get("max_source_gb", config.get("max_source_gb", 40))))
         source_id = source.provenance["sha256"][:20]
         ledger.record_source(source_id, source.url, source.path, source.provenance["sha256"],
                              {**source.provenance, "canonical_source_id": source_id,
@@ -225,8 +240,12 @@ def _prepare_clips(campaign, config, ledger, home):
             clip.render_seconds = render_seconds
             clip.source_route = source_route
             ledger.record_clip(clip)
-            output.append(clip)
-    return output
+            yield clip
+
+
+def _prepare_clips(campaign, config, ledger, home):
+    """Compatibility list wrapper; Producer itself consumes the iterator."""
+    return list(_iter_prepared_clips(campaign, config, ledger, home))
 
 
 def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_stock=20):
@@ -255,27 +274,49 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         ledger.event("producer_error", item)
 
     raw_campaigns = []
+    registry_root = Path(config.get("campaign_registry", Path(__file__).resolve().parents[1]))
+    try:
+        raw_campaigns.extend(load_campaign_registry(registry_root, home))
+    except Exception as exc:
+        report_error("campaign_registry_failed", f"{type(exc).__name__}: {exc}")
     if scout is None:
         report_error("scout_unavailable", "Campaign discovery plugin is unavailable")
     else:
         try:
-            raw_campaigns = scout.list_campaigns()
+            discovered = scout.list_campaigns()
+            known = {row.id if isinstance(row, Campaign) else str(row.get("id")) for row in raw_campaigns}
+            raw_campaigns.extend(row for row in discovered if
+                                (row.id if isinstance(row, Campaign) else str(row.get("id"))) not in known)
         except Exception as exc:
             report_error("campaign_discovery_failed", f"{type(exc).__name__}: {exc}")
     campaigns = []
     for index, row in enumerate(raw_campaigns):
         try:
             campaign = _campaign(row)
+            rules_override = home / "campaign_rules" / f"{campaign.id}.txt"
+            if rules_override.is_file():
+                campaign.rules_text = rules_override.read_text(encoding="utf-8")
             campaigns.append(campaign)
             ledger.record_campaign(campaign)
         except Exception as exc:
             report_error("campaign_contract_invalid", f"campaign {index}: {type(exc).__name__}: {exc}")
     eligibility_config = config
     joined_ids = getattr(scout, "joined_campaign_ids", None)
+    registry_ids = {path.name for root in (registry_root / "campaigns", home / "campaigns")
+                    if root.is_dir() for path in root.iterdir() if path.is_dir()}
     if joined_ids is not None:
+        registry_ids.update(joined_ids)
+    if registry_ids:
         eligibility_config = {**config, "approved_campaign_ids": sorted(
-            set(config.get("approved_campaign_ids", [])) | set(joined_ids))}
-    eligible = [campaign for campaign in campaigns if _campaign_eligible(campaign, eligibility_config, ledger)]
+            set(config.get("approved_campaign_ids", [])) | registry_ids)}
+    eligible = []
+    for campaign in campaigns:
+        if campaign.eligible_for_new_youtube_shorts_channels is False:
+            report_error("campaign_ineligible", "eligible_for_new_youtube_shorts_channels=false",
+                         campaign_id=campaign.id)
+            continue
+        if _campaign_eligible(campaign, eligibility_config, ledger):
+            eligible.append(campaign)
     history = config.get("approval_history", {})
     def approval_score(campaign_id):
         record = history.get(campaign_id, 0)
@@ -284,9 +325,14 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
                                  approval_score(c.id),
                                  len(c.platforms)), reverse=True)
     ready_before = len(ledger.library_items("ready"))
+    daily_target = max(1, int(config.get("daily_target_clips", 40)))
+    campaign_targets = allocate_daily_campaign_targets(eligible, daily_target)
     output = {"campaigns": len(eligible), "produced": 0, "qa_failures": 0, "ready": ready_before,
               "errors": errors, "error_count": 0, "failure_count": 0,
-              "render_time_per_clip_seconds": {}, "source_routes": {}, "qa_rules_enforced": {}}
+              "render_time_per_clip_seconds": {}, "source_routes": {}, "qa_rules_enforced": {},
+              "daily_target": daily_target, "daily_ready": ledger.ready_today(),
+              "campaign_targets": campaign_targets,
+              "owner_actions": {}}
     if hasattr(scout, "join_suggestions"):
         try:
             output["join_suggestions"] = scout.join_suggestions()
@@ -297,15 +343,25 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         output["join_suggestions"] = []
     for campaign in eligible:
         checklist = parse_campaign_requirements(campaign.rules_text)
+        if campaign.requires_draft_preapproval:
+            checklist["draft_preapproval"] = True
+            checklist["owner_actions"] = list(checklist["owner_actions"]) + [
+                {"requirement": "draft_preapproval", "reason": "summary requires pre-approval"}]
+        for requirement in campaign.owner_requirements:
+            checklist["owner_actions"].append({"requirement": str(requirement), "reason": "campaign brief requires owner action"})
         ledger.save_campaign_checklist(campaign.id, checklist)
         output["qa_rules_enforced"][campaign.id] = checklist
+        if checklist["owner_actions"]:
+            output["owner_actions"][campaign.id] = checklist["owner_actions"]
+        if ledger.campaign_ready_today(campaign.id) >= campaign_targets.get(campaign.id, 1):
+            continue
         if campaign_clips is None and not _campaign_sources(campaign, home):
             report_error("campaign_sources_unavailable",
                          "No public detail, campaign-rule, or override source links found",
                          campaign_id=campaign.id)
             continue
         try:
-            clips = list(campaign_clips[campaign.id]) if campaign_clips is not None else _prepare_clips(
+            clips = iter(campaign_clips[campaign.id]) if campaign_clips is not None else _iter_prepared_clips(
                 campaign, {**config, "channels": ["__library__"], "captions": False}, ledger, home)
         except Exception as exc:
             report_error("campaign_production_failed", f"{type(exc).__name__}: {exc}", campaign_id=campaign.id)
@@ -315,6 +371,8 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
                          "Source media produced no campaign-compliant clip candidates",
                          campaign_id=campaign.id)
         for original in clips:
+            if ledger.campaign_ready_today(campaign.id) >= campaign_targets.get(campaign.id, 1):
+                break
             if getattr(original, "source_route", None):
                 output["source_routes"].setdefault(campaign.id, original.source_route)
             output["render_time_per_clip_seconds"][original.id] = round(
@@ -328,6 +386,11 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             probe = _ffprobe(original.path) if Path(original.path).exists() else None
             failures = qa_clip(original, checklist, word_times=original.caption_words,
                                probe_fn=(lambda _: probe) if Path(original.path).exists() else None)
+            if ledger.any_segment_overlap(original.source_id, original.start_s, original.end_s,
+                                          except_clip_id=original.id):
+                ledger.event("duplicate_source_moment_skipped", {"clip_id": original.id,
+                    "source_id": original.source_id, "start_s": original.start_s, "end_s": original.end_s})
+                continue
             ledger.record_clip(original)
             if failures:
                 ledger.add_library_clip(original, checklist=checklist, status="failed", qa_failures=failures)
@@ -342,11 +405,12 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             ledger.update_clip_path(clip)
             ledger.add_library_clip(clip, checklist=checklist, status="ready")
             output["produced"] += 1
-            if len(ledger.library_items("ready")) >= target_stock:
+            if ledger.ready_today() >= daily_target:
                 break
-        if len(ledger.library_items("ready")) >= target_stock:
+        if ledger.ready_today() >= daily_target:
             break
     output["ready"] = len(ledger.library_items("ready"))
+    output["daily_ready"] = ledger.ready_today()
     for event in ledger.events():
         if event["kind"] != "campaign_source_selected":
             continue
@@ -354,8 +418,9 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
         output["source_routes"].setdefault(details["campaign_id"], details["route"])
     output["error_count"] = len(errors)
     output["failure_count"] = len(errors) + output["qa_failures"]
-    if output["ready"] < target_stock:
-        ledger.event("producer_stock_low", {"ready": output["ready"], "target": target_stock})
+    if output["daily_ready"] < daily_target:
+        ledger.event("producer_stock_low", {"ready": output["ready"], "daily_ready": output["daily_ready"],
+                                             "target": daily_target})
     return output
 
 

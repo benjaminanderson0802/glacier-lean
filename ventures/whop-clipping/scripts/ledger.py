@@ -162,6 +162,19 @@ class Ledger:
         return [dict(row, clip=json.loads(row["clip_payload"]), checklist=json.loads(row["checklist"]),
                      qa_failures=json.loads(row["qa_failures"])) for row in rows]
 
+    def campaign_ready_today(self, campaign_id, today=None):
+        today = today or datetime.now(timezone.utc).date().isoformat()
+        with self._connect() as db:
+            return db.execute("""SELECT count(*) FROM events WHERE kind='library_clip_added'
+                AND substr(created_at,1,10)=? AND json_extract(details,'$.campaign_id')=?""",
+                (today, campaign_id)).fetchone()[0]
+
+    def ready_today(self, today=None):
+        today = today or datetime.now(timezone.utc).date().isoformat()
+        with self._connect() as db:
+            return db.execute("""SELECT count(*) FROM events WHERE kind='library_clip_added'
+                AND substr(created_at,1,10)=?""", (today,)).fetchone()[0]
+
     def library_item(self, clip_id):
         with self._connect() as db:
             row = db.execute("SELECT * FROM library WHERE clip_id=?", (clip_id,)).fetchone()
