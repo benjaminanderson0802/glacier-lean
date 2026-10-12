@@ -17,23 +17,50 @@ from .interfaces import Campaign, Clip
 from .ledger import Ledger, clip_home
 from .clipper import candidate_segments, make_clip, transcribe
 from .sources import fetch_source
-from .variants import assign_segments, make_variant
-from .variants import channel_style
+from .variants import (assign_segments, brand_spelling, campaign_brand, make_variant,
+                       normalize_brand, normalize_caption_words, required_mentions, required_tags, channel_style)
+
+DEFAULT_CAMPAIGNS_DIR = Path(__file__).resolve().parents[1] / "campaigns"
 
 
 def parse_campaign_requirements(rules_text: str) -> dict:
-    tags = list(dict.fromkeys(re.findall(r"(?<!\w)#[\w-]+", rules_text)))
+    tags = required_tags(rules_text)
     disclosures = []
-    mentions = list(dict.fromkeys(re.findall(r"(?<!\w)@[\w.-]+", rules_text)))
+    mentions = required_mentions(rules_text)
     links = list(dict.fromkeys(re.findall(r"https?://[^\s,)]+", rules_text)))
+    banned_rules = []
+    banned_content = []
+    rule_fragments = []
     for line in rules_text.splitlines():
+        if re.search(r"\b(?:must|should|required|tag|include|use|mention|banned|on-video captions)\b", line, re.I):
+            for part in re.split(r"[;:.]", line):
+                fragment = part.strip()
+                if len(re.findall(r"\b\w+\b", fragment)) >= 4:
+                    rule_fragments.append(fragment)
         match = re.search(r"(?:disclosure|must say|caption must)\s*[:=]?\s*(.+)", line, re.I)
-        if match:
+        if match and re.search(r"\bdisclosure\s*[:=]", line, re.I):
             disclosures.append(match.group(1).strip())
+        if re.match(r"\s*(?:banned|no\b)\s*[:=]?", line, re.I):
+            banned_rules.append(line.strip())
+            body = re.sub(r"^\s*(?:banned|no\b)\s*[:=]?\s*", "", line, flags=re.I)
+            if re.match(r"\s*no\b", line, re.I) and not re.search(r"editing", body, re.I):
+                banned_content.extend(part.strip(" .;,\t") for part in re.split(r"[,;]|\bor\b", body, flags=re.I)
+                                      if part.strip(" .;,\t"))
+            clauses = [part.strip(" .;,") for part in re.split(r"[;\n]", body) if part.strip(" .;,")]
+            for clause in clauses:
+                # Extract the named subject of a restriction while retaining broad topic terms.
+                named = re.search(r"\b(?:clips?\s+of|mention(?:ing)?|about)\s+([\w'-]+)", clause, re.I)
+                if named and not re.search(r"\b(?:stock|ticker)\b", clause, re.I):
+                    banned_content.append(named.group(1))
+                for topic in ("stock", "ticker", "story boosting", "negativity", "mocking", "low-effort bait"):
+                    if re.search(re.escape(topic), clause, re.I):
+                        banned_content.append(topic)
     min_match = re.search(r"\bmin(?:imum)?(?:imum)?\s*(?:length)?\s*[:=]?\s*(\d+(?:\.\d+)?)", rules_text, re.I)
     max_match = re.search(r"\bmax(?:imum)?(?:imum)?\s*(?:length)?\s*[:=]?\s*(\d+(?:\.\d+)?)", rules_text, re.I)
     edits_match = re.search(r"allowed edits?\s*[:=]\s*([^\n]+)", rules_text, re.I)
     banned_match = re.search(r"banned content\s*[:=]\s*([^\n]+)", rules_text, re.I)
+    if banned_match:
+        banned_content.extend(part.strip() for part in re.split(r"[,;]", banned_match.group(1)) if part.strip())
     no_edit = bool(re.search(r"no editing|do not edit|don't edit|unedited|as[- ]is", rules_text, re.I))
     if re.search(r"no editing\s*[:=]\s*(?:false|no|0)", rules_text, re.I):
         no_edit = False
@@ -47,13 +74,21 @@ def parse_campaign_requirements(rules_text: str) -> dict:
         if re.search(pattern, rules_text, re.I):
             owner_actions.append({"requirement": requirement, "reason": "requires owner action"})
     draft_preapproval = any(row["requirement"] == "draft_preapproval" for row in owner_actions)
-    return {"required_tags": tags, "disclosures": list(dict.fromkeys(disclosures)), "mentions": mentions,
+    return {"rules_text": rules_text, "required_tags": tags, "disclosures": list(dict.fromkeys(disclosures)), "mentions": mentions,
             "links": links, "min_length_s": float(min_match.group(1)) if min_match else 0.0,
             "max_length_s": float(max_match.group(1)) if max_match else 58.0,
             "allowed_edits": [part.strip() for part in re.split(r"[,;]", edits_match.group(1))] if edits_match else [],
-            "banned_content": [part.strip() for part in re.split(r"[,;]", banned_match.group(1))] if banned_match else [],
+            "banned_content": list(dict.fromkeys(banned_content)), "banned_rules": banned_rules,
+            "rule_fragments": list(dict.fromkeys(rule_fragments)),
+            "brand_spelling": brand_spelling(rules_text, ""),
+            "required_mentions": required_mentions(rules_text),
             "no_edit": no_edit, "owner_actions": owner_actions,
             "draft_preapproval": draft_preapproval}
+
+
+def _rules_require_brand(rules_text: str, brand: str) -> bool:
+    return bool(brand and re.search(rf"\bmention(?:ing)?\b[^\n.;]*\b{re.escape(brand)}\b",
+                                    rules_text or "", re.I))
 
 
 def qa_clip(clip: Clip, checklist: dict, *, word_times=(), probe_fn=None) -> list[str]:
@@ -64,6 +99,21 @@ def qa_clip(clip: Clip, checklist: dict, *, word_times=(), probe_fn=None) -> lis
     if duration < float(checklist.get("min_length_s", 0)) or duration > float(checklist.get("max_length_s", 58)):
         failures.append("length outside campaign limits")
     metadata = "\n".join([clip.title, clip.description, *clip.hashtags])
+    public_casefold = metadata.casefold()
+    campaign_name = str(checklist.get("campaign_name", "")).strip()
+    public_brand = campaign_brand(campaign_name)
+    campaign_url = str(checklist.get("campaign_url", "")).strip()
+    if campaign_name and campaign_name.casefold() != public_brand.casefold() \
+            and campaign_name.casefold() in public_casefold:
+        failures.append("internal campaign name leaked into public metadata: " + campaign_name)
+    if campaign_url and campaign_url.casefold() in public_casefold:
+        failures.append("internal campaign URL leaked into public metadata: " + campaign_url)
+    for fragment in checklist.get("rule_fragments", []):
+        words = fragment.split()
+        candidates = [fragment, *[" ".join(words[index:]) for index in range(1, len(words) - 3)]]
+        leaked = next((candidate for candidate in candidates if candidate.casefold() in public_casefold), None)
+        if leaked:
+            failures.append("campaign rule text leaked into public metadata: " + leaked)
     missing = [tag for tag in checklist.get("required_tags", []) if tag.lower() not in metadata.lower()]
     if missing:
         failures.append("required tags missing from clip metadata: " + ", ".join(missing))
@@ -71,9 +121,42 @@ def qa_clip(clip: Clip, checklist: dict, *, word_times=(), probe_fn=None) -> lis
         if required.lower() not in metadata.lower():
             failures.append("campaign requirement missing from metadata: " + required)
     spoken = " ".join(str(word.get("word", "")) for word in word_times)
+    transcript_line = ""
+    if campaign_name:
+        brand_prefix = campaign_brand(campaign_name) + ":"
+        transcript_line = next((line.partition(":")[2] for line in clip.description.splitlines()
+                                if line.strip().casefold().startswith(brand_prefix.casefold())), "")
+    spoken = " ".join((spoken, transcript_line))
+    ticker_banned = any(term.casefold() == "ticker" for term in checklist.get("banned_content", []))
+    if ticker_banned:
+        brand_token = brand_spelling(checklist.get("rules_text", ""), public_brand).upper()
+        symbols = [symbol for symbol in re.findall(r"(?<!\w)[A-Z]{2,5}(?!\w)", spoken)
+                   if symbol != brand_token]
+        if symbols:
+            source_rule = next((line for line in checklist.get("banned_rules", [])
+                                if re.search(r"\bticker\b", line, re.I)), "ticker")
+            failures.append(f'banned campaign rule: "{source_rule}" (matched ticker: {symbols[0]})')
     for banned in checklist.get("banned_content", []):
-        if banned and re.search(rf"\b{re.escape(banned.strip())}\b", spoken + " " + metadata, re.I):
-            failures.append("banned campaign content detected: " + banned)
+        if banned and re.search(rf"\b{re.escape(banned.strip())}\b", spoken, re.I):
+            source_rule = next((line for line in checklist.get("banned_rules", [])
+                                if banned.casefold() in line.casefold()), banned)
+            failures.append(f'banned campaign rule: "{source_rule}" (matched: {banned})')
+    for mention in checklist.get("required_mentions", []):
+        if mention.casefold() not in metadata.casefold():
+            failures.append("required campaign handle missing from public metadata: " + mention)
+    required_brand = str(checklist.get("required_brand", "")).strip()
+    if required_brand and required_brand.casefold() not in clip.title.casefold():
+        failures.append("required brand missing from title: " + required_brand)
+    exact_spelling = str(checklist.get("brand_spelling", "")).strip()
+    spelling_brand = campaign_brand(campaign_name)
+    if exact_spelling and spelling_brand:
+        if normalize_brand(clip.title, checklist.get("rules_text", ""), spelling_brand) != clip.title:
+            failures.append("brand spelling in title must be exactly: " + exact_spelling)
+        for word in word_times:
+            spoken_word = str(word.get("word", ""))
+            if normalize_brand(spoken_word, checklist.get("rules_text", ""), spelling_brand) != spoken_word:
+                failures.append("burned-in caption spelling must be exactly: " + exact_spelling)
+                break
     if checklist.get("no_edit") and not clip.passthrough:
         failures.append("campaign prohibits editing but clip is not an untouched pass-through")
     for word in word_times:
@@ -236,9 +319,11 @@ def _iter_prepared_clips(campaign, config, ledger, home):
                           caption_words=False, mode=config.get("video_layout", "blurred_background"))
             render_seconds = (time.monotonic() - render_started if rendered else
                               float((previous or {}).get("render_seconds", 0.0)))
-            words = [{**word, "start": max(0.0, float(word["start"])-float(item["start_s"])),
+            words = [{**word,
+                      "start": max(0.0, float(word["start"])-float(item["start_s"])),
                       "end": min(float(item["end_s"])-float(item["start_s"]), float(word["end"])-float(item["start_s"]))}
                      for word in item.get("words", [])]
+            words = normalize_caption_words(words, campaign.rules_text, campaign_brand(campaign.name))
             clip = Clip(digest, campaign.id, source_id, item["start_s"], item["end_s"], str(target),
                         variant["title"], variant["description"], variant["hashtags"], "",
                         caption_words=words, passthrough=bool(item.get("passthrough")))
@@ -280,8 +365,10 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
 
     raw_campaigns = []
     registry_root = Path(config.get("campaign_registry", Path(__file__).resolve().parents[1]))
+    default_campaigns_dir = registry_root / "campaigns" if "campaign_registry" in config else DEFAULT_CAMPAIGNS_DIR
+    campaigns_dir = Path(config.get("campaigns_dir", default_campaigns_dir))
     try:
-        raw_campaigns.extend(load_campaign_registry(registry_root, home))
+        raw_campaigns.extend(load_campaign_registry(registry_root, home, campaigns_dir=campaigns_dir))
     except Exception as exc:
         report_error("campaign_registry_failed", f"{type(exc).__name__}: {exc}")
     if scout is None:
@@ -307,7 +394,7 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             report_error("campaign_contract_invalid", f"campaign {index}: {type(exc).__name__}: {exc}")
     eligibility_config = config
     joined_ids = getattr(scout, "joined_campaign_ids", None)
-    registry_ids = {path.name for root in (registry_root / "campaigns", home / "campaigns")
+    registry_ids = {path.name for root in (campaigns_dir, home / "campaigns")
                     if root.is_dir() for path in root.iterdir() if path.is_dir()}
     if joined_ids is not None:
         registry_ids.update(joined_ids)
@@ -316,7 +403,11 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
             set(config.get("approved_campaign_ids", [])) | registry_ids)}
     eligible = []
     for campaign in campaigns:
-        if campaign.eligible_for_new_youtube_shorts_channels is False:
+        eligibility = campaign.eligible_for_new_youtube_shorts_channels
+        allow_conditional = set(config.get("allow_conditional_campaign_ids", []))
+        is_yes = eligibility is True or (isinstance(eligibility, str) and eligibility.strip().casefold() == "yes")
+        is_conditional = isinstance(eligibility, str) and eligibility.strip().casefold() == "conditional"
+        if eligibility is not None and not is_yes and not (is_conditional and campaign.id in allow_conditional):
             report_error("campaign_ineligible", "eligible_for_new_youtube_shorts_channels=false",
                          campaign_id=campaign.id)
             continue
@@ -347,7 +438,10 @@ def produce_ready(config, *, home=None, scout=None, campaign_clips=None, target_
     else:
         output["join_suggestions"] = []
     for campaign in eligible:
-        checklist = parse_campaign_requirements(campaign.rules_text)
+        checklist = {**parse_campaign_requirements(campaign.rules_text),
+                     "campaign_name": campaign.name, "campaign_url": campaign.url,
+                     "required_brand": (campaign_brand(campaign.name)
+                                        if _rules_require_brand(campaign.rules_text, campaign_brand(campaign.name)) else "")}
         if campaign.requires_draft_preapproval:
             checklist["draft_preapproval"] = True
             checklist["owner_actions"] = list(checklist["owner_actions"]) + [
@@ -457,7 +551,10 @@ def run(config, *, home=None, scout=None, library=None, candidates=None, words=N
         if campaign is None:
             failures.append("campaign requirements were not reviewed")
             continue
-        checklist = parse_campaign_requirements(campaign.rules_text)
+        checklist = {**parse_campaign_requirements(campaign.rules_text),
+                     "campaign_name": campaign.name, "campaign_url": campaign.url,
+                     "required_brand": (campaign_brand(campaign.name)
+                                        if _rules_require_brand(campaign.rules_text, campaign_brand(campaign.name)) else "")}
         caption_words = timed_words or candidate.caption_words
         issues = qa_clip(candidate, checklist, word_times=caption_words)
         if issues:
