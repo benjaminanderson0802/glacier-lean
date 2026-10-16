@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
-import os
 import threading
 import time
 from collections.abc import Mapping
@@ -14,7 +12,6 @@ from urllib.parse import quote
 
 import requests
 
-logger = logging.getLogger("apify")
 TIMEOUT_SECONDS = 12
 RETRIES = 2
 RATE_INTERVAL_SECONDS = 0.2
@@ -52,17 +49,7 @@ def request_json(url: str, params: Mapping[str, Any] | None = None) -> Any:
     for attempt in range(RETRIES + 1):
         try:
             _polite_wait()
-            started = time.monotonic()
             response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT_SECONDS)
-            if url == SOURCE_URLS["CPSC"] and os.getenv("RECALL_DIAGNOSTICS") == "1":
-                logger.info(
-                    "Recall diagnostic HTTP source=CPSC url=%s status=%d content_type=%s bytes=%d elapsed_ms=%d",
-                    url,
-                    response.status_code,
-                    response.headers.get("content-type", ""),
-                    len(response.content),
-                    round((time.monotonic() - started) * 1000),
-                )
             # openFDA uses HTTP 404 with a source-specific code for valid empty searches.
             if response.status_code == 404 and "api.fda.gov" in url:
                 try:
@@ -72,8 +59,13 @@ def request_json(url: str, params: Mapping[str, Any] | None = None) -> Any:
                 if payload.get("error", {}).get("code") in {"NO_RECORDS_FOUND", "NOT_FOUND"}:
                     return {"results": [], "meta": {"no_records": True}}
             response.raise_for_status()
-            return response.json()
-        except (requests.RequestException, ValueError) as exc:
+            payload = response.json()
+            if url == SOURCE_URLS["CPSC"]:
+                error = _cpsc_error_sentinel(payload)
+                if error:
+                    raise SourceUnavailable(error)
+            return payload
+        except (requests.RequestException, SourceUnavailable, ValueError) as exc:
             last_error = exc
             if attempt < RETRIES:
                 time.sleep(0.35 * (attempt + 1))
@@ -86,6 +78,19 @@ def _first(record: Mapping[str, Any], *keys: str) -> Any:
         if value not in (None, ""):
             return value
     return ""
+
+
+def _cpsc_error_sentinel(payload: Any) -> str | None:
+    if not isinstance(payload, list):
+        return None
+    for record in payload:
+        if not isinstance(record, Mapping):
+            continue
+        recall_id = str(_first(record, "RecallNumber", "RecallID", "RecallId")).strip()
+        title = str(_first(record, "Title", "RecallTitle")).strip()
+        if recall_id == "0" and title.casefold().startswith("error retrieving recalls:"):
+            return title
+    return None
 
 
 def _record(source: str, record: Mapping[str, Any], *, fda_kind: str = "") -> dict[str, Any]:
@@ -187,6 +192,9 @@ def _record(source: str, record: Mapping[str, Any], *, fda_kind: str = "") -> di
 def normalize_cpsc(payload: Any) -> list[dict[str, Any]]:
     if not isinstance(payload, list):
         raise SourceUnavailable("CPSC returned an unexpected response")
+    error = _cpsc_error_sentinel(payload)
+    if error:
+        raise SourceUnavailable(error)
     return [_record("CPSC", item) for item in payload if isinstance(item, Mapping)]
 
 
@@ -286,30 +294,7 @@ def check_sources(query: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[
     cpsc_errors: list[str] = []
     for params in cpsc_searches:
         try:
-            payload = request_json(SOURCE_URLS["CPSC"], params)
-            normalized = normalize_cpsc(payload)
-            cpsc_records.extend(normalized)
-            if os.getenv("RECALL_DIAGNOSTICS") == "1":
-                field = next((name for name in params if name != "format"), "unknown")
-                phrase = str(params.get(field, ""))
-                is_known_canary = (
-                    query.get("brand") == "Fisher-Price"
-                    and query.get("product_name") == "Rock 'n Play Sleeper"
-                )
-                phrase_label = repr(phrase) if is_known_canary else f"<redacted:{len(phrase)} chars>"
-                raw_count = len(payload) if isinstance(payload, list) else -1
-                sample = normalized[0] if is_known_canary and normalized else {}
-                logger.info(
-                    "Recall diagnostic CPSC probe field=%s phrase=%s raw_rows=%d normalized_rows=%d first_id=%s first_title=%s first_brand=%s first_model=%s",
-                    field,
-                    phrase_label,
-                    raw_count,
-                    len(normalized),
-                    str(sample.get("recall_id", ""))[:80],
-                    str(sample.get("title", ""))[:120],
-                    str(sample.get("brand", ""))[:80],
-                    str(sample.get("model", ""))[:80],
-                )
+            cpsc_records.extend(normalize_cpsc(request_json(SOURCE_URLS["CPSC"], params)))
         except (SourceUnavailable, requests.RequestException, ValueError) as exc:
             cpsc_errors.append(str(exc)[:240])
     recalls.extend(_dedupe_cpsc(cpsc_records))

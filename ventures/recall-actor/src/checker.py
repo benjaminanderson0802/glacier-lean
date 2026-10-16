@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import logging
-import os
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from typing import Any
 
 from .matching import classify_matches
 from .sources import check_sources
-
-logger = logging.getLogger("apify")
 
 
 def _now() -> str:
@@ -24,13 +20,6 @@ def public_match(record: Mapping[str, Any]) -> dict[str, str]:
 
 def build_result(query: Mapping[str, Any], recalls: Sequence[Mapping[str, Any]], sources_checked: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
     match_outcome, candidates = classify_matches(query, recalls)
-    if os.getenv("RECALL_DIAGNOSTICS") == "1":
-        logger.info(
-            "Recall diagnostic matching source_rows=%d candidate_rows=%d classification=%s",
-            len(recalls),
-            len(candidates),
-            match_outcome,
-        )
     has_source_error = any(source.get("status") == "error" for source in sources_checked.values())
     if has_source_error:
         outcome = "uncertain"
