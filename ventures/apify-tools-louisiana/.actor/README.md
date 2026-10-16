@@ -1,4 +1,6 @@
-# Louisiana Contractor License Lookup — Status and Expiration
+# Louisiana Contractor License Status
+
+Look up Louisiana contractor license status and expiration from public Louisiana State Licensing Board for Contractors records. Search by license number or company name and export source-linked results.
 
 Search Louisiana State Licensing Board for Contractors (LSLBC) public records by license number or business name. Get source-linked JSON with the reported status, expiration date and UTC check time. Use one lookup or a batch of up to 100 queries.
 

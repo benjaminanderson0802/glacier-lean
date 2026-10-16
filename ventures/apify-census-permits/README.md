@@ -30,7 +30,7 @@ period is YYYY-MM (2000–2099) or latest (default). previous_period defaults to
 
 **Example output:** the source-backed sample below is a recorded local result, not a guarantee of a current record.
 
-One dataset row per one state successfully compared across both periods. `outcome` is `ok`, `no_match` (where the API explicitly reports zero matches), or `uncertain`. Every row includes the official source URL, retrieval time and a plain message. Successful source responses also carry SHA-256 provenance. JSON/CSV/Excel exports are available through Apify dataset downloads; the Output tab includes overview and provenance views.
+One dataset row per selected state. `outcome` is `ok` for a successful comparison or `uncertain` when a source or state value is missing, malformed, or changed. A missing state is not reported as a clean no-match. Every row includes the official source URL, retrieval time and a plain message. Successful source responses also carry SHA-256 provenance. JSON/CSV/Excel exports are available through Apify dataset downloads; the Output tab includes overview and provenance views.
 
 Actual source-backed sample from 2026-10-11T03:03:36.311216+00:00:
 

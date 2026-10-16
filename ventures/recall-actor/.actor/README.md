@@ -1,4 +1,6 @@
-# Product Recall Checker — CPSC, NHTSA and FDA Recall Search
+# Product Recall Checker (CPSC, NHTSA, FDA)
+
+Check product names, barcodes, brands, models, and vehicle details against public CPSC, NHTSA, and FDA recall records. Get source links, per-source status, and dated results.
 
 Check a product name, barcode, brand/model or vehicle make/model/year against public U.S. recall data. Get source-linked JSON for one item or a batch of up to 100, with explicit source status and a UTC check time.
 
@@ -13,7 +15,7 @@ Check a product name, barcode, brand/model or vehicle make/model/year against pu
 ```json
 {
   "brand": "Fisher-Price",
-  "product_name": "Rock 'n Play"
+  "product_name": "Rock 'n Play Sleeper"
 }
 ```
 
@@ -21,7 +23,7 @@ Optional fields: `barcode`, `brand`, `model`, `product_name`, `year`. For vehicl
 
 ## Output example
 
-Illustrative outage response for the input above, not a new live check. All applicable sources failed in this illustrative result, so no recall-check event is charged.
+Illustrative outage response for the input above. All applicable sources failed in this example, so no recall-check event is charged.
 
 ```json
 {

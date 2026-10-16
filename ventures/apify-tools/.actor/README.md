@@ -1,4 +1,6 @@
-# Mississippi Contractor License Lookup — Status and Expiration
+# Mississippi Contractor License Status
+
+Look up Mississippi contractor license status and expiration from public Mississippi State Board of Contractors records. Search by license number or business name and export source-linked results.
 
 Search Mississippi State Board of Contractors (MSBOC) public records by license number or business name. Get source-linked JSON with the reported status, expiration date and UTC check time. Use one lookup or a batch of up to 100 queries.
 
