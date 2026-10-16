@@ -46,7 +46,8 @@ def _polite_wait() -> None:
 
 def request_json(url: str, params: Mapping[str, Any] | None = None) -> Any:
     last_error: Exception | None = None
-    for attempt in range(RETRIES + 1):
+    max_retries = 1 if url == SOURCE_URLS["CPSC"] else RETRIES
+    for attempt in range(max_retries + 1):
         try:
             _polite_wait()
             response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT_SECONDS)
@@ -67,7 +68,7 @@ def request_json(url: str, params: Mapping[str, Any] | None = None) -> Any:
             return payload
         except (requests.RequestException, SourceUnavailable, ValueError) as exc:
             last_error = exc
-            if attempt < RETRIES:
+            if attempt < max_retries:
                 time.sleep(0.35 * (attempt + 1))
     raise SourceUnavailable(str(last_error or "source request failed"))
 
