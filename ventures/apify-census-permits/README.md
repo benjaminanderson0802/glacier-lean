@@ -66,11 +66,8 @@ Source outages and unreadable/schema-changed responses produce `outcome: "uncert
 
 ## Pricing
 
-Suggested pay-per-event price: **$0.002 for one state successfully compared across both periods**, custom event **`state-comparison`**. No minimum/start charge; no-match and uncertain results have no custom event charge. Repeated runs can incur new charges; deduplication does not extend across runs. Source data itself is free. `billable` describes event eligibility; local runs never charge.
+The `state-comparison` event costs **$0.002 per successfully compared state**, with platform usage included. Uncertain rows are free; this Actor does not return a separate no-match outcome. For all 50 states and DC, the maximum event charge per run is **$0.102**. A smaller selected-state list costs up to $0.002 per state compared. Each new run can incur new event charges.
 
-Configure **only this custom event**, with no automatic `apify-actor-start` or `apify-default-dataset-item` events. The SDK writes a result before charging, uses run-scoped idempotency keys and stops delivery when the event spending limit is reached. Platform idempotency is time-limited; this is not a durable cross-run exactly-once guarantee. Set a maximum total charge in Console; use the input limits to bound source work. Platform compute costs can still apply to the developer even on failed/no-match runs. Pricing configuration is manual; `pricing.json` is a setup reference, not automatic Apify configuration.
-
-Competitor snapshot, 2026-10-10: [aether_studio/census-state-building-permit-change-monitor](https://apify.com/aether_studio/census-state-building-permit-change-monitor) listed $0.001/result plus $0.005 start. See [portfolio comparison](../apify-portfolio/CHOICES.md) for fuller evidence and limitations. Proposed price is an experiment, not a promise of profit.
 
 ## Limits and source notes
 
@@ -92,14 +89,6 @@ APIFY_IS_AT_HOME=0 CRAWLEE_PURGE_ON_START=false python -m src
 ```
 
 Use an empty local storage directory or set `APIFY_LOCAL_STORAGE_DIR` to a fresh directory. Do not set an Apify token for local testing. Results are written under `storage/datasets/default`. `apify run` is also supported with the same INPUT. In the Glacier sandbox use `~/w/glacier-lean/.venv/bin/python`.
-
-## Build and publish (owner)
-
-After the commit is integrated into `glacier-final`, Develop new → Connect Git → paste:
-
-`https://github.com/benjaminanderson0802/glacier-lean#glacier-final:ventures/apify-census-permits`
-
-Build → configure Pay per event with **`state-comparison` at $0.002**, without automatic start/dataset charges → review the sample output and Publish. Payout/business verification remains with the owner. This task did not log in, build in the cloud or publish. The Git subfolder is self-contained; it does not import neighboring venture folders.
 
 ## Verification
 

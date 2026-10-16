@@ -48,6 +48,6 @@ Uses the [U.S. Census Bureau Building Permits Survey](https://www.census.gov/con
 
 ## Pricing
 
-The proposed event is `state-comparison` at **$0.002 per successfully compared state**. No-match and uncertain rows are free. The Store pricing panel controls actual charges. Platform usage should be included, and automatic Actor-start and dataset-item events should be disabled. Set a maximum run charge in Console before use; `pricing.json` is only a reference.
+The `state-comparison` event costs **$0.002 per successfully compared state**, with platform usage included. Uncertain rows are free; this Actor does not return a separate no-match outcome.
 
-For a 51-state/DC comparison, the event total is at most $0.102. A full run still uses two source files and may incur platform compute costs. The Actor writes each result before charging and stops when its configured event limit is reached.
+For all 50 states and DC, the maximum event charge per run is **$0.102**. A smaller selected-state list costs up to $0.002 per state compared. Each new run can incur new event charges.

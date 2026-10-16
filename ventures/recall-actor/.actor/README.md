@@ -71,9 +71,9 @@ Outcomes: `match`, `no_match` (no match found in checked sources as of the shown
 
 ## Pricing
 
-Proposed Store price: **$0.01 per completed input query**, event `recall-check`, platform usage included; 100 billable queries cost $1.00. The published pricing panel controls the actual price. A readable no-match or uncertain result is billable, including partial results when another source failed. An outage-only result (source errors and no successful source response) does not incur the event. Billing is per input item, not per recall returned.
+The `recall-check` event costs **$0.01 per input query**, with platform usage included. A readable no-match or uncertain result is charged when at least one source responded, including partial results when another source failed. A result with only source outages is free. Billing is per input item, not per recall returned.
 
-Set the maximum run charge to $1.00 for a full batch or $0.01 for one item. No automatic dataset-item or startup fee is proposed; those must be disabled by the publisher. Dollar limits are Console settings, not a hard-coded cap in the Actor.
+The maximum event charge per run is **$1.00** for 100 input queries. For a smaller batch, choose a lower run cap if desired. Each new run can incur new event charges.
 
 ## Sources, limitations and legal notes
 

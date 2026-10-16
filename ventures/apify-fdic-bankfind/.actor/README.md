@@ -47,6 +47,6 @@ Uses the [FDIC BankFind API](https://api.fdic.gov/banks/docs). This Actor return
 
 ## Pricing
 
-The proposed event is `bank-record` at **$0.002 per returned institution**. No-match and uncertain rows are free. The Store pricing panel controls actual charges. Platform usage should be included, and automatic Actor-start and dataset-item events should be disabled. Set a maximum run charge in Console before use; `pricing.json` is only a reference.
+The `bank-record` event costs **$0.002 per returned institution**, with platform usage included. No-match and uncertain results are free.
 
-At the 1,000-record input cap, event charges total at most $2.00. A run may still incur platform compute costs. The Actor writes each result before charging and stops when its configured event limit is reached.
+The maximum event charge per run is **$2.00** at the 1,000-record limit. Narrower results cost up to $0.002 per institution returned. Each new run can incur new event charges.

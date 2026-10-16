@@ -48,6 +48,6 @@ Uses the [CMS NPPES NPI Registry API](https://npiregistry.cms.hhs.gov/api-page).
 
 ## Pricing
 
-The proposed event is `provider-record` at **$0.003 per returned provider**. No-match and uncertain rows are free. The Store pricing panel controls actual charges. Platform usage should be included, and automatic Actor-start and dataset-item events should be disabled. Set a maximum run charge in Console before use; `pricing.json` is only a reference.
+The `provider-record` event costs **$0.003 per returned provider**, with platform usage included. No-match and uncertain results are free.
 
-At the 50-input cap, event charges total at most $0.15. A run may still incur platform compute costs. The Actor writes each result before charging and stops when its configured event limit is reached.
+The maximum event charge per run is **$0.15** for 50 input NPIs. Fewer returned providers cost up to $0.003 each. Each new run can incur new event charges.

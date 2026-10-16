@@ -45,9 +45,9 @@ The default dataset contains one row per returned record, or a dated no-match/un
 
 ## Pricing
 
-Proposed launch price: **$0.02 per input lookup**, event `license-lookup`, with platform usage included. The Store pricing panel is authoritative once published. One lookup returning multiple name matches incurs one event, not one charge per row. A readable no-match is billable; a partial record marked `uncertain` can also be billable. A source failure marked `unverifiable` is not charged by this event.
+The `license-lookup` event costs **$0.02 per completed readable lookup**, with platform usage included. One input query incurs one event even if a name search returns multiple records. A readable no-match is charged; an `uncertain` or `unverifiable` result is not.
 
-At this price, 100 billable queries cost $2.00. Use a maximum charge of $2 for a full batch or $0.02 for one query. These are user settings, not a hard-coded dollar cap. No additional startup or automatic dataset-item fee is proposed. Check the displayed event settings before running.
+The maximum charge for a run of 100 input queries is **$2.00**. For a smaller batch, choose a lower run cap if desired. Each new run can incur new event charges.
 
 ## Limitations and legal notes
 
