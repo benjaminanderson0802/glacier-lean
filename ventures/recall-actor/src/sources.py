@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 import threading
 import time
 from collections.abc import Mapping
@@ -12,6 +14,7 @@ from urllib.parse import quote
 
 import requests
 
+logger = logging.getLogger(__name__)
 TIMEOUT_SECONDS = 12
 RETRIES = 2
 RATE_INTERVAL_SECONDS = 0.2
@@ -49,7 +52,17 @@ def request_json(url: str, params: Mapping[str, Any] | None = None) -> Any:
     for attempt in range(RETRIES + 1):
         try:
             _polite_wait()
+            started = time.monotonic()
             response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT_SECONDS)
+            if url == SOURCE_URLS["CPSC"] and os.getenv("RECALL_DIAGNOSTICS") == "1":
+                logger.info(
+                    "Recall diagnostic HTTP source=CPSC url=%s status=%d content_type=%s bytes=%d elapsed_ms=%d",
+                    url,
+                    response.status_code,
+                    response.headers.get("content-type", ""),
+                    len(response.content),
+                    round((time.monotonic() - started) * 1000),
+                )
             # openFDA uses HTTP 404 with a source-specific code for valid empty searches.
             if response.status_code == 404 and "api.fda.gov" in url:
                 try:
@@ -273,7 +286,25 @@ def check_sources(query: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[
     cpsc_errors: list[str] = []
     for params in cpsc_searches:
         try:
-            cpsc_records.extend(normalize_cpsc(request_json(SOURCE_URLS["CPSC"], params)))
+            payload = request_json(SOURCE_URLS["CPSC"], params)
+            normalized = normalize_cpsc(payload)
+            cpsc_records.extend(normalized)
+            if os.getenv("RECALL_DIAGNOSTICS") == "1":
+                field = next((name for name in params if name != "format"), "unknown")
+                phrase = str(params.get(field, ""))
+                is_known_canary = (
+                    query.get("brand") == "Fisher-Price"
+                    and query.get("product_name") == "Rock 'n Play Sleeper"
+                )
+                phrase_label = repr(phrase) if is_known_canary else f"<redacted:{len(phrase)} chars>"
+                raw_count = len(payload) if isinstance(payload, list) else -1
+                logger.info(
+                    "Recall diagnostic CPSC probe field=%s phrase=%s raw_rows=%d normalized_rows=%d",
+                    field,
+                    phrase_label,
+                    raw_count,
+                    len(normalized),
+                )
         except (SourceUnavailable, requests.RequestException, ValueError) as exc:
             cpsc_errors.append(str(exc)[:240])
     recalls.extend(_dedupe_cpsc(cpsc_records))
