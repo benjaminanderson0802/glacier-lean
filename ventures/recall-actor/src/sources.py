@@ -298,12 +298,17 @@ def check_sources(query: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[
                 )
                 phrase_label = repr(phrase) if is_known_canary else f"<redacted:{len(phrase)} chars>"
                 raw_count = len(payload) if isinstance(payload, list) else -1
+                sample = normalized[0] if is_known_canary and normalized else {}
                 logger.info(
-                    "Recall diagnostic CPSC probe field=%s phrase=%s raw_rows=%d normalized_rows=%d",
+                    "Recall diagnostic CPSC probe field=%s phrase=%s raw_rows=%d normalized_rows=%d first_id=%s first_title=%s first_brand=%s first_model=%s",
                     field,
                     phrase_label,
                     raw_count,
                     len(normalized),
+                    str(sample.get("recall_id", ""))[:80],
+                    str(sample.get("title", ""))[:120],
+                    str(sample.get("brand", ""))[:80],
+                    str(sample.get("model", ""))[:80],
                 )
         except (SourceUnavailable, requests.RequestException, ValueError) as exc:
             cpsc_errors.append(str(exc)[:240])
