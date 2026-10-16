@@ -279,8 +279,15 @@ def check_sources(query: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[
     recalls.extend(_dedupe_cpsc(cpsc_records))
     if not cpsc_searches:
         statuses["CPSC"] = {"status": "skipped", "as_of": as_of(), "message": "No UPC or product phrase was provided."}
-    elif len(cpsc_errors) == len(cpsc_searches):
-        statuses["CPSC"] = {"status": "error", "as_of": as_of(), "message": cpsc_errors[-1]}
+    elif cpsc_errors:
+        failure_count = len(cpsc_errors)
+        search_count = len(cpsc_searches)
+        if failure_count == search_count:
+            message = cpsc_errors[-1]
+        else:
+            details = "; ".join(cpsc_errors)
+            message = f"{failure_count} of {search_count} CPSC searches failed: {details}"
+        statuses["CPSC"] = {"status": "error", "as_of": as_of(), "message": message[:240]}
     else:
         statuses["CPSC"] = {"status": "ok", "as_of": as_of()}
 
