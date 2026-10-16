@@ -11,7 +11,7 @@ from typing import Any
 from .matching import classify_matches
 from .sources import check_sources
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("apify")
 
 
 def _now() -> str:

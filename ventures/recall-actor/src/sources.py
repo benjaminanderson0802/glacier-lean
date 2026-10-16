@@ -14,7 +14,7 @@ from urllib.parse import quote
 
 import requests
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("apify")
 TIMEOUT_SECONDS = 12
 RETRIES = 2
 RATE_INTERVAL_SECONDS = 0.2
